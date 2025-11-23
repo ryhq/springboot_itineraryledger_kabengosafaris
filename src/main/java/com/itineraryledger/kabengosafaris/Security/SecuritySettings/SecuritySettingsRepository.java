@@ -1,4 +1,4 @@
-package com.itineraryledger.kabengosafaris.Security;
+package com.itineraryledger.kabengosafaris.Security.SecuritySettings;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -9,48 +9,48 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repository interface for SecuritySettings entity.
+ * Repository interface for SecuritySetting entity.
  * Provides database access operations for security configuration settings.
  */
 @Repository
-public interface SecuritySettingsRepository extends JpaRepository<SecuritySettings, Long> {
+public interface SecuritySettingsRepository extends JpaRepository<SecuritySetting, Long> {
 
     /**
      * Find security setting by setting key
      * @param settingKey the setting key (e.g., 'jwt.expiration.time.minutes')
      * @return Optional containing the setting if found
      */
-    Optional<SecuritySettings> findBySettingKey(String settingKey);
+    Optional<SecuritySetting> findBySettingKey(String settingKey);
 
     /**
      * Find active setting by setting key
      * @param settingKey the setting key
      * @return Optional containing the active setting if found
      */
-    @Query("SELECT setting FROM SecuritySettings setting WHERE setting.settingKey = :settingKey AND setting.active = true")
-    Optional<SecuritySettings> findActiveBySettingKey(@Param("settingKey") String settingKey);
+    @Query("SELECT setting FROM SecuritySetting setting WHERE setting.settingKey = :settingKey AND setting.active = true")
+    Optional<SecuritySetting> findActiveBySettingKey(@Param("settingKey") String settingKey);
 
     /**
      * Get all active security settings
      * @return List of all active settings
      */
-    @Query("SELECT setting FROM SecuritySettings setting WHERE setting.active = true ORDER BY setting.category, setting.settingKey")
-    List<SecuritySettings> findAllActive();
+    @Query("SELECT setting FROM SecuritySetting setting WHERE setting.active = true ORDER BY setting.category, setting.settingKey")
+    List<SecuritySetting> findAllActive();
 
     /**
      * Get all active settings by category
      * @param category the category
      * @return List of active settings in that category
      */
-    @Query("SELECT setting FROM SecuritySettings setting WHERE setting.category = :category AND setting.active = true ORDER BY setting.settingKey")
-    List<SecuritySettings> findActiveByCategoryOrderBySettingKeyAsc(@Param("category") String category);
+    @Query("SELECT setting FROM SecuritySetting setting WHERE setting.category = :category AND setting.active = true ORDER BY setting.settingKey")
+    List<SecuritySetting> findActiveByCategoryOrderBySettingKeyAsc(@Param("category") String category);
 
     /**
      * Get all system default settings
      * @return List of all system default settings
      */
-    @Query("SELECT setting FROM SecuritySettings setting WHERE setting.isSystemDefault = true ORDER BY setting.category, setting.settingKey")
-    List<SecuritySettings> findAllSystemDefaults();
+    @Query("SELECT setting FROM SecuritySetting setting WHERE setting.isSystemDefault = true ORDER BY setting.category, setting.settingKey")
+    List<SecuritySetting> findAllSystemDefaults();
 
     /**
      * Check if a setting key exists
@@ -63,6 +63,6 @@ public interface SecuritySettingsRepository extends JpaRepository<SecuritySettin
      * Find all settings that require restart on change
      * @return List of settings that require restart
      */
-    @Query("SELECT setting FROM SecuritySettings setting WHERE setting.requiresRestart = true AND setting.active = true")
-    List<SecuritySettings> findAllThatRequireRestart();
+    @Query("SELECT setting FROM SecuritySetting setting WHERE setting.requiresRestart = true AND setting.active = true")
+    List<SecuritySetting> findAllThatRequireRestart();
 }

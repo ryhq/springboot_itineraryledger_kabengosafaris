@@ -551,30 +551,123 @@ DAY 2 - 10:30 AM (24+ hours later, scheduled task runs)
 All settings are stored in `security_settings` table and can be modified via admin API:
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    SECURITY SETTINGS                            │
-├────────────────────────┬──────────────────────────┬─────────────┤
-│ Setting Key            │ Default Value            │ Category    │
-├────────────────────────┼──────────────────────────┼─────────────┤
-│ accountLockout.        │ 5                        │ ACCOUNT_    │
-│ maxFailedAttempts      │                          │ LOCKOUT     │
-├────────────────────────┼──────────────────────────┼─────────────┤
-│ accountLockout.        │ 30 (minutes)             │ ACCOUNT_    │
-│ lockoutDurationMinutes │                          │ LOCKOUT     │
-├────────────────────────┼──────────────────────────┼─────────────┤
-│ accountLockout.        │ 24 (hours, 0=never)      │ ACCOUNT_    │
-│ counterResetHours      │                          │ LOCKOUT     │
-├────────────────────────┼──────────────────────────┼─────────────┤
-│ loginAttempts.         │ 5 (tokens)               │ RATE_LIMIT  │
-│ maxCapacity            │                          │             │
-├────────────────────────┼──────────────────────────┼─────────────┤
-│ loginAttempts.         │ 5 (tokens)               │ RATE_LIMIT  │
-│ refillRate             │                          │             │
-├────────────────────────┼──────────────────────────┼─────────────┤
-│ loginAttempts.         │ 1 (minute)               │ RATE_LIMIT  │
-│ refillDurationMinutes  │                          │             │
-└────────────────────────┴──────────────────────────┴─────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                    SECURITY SETTINGS                             │
+├────────────────────────┬──────────────────────────┬──────────────┤
+│ Setting Key            │ Default Value            │ Category     │
+├────────────────────────┼──────────────────────────┼──────────────┤
+│ accountLockout.        │ 5                        │ ACCOUNT_     │
+│ maxFailedAttempts      │                          │ LOCKOUT      │
+├────────────────────────┼──────────────────────────┼──────────────┤
+│ accountLockout.        │ 30 (minutes)             │ ACCOUNT_     │
+│ lockoutDurationMinutes │                          │ LOCKOUT      │
+├────────────────────────┼──────────────────────────┼──────────────┤
+│ accountLockout.        │ 24 (hours, 0=never)      │ ACCOUNT_     │
+│ counterResetHours      │                          │ LOCKOUT      │
+├────────────────────────┼──────────────────────────┼──────────────┤
+│ accountLockout.        │ true (ENABLE/DISABLE)    │ ACCOUNT_     │
+│ enabled                │                          │ LOCKOUT      │
+├────────────────────────┼──────────────────────────┼──────────────┤
+│ loginAttempts.         │ 5 (tokens)               │ RATE_LIMIT   │
+│ maxCapacity            │                          │              │
+├────────────────────────┼──────────────────────────┼──────────────┤
+│ loginAttempts.         │ 5 (tokens)               │ RATE_LIMIT   │
+│ refillRate             │                          │              │
+├────────────────────────┼──────────────────────────┼──────────────┤
+│ loginAttempts.         │ 1 (minute)               │ RATE_LIMIT   │
+│ refillDurationMinutes  │                          │              │
+├────────────────────────┼──────────────────────────┼──────────────┤
+│ loginAttempts.         │ true (ENABLE/DISABLE)    │ RATE_LIMIT   │
+│ enabled                │                          │              │
+└────────────────────────┴──────────────────────────┴──────────────┘
 ```
+
+### Enable/Disable Policy Controls
+
+**Account Lockout Policy (`accountLockout.enabled`)**
+- **Enabled (true)**: Failed attempt counter is tracked; accounts lock after maxFailedAttempts
+- **Disabled (false)**: Failed attempts are NOT tracked; locking is bypassed
+- Can be toggled at runtime without restart
+- Takes effect on next login attempt
+
+**Login Rate Limiting Policy (`loginAttempts.enabled`)**
+- **Enabled (true)**: Token bucket rate limiting is enforced; excess attempts are rejected
+- **Disabled (false)**: All login attempts are allowed (no rate limiting)
+- Can be toggled at runtime without restart
+- Takes effect on next login attempt
+- Note: Disabling does NOT clear existing token buckets
+
+---
+
+## Policy Enable/Disable Implementation
+
+### Account Lockout Policy Control
+
+The Account Lockout policy is enforced by checking `accountLockout.enabled` setting at three critical points:
+
+**1. During Login - Account Lock Check (Step 5)**
+```java
+// LoginService.java:80-88
+if (securitySettingsGetterServices.getAccountLockoutEnabled() && !user.isAccountNonLocked()) {
+    if (unlockWhenTimeExpired(user)) {
+        resetFailedAttempts(user);
+    } else {
+        throw new LoginException("Your account is locked...");
+    }
+}
+```
+- If disabled: locked accounts are NOT checked; login proceeds
+- If enabled: locked accounts prevent login
+
+**2. During Failed Authentication (Step 8b)**
+```java
+// LoginService.java:127-137
+if (securitySettingsGetterServices.getAccountLockoutEnabled()) {
+    int maxFailedAttempts = securitySettingsGetterServices.getMaxFailedAttempts();
+    if (user.getFailedAttempt() >= maxFailedAttempts - 1) {
+        lock(user);
+    } else {
+        increaseFailedAttempts(user);
+    }
+}
+```
+- If disabled: failed attempts are NOT tracked; no locking occurs
+- If enabled: counter increments; account locks when threshold reached
+
+**3. Scheduled Maintenance Tasks**
+```java
+// AccountMaintenanceScheduledService.java:46-50
+if (!securitySettingsGetterServices.getAccountLockoutEnabled()) {
+    log.debug("Account lockout policy is disabled, skipping unlockExpiredAccounts");
+    return;
+}
+```
+- If disabled: background tasks skip processing locked accounts
+- If enabled: tasks automatically unlock expired locks and reset counters
+
+---
+
+### Login Rate Limiting Policy Control
+
+The Login Rate Limiting policy is enforced by checking `loginAttempts.enabled` setting at the beginning of login:
+
+**During Login - Rate Limit Check (Step 0)**
+```java
+// LoginService.java:50-61
+if (securitySettingsGetterServices.getLoginRateLimitEnabled()) {
+    if (!loginRateLimitingService.isAllowed(identifier)) {
+        throw new LoginException("Too many login attempts. Please try again later.");
+    }
+}
+```
+- If disabled: all login attempts are allowed (no token consumption)
+- If enabled: token bucket algorithm enforces rate limiting
+
+**Important Notes:**
+- Token bucket configuration changes (maxCapacity, refillRate, refillDurationMinutes) take effect on NEW bucket creation
+- Existing token buckets are NOT cleared when settings change
+- Disabling rate limiting does NOT refund consumed tokens
+- Next login attempt after disabling rate limiting will either succeed or create a new bucket
 
 ---
 

@@ -12,7 +12,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 
 import com.itineraryledger.kabengosafaris.Security.JwtTokenProvider;
-import com.itineraryledger.kabengosafaris.Security.SecuritySettingsService;
+import com.itineraryledger.kabengosafaris.Security.SecuritySettings.SecuritySettingsGetterServices;
 import com.itineraryledger.kabengosafaris.User.User;
 import com.itineraryledger.kabengosafaris.User.UserRepository;
 import com.itineraryledger.kabengosafaris.User.DTOs.LoginRequest;
@@ -33,7 +33,7 @@ public class LoginService {
     private UserRepository userRepository;
 
     @Autowired
-    private SecuritySettingsService securitySettingsService;
+    private SecuritySettingsGetterServices securitySettingsGetterServices;
 
     public LoginResponse login (LoginRequest loginRequest) {
         String identifier = loginRequest.getIdentifier();
@@ -47,11 +47,15 @@ public class LoginService {
             throw new LoginException("Password must be provided");
         }
 
-        // Rate limiting: Prevent brute-force attacks
+        // Rate limiting: Prevent brute-force attacks (if enabled)
         try {
-            if (!loginRateLimitingService.isAllowed(identifier)) {
-                throw new LoginException("Too many login attempts. Please try again later.");
+            if (securitySettingsGetterServices.getLoginRateLimitEnabled()) {
+                if (!loginRateLimitingService.isAllowed(identifier)) {
+                    throw new LoginException("Too many login attempts. Please try again later.");
+                }
             }
+        } catch (LoginException e) {
+            throw e;
         } catch (Exception e) {
             throw new LoginException(e.getMessage());
         }
@@ -73,8 +77,8 @@ public class LoginService {
             // Check if failed attempt counter should be reset based on counterResetHours
             resetCounterIfExpired(user);
 
-            // Check if the account is locked
-            if (!user.isAccountNonLocked()) {
+            // Check if the account is locked (if account lockout policy is enabled)
+            if (securitySettingsGetterServices.getAccountLockoutEnabled() && !user.isAccountNonLocked()) {
                 if (unlockWhenTimeExpired(user)) {
                     // Account was locked but is now unlocked
                     resetFailedAttempts(user);
@@ -103,10 +107,10 @@ public class LoginService {
                 loginResponse.setAccessToken(jwtTokenProvider.generateToken(authentication));
                 loginResponse.setRefreshToken(jwtTokenProvider.generateRefreshToken(authentication));
                 try {
-                    loginResponse.setRefreshTokenExpiresIn(securitySettingsService.getJwtRefreshExpirationTimeMillis());
-                    loginResponse.setAccessTokenExpiresIn(securitySettingsService.getJwtExpirationTimeMillis());
-                    String accessTokenExpiryDateTime = LocalDateTime.now().plusSeconds(securitySettingsService.getJwtExpirationTimeMillis() / 1000).toString();
-                    String refreshTokenExpiryDateTime = LocalDateTime.now().plusSeconds(securitySettingsService.getJwtRefreshExpirationTimeMillis() / 1000).toString();
+                    loginResponse.setRefreshTokenExpiresIn(securitySettingsGetterServices.getJwtRefreshExpirationTimeMillis());
+                    loginResponse.setAccessTokenExpiresIn(securitySettingsGetterServices.getJwtExpirationTimeMillis());
+                    String accessTokenExpiryDateTime = LocalDateTime.now().plusSeconds(securitySettingsGetterServices.getJwtExpirationTimeMillis() / 1000).toString();
+                    String refreshTokenExpiryDateTime = LocalDateTime.now().plusSeconds(securitySettingsGetterServices.getJwtRefreshExpirationTimeMillis() / 1000).toString();
                     loginResponse.setAccessTokenExpiresAt(accessTokenExpiryDateTime);
                     loginResponse.setRefreshTokenExpiresAt(refreshTokenExpiryDateTime);
                 } catch (Exception e) {
@@ -121,12 +125,14 @@ public class LoginService {
         } catch (CredentialsExpiredException ex) {
             throw new LoginException("Your password has expired. Please reset your password.");
         } catch (AuthenticationException ex) {
-            // Handle failed login attempts for database users
-            int maxFailedAttempts = securitySettingsService.getSettingValueAsInteger("accountLockout.maxFailedAttempts");
-            if (user.getFailedAttempt() >= maxFailedAttempts - 1) {
-                lock(user);
-            } else {
-                increaseFailedAttempts(user);
+            // Handle failed login attempts for database users (if account lockout is enabled)
+            if (securitySettingsGetterServices.getAccountLockoutEnabled()) {
+                int maxFailedAttempts = securitySettingsGetterServices.getMaxFailedAttempts();
+                if (user.getFailedAttempt() >= maxFailedAttempts - 1) {
+                    lock(user);
+                } else {
+                    increaseFailedAttempts(user);
+                }
             }
             throw new LoginException("Invalid username or password");
         }
@@ -145,7 +151,7 @@ public class LoginService {
         }
 
         try {
-            int counterResetHours = securitySettingsService.getSettingValueAsInteger("accountLockout.counterResetHours");
+            int counterResetHours = securitySettingsGetterServices.getLockoutCounterResetHours();
             if (counterResetHours == 0) {
                 return; // 0 means never reset
             }
@@ -190,7 +196,7 @@ public class LoginService {
         }
 
         try {
-            int lockoutDurationMinutes = securitySettingsService.getSettingValueAsInteger("accountLockout.lockoutDurationMinutes");
+            int lockoutDurationMinutes = securitySettingsGetterServices.getLockoutDurationMinutes();
             LocalDateTime unlockTime = lockTime.plusMinutes(lockoutDurationMinutes);
 
             if (LocalDateTime.now().isAfter(unlockTime)) {

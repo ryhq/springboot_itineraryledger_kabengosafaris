@@ -1,10 +1,12 @@
 package com.itineraryledger.kabengosafaris.User.Services;
 
-import com.itineraryledger.kabengosafaris.Security.SecuritySettingsService;
+import com.itineraryledger.kabengosafaris.Security.SecuritySettings.SecuritySettingsGetterServices;
 import com.itineraryledger.kabengosafaris.User.User;
 import com.itineraryledger.kabengosafaris.User.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +26,9 @@ import java.util.List;
 public class AccountMaintenanceScheduledService {
 
     private final UserRepository userRepository;
-    private final SecuritySettingsService securitySettingsService;
+
+    @Autowired
+    private SecuritySettingsGetterServices securitySettingsGetterServices;
 
     /**
      * Automatically unlocks accounts whose lockout period has expired.
@@ -39,7 +43,13 @@ public class AccountMaintenanceScheduledService {
     @Transactional
     public void unlockExpiredAccounts() {
         try {
-            int lockoutDurationMinutes = securitySettingsService.getSettingValueAsInteger("accountLockout.lockoutDurationMinutes");
+            // Only process locked accounts if account lockout policy is enabled
+            if (!securitySettingsGetterServices.getAccountLockoutEnabled()) {
+                log.debug("Account lockout policy is disabled, skipping unlockExpiredAccounts");
+                return;
+            }
+
+            int lockoutDurationMinutes = securitySettingsGetterServices.getLockoutDurationMinutes();
 
             List<User> lockedUsers = userRepository.findByAccountLockedTrue();
 
@@ -77,7 +87,7 @@ public class AccountMaintenanceScheduledService {
     @Transactional
     public void resetExpiredFailedAttemptCounters() {
         try {
-            int counterResetHours = securitySettingsService.getSettingValueAsInteger("accountLockout.counterResetHours");
+            int counterResetHours = securitySettingsGetterServices.getLockoutCounterResetHours();
 
             if (counterResetHours == 0) {
                 log.debug("Counter reset disabled (counterResetHours = 0), skipping scheduled reset");

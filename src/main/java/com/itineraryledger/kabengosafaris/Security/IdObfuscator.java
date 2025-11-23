@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.itineraryledger.kabengosafaris.Security.SecuritySettings.SecuritySettingsGetterServices;
+
 /**
  * ID Obfuscator Component
  * Encodes numeric IDs into hash strings to hide internal ID sequences.
@@ -15,7 +17,6 @@ import org.springframework.stereotype.Component;
  * Configurable Settings:
  * - idObfuscator.obfuscated.length: Length of the hash string (default: 70)
  * - idObfuscator.salt.length: Length of the salt for obfuscation (default: 21)
- * - idObfuscator.enabled: Whether obfuscation is enabled (default: true)
  */
 @Component
 @Slf4j
@@ -31,16 +32,20 @@ public class IdObfuscator {
 
     @Value("${security.idObfuscator.salt.length:21}")
     private int defaultSaltLength;
-
+    
     @Autowired
-    public IdObfuscator(SecuritySettingsService securitySettingsService) {
-        this.hashids = initializeHashids(securitySettingsService);
+    public IdObfuscator(SecuritySettingsGetterServices securitySettingsServices) {
+        this.hashids = initializeHashids(securitySettingsServices);
+    }
+
+    public void reloadConfig(SecuritySettingsGetterServices securitySettingsServices) {
+        this.hashids = initializeHashids(securitySettingsServices);
     }
 
     /**
      * Initialize Hashids with configuration from database or fallback
      */
-    private Hashids initializeHashids(SecuritySettingsService securitySettingsService) {
+    private Hashids initializeHashids(SecuritySettingsGetterServices securitySettingsService) {
         try {
             // Try to get configuration from database
             this.obfuscatedIdLength = securitySettingsService.getIdObfuscationLength();

@@ -1,11 +1,14 @@
 package com.itineraryledger.kabengosafaris.User.Services.LoginServices;
 
-import com.itineraryledger.kabengosafaris.Security.SecuritySettingsService;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.itineraryledger.kabengosafaris.Security.SecuritySettings.SecuritySettingsGetterServices;
 
 import java.time.Duration;
 import java.util.Map;
@@ -25,7 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class LoginRateLimitingService {
 
-    private final SecuritySettingsService securitySettingsService;
+    @Autowired
+    private SecuritySettingsGetterServices securitySettingsGetterServices;
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
     /**
@@ -104,7 +108,7 @@ public class LoginRateLimitingService {
      * @return maximum capacity (default: 5)
      */
     private int getLoginAttemptMaxCapacity() {
-        return securitySettingsService.getSettingValueAsInteger("loginAttempts.maxCapacity");
+        return securitySettingsGetterServices.getLoginRateLimitMaxCapacity();
     }
 
     /**
@@ -113,7 +117,7 @@ public class LoginRateLimitingService {
      * @return refill rate (default: 5)
      */
     private int getLoginAttemptRefillRate() {
-        return securitySettingsService.getSettingValueAsInteger("loginAttempts.refillRate");
+        return securitySettingsGetterServices.getLoginRateLimitRefillRate();
     }
 
     /**
@@ -122,6 +126,6 @@ public class LoginRateLimitingService {
      * @return refill duration in minutes (default: 1)
      */
     private int getLoginAttemptRefillDurationMinutes() {
-        return securitySettingsService.getSettingValueAsInteger("loginAttempts.refillDurationMinutes");
+        return securitySettingsGetterServices.getLoginRateLimitRefillDurationMinutes();
     }
 }

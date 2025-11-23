@@ -1,4 +1,4 @@
-package com.itineraryledger.kabengosafaris.Security;
+package com.itineraryledger.kabengosafaris.Security.SecuritySettings;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

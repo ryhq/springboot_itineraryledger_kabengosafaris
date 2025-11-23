@@ -2,7 +2,7 @@ package com.itineraryledger.kabengosafaris.User.Services.RegistrationServices;
 
 import com.itineraryledger.kabengosafaris.Security.PasswordHasher;
 import com.itineraryledger.kabengosafaris.Security.PasswordValidator;
-import com.itineraryledger.kabengosafaris.Security.SecuritySettingsService;
+import com.itineraryledger.kabengosafaris.Security.SecuritySettings.SecuritySettingsGetterServices;
 import com.itineraryledger.kabengosafaris.User.User;
 import com.itineraryledger.kabengosafaris.User.UserRepository;
 import com.itineraryledger.kabengosafaris.User.DTOs.RegistrationRequest;
@@ -30,7 +30,7 @@ public class RegistrationServices {
     private PasswordValidator passwordValidator;
 
     @Autowired
-    private SecuritySettingsService securitySettingsService;
+    private SecuritySettingsGetterServices securitySettingsGetterServices;
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
             "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
@@ -85,7 +85,7 @@ public class RegistrationServices {
 
         // Calculate password expiry date from database settings
         try {
-            int expirationDays = securitySettingsService.getSettingValueAsInteger("password.expirationDays");
+            int expirationDays = securitySettingsGetterServices.getPasswordExpirationDays();
             if (expirationDays > 0) {
                 user.setPasswordExpiryDate(LocalDateTime.now().plusDays(expirationDays));
             }

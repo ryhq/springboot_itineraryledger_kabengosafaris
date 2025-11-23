@@ -12,7 +12,9 @@ The Security module provides a comprehensive, database-driven security framework
 - Strong password generation
 - Configurable security settings without application restart
 - Method-level access control via annotations
-- Account lockout and password policy support
+- Account lockout with enable/disable control
+- Login rate limiting with configurable token bucket algorithm
+- Password policy support with configurable constraints
 
 ---
 
@@ -73,7 +75,6 @@ Manages JWT token generation, validation, and extraction.
 **Configuration Keys:**
 - `jwt.expiration.time.minutes` - Token expiration in minutes (default: 180)
 - `jwt.refresh.expiration.time.minutes` - Refresh token expiration (default: 10080) 
-- `jwt.issuer` - Token issuer claim (default: kabengosafaris)
 
 ---
 
@@ -415,8 +416,6 @@ Encodes numeric IDs into hash strings to hide internal ID sequences from API res
 **Configuration Keys:**
 - `idObfuscator.obfuscated.length` - Length of hash string (default: 70)
 - `idObfuscator.salt.length` - Salt length for obfuscation (default: 21)
-- `idObfuscator.enabled` - Enable/disable obfuscation (default: true)
-- `idObfuscator.algorithm` - Algorithm used (default: hashids)
 
 **Methods:**
 
@@ -447,8 +446,6 @@ Utility for generating cryptographically secure passwords.
 - Shuffled for unpredictability
 - Uses `SecureRandom` for security
 
-
-
 **Method:**
 ```java
 // Generate password with specified length (minimum 8)
@@ -460,6 +457,86 @@ static String generateStrongPassword(int length);
 - Lowercase: a-z
 - Digits: 0-9
 - Special: !@#$%^&*()-_+=<>?
+
+---
+
+### 9. Account Lockout Policy (`AccountMaintenanceScheduledService`, `LoginService`)
+
+Protects against brute-force attacks by locking accounts after multiple failed login attempts.
+
+**Features:**
+- Configurable maximum failed attempts before lockout
+- Automatic unlock after configurable duration
+- Failed attempt counter reset after inactivity period
+- **Enable/Disable Control**: Policy can be toggled on/off via database setting
+- Background scheduled task for automatic maintenance
+
+**Configuration Keys:**
+- `accountLockout.enabled` - Enable/disable the account lockout policy (default: true)
+- `accountLockout.maxFailedAttempts` - Max failed attempts before lock (default: 5)
+- `accountLockout.lockoutDurationMinutes` - How long account stays locked (default: 30)
+- `accountLockout.counterResetHours` - Hours of inactivity before counter resets (default: 24, 0=never)
+
+**How It Works:**
+1. User fails authentication
+2. If lockout is **enabled**: failed attempt counter increments
+3. When counter reaches maxFailedAttempts: account is locked
+4. User cannot login until lockout duration expires
+5. Scheduled task (every 5 minutes) automatically unlocks expired locks
+6. Counter resets after counterResetHours of inactivity (scheduled task)
+
+**When Lockout is Disabled:**
+- Failed attempts are NOT tracked
+- Account locking is bypassed
+- Users can attempt unlimited logins (rate limiting still applies if enabled)
+- Useful for development/testing environments
+
+**Code References:**
+- Login check: [LoginService.java:80-88](LoginService.java#L80-L88)
+- Failed attempt handler: [LoginService.java:127-137](LoginService.java#L127-L137)
+- Auto-unlock task: [AccountMaintenanceScheduledService.java:42-69](AccountMaintenanceScheduledService.java#L42-L69)
+- Counter reset task: [AccountMaintenanceScheduledService.java:80-110](AccountMaintenanceScheduledService.java#L80-L110)
+
+---
+
+### 10. Login Rate Limiting (`LoginRateLimitingService`)
+
+Implements token bucket algorithm to prevent brute-force attacks by limiting login attempt frequency.
+
+**Features:**
+- Per-user/email rate limiting
+- Token bucket algorithm for flexible rate control
+- Configurable burst capacity and refill rate
+- **Enable/Disable Control**: Can be toggled on/off via database setting
+- Graceful degradation on errors (fail-open)
+
+**Configuration Keys:**
+- `loginAttempts.enabled` - Enable/disable rate limiting (default: true)
+- `loginAttempts.maxCapacity` - Initial tokens available for login attempts (default: 5)
+- `loginAttempts.refillRate` - Tokens to add during refill (default: 5)
+- `loginAttempts.refillDurationMinutes` - Refill interval in minutes (default: 1)
+
+**Token Bucket Algorithm Explained:**
+```
+Initial State: 5 tokens
+├─ Attempt 1: Consume 1 token (4 remaining)
+├─ Attempt 2: Consume 1 token (3 remaining)
+├─ Attempt 3: Consume 1 token (2 remaining)
+├─ Attempt 4: Consume 1 token (1 remaining)
+├─ Attempt 5: Consume 1 token (0 remaining)
+├─ Attempt 6: DENIED - No tokens available
+└─ After 1 minute (refill): 5 tokens restored (capped at maxCapacity)
+```
+
+**When Rate Limiting is Disabled:**
+- All login attempts are allowed (no token consumption)
+- No rate limit exceptions thrown
+- Useful for testing/development or high-trust environments
+- Account lockout policy still applies if enabled
+
+**Code References:**
+- Rate limit check: [LoginService.java:50-61](LoginService.java#L50-L61)
+- Token bucket implementation: [LoginRateLimitingService.java:42-89](LoginRateLimitingService.java#L42-L89)
 
 ---
 
@@ -475,7 +552,6 @@ security.jwt.refresh.expiration.time.minutes=10080
 # ID Obfuscation Configuration
 security.idObfuscator.obfuscated.length=70
 security.idObfuscator.salt.length=21
-security.idObfuscator.enabled=true
 
 # Password Policy Configuration
 security.password.min.length=8
@@ -489,7 +565,14 @@ security.password.expiration.days=90
 # Account Lockout Configuration
 security.account-lockout.max-failed-attempts=5
 security.account-lockout.lockout-duration-minutes=30
+security.account-lockout.counter-reset-hours=24
 security.account-lockout.enabled=true
+
+# Login Rate Limit Configuration
+security.login-rate-limit.max-capacity=5
+security.login-rate-limit.refill-rate=5
+security.login-rate-limit.refill-duration-minutes=1
+security.login-rate-limit.enabled=true
 ```
 
 ---

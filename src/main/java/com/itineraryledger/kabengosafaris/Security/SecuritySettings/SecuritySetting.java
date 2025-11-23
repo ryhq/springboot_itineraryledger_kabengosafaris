@@ -1,4 +1,4 @@
-package com.itineraryledger.kabengosafaris.Security;
+package com.itineraryledger.kabengosafaris.Security.SecuritySettings;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SecuritySettings {
+public class SecuritySetting {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -73,10 +73,11 @@ public class SecuritySettings {
     private Boolean isSystemDefault = false;
 
     /**
-     * Category of the security setting (JWT, OBFUSCATION, PASSWORD, SESSION, etc.)
+     * Category of the security setting (JWT, OBFUSCATION, PASSWORD, etc.)
      */
-    @Column(length = 50)
-    private String category;
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Category category;
 
     /**
      * Whether changing this setting requires application restart
@@ -113,7 +114,6 @@ public class SecuritySettings {
         JWT("JWT Token Settings"),
         OBFUSCATION("ID Obfuscation Settings"),
         PASSWORD("Password Policy Settings"),
-        SESSION("Session Management Settings"),
         ACCOUNT_LOCKOUT("Account Lockout Settings"),
         RATE_LIMIT("Rate Limiting Settings"),
         CORS("CORS Settings"),

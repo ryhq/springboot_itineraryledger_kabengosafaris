@@ -1,14 +1,18 @@
 package com.itineraryledger.kabengosafaris.Security;
 
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Date;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import com.itineraryledger.kabengosafaris.Security.SecuritySettings.SecuritySettingsGetterServices;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -28,99 +32,75 @@ import lombok.extern.slf4j.Slf4j;
  * Configurable Settings:
  * - jwt.expiration.time.minutes: JWT token expiration time in minutes
  * - jwt.refresh.expiration.time.minutes: Refresh token expiration time
- * - jwt.issuer: JWT token issuer claim
  */
 @Component
 @Slf4j
 public class JwtTokenProvider {
 
-    private String JWT_SECRET_KEY = "";
-    private final SecuritySettingsService securitySettingsService;
-    private long jwtExpirationTimeMillis;
-    private long jwtRefreshExpirationTimeMillis;
+    private final SecuritySettingsGetterServices securitySettingsGetterServices;
 
-    // Fallback value from application.properties
+    private String JWT_SECRET_KEY = "";
+
     @Value("${security.jwt.expiration.time.minutes:180}")
-    private long defaultJwtExpirationMinutes;
+    private long jwtExpirationMinutes;
 
     @Value("${security.jwt.refresh.expiration.time.minutes:1440}")
-    private long defaultJwtRefreshExpirationMinutes;
+    private long jwtRefreshExpirationMinutes;
 
-    public JwtTokenProvider(SecuritySettingsService securitySettingsService) {
-        this.securitySettingsService = securitySettingsService;
+    private long jwtExpirationTimeMillis;
 
+    private long jwtRefreshExpirationTimeMillis;
+
+    @Autowired
+    public JwtTokenProvider(SecuritySettingsGetterServices securitySettingsGetterServices) {
+        this.securitySettingsGetterServices = securitySettingsGetterServices;
+
+        // Generate or load JWT secret key
         try {
-            // Generate or load JWT secret key
             KeyGenerator keyGenerator = KeyGenerator.getInstance("HmacSHA256");
             SecretKey secKey = keyGenerator.generateKey();
             JWT_SECRET_KEY = Base64.getEncoder().encodeToString(secKey.getEncoded());
+        } catch (NoSuchAlgorithmException e) {
+            log.error("JwtTokenProvider: Error generating JWT secret key", e);
+        }
 
-            // Try to load JWT expiration time from database settings
-            // If database is not initialized yet, this will fail and we'll use fallback
-            try {
-                this.jwtExpirationTimeMillis = securitySettingsService.getJwtExpirationTimeMillis();
-                log.info("JwtTokenProvider: Using database settings - expiration time: {} milliseconds ({} minutes)",
-                        jwtExpirationTimeMillis, jwtExpirationTimeMillis / (60 * 1000));
-            } catch (Exception dbException) {
-                // Database settings not available yet (normal during startup)
-                log.debug("JwtTokenProvider: Database settings not available during initialization, will use fallback");
-                this.jwtExpirationTimeMillis = defaultJwtExpirationMinutes * 60 * 1000;
-                log.info("JwtTokenProvider: Using fallback JWT expiration time from application.properties: {} milliseconds ({} minutes)",
-                        jwtExpirationTimeMillis, defaultJwtExpirationMinutes);
-            }
+        initialize(this.securitySettingsGetterServices);
+    }
 
-            // Try to load JWT refresh token expiration time from database settings
-            try {
-                this.jwtRefreshExpirationTimeMillis = securitySettingsService.getJwtRefreshExpirationTimeMillis();
-                log.info("JwtTokenProvider: Using database settings - refresh token expiration time: {} milliseconds ({} minutes)",
-                        jwtRefreshExpirationTimeMillis, jwtRefreshExpirationTimeMillis / (60 * 1000));
-            } catch (Exception dbException) {
-                // Database settings not available yet (normal during startup)
-                log.debug("JwtTokenProvider: Database settings not available during initialization, will use fallback for refresh token");
-                this.jwtRefreshExpirationTimeMillis = defaultJwtRefreshExpirationMinutes * 60 * 1000;
-                log.info("JwtTokenProvider: Using fallback JWT refresh token expiration time from application.properties: {} milliseconds ({} minutes)",
-                        jwtRefreshExpirationTimeMillis, defaultJwtRefreshExpirationMinutes);
-            }
+    public void reloadConfig(SecuritySettingsGetterServices securitySettingsGetterServices) {
+        initialize(securitySettingsGetterServices);
+    }
 
+    private void initialize(SecuritySettingsGetterServices securitySettingsGetterServices) {
+        try {
+            // Try to load JWT expiration time SecuritySettingsServices
+            jwtExpirationMinutes = securitySettingsGetterServices.getJwtExpirationMinutes();
+            jwtRefreshExpirationMinutes = securitySettingsGetterServices.getJwtRefreshExpirationMinutes();
+
+            this.jwtExpirationTimeMillis = jwtExpirationMinutes * 60 * 1000;
+            this.jwtRefreshExpirationTimeMillis = jwtRefreshExpirationMinutes * 60 * 1000;
+
+            log.info("JwtTokenProvider: Loaded JWT expiration time from SecuritySettingsServices: {} milliseconds ({} minutes)",
+                    jwtExpirationTimeMillis, jwtExpirationMinutes);
+            log.info("JwtTokenProvider: Loaded JWT refresh token expiration time from SecuritySettingsServices: {} milliseconds ({} minutes)",
+                    jwtRefreshExpirationTimeMillis, jwtRefreshExpirationMinutes);
+            
         } catch (Exception e) {
             log.error("JwtTokenProvider: Error during initialization", e);
             // Fallback to application.properties value
-            this.jwtExpirationTimeMillis = defaultJwtExpirationMinutes * 60 * 1000;
             log.warn("JwtTokenProvider: Using fallback JWT expiration time from application.properties: {} milliseconds ({} minutes)",
-                    jwtExpirationTimeMillis, defaultJwtExpirationMinutes);
-            this.jwtRefreshExpirationTimeMillis = defaultJwtRefreshExpirationMinutes * 60 * 1000;
+                    jwtExpirationTimeMillis, jwtExpirationMinutes);
+            this.jwtRefreshExpirationTimeMillis = jwtRefreshExpirationMinutes * 60 * 1000;
             log.warn("JwtTokenProvider: Using fallback JWT refresh token expiration time from application.properties: {} milliseconds ({} minutes)",
-                    jwtRefreshExpirationTimeMillis, defaultJwtRefreshExpirationMinutes);
+                    jwtRefreshExpirationTimeMillis, jwtRefreshExpirationMinutes);
         }
     }
 
-    /**
-     * Refresh JWT expiration time from database settings.
-     * Call this method if you want to pick up changes made to the database
-     * without restarting the application.
-     */
-    public void refreshExpirationTime() {
-        try {
-            this.jwtExpirationTimeMillis = securitySettingsService.getJwtExpirationTimeMillis();
-            log.info("JWT expiration time refreshed from database: {} milliseconds", jwtExpirationTimeMillis);
-        } catch (Exception e) {
-            log.error("Failed to refresh JWT expiration time from database", e);
-        }
-    }
+    // @PostConstruct
+    // private void postConstruct() {
+    //     initialize(securitySettingsGetterServices);
+    // }
 
-    /**
-     * Refresh JWT refresh token expiration time from database settings.
-     * Call this method if you want to pick up changes made to the database
-     * without restarting the application.
-     */
-    public void refreshRefreshTokenExpirationTime() {
-        try {
-            this.jwtRefreshExpirationTimeMillis = securitySettingsService.getJwtRefreshExpirationTimeMillis();
-            log.info("JWT refresh token expiration time refreshed from database: {} milliseconds", jwtRefreshExpirationTimeMillis);
-        } catch (Exception e) {
-            log.error("Failed to refresh JWT refresh token expiration time from database", e);
-        }
-    }
 
     public String generateToken(Authentication authentication) {
         String name = authentication.getName();

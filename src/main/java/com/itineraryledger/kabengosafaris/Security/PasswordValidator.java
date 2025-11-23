@@ -2,7 +2,11 @@ package com.itineraryledger.kabengosafaris.Security;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.itineraryledger.kabengosafaris.Security.SecuritySettings.SecuritySettingsGetterServices;
 
 /**
  * Service for validating passwords against security policies stored in the database.
@@ -20,10 +24,11 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class PasswordValidator {
 
-    private final SecuritySettingsService securitySettingsService;
+    @Autowired
+    private SecuritySettingsGetterServices securitySettingsGetterServices;
 
     /**
-     * Validate password against database security policies
+     * Validate password against database password security policies
      *
      * @param password the password to validate
      * @throws IllegalArgumentException if password doesn't meet security requirements
@@ -35,25 +40,21 @@ public class PasswordValidator {
 
         try {
             // Fetch password policy settings from database
-            int minLength = securitySettingsService.getSettingValueAsInteger("password.minLength");
-            int maxLength = securitySettingsService.getSettingValueAsInteger("password.maxLength");
-            boolean requireUppercase = securitySettingsService.getSettingValueAsBoolean("password.requireUppercase");
-            boolean requireLowercase = securitySettingsService.getSettingValueAsBoolean("password.requireLowercase");
-            boolean requireNumbers = securitySettingsService.getSettingValueAsBoolean("password.requireNumbers");
-            boolean requireSpecialCharacters = securitySettingsService.getSettingValueAsBoolean("password.requireSpecialCharacters");
+            int minLength = securitySettingsGetterServices.getPasswordMinLength();
+            int maxLength = securitySettingsGetterServices.getPasswordMaxLength();
+            boolean requireUppercase = securitySettingsGetterServices.getPasswordRequireUppercase();
+            boolean requireLowercase = securitySettingsGetterServices.getPasswordRequireLowercase();
+            boolean requireNumbers = securitySettingsGetterServices.getPasswordRequireNumbers();
+            boolean requireSpecialCharacters = securitySettingsGetterServices.getPasswordRequireSpecialCharacters();
 
             // Validate minimum length
             if (password.length() < minLength) {
-                throw new IllegalArgumentException(
-                        "Password must be at least " + minLength + " characters long"
-                );
+                throw new IllegalArgumentException("Password must be at least " + minLength + " characters long");
             }
 
             // Validate maximum length
             if (password.length() > maxLength) {
-                throw new IllegalArgumentException(
-                        "Password cannot exceed " + maxLength + " characters"
-                );
+                throw new IllegalArgumentException("Password cannot exceed " + maxLength + " characters");
             }
 
             // Validate uppercase requirement
