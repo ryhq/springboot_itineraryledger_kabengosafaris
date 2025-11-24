@@ -29,6 +29,7 @@ The audit logging system captures every action performed in the application, sto
 6. **AuditLogMaintenanceScheduler** - Scheduled tasks for automatic log cleanup/retention
 
 **Dynamic Settings Management (Runtime configuration):**
+
 7. **AuditLogSetting Entity** - Database-driven configuration storage
 8. **AuditLogSettingRepository** - Repository for settings CRUD
 9. **AuditLogSettingServices** - Business logic for updating and resetting settings
