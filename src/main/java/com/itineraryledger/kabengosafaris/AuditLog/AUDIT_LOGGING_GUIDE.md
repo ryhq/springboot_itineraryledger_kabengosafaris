@@ -39,6 +39,10 @@ The audit logging system captures every action performed in the application, sto
 
 ### How It Works
 
+<!-- Link Image Illustrating how it works-->
+![Audit Logging Flow](./AUDIT_LOGGING_GUIDE.png)
+
+
 ```
 User performs action
     ↓
