@@ -4,16 +4,37 @@
 
 The audit logging system captures every action performed in the application, storing comprehensive logs in the database. This enables full traceability of user actions, entity changes, and system operations.
 
+### Key Features
+
+- **Automatic Action Tracking**: Uses AOP annotations to automatically log method calls without modifying business logic
+- **Comprehensive Logging**: Captures user identity, IP address, browser info, request/response data, and timestamps
+- **Asynchronous Processing**: Non-blocking audit logging using async thread pool to prevent performance degradation
+- **Dynamic Configuration**: Runtime-configurable settings via REST API without requiring application restart
+- **Policy-Based Filtering**: Automatically excludes sensitive data (passwords, tokens) and applies retention policies
+- **Automatic Cleanup**: Scheduled tasks automatically delete logs older than retention period
+- **Sensitive Data Protection**: Multiple layers of protection against logging sensitive information
+- **Audit Trail Versioning**: Track complete change history for any entity with before/after values
+- **Compliance Ready**: Supports audit log retention policies, access control, and change tracking for compliance
+
 ## Architecture
 
 ### Components
 
+**Core Audit Logging (Automatic tracking):**
 1. **AuditLog Entity** - JPA entity representing an audit log record
 2. **AuditLogRepository** - Data access layer for audit logs
-3. **AuditLogService** - Business logic for managing and querying audit logs
+3. **AuditLogService** - Business logic for managing and querying audit logs, applies policies
 4. **AuditLogAnnotation** - Custom annotation to mark methods for logging
-5. **AuditLoggingAspect** - AOP aspect that intercepts annotated methods
-6. **AuditLogController** - REST endpoints for retrieving audit logs
+5. **AuditLoggingAspect** - AOP aspect that intercepts annotated methods and captures context
+6. **AuditLogMaintenanceScheduler** - Scheduled tasks for automatic log cleanup/retention
+
+**Dynamic Settings Management (Runtime configuration):**
+7. **AuditLogSetting Entity** - Database-driven configuration storage
+8. **AuditLogSettingRepository** - Repository for settings CRUD
+9. **AuditLogSettingServices** - Business logic for updating and resetting settings
+10. **AuditLogSettingGetterServices** - Retrieves and parses runtime settings with fallbacks
+11. **AuditLogSettingController** - REST endpoints for managing settings
+12. **AuditLogSettingInitializer** - Initializes default settings on application startup
 
 ### How It Works
 
@@ -198,7 +219,7 @@ Authorization: Bearer <token>
 
 ## Configuration
 
-### Application Properties
+### Application Properties (Fallback Defaults)
 
 ```properties
 # Enable async processing for audit logs (non-blocking)
@@ -211,7 +232,47 @@ audit.log.retention.days=90
 
 # Enable/disable audit logging globally
 audit.log.enabled=true
+
+# Capture IP address in audit logs
+audit.log.capture.ip.address=true
+
+# Capture user agent in audit logs
+audit.log.capture.user.agent=true
+
+# Capture old values (request parameters)
+audit.log.capture.old.values=true
+
+# Capture new values (response data)
+audit.log.capture.new.values=true
+
+# Comma-separated list of field names to exclude from old/new values
+audit.log.excluded.fields=password,token,secret,apikey,creditcard
+
+# Maximum length for old/new value strings (exceeding this will be truncated)
+audit.log.max.value.length=2048
 ```
+
+### Dynamic Settings (Database-Driven)
+
+Audit logging configuration is now managed dynamically through the database via `AuditLogSetting` entity. This allows configuration changes without restarting the application.
+
+**Available Settings:**
+
+| Setting Key | Data Type | Default | Description |
+|------------|-----------|---------|-------------|
+| `audit.log.enabled` | BOOLEAN | true | Enable/disable audit logging globally |
+| `audit.log.retention.days` | INTEGER | 90 | Number of days to retain audit logs |
+| `audit.log.capture.ip.address` | BOOLEAN | true | Capture client IP address |
+| `audit.log.capture.user.agent` | BOOLEAN | true | Capture browser/client user agent |
+| `audit.log.capture.old.values` | BOOLEAN | true | Capture old values (request parameters) |
+| `audit.log.capture.new.values` | BOOLEAN | true | Capture new values (response data) |
+| `audit.log.excluded.fields` | STRING | password,token,secret,apikey,creditcard | Comma-separated field names to exclude |
+| `audit.log.max.value.length` | INTEGER | 2048 | Maximum length for field values before truncation |
+
+Settings are categorized as:
+- **GENERAL**: Enable/disable audit logging and retention policies
+- **CAPTURE**: Configure what data to capture (IP, user agent, old/new values)
+- **VALUES**: Configure value filtering and truncation
 
 ### Thread Pool Configuration
 
@@ -249,6 +310,224 @@ CREATE TABLE audit_logs (
     INDEX idx_entity_type_id (entity_type, entity_id)
 );
 ```
+
+The `audit_log_settings` table stores dynamic configuration:
+
+```sql
+CREATE TABLE audit_log_settings (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    setting_key VARCHAR(100) NOT NULL UNIQUE,
+    setting_value TEXT NOT NULL,
+    data_type VARCHAR(50) NOT NULL,
+    description TEXT,
+    active BOOLEAN NOT NULL DEFAULT true,
+    is_system_default BOOLEAN NOT NULL DEFAULT false,
+    category VARCHAR(50) NOT NULL DEFAULT 'GENERAL',
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL
+);
+```
+
+## System Components
+
+### Core Classes
+
+| Class | Purpose |
+|-------|---------|
+| [AuditLog.java](AuditLog.java) | JPA entity for audit log records with indexed fields |
+| [AuditLogAnnotation.java](AuditLogAnnotation.java) | Custom annotation to mark methods for automatic logging |
+| [AuditLoggingAspect.java](AuditLoggingAspect.java) | AOP aspect intercepting annotated methods and capturing context |
+| [AuditLogService.java](AuditLogService.java) | Service managing log storage, policy application, and cleanup |
+| [AuditLogRepository.java](AuditLogRepository.java) | JPA repository for database queries |
+| [AuditLogMaintenanceScheduler.java](AuditLogMaintenanceScheduler.java) | Scheduled tasks for automatic log cleanup |
+
+### Settings Management Classes
+
+| Class | Purpose |
+|-------|---------|
+| [AuditLogSetting.java](AuditLogSettings/AuditLogSetting.java) | Entity for dynamic audit log configuration |
+| [AuditLogSettingServices.java](AuditLogSettings/AuditLogSettingServices.java) | Service for managing settings and resets |
+| [AuditLogSettingGetterServices.java](AuditLogSettings/AuditLogSettingGetterServices.java) | Service for retrieving and parsing setting values |
+| [AuditLogSettingRepository.java](AuditLogSettings/AuditLogSettingRepository.java) | Repository for settings CRUD operations |
+| [AuditLogSettingController.java](AuditLogSettings/AuditLogSettingController.java) | REST endpoints for managing settings |
+| [AuditLogSettingInitializer.java](AuditLogSettings/AuditLogSettingInitializer.java) | Initializes default settings on application startup |
+
+## Audit Log Settings Management
+
+### Managing Settings via REST API
+
+Audit log settings can be updated through REST endpoints:
+
+#### Get All Audit Log Settings
+```http
+GET /api/audit-log-settings
+Authorization: Bearer <token>
+```
+
+Response:
+```json
+{
+  "status": 200,
+  "message": "Audit Log Settings retrieved successfully.",
+  "data": [
+    {
+      "id": "encoded_id",
+      "settingKey": "audit.log.enabled",
+      "settingValue": "true",
+      "dataType": "BOOLEAN",
+      "description": "Global audit logging enabled/disabled",
+      "active": true,
+      "isSystemDefault": true,
+      "category": "GENERAL",
+      "createdAt": "2025-01-01T00:00:00",
+      "updatedAt": "2025-01-15T10:30:00"
+    }
+  ]
+}
+```
+
+#### Update Audit Log Setting
+```http
+PUT /api/audit-log-settings/{id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "settingValue": "180",
+  "description": "Retention period updated to 180 days",
+  "active": true
+}
+```
+
+Response:
+```json
+{
+  "status": 200,
+  "message": "Audit Log Setting updated successfully. Updated fields: settingValue, description",
+  "data": { /* updated setting */ }
+}
+```
+
+### Resetting Settings to Defaults
+
+#### Reset General Settings
+```http
+POST /api/audit-log-settings/reset/general
+Authorization: Bearer <token>
+```
+
+#### Reset Capture Settings
+```http
+POST /api/audit-log-settings/reset/capture
+Authorization: Bearer <token>
+```
+
+#### Reset Value Settings
+```http
+POST /api/audit-log-settings/reset/values
+Authorization: Bearer <token>
+```
+
+#### Reset All Settings
+```http
+POST /api/audit-log-settings/reset/all
+Authorization: Bearer <token>
+```
+
+All setting changes are automatically logged in the audit log for compliance and tracking purposes.
+
+### Policy Application
+
+Settings are applied to each audit log entry at save time through `AuditLogService.applyAuditPolicies()`:
+
+1. **Capture Policies**: Fields like IP address and user agent are excluded based on settings
+2. **Value Exclusion**: Sensitive fields are removed from old/new values JSON
+3. **Length Truncation**: Values exceeding `max.value.length` are truncated with "[TRUNCATED]" marker
+
+Example: Applying policies with these settings:
+- `audit.log.capture.ip.address=false` → IP address field set to null
+- `audit.log.excluded.fields=password,ssn` → Those fields removed from JSON
+- `audit.log.max.value.length=1000` → Values > 1000 chars truncated
+
+## Automatic Maintenance
+
+### Audit Log Cleanup Scheduler
+
+The `AuditLogMaintenanceScheduler` automatically manages audit log retention through scheduled tasks:
+
+**Default Schedules:**
+- **Daily Cleanup**: Every day at 2:00 AM - Deletes logs older than configured retention days
+- **Weekly Cleanup**: Every Sunday at 3:00 AM - Secondary thorough cleanup
+- **Fixed-Rate Cleanup** (optional): Every 6 hours - For high-volume scenarios
+
+The scheduler respects the `audit.log.retention.days` setting and logs all cleanup operations.
+
+Example log output:
+```
+INFO: Starting daily audit log cleanup task...
+INFO: Audit log cleanup completed successfully. Deleted 1,234 logs older than 90 days
+```
+
+## Settings Flow and Lifecycle
+
+### Configuration Hierarchy
+
+Settings are resolved in this order (highest to lowest priority):
+
+1. **Database Settings** (`AuditLogSetting` table) - Most specific, runtime-configurable
+2. **Application Properties** (application.properties) - Fallback defaults
+3. **Hardcoded Defaults** - Final fallback in code
+
+### Settings Retrieval Flow
+
+```
+User Action
+    ↓
+@AuditLogAnnotation triggers
+    ↓
+AuditLoggingAspect captures request/response
+    ↓
+AuditLogService.logAction() called
+    ↓
+applyAuditPolicies() invoked
+    ↓
+AuditLogSettingGetterServices queries database settings
+    ↓
+Falls back to application.properties if not in database
+    ↓
+Policies applied to audit log entry
+    ↓
+Policies applied entries saved to database
+```
+
+### Example: Policy Application Flow
+
+Request to update a user with these settings:
+```
+audit.log.capture.ip.address=false
+audit.log.excluded.fields=password,ssn
+audit.log.max.value.length=500
+```
+
+When the request is logged:
+
+1. **Before Policy Application:**
+   ```json
+   {
+     "ipAddress": "192.168.1.100",
+     "oldValues": {"email": "user@example.com", "password": "secret123", "ssn": "123-45-6789"},
+     "newValues": "{\"email\": \"user@example.com\", \"password\": \"secret456\", \"ssn\": \"123-45-6789\", \"largeData\": \"...very long string...\"}"
+   }
+   ```
+
+2. **After Policy Application:**
+   ```json
+   {
+     "ipAddress": null,                    // Excluded by capture policy
+     "oldValues": "{\"email\": \"user@example.com\"}",  // password and ssn removed
+     "newValues": "{\"email\": \"user@example.com\", \"largeData\": \"...trun... [TRUNCATED]\"}"  // Truncated
+   }
+   ```
 
 ## Examples
 
@@ -434,6 +713,47 @@ curl -X DELETE http://localhost:4450/api/audit-logs/cleanup?retentionDays=90 \
 
 3. **Monitor Database Size**: Audit logs can grow quickly; monitor disk usage
 
+## Initialization and Startup
+
+### Application Startup Process
+
+When the application starts, the `AuditLogSettingInitializer` automatically:
+
+1. **Creates default settings** if the `audit_log_settings` table is empty
+2. **Initializes all audit log configuration keys** with default values from application.properties
+3. **Marks system defaults** so administrators know which settings are core to the system
+4. **Logs initialization actions** to the audit log
+
+### Default Settings Initialized
+
+| Setting Key | Initial Value | Category |
+|-------------|---------------|----------|
+| `audit.log.enabled` | true | GENERAL |
+| `audit.log.retention.days` | 90 | GENERAL |
+| `audit.log.capture.ip.address` | true | CAPTURE |
+| `audit.log.capture.user.agent` | true | CAPTURE |
+| `audit.log.capture.old.values` | true | CAPTURE |
+| `audit.log.capture.new.values` | true | CAPTURE |
+| `audit.log.excluded.fields` | password,token,secret,apikey,creditcard | VALUES |
+| `audit.log.max.value.length` | 2048 | VALUES |
+
+### Customizing Defaults
+
+To change default values on startup:
+
+1. **Edit application.properties:**
+   ```properties
+   audit.log.retention.days=180
+   audit.log.excluded.fields=password,token,secret,apikey,creditcard,ssn
+   ```
+
+2. **Delete database records** (or let initializer override them):
+   ```sql
+   DELETE FROM audit_log_settings WHERE is_system_default = true;
+   ```
+
+3. **Restart application** - New defaults will be initialized
+
 ## Troubleshooting
 
 ### Audit Logs Not Being Created
@@ -456,6 +776,35 @@ curl -X DELETE http://localhost:4450/api/audit-logs/cleanup?retentionDays=90 \
 1. Verify `entityIdParamName` matches actual method parameter name
 2. Ensure parameter is of type Long or convertible to Long
 3. Use different approach for complex entity lookups
+
+### Settings Not Taking Effect
+
+1. Verify setting exists in `audit_log_settings` table
+2. Check `active` flag is true for the setting
+3. Verify setting value format matches data type (e.g., "true" for BOOLEAN, "90" for INTEGER)
+4. Check logs for `AuditLogSettingGetterServices` errors
+5. Confirm `audit.log.enabled=true` in either database or application.properties
+
+### Settings Changes Not Applied
+
+1. Changes are applied at log-save time, not retroactively
+2. Restart application if application.properties were changed
+3. Settings database takes precedence over application.properties
+4. Check if setting is marked as inactive
+
+### Excluded Fields Not Removing Data
+
+1. Verify field names in `audit.log.excluded.fields` match JSON keys (case-insensitive)
+2. Check field names are comma-separated with no extra spaces
+3. Field removal uses regex pattern matching on JSON
+4. Complex nested objects may require more specific field names
+
+### Performance After Settings Changes
+
+1. Reducing captured data improves performance
+2. Lowering `max.value.length` reduces database storage
+3. Disabling capture policies saves processing time
+4. Monitor database size after major policy changes
 
 ## Best Practices
 

@@ -1,41 +1,40 @@
-package com.itineraryledger.kabengosafaris.Security.SecuritySettings;
+package com.itineraryledger.kabengosafaris.AuditLog.AuditLogSettings;
 
-import jakarta.persistence.*;
-import lombok.*;
+import java.time.LocalDateTime;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.itineraryledger.kabengosafaris.GlobalEnums.SettingDataType;
 
-import java.time.LocalDateTime;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
- * Entity class to store Security Configuration settings in the database.
+ * Entity class to store Audit Logging Settings in the database.
  * This allows dynamic configuration changes without restarting the application.
  *
- * Replaces static code constants with database-driven settings for:
- * - JWT Token expiration time
- * - ID Obfuscation length and salt length
- * - Password policies
- * - Session timeouts
- * - And other security-related configurations
+ * Replaces static application.properties audit configuration with database-driven settings.
  */
 @Entity
-@Table(name = "security_settings", uniqueConstraints = {
+@Table(name = "audit_log_settings", uniqueConstraints = {
         @UniqueConstraint(columnNames = "setting_key")
 })
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SecuritySetting {
+public class AuditLogSetting {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
-     * Setting key (e.g., 'jwt.expiration.time.minutes', 'idObfuscator.obfuscated.length')
+     * Setting key (e.g., 'audit.log.enabled', 'audit.log.retention.days')
      */
     @Column(nullable = false, length = 100)
     private String settingKey;
@@ -75,44 +74,34 @@ public class SecuritySetting {
     private Boolean isSystemDefault = false;
 
     /**
-     * Category of the security setting (JWT, OBFUSCATION, PASSWORD, etc.)
+     * Category of the audit log setting (GENERAL, CAPTURE, VALUES, etc.)
      */
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private Category category;
-
-    /**
-     * Whether changing this setting requires application restart
-     */
-    @Column(nullable = false)
     @Builder.Default
-    private Boolean requiresRestart = false;
+    private Category category = Category.GENERAL;
 
     /**
-     * Timestamp when the setting was created
+     * Timestamp when the configuration was created
      */
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /**
-     * Timestamp when the setting was last updated
+     * Timestamp when the configuration was last updated
      */
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
-    
+
     /**
-     * Categories for organizing settings
+     * Categories for organizing audit log settings
      */
     public enum Category {
-        JWT("JWT Token Settings"),
-        OBFUSCATION("ID Obfuscation Settings"),
-        PASSWORD("Password Policy Settings"),
-        ACCOUNT_LOCKOUT("Account Lockout Settings"),
-        RATE_LIMIT("Rate Limiting Settings"),
-        CORS("CORS Settings"),
-        OTHER("Other Security Settings");
+        GENERAL("Audit Logging General Settings"),
+        CAPTURE("Audit Logging Capture Settings"),
+        VALUES("Audit Logging Value Settings");
 
         private final String displayName;
 

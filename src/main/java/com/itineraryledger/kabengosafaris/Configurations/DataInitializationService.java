@@ -42,9 +42,11 @@ public class DataInitializationService {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void initializeSystemData() {
+        System.out.println("\n\n\n");
         log.info("=========================================");
         log.info("Starting system RBAC data initialization...");
         log.info("=========================================");
+        System.out.println("\n");
 
         try {
             // Step 1: Initialize system action types

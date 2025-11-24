@@ -5,10 +5,15 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.itineraryledger.kabengosafaris.AuditLog.AuditLog;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
+import com.itineraryledger.kabengosafaris.AuditLog.AuditLogService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import com.itineraryledger.kabengosafaris.Security.JwtTokenProvider;
@@ -117,6 +122,9 @@ public class SecuritySettingsServices {
     @Autowired
     private SecuritySettingsRepository securitySettingsRepository;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     private SecuritySettingDTO getSecuritySettingDTO(SecuritySetting securitySetting) {
         return new SecuritySettingDTO(
             idObfuscator.encodeId(securitySetting.getId()),
@@ -144,7 +152,7 @@ public class SecuritySettingsServices {
         return ResponseEntity.ok(ApiResponse.success(200, "Security Settings retrieved successfully.", securitySettingDTOs));
     }
     
-    public ResponseEntity<?> updateSecuritySetting(String obfuscatedId, SecuritySettingDTO securitySettingDTO) {
+    public ResponseEntity<?> updateSecuritySetting(String obfuscatedId, UpdateSecuritySettingDTO updateSecuritySettingDTO) {
         Long id;
 
         try {
@@ -159,14 +167,14 @@ public class SecuritySettingsServices {
             );
         }
 
-        return updateSecuritySettingById(id, securitySettingDTO);
+        return updateSecuritySettingById(id, updateSecuritySettingDTO);
     }
 
     @AuditLogAnnotation(action = "Update Security Setting", description = "Updates a security setting by ID", entityIdParamName = "id", entityType = "SecuritySetting")
-    private ResponseEntity<?> updateSecuritySettingById(Long id, SecuritySettingDTO securitySettingDTO) {
-        Boolean active = securitySettingDTO.getActive();
-        String description = securitySettingDTO.getDescription();
-        String settingValue = securitySettingDTO.getSettingValue();
+    private ResponseEntity<?> updateSecuritySettingById(Long id, UpdateSecuritySettingDTO updateSecuritySettingDTO) {
+        Boolean active = updateSecuritySettingDTO.getActive();
+        String description = updateSecuritySettingDTO.getDescription();
+        String settingValue = updateSecuritySettingDTO.getSettingValue();
         
         // Validation all
         if (active == null) {
@@ -208,19 +216,157 @@ public class SecuritySettingsServices {
             );
         }
 
+        // Store old values before changes
+        Boolean oldActive = securitySetting.getActive();
+        String oldDescription = securitySetting.getDescription();
+        String oldSettingValue = securitySetting.getSettingValue();
+
+        // Detect changes
+        boolean activeChanged = !active.equals(oldActive);
+        boolean descriptionChanged = !description.equals(oldDescription);
+        boolean settingValueChanged = !settingValue.equals(oldSettingValue);
+
+        // Check if any changes are being made
+        if (!activeChanged && !descriptionChanged && !settingValueChanged) {
+            return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.success(
+                    200,
+                    "No changes detected. Security Setting remains unchanged.",
+                    null
+                )
+            );
+        }
+
         securitySetting.setActive(active);
         securitySetting.setDescription(description);
         securitySetting.setSettingValue(settingValue);
 
         securitySetting = securitySettingsRepository.save(securitySetting);
 
+        // Log each individual field change with old and new values
+        logFieldChanges(
+            securitySetting.getId(), 
+            activeChanged, 
+            descriptionChanged, 
+            settingValueChanged,
+            oldActive, 
+            active, 
+            oldDescription, 
+            description, 
+            oldSettingValue, 
+            settingValue
+        );
+
+        // Build message with details about which fields changed
+        String changeDetails = buildChangeDetails(activeChanged, descriptionChanged, settingValueChanged);
+
         return ResponseEntity.ok(
             ApiResponse.success(
-                200, 
-                "Security Setting updated successfully.", 
+                200,
+                "Security Setting updated successfully. " + changeDetails,
                 getSecuritySettingDTO(securitySetting)
             )
         );
+    }
+
+    private void logFieldChanges(
+        Long entityId,
+        boolean activeChanged,
+        boolean descriptionChanged,
+        boolean settingValueChanged,
+        Boolean oldActive,
+        Boolean newActive,
+        String oldDescription,
+        String newDescription,
+        String oldSettingValue,
+        String newSettingValue
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long userId = null;
+        String username = "SYSTEM";
+
+        if (authentication != null && authentication.isAuthenticated() &&
+            !authentication.getPrincipal().equals("anonymousUser")) {
+            username = authentication.getName();
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof com.itineraryledger.kabengosafaris.User.User) {
+                userId = ((com.itineraryledger.kabengosafaris.User.User) principal).getId();
+            }
+        }
+
+        if (activeChanged) {
+            AuditLog log = AuditLog.builder()
+                    .userId(userId)
+                    .username(username)
+                    .action("Update Security Setting Field")
+                    .entityType("SecuritySetting")
+                    .entityId(entityId)
+                    .description("Changed active field from " + oldActive + " to " + newActive)
+                    .status("SUCCESS")
+                    .oldValues("{\"active\": " + oldActive + "}")
+                    .newValues("{\"active\": " + newActive + "}")
+                    .build();
+            auditLogService.logActionSync(log);
+        }
+
+        if (descriptionChanged) {
+            AuditLog log = AuditLog.builder()
+                    .userId(userId)
+                    .username(username)
+                    .action("Update Security Setting Field")
+                    .entityType("SecuritySetting")
+                    .entityId(entityId)
+                    .description("Changed description field from \"" + oldDescription + "\" to \"" + newDescription + "\"")
+                    .status("SUCCESS")
+                    .oldValues("{\"description\": \"" + escapeJson(oldDescription) + "\"}")
+                    .newValues("{\"description\": \"" + escapeJson(newDescription) + "\"}")
+                    .build();
+            auditLogService.logActionSync(log);
+        }
+
+        if (settingValueChanged) {
+            AuditLog log = AuditLog.builder()
+                    .userId(userId)
+                    .username(username)
+                    .action("Update Security Setting Field")
+                    .entityType("SecuritySetting")
+                    .entityId(entityId)
+                    .description("Changed settingValue field from \"" + oldSettingValue + "\" to \"" + newSettingValue + "\"")
+                    .status("SUCCESS")
+                    .oldValues("{\"settingValue\": \"" + escapeJson(oldSettingValue) + "\"}")
+                    .newValues("{\"settingValue\": \"" + escapeJson(newSettingValue) + "\"}")
+                    .build();
+            auditLogService.logActionSync(log);
+        }
+    }
+
+    private String escapeJson(String value) {
+        if (value == null) {
+            return "null";
+        }
+        return value.replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                    .replace("\n", "\\n")
+                    .replace("\r", "\\r")
+                    .replace("\t", "\\t");
+    }
+
+    private String buildChangeDetails(boolean activeChanged, boolean descriptionChanged, boolean settingValueChanged) {
+        StringBuilder details = new StringBuilder("Updated fields: ");
+        java.util.List<String> changedFields = new java.util.ArrayList<>();
+
+        if (activeChanged) {
+            changedFields.add("active");
+        }
+        if (descriptionChanged) {
+            changedFields.add("description");
+        }
+        if (settingValueChanged) {
+            changedFields.add("settingValue");
+        }
+
+        details.append(String.join(", ", changedFields));
+        return details.toString();
     }
 
     /**
@@ -239,6 +385,29 @@ public class SecuritySettingsServices {
                 null
             )
         );
+    }
+
+    public ResponseEntity<?> testIdObfuscationConfigurations() {
+        String obfuscatedId;
+        try {
+            obfuscatedId = idObfuscator.encodeId(0l);
+            // Return encoded
+            return ResponseEntity.ok(
+                ApiResponse.success(
+                    200,
+                    "ID Obfuscation test successful.",
+                    obfuscatedId
+                )
+            );
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(
+                ApiResponse.error(
+                    500,
+                    "ID Obfuscation test failed: " + e.getMessage(),
+                    "INTERNAL_SERVER_ERROR"
+                )
+            );
+        }
     }
 
     public ResponseEntity<?> resetIdObfuscationConfigurations() {

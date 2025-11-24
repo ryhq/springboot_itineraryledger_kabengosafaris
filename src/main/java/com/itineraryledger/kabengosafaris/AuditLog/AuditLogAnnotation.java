@@ -2,9 +2,9 @@ package com.itineraryledger.kabengosafaris.AuditLog;
 
 import java.lang.annotation.*;
 
-@Target(ElementType.METHOD)
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
+@Target(ElementType.METHOD) // Can be applied to methods
+@Retention(RetentionPolicy.RUNTIME) // Retained at runtime for reflection
+@Documented // Included in Javadoc
 public @interface AuditLogAnnotation {
 
     /**

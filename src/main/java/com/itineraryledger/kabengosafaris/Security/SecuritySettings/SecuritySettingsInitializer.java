@@ -9,6 +9,8 @@ import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.itineraryledger.kabengosafaris.GlobalEnums.SettingDataType;
+
 /**
  * Initializer for Security Settings.
  * Runs at application startup and initializes default security settings in the database.
@@ -92,10 +94,21 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
+        System.out.println("\n\n\n");
+        log.info("=============================================");
+        log.info("Starting Security Settings initialization...");
+        log.info("=============================================");
+        System.out.println("\n");
+
         try {
             log.info("Initializing Security Settings from database...");
             initializeSecuritySettings();
             log.info("Security Settings initialization completed successfully");
+            System.out.println("\n");
+            log.info("=============================================");
+            log.info("✓ Security Settings initialization Complete");
+            log.info("=============================================");
+            System.out.println("\n");
         } catch (Exception e) {
             log.error("Error initializing Security Settings", e);
         }
@@ -117,7 +130,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "jwt.expiration.time.minutes",
                 String.valueOf(jwtExpirationTimeMinutes),
-                SecuritySetting.SettingDataType.LONG,
+                SettingDataType.LONG,
                 "JWT token expiration time in minutes",
                 SecuritySetting.Category.JWT,
                 false
@@ -126,7 +139,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "jwt.refresh.expiration.time.minutes",
                 String.valueOf(jwtRefreshExpirationTimeMinutes),
-                SecuritySetting.SettingDataType.LONG,
+                SettingDataType.LONG,
                 "JWT refresh token expiration time in minutes",
                 SecuritySetting.Category.JWT,
                 false
@@ -136,7 +149,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "idObfuscator.obfuscated.length",
                 String.valueOf(obfuscatedIdLength),
-                SecuritySetting.SettingDataType.INTEGER,
+                SettingDataType.INTEGER,
                 "Length of obfuscated IDs",
                 SecuritySetting.Category.OBFUSCATION,
                 false
@@ -145,7 +158,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "idObfuscator.salt.length",
                 String.valueOf(saltLength),
-                SecuritySetting.SettingDataType.INTEGER,
+                SettingDataType.INTEGER,
                 "Length of the salt used for ID obfuscation",
                 SecuritySetting.Category.OBFUSCATION,
                 false
@@ -155,7 +168,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "password.minLength",
                 String.valueOf(passwordMinLength),
-                SecuritySetting.SettingDataType.INTEGER,
+                SettingDataType.INTEGER,
                 "Minimum password length",
                 SecuritySetting.Category.PASSWORD,
                 false
@@ -164,7 +177,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "password.maxLength",
                 String.valueOf(passwordMaxLength),
-                SecuritySetting.SettingDataType.INTEGER,
+                SettingDataType.INTEGER,
                 "Maximum password length",
                 SecuritySetting.Category.PASSWORD,
                 false
@@ -173,7 +186,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "password.requireUppercase",
                 String.valueOf(passwordRequireUppercase),
-                SecuritySetting.SettingDataType.BOOLEAN,
+                SettingDataType.BOOLEAN,
                 "Whether password must contain uppercase letters",
                 SecuritySetting.Category.PASSWORD,
                 false
@@ -182,7 +195,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "password.requireLowercase",
                 String.valueOf(passwordRequireLowercase),
-                SecuritySetting.SettingDataType.BOOLEAN,
+                SettingDataType.BOOLEAN,
                 "Whether password must contain lowercase letters",
                 SecuritySetting.Category.PASSWORD,
                 false
@@ -191,7 +204,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "password.requireNumbers",
                 String.valueOf(passwordRequireNumbers),
-                SecuritySetting.SettingDataType.BOOLEAN,
+                SettingDataType.BOOLEAN,
                 "Whether password must contain numbers",
                 SecuritySetting.Category.PASSWORD,
                 false
@@ -200,7 +213,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "password.requireSpecialCharacters",
                 String.valueOf(passwordRequireSpecialCharacters),
-                SecuritySetting.SettingDataType.BOOLEAN,
+                SettingDataType.BOOLEAN,
                 "Whether password must contain special characters",
                 SecuritySetting.Category.PASSWORD,
                 false
@@ -209,27 +222,17 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "password.expirationDays",
                 String.valueOf(passwordExpirationDays),
-                SecuritySetting.SettingDataType.INTEGER,
+                SettingDataType.INTEGER,
                 "Password expiration time in days (0 = no expiration)",
                 SecuritySetting.Category.PASSWORD,
                 false
         );
-
-        createOrUpdateSetting(
-                "password.historyCount",
-                "5",
-                SecuritySetting.SettingDataType.INTEGER,
-                "Number of previous passwords to check for reuse",
-                SecuritySetting.Category.PASSWORD,
-                false
-        );
-
-
+       
         // Account Lockout Settings
         createOrUpdateSetting(
                 "accountLockout.maxFailedAttempts",
                 String.valueOf(maxFailedAttempts),
-                SecuritySetting.SettingDataType.INTEGER,
+                SettingDataType.INTEGER,
                 "Number of failed login attempts before lockout",
                 SecuritySetting.Category.ACCOUNT_LOCKOUT,
                 false
@@ -246,7 +249,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "accountLockout.lockoutDurationMinutes",
                 String.valueOf(lockoutDurationMinutes),
-                SecuritySetting.SettingDataType.INTEGER,
+                SettingDataType.INTEGER,
                 "Account lockout duration in minutes",
                 SecuritySetting.Category.ACCOUNT_LOCKOUT,
                 false
@@ -255,7 +258,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "accountLockout.enabled",
                 String.valueOf(accountLockoutEnabled),
-                SecuritySetting.SettingDataType.BOOLEAN,
+                SettingDataType.BOOLEAN,
                 "Whether account lockout is enabled",
                 SecuritySetting.Category.ACCOUNT_LOCKOUT,
                 false
@@ -270,7 +273,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "accountLockout.counterResetHours",
                 String.valueOf(lockoutCounterResetHours),
-                SecuritySetting.SettingDataType.INTEGER,
+                SettingDataType.INTEGER,
                 "Failed attempt counter reset time in hours (0 = never reset)",
                 SecuritySetting.Category.ACCOUNT_LOCKOUT,
                 false
@@ -280,7 +283,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "loginAttempts.maxCapacity",
                 String.valueOf(loginRateLimitMaxCapacity),
-                SecuritySetting.SettingDataType.INTEGER,
+                SettingDataType.INTEGER,
                 "Maximum login attempts (token bucket capacity)",
                 SecuritySetting.Category.RATE_LIMIT,
                 false
@@ -289,7 +292,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "loginAttempts.refillRate",
                 String.valueOf(loginRateLimitRefillRate),
-                SecuritySetting.SettingDataType.INTEGER,
+                SettingDataType.INTEGER,
                 "Number of tokens to refill for login attempts",
                 SecuritySetting.Category.RATE_LIMIT,
                 false
@@ -298,7 +301,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "loginAttempts.refillDurationMinutes",
                 String.valueOf(loginRateLimitRefillDurationMinutes),
-                SecuritySetting.SettingDataType.INTEGER,
+                SettingDataType.INTEGER,
                 "Duration in minutes for login attempt token refill",
                 SecuritySetting.Category.RATE_LIMIT,
                 false
@@ -308,7 +311,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
         createOrUpdateSetting(
                 "loginAttempts.enabled",
                 String.valueOf(loginRateLimitEnabled),
-                SecuritySetting.SettingDataType.BOOLEAN,
+                SettingDataType.BOOLEAN,
                 "Whether login rate limiting is enabled",
                 SecuritySetting.Category.RATE_LIMIT,
                 false
@@ -330,7 +333,7 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
      * @param requiresRestart whether changing this setting requires restart
      */
     private void createOrUpdateSetting(String settingKey, String settingValue,
-                                        SecuritySetting.SettingDataType dataType,
+                                        SettingDataType dataType,
                                         String description, SecuritySetting.Category category,
                                         Boolean requiresRestart) {
         try {

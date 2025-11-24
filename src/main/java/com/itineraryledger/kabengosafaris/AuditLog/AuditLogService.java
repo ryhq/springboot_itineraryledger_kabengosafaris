@@ -1,15 +1,19 @@
 package com.itineraryledger.kabengosafaris.AuditLog;
 
+import com.itineraryledger.kabengosafaris.AuditLog.AuditLogSettings.AuditLogSettingGetterServices;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -18,13 +22,24 @@ import java.util.List;
 public class AuditLogService {
 
     private final AuditLogRepository auditLogRepository;
+    private final AuditLogSettingGetterServices auditLogSettingGetterServices;
 
     /**
      * Log an action asynchronously to avoid blocking the main request
+     * Respects audit logging policies
      */
     @Async
     public void logAction(AuditLog auditLog) {
         try {
+            // Check if audit logging is enabled globally
+            if (!auditLogSettingGetterServices.isAuditLogEnabled()) {
+                log.debug("Audit logging is disabled, skipping: {} - {}", auditLog.getAction(), auditLog.getEntityType());
+                return;
+            }
+
+            // Apply audit logging policies
+            applyAuditPolicies(auditLog);
+
             auditLogRepository.save(auditLog);
             log.debug("Audit log saved: {} - {} - {}", auditLog.getUsername(), auditLog.getAction(), auditLog.getEntityType());
         } catch (Exception e) {
@@ -34,9 +49,19 @@ public class AuditLogService {
 
     /**
      * Synchronously log an action (blocks until saved)
+     * Respects audit logging policies
      */
     public void logActionSync(AuditLog auditLog) {
         try {
+            // Check if audit logging is enabled globally
+            if (!auditLogSettingGetterServices.isAuditLogEnabled()) {
+                log.debug("Audit logging is disabled, skipping: {} - {}", auditLog.getAction(), auditLog.getEntityType());
+                return;
+            }
+
+            // Apply audit logging policies
+            applyAuditPolicies(auditLog);
+
             auditLogRepository.save(auditLog);
             log.debug("Audit log saved synchronously: {} - {} - {}", auditLog.getUsername(), auditLog.getAction(), auditLog.getEntityType());
         } catch (Exception e) {
@@ -45,85 +70,150 @@ public class AuditLogService {
     }
 
     /**
-     * Get audit logs for a specific user with pagination
+     * Apply audit logging policies to the audit log
+     * Enforces capture policies, field exclusions, and value length limits
+     *
+     * @param auditLog the audit log to apply policies to
      */
-    @Transactional(readOnly = true)
-    public Page<AuditLog> getUserAuditLogs(Long userId, Pageable pageable) {
-        return auditLogRepository.findByUserId(userId, pageable);
+    private void applyAuditPolicies(AuditLog auditLog) {
+        // Apply IP address capture policy
+        if (!auditLogSettingGetterServices.shouldCaptureIpAddress()) {
+            auditLog.setIpAddress(null);
+        }
+
+        // Apply user agent capture policy
+        if (!auditLogSettingGetterServices.shouldCaptureUserAgent()) {
+            auditLog.setUserAgent(null);
+        }
+
+        // Apply old values capture policy
+        if (!auditLogSettingGetterServices.shouldCaptureOldValues()) {
+            auditLog.setOldValues(null);
+        }
+
+        // Apply new values capture policy
+        if (!auditLogSettingGetterServices.shouldCaptureNewValues()) {
+            auditLog.setNewValues(null);
+        }
+
+        // Apply excluded fields policy
+        Set<String> excludedFields = parseExcludedFields();
+        auditLog.setOldValues(filterExcludedFields(auditLog.getOldValues(), excludedFields));
+        auditLog.setNewValues(filterExcludedFields(auditLog.getNewValues(), excludedFields));
+
+        // Apply max value length policy
+        Integer maxValueLength = auditLogSettingGetterServices.getMaxValueLength();
+        if (maxValueLength != null && maxValueLength > 0) {
+            if (auditLog.getOldValues() != null && auditLog.getOldValues().length() > maxValueLength) {
+                auditLog.setOldValues(auditLog.getOldValues().substring(0, maxValueLength) + "... [TRUNCATED]");
+            }
+            if (auditLog.getNewValues() != null && auditLog.getNewValues().length() > maxValueLength) {
+                auditLog.setNewValues(auditLog.getNewValues().substring(0, maxValueLength) + "... [TRUNCATED]");
+            }
+        }
     }
 
     /**
-     * Get audit logs for a specific action with pagination
+     * Parse excluded fields from the configuration
+     * @return set of lowercase field names to exclude
      */
-    @Transactional(readOnly = true)
-    public Page<AuditLog> getActionAuditLogs(String action, Pageable pageable) {
-        return auditLogRepository.findByAction(action, pageable);
+    private Set<String> parseExcludedFields() {
+        String excludedFieldsStr = auditLogSettingGetterServices.getExcludedFields();
+        Set<String> excludedFields = new HashSet<>();
+        if (excludedFieldsStr != null && !excludedFieldsStr.isEmpty()) {
+            Arrays.stream(excludedFieldsStr.split(","))
+                    .map(String::trim)
+                    .map(String::toLowerCase)
+                    .forEach(excludedFields::add);
+        }
+        return excludedFields;
     }
 
     /**
-     * Get audit logs for a specific entity type with pagination
+     * Filter out excluded fields from JSON values
+     * Attempts to remove excluded fields from JSON strings
+     *
+     * @param jsonValue the JSON string to filter
+     * @param excludedFields set of field names to exclude (lowercase)
+     * @return filtered JSON string or original if filtering fails
      */
-    @Transactional(readOnly = true)
-    public Page<AuditLog> getEntityTypeAuditLogs(String entityType, Pageable pageable) {
-        return auditLogRepository.findByEntityType(entityType, pageable);
-    }
+    private String filterExcludedFields(String jsonValue, Set<String> excludedFields) {
+        if (jsonValue == null || jsonValue.isEmpty() || excludedFields.isEmpty()) {
+            return jsonValue;
+        }
 
-    /**
-     * Get audit logs for a specific entity instance (audit trail)
-     */
-    @Transactional(readOnly = true)
-    public List<AuditLog> getEntityAuditTrail(String entityType, Long entityId) {
-        return auditLogRepository.findEntityAuditTrail(entityType, entityId);
-    }
-
-    /**
-     * Get audit logs for a specific entity type and ID with pagination
-     */
-    @Transactional(readOnly = true)
-    public Page<AuditLog> getEntityAuditLogs(String entityType, Long entityId, Pageable pageable) {
-        return auditLogRepository.findByEntityTypeAndEntityId(entityType, entityId, pageable);
-    }
-
-    /**
-     * Get audit logs within a date range with pagination
-     */
-    @Transactional(readOnly = true)
-    public Page<AuditLog> getAuditLogsByDateRange(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
-        return auditLogRepository.findByDateRange(startDate, endDate, pageable);
-    }
-
-    /**
-     * Get audit logs for a user within a specific date range
-     */
-    @Transactional(readOnly = true)
-    public List<AuditLog> getUserAuditLogsByDateRange(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
-        return auditLogRepository.findByUserIdAndDateRange(userId, startDate, endDate);
-    }
-
-    /**
-     * Get audit logs for an action within a date range
-     */
-    @Transactional(readOnly = true)
-    public Page<AuditLog> getActionAuditLogsByDateRange(String action, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
-        return auditLogRepository.findByActionAndDateRange(action, startDate, endDate, pageable);
+        try {
+            // Simple regex-based field removal from JSON
+            String filtered = jsonValue;
+            for (String field : excludedFields) {
+                // Match field name (case-insensitive) and remove the key-value pair
+                // Pattern: "fieldName":"value" or "fieldName":value (for various value types)
+                filtered = filtered.replaceAll("(?i)\"" + Pattern.quote(field) + "\"\\s*:\\s*[^,}]*", "");
+                // Clean up any leftover commas
+                filtered = filtered.replaceAll(",\\s*,", ",");
+                filtered = filtered.replaceAll(",\\s*}", "}");
+                filtered = filtered.replaceAll("\\{,", "{");
+            }
+            return filtered;
+        } catch (Exception e) {
+            log.debug("Failed to filter excluded fields from audit log values", e);
+            return jsonValue;
+        }
     }
 
     /**
      * Delete old audit logs (retention policy)
-     * Keeps logs for specified number of days
+     * Keeps logs for specified number of days based on policy
      */
     @Transactional
-    public long deleteOldAuditLogs(int retentionDays) {
+    public long deleteOldAuditLogs() {
+        Integer retentionDays = auditLogSettingGetterServices.getAuditLogRetentionDays();
+        if (retentionDays == null || retentionDays <= 0) {
+            log.warn("Invalid retention days configured: {}", retentionDays);
+            return 0;
+        }
+
         LocalDateTime cutoffDate = LocalDateTime.now().minusDays(retentionDays);
         List<AuditLog> oldLogs = auditLogRepository.findByDateRange(
                 LocalDateTime.of(2000, 1, 1, 0, 0, 0),
                 cutoffDate,
-                org.springframework.data.domain.PageRequest.of(0, Integer.MAX_VALUE)
+                PageRequest.of(0, Integer.MAX_VALUE)
         ).getContent();
 
         long deletedCount = oldLogs.size();
-        auditLogRepository.deleteAll(oldLogs);
-        log.info("Deleted {} audit logs older than {} days", deletedCount, retentionDays);
+        if (deletedCount > 0) {
+            auditLogRepository.deleteAll(oldLogs);
+            log.info("Deleted {} audit logs older than {} days", deletedCount, retentionDays);
+        }
+        return deletedCount;
+    }
+
+    /**
+     * Delete old audit logs with specified retention days
+     * Overloaded method for backward compatibility
+     *
+     * @param retentionDays number of days to retain logs
+     * @return number of deleted logs
+     */
+    @Transactional
+    public long deleteOldAuditLogs(int retentionDays) {
+        if (retentionDays <= 0) {
+            log.warn("Invalid retention days specified: {}", retentionDays);
+            return 0;
+        }
+
+        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(retentionDays);
+        List<AuditLog> oldLogs = auditLogRepository.findByDateRange(
+                LocalDateTime.of(2000, 1, 1, 0, 0, 0),
+                cutoffDate,
+                PageRequest.of(0, Integer.MAX_VALUE)
+        ).getContent();
+
+        long deletedCount = oldLogs.size();
+        if (deletedCount > 0) {
+            auditLogRepository.deleteAll(oldLogs);
+            log.info("Deleted {} audit logs older than {} days", deletedCount, retentionDays);
+        }
         return deletedCount;
     }
 
