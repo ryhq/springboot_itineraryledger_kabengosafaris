@@ -55,6 +55,9 @@ public class SecuritySettingsGetterServices {
     @Value("${security.jwt.expiration.time.minutes:180}")
     private long jwtExpirationMinutes;
 
+    @Value("${security.mfa.jwt.expiration.time.seconds:180}")
+    private Long mfaJwtExpirationTimeSeconds;
+
     @Value("${security.jwt.refresh.expiration.time.minutes:1440}")
     private long jwtRefreshExpirationMinutes;
 
@@ -309,6 +312,22 @@ public class SecuritySettingsGetterServices {
             return jwtExpirationMinutes;
         }
     }
+    
+    public long getMFAJwtExpirationMinutes() {
+        SecuritySetting securitySetting = securitySettingsRepository.findBySettingKey("mfa.jwt.expiration.time.seconds").orElse(null);
+        if (securitySetting == null) {
+            return mfaJwtExpirationTimeSeconds;
+        }
+        if (securitySetting.getActive() == false) {
+            return mfaJwtExpirationTimeSeconds;
+        }
+        try {
+            return Long.parseLong(securitySetting.getSettingValue());
+        } catch (NumberFormatException e) {
+            return mfaJwtExpirationTimeSeconds;
+        }
+    }
+    
     public long getJwtRefreshExpirationMinutes() {
         SecuritySetting securitySetting = securitySettingsRepository.findBySettingKey("jwt.refresh.expiration.time.minutes").orElse(null);
         if (securitySetting == null) {

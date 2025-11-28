@@ -5,6 +5,9 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import com.itineraryledger.kabengosafaris.EmailAccount.Components.EncryptionUtil;
+import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccountProvider;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -84,7 +87,7 @@ public class EmailConfigurationInitializer {
                 .smtpPassword(EncryptionUtil.encrypt("your-app-password"))
                 .useTls(true)
                 .useSsl(false)
-                .providerType("GMAIL")
+                .providerType(EmailAccountProvider.GMAIL)
                 .enabled(false) // Disabled by default until configured
                 .isDefault(false)
                 .rateLimitPerMinute(0)
@@ -121,7 +124,7 @@ public class EmailConfigurationInitializer {
                 .smtpPassword(EncryptionUtil.encrypt("your-password"))
                 .useTls(true)
                 .useSsl(false)
-                .providerType("OUTLOOK")
+                .providerType(EmailAccountProvider.OUTLOOK)
                 .enabled(false) // Disabled by default until configured
                 .isDefault(false)
                 .rateLimitPerMinute(0)
@@ -158,7 +161,7 @@ public class EmailConfigurationInitializer {
                 .smtpPassword(EncryptionUtil.encrypt("your-password"))
                 .useTls(true)
                 .useSsl(false)
-                .providerType("CUSTOM")
+                .providerType(EmailAccountProvider.CUSTOM)
                 .enabled(false) // Disabled by default until configured
                 .isDefault(true) // Set as default
                 .rateLimitPerMinute(0)

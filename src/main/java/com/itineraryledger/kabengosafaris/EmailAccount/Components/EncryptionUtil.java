@@ -1,4 +1,4 @@
-package com.itineraryledger.kabengosafaris.EmailConfiguration;
+package com.itineraryledger.kabengosafaris.EmailAccount.Components;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;

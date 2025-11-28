@@ -72,6 +72,9 @@ public class SecuritySettingsServices {
     @Value("${security.jwt.refresh.expiration.time.minutes:1440}")
     private long jwtRefreshExpirationMinutes;
 
+    @Value("${security.mfa.jwt.expiration.time.seconds:180}")
+    private Long mfaJwtExpirationTimeSeconds;
+
     /**
      * #######################################
      * ### Login Rate Limit Configurations ###
@@ -173,7 +176,6 @@ public class SecuritySettingsServices {
     @AuditLogAnnotation(action = "Update Security Setting", description = "Updates a security setting by ID", entityIdParamName = "id", entityType = "SecuritySetting")
     private ResponseEntity<?> updateSecuritySettingById(Long id, UpdateSecuritySettingDTO updateSecuritySettingDTO) {
         Boolean active = updateSecuritySettingDTO.getActive();
-        String description = updateSecuritySettingDTO.getDescription();
         String settingValue = updateSecuritySettingDTO.getSettingValue();
         
         // Validation all
@@ -186,15 +188,7 @@ public class SecuritySettingsServices {
                 )
             );
         }
-        if (description == null || description.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(
-                ApiResponse.error(
-                    400, 
-                    "Description must be provided.", 
-                    "VALIDATION_ERROR"
-                )
-            );
-        }
+
         if (settingValue == null || settingValue.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(
                 ApiResponse.error(
@@ -223,11 +217,10 @@ public class SecuritySettingsServices {
 
         // Detect changes
         boolean activeChanged = !active.equals(oldActive);
-        boolean descriptionChanged = !description.equals(oldDescription);
         boolean settingValueChanged = !settingValue.equals(oldSettingValue);
 
         // Check if any changes are being made
-        if (!activeChanged && !descriptionChanged && !settingValueChanged) {
+        if (!activeChanged && !settingValueChanged) {
             return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.success(
                     200,
@@ -238,7 +231,6 @@ public class SecuritySettingsServices {
         }
 
         securitySetting.setActive(active);
-        securitySetting.setDescription(description);
         securitySetting.setSettingValue(settingValue);
 
         securitySetting = securitySettingsRepository.save(securitySetting);
@@ -247,23 +239,19 @@ public class SecuritySettingsServices {
         logFieldChanges(
             securitySetting.getId(), 
             activeChanged, 
-            descriptionChanged, 
             settingValueChanged,
             oldActive, 
             active, 
             oldDescription, 
-            description, 
             oldSettingValue, 
             settingValue
         );
 
-        // Build message with details about which fields changed
-        String changeDetails = buildChangeDetails(activeChanged, descriptionChanged, settingValueChanged);
 
         return ResponseEntity.ok(
             ApiResponse.success(
                 200,
-                "Security Setting updated successfully. " + changeDetails,
+                "Security Setting updated successfully. "+ (activeChanged ? "Active status changed. " : "") + (settingValueChanged ? "Setting Value changed." : ""),
                 getSecuritySettingDTO(securitySetting)
             )
         );
@@ -272,12 +260,10 @@ public class SecuritySettingsServices {
     private void logFieldChanges(
         Long entityId,
         boolean activeChanged,
-        boolean descriptionChanged,
         boolean settingValueChanged,
         Boolean oldActive,
         Boolean newActive,
         String oldDescription,
-        String newDescription,
         String oldSettingValue,
         String newSettingValue
     ) {
@@ -309,21 +295,6 @@ public class SecuritySettingsServices {
             auditLogService.logActionSync(log);
         }
 
-        if (descriptionChanged) {
-            AuditLog log = AuditLog.builder()
-                    .userId(userId)
-                    .username(username)
-                    .action("Update Security Setting Field")
-                    .entityType("SecuritySetting")
-                    .entityId(entityId)
-                    .description("Changed description field from \"" + oldDescription + "\" to \"" + newDescription + "\"")
-                    .status("SUCCESS")
-                    .oldValues("{\"description\": \"" + escapeJson(oldDescription) + "\"}")
-                    .newValues("{\"description\": \"" + escapeJson(newDescription) + "\"}")
-                    .build();
-            auditLogService.logActionSync(log);
-        }
-
         if (settingValueChanged) {
             AuditLog log = AuditLog.builder()
                     .userId(userId)
@@ -350,25 +321,6 @@ public class SecuritySettingsServices {
                     .replace("\r", "\\r")
                     .replace("\t", "\\t");
     }
-
-    private String buildChangeDetails(boolean activeChanged, boolean descriptionChanged, boolean settingValueChanged) {
-        StringBuilder details = new StringBuilder("Updated fields: ");
-        java.util.List<String> changedFields = new java.util.ArrayList<>();
-
-        if (activeChanged) {
-            changedFields.add("active");
-        }
-        if (descriptionChanged) {
-            changedFields.add("description");
-        }
-        if (settingValueChanged) {
-            changedFields.add("settingValue");
-        }
-
-        details.append(String.join(", ", changedFields));
-        return details.toString();
-    }
-
     /**
      * 
      * ##############################################################
@@ -481,6 +433,7 @@ public class SecuritySettingsServices {
         // Store default values in the database
         updateSettingIfExists("jwt.expiration.time.minutes", String.valueOf(jwtExpirationMinutes));
         updateSettingIfExists("jwt.refresh.expiration.time.minutes", String.valueOf(jwtRefreshExpirationMinutes));
+        updateSettingIfExists("mfa.jwt.expiration.time.seconds", String.valueOf(mfaJwtExpirationTimeSeconds));
         // Reload configurations
         jwtTokenProvider.reloadConfig(securitySettingsGetterServices);
         return ResponseEntity.ok(

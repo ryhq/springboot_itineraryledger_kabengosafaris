@@ -1,11 +1,9 @@
-package com.itineraryledger.kabengosafaris.EmailConfiguration;
+package com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity;
 
 import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
-import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccountProvider;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -14,60 +12,48 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * EmailConfiguration Entity - Stores email provider configurations
- * Allows system to send emails from multiple configured email accounts
+ * EmailAccount Entity - Stores email accounts configurations
+ * Allows system to send emails from multiple ` email accounts
  *
- * Each configuration includes:
+ * Each accounts includes:
  * - SMTP server details (host, port, protocol)
  * - Authentication credentials (encrypted)
- * - Email account info (from address, display name)
+ * - Email account info (email, name)
  * - Security settings (TLS, SSL)
  * - Rate limiting and retry settings
  */
+
 @Entity
-@Table(name = "email_configurations")
+@Table(name = "email_accounts")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class EmailConfiguration {
+public class EmailAccount {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
-     * Configuration name - unique identifier for this email config
-     * Examples: "default", "alerts", "notifications", "support"
+     * Email address to send from (e.g., noreply@kabengosafaris.com)
+     */
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    /**
+     * Email Account name - unique identifier for this email account
+     * Examples: "Sales", "Alerts", "Notifications", "Support", "Kabengo Safaris"
      */
     @Column(nullable = false, unique = true)
     private String name;
 
     /**
-     * Human-readable display name for this configuration
-     * Examples: "Default Email", "Alert Notifications"
-     */
-    @Column(nullable = false)
-    private String displayName;
-
-    /**
-     * Description of what this configuration is used for
+     * Description of what this email account is used for
      */
     @Lob
     @Column(length = 1000)
     private String description;
-
-    /**
-     * Email address to send from (e.g., noreply@kabengosafaris.com)
-     */
-    @Column(nullable = false)
-    private String fromEmail;
-
-    /**
-     * Display name for the sender (e.g., "Kabengo Safaris")
-     */
-    @Column(nullable = false)
-    private String fromName;
 
     /**
      * SMTP host address (e.g., smtp.gmail.com, smtp.outlook.com)
@@ -109,14 +95,14 @@ public class EmailConfiguration {
     private Boolean useSsl;
 
     /**
-     * Whether this configuration is enabled/active
+     * Whether this Email Account is enabled/active
      */
     @Column(nullable = false)
     private Boolean enabled;
 
     /**
-     * Whether this is the default configuration to use
-     * Only one configuration should have this set to true
+     * Whether this is the default Email Account to use
+     * Only one Email Account should have this set to true
      */
     @Column(nullable = false)
     private Boolean isDefault;
@@ -148,13 +134,7 @@ public class EmailConfiguration {
     private Integer retryDelaySeconds;
 
     /**
-     * Whether to verify SMTP connection on configuration creation/update
-     */
-    @Column(nullable = false)
-    private Boolean verifyOnSave;
-
-    /**
-     * Last time this configuration was successfully tested
+     * Last time this Email Account was successfully tested
      */
     private LocalDateTime lastTestedAt;
 
@@ -165,7 +145,7 @@ public class EmailConfiguration {
     private String lastErrorMessage;
 
     /**
-     * Total number of emails sent using this configuration
+     * Total number of emails sent using this Email Account
      */
     @Column(nullable = false)
     @Builder.Default
@@ -179,14 +159,14 @@ public class EmailConfiguration {
     private Long emailsFailedCount = 0L;
 
     /**
-     * Timestamp when this configuration was created
+     * Timestamp when this Email Account was created
      */
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /**
-     * Timestamp when this configuration was last updated
+     * Timestamp when this Email Account was last updated
      */
     @UpdateTimestamp
     @Column(nullable = false)
@@ -204,25 +184,22 @@ public class EmailConfiguration {
 
     @PrePersist
     protected void onCreate() {
-        if (this.enabled == null) this.enabled = true;
+        if (this.enabled == null) this.enabled = false;
         if (this.isDefault == null) this.isDefault = false;
         if (this.useTls == null) this.useTls = true;
         if (this.useSsl == null) this.useSsl = false;
         if (this.rateLimitPerMinute == null) this.rateLimitPerMinute = 0;
         if (this.maxRetryAttempts == null) this.maxRetryAttempts = 3;
         if (this.retryDelaySeconds == null) this.retryDelaySeconds = 5;
-        if (this.verifyOnSave == null) this.verifyOnSave = false;
         if (this.emailsSentCount == null) this.emailsSentCount = 0L;
         if (this.emailsFailedCount == null) this.emailsFailedCount = 0L;
     }
 
     @Override
     public String toString() {
-        return "EmailConfiguration{" +
+        return "EmailAccount{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", displayName='" + displayName + '\'' +
-                ", fromEmail='" + fromEmail + '\'' +
                 ", smtpHost='" + smtpHost + '\'' +
                 ", smtpPort=" + smtpPort +
                 ", enabled=" + enabled +
@@ -232,4 +209,5 @@ public class EmailConfiguration {
                 ", emailsFailedCount=" + emailsFailedCount +
                 '}';
     }
+    
 }

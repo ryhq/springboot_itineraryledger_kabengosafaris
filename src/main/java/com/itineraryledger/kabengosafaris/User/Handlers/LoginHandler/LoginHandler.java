@@ -10,6 +10,7 @@ import com.itineraryledger.kabengosafaris.User.DTOs.LoginRequest;
 import com.itineraryledger.kabengosafaris.User.DTOs.LoginResponse;
 import com.itineraryledger.kabengosafaris.User.Services.LoginServices.LoginException;
 import com.itineraryledger.kabengosafaris.User.Services.LoginServices.LoginService;
+import com.itineraryledger.kabengosafaris.User.Services.MFAServices.MFARequiredException;
 
 @Component
 public class LoginHandler {
@@ -23,6 +24,15 @@ public class LoginHandler {
         } catch (LoginException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 ApiResponse.error(400, e.getMessage(), "LOGIN_ERROR")
+            );
+        } catch (MFARequiredException e) {
+            // Handle MFA required scenario
+            return ResponseEntity.status(200).body(
+                ApiResponse.redirect(
+                    302, 
+                    "MFA verification required", 
+                    e.getTempToken() 
+                )
             );
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(

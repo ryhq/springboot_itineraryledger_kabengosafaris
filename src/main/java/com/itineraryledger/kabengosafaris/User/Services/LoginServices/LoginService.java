@@ -17,6 +17,8 @@ import com.itineraryledger.kabengosafaris.User.User;
 import com.itineraryledger.kabengosafaris.User.UserRepository;
 import com.itineraryledger.kabengosafaris.User.DTOs.LoginRequest;
 import com.itineraryledger.kabengosafaris.User.DTOs.LoginResponse;
+import com.itineraryledger.kabengosafaris.User.Services.MFAServices.MFARequiredException;
+import com.itineraryledger.kabengosafaris.User.Services.MFAServices.MFATempTokenProvider;
 
 @Service
 public class LoginService {
@@ -34,6 +36,9 @@ public class LoginService {
 
     @Autowired
     private SecuritySettingsGetterServices securitySettingsGetterServices;
+
+    @Autowired
+    private MFATempTokenProvider mfaTempTokenProvider;
 
     public LoginResponse login (LoginRequest loginRequest) {
         String identifier = loginRequest.getIdentifier();
@@ -103,6 +108,13 @@ public class LoginService {
                     resetFailedAttempts(user);
                 }
 
+                // Check if MFA is enabled and confirmed
+                if (user.isMfaEnabled() && user.getMfaConfirmed()) {
+                    // MFA is required - generate temporary token and throw exception
+                    String tempToken = mfaTempTokenProvider.generateMFATempToken(user);
+                    throw new MFARequiredException("MFA verification required", tempToken);
+                }
+
                 LoginResponse loginResponse = new LoginResponse();
                 loginResponse.setAccessToken(jwtTokenProvider.generateToken(authentication));
                 loginResponse.setRefreshToken(jwtTokenProvider.generateRefreshToken(authentication));
@@ -135,10 +147,30 @@ public class LoginService {
                 }
             }
             throw new LoginException("Invalid username or password");
+        } catch (MFARequiredException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new LoginException("An error occurred during login: " + ex.getMessage());
         }
         throw new LoginException("Login failed due to unknown reasons");
     }
-
+    
+    public LoginResponse loginResponseMFA(User user) {
+        LoginResponse loginResponse = new LoginResponse();
+        loginResponse.setAccessToken(jwtTokenProvider.generateTokenFromUsername(user.getUsername()));
+        loginResponse.setRefreshToken(jwtTokenProvider.generateRefreshTokenFromUsername(user.getUsername()));
+        try {
+            loginResponse.setRefreshTokenExpiresIn(securitySettingsGetterServices.getJwtRefreshExpirationTimeMillis());
+            loginResponse.setAccessTokenExpiresIn(securitySettingsGetterServices.getJwtExpirationTimeMillis());
+            String accessTokenExpiryDateTime = LocalDateTime.now().plusSeconds(securitySettingsGetterServices.getJwtExpirationTimeMillis() / 1000).toString();
+            String refreshTokenExpiryDateTime = LocalDateTime.now().plusSeconds(securitySettingsGetterServices.getJwtRefreshExpirationTimeMillis() / 1000).toString();
+            loginResponse.setAccessTokenExpiresAt(accessTokenExpiryDateTime);
+            loginResponse.setRefreshTokenExpiresAt(refreshTokenExpiryDateTime);
+        } catch (Exception e) {
+            // ignore
+        }
+        return loginResponse;
+    }
     /**
      * Resets the failed attempt counter if the counterResetHours has expired.
      * This allows users to get fresh login attempts after being inactive for the configured period.

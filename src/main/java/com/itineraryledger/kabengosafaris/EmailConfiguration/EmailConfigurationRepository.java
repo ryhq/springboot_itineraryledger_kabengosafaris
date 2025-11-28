@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccountProvider;
+
 /**
  * Repository for EmailConfiguration entity
  * Provides CRUD operations and custom queries for email configurations
@@ -38,12 +40,12 @@ public interface EmailConfigurationRepository extends JpaRepository<EmailConfigu
     /**
      * Find all configurations for a specific provider
      */
-    List<EmailConfiguration> findByProviderType(String providerType);
+    List<EmailConfiguration> findByProviderType(EmailAccountProvider providerType);
 
     /**
      * Find all enabled configurations for a provider
      */
-    List<EmailConfiguration> findByProviderTypeAndEnabledTrue(String providerType);
+    List<EmailConfiguration> findByProviderTypeAndEnabledTrue(EmailAccountProvider providerType);
 
     /**
      * Find configurations created by a specific user

@@ -14,7 +14,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -146,7 +145,6 @@ public class AuditLogSettingServices {
     )
     private ResponseEntity<?> updateAuditLogSettingById(Long id, UpdateAuditLogSettingDTO updateDTO) {
         Boolean active = updateDTO.getActive();
-        String description = updateDTO.getDescription();
         String settingValue = updateDTO.getSettingValue();
 
         // Validation
@@ -155,11 +153,7 @@ public class AuditLogSettingServices {
                     ApiResponse.error(400, "Active status must be provided.", "VALIDATION_ERROR")
             );
         }
-        if (description == null || description.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Description must be provided.", "VALIDATION_ERROR")
-            );
-        }
+        
         if (settingValue == null || settingValue.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(
                     ApiResponse.error(400, "Setting Value must be provided.", "VALIDATION_ERROR")
@@ -175,16 +169,14 @@ public class AuditLogSettingServices {
 
         // Store old values before changes
         Boolean oldActive = setting.getActive();
-        String oldDescription = setting.getDescription();
         String oldSettingValue = setting.getSettingValue();
 
         // Detect changes
         boolean activeChanged = !active.equals(oldActive);
-        boolean descriptionChanged = !description.equals(oldDescription);
         boolean settingValueChanged = !settingValue.equals(oldSettingValue);
 
         // Check if any changes are being made
-        if (!activeChanged && !descriptionChanged && !settingValueChanged) {
+        if (!activeChanged && !settingValueChanged) {
             return ResponseEntity.status(HttpStatus.OK).body(
                     ApiResponse.success(
                             200,
@@ -195,7 +187,6 @@ public class AuditLogSettingServices {
         }
 
         setting.setActive(active);
-        setting.setDescription(description);
         setting.setSettingValue(settingValue);
 
         setting = auditLogSettingRepository.save(setting);
@@ -204,23 +195,18 @@ public class AuditLogSettingServices {
         logFieldChanges(
                 setting.getId(),
                 activeChanged,
-                descriptionChanged,
                 settingValueChanged,
                 oldActive,
                 active,
-                oldDescription,
-                description,
                 oldSettingValue,
                 settingValue
         );
 
-        // Build message with details about which fields changed
-        String changeDetails = buildChangeDetails(activeChanged, descriptionChanged, settingValueChanged);
 
         return ResponseEntity.ok(
                 ApiResponse.success(
                         200,
-                        "Audit Log Setting updated successfully. " + changeDetails,
+                        "Audit Log Setting updated successfully. " + (activeChanged ? "Active status changed. " : "") + (settingValueChanged ? "Setting Value changed." : ""),
                         getAuditLogSettingDTO(setting)
                 )
         );
@@ -232,12 +218,9 @@ public class AuditLogSettingServices {
     private void logFieldChanges(
             Long entityId,
             boolean activeChanged,
-            boolean descriptionChanged,
             boolean settingValueChanged,
             Boolean oldActive,
             Boolean newActive,
-            String oldDescription,
-            String newDescription,
             String oldSettingValue,
             String newSettingValue
     ) {
@@ -268,22 +251,6 @@ public class AuditLogSettingServices {
                     .build();
             auditLogService.logActionSync(log);
         }
-
-        if (descriptionChanged) {
-            AuditLog log = AuditLog.builder()
-                    .userId(userId)
-                    .username(username)
-                    .action("UPDATE_AUDIT_LOG_SETTING_FIELD")
-                    .entityType("AuditLogSetting")
-                    .entityId(entityId)
-                    .description("Changed description field from \"" + oldDescription + "\" to \"" + newDescription + "\"")
-                    .status("SUCCESS")
-                    .oldValues("{\"description\": \"" + escapeJson(oldDescription) + "\"}")
-                    .newValues("{\"description\": \"" + escapeJson(newDescription) + "\"}")
-                    .build();
-            auditLogService.logActionSync(log);
-        }
-
         if (settingValueChanged) {
             AuditLog log = AuditLog.builder()
                     .userId(userId)
@@ -312,27 +279,6 @@ public class AuditLogSettingServices {
                 .replace("\n", "\\n")
                 .replace("\r", "\\r")
                 .replace("\t", "\\t");
-    }
-
-    /**
-     * Build a string describing which fields were changed
-     */
-    private String buildChangeDetails(boolean activeChanged, boolean descriptionChanged, boolean settingValueChanged) {
-        StringBuilder details = new StringBuilder("Updated fields: ");
-        List<String> changedFields = new ArrayList<>();
-
-        if (activeChanged) {
-            changedFields.add("active");
-        }
-        if (descriptionChanged) {
-            changedFields.add("description");
-        }
-        if (settingValueChanged) {
-            changedFields.add("settingValue");
-        }
-
-        details.append(String.join(", ", changedFields));
-        return details.toString();
     }
 
     /**

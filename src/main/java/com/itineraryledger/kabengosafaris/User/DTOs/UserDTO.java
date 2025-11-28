@@ -18,16 +18,35 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserDTO {
-    private String id; // Obfuscated ID
-    private String email;
+    // Obfuscated ID
+    private String id; 
+    
+    // Personal Info
     private String firstName;
     private String lastName;
     private String username;
-    private String phoneNumber;
-    private Boolean enabled;
-    private Boolean accountLocked;
     private String bio;
     private String profilePictureUrl;
+    
+    // Contact Info
+    private String email;
+    private String phoneNumber;
+    
+    // Account Info
+    private Boolean enabled;
+    private Boolean accountLocked;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // Password & MFA (Security)
+    private int failedAttempt; // Failed login Attempts
+    private LocalDateTime lastFailedAttemptTime;
+    private LocalDateTime accountLockedTime;
+    private LocalDateTime passwordExpiryDate;
+
+    private boolean mfaEnabled;
+    private LocalDateTime mfaEnabledAt;
+    private Boolean mfaConfirmed = false; 
+    private LocalDateTime lastMfaVerification;
+    private String mfaSecret;
 }

@@ -16,6 +16,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+
 @RequiredArgsConstructor // Generates a constructor with required arguments (final fields)
 @Slf4j // Enables logging in this class
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -30,6 +33,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String jwt = getJwtFromRequest(request);
 
             if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
+                TokenType tokenType = tokenProvider.getTokenType(jwt);
+
+                // Check if token type is valid for general endpoint access
+                if (tokenType == null || tokenType != TokenType.ACCESS) {
+                    log.warn("Attempt to access protected endpoint with invalid token type: {}", tokenType);
+                    handleInvalidTokenType(response, tokenType);
+                    return;
+                }
+
                 String username = tokenProvider.getUsernameFromToken(jwt);
                 UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
 
@@ -46,6 +58,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void handleInvalidTokenType(HttpServletResponse response, TokenType actualType) throws IOException {
+        response.setStatus(401);
+        response.setContentType("application/json");
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonResponse = objectMapper.writeValueAsString(
+            ApiResponse.error(401,
+                "Invalid token type. Expected ACCESS token, got " + (actualType != null ? actualType.getType() : "unknown"),
+                "INVALID_TOKEN_TYPE"
+            )
+        );
+        response.getWriter().write(jsonResponse);
     }
 
     private String getJwtFromRequest(HttpServletRequest request) {

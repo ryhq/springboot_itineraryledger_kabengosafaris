@@ -64,6 +64,25 @@ public class User implements UserDetails {
 
     private LocalDateTime passwordExpiryDate;
 
+    // MFA fields
+    private boolean mfaEnabled;
+
+    private String mfaSecret;
+
+    @Column(name = "mfa_enabled_at")
+    private LocalDateTime mfaEnabledAt;  // When MFA was activated
+
+    @Column(name = "mfa_confirmed")
+    @Builder.Default
+    private Boolean mfaConfirmed = false;  // Is MFA setup complete?
+
+    @Lob
+    @Column(name = "mfa_backup_codes", length = 2000)
+    private String mfaBackupCodes;  // JSON array of encrypted backup codes
+
+    @Column(name = "last_mfa_verification")
+    private LocalDateTime lastMfaVerification;  // Last successful 2FA
+
     @Lob
     @Column(length = 2000)
     private String bio;

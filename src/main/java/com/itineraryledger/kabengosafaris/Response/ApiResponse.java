@@ -93,6 +93,19 @@ public class ApiResponse<T> {
     }
 
     /**
+     * Create a redirect response with data
+     */
+    public static <T> ApiResponse<T> redirect(int statusCode, String message, T data) {
+        return ApiResponse.<T>builder()
+                .success(true)
+                .statusCode(statusCode)
+                .message(message)
+                .data(data)
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+    
+    /**
      * Create a successful response without data
      */
     public static <T> ApiResponse<T> success(int statusCode, String message) {

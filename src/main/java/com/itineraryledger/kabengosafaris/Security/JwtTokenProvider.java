@@ -47,9 +47,14 @@ public class JwtTokenProvider {
     @Value("${security.jwt.refresh.expiration.time.minutes:1440}")
     private long jwtRefreshExpirationMinutes;
 
+    @Value("${security.mfa.jwt.expiration.time.seconds:180}")
+    private long mfaJwtExpirationTimeSeconds;
+
     private long jwtExpirationTimeMillis;
 
     private long jwtRefreshExpirationTimeMillis;
+
+    private long mfaJwtExpirationTimeMillis;
 
     @Autowired
     public JwtTokenProvider(SecuritySettingsGetterServices securitySettingsGetterServices) {
@@ -75,23 +80,31 @@ public class JwtTokenProvider {
         try {
             // Try to load JWT expiration time SecuritySettingsServices
             jwtExpirationMinutes = securitySettingsGetterServices.getJwtExpirationMinutes();
+            mfaJwtExpirationTimeSeconds = securitySettingsGetterServices.getMFAJwtExpirationMinutes();
             jwtRefreshExpirationMinutes = securitySettingsGetterServices.getJwtRefreshExpirationMinutes();
 
             this.jwtExpirationTimeMillis = jwtExpirationMinutes * 60 * 1000;
+            this.mfaJwtExpirationTimeMillis = mfaJwtExpirationTimeSeconds * 1000;
             this.jwtRefreshExpirationTimeMillis = jwtRefreshExpirationMinutes * 60 * 1000;
 
             log.info("JwtTokenProvider: Loaded JWT expiration time from SecuritySettingsServices: {} milliseconds ({} minutes)",
                     jwtExpirationTimeMillis, jwtExpirationMinutes);
+            log.info("JwtTokenProvider: Loaded MFA JWT expiration time from SecuritySettingsServices: {} milliseconds ({} seconds)",
+                    mfaJwtExpirationTimeMillis, mfaJwtExpirationTimeSeconds);
             log.info("JwtTokenProvider: Loaded JWT refresh token expiration time from SecuritySettingsServices: {} milliseconds ({} minutes)",
                     jwtRefreshExpirationTimeMillis, jwtRefreshExpirationMinutes);
             
         } catch (Exception e) {
             log.error("JwtTokenProvider: Error during initialization", e);
             // Fallback to application.properties value
-            log.warn("JwtTokenProvider: Using fallback JWT expiration time from application.properties: {} milliseconds ({} minutes)",
-                    jwtExpirationTimeMillis, jwtExpirationMinutes);
+            this.jwtExpirationTimeMillis = jwtExpirationMinutes * 60 * 1000;
+            this.mfaJwtExpirationTimeMillis = mfaJwtExpirationTimeSeconds * 1000;
             this.jwtRefreshExpirationTimeMillis = jwtRefreshExpirationMinutes * 60 * 1000;
-            log.warn("JwtTokenProvider: Using fallback JWT refresh token expiration time from application.properties: {} milliseconds ({} minutes)",
+            log.info("JwtTokenProvider: Fallback to application.properties JWT expiration time: {} milliseconds ({} minutes)",
+                    jwtExpirationTimeMillis, jwtExpirationMinutes);
+            log.info("JwtTokenProvider: Fallback to application.properties MFA JWT expiration time: {} milliseconds ({} seconds)",
+                    mfaJwtExpirationTimeMillis, mfaJwtExpirationTimeSeconds);
+            log.info("JwtTokenProvider: Fallback to application.properties JWT refresh token expiration time: {} milliseconds ({} minutes)",
                     jwtRefreshExpirationTimeMillis, jwtRefreshExpirationMinutes);
         }
     }
@@ -112,9 +125,22 @@ public class JwtTokenProvider {
         return generateRefreshTokenFromUsername(name);
     }
 
+    public String generateMFATokenFromUsername(String name) {
+        return Jwts.builder()
+                .subject(name)
+                .claim("type", TokenType.MFA.getType())
+                .claim("aud", "mfa")
+                .claim("purpose", "mfa_verify")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + mfaJwtExpirationTimeMillis))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
     public String generateTokenFromUsername(String name) {
         return Jwts.builder()
                 .subject(name)
+                .claim("type", TokenType.ACCESS.getType())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpirationTimeMillis))
                 .signWith(getSigningKey())
@@ -124,6 +150,7 @@ public class JwtTokenProvider {
     public String generateRefreshTokenFromUsername(String name) {
         return Jwts.builder()
                 .subject(name)
+                .claim("type", TokenType.REFRESH.getType())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtRefreshExpirationTimeMillis))
                 .signWith(getSigningKey())
@@ -137,6 +164,26 @@ public class JwtTokenProvider {
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
+    }
+
+    public TokenType getTokenType(String token) {
+        try {
+            Object typeClaim = Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    .get("type");
+
+            if (typeClaim != null) {
+                return TokenType.fromString(typeClaim.toString());
+            }
+            // Default to ACCESS for backward compatibility
+            return TokenType.ACCESS;
+        } catch (Exception e) {
+            log.error("Error extracting token type: {}", e.getMessage());
+            return null;
+        }
     }
 
     public boolean validateToken(String token) {
