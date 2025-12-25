@@ -116,6 +116,16 @@ public class EmailAccountDTO {
     private String lastErrorMessage;
 
     /**
+     * Email signature - HTML content appended to emails
+     */
+    private String signature;
+
+    /**
+     * Whether to include signature in all emails by default
+     */
+    private Boolean includeSignatureByDefault;
+
+    /**
      * Total number of emails sent using this account
      */
     private Long emailsSentCount;

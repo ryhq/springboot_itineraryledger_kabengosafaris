@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices;
 
+import java.util.regex.Pattern;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +40,10 @@ public class EmailAccountUpdateService {
     private final EmailAccountRepository emailAccountRepository;
     private final EmailAccountGetService emailAccountGetService;
     private final IdObfuscator idObfuscator;
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+    );
 
     @Autowired
     public EmailAccountUpdateService(
@@ -93,20 +99,35 @@ public class EmailAccountUpdateService {
             );
         }
 
+        // Track if sensitive attributes changed (require re-testing)
+        boolean sensitiveAttributeChanged = false;
+
         // Update email (if provided and different)
         if (updateDTO.getEmail() != null && !updateDTO.getEmail().isBlank()) {
             if (!existing.getEmail().equals(updateDTO.getEmail())) {
+                // Validate email format
+                if (!EMAIL_PATTERN.matcher(updateDTO.getEmail()).matches()) {
+                    log.warn("Invalid email format: {}", updateDTO.getEmail());
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(
+                            400,
+                            "Invalid email format",
+                            "INVALID_EMAIL_FORMAT"
+                        )
+                    );
+                }
                 // Check for duplicate email
                 if (emailAccountRepository.findByEmail(updateDTO.getEmail()).isPresent()) {
                     log.warn("Email already exists: {}", updateDTO.getEmail());
                     return ResponseEntity.badRequest().body(
                         ApiResponse.error(
-                            400, 
-                            "Email already exists", 
+                            400,
+                            "Email already exists",
                             "DUPLICATE_EMAIL"
                         )
                     );
                 }
+                sensitiveAttributeChanged = true;
                 existing.setEmail(updateDTO.getEmail());
             }
         }
@@ -133,9 +154,6 @@ public class EmailAccountUpdateService {
         if (updateDTO.getDescription() != null) {
             existing.setDescription(updateDTO.getDescription());
         }
-
-        // Track if sensitive attributes changed (require re-testing)
-        boolean sensitiveAttributeChanged = false;
 
         // Update SMTP password (encrypt if provided)
         if (updateDTO.getSmtpPassword() != null && !updateDTO.getSmtpPassword().isBlank()) {
@@ -170,6 +188,23 @@ public class EmailAccountUpdateService {
         }
 
         // Update security settings (if provided and different)
+        // First, determine the final TLS/SSL values after update
+        Boolean finalUseTls = updateDTO.getUseTls() != null ? updateDTO.getUseTls() : existing.getUseTls();
+        Boolean finalUseSsl = updateDTO.getUseSsl() != null ? updateDTO.getUseSsl() : existing.getUseSsl();
+
+        // Validate SSL/TLS configuration
+        if (Boolean.TRUE.equals(finalUseTls) && Boolean.TRUE.equals(finalUseSsl)) {
+            log.warn("Invalid SSL/TLS configuration: Both TLS and SSL cannot be enabled simultaneously");
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(
+                    400,
+                    "Invalid SSL/TLS configuration: TLS and SSL cannot both be enabled. Please enable only one.",
+                    "INVALID_SSL_TLS_CONFIGURATION"
+                )
+            );
+        }
+
+        // Apply the updates if validation passed
         if (updateDTO.getUseTls() != null) {
             if (!existing.getUseTls().equals(updateDTO.getUseTls())) {
                 existing.setUseTls(updateDTO.getUseTls());
@@ -190,13 +225,24 @@ public class EmailAccountUpdateService {
             log.info("Sensitive attributes changed for account {}. Account disabled and default status cleared. Requires re-testing.", id);
         }
 
-        // Update enabled status
-        if (updateDTO.getEnabled() != null) {
-            existing.setEnabled(updateDTO.getEnabled());
+        // Update enabled status, Disable only
+        if (updateDTO.getEnabled() != null && updateDTO.getEnabled() == false) {
+            existing.setEnabled(false);
+            existing.setIsDefault(false);
         }
 
         // Update default status (if set to true, unset all others)
         if (updateDTO.getIsDefault() != null && updateDTO.getIsDefault()) {
+            Boolean enabled = existing.getEnabled();
+            if (!enabled) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400, 
+                        "Untested Email Account cannot be set as default.", 
+                        "UNTESTED_EMAIL_CONNECTION"
+                    )
+                );
+            }
             existing.setIsDefault(true);
             emailAccountRepository.setOnlyOneDefault(id);
             log.info("Account {} set as default, all others unset", id);
@@ -229,6 +275,11 @@ public class EmailAccountUpdateService {
         }
         if (updateDTO.getRetryDelaySeconds() != null) {
             existing.setRetryDelaySeconds(updateDTO.getRetryDelaySeconds());
+        }
+
+        // Update includeSignatureByDefault if provided
+        if (updateDTO.getIncludeSignatureByDefault() != null) {
+            existing.setIncludeSignatureByDefault(updateDTO.getIncludeSignatureByDefault());
         }
 
         // Save updated account

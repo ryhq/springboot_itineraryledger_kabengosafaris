@@ -54,9 +54,15 @@ public class EmailAccountGetService {
      * @param isDefault Filter by default account status
      * @param email Filter by email address (partial match)
      * @param name Filter by account name (partial match)
-     * @param providerTypeStr Filter by provider type (as string)
+     * @param providerTypeLong Filter by provider type (as enum)
      * @param smtpHost Filter by SMTP host (partial match)
+     * @param smtpPort Filter by SMTP port
      * @param hasErrors Filter by error status
+     * @param description Filter by description (partial match)
+     * @param useTls Filter by TLS enabled status
+     * @param useSsl Filter by SSL enabled status
+     * @param smtpUsername Filter by SMTP username (partial match)
+     * @param errorMessage Filter by error message (partial match)
      * @param sortDir Sort direction ("asc" or "desc")
      * @return ResponseEntity with paginated results or validation error
      */
@@ -69,13 +75,21 @@ public class EmailAccountGetService {
         String name,
         int providerTypeLong,
         String smtpHost,
+        Integer smtpPort,
         Boolean hasErrors,
+        String description,
+        Boolean useTls,
+        Boolean useSsl,
+        String smtpUsername,
+        String errorMessage,
         String sortDir
     ) {
 
         log.debug("Fetching email accounts with filters - page: {}, size: {}, enabled: {}, isDefault: {}, " +
-                "email: {}, name: {}, providerType: {}, smtpHost: {}, hasErrors: {}, sortDir: {}",
-                page, size, enabled, isDefault, email, name, providerTypeLong, smtpHost, hasErrors, sortDir);
+                "email: {}, name: {}, providerType: {}, smtpHost: {}, smtpPort: {}, hasErrors: {}, description: {}, " +
+                "useTls: {}, useSsl: {}, smtpUsername: {}, errorMessage: {}, sortDir: {}",
+                page, size, enabled, isDefault, email, name, providerTypeLong, smtpHost, smtpPort, hasErrors,
+                description, useTls, useSsl, smtpUsername, errorMessage, sortDir);
 
         // Validate pagination parameters
         if (page < 0) {
@@ -153,8 +167,32 @@ public class EmailAccountGetService {
             specification = specification.and(EmailAccountSpecification.smtpHostLike(smtpHost));
         }
 
+        if (smtpPort != null) {
+            specification = specification.and(EmailAccountSpecification.smtpPort(smtpPort));
+        }
+
         if (hasErrors != null && hasErrors) {
             specification = specification.and(EmailAccountSpecification.hasErrors());
+        }
+
+        if (description != null && !description.isBlank()) {
+            specification = specification.and(EmailAccountSpecification.descriptionLike(description));
+        }
+
+        if (useTls != null) {
+            specification = specification.and(EmailAccountSpecification.useTls(useTls));
+        }
+
+        if (useSsl != null) {
+            specification = specification.and(EmailAccountSpecification.useSsl(useSsl));
+        }
+
+        if (smtpUsername != null && !smtpUsername.isBlank()) {
+            specification = specification.and(EmailAccountSpecification.smtpUsernameLike(smtpUsername));
+        }
+
+        if (errorMessage != null && !errorMessage.isBlank()) {
+            specification = specification.and(EmailAccountSpecification.errorMessageLike(errorMessage));
         }
 
         // Execute query with specifications
@@ -252,6 +290,7 @@ public class EmailAccountGetService {
                 .retryDelaySeconds(emailAccount.getRetryDelaySeconds())
                 .lastTestedAt(emailAccount.getLastTestedAt())
                 .lastErrorMessage(emailAccount.getLastErrorMessage())
+                .includeSignatureByDefault(emailAccount.getIncludeSignatureByDefault())
                 .emailsSentCount(emailAccount.getEmailsSentCount())
                 .emailsFailedCount(emailAccount.getEmailsFailedCount())
                 .createdAt(emailAccount.getCreatedAt())

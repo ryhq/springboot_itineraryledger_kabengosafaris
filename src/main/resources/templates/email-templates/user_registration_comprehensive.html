@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Kabengo Safaris</title>
+    <style>
+        /* Reset & Base */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: #f7f7f7;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Email Container */
+        .email-wrapper {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #f7f7f7;
+            padding: 20px;
+        }
+
+        .email-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Header with Brand Colors */
+        .email-header {
+            background: linear-gradient(135deg, #6B4423 0%, #8B6F47 100%);
+            padding: 40px 30px;
+            text-align: center;
+            border-bottom: 4px solid #2D5A3D;
+        }
+
+        .email-header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .email-header p {
+            color: #f0f0f0;
+            margin: 10px 0 0 0;
+            font-size: 14px;
+        }
+
+        /* Content Section */
+        .email-content {
+            padding: 40px 30px;
+            color: #2c2c2c;
+        }
+
+        .email-content p {
+            margin: 0 0 16px 0;
+            color: #2c2c2c;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .email-content strong {
+            color: #6B4423;
+            font-weight: 600;
+        }
+
+        /* Greeting Box */
+        .greeting-box {
+            background-color: #f9f9f9;
+            border-left: 4px solid #6B4423;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+
+        .greeting-box p {
+            margin: 0;
+            color: #2c2c2c;
+            font-size: 16px;
+        }
+
+        .greeting-name {
+            color: #6B4423;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        /* Account Details Box */
+        .account-details {
+            background-color: #f9f9f9;
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+
+        .account-details h3 {
+            color: #6B4423;
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .detail-row {
+            display: table;
+            width: 100%;
+            margin: 8px 0;
+            border-bottom: 1px solid #e8e8e8;
+            padding-bottom: 8px;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .detail-label {
+            display: table-cell;
+            width: 40%;
+            color: #6b6b6b;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            display: table-cell;
+            width: 60%;
+            color: #2c2c2c;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-inactive {
+            background-color: #fff8e1;
+            color: #b36b00;
+            border: 1px solid #ffecb3;
+        }
+
+        .status-active {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        .status-locked {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+
+        .status-unlocked {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        /* CTA Button */
+        .cta-container {
+            text-align: center;
+            margin: 35px 0;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 14px 40px;
+            background-color: #6B4423;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 2px 8px rgba(107, 68, 35, 0.25);
+        }
+
+        .cta-button:hover {
+            background-color: #5a3819;
+        }
+
+        /* Info Alert Box */
+        .alert-info {
+            background-color: #fff8e1;
+            border: 1px solid #ffecb3;
+            border-left: 4px solid #f39c12;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+
+        .alert-info-title {
+            color: #b36b00;
+            font-weight: 600;
+            margin: 0 0 10px 0;
+            font-size: 15px;
+        }
+
+        .alert-info ul {
+            margin: 10px 0;
+            padding-left: 20px;
+            color: #2c2c2c;
+        }
+
+        .alert-info li {
+            margin: 6px 0;
+            color: #2c2c2c;
+        }
+
+        .alert-info strong {
+            color: #b36b00;
+        }
+
+        /* Link Box */
+        .link-box {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #e8e8e8;
+            margin: 20px 0;
+            word-break: break-all;
+        }
+
+        .link-box a {
+            color: #6B4423;
+            text-decoration: none;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        /* Divider */
+        .divider {
+            height: 1px;
+            background-color: #efefef;
+            margin: 30px 0;
+        }
+
+        /* Footer */
+        .email-footer {
+            background-color: #f7f7f7;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e8e8e8;
+        }
+
+        .email-footer p {
+            margin: 8px 0;
+            color: #6b6b6b;
+            font-size: 13px;
+        }
+
+        .email-footer-brand {
+            color: #6B4423;
+            font-weight: 600;
+        }
+
+        /* Accent Elements */
+        .accent-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #2D5A3D;
+            border-radius: 50%;
+            margin: 0 5px;
+        }
+
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .email-wrapper {
+                margin: 0;
+                padding: 10px;
+            }
+
+            .email-header {
+                padding: 30px 20px;
+            }
+
+            .email-header h1 {
+                font-size: 24px;
+            }
+
+            .email-content {
+                padding: 30px 20px;
+            }
+
+            .cta-button {
+                padding: 12px 30px;
+                font-size: 15px;
+            }
+
+            .detail-row {
+                display: block;
+            }
+
+            .detail-label,
+            .detail-value {
+                display: block;
+                width: 100%;
+                text-align: left;
+            }
+
+            .detail-value {
+                margin-top: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <div class="email-container">
+            <!-- Header -->
+            <div class="email-header">
+                <h1>Welcome to Kabengo Safaris</h1>
+                <p>Your Safari Adventure Begins Here</p>
+            </div>
+
+            <!-- Content -->
+            <div class="email-content">
+                <!-- Personalized Greeting -->
+                <div class="greeting-box">
+                    <p>Hello <span class="greeting-name">{{firstName}} {{lastName}}</span>,</p>
+                    <p style="margin-top: 8px; font-size: 14px; color: #6b6b6b;">Username: <strong>{{username}}</strong></p>
+                </div>
+
+                <p>Thank you for registering with Kabengo Safaris! We're thrilled to have you join our community of safari enthusiasts and adventure seekers.</p>
+
+                <p>Your account has been successfully created on <strong>{{createdAt}}</strong>. To complete your registration and unlock full access to our platform, please verify your email address by activating your account.</p>
+
+                <!-- Account Details -->
+                <div class="account-details">
+                    <h3>Account Information</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Email Address:</span>
+                        <span class="detail-value">{{email}}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Username:</span>
+                        <span class="detail-value">{{username}}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Full Name:</span>
+                        <span class="detail-value">{{firstName}} {{lastName}}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Phone Number:</span>
+                        <span class="detail-value">{{phoneNumber}}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Account Status:</span>
+                        <span class="detail-value">
+                            <span class="status-badge status-inactive">Pending Activation</span>
+                        </span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Registration Date:</span>
+                        <span class="detail-value">{{createdAt}}</span>
+                    </div>
+                </div>
+
+                <!-- CTA Button -->
+                <div class="cta-container">
+                    <a href="{{activationLink}}" class="cta-button">Activate Your Account</a>
+                </div>
+
+                <!-- Important Info Alert -->
+                <div class="alert-info">
+                    <p class="alert-info-title">Important Information</p>
+                    <ul>
+                        <li>This activation link will expire in <strong>{{expirationHours}} hours</strong></li>
+                        <li>Expiration date/time: <strong>{{expirationDateTime}}</strong></li>
+                        <li>If the link expires, you'll need to request a new activation email</li>
+                        <li>For your security, please don't share this link with anyone</li>
+                        <li>After activation, your account status will change from "Pending" to "Active"</li>
+                    </ul>
+                </div>
+
+                <!-- Divider -->
+                <div class="divider"></div>
+
+                <!-- Alternative Link -->
+                <p style="color: #6b6b6b; font-size: 14px;">If the button above doesn't work, copy and paste this link into your browser:</p>
+                <div class="link-box">
+                    <a href="{{activationLink}}">{{activationLink}}</a>
+                </div>
+
+                <!-- Divider -->
+                <div class="divider"></div>
+
+                <!-- Support Info -->
+                <p style="color: #6b6b6b; font-size: 14px;">
+                    If you didn't create an account with Kabengo Safaris, you can safely ignore this email. Your email address will not be used without your confirmation.
+                </p>
+
+                <p style="color: #6b6b6b; font-size: 14px;">
+                    Need help? Our support team is always ready to assist you with any questions or concerns.
+                </p>
+
+                <!-- Sign-off -->
+                <p style="margin-top: 30px;">
+                    Best regards,<br>
+                    <strong class="email-footer-brand">The Kabengo Safaris Team</strong>
+                </p>
+            </div>
+
+            <!-- Footer -->
+            <div class="email-footer">
+                <p>
+                    <span class="accent-dot"></span>
+                    <span class="email-footer-brand">Kabengo Safaris</span>
+                    <span class="accent-dot"></span>
+                </p>
+                <p>&copy; 2025 Kabengo Safaris. All rights reserved.</p>
+                <p style="font-size: 12px; color: #999999;">
+                    This is an automated email. Please do not reply to this message.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

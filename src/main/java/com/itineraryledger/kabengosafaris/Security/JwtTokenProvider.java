@@ -50,11 +50,16 @@ public class JwtTokenProvider {
     @Value("${security.mfa.jwt.expiration.time.seconds:180}")
     private long mfaJwtExpirationTimeSeconds;
 
+    @Value("${security.registration.jwt.expiration.time.minutes:60}")
+    private long registrationJwtExpirationMinutes;
+
     private long jwtExpirationTimeMillis;
 
     private long jwtRefreshExpirationTimeMillis;
 
     private long mfaJwtExpirationTimeMillis;
+
+    private long registrationJwtExpirationTimeMillis;
 
     @Autowired
     public JwtTokenProvider(SecuritySettingsGetterServices securitySettingsGetterServices) {
@@ -81,16 +86,20 @@ public class JwtTokenProvider {
             // Try to load JWT expiration time SecuritySettingsServices
             jwtExpirationMinutes = securitySettingsGetterServices.getJwtExpirationMinutes();
             mfaJwtExpirationTimeSeconds = securitySettingsGetterServices.getMFAJwtExpirationMinutes();
+            registrationJwtExpirationMinutes = securitySettingsGetterServices.getRegistrationJwtExpirationMinutes();
             jwtRefreshExpirationMinutes = securitySettingsGetterServices.getJwtRefreshExpirationMinutes();
 
             this.jwtExpirationTimeMillis = jwtExpirationMinutes * 60 * 1000;
             this.mfaJwtExpirationTimeMillis = mfaJwtExpirationTimeSeconds * 1000;
+            this.registrationJwtExpirationTimeMillis = registrationJwtExpirationMinutes * 60 * 1000;
             this.jwtRefreshExpirationTimeMillis = jwtRefreshExpirationMinutes * 60 * 1000;
 
             log.info("JwtTokenProvider: Loaded JWT expiration time from SecuritySettingsServices: {} milliseconds ({} minutes)",
                     jwtExpirationTimeMillis, jwtExpirationMinutes);
             log.info("JwtTokenProvider: Loaded MFA JWT expiration time from SecuritySettingsServices: {} milliseconds ({} seconds)",
                     mfaJwtExpirationTimeMillis, mfaJwtExpirationTimeSeconds);
+            log.info("JwtTokenProvider: Loaded Registration JWT expiration time from SecuritySettingsServices: {} milliseconds ({} minutes)",
+                    registrationJwtExpirationTimeMillis, registrationJwtExpirationMinutes);
             log.info("JwtTokenProvider: Loaded JWT refresh token expiration time from SecuritySettingsServices: {} milliseconds ({} minutes)",
                     jwtRefreshExpirationTimeMillis, jwtRefreshExpirationMinutes);
             
@@ -99,11 +108,14 @@ public class JwtTokenProvider {
             // Fallback to application.properties value
             this.jwtExpirationTimeMillis = jwtExpirationMinutes * 60 * 1000;
             this.mfaJwtExpirationTimeMillis = mfaJwtExpirationTimeSeconds * 1000;
+            this.registrationJwtExpirationTimeMillis = registrationJwtExpirationMinutes * 60 * 1000;
             this.jwtRefreshExpirationTimeMillis = jwtRefreshExpirationMinutes * 60 * 1000;
             log.info("JwtTokenProvider: Fallback to application.properties JWT expiration time: {} milliseconds ({} minutes)",
                     jwtExpirationTimeMillis, jwtExpirationMinutes);
             log.info("JwtTokenProvider: Fallback to application.properties MFA JWT expiration time: {} milliseconds ({} seconds)",
                     mfaJwtExpirationTimeMillis, mfaJwtExpirationTimeSeconds);
+            log.info("JwtTokenProvider: Fallback to application.properties Registration JWT expiration time: {} milliseconds ({} minutes)",
+                    registrationJwtExpirationTimeMillis, registrationJwtExpirationMinutes);
             log.info("JwtTokenProvider: Fallback to application.properties JWT refresh token expiration time: {} milliseconds ({} minutes)",
                     jwtRefreshExpirationTimeMillis, jwtRefreshExpirationMinutes);
         }
@@ -133,6 +145,16 @@ public class JwtTokenProvider {
                 .claim("purpose", "mfa_verify")
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + mfaJwtExpirationTimeMillis))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public String generateRegistrationTokenFromUsername(String name) {
+        return Jwts.builder()
+                .subject(name)
+                .claim("type", TokenType.REGISTRATION.getType())
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + registrationJwtExpirationTimeMillis))
                 .signWith(getSigningKey())
                 .compact();
     }

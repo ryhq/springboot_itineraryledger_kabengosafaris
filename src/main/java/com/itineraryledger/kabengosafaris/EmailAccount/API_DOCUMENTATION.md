@@ -241,25 +241,59 @@ Creates a new email account with SMTP configuration.
 ### 2. Get All Email Accounts
 **GET** `/api/email-accounts`
 
-Retrieves a paginated list of email accounts with optional filtering.
+Retrieves a paginated list of email accounts with optional filtering and comprehensive search capabilities.
 
 **Query Parameters:**
 ```
 page=0 (default, 0-indexed)
 size=10 (default)
+
+Status Filters:
 enabled=true/false (optional)
 isDefault=true/false (optional)
-email=string (optional, partial match)
-name=string (optional, partial match)
-providerType=1-6 (optional)
-smtpHost=string (optional, partial match)
 hasErrors=true/false (optional)
-sortDir=asc/desc (optional, default: asc)
+
+Account Identity Filters:
+email=string (optional, partial match, case-insensitive)
+name=string (optional, partial match, case-insensitive)
+description=string (optional, partial match, case-insensitive)
+
+SMTP Configuration Filters:
+providerType=1-6 (optional) - 1=GMAIL, 2=OUTLOOK, 3=SENDGRID, 4=MAILGUN, 5=AWS_SES, 6=CUSTOM
+smtpHost=string (optional, partial match, case-insensitive)
+smtpPort=integer (optional, exact match)
+smtpUsername=string (optional, partial match, case-insensitive)
+
+Security Filters:
+useTls=true/false (optional)
+useSsl=true/false (optional)
+
+Error Monitoring Filters:
+errorMessage=string (optional, partial match, case-insensitive)
+
+Sorting:
+sortDir=asc/desc (optional, default: desc)
 ```
 
-**Example Request:**
+**Example Requests:**
 ```
+# Basic filtering
 GET /api/email-accounts?page=0&size=10&enabled=true&sortDir=desc
+
+# SMTP configuration filtering
+GET /api/email-accounts?smtpHost=smtp.gmail.com&smtpPort=587&useTls=true
+
+# Security and status filtering
+GET /api/email-accounts?enabled=true&useSsl=false&hasErrors=false
+
+# Search by description
+GET /api/email-accounts?description=sales&enabled=true
+
+# Error monitoring
+GET /api/email-accounts?hasErrors=true&errorMessage=timeout
+
+# Provider specific filtering
+GET /api/email-accounts?providerType=1&enabled=true&useTls=true
 ```
 
 **Success Response (200):**
@@ -267,24 +301,38 @@ GET /api/email-accounts?page=0&size=10&enabled=true&sortDir=desc
 {
   "success": true,
   "statusCode": 200,
-  "message": "Email accounts retrieved successfully",
+  "message": "Successfully retrieved email accounts.",
   "data": {
     "emailAccounts": [
       {
         "id": "encoded_id_1",
         "email": "noreply@example.com",
         "name": "Support Email",
+        "description": "Support notifications",
+        "smtpHost": "smtp.gmail.com",
+        "smtpPort": 587,
+        "smtpUsername": "noreply@example.com",
+        "useTls": true,
+        "useSsl": false,
         "enabled": true,
         "isDefault": true,
-        "providerType": "GMAIL"
+        "providerType": "GMAIL",
+        "lastErrorMessage": null
       },
       {
         "id": "encoded_id_2",
         "email": "alerts@example.com",
         "name": "Alert Email",
+        "description": "System alerts",
+        "smtpHost": "smtp.office365.com",
+        "smtpPort": 587,
+        "smtpUsername": "alerts@example.com",
+        "useTls": true,
+        "useSsl": false,
         "enabled": true,
         "isDefault": false,
-        "providerType": "OUTLOOK"
+        "providerType": "OUTLOOK",
+        "lastErrorMessage": null
       }
     ],
     "currentPage": 0,

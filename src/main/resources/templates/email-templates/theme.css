@@ -1,0 +1,174 @@
+/* Light Theme (Default) */
+:root,
+[data-theme='light'] {
+  /* Primary Colors from Logo */
+  --primary-brown: #6B4423;
+  --primary-brown-hover: #5a3819;
+  --primary-green: #2D5A3D;
+  --secondary-brown: #8B6F47;
+  --accent-green: #4A7C5F;
+
+  /* Light Theme */
+  --bg-primary: #f7f7f7;
+  --bg-secondary: #ffffff;
+  --bg-hover: #f5f5f5;
+  --bg-tertiary: #f9f9f9;
+
+  /* Text Colors */
+  --text-primary: #2c2c2c;
+  --text-secondary: #6b6b6b;
+  --text-muted: #999999;
+  --text-light: #cccccc;
+  --text-link: #6B4423;
+
+  /* Selected Text */
+  --text-selection-bg: #d7bfae;
+  --text-selection-color: #2c2c2c;
+
+  /* Border & Divider */
+  --border-color: #d9d9d9;
+  --border-light: #e8e8e8;
+  --divider-color: #efefef;
+
+  /* Input */
+  --input-bg: #ffffff;
+  --input-border: #d9d9d9;
+  --input-focus: #6B4423;
+
+  /* Focus Ring */
+  --focus-ring: rgba(107, 68, 35, 0.1);
+
+  /* Shadows */
+  --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.15);
+
+  /* Status Colors */
+  --success: #51a853;
+  --error: #e74c3c;
+  --warning: #f39c12;
+  --info: #3498db;
+
+  /* Icon Color */
+  --icon-color: #6b6b6b;
+
+  /* Infomative Alert */
+  --alert-info-bg: #e7f3fe;
+  --alert-info-border: #b3d4fc;
+  --alert-info-text: #3178c6;
+
+  /* Alert - Success */
+  --alert-success-bg: #e8f5e9;
+  --alert-success-border: #c8e6c9;
+  --alert-success-text: #2d7a32;
+
+  /* Alert - Warning */
+  --alert-warning-bg: #fff8e1;
+  --alert-warning-border: #ffecb3;
+  --alert-warning-text: #b36b00;
+
+  /* Alert - Danger / Error */
+  --alert-danger-bg: #fdecea;
+  --alert-danger-border: #f5c6cb;
+  --alert-danger-text: #c0392b;
+
+  /* Loading Circular Progress */
+  --circular-progress-color: #6B4423;
+
+  /* Shadow */
+  --shadow-dark: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+}
+
+/* Dark Theme */
+[data-theme='dark'] {
+  /* Primary Colors from Logo - Adjusted for dark background */
+  --primary-brown: #8B6F47;
+  --primary-brown-hover: #a68659;
+  --primary-green: #4A7C5F;
+  --secondary-brown: #6B4423;
+  --accent-green: #5a9b7a;
+
+  /* Dark Theme - Nearly Black and White */
+  --bg-primary: #0f0f0f;
+  --bg-secondary: #1a1a1a;
+  --bg-hover: #252525;
+  --bg-tertiary: #1f1f1f;
+
+  /* Text Colors */
+  --text-primary: #f0f0f0;
+  --text-secondary: #b0b0b0;
+  --text-muted: #777777;
+  --text-light: #555555;
+  --text-link: #8B6F47;
+  /* Selected Text */
+  --text-selection-bg: #5a3819;
+  --text-selection-color: #f0f0f0;
+
+  /* Border & Divider */
+  --border-color: #333333;
+  --border-light: #2a2a2a;
+  --divider-color: #252525;
+
+  /* Input */
+  --input-bg: #1f1f1f;
+  --input-border: #333333;
+  --input-focus: #8B6F47;
+
+  /* Focus Ring */
+  --focus-ring: rgba(139, 111, 71, 0.2);
+
+  /* Shadows */
+  --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.5);
+
+  /* Status Colors - Dark Theme */
+  --success: #4ade80;
+  --error: #f87171;
+  --warning: #fbbf24;
+  --info: #60a5fa;
+
+  /* Icon Color */
+  --icon-color: #b0b0b0;
+
+  /* Infomative Alert */
+  --alert-info-bg: #1e3a5f;
+  --alert-info-border: #3b5998;
+  --alert-info-text: #93c5fd;
+
+  /* Alert - Success */
+  --alert-success-bg: #1a2e1a;
+  --alert-success-border: #2d4d2d;
+  --alert-success-text: #6ee788;
+
+  /* Alert - Warning */
+  --alert-warning-bg: #2e2305;
+  --alert-warning-border: #4b3b08;
+  --alert-warning-text: #f6d166;
+
+  /* Alert - Danger / Error */
+  --alert-danger-bg: #331a18;
+  --alert-danger-border: #5b2b27;
+  --alert-danger-text: #ff9a8f;
+
+  /* Loading Circular Progress */
+  --circular-progress-color: #8B6F47;
+
+  /* Shadow */
+  --shadow-dark: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+/* Smooth transitions on theme change */
+*,
+*::before,
+*::after {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Exceptions - Don't transition these */
+input:focus,
+button:active,
+a:active {
+  transition: none;
+}

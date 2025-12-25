@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices;
 
+import java.util.regex.Pattern;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,15 +36,23 @@ public class EmailAccountCreateService {
 
     private final EmailAccountRepository emailAccountRepository;
     private final EmailAccountGetService emailAccountGetService;
+    private final com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountSignatures.Services.EmailAccountSignatureCreateService emailAccountSignatureCreateService;
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+    );
+
 
     @Autowired
     public EmailAccountCreateService(
-        EmailAccountRepository emailAccountRepository, 
+        EmailAccountRepository emailAccountRepository,
         IdObfuscator idObfuscator,
-        EmailAccountGetService emailAccountGetService
+        EmailAccountGetService emailAccountGetService,
+        com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountSignatures.Services.EmailAccountSignatureCreateService emailAccountSignatureCreateService
     ) {
         this.emailAccountRepository = emailAccountRepository;
         this.emailAccountGetService = emailAccountGetService;
+        this.emailAccountSignatureCreateService = emailAccountSignatureCreateService;
     }
 
     /**
@@ -56,6 +66,18 @@ public class EmailAccountCreateService {
         log.info("Creating new email account: {}", createDTO.getName());
 
         try {
+            // Validate email format
+            if (!EMAIL_PATTERN.matcher(createDTO.getEmail()).matches()) {
+                log.warn("Invalid email format: {}", createDTO.getEmail());
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        "Invalid email format",
+                        "INVALID_EMAIL_FORMAT"
+                    )
+                );
+            }
+
             // Validate provider type
             EmailAccountProvider providerType = validateAndGetProviderType(createDTO.getProviderType());
             if (providerType == null) {
@@ -86,9 +108,21 @@ public class EmailAccountCreateService {
                 log.warn("Account name already exists: {}", createDTO.getName());
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(
-                        400, 
-                        "Account name already exists", 
+                        400,
+                        "Account name already exists",
                         "DUPLICATE_NAME"
+                    )
+                );
+            }
+
+            // Validate SSL/TLS configuration
+            if (Boolean.TRUE.equals(createDTO.getUseTls()) && Boolean.TRUE.equals(createDTO.getUseSsl())) {
+                log.warn("Invalid SSL/TLS configuration: Both TLS and SSL cannot be enabled simultaneously");
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        "Invalid SSL/TLS configuration: TLS and SSL cannot both be enabled. Please enable only one.",
+                        "INVALID_SSL_TLS_CONFIGURATION"
                     )
                 );
             }
@@ -122,13 +156,26 @@ public class EmailAccountCreateService {
 
             log.info("Email account created successfully with ID: {}", savedAccount.getId());
 
+            // Create system default signature for the new email account
+            try {
+                boolean signatureCreated = emailAccountSignatureCreateService.createSystemDefaultSignature(savedAccount);
+                if (signatureCreated) {
+                    log.info("System default signature created for email account: {}", savedAccount.getId());
+                } else {
+                    log.warn("Failed to create system default signature for email account: {}", savedAccount.getId());
+                }
+            } catch (Exception e) {
+                log.error("Error creating system default signature for email account: {}", savedAccount.getId(), e);
+                // Don't fail the account creation if signature creation fails
+            }
+
             // Create response with obfuscated ID
             EmailAccountDTO emailAccountDTO = emailAccountGetService.convertToDTO(emailAccount);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(
                 ApiResponse.success(
-                    201, 
-                    "Email account created successfully", 
+                    201,
+                    "Email account created successfully",
                     emailAccountDTO
                 )
             );

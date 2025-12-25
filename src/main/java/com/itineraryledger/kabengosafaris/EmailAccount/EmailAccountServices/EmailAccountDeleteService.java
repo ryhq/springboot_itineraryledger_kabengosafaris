@@ -13,6 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountRepository;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountSignatures.ModalEntity.EmailAccountSignature;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountSignatures.Repository.EmailAccountSignatureRepository;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountSignatures.Services.EmailAccountSignatureService;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccount;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -26,6 +29,8 @@ import lombok.extern.slf4j.Slf4j;
  * - Single or batch deletion of email accounts by obfuscated IDs
  * - Validation preventing deletion of default accounts
  * - Atomic operation: if any account in the list is default, no accounts are deleted
+ * - Deletion of associated signature files from disk
+ * - Cascade deletion of signature records (via JPA cascade rules)
  * - Response formatting with list of deleted IDs
  */
 @Service
@@ -34,13 +39,19 @@ import lombok.extern.slf4j.Slf4j;
 public class EmailAccountDeleteService {
 
     private final EmailAccountRepository emailAccountRepository;
+    private final EmailAccountSignatureRepository emailAccountSignatureRepository;
+    private final EmailAccountSignatureService emailAccountSignatureService;
     private final IdObfuscator idObfuscator;
 
     @Autowired
     public EmailAccountDeleteService(
             EmailAccountRepository emailAccountRepository,
+            EmailAccountSignatureRepository emailAccountSignatureRepository,
+            EmailAccountSignatureService emailAccountSignatureService,
             IdObfuscator idObfuscator) {
         this.emailAccountRepository = emailAccountRepository;
+        this.emailAccountSignatureRepository = emailAccountSignatureRepository;
+        this.emailAccountSignatureService = emailAccountSignatureService;
         this.idObfuscator = idObfuscator;
     }
 
@@ -108,14 +119,10 @@ public class EmailAccountDeleteService {
                     ApiResponse.error(
                             400,
                             "Cannot delete accounts: some are set as default",
-                            "CANNOT_DELETE_DEFAULT_ACCOUNTS",
-                            new ArrayList<>()
+                            "CANNOT_DELETE_DEFAULT_ACCOUNTS"
                     )
             );
         }
-
-        // All validations passed, now delete all accounts
-        List<Long> deletedIds = new ArrayList<>();
 
         for (Long id : ids) {
             try {
@@ -126,8 +133,10 @@ public class EmailAccountDeleteService {
                     continue;
                 }
 
+                // Delete all associated signature files before deleting the account
+                deleteSignatureFilesForAccount(id);
+
                 deleteEmailAccount(id);
-                deletedIds.add(id);
                 log.info("Email account deleted successfully: {}", id);
 
             } catch (Exception e) {
@@ -135,17 +144,11 @@ public class EmailAccountDeleteService {
             }
         }
 
-        // Build response with deleted IDs
-        Map<String, Object> result = new HashMap<>();
-        result.put("deletedIds", deletedIds);
-        result.put("deletedCount", deletedIds.size());
-        result.put("totalRequested", ids.size());
-
         return ResponseEntity.ok().body(
                 ApiResponse.success(
                         200,
                         "Email accounts deleted successfully",
-                        result
+                        null
                 )
         );
     }
@@ -153,5 +156,37 @@ public class EmailAccountDeleteService {
     @AuditLogAnnotation(action = "DELETE_EMAIL_ACCOUNTS", description = "Deleting email accounts", entityType = "EmailAccount", entityIdParamName = "id")
     private void deleteEmailAccount(Long id) {
         emailAccountRepository.deleteById(id);
+    }
+
+    /**
+     * Delete all signature files associated with an email account
+     * Files are deleted from disk; database records are deleted via cascade
+     *
+     * @param emailAccountId The email account ID
+     */
+    private void deleteSignatureFilesForAccount(Long emailAccountId) {
+        try {
+            // Get all signatures for this account
+            List<EmailAccountSignature> signatures = emailAccountSignatureRepository.findByEmailAccountId(emailAccountId);
+
+            // Delete each signature file from disk
+            for (EmailAccountSignature signature : signatures) {
+                try {
+                    boolean deleted = emailAccountSignatureService.deleteSignatureFile(signature.getFileName());
+                    if (deleted) {
+                        log.debug("Signature file deleted: {}", signature.getFileName());
+                    } else {
+                        log.warn("Failed to delete signature file: {}", signature.getFileName());
+                    }
+                } catch (Exception e) {
+                    log.error("Error deleting signature file: {}", signature.getFileName(), e);
+                }
+            }
+
+            log.info("Deleted {} signature files for email account: {}", signatures.size(), emailAccountId);
+
+        } catch (Exception e) {
+            log.error("Error deleting signature files for email account: {}", emailAccountId, e);
+        }
     }
 }

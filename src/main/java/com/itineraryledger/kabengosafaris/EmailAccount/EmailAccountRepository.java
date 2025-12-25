@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -28,6 +29,12 @@ public interface EmailAccountRepository extends JpaRepository<EmailAccount, Long
      * Update the default configuration flag
      * Sets all to false except the one with given id
      */
+    @Modifying
     @Query("UPDATE EmailAccount SET isDefault = false WHERE id != :id")
     void setOnlyOneDefault(@Param("id") Long id);
+
+    /**
+     * Find the first enabled and default email account ordered by creation date descending
+     */
+    Optional<EmailAccount> findFirstByEnabledTrueAndIsDefaultTrueOrderByCreatedAtDesc();
 }

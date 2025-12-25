@@ -61,6 +61,9 @@ public class SecuritySettingsGetterServices {
     @Value("${security.jwt.refresh.expiration.time.minutes:1440}")
     private long jwtRefreshExpirationMinutes;
 
+    @Value("${security.registration.jwt.expiration.time.minutes:60}")
+    private long registrationJwtExpirationMinutes;
+
     /**
      * #######################################
      * ### Login Rate Limit Configurations ###
@@ -325,6 +328,21 @@ public class SecuritySettingsGetterServices {
             return Long.parseLong(securitySetting.getSettingValue());
         } catch (NumberFormatException e) {
             return mfaJwtExpirationTimeSeconds;
+        }
+    }
+
+    public long getRegistrationJwtExpirationMinutes() {
+        SecuritySetting securitySetting = securitySettingsRepository.findBySettingKey("registration.jwt.expiration.time.minutes").orElse(null);
+        if (securitySetting == null) {
+            return registrationJwtExpirationMinutes;
+        }
+        if (securitySetting.getActive() == false) {
+            return registrationJwtExpirationMinutes;
+        }
+        try {
+            return Long.parseLong(securitySetting.getSettingValue());
+        } catch (NumberFormatException e) {
+            return registrationJwtExpirationMinutes;
         }
     }
     

@@ -174,7 +174,13 @@ public class EmailAccountController {
      * @param providerType Filter by provider type as integer (optional)
      *                     1=GMAIL, 2=OUTLOOK, 3=SENDGRID, 4=MAILGUN, 5=AWS_SES, 6=CUSTOM
      * @param smtpHost Filter by SMTP host partial match (optional)
+     * @param smtpPort Filter by SMTP port (optional)
      * @param hasErrors Filter by error status (optional)
+     * @param description Filter by description partial match (optional)
+     * @param useTls Filter by TLS enabled status (optional)
+     * @param useSsl Filter by SSL enabled status (optional)
+     * @param smtpUsername Filter by SMTP username partial match (optional)
+     * @param errorMessage Filter by error message partial match (optional)
      * @param sortDir Sort direction: "asc" or "desc", default: "desc"
      * @return ResponseEntity with paginated email accounts or validation error
      *
@@ -191,7 +197,13 @@ public class EmailAccountController {
         @RequestParam(required = false) String name,
         @RequestParam(required = false) Integer providerType,
         @RequestParam(required = false) String smtpHost,
+        @RequestParam(required = false) Integer smtpPort,
         @RequestParam(required = false) Boolean hasErrors,
+        @RequestParam(required = false) String description,
+        @RequestParam(required = false) Boolean useTls,
+        @RequestParam(required = false) Boolean useSsl,
+        @RequestParam(required = false) String smtpUsername,
+        @RequestParam(required = false) String errorMessage,
         @RequestParam(required = false) String sortDir
     ) {
         return emailAccountGetService.getAllEmailAccounts(
@@ -203,7 +215,13 @@ public class EmailAccountController {
             name,
             providerType != null ? providerType : 0,
             smtpHost,
+            smtpPort,
             hasErrors,
+            description,
+            useTls,
+            useSsl,
+            smtpUsername,
+            errorMessage,
             sortDir
         );
     }

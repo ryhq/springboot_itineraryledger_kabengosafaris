@@ -7,7 +7,8 @@ package com.itineraryledger.kabengosafaris.Security;
 public enum TokenType {
     ACCESS("access"),      // Can access any endpoint
     REFRESH("refresh"),    // Only for obtaining new access tokens
-    MFA("mfa");            // Only for MFA verification
+    MFA("mfa"),            // Only for MFA verification
+    REGISTRATION("registration"); // Only for user registration account activation
 
     private final String type;
 

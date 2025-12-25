@@ -37,6 +37,9 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
     @Value("${security.mfa.jwt.expiration.time.seconds:180}")
     private Long mfaJwtExpirationTimeSeconds;
 
+    @Value("${security.registration.jwt.expiration.time.minutes:60}")
+    private long registrationJwtExpirationMinutes;
+
     @Value("${security.jwt.refresh.expiration.time.minutes:10080}")
     private Long jwtRefreshExpirationTimeMinutes;
 
@@ -144,6 +147,15 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
                 String.valueOf(mfaJwtExpirationTimeSeconds),
                 SettingDataType.LONG,
                 "MFA JWT token expiration time in seconds",
+                SecuritySetting.Category.JWT,
+                false
+        );
+
+        createOrUpdateSetting(
+                "registration.jwt.expiration.time.minutes",
+                String.valueOf(registrationJwtExpirationMinutes),
+                SettingDataType.LONG,
+                "Registration JWT token expiration time in minutes. This token is only sent in user's registration email to allow them to activate their account.",
                 SecuritySetting.Category.JWT,
                 false
         );

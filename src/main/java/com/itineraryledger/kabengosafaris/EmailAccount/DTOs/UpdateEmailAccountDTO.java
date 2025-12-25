@@ -106,4 +106,9 @@ public class UpdateEmailAccountDTO {
      */
     @Min(value = 1, message = "Retry delay must be at least 1 second")
     private Integer retryDelaySeconds;
+
+    /**
+     * Whether to include signature in all emails sent from this account (optional)
+     */
+    private Boolean includeSignatureByDefault;
 }

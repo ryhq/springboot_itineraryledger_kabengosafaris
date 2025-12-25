@@ -1,9 +1,12 @@
 package com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountSignatures.ModalEntity.EmailAccountSignature;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -173,6 +176,22 @@ public class EmailAccount {
     private LocalDateTime updatedAt;
 
     /**
+     * One-to-Many relationship with EmailSignature
+     * When an email account is deleted, all associated signatures are also deleted
+     * FetchType.LAZY ensures signatures are not loaded by default
+     * CascadeType.ALL ensures cascading delete, persist, update operations
+     */
+    @OneToMany(mappedBy = "emailAccount", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<EmailAccountSignature> signatures;
+
+    /**
+     * Whether to include signature in all emails sent from this account if the signature is present
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean includeSignatureByDefault = true;
+
+    /**
      * Created by user (optional - for audit trail)
      */
     private String createdBy;
@@ -193,6 +212,7 @@ public class EmailAccount {
         if (this.retryDelaySeconds == null) this.retryDelaySeconds = 5;
         if (this.emailsSentCount == null) this.emailsSentCount = 0L;
         if (this.emailsFailedCount == null) this.emailsFailedCount = 0L;
+        if (this.includeSignatureByDefault == null) this.includeSignatureByDefault = true;
     }
 
     @Override
@@ -205,6 +225,7 @@ public class EmailAccount {
                 ", enabled=" + enabled +
                 ", isDefault=" + isDefault +
                 ", providerType=" + providerType +
+                ", includeSignatureByDefault=" + includeSignatureByDefault +
                 ", emailsSentCount=" + emailsSentCount +
                 ", emailsFailedCount=" + emailsFailedCount +
                 '}';

@@ -1,5 +1,8 @@
 package com.itineraryledger.kabengosafaris.User.Services.RegistrationServices;
 
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices.EmailSendingService;
+import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailTemplateRenderer;
+import com.itineraryledger.kabengosafaris.Security.JwtTokenProvider;
 import com.itineraryledger.kabengosafaris.Security.PasswordHasher;
 import com.itineraryledger.kabengosafaris.Security.PasswordValidator;
 import com.itineraryledger.kabengosafaris.Security.SecuritySettings.SecuritySettingsGetterServices;
@@ -8,10 +11,16 @@ import com.itineraryledger.kabengosafaris.User.UserRepository;
 import com.itineraryledger.kabengosafaris.User.DTOs.RegistrationRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service for handling user registration with comprehensive validation.
@@ -19,8 +28,10 @@ import java.util.regex.Pattern;
  * - Enforces password policy from database via PasswordValidator
  * - Prevents duplicate email/username registration
  * - Hashes passwords using BCrypt
+ * - Sends registration email asynchronously with activation link
  */
 @Service
+@Slf4j
 public class RegistrationServices {
 
     @Autowired
@@ -31,6 +42,18 @@ public class RegistrationServices {
 
     @Autowired
     private SecuritySettingsGetterServices securitySettingsGetterServices;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private EmailTemplateRenderer emailTemplateRenderer;
+
+    @Autowired
+    private EmailSendingService emailSendingService;
+
+    @Value("${app.base.url}")
+    private String appBaseUrl;
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
             "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
@@ -56,8 +79,10 @@ public class RegistrationServices {
             throw new RegistrationException("Username already exists");
         }
 
-        if (userRepository.findByPhoneNumber(request.getPhoneNumber()).isPresent()) {
-            throw new RegistrationException("Phone already exists");
+        if (request.getPhoneNumber() != null) {
+            if (userRepository.findByPhoneNumber(request.getPhoneNumber()).isPresent()) {
+                throw new RegistrationException("Phone already exists");
+            }
         }
 
         // Validate password policy using database settings
@@ -94,8 +119,72 @@ public class RegistrationServices {
             // User will have no expiration date in this case
         }
 
-        // Save and return the user
-        return userRepository.save(user);
+        // Save the user
+        User savedUser = userRepository.save(user);
+
+        // Send registration email with activation link (asynchronously)
+        // Note: This runs in the background and won't block the registration response
+        // Any email sending errors will be logged but won't fail the registration
+        sendRegistrationEmail(savedUser);
+
+        return savedUser;
+    }
+
+    /**
+     * Send registration email with activation token and link
+     * This method is called asynchronously to avoid blocking the registration process
+     *
+     * @param user The newly registered user
+     */
+    private void sendRegistrationEmail(User user) {
+        try {
+            log.info("Preparing to send registration email to user: {} ({})", user.getUsername(), user.getEmail());
+
+            // Generate activation token
+            String activationToken = jwtTokenProvider.generateRegistrationTokenFromUsername(user.getUsername());
+
+            // Build activation link
+            String activationLink = appBaseUrl + "/api/auth/activate?token=" + activationToken;
+
+            // Calculate expiration time
+            Long expirationMinutes = securitySettingsGetterServices.getRegistrationJwtExpirationMinutes();
+            LocalDateTime expirationDateTime = LocalDateTime.now().plusMinutes(expirationMinutes);
+            Long expirationHours = expirationMinutes / 60;
+
+            log.debug("Activation link generated for user {}: {} (expires in {} hours)",
+                user.getUsername(), activationLink, expirationHours);
+
+            // Prepare template variables
+            Map<String, String> variables = new HashMap<>();
+            variables.put("username", user.getUsername());
+            variables.put("email", user.getEmail());
+            variables.put("firstName", user.getFirstName());
+            variables.put("lastName", user.getLastName());
+            variables.put("phoneNumber", user.getPhoneNumber() != null ? user.getPhoneNumber() : "");
+            variables.put("enabled", String.valueOf(user.getEnabled()));
+            variables.put("accountLocked", String.valueOf(user.getAccountLocked()));
+            variables.put("createdAt", user.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            variables.put("activationToken", activationToken);
+            variables.put("activationLink", activationLink);
+            variables.put("expirationHours", String.valueOf(expirationHours));
+            variables.put("expirationDateTime", expirationDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+
+            // Render template
+            String htmlContent = emailTemplateRenderer.renderTemplate("USER_REGISTRATION", variables);
+
+            // Send email (this will run asynchronously)
+            emailSendingService.sendHtmlEmail(
+                user.getEmail(),
+                "Welcome to Kabengosafaris - Activate Your Account",
+                htmlContent
+            );
+
+            log.info("Registration email queued for sending to: {}", user.getEmail());
+
+        } catch (Exception e) {
+            // Log error but don't throw - email sending is async and shouldn't fail registration
+            log.error("Failed to send registration email to user: {} ({})", user.getUsername(), user.getEmail(), e);
+        }
     }
 
     /**

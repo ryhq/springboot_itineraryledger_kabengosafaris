@@ -6,9 +6,11 @@ import java.util.Properties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.mail.javamail.MimeMessageHelper;
+
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,12 +84,23 @@ public class EmailAccountTestService {
     private ResponseEntity<ApiResponse<?>> testEmailAccount(Long id) {
         EmailAccount emailAccount = emailAccountRepository.findById(id).orElse(null);
 
-        if (emailAccount  == null) {
+        if (emailAccount == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 ApiResponse.error(
-                    404, 
-                    "Email already exists", 
-                    "EMAIL_NOT_FOUND"
+                    404,
+                    "Email account not found",
+                    "EMAIL_ACCOUNT_NOT_FOUND"
+                )
+            );
+        }
+
+        if (Boolean.TRUE.equals(emailAccount.getEnabled())) {
+            log.warn("Cannot test connection for already enabled account: {}", id);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(
+                    400,
+                    "Email account is already enabled and tested. Disable the account first to re-test the connection.",
+                    "ACCOUNT_ALREADY_TESTED"
                 )
             );
         }
@@ -119,22 +132,31 @@ public class EmailAccountTestService {
         // Build response
         EmailAccountDTO emailAccountDTO = emailAccountGetService.convertToDTO(updated);
 
-        String message = testPassed ?
-                "Email account connection test passed successfully. Account enabled." :
-                "Email account connection test failed. Please check the error message.";
-
-        return ResponseEntity.ok().body(
-            ApiResponse.success(
-                200, 
-                message, 
-                emailAccountDTO
-            )
-        );
+        if (testPassed) {
+            log.info("SMTP test passed and account enabled for: {}", emailAccount.getName());
+            return ResponseEntity.ok().body(
+                ApiResponse.success(
+                    200,
+                    "Email account connection test passed successfully. Account enabled.",
+                    emailAccountDTO
+                )
+            );
+        } else {
+            log.error("SMTP test failed for account: {} - {}", emailAccount.getName(), emailAccount.getLastErrorMessage());
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(
+                    400,
+                    "Email account connection test failed. " + emailAccount.getLastErrorMessage(),
+                    "SMTP_TEST_FAILED"
+                )
+            );
+        }
     }
 
     /**
      * Test SMTP connection with retry logic
      * Respects maxRetryAttempts and retryDelaySeconds settings
+     * Saves error messages to database immediately on failure
      *
      * @param emailAccount The email account to test
      * @return true if connection successful, false otherwise
@@ -152,23 +174,38 @@ public class EmailAccountTestService {
                 // Create mail sender with account configuration
                 JavaMailSender mailSender = createMailSender(emailAccount);
 
-                // Send test email
-                SimpleMailMessage testMessage = new SimpleMailMessage();
-                testMessage.setFrom(emailAccount.getEmail());
-                testMessage.setTo(emailAccount.getEmail()); // Send to self for testing
-                testMessage.setSubject("Test Email - Do Not Reply");
-                testMessage.setText("This is a test email to verify SMTP configuration for: " + emailAccount.getName() + "\n\nTimestamp: " + LocalDateTime.now());
-                mailSender.send(testMessage);
+                // Send test email with display name
+                MimeMessage mimeMessage = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+                // Set from address with display name
+                helper.setFrom(emailAccount.getEmail(), emailAccount.getName());
+                helper.setTo(emailAccount.getEmail()); // Send to self for testing
+                helper.setSubject("Test Email - Do Not Reply");
+                helper.setText("This is a test email to verify SMTP configuration for: " + emailAccount.getName() + "\n\nTimestamp: " + LocalDateTime.now());
+
+                mailSender.send(mimeMessage);
 
                 log.info("SMTP test succeeded on attempt {}/{} for account: {}", attempt, maxRetries, emailAccount.getName());
                 return true;
 
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
+                // Fail fast for configuration/decryption errors - these won't be fixed by retrying
+                if (e.getMessage() != null && e.getMessage().contains("Decryption failed")) {
+                    log.error("Decryption failed for account password. Account configuration may be corrupted: {}", emailAccount.getName(), e);
+                    emailAccount.setLastErrorMessage("Decryption failed: Unable to decrypt SMTP password. Account configuration may be corrupted.");
+                    emailAccount.setLastTestedAt(LocalDateTime.now());
+                    emailAccountRepository.save(emailAccount);
+                    return false;
+                }
+
                 log.warn("SMTP test attempt {}/{} failed for account: {} - {}", attempt, maxRetries, emailAccount.getName(), e.getMessage());
 
                 // Store error message for the last attempt
                 if (attempt == maxRetries) {
                     emailAccount.setLastErrorMessage("SMTP test failed after " + maxRetries + " attempts: " + e.getMessage());
+                    emailAccount.setLastTestedAt(LocalDateTime.now());
+                    emailAccountRepository.save(emailAccount);
                     log.error("All retry attempts exhausted for account: {}", emailAccount.getName(), e);
                 } else if (attempt < maxRetries) {
                     // Wait before retrying
@@ -178,6 +215,31 @@ public class EmailAccountTestService {
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         emailAccount.setLastErrorMessage("SMTP test interrupted: " + ie.getMessage());
+                        emailAccount.setLastTestedAt(LocalDateTime.now());
+                        emailAccountRepository.save(emailAccount);
+                        log.error("Test interrupted for account: {}", emailAccount.getName(), ie);
+                        return false;
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("SMTP test attempt {}/{} failed for account: {} - {}", attempt, maxRetries, emailAccount.getName(), e.getMessage());
+
+                // Store error message for the last attempt
+                if (attempt == maxRetries) {
+                    emailAccount.setLastErrorMessage("SMTP test failed after " + maxRetries + " attempts: " + e.getMessage());
+                    emailAccount.setLastTestedAt(LocalDateTime.now());
+                    emailAccountRepository.save(emailAccount);
+                    log.error("All retry attempts exhausted for account: {}", emailAccount.getName(), e);
+                } else if (attempt < maxRetries) {
+                    // Wait before retrying
+                    try {
+                        log.debug("Waiting {} seconds before retry attempt {}", retryDelaySeconds, attempt + 1);
+                        Thread.sleep(retryDelaySeconds * 1000L);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        emailAccount.setLastErrorMessage("SMTP test interrupted: " + ie.getMessage());
+                        emailAccount.setLastTestedAt(LocalDateTime.now());
+                        emailAccountRepository.save(emailAccount);
                         log.error("Test interrupted for account: {}", emailAccount.getName(), ie);
                         return false;
                     }

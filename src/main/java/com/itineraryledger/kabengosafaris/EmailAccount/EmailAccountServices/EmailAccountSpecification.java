@@ -1,7 +1,5 @@
 package com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices;
 
-import java.time.LocalDateTime;
-
 import org.springframework.data.jpa.domain.Specification;
 
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccount;
@@ -100,85 +98,6 @@ public class EmailAccountSpecification {
     }
 
     /**
-     * Filter accounts created after a specific date
-     */
-    public static Specification<EmailAccount> createdAfter(LocalDateTime dateTime) {
-        return (root, query, cb) -> {
-            if (dateTime == null) {
-                return cb.conjunction();
-            }
-            return cb.greaterThanOrEqualTo(root.get("createdAt"), dateTime);
-        };
-    }
-
-    /**
-     * Filter accounts created before a specific date
-     */
-    public static Specification<EmailAccount> createdBefore(LocalDateTime dateTime) {
-        return (root, query, cb) -> {
-            if (dateTime == null) {
-                return cb.conjunction();
-            }
-            return cb.lessThanOrEqualTo(root.get("createdAt"), dateTime);
-        };
-    }
-
-    /**
-     * Filter accounts updated after a specific date
-     */
-    public static Specification<EmailAccount> updatedAfter(LocalDateTime dateTime) {
-        return (root, query, cb) -> {
-            if (dateTime == null) {
-                return cb.conjunction();
-            }
-            return cb.greaterThanOrEqualTo(root.get("updatedAt"), dateTime);
-        };
-    }
-
-    /**
-     * Filter accounts updated before a specific date
-     */
-    public static Specification<EmailAccount> updatedBefore(LocalDateTime dateTime) {
-        return (root, query, cb) -> {
-            if (dateTime == null) {
-                return cb.conjunction();
-            }
-            return cb.lessThanOrEqualTo(root.get("updatedAt"), dateTime);
-        };
-    }
-
-    /**
-     * Filter by creation user (case-insensitive)
-     */
-    public static Specification<EmailAccount> createdByLike(String createdBy) {
-        return (root, query, cb) -> {
-            if (createdBy == null || createdBy.isEmpty()) {
-                return cb.conjunction();
-            }
-            return cb.like(cb.lower(root.get("createdBy")), "%" + createdBy.toLowerCase() + "%");
-        };
-    }
-
-    /**
-     * Filter by update user (case-insensitive)
-     */
-    public static Specification<EmailAccount> updatedByLike(String updatedBy) {
-        return (root, query, cb) -> {
-            if (updatedBy == null || updatedBy.isEmpty()) {
-                return cb.conjunction();
-            }
-            return cb.like(cb.lower(root.get("updatedBy")), "%" + updatedBy.toLowerCase() + "%");
-        };
-    }
-
-    /**
-     * Filter accounts that have been tested (lastTestedAt is not null)
-     */
-    public static Specification<EmailAccount> hasBeeenTested() {
-        return (root, query, cb) -> cb.isNotNull(root.get("lastTestedAt"));
-    }
-
-    /**
      * Filter accounts that have errors (lastErrorMessage is not null)
      */
     public static Specification<EmailAccount> hasErrors() {
@@ -186,26 +105,62 @@ public class EmailAccountSpecification {
     }
 
     /**
-     * Filter accounts with minimum emails sent
+     * Filter by description (case-insensitive)
      */
-    public static Specification<EmailAccount> emailsSentGreaterThan(Long count) {
+    public static Specification<EmailAccount> descriptionLike(String description) {
         return (root, query, cb) -> {
-            if (count == null) {
+            if (description == null || description.isEmpty()) {
                 return cb.conjunction();
             }
-            return cb.greaterThanOrEqualTo(root.get("emailsSentCount"), count);
+            return cb.like(cb.lower(root.get("description")), "%" + description.toLowerCase() + "%");
         };
     }
 
     /**
-     * Filter accounts with minimum failed emails
+     * Filter by TLS enabled status
      */
-    public static Specification<EmailAccount> emailsFailedGreaterThan(Long count) {
+    public static Specification<EmailAccount> useTls(Boolean useTls) {
         return (root, query, cb) -> {
-            if (count == null) {
+            if (useTls == null) {
                 return cb.conjunction();
             }
-            return cb.greaterThanOrEqualTo(root.get("emailsFailedCount"), count);
+            return cb.equal(root.get("useTls"), useTls);
+        };
+    }
+
+    /**
+     * Filter by SSL enabled status
+     */
+    public static Specification<EmailAccount> useSsl(Boolean useSsl) {
+        return (root, query, cb) -> {
+            if (useSsl == null) {
+                return cb.conjunction();
+            }
+            return cb.equal(root.get("useSsl"), useSsl);
+        };
+    }
+
+    /**
+     * Filter by error message (case-insensitive)
+     */
+    public static Specification<EmailAccount> errorMessageLike(String errorMessage) {
+        return (root, query, cb) -> {
+            if (errorMessage == null || errorMessage.isEmpty()) {
+                return cb.conjunction();
+            }
+            return cb.like(cb.lower(root.get("lastErrorMessage")), "%" + errorMessage.toLowerCase() + "%");
+        };
+    }
+
+    /**
+     * Filter accounts by SMTP username (case-insensitive)
+     */
+    public static Specification<EmailAccount> smtpUsernameLike(String username) {
+        return (root, query, cb) -> {
+            if (username == null || username.isEmpty()) {
+                return cb.conjunction();
+            }
+            return cb.like(cb.lower(root.get("smtpUsername")), "%" + username.toLowerCase() + "%");
         };
     }
 }
