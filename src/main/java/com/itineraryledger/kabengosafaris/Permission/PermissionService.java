@@ -1,203 +1,258 @@
 package com.itineraryledger.kabengosafaris.Permission;
 
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
-import lombok.RequiredArgsConstructor;
+import com.itineraryledger.kabengosafaris.Permission.DTOs.PermissionDTO;
+import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * PermissionService - Manages granular permission definitions
+ * PermissionService - Service for managing permissions
  *
- * This service handles all CRUD operations for permissions (e.g., "create_booking", "view_reports").
- * Each permission combines:
- * - Action type (CREATE, READ, UPDATE, DELETE, etc.)
- * - Resource type (Booking, Report, User, etc.)
- * - Category (Booking, Reporting, User Management, etc.)
- *
- * Key Responsibilities:
- * - Create permissions with validation
- * - Query permissions by resource and action
- * - Deactivate permissions
- * - Manage permission lifecycle
+ * This service provides methods to:
+ * - Get all permissions with pagination, filtering, and sorting
+ * - Get a single permission by ID
+ * - Toggle permission active status
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class PermissionService {
 
     private final PermissionRepository permissionRepository;
-    private final PermissionActionService actionService;
+    private final IdObfuscator idObfuscator;
+
+    @Autowired
+    public PermissionService(PermissionRepository permissionRepository, IdObfuscator idObfuscator) {
+        this.permissionRepository = permissionRepository;
+        this.idObfuscator = idObfuscator;
+    }
 
     /**
-     * Create a new permission with validation
-     * Validates that:
-     * - Permission name doesn't already exist
-     * - Action code exists in database
+     * Get all permissions with pagination, filtering, and sorting
      *
-     * @param name unique permission identifier (e.g., "create_booking")
-     * @param description human-readable description
-     * @param category module/entity category (e.g., "Booking", "User")
-     * @param actionCode action type code (must exist in permission_action_types table)
-     * @param resource resource/document type (e.g., "Booking", "Report")
-     * @return the created Permission
-     * @throws IllegalArgumentException if name exists or action code invalid
+     * @param page Page number (0-based)
+     * @param size Page size
+     * @param name Filter by permission name (partial match)
+     * @param entity Filter by entity (partial match)
+     * @param action Filter by permission action
+     * @param active Filter by active status
+     * @param sortDir Sort direction ("asc" or "desc")
+     * @return ResponseEntity with paginated results or validation error
      */
-    @Transactional
-    @AuditLogAnnotation(action = "CREATE_PERMISSION", entityType = "Permission", description = "Create a new permission")
-    public Permission createPermission(String name, String description, String category,
-                                       String actionCode, String resource) {
-        // Validate permission name doesn't exist
-        if (permissionRepository.existsByName(name)) {
-            log.warn("Permission already exists: {}", name);
-            throw new IllegalArgumentException("Permission name already exists: " + name);
+    public ResponseEntity<?> getAllPermissions(
+        int page,
+        int size,
+        String name,
+        String entity,
+        PermissionAction action,
+        Boolean active,
+        String sortDir
+    ) {
+
+        log.debug("Fetching permissions with filters - page: {}, size: {}, name: {}, entity: {}, " +
+                "action: {}, active: {}, sortDir: {}",
+                page, size, name, entity, action, active, sortDir);
+
+        // Validate pagination parameters
+        if (page < 0) {
+            log.warn("Invalid page number: {}", page);
+            return ResponseEntity.badRequest().body("Page number cannot be negative");
+        }
+        if (size <= 0) {
+            log.warn("Invalid page size: {}", size);
+            return ResponseEntity.badRequest().body("Page size must be greater than 0");
         }
 
-        // Validate action code exists and is active
-        PermissionActionType action = actionService.getActionByCode(actionCode)
-            .orElseThrow(() -> {
-                log.warn("Invalid action code: {}", actionCode);
-                return new IllegalArgumentException("Action code not found: " + actionCode);
-            });
-
-        if (!action.getActive()) {
-            log.warn("Cannot create permission with inactive action: {}", actionCode);
-            throw new IllegalArgumentException("Action type is inactive: " + actionCode);
+        // Setup sorting
+        Sort.Direction direction = Sort.Direction.DESC;
+        if ("asc".equalsIgnoreCase(sortDir)) {
+            direction = Sort.Direction.ASC;
         }
 
-        // Create permission
-        Permission permission = Permission.builder()
-            .name(name)
-            .description(description)
-            .category(category)
-            .actionType(action)
-            .resource(resource)
-            .active(true)
-            .build();
+        Pageable paging = PageRequest.of(
+            page,
+            size,
+            Sort.by(direction, "createdAt")
+        );
 
-        Permission saved = permissionRepository.save(permission);
-        log.info("Created permission: name={}, action={}, resource={}", name, actionCode, resource);
-        return saved;
+        // Build dynamic specification
+        Specification<Permission> specification = Specification.unrestricted();
+
+        if (name != null && !name.isBlank()) {
+            specification = specification.and(PermissionSpecification.nameLike(name));
+        }
+
+        if (entity != null && !entity.isBlank()) {
+            specification = specification.and(PermissionSpecification.entityLike(entity));
+        }
+
+        if (action != null) {
+            specification = specification.and(PermissionSpecification.hasAction(action));
+        }
+
+        if (active != null) {
+            specification = specification.and(PermissionSpecification.isActive(active));
+        }
+
+        // Execute query with specifications
+        Page<Permission> pagedPermissions = permissionRepository.findAll(specification, paging);
+
+        // Convert to DTOs
+        List<PermissionDTO> permissionDTOs = getPermissionDTOs(pagedPermissions.getContent());
+
+        // Build response
+        Map<String, Object> response = new HashMap<>();
+        response.put("permissions", permissionDTOs);
+        response.put("currentPage", pagedPermissions.getNumber());
+        response.put("totalItems", pagedPermissions.getTotalElements());
+        response.put("totalPages", pagedPermissions.getTotalPages());
+
+        log.info("Successfully fetched {} permissions on page {}", permissionDTOs.size(), page);
+        return ResponseEntity.ok(
+            ApiResponse.success(
+                200,
+                "Successfully retrieved permissions.",
+                response
+            )
+        );
     }
 
     /**
-     * Get all permissions for a specific resource and action combination
+     * Get a single permission by obfuscated ID
      *
-     * @param resource resource type (e.g., "Booking")
-     * @param actionCode action code (e.g., "create")
-     * @return list of matching active permissions
+     * @param idObfuscated The obfuscated permission ID
+     * @return ResponseEntity with ApiResponse containing permission or error
      */
-    @Transactional(readOnly = true)
-    public List<Permission> getPermissionsForResourceAndAction(String resource, String actionCode) {
-        return permissionRepository.findAll().stream()
-            .filter(p -> p.getResource().equalsIgnoreCase(resource) &&
-                        p.getActionType() != null &&
-                        p.getActionType().getCode().equalsIgnoreCase(actionCode) &&
-                        p.getActive())
-            .collect(Collectors.toList());
+    public ResponseEntity<ApiResponse<?>> getPermission(String idObfuscated) {
+        try {
+            // Decode obfuscated ID
+            Long id = idObfuscator.decodeId(idObfuscated);
+
+            Permission permission = permissionRepository.findById(id).orElse(null);
+
+            if (permission == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(
+                        404,
+                        "Permission not found",
+                        "RESOURCE_NOT_FOUND"
+                    )
+                );
+            }
+
+            return ResponseEntity.ok(
+                ApiResponse.success(
+                    200,
+                    "Successfully retrieved permission.",
+                    convertToDTO(permission)
+                )
+            );
+
+        } catch (Exception e) {
+            log.error("Error getting permission", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(
+                    500,
+                    "Failed to get permission",
+                    "GET_PERMISSION_FAILED"
+                )
+            );
+        }
     }
 
     /**
-     * Get all active permissions for a category
+     * Toggle permission active status
      *
-     * @param category category name (e.g., "Booking")
-     * @return list of active permissions in category
-     */
-    @Transactional(readOnly = true)
-    public List<Permission> getPermissionsByCategory(String category) {
-        return permissionRepository.findByCategory(category).stream()
-            .filter(Permission::getActive)
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * Get all active permissions for a resource
-     *
-     * @param resource resource type
-     * @return list of active permissions for resource
-     */
-    @Transactional(readOnly = true)
-    public List<Permission> getPermissionsByResource(String resource) {
-        return permissionRepository.findByResource(resource).stream()
-            .filter(Permission::getActive)
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * Deactivate a permission (soft delete)
-     * Inactive permissions can be reactivated later
-     *
-     * @param id permission ID to deactivate
-     * @return the deactivated Permission
+     * @param idObfuscated The obfuscated permission ID
+     * @return ResponseEntity with ApiResponse containing updated permission or error
      */
     @Transactional
-    @AuditLogAnnotation(action = "DEACTIVATE_PERMISSION", entityType = "Permission", entityIdParamName = "id", description = "Deactivate a permission")
-    public Permission deactivatePermission(Long id) {
-        Permission permission = permissionRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Permission not found with ID: " + id));
+    public ResponseEntity<ApiResponse<?>> togglePermissionActiveStatus(String idObfuscated) {
+        try {
+            // Decode obfuscated ID
+            Long id = idObfuscator.decodeId(idObfuscated);
 
-        permission.setActive(false);
-        Permission updated = permissionRepository.save(permission);
-        log.info("Deactivated permission: name={}", permission.getName());
-        return updated;
+            Permission permission = permissionRepository.findById(id).orElse(null);
+
+            if (permission == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(
+                        404,
+                        "Permission not found",
+                        "RESOURCE_NOT_FOUND"
+                    )
+                );
+            }
+
+            // Toggle active status
+            boolean newStatus = !permission.getActive();
+            permission.setActive(newStatus);
+            permissionRepository.save(permission);
+
+            log.info("Toggled permission {} active status to {}", permission.getName(), newStatus);
+
+            return ResponseEntity.ok(
+                ApiResponse.success(
+                    200,
+                    "Successfully toggled permission active status to " + newStatus,
+                    convertToDTO(permission)
+                )
+            );
+
+        } catch (Exception e) {
+            log.error("Error toggling permission active status", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(
+                    500,
+                    "Failed to toggle permission active status",
+                    "TOGGLE_PERMISSION_FAILED"
+                )
+            );
+        }
     }
 
     /**
-     * Reactivate a permission
+     * Convert list of Permission entities to PermissionDTOs with obfuscated IDs
      *
-     * @param id permission ID to reactivate
-     * @return the reactivated Permission
+     * @param permissions The entities to convert
+     * @return List of PermissionDTO with obfuscated IDs
      */
-    @Transactional
-    @AuditLogAnnotation(action = "REACTIVATE_PERMISSION", entityType = "Permission", entityIdParamName = "id", description = "Reactivate a permission")
-    public Permission reactivatePermission(Long id) {
-        Permission permission = permissionRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Permission not found with ID: " + id));
-
-        permission.setActive(true);
-        Permission updated = permissionRepository.save(permission);
-        log.info("Reactivated permission: name={}", permission.getName());
-        return updated;
+    private List<PermissionDTO> getPermissionDTOs(List<Permission> permissions) {
+        return permissions.stream().map(this::convertToDTO).toList();
     }
 
     /**
-     * Check if a user has a specific permission
-     * This is a convenience method - actual checking is done in User.hasPermission()
+     * Convert Permission entity to PermissionDTO with obfuscated ID
      *
-     * @param permissionName permission name to check
-     * @return true if permission exists and is active
+     * @param permission The entity to convert
+     * @return PermissionDTO with obfuscated ID
      */
-    public boolean permissionExists(String permissionName) {
-        return permissionRepository.findByName(permissionName)
-            .map(Permission::getActive)
-            .orElse(false);
-    }
-
-    /**
-     * Get total count of active permissions
-     *
-     * @return count of active permissions
-     */
-    public long countActivePermissions() {
-        return permissionRepository.findByActiveTrue().size();
-    }
-
-    /**
-     * Get all permissions for an action type
-     *
-     * @param actionCode action code
-     * @return list of permissions using this action
-     */
-    @Transactional(readOnly = true)
-    public List<Permission> getPermissionsByActionCode(String actionCode) {
-        return permissionRepository.findAll().stream()
-            .filter(p -> p.getActionType() != null &&
-                        p.getActionType().getCode().equalsIgnoreCase(actionCode) &&
-                        p.getActive())
-            .collect(Collectors.toList());
+    private PermissionDTO convertToDTO(Permission permission) {
+        return PermissionDTO.builder()
+                .id(idObfuscator.encodeId(permission.getId()))
+                .name(permission.getName())
+                .description(permission.getDescription())
+                .action(permission.getAction())
+                .actionDisplayName(permission.getAction().getDisplayName())
+                .entity(permission.getEntity())
+                .active(permission.getActive())
+                .createdAt(permission.getCreatedAt())
+                .updatedAt(permission.getUpdatedAt())
+                .build();
     }
 }

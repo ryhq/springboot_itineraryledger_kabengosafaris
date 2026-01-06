@@ -2,6 +2,7 @@ package com.itineraryledger.kabengosafaris.AuditLog.AuditLogSettings;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +29,7 @@ public class AuditLogSettingController {
      * GET /api/audit-log-settings
      */
     @GetMapping
+    @PreAuthorize("hasAuthority('PERM_READ_AUDIT_LOG_SETTING')")
     public ResponseEntity<?> getAllAuditLogSettings() {
         return auditLogSettingServices.getAllAuditLogSettings();
     }
@@ -37,6 +39,7 @@ public class AuditLogSettingController {
      * PUT /api/audit-log-settings/{id}
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_AUDIT_LOG_SETTING')")
     public ResponseEntity<?> updateAuditLogSetting(
             @PathVariable("id") String id,
             @RequestBody UpdateAuditLogSettingDTO updateDTO
@@ -55,6 +58,7 @@ public class AuditLogSettingController {
      * POST /api/audit-log-settings/reset/general
      */
     @PostMapping("/reset/general")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_AUDIT_LOG_SETTING')")
     public ResponseEntity<?> resetAuditLoggingGeneralSettings() {
         return auditLogSettingServices.resetAuditLoggingGeneralSettings();
     }
@@ -70,6 +74,7 @@ public class AuditLogSettingController {
      * POST /api/audit-log-settings/reset/capture
      */
     @PostMapping("/reset/capture")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_AUDIT_LOG_SETTING')")
     public ResponseEntity<?> resetAuditLoggingCaptureSettings() {
         return auditLogSettingServices.resetAuditLoggingCaptureSettings();
     }
@@ -85,6 +90,7 @@ public class AuditLogSettingController {
      * POST /api/audit-log-settings/reset/values
      */
     @PostMapping("/reset/values")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_AUDIT_LOG_SETTING')")
     public ResponseEntity<?> resetAuditLoggingValueSettings() {
         return auditLogSettingServices.resetAuditLoggingValueSettings();
     }
@@ -100,6 +106,7 @@ public class AuditLogSettingController {
      * POST /api/audit-log-settings/reset/all
      */
     @PostMapping("/reset/all")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_AUDIT_LOG_SETTING')")
     public ResponseEntity<?> resetAllAuditLogSettings() {
         return auditLogSettingServices.resetAllAuditLogSettings();
     }

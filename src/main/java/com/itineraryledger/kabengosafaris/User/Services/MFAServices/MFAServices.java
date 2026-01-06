@@ -15,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
-import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.User.User;
 import com.itineraryledger.kabengosafaris.User.DTOs.MFABackupCodesResponse;
@@ -89,14 +88,7 @@ public class MFAServices {
     public boolean verifyCode(String secret, String code) {
         return codeVerifier.isValidCode(secret, code);
     }
-    
 
-    @AuditLogAnnotation(
-        action = "MFA_SETUP_INITIATED",
-        entityType = "User",
-        entityIdParamName = "authentication",
-        description = "User initiated MFA setup"
-    )
     public ResponseEntity<?> enableMFA(Authentication authentication) {
         try {
             // Check if user is authenticated
@@ -275,17 +267,7 @@ public class MFAServices {
             log.error("Error saving backup codes: {}", e.getMessage());
         }
     }
-
-    /**
-     * Verify and confirm MFA setup
-     * Called after user enters code from authenticator
-     */
-    @AuditLogAnnotation(
-        action = "MFA_SETUP_CONFIRMED",
-        entityType = "User",
-        entityIdParamName = "authentication",
-        description = "User confirmed MFA setup with valid code"
-    )
+    
     public ResponseEntity<?> confirmMFASetup(Authentication authentication, String code) {
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
@@ -410,17 +392,7 @@ public class MFAServices {
             );
         }
     }
-
-    /**
-     * Regenerate backup codes
-     * User must provide current MFA code to regenerate
-     */
-    @AuditLogAnnotation(
-        action = "MFA_BACKUP_CODES_REGENERATED",
-        entityType = "User",
-        entityIdParamName = "authentication",
-        description = "User regenerated MFA backup codes"
-    )
+    
     public ResponseEntity<?> regenerateBackupCodes(Authentication authentication, String code) {
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
@@ -470,17 +442,7 @@ public class MFAServices {
             );
         }
     }
-
-    /**
-     * Disable MFA for authenticated user
-     * User must provide current MFA code to disable
-     */
-    @AuditLogAnnotation(
-        action = "MFA_DISABLED",
-        entityType = "User",
-        entityIdParamName = "authentication",
-        description = "User disabled MFA authentication"
-    )
+    
     public ResponseEntity<?> disableMFA(Authentication authentication, String code) {
         try {
             if (authentication == null || !authentication.isAuthenticated()) {

@@ -1,8 +1,8 @@
 package com.itineraryledger.kabengosafaris.AuditLog.AuditLogSettings;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLog;
-import com.itineraryledger.kabengosafaris.AuditLog.AuditLogService;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
+import com.itineraryledger.kabengosafaris.AuditLog.AuditLogService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Service for managing Audit Log Settings
  * Provides methods to retrieve, update, and reset audit logging configurations
- * All updates and resets are logged using AuditLogAnnotation
+ * All updates and resets are logged using AuditLog
  */
 @Service
 @Slf4j
@@ -89,11 +89,6 @@ public class AuditLogSettingServices {
     /**
      * Get all audit log settings
      */
-    @AuditLogAnnotation(
-            action = "RETRIEVE_AUDIT_LOG_SETTINGS",
-            description = "Retrieves all audit log settings",
-            entityType = "AuditLogSetting"
-    )
     public ResponseEntity<?> getAllAuditLogSettings() {
         try {
             List<AuditLogSetting> settings = auditLogSettingRepository.findAll();
@@ -120,6 +115,17 @@ public class AuditLogSettingServices {
     /**
      * Update audit log setting by obfuscated ID
      */
+
+
+    /**
+     * Update audit log setting by ID with audit logging
+     */
+    @AuditLogAnnotation(
+            action = "UPDATE_AUDIT_LOG_SETTING",
+            description = "Updates an audit log setting by ID",
+            entityIdParamName = "obfuscatedId",
+            entityType = "AuditLogSetting"
+    )
     public ResponseEntity<?> updateAuditLogSetting(String obfuscatedId, UpdateAuditLogSettingDTO updateDTO) {
         Long id;
 
@@ -133,16 +139,6 @@ public class AuditLogSettingServices {
 
         return updateAuditLogSettingById(id, updateDTO);
     }
-
-    /**
-     * Update audit log setting by ID with audit logging
-     */
-    @AuditLogAnnotation(
-            action = "UPDATE_AUDIT_LOG_SETTING",
-            description = "Updates an audit log setting by ID",
-            entityIdParamName = "id",
-            entityType = "AuditLogSetting"
-    )
     private ResponseEntity<?> updateAuditLogSettingById(Long id, UpdateAuditLogSettingDTO updateDTO) {
         Boolean active = updateDTO.getActive();
         String settingValue = updateDTO.getSettingValue();
@@ -239,6 +235,7 @@ public class AuditLogSettingServices {
 
         if (activeChanged) {
             AuditLog log = AuditLog.builder()
+                    .name("TEMP_" + System.currentTimeMillis())
                     .userId(userId)
                     .username(username)
                     .action("UPDATE_AUDIT_LOG_SETTING_FIELD")
@@ -253,6 +250,7 @@ public class AuditLogSettingServices {
         }
         if (settingValueChanged) {
             AuditLog log = AuditLog.builder()
+                    .name("TEMP_" + System.currentTimeMillis())
                     .userId(userId)
                     .username(username)
                     .action("UPDATE_AUDIT_LOG_SETTING_FIELD")

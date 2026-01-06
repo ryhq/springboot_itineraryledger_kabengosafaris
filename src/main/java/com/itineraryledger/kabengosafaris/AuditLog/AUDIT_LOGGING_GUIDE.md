@@ -24,7 +24,7 @@ The audit logging system captures every action performed in the application, sto
 1. **AuditLog Entity** - JPA entity representing an audit log record
 2. **AuditLogRepository** - Data access layer for audit logs
 3. **AuditLogService** - Business logic for managing and querying audit logs, applies policies
-4. **AuditLogAnnotation** - Custom annotation to mark methods for logging
+4. **AuditLog** - Custom annotation to mark methods for logging
 5. **AuditLoggingAspect** - AOP aspect that intercepts annotated methods and captures context
 6. **AuditLogMaintenanceScheduler** - Scheduled tasks for automatic log cleanup/retention
 
@@ -340,7 +340,7 @@ CREATE TABLE audit_log_settings (
 | Class | Purpose |
 |-------|---------|
 | [AuditLog.java](AuditLog.java) | JPA entity for audit log records with indexed fields |
-| [AuditLogAnnotation.java](AuditLogAnnotation.java) | Custom annotation to mark methods for automatic logging |
+| [AuditLog.java](AuditLog.java) | Custom annotation to mark methods for automatic logging |
 | [AuditLoggingAspect.java](AuditLoggingAspect.java) | AOP aspect intercepting annotated methods and capturing context |
 | [AuditLogService.java](AuditLogService.java) | Service managing log storage, policy application, and cleanup |
 | [AuditLogRepository.java](AuditLogRepository.java) | JPA repository for database queries |

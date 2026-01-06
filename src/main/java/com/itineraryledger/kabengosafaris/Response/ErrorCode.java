@@ -35,6 +35,10 @@ public enum ErrorCode {
     DUPLICATE_ENTRY("DUPLICATE_ENTRY", "This entry already exists"),
     RESOURCE_ALREADY_EXISTS("RESOURCE_ALREADY_EXISTS", "Resource already exists"),
 
+    // Database Constraint Errors (400)
+    DATA_TOO_LONG("DATA_TOO_LONG", "Data exceeds maximum allowed length"),
+    FOREIGN_KEY_VIOLATION("FOREIGN_KEY_VIOLATION", "Cannot perform operation due to related records"),
+
     // Not Found Errors (404)
     RESOURCE_NOT_FOUND("RESOURCE_NOT_FOUND", "Requested resource not found"),
     USER_NOT_FOUND("USER_NOT_FOUND", "User not found"),

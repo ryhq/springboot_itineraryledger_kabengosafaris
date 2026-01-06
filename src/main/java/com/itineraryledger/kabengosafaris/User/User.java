@@ -4,12 +4,14 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.itineraryledger.kabengosafaris.Permission.Permission;
+import com.itineraryledger.kabengosafaris.Permission.PermissionAction;
 import com.itineraryledger.kabengosafaris.Role.Role;
 
 import jakarta.persistence.*;
@@ -162,19 +164,29 @@ public class User implements UserDetails {
     }
 
     /**
-     * Check if user has a specific action on a resource
-     * Database-driven: action code must exist in permission_action_types table
+     * Check if user has a specific action on an entity
+     * Example: hasPermission(PermissionAction.CREATE, "USER")
      *
-     * @param actionCode action code (e.g., "create", "read", "update", "delete")
-     * @param resource resource/document type
+     * @param action permission action (CREATE, READ, UPDATE, DELETE, etc.)
+     * @param entity entity name (USER, ROLE, EMAIL_ACCOUNT, etc.)
      * @return true if user has the permission
      */
-    public boolean hasPermission(String actionCode, String resource) {
-        return roles.stream().filter(
-            Role::getActive
-        ).anyMatch(
-            role -> role.hasPermission(actionCode, resource)
-        );
+    public boolean hasPermission(PermissionAction action, String entity) {
+        return roles.stream().filter(Role::getActive).anyMatch(role -> role.hasPermission(action, entity));
+    }
+
+    /**
+     * Get all entities this user has permissions for a specific action
+     * Example: getEntitiesForAction(PermissionAction.CREATE) returns ["USER", "ROLE", "EMAIL_ACCOUNT"]
+     *
+     * @param action permission action
+     * @return set of entity names this user can perform the action on
+     */
+    public Set<String> getEntitiesForAction(PermissionAction action) {
+        return roles.stream()
+            .filter(Role::getActive)
+            .flatMap(role -> role.getEntitiesForAction(action).stream())
+            .collect(Collectors.toSet());
     }
 
     /**

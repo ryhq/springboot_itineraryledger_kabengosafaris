@@ -19,8 +19,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.itineraryledger.kabengosafaris.Security.JwtAuthenticationFilter;
 import com.itineraryledger.kabengosafaris.Security.DynamicPermissionFilter;
 import com.itineraryledger.kabengosafaris.Security.JwtTokenProvider;
+import com.itineraryledger.kabengosafaris.EndpointPermission.EndpointPermissionService;
 import com.itineraryledger.kabengosafaris.Security.CustomUserDetailsService;
-import com.itineraryledger.kabengosafaris.Permission.EndpointPermissionService;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;

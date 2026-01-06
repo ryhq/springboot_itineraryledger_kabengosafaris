@@ -70,6 +70,15 @@ public enum PermissionAction {
         return description;
     }
 
+    /**
+     * Get display name (capitalized first letter of each word)
+     * Example: CREATE -> "Create", UPDATE -> "Update"
+     */
+    public String getDisplayName() {
+        String lowercased = code.toLowerCase();
+        return Character.toUpperCase(lowercased.charAt(0)) + lowercased.substring(1);
+    }
+
     @Override
     public String toString() {
         return code + " (" + description + ")";

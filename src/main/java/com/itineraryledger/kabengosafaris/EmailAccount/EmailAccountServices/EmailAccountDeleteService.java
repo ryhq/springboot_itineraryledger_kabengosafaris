@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -136,7 +137,8 @@ public class EmailAccountDeleteService {
                 // Delete all associated signature files before deleting the account
                 deleteSignatureFilesForAccount(id);
 
-                deleteEmailAccount(id);
+                // Use AopContext to get proxy and trigger AOP aspect
+                ((EmailAccountDeleteService) AopContext.currentProxy()).deleteEmailAccount(id);
                 log.info("Email account deleted successfully: {}", id);
 
             } catch (Exception e) {
@@ -154,7 +156,7 @@ public class EmailAccountDeleteService {
     }
 
     @AuditLogAnnotation(action = "DELETE_EMAIL_ACCOUNTS", description = "Deleting email accounts", entityType = "EmailAccount", entityIdParamName = "id")
-    private void deleteEmailAccount(Long id) {
+    public void deleteEmailAccount(Long id) {
         emailAccountRepository.deleteById(id);
     }
 

@@ -1,0 +1,93 @@
+package com.itineraryledger.kabengosafaris.Accommodation.Entities;
+
+import com.itineraryledger.kabengosafaris.Season.Season;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+/**
+ * AccommodationRate Entity - Defines pricing rates for accommodation combinations
+ *
+ * The rate is determined by the combination of:
+ * - Accommodation (the property)
+ * - Season (pricing period: high/low/peak season)
+ * - AccommodationRoomType (bed configuration: single/double/twin)
+ * - AccommodationRoomStandard (room quality: standard/deluxe/suite)
+ * - AccommodationBoardType (meal plan: room only/B&B/half board/full board)
+ *
+ * Example: "Serena Hotel + High Season + Double Room + Deluxe + Full Board = $350/night"
+ *
+ * IMPROVED from old version:
+ * - Uses self-referencing Accommodation (no separate branch entity!)
+ * - Simplified to focus on core pricing (rack rate and STO rate)
+ * - Dual pricing model for direct customers and tour operators
+ */
+@Entity
+@Table(name = "accommodation_rates", indexes = {
+    @Index(name = "idx_accommodation_rate_accommodation_id", columnList = "accommodation_id"),
+    @Index(name = "idx_accommodation_rate_season_id", columnList = "season_id"),
+    @Index(name = "idx_accommodation_rate_room_type_id", columnList = "room_type_id"),
+    @Index(name = "idx_accommodation_rate_room_standard_id", columnList = "room_standard_id"),
+    @Index(name = "idx_accommodation_rate_board_type_id", columnList = "board_type_id")
+}, uniqueConstraints = {
+    @UniqueConstraint(
+        name = "uk_accommodation_rate_combination",
+        columnNames = {"accommodation_id", "season_id", "room_type_id", "room_standard_id", "board_type_id"}
+    )
+})
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class AccommodationRate {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "accommodation_id", nullable = false)
+    private Accommodation accommodation;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "season_id", nullable = false)
+    private Season season;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "room_type_id", nullable = false)
+    private AccommodationRoomType roomType;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "room_standard_id", nullable = false)
+    private AccommodationRoomStandard roomStandard;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "board_type_id", nullable = false)
+    private AccommodationBoardType boardType;
+
+    // Core pricing information
+    @Column(name = "rack_rate", nullable = false, precision = 10, scale = 2)
+    private BigDecimal rackRate; // Public/published rate
+
+    @Column(name = "sto_rate", precision = 10, scale = 2)
+    private BigDecimal stoRate; // Special Tour Operator rate (discounted)
+
+    @Column(name = "currency", nullable = false, length = 3)
+    @Builder.Default
+    private String currency = "USD"; // ISO 4217 currency code
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+}

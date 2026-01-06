@@ -6,6 +6,7 @@ import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailEventUpdateSe
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -53,6 +54,7 @@ public class EmailEventController {
      * }
      */
     @GetMapping
+    @PreAuthorize("hasAuthority('PERM_READ_EMAIL_EVENT')")
     public ResponseEntity<ApiResponse<?>> getAllEmailEvents() {
         return emailEventGetService.getAllEmailEvents();
     }
@@ -83,6 +85,7 @@ public class EmailEventController {
      * }
      */
     @GetMapping("/{eventId}")
+    @PreAuthorize("hasAuthority('PERM_READ_EMAIL_EVENT')")
     public ResponseEntity<ApiResponse<?>> getEmailEventById(@PathVariable String eventId) {
         return emailEventGetService.getEmailEventById(eventId);
     }
@@ -121,6 +124,7 @@ public class EmailEventController {
      * }
      */
     @PutMapping("/{eventId}")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_EVENT')")
     public ResponseEntity<ApiResponse<?>> updateEmailEvent(
             @PathVariable String eventId,
             @RequestBody UpdateEmailEventDTO updateDTO) {

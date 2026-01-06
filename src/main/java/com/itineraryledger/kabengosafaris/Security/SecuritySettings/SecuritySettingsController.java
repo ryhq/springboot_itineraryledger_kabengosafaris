@@ -2,6 +2,7 @@ package com.itineraryledger.kabengosafaris.Security.SecuritySettings;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,13 +14,15 @@ public class SecuritySettingsController {
 
     @Autowired
     private SecuritySettingsServices securitySettingsServices;
-    
+
     @GetMapping
+    @PreAuthorize("hasAuthority('PERM_READ_SECURITY_SETTING')")
     public ResponseEntity<?> getAllSecuritySettings() {
         return securitySettingsServices.getAllSecuritySettings();
     }
-    
+
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_SECURITY_SETTING')")
     public ResponseEntity<?> updateSecuritySetting(
         @PathVariable("id") String id,
         @RequestBody UpdateSecuritySettingDTO updateSecuritySettingDTO
@@ -35,16 +38,19 @@ public class SecuritySettingsController {
      */
 
     @PostMapping("/reload/id-obfuscation")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_SECURITY_SETTING')")
     public ResponseEntity<?> reloadIdObfuscationConfigurations() {
         return securitySettingsServices.reloadIdObfuscationConfigurations();
     }
 
     @GetMapping("/test/id-obfuscation")
+    @PreAuthorize("hasAuthority('PERM_READ_SECURITY_SETTING')")
     public ResponseEntity<?> testIdObfuscationConfigurations() {
         return securitySettingsServices.testIdObfuscationConfigurations();
     }
 
     @PostMapping("/reset/id-obfuscation")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_SECURITY_SETTING')")
     public ResponseEntity<?> resetIdObfuscationConfigurations() {
         return securitySettingsServices.resetIdObfuscationConfigurations();
     }
@@ -55,6 +61,7 @@ public class SecuritySettingsController {
      * ═════════════════════════════════════════════════════════════════════════
      */
     @PostMapping("/reset/password-policy")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_SECURITY_SETTING')")
     public ResponseEntity<?> resetPasswordPolicyConfigurations() {
         return securitySettingsServices.resetPasswordPolicyConfigurations();
     }
@@ -66,11 +73,13 @@ public class SecuritySettingsController {
      */
 
     @PostMapping("/reload/jwt-token")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_SECURITY_SETTING')")
     public ResponseEntity<?> reloadJwtTokenConfigurations() {
         return securitySettingsServices.reloadJwtTokenConfigurations();
     }
 
     @PostMapping("/reset/jwt-token")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_SECURITY_SETTING')")
     public ResponseEntity<?> resetJwtTokenConfigurations() {
         return securitySettingsServices.resetJwtTokenConfigurations();
     }
@@ -82,6 +91,7 @@ public class SecuritySettingsController {
      */
 
     @PostMapping("/reset/login-rate-limit")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_SECURITY_SETTING')")
     public ResponseEntity<?> resetLoginRateLimitConfigurations() {
         return securitySettingsServices.resetLoginRateLimitConfigurations();
     }
@@ -93,6 +103,7 @@ public class SecuritySettingsController {
      */
 
     @PostMapping("/reset/account-lockout")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_SECURITY_SETTING')")
     public ResponseEntity<?> resetAccountLockoutPolicyConfigurations() {
         return securitySettingsServices.resetAccountLockoutPolicyConfigurations();
     }
@@ -104,11 +115,13 @@ public class SecuritySettingsController {
      */
 
     @PostMapping("/reload/all")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_SECURITY_SETTING')")
     public ResponseEntity<?> reloadAllConfigurations() {
         return securitySettingsServices.reloadAllConfigurations();
     }
 
     @PostMapping("/reset/all")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_SECURITY_SETTING')")
     public ResponseEntity<?> resetAllConfigurations() {
         return securitySettingsServices.resetAllConfigurations();
     }

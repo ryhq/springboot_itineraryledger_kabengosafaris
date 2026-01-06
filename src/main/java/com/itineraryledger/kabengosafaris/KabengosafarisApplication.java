@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableAspectJAutoProxy
+@EnableAspectJAutoProxy(exposeProxy = true)
 @EnableAsync
 @EnableScheduling
 public class KabengosafarisApplication {

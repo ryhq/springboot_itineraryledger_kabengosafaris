@@ -61,7 +61,11 @@ public class EmailAccountCreateService {
      * @param createDTO The request DTO containing email account details
      * @return ResponseEntity with ApiResponse containing created account or error
      */
-    @AuditLogAnnotation(action = "ADD_EMAIL_ACCOUNT", description = "Creating a new email account", entityType = "EmailAccount")
+    @AuditLogAnnotation(
+        action = "CREATE_EMAIL_ACCOUNT", 
+        description = "Creating a new email account", 
+        entityType = "EmailAccount"
+    )
     public ResponseEntity<ApiResponse<?>> createEmailAccount(CreateEmailAccountDTO createDTO) {
         log.info("Creating new email account: {}", createDTO.getName());
 

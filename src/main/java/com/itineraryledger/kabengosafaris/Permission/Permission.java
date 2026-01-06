@@ -12,9 +12,15 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 /**
  * Permission Entity - Represents granular permissions in the system
- * 
- * Each permission defines what action can be performed on what resource
- * Example: "create_safari_booking", "read_user_profile",
+ *
+ * Each permission defines what action can be performed on what entity
+ * Format: {ACTION}_{ENTITY}
+ * Examples: "CREATE_USER", "READ_USER", "UPDATE_ROLE", "DELETE_EMAIL_ACCOUNT"
+ *
+ * This simplified approach uses:
+ * - PermissionAction enum for actions (CREATE, READ, UPDATE, DELETE, etc.)
+ * - Entity name for the resource being protected
+ * - Permission name for use in @PreAuthorize annotations
  */
 @Entity
 @Table(name = "permissions")
@@ -30,39 +36,37 @@ public class Permission {
 
     /**
      * Permission name - unique identifier for the permission
-     * Format: action_resource (e.g., "create_booking", "read_profile", "delete_user")
+     * Format: {ACTION}_{ENTITY} (uppercase with underscores)
+     * Examples: "CREATE_USER", "READ_ROLE", "UPDATE_EMAIL_ACCOUNT", "DELETE_BOOKING"
+     *
+     * Used in @PreAuthorize("hasPermission('CREATE_USER')") annotations
      */
     @Column(nullable = false, unique = true)
     private String name;
 
     /**
      * Human-readable description of what this permission allows
+     * Example: "Allows creating new users in the system"
      */
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
     /**
-     * Category/module/entity this permission belongs to
-     * Examples: "Safari", "User", "Booking"
+     * Action type from PermissionAction enum
+     * Examples: CREATE, READ, UPDATE, DELETE, EXECUTE, SUBMIT, etc.
      */
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String category;
+    private PermissionAction action;
 
     /**
-     * Action type: reference to PermissionActionType (database-driven)
-     * Examples: "create", "read", "update", "delete", "execute", "submit", etc.
-     * Loaded eagerly since permission checks happen frequently
-     */
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "action_type_id", nullable = false)
-    private PermissionActionType actionType;
-
-    /**
-     * Resource/Document type this permission applies to
-     * Examples: "Safari Package", "Booking", "User", "Payment"
+     * Entity name this permission applies to
+     * Examples: "USER", "ROLE", "EMAIL_ACCOUNT", "BOOKING", "SAFARI_PACKAGE"
+     *
+     * Used for filtering and grouping permissions by entity
      */
     @Column(nullable = false)
-    private String resource;
+    private String entity;
 
     /**
      * Whether this permission is active/enabled

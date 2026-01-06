@@ -2,6 +2,7 @@ package com.itineraryledger.kabengosafaris.EmailAccount;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -82,6 +83,7 @@ public class EmailAccountController {
      * }
      */
     @PostMapping
+    @PreAuthorize("hasAuthority('PERM_CREATE_EMAIL_ACCOUNT')")
     public ResponseEntity<ApiResponse<?>> createEmailAccount(
         @Valid
         @RequestBody CreateEmailAccountDTO createDTO
@@ -109,6 +111,7 @@ public class EmailAccountController {
      * SMTP password will be automatically encrypted before storing.
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_ACCOUNT')")
     public ResponseEntity<ApiResponse<?>> updateEmailAccount(
         @PathVariable String id,
         @Valid @RequestBody UpdateEmailAccountDTO updateDTO
@@ -134,32 +137,9 @@ public class EmailAccountController {
      * POST /api/email-accounts/{id}/test
      */
     @PostMapping("/{id}/test")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_ACCOUNT')")
     public ResponseEntity<ApiResponse<?>> testEmailAccount(@PathVariable String id) {
         return emailAccountTestService.testEmailAccount(id);
-    }
-
-    /**
-     * Toggle email account default status
-     *
-     * @param id The obfuscated email account ID
-     * @param setAsDefault Query parameter: true to set as default, false to unset
-     * @return ResponseEntity with ApiResponse containing updated account
-     *
-     * Validation:
-     * - Can only set as default if account is enabled (has passed test)
-     * - Setting an account as default automatically unsets all other accounts
-     * - Can unset default status at any time
-     *
-     * Example requests:
-     * POST /api/email-accounts/{id}/toggle-default?setAsDefault=true
-     * POST /api/email-accounts/{id}/toggle-default?setAsDefault=false
-     */
-    @PostMapping("/{id}/toggle-default")
-    public ResponseEntity<ApiResponse<?>> toggleDefaultStatus(
-            @PathVariable String id,
-            @RequestParam boolean setAsDefault) {
-
-        return emailAccountUpdateService.toggleDefaultStatus(id, setAsDefault);
     }
 
     /**
@@ -188,6 +168,7 @@ public class EmailAccountController {
      */
 
     @GetMapping
+    @PreAuthorize("hasAuthority('PERM_READ_EMAIL_ACCOUNT')")
     public ResponseEntity<?> getAllEmailAccounts(
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size,
@@ -227,6 +208,7 @@ public class EmailAccountController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('PERM_READ_EMAIL_ACCOUNT')")
     public ResponseEntity<ApiResponse<?>> getEmailAccount(@PathVariable String id) {
         return emailAccountGetService.getEmailAccount(id);
     }
@@ -258,6 +240,7 @@ public class EmailAccountController {
      * DELETE /api/email-accounts/{id}
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('PERM_DELETE_EMAIL_ACCOUNT')")
     public ResponseEntity<ApiResponse<?>> deleteEmailAccount(@PathVariable String id) {
         List<String> idList = new ArrayList<>();
         idList.add(id);
@@ -308,6 +291,7 @@ public class EmailAccountController {
      * ]
      */
     @DeleteMapping
+    @PreAuthorize("hasAuthority('PERM_DELETE_EMAIL_ACCOUNT')")
     public ResponseEntity<ApiResponse<?>> deleteEmailAccountsBatch(@RequestBody List<String> idList) {
         return emailAccountDeleteService.deleteEmailAccounts(idList);
     }

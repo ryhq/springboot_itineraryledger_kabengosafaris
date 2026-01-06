@@ -62,6 +62,12 @@ public class EmailAccountUpdateService {
      * @param updateDTO The DTO containing fields to update (only provided fields will be updated)
      * @return ResponseEntity with ApiResponse containing updated account or error
      */
+    @AuditLogAnnotation(
+        action = "UPDATE_EMAIL_ACCOUNT", 
+        description = "Updating an email account", 
+        entityType = "EmailAccount", 
+        entityIdParamName = "idObfuscated"
+    )
     public ResponseEntity<ApiResponse<?>> updateEmailAccount(String idObfuscated, UpdateEmailAccountDTO updateDTO) {
         log.info("Updating email account with ID: {}", idObfuscated);
 
@@ -84,7 +90,7 @@ public class EmailAccountUpdateService {
     }
 
 
-    @AuditLogAnnotation(action = "UPDATE_EMAIL_ACCOUNT", description = "Updating an email account", entityType = "EmailAccount", entityIdParamName = "id")
+    
     private ResponseEntity<ApiResponse<?>> updateEmailAccount(UpdateEmailAccountDTO updateDTO, Long id) {
         // Find existing account
         EmailAccount existing = emailAccountRepository.findById(id).orElse(null);
@@ -296,78 +302,6 @@ public class EmailAccountUpdateService {
                 emailAccountDTO
             )
         );
-    }
-
-    /**
-     * Toggle email account default status
-     * Only allows setting as default if account is enabled (has passed test)
-     *
-     * @param idObfuscated The obfuscated email account ID
-     * @param setAsDefault Whether to set as default (true) or unset (false)
-     * @return ResponseEntity with ApiResponse containing updated account
-     */
-    public ResponseEntity<ApiResponse<?>> toggleDefaultStatus(String idObfuscated, boolean setAsDefault) {
-        log.info("Toggling default status for email account with ID: {}, setAsDefault: {}", idObfuscated, setAsDefault);
-
-        try {
-            // Decode obfuscated ID
-            Long id = idObfuscator.decodeId(idObfuscated);
-
-            return toggleDefaultStatus(setAsDefault, id);
-
-        } catch (Exception e) {
-            log.error("Error toggling default status for email account", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.error(500, "Failed to toggle default status", "TOGGLE_DEFAULT_FAILED"));
-        }
-    }
-
-    @AuditLogAnnotation(action = "TOGGLE_DEFAULT_EMAIL_ACCOUNT", description = "Toggling email account default status", entityType = "EmailAccount" , entityIdParamName = "id")
-    private ResponseEntity<ApiResponse<?>> toggleDefaultStatus(boolean setAsDefault, Long id) {
-        EmailAccount emailAccount = emailAccountRepository.findById(id).orElse(null);
-
-        if (emailAccount  == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ApiResponse.error(
-                    404, 
-                    "Email account not found", 
-                    "EMAIL_NOT_FOUND"
-                )
-            );
-        }
-
-        // If setting as default, validate that account is enabled
-        if (setAsDefault) {
-            if (!Boolean.TRUE.equals(emailAccount.getEnabled())) {
-                log.warn("Cannot set disabled account {} as default. Must enable and test first.", id);
-                return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400,
-                                "Account must be enabled before setting as default. Please test the connection first.",
-                                "ACCOUNT_NOT_ENABLED"));
-            }
-
-            // Set as default and unset all others
-            emailAccount.setIsDefault(true);
-            emailAccountRepository.setOnlyOneDefault(id);
-            log.info("Account {} set as default, all others unset", id);
-        } else {
-            // Unsetting as default
-            emailAccount.setIsDefault(false);
-            log.info("Account {} unset as default", id);
-        }
-
-        // Save updated account
-        EmailAccount updated = emailAccountRepository.save(emailAccount);
-
-        // Convert to DTO and return
-        EmailAccountDTO emailAccountDTO = emailAccountGetService.convertToDTO(updated);
-
-        String message = setAsDefault ?
-                "Email account set as default successfully." :
-                "Email account default status removed successfully.";
-
-        return ResponseEntity.ok().body(
-                ApiResponse.success(200, message, emailAccountDTO));
     }
 
     /**

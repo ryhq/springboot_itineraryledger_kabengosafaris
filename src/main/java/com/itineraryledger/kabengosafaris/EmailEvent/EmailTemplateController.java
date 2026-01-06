@@ -7,6 +7,7 @@ import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -73,6 +74,7 @@ public class EmailTemplateController {
      * }
      */
     @PostMapping
+    @PreAuthorize("hasAuthority('PERM_CREATE_EMAIL_TEMPLATE')")
     public ResponseEntity<ApiResponse<?>> createTemplate(
             @PathVariable String eventId,
             @Valid @RequestBody CreateEmailTemplateDTO createDTO) {
@@ -108,6 +110,7 @@ public class EmailTemplateController {
      * }
      */
     @GetMapping
+    @PreAuthorize("hasAuthority('PERM_READ_EMAIL_TEMPLATE')")
     public ResponseEntity<ApiResponse<?>> getAllTemplates(
             @PathVariable String eventId,
             @RequestParam(required = false) Boolean enabled,
@@ -131,6 +134,7 @@ public class EmailTemplateController {
      * GET /api/email-events/{eventId}/templates/{templateId}
      */
     @GetMapping("/{templateId}")
+    @PreAuthorize("hasAuthority('PERM_READ_EMAIL_TEMPLATE')")
     public ResponseEntity<ApiResponse<?>> getTemplate(
             @PathVariable String eventId,
             @PathVariable String templateId) {
@@ -160,6 +164,7 @@ public class EmailTemplateController {
      * }
      */
     @GetMapping("/{templateId}/content")
+    @PreAuthorize("hasAuthority('PERM_READ_EMAIL_TEMPLATE')")
     public ResponseEntity<ApiResponse<?>> getTemplateContent(
             @PathVariable String eventId,
             @PathVariable String templateId) {
@@ -179,6 +184,7 @@ public class EmailTemplateController {
      * GET /api/email-events/{eventId}/templates/{templateId}/file?download=true (download)
      */
     @GetMapping("/{templateId}/file")
+    @PreAuthorize("hasAuthority('PERM_READ_EMAIL_TEMPLATE')")
     public ResponseEntity<?> getTemplateContentFile(
             @PathVariable String eventId,
             @PathVariable String templateId,
@@ -198,6 +204,7 @@ public class EmailTemplateController {
      * GET /api/email-events/{eventId}/templates/file/USER_REGISTRATION_Welcome_Email_20250115_143000.html
      */
     @GetMapping("/file/{fileName}")
+    @PreAuthorize("hasAuthority('PERM_READ_EMAIL_TEMPLATE')")
     public ResponseEntity<?> getTemplateContentFileByName(
             @PathVariable String eventId,
             @PathVariable String fileName,
@@ -227,6 +234,7 @@ public class EmailTemplateController {
      * }
      */
     @PutMapping("/{templateId}")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_TEMPLATE')")
     public ResponseEntity<ApiResponse<?>> updateTemplate(
             @PathVariable String eventId,
             @PathVariable String templateId,
@@ -261,6 +269,7 @@ public class EmailTemplateController {
      * }
      */
     @PostMapping("/{templateId}/restore")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_TEMPLATE')")
     public ResponseEntity<ApiResponse<?>> restoreSystemDefaultTemplate(
             @PathVariable String eventId,
             @PathVariable String templateId) {
@@ -292,6 +301,7 @@ public class EmailTemplateController {
      * }
      */
     @DeleteMapping
+    @PreAuthorize("hasAuthority('PERM_DELETE_EMAIL_TEMPLATE')")
     public ResponseEntity<ApiResponse<?>> deleteTemplates(
             @PathVariable String eventId,
             @RequestBody List<String> templateIds) {
@@ -333,6 +343,7 @@ public class EmailTemplateController {
      * }
      */
     @PostMapping("/{templateId}/test")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_TEMPLATE')")
     public ResponseEntity<ApiResponse<?>> sendTestEmail(
             @PathVariable String eventId,
             @PathVariable String templateId,

@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -78,6 +79,7 @@ public class EmailSignatureController {
      * }
      */
     @PostMapping
+    @PreAuthorize("hasAuthority('PERM_CREATE_EMAIL_ACCOUNT_SIGNATURE')")
     public ResponseEntity<ApiResponse<?>> createSignature(
             @PathVariable String emailAccountId,
             @Valid @RequestBody CreateEmailAccountSignatureDTO createDTO) {
@@ -112,6 +114,7 @@ public class EmailSignatureController {
      * }
      */
     @GetMapping
+    @PreAuthorize("hasAuthority('PERM_READ_EMAIL_ACCOUNT_SIGNATURE')")
     public ResponseEntity<ApiResponse<?>> getAllSignatures(
             @PathVariable String emailAccountId,
             @RequestParam(required = false) Boolean enabled,
@@ -133,6 +136,7 @@ public class EmailSignatureController {
      * GET /api/email-accounts/{emailAccountId}/signatures/{signatureId}
      */
     @GetMapping("/{signatureId}")
+    @PreAuthorize("hasAuthority('PERM_READ_EMAIL_ACCOUNT_SIGNATURE')")
     public ResponseEntity<ApiResponse<?>> getSignature(
             @PathVariable String emailAccountId,
             @PathVariable String signatureId) {
@@ -164,6 +168,7 @@ public class EmailSignatureController {
      * }
      */
     @GetMapping("/{signatureId}/preview")
+    @PreAuthorize("hasAuthority('PERM_READ_EMAIL_ACCOUNT_SIGNATURE')")
     public ResponseEntity<ApiResponse<?>> getSignaturePreview(
             @PathVariable String emailAccountId,
             @PathVariable String signatureId,
@@ -200,6 +205,7 @@ public class EmailSignatureController {
      * }
      */
     @PutMapping("/{signatureId}")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_ACCOUNT_SIGNATURE')")
     public ResponseEntity<ApiResponse<?>> updateSignature(
             @PathVariable String emailAccountId,
             @PathVariable String signatureId,
@@ -241,6 +247,7 @@ public class EmailSignatureController {
      * }
      */
     @PostMapping("/{signatureId}/restore")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_ACCOUNT_SIGNATURE')")
     public ResponseEntity<ApiResponse<?>> restoreSystemDefaultSignature(
             @PathVariable String emailAccountId,
             @PathVariable String signatureId) {
@@ -282,6 +289,7 @@ public class EmailSignatureController {
      * }
      */
     @DeleteMapping("/{signatureId}")
+    @PreAuthorize("hasAuthority('PERM_DELETE_EMAIL_ACCOUNT_SIGNATURE')")
     public ResponseEntity<ApiResponse<?>> deleteSignature(
             @PathVariable String emailAccountId,
             @PathVariable String signatureId) {
@@ -336,6 +344,7 @@ public class EmailSignatureController {
      * }
      */
     @DeleteMapping
+    @PreAuthorize("hasAuthority('PERM_DELETE_EMAIL_ACCOUNT_SIGNATURE')")
     public ResponseEntity<ApiResponse<?>> deleteSignaturesBatch(
             @PathVariable String emailAccountId,
             @RequestBody List<String> signatureIdList) {
@@ -353,6 +362,7 @@ public class EmailSignatureController {
      * GET /api/email-accounts/{emailAccountId}/signatures/{signatureId}/content
      */
     @GetMapping("/{signatureId}/content")
+    @PreAuthorize("hasAuthority('PERM_READ_EMAIL_ACCOUNT_SIGNATURE')")
     public ResponseEntity<ApiResponse<?>> getSignatureContent(
             @PathVariable String emailAccountId,
             @PathVariable String signatureId) {
@@ -380,6 +390,7 @@ public class EmailSignatureController {
      * GET /api/email-accounts/{emailAccountId}/signatures/{signatureId}/download?download=true (download file)
      */
     @GetMapping("/{signatureId}/download")
+    @PreAuthorize("hasAuthority('PERM_READ_EMAIL_ACCOUNT_SIGNATURE')")
     public ResponseEntity<?> downloadSignatureFile(
             @PathVariable String emailAccountId,
             @PathVariable String signatureId,
@@ -407,6 +418,7 @@ public class EmailSignatureController {
      * GET /api/email-accounts/{emailAccountId}/signatures/files/developerks_developerks_1764855656760.html?download=true
      */
     @GetMapping("/files/{fileName:.+}")
+    @PreAuthorize("hasAuthority('PERM_READ_EMAIL_ACCOUNT_SIGNATURE')")
     public ResponseEntity<?> getSignatureFileByName(
             @PathVariable String emailAccountId,
             @PathVariable String fileName,

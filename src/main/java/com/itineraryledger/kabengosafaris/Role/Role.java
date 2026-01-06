@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.itineraryledger.kabengosafaris.Permission.Permission;
+import com.itineraryledger.kabengosafaris.Permission.PermissionAction;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -101,30 +102,31 @@ public class Role {
     }
 
     /**
-     * Check if this role has a specific permission
+     * Check if this role has a specific permission by name
+     * Example: hasPermission("CREATE_USER")
      *
-     * @param permissionName name of the permission
-     * @return true if role has the permission
+     * @param permissionName name of the permission (e.g., "CREATE_USER", "READ_ROLE")
+     * @return true if role has the permission and it's active
      */
     public boolean hasPermission(String permissionName) {
-        return permissions.stream().anyMatch(p -> p.getName().equals(permissionName) && p.getActive());
+        return permissions.stream()
+            .anyMatch(p -> p.getName().equals(permissionName) && p.getActive());
     }
 
     /**
-     * Check if this role has a specific action on a resource
-     * Database-driven: looks up action type from database
+     * Check if this role has a specific action on an entity
+     * Example: hasPermission(PermissionAction.CREATE, "USER")
      *
-     * @param actionCode action code to check (e.g., "create", "read", "update")
-     * @param resource resource/document type
+     * @param action permission action (CREATE, READ, UPDATE, DELETE, etc.)
+     * @param entity entity name (USER, ROLE, EMAIL_ACCOUNT, etc.)
      * @return true if role has the permission
      */
-    public boolean hasPermission(String actionCode, String resource) {
+    public boolean hasPermission(PermissionAction action, String entity) {
         return permissions.stream()
-            .anyMatch(
-                p -> p.getActionType() != null &&
-                     p.getActionType().getCode().equalsIgnoreCase(actionCode) &&
-                     p.getResource().equalsIgnoreCase(resource) &&
-                     p.getActive()
+            .anyMatch(p ->
+                p.getAction() == action &&
+                p.getEntity().equalsIgnoreCase(entity) &&
+                p.getActive()
             );
     }
 
@@ -147,20 +149,18 @@ public class Role {
     }
 
     /**
-     * Get all permissions for a specific action code
-     * Database-driven: uses action code instead of enum
+     * Get all entities this role has permissions for a specific action
+     * Example: getEntitiesForAction(PermissionAction.CREATE) returns ["USER", "ROLE", "EMAIL_ACCOUNT"]
      *
-     * @param actionCode action code (e.g., "create", "read", "update")
-     * @return set of resources this role can perform the action on
+     * @param action permission action
+     * @return set of entity names this role can perform the action on
      */
-    public Set<String> getResourcesForAction(String actionCode) {
-        Set<String> resources = new HashSet<>();
+    public Set<String> getEntitiesForAction(PermissionAction action) {
+        Set<String> entities = new HashSet<>();
         permissions.stream()
-                .filter(p -> p.getActionType() != null &&
-                           p.getActionType().getCode().equalsIgnoreCase(actionCode) &&
-                           p.getActive())
-                .forEach(p -> resources.add(p.getResource()));
-        return resources;
+            .filter(p -> p.getAction() == action && p.getActive())
+            .forEach(p -> entities.add(p.getEntity()));
+        return entities;
     }
 
     @Override

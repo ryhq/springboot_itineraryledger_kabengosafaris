@@ -158,6 +158,12 @@ public class SecuritySettingsServices {
         return ResponseEntity.ok(ApiResponse.success(200, "Security Settings retrieved successfully.", securitySettingDTOs));
     }
     
+    @AuditLogAnnotation(
+        action = "UPDATE_SECURITY_SETTING",
+        description = "Updating a security setting", 
+        entityIdParamName = "obfuscatedId", 
+        entityType = "SecuritySetting"
+    )
     public ResponseEntity<?> updateSecuritySetting(String obfuscatedId, UpdateSecuritySettingDTO updateSecuritySettingDTO) {
         Long id;
 
@@ -176,7 +182,6 @@ public class SecuritySettingsServices {
         return updateSecuritySettingById(id, updateSecuritySettingDTO);
     }
 
-    @AuditLogAnnotation(action = "Update Security Setting", description = "Updates a security setting by ID", entityIdParamName = "id", entityType = "SecuritySetting")
     private ResponseEntity<?> updateSecuritySettingById(Long id, UpdateSecuritySettingDTO updateSecuritySettingDTO) {
         Boolean active = updateSecuritySettingDTO.getActive();
         String settingValue = updateSecuritySettingDTO.getSettingValue();
@@ -325,12 +330,13 @@ public class SecuritySettingsServices {
                     .replace("\t", "\\t");
     }
     /**
-     * 
+     *
      * ##############################################################
      * ### ID Obfuscation Configurations Reload and Reset Methods ###
      * ##############################################################
      */
 
+    @AuditLogAnnotation(action = "RELOAD_ID_OBFUSCATION_CONFIG", description = "Reloading ID obfuscation configurations", entityType = "SecuritySetting")
     public ResponseEntity<?> reloadIdObfuscationConfigurations() {
         idObfuscator.reloadConfig(securitySettingsGetterServices);
         return ResponseEntity.ok(
@@ -342,6 +348,7 @@ public class SecuritySettingsServices {
         );
     }
 
+    @AuditLogAnnotation(action = "TEST_ID_OBFUSCATION_CONFIG", description = "Testing ID obfuscation configurations", entityType = "SecuritySetting")
     public ResponseEntity<?> testIdObfuscationConfigurations() {
         String obfuscatedId;
         try {
@@ -365,6 +372,7 @@ public class SecuritySettingsServices {
         }
     }
 
+    @AuditLogAnnotation(action = "RESET_ID_OBFUSCATION_CONFIG", description = "Resetting ID obfuscation configurations to defaults", entityType = "SecuritySetting")
     public ResponseEntity<?> resetIdObfuscationConfigurations() {
         // Store default values in the database
         SecuritySetting obfuscatedLengthSetting = securitySettingsRepository.findBySettingKey("idObfuscator.obfuscated.length").orElse(null);
@@ -395,6 +403,7 @@ public class SecuritySettingsServices {
      * ###########################################################
      */
 
+    @AuditLogAnnotation(action = "RESET_PASSWORD_POLICY_CONFIG", description = "Resetting password policy configurations to defaults", entityType = "SecuritySetting")
     public ResponseEntity<?> resetPasswordPolicyConfigurations() {
         // Store default values in the database
         updateSettingIfExists("password.minLength", String.valueOf(passwordMinLength));
@@ -421,6 +430,7 @@ public class SecuritySettingsServices {
      * #######################################################
      */
 
+    @AuditLogAnnotation(action = "RELOAD_JWT_TOKEN_CONFIG", description = "Reloading JWT token configurations", entityType = "SecuritySetting")
     public ResponseEntity<?> reloadJwtTokenConfigurations() {
         jwtTokenProvider.reloadConfig(securitySettingsGetterServices);
         return ResponseEntity.ok(
@@ -432,6 +442,7 @@ public class SecuritySettingsServices {
         );
     }
 
+    @AuditLogAnnotation(action = "RESET_JWT_TOKEN_CONFIG", description = "Resetting JWT token configurations to defaults", entityType = "SecuritySetting")
     public ResponseEntity<?> resetJwtTokenConfigurations() {
         // Store default values in the database
         updateSettingIfExists("jwt.expiration.time.minutes", String.valueOf(jwtExpirationMinutes));
@@ -456,6 +467,7 @@ public class SecuritySettingsServices {
      * ########################################################
      */
 
+    @AuditLogAnnotation(action = "RESET_LOGIN_RATE_LIMIT_CONFIG", description = "Resetting login rate limit configurations to defaults", entityType = "SecuritySetting")
     public ResponseEntity<?> resetLoginRateLimitConfigurations() {
         // Store default values in the database
         updateSettingIfExists("loginAttempts.maxCapacity", String.valueOf(loginRateLimitMaxCapacity));
@@ -478,7 +490,8 @@ public class SecuritySettingsServices {
      * ### Account Lockout Policy Configurations Reset Methods ###
      * ############################################################
      */
-    
+
+    @AuditLogAnnotation(action = "RESET_ACCOUNT_LOCKOUT_CONFIG", description = "Resetting account lockout policy configurations to defaults", entityType = "SecuritySetting")
     public ResponseEntity<?> resetAccountLockoutPolicyConfigurations() {
         // Store default values in the database
         updateSettingIfExists("accountLockout.maxFailedAttempts", String.valueOf(maxFailedAttempts));
@@ -502,6 +515,7 @@ public class SecuritySettingsServices {
      * ##################################################
      */
 
+    @AuditLogAnnotation(action = "RELOAD_ALL_CONFIG", description = "Reloading all security configurations", entityType = "SecuritySetting")
     public ResponseEntity<?> reloadAllConfigurations() {
         reloadIdObfuscationConfigurations();
         reloadJwtTokenConfigurations();
@@ -515,6 +529,7 @@ public class SecuritySettingsServices {
         );
     }
 
+    @AuditLogAnnotation(action = "RESET_ALL_CONFIG", description = "Resetting all security configurations to defaults", entityType = "SecuritySetting")
     public ResponseEntity<?> resetAllConfigurations() {
         resetIdObfuscationConfigurations();
         resetPasswordPolicyConfigurations();

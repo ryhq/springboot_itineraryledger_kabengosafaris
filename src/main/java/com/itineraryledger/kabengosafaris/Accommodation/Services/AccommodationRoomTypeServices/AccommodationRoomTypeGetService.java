@@ -1,0 +1,315 @@
+package com.itineraryledger.kabengosafaris.Accommodation.Services.AccommodationRoomTypeServices;
+
+import com.itineraryledger.kabengosafaris.Accommodation.AccommodationRoomTypeSpecification;
+import com.itineraryledger.kabengosafaris.Accommodation.DTOs.AccommodationRoomTypeDTOs.AccommodationRoomTypeDTO;
+import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRoomType;
+import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRoomTypeRepository;
+import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+import jakarta.validation.constraints.NotBlank;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * AccommodationRoomTypeGetService - Service for retrieving accommodation room types
+ */
+@Service
+@Slf4j
+@Transactional(readOnly = true)
+public class AccommodationRoomTypeGetService {
+
+    private final AccommodationRoomTypeRepository roomTypeRepository;
+    private final IdObfuscator idObfuscator;
+
+    @Autowired
+    public AccommodationRoomTypeGetService(
+        AccommodationRoomTypeRepository roomTypeRepository,
+        IdObfuscator idObfuscator
+    ) {
+        this.roomTypeRepository = roomTypeRepository;
+        this.idObfuscator = idObfuscator;
+    }
+
+    /**
+     * Get a single accommodation room type by ID
+     *
+     * @param idObfuscated The obfuscated room type ID
+     * @return ResponseEntity with ApiResponse containing the room type
+     */
+    public ResponseEntity<ApiResponse<?>> getAccommodationRoomTypeById(String idObfuscated) {
+        log.info("Fetching accommodation room type by ID: {}", idObfuscated);
+
+        try {
+            // Decode room type ID
+            Long roomTypeId;
+            try {
+                roomTypeId = idObfuscator.decodeId(idObfuscated);
+            } catch (Exception e) {
+                log.warn("Failed to decode room type ID: {}", idObfuscated, e);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        "Invalid room type ID",
+                        "INVALID_ROOM_TYPE_ID"
+                    )
+                );
+            }
+
+            // Find room type
+            AccommodationRoomType roomType = roomTypeRepository.findById(roomTypeId).orElse(null);
+            if (roomType == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(
+                        404,
+                        "Room type not found",
+                        "ROOM_TYPE_NOT_FOUND"
+                    )
+                );
+            }
+
+            // Convert to DTO
+            AccommodationRoomTypeDTO roomTypeDTO = convertToDTO(roomType);
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(
+                    200,
+                    "Room type retrieved successfully",
+                    roomTypeDTO
+                )
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching accommodation room type by ID", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(
+                    500,
+                    "Failed to fetch room type",
+                    "ROOM_TYPE_FETCH_FAILED"
+                )
+            );
+        }
+    }
+
+    /**
+     * Get all accommodation room types with optional filters
+     * Accommodation ID is optional
+     *
+     * @param accommodationId Optional accommodation ID filter
+     * @param name Filter by name
+     * @param minOccupancy Filter by minimum occupancy
+     * @param maxOccupancy Filter by maximum occupancy
+     * @param isActive Filter by active status
+     * @param keyword Search keyword
+     * @param pageable Pagination parameters
+     * @return ResponseEntity with ApiResponse containing paginated room types
+     */
+    public ResponseEntity<ApiResponse<?>> getAllAccommodationRoomTypes(
+        String accommodationId,
+        String name,
+        Integer minOccupancy,
+        Integer maxOccupancy,
+        Boolean isActive,
+        String keyword,
+        Pageable pageable
+    ) {
+        log.info("Fetching all accommodation room types with filters");
+
+        try {
+            // Build specification
+            Specification<AccommodationRoomType> spec = Specification.unrestricted();
+
+            // Filter by accommodation ID if provided
+            if (accommodationId != null && !accommodationId.isEmpty()) {
+                try {
+                    Long accId = idObfuscator.decodeId(accommodationId);
+                    spec = spec.and(AccommodationRoomTypeSpecification.hasAccommodationId(accId));
+                } catch (Exception e) {
+                    log.warn("Failed to decode accommodation ID: {}", accommodationId, e);
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(
+                            400,
+                            "Invalid accommodation ID",
+                            "INVALID_ACCOMMODATION_ID"
+                        )
+                    );
+                }
+            }
+
+            // Apply other filters
+            if (name != null && !name.isEmpty()) {
+                spec = spec.and(AccommodationRoomTypeSpecification.hasName(name));
+            }
+            if (minOccupancy != null) {
+                spec = spec.and(AccommodationRoomTypeSpecification.hasMinOccupancy(minOccupancy));
+            }
+            if (maxOccupancy != null) {
+                spec = spec.and(AccommodationRoomTypeSpecification.hasMaxOccupancy(maxOccupancy));
+            }
+            if (isActive != null) {
+                spec = spec.and(AccommodationRoomTypeSpecification.isActive(isActive));
+            }
+            if (keyword != null && !keyword.isEmpty()) {
+                spec = spec.and(AccommodationRoomTypeSpecification.searchKeyword(keyword));
+            }
+
+            // Fetch paginated results
+            Page<AccommodationRoomType> roomTypesPage = roomTypeRepository.findAll(spec, pageable);
+
+            // Convert to DTOs
+            List<AccommodationRoomTypeDTO> dtos = roomTypesPage.getContent().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+            // Build response map
+            Map<String, Object> response = new HashMap<>();
+            response.put("roomTypes", dtos);
+            response.put("currentPage", roomTypesPage.getNumber());
+            response.put("totalItems", roomTypesPage.getTotalElements());
+            response.put("totalPages", roomTypesPage.getTotalPages());
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(
+                    200,
+                    "Room types retrieved successfully",
+                    response
+                )
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching all accommodation room types", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(
+                    500,
+                    "Failed to fetch room types",
+                    "ROOM_TYPES_FETCH_FAILED"
+                )
+            );
+        }
+    }
+
+    /**
+     * Get all room types for a specific accommodation
+     * Accommodation ID is required
+     *
+     * @param accommodationId Required accommodation ID
+     * @param name Filter by name
+     * @param minOccupancy Filter by minimum occupancy
+     * @param maxOccupancy Filter by maximum occupancy
+     * @param isActive Filter by active status
+     * @param keyword Search keyword
+     * @param pageable Pagination parameters
+     * @return ResponseEntity with ApiResponse containing paginated room types
+     */
+    public ResponseEntity<ApiResponse<?>> getAllAccommodationsRoomTypes(
+        @NotBlank(message = "Accommodation ID is required") String accommodationId,
+        String name,
+        Integer minOccupancy,
+        Integer maxOccupancy,
+        Boolean isActive,
+        String keyword,
+        Pageable pageable
+    ) {
+        log.info("Fetching room types for accommodation: {}", accommodationId);
+
+        try {
+            // Decode accommodation ID
+            Long accId;
+            try {
+                accId = idObfuscator.decodeId(accommodationId);
+            } catch (Exception e) {
+                log.warn("Failed to decode accommodation ID: {}", accommodationId, e);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        "Invalid accommodation ID",
+                        "INVALID_ACCOMMODATION_ID"
+                    )
+                );
+            }
+
+            // Build specification starting with accommodation ID
+            Specification<AccommodationRoomType> spec = AccommodationRoomTypeSpecification.hasAccommodationId(accId);
+
+            // Apply other filters
+            if (name != null && !name.isEmpty()) {
+                spec = spec.and(AccommodationRoomTypeSpecification.hasName(name));
+            }
+            if (minOccupancy != null) {
+                spec = spec.and(AccommodationRoomTypeSpecification.hasMinOccupancy(minOccupancy));
+            }
+            if (maxOccupancy != null) {
+                spec = spec.and(AccommodationRoomTypeSpecification.hasMaxOccupancy(maxOccupancy));
+            }
+            if (isActive != null) {
+                spec = spec.and(AccommodationRoomTypeSpecification.isActive(isActive));
+            }
+            if (keyword != null && !keyword.isEmpty()) {
+                spec = spec.and(AccommodationRoomTypeSpecification.searchKeyword(keyword));
+            }
+
+            // Fetch paginated results
+            Page<AccommodationRoomType> roomTypesPage = roomTypeRepository.findAll(spec, pageable);
+
+            // Convert to DTOs
+            List<AccommodationRoomTypeDTO> dtos = roomTypesPage.getContent().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+            // Build response map
+            Map<String, Object> response = new HashMap<>();
+            response.put("roomTypes", dtos);
+            response.put("currentPage", roomTypesPage.getNumber());
+            response.put("totalItems", roomTypesPage.getTotalElements());
+            response.put("totalPages", roomTypesPage.getTotalPages());
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(
+                    200,
+                    "Room types retrieved successfully",
+                    response
+                )
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching accommodation room types", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(
+                    500,
+                    "Failed to fetch room types",
+                    "ROOM_TYPES_FETCH_FAILED"
+                )
+            );
+        }
+    }
+
+    /**
+     * Convert AccommodationRoomType entity to DTO
+     */
+    private AccommodationRoomTypeDTO convertToDTO(AccommodationRoomType roomType) {
+        return AccommodationRoomTypeDTO.builder()
+            .id(idObfuscator.encodeId(roomType.getId()))
+            .accommodationId(idObfuscator.encodeId(roomType.getAccommodation().getId()))
+            .accommodationName(roomType.getAccommodation().getName())
+            .name(roomType.getName())
+            .bedConfiguration(roomType.getBedConfiguration())
+            .maxOccupancy(roomType.getMaxOccupancy())
+            .minOccupancy(roomType.getMinOccupancy())
+            .description(roomType.getDescription())
+            .isActive(roomType.getIsActive())
+            .createdAt(roomType.getCreatedAt())
+            .updatedAt(roomType.getUpdatedAt())
+            .build();
+    }
+}

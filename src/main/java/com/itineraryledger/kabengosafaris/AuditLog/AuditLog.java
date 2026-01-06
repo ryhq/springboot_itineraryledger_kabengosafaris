@@ -23,6 +23,9 @@ public class AuditLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
+    private String name;
+
     @Column(nullable = false)
     private Long userId;
 
@@ -40,10 +43,12 @@ public class AuditLog {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "old_values", columnDefinition = "TEXT")
+    @Lob
+    @Column(name = "old_values", columnDefinition = "LONGTEXT") // Most hold large text data or JSON
     private String oldValues;
 
-    @Column(name = "new_values", columnDefinition = "TEXT")
+    @Lob
+    @Column(name = "new_values", columnDefinition = "LONGTEXT") // Most hold large text data or JSON
     private String newValues;
 
     private String ipAddress;

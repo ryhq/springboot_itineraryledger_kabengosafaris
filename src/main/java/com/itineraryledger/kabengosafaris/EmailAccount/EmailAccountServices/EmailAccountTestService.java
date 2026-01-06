@@ -60,6 +60,7 @@ public class EmailAccountTestService {
      * @param idObfuscated The obfuscated email account ID
      * @return ResponseEntity with ApiResponse containing test result and updated account
      */
+    @AuditLogAnnotation(action = "TEST_EMAIL_ACCOUNT", description = "Testing email account SMTP connection", entityType = "EmailAccount", entityIdParamName = "idObfuscated")
     public ResponseEntity<ApiResponse<?>> testEmailAccount(String idObfuscated) {
         log.info("Testing email account with ID: {}", idObfuscated);
         try {
@@ -80,7 +81,6 @@ public class EmailAccountTestService {
         }
     }
 
-    @AuditLogAnnotation(action = "TEST_EMAIL_ACCOUNT", description = "Testing email account SMTP connection", entityType = "EmailAccount", entityIdParamName = "id")
     private ResponseEntity<ApiResponse<?>> testEmailAccount(Long id) {
         EmailAccount emailAccount = emailAccountRepository.findById(id).orElse(null);
 

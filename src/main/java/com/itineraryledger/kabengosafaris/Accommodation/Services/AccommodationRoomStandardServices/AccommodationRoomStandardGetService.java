@@ -1,0 +1,336 @@
+package com.itineraryledger.kabengosafaris.Accommodation.Services.AccommodationRoomStandardServices;
+
+import com.itineraryledger.kabengosafaris.Accommodation.AccommodationRoomStandardSpecification;
+import com.itineraryledger.kabengosafaris.Accommodation.DTOs.AccommodationRoomStandardDTOs.AccommodationRoomStandardDTO;
+import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRoomStandard;
+import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRoomStandardRepository;
+import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+import jakarta.validation.constraints.NotBlank;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * AccommodationRoomStandardGetService - Service for retrieving accommodation room standards
+ */
+@Service
+@Slf4j
+@Transactional(readOnly = true)
+public class AccommodationRoomStandardGetService {
+
+    private final AccommodationRoomStandardRepository roomStandardRepository;
+    private final IdObfuscator idObfuscator;
+
+    @Autowired
+    public AccommodationRoomStandardGetService(
+        AccommodationRoomStandardRepository roomStandardRepository,
+        IdObfuscator idObfuscator
+    ) {
+        this.roomStandardRepository = roomStandardRepository;
+        this.idObfuscator = idObfuscator;
+    }
+
+    /**
+     * Get a single accommodation room standard by ID
+     *
+     * @param idObfuscated The obfuscated room standard ID
+     * @return ResponseEntity with ApiResponse containing the room standard
+     */
+    public ResponseEntity<ApiResponse<?>> getAccommodationRoomStandardById(String idObfuscated) {
+        log.info("Fetching accommodation room standard by ID: {}", idObfuscated);
+
+        try {
+            // Decode room standard ID
+            Long roomStandardId;
+            try {
+                roomStandardId = idObfuscator.decodeId(idObfuscated);
+            } catch (Exception e) {
+                log.warn("Failed to decode room standard ID: {}", idObfuscated, e);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        "Invalid room standard ID",
+                        "INVALID_ROOM_STANDARD_ID"
+                    )
+                );
+            }
+
+            // Find room standard
+            AccommodationRoomStandard roomStandard = roomStandardRepository.findById(roomStandardId).orElse(null);
+            if (roomStandard == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(
+                        404,
+                        "Room standard not found",
+                        "ROOM_STANDARD_NOT_FOUND"
+                    )
+                );
+            }
+
+            // Convert to DTO
+            AccommodationRoomStandardDTO roomStandardDTO = convertToDTO(roomStandard);
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(
+                    200,
+                    "Room standard retrieved successfully",
+                    roomStandardDTO
+                )
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching accommodation room standard by ID", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(
+                    500,
+                    "Failed to fetch room standard",
+                    "ROOM_STANDARD_FETCH_FAILED"
+                )
+            );
+        }
+    }
+
+    /**
+     * Get all accommodation room standards with optional filters
+     * Accommodation ID is optional
+     *
+     * @param accommodationId Optional accommodation ID filter
+     * @param name Filter by name
+     * @param viewType Filter by view type
+     * @param floorLevel Filter by floor level
+     * @param minOccupancy Filter by minimum occupancy
+     * @param maxOccupancy Filter by maximum occupancy
+     * @param isActive Filter by active status
+     * @param keyword Search keyword
+     * @param pageable Pagination parameters
+     * @return ResponseEntity with ApiResponse containing paginated room standards
+     */
+    public ResponseEntity<ApiResponse<?>> getAllAccommodationRoomStandards(
+        String accommodationId,
+        String name,
+        String viewType,
+        String floorLevel,
+        Integer minOccupancy,
+        Integer maxOccupancy,
+        Boolean isActive,
+        String keyword,
+        Pageable pageable
+    ) {
+        log.info("Fetching all accommodation room standards with filters");
+
+        try {
+            // Build specification
+            Specification<AccommodationRoomStandard> spec = Specification.unrestricted();
+
+            // Filter by accommodation ID if provided
+            if (accommodationId != null && !accommodationId.isEmpty()) {
+                try {
+                    Long accId = idObfuscator.decodeId(accommodationId);
+                    spec = spec.and(AccommodationRoomStandardSpecification.hasAccommodationId(accId));
+                } catch (Exception e) {
+                    log.warn("Failed to decode accommodation ID: {}", accommodationId, e);
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(
+                            400,
+                            "Invalid accommodation ID",
+                            "INVALID_ACCOMMODATION_ID"
+                        )
+                    );
+                }
+            }
+
+            // Apply other filters
+            if (name != null && !name.isEmpty()) {
+                spec = spec.and(AccommodationRoomStandardSpecification.hasName(name));
+            }
+            if (viewType != null && !viewType.isEmpty()) {
+                spec = spec.and(AccommodationRoomStandardSpecification.hasViewType(viewType));
+            }
+            if (floorLevel != null && !floorLevel.isEmpty()) {
+                spec = spec.and(AccommodationRoomStandardSpecification.hasFloorLevel(floorLevel));
+            }
+            if (minOccupancy != null) {
+                spec = spec.and(AccommodationRoomStandardSpecification.hasMinOccupancy(minOccupancy));
+            }
+            if (maxOccupancy != null) {
+                spec = spec.and(AccommodationRoomStandardSpecification.hasMaxOccupancy(maxOccupancy));
+            }
+            if (isActive != null) {
+                spec = spec.and(AccommodationRoomStandardSpecification.isActive(isActive));
+            }
+            if (keyword != null && !keyword.isEmpty()) {
+                spec = spec.and(AccommodationRoomStandardSpecification.searchKeyword(keyword));
+            }
+
+            // Fetch paginated results
+            Page<AccommodationRoomStandard> roomStandardsPage = roomStandardRepository.findAll(spec, pageable);
+
+            // Convert to DTOs
+            List<AccommodationRoomStandardDTO> dtos = roomStandardsPage.getContent().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+            // Build response map
+            Map<String, Object> response = new HashMap<>();
+            response.put("roomStandards", dtos);
+            response.put("currentPage", roomStandardsPage.getNumber());
+            response.put("totalItems", roomStandardsPage.getTotalElements());
+            response.put("totalPages", roomStandardsPage.getTotalPages());
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(
+                    200,
+                    "Room standards retrieved successfully",
+                    response
+                )
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching all accommodation room standards", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(
+                    500,
+                    "Failed to fetch room standards",
+                    "ROOM_STANDARDS_FETCH_FAILED"
+                )
+            );
+        }
+    }
+
+    /**
+     * Get all room standards for a specific accommodation
+     * Accommodation ID is required
+     *
+     * @param accommodationId Required accommodation ID
+     * @param name Filter by name
+     * @param viewType Filter by view type
+     * @param floorLevel Filter by floor level
+     * @param minOccupancy Filter by minimum occupancy
+     * @param maxOccupancy Filter by maximum occupancy
+     * @param isActive Filter by active status
+     * @param keyword Search keyword
+     * @param pageable Pagination parameters
+     * @return ResponseEntity with ApiResponse containing paginated room standards
+     */
+    public ResponseEntity<ApiResponse<?>> getAllAccommodationsRoomStandards(
+        @NotBlank(message = "Accommodation ID is required") String accommodationId,
+        String name,
+        String viewType,
+        String floorLevel,
+        Integer minOccupancy,
+        Integer maxOccupancy,
+        Boolean isActive,
+        String keyword,
+        Pageable pageable
+    ) {
+        log.info("Fetching room standards for accommodation: {}", accommodationId);
+
+        try {
+            // Decode accommodation ID
+            Long accId;
+            try {
+                accId = idObfuscator.decodeId(accommodationId);
+            } catch (Exception e) {
+                log.warn("Failed to decode accommodation ID: {}", accommodationId, e);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        "Invalid accommodation ID",
+                        "INVALID_ACCOMMODATION_ID"
+                    )
+                );
+            }
+
+            // Build specification starting with accommodation ID
+            Specification<AccommodationRoomStandard> spec = AccommodationRoomStandardSpecification.hasAccommodationId(accId);
+
+            // Apply other filters
+            if (name != null && !name.isEmpty()) {
+                spec = spec.and(AccommodationRoomStandardSpecification.hasName(name));
+            }
+            if (viewType != null && !viewType.isEmpty()) {
+                spec = spec.and(AccommodationRoomStandardSpecification.hasViewType(viewType));
+            }
+            if (floorLevel != null && !floorLevel.isEmpty()) {
+                spec = spec.and(AccommodationRoomStandardSpecification.hasFloorLevel(floorLevel));
+            }
+            if (minOccupancy != null) {
+                spec = spec.and(AccommodationRoomStandardSpecification.hasMinOccupancy(minOccupancy));
+            }
+            if (maxOccupancy != null) {
+                spec = spec.and(AccommodationRoomStandardSpecification.hasMaxOccupancy(maxOccupancy));
+            }
+            if (isActive != null) {
+                spec = spec.and(AccommodationRoomStandardSpecification.isActive(isActive));
+            }
+            if (keyword != null && !keyword.isEmpty()) {
+                spec = spec.and(AccommodationRoomStandardSpecification.searchKeyword(keyword));
+            }
+
+            // Fetch paginated results
+            Page<AccommodationRoomStandard> roomStandardsPage = roomStandardRepository.findAll(spec, pageable);
+
+            // Convert to DTOs
+            List<AccommodationRoomStandardDTO> dtos = roomStandardsPage.getContent().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+            // Build response map
+            Map<String, Object> response = new HashMap<>();
+            response.put("roomStandards", dtos);
+            response.put("currentPage", roomStandardsPage.getNumber());
+            response.put("totalItems", roomStandardsPage.getTotalElements());
+            response.put("totalPages", roomStandardsPage.getTotalPages());
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(
+                    200,
+                    "Room standards retrieved successfully",
+                    response
+                )
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching accommodation room standards", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(
+                    500,
+                    "Failed to fetch room standards",
+                    "ROOM_STANDARDS_FETCH_FAILED"
+                )
+            );
+        }
+    }
+
+    /**
+     * Convert AccommodationRoomStandard entity to DTO
+     */
+    private AccommodationRoomStandardDTO convertToDTO(AccommodationRoomStandard roomStandard) {
+        return AccommodationRoomStandardDTO.builder()
+            .id(idObfuscator.encodeId(roomStandard.getId()))
+            .accommodationId(idObfuscator.encodeId(roomStandard.getAccommodation().getId()))
+            .accommodationName(roomStandard.getAccommodation().getName())
+            .name(roomStandard.getName())
+            .description(roomStandard.getDescription())
+            .maxOccupancy(roomStandard.getMaxOccupancy())
+            .amenities(roomStandard.getAmenities())
+            .viewType(roomStandard.getViewType())
+            .floorLevel(roomStandard.getFloorLevel())
+            .isActive(roomStandard.getIsActive())
+            .createdAt(roomStandard.getCreatedAt())
+            .updatedAt(roomStandard.getUpdatedAt())
+            .build();
+    }
+}

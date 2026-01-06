@@ -37,6 +37,8 @@ public class AuditLoggingAspect {
         String entityType = annotation.entityType();
         String description = annotation.description();
 
+        log.info("AuditLoggingAspect triggered for action: {} on entityType: {}", action, entityType);
+
         // Get current user
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long userId = null;
@@ -106,6 +108,7 @@ public class AuditLoggingAspect {
             // Save audit log
             try {
                 AuditLog auditLog = AuditLog.builder()
+                        .name("TEMP_" + System.currentTimeMillis())
                         .userId(userId)
                         .username(username)
                         .action(action)
