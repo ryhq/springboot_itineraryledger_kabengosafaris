@@ -129,13 +129,16 @@ public class AccommodationController {
      * Returns only essential fields: id, name, location, region, isActive
      * Useful for UI components when creating emails, phones, etc.
      *
+     * @param hasBranch Optional filter for accommodations with branches
      * @return ResponseEntity with ApiResponse containing list of accommodations
      */
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('PERM_READ_ACCOMMODATION')")
-    public ResponseEntity<ApiResponse<?>> getAccommodationsList() {
-        log.info("GET /api/accommodations/list - Fetching accommodations for dropdown");
-        return accommodationGetService.getAccommodationsList();
+    public ResponseEntity<ApiResponse<?>> getAccommodationsList(
+        @RequestParam(required = false) Boolean hasBranch
+    ) {
+        log.info("GET /api/accommodations/list - Fetching accommodations for dropdown (hasBranch: {})", hasBranch);
+        return accommodationGetService.getAccommodationsList(hasBranch);
     }
 
     /**
@@ -189,7 +192,7 @@ public class AccommodationController {
         @RequestParam(required = false) Boolean isActive,
         @RequestParam(required = false) Boolean isHeadquarters,
         @RequestParam(required = false) Boolean hasBranch,
-        @RequestParam(required = false) Long parentId,
+        @RequestParam(required = false) String parentId,
         @RequestParam(required = false) Boolean hasNoParent,
         @RequestParam(required = false) Integer minRooms,
         @RequestParam(required = false) Integer maxRooms,

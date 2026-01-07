@@ -164,6 +164,18 @@ public class UpdateAccommodationService {
             } else {
                 try {
                     Long parentId = idObfuscator.decodeId(updateAccommodationDTO.getParentAccommodationId());
+
+                    // Validate: Accommodation cannot be its own parent
+                    if (parentId.equals(id)) {
+                        return ResponseEntity.badRequest().body(
+                            ApiResponse.error(
+                                400,
+                                "An accommodation cannot be its own parent",
+                                "SELF_PARENT_NOT_ALLOWED"
+                            )
+                        );
+                    }
+
                     Optional<Accommodation> parentOpt = accommodationRepository.findById(parentId);
 
                     if (parentOpt.isEmpty()) {
@@ -177,6 +189,18 @@ public class UpdateAccommodationService {
                     }
 
                     Accommodation parentAccommodation = parentOpt.get();
+
+                    // Validate: Check for circular parent-child relationship
+                    // This prevents scenarios like: A->B, B->C, C->A
+                    if (wouldCreateCircularReference(parentAccommodation, id)) {
+                        return ResponseEntity.badRequest().body(
+                            ApiResponse.error(
+                                400,
+                                "Cannot set this parent: it would create a circular parent-child relationship",
+                                "CIRCULAR_PARENT_CHILD_REFERENCE"
+                            )
+                        );
+                    }
 
                     // Update parent to indicate it has branches
                     if (!parentAccommodation.getHasBranch()) {
@@ -319,6 +343,47 @@ public class UpdateAccommodationService {
                 accommodationDTO
             )
         );
+    }
+
+    /**
+     * Check if setting a parent would create a circular reference
+     *
+     * This recursively checks if the proposed parent has the current accommodation
+     * anywhere in its parent chain.
+     *
+     * Example scenarios prevented:
+     * - A tries to set parent as B, but B's parent is A (direct circular)
+     * - A tries to set parent as B, but B->C->A (indirect circular chain)
+     *
+     * @param proposedParent The accommodation being set as parent
+     * @param currentAccommodationId The ID of the accommodation being updated
+     * @return true if circular reference would be created, false otherwise
+     */
+    private boolean wouldCreateCircularReference(Accommodation proposedParent, Long currentAccommodationId) {
+        // Traverse up the parent chain of the proposed parent
+        Accommodation current = proposedParent;
+        int maxDepth = 100; // Safety limit to prevent infinite loops in case of data corruption
+        int depth = 0;
+
+        while (current != null && depth < maxDepth) {
+            // If we find the current accommodation in the parent chain, it's circular
+            if (current.getId().equals(currentAccommodationId)) {
+                log.warn("Circular reference detected: Accommodation {} found in parent chain of {}",
+                    currentAccommodationId, proposedParent.getId());
+                return true;
+            }
+
+            // Move up to the next parent
+            current = current.getParentAccommodation();
+            depth++;
+        }
+
+        if (depth >= maxDepth) {
+            log.error("Maximum parent chain depth exceeded. Possible circular reference or very deep hierarchy.");
+            return true; // Treat as circular to be safe
+        }
+
+        return false;
     }
 
     /**

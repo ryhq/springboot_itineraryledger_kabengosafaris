@@ -105,7 +105,6 @@ public class CreateAccommodationDTO {
     @Size(max = 500, message = "Short description must not exceed 500 characters")
     private String shortDescription;
 
-    @NotBlank(message = "Details are required")
     private String details; // Detailed description
 
     private String amenities; // Comma-separated or JSON list

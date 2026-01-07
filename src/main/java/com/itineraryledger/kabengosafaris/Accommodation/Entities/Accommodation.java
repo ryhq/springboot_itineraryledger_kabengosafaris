@@ -124,7 +124,7 @@ public class Accommodation {
     private String shortDescription; // Brief overview (150-200 chars)
 
     @Lob
-    @Column(columnDefinition = "LONGTEXT", nullable = false)
+    @Column(columnDefinition = "LONGTEXT")
     private String details; // Detailed description of the accommodation
 
     @Lob

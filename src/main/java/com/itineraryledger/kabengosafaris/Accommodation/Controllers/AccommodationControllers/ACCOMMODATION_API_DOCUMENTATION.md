@@ -298,7 +298,66 @@ Ideal for public-facing URLs and SEO-friendly routes.
 
 ---
 
-### 6. Get All Accommodations (List with Filters)
+### 6. Get Accommodations List (Lightweight for Dropdowns)
+**GET** `/api/accommodations/list`
+
+Retrieves a lightweight list of accommodations for dropdown/select purposes. Returns only essential fields without pagination.
+
+**Permission Required:** `PERM_READ_ACCOMMODATION`
+
+**Query Parameters:**
+- `hasBranch` (boolean, optional) - Filter accommodations with branches
+  - `true` - Returns only accommodations that have branches (headquarters with branches)
+  - `false` - Returns only accommodations without branches
+  - Not provided - Returns all accommodations
+
+**Example Requests:**
+```
+# Get all accommodations for dropdown
+GET /api/accommodations/list
+
+# Get only accommodations with branches (headquarters)
+GET /api/accommodations/list?hasBranch=true
+
+# Get only single-location accommodations (no branches)
+GET /api/accommodations/list?hasBranch=false
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "status": 200,
+  "message": "Accommodations list retrieved successfully",
+  "data": [
+    {
+      "id": "encoded_accommodation_id_1",
+      "name": "Serengeti Serena Safari Lodge",
+      "location": "Central Serengeti, Tanzania",
+      "region": "Serengeti",
+      "isActive": true
+    },
+    {
+      "id": "encoded_accommodation_id_2",
+      "name": "Ngorongoro Crater Lodge",
+      "location": "Ngorongoro Conservation Area",
+      "region": "Ngorongoro",
+      "isActive": true
+    }
+  ]
+}
+```
+
+**Use Cases:**
+- Populate dropdown lists in forms
+- Select parent accommodation when creating branches
+- Quick accommodation selection in UI components
+- Selecting accommodation for emails, phones, and other related entities
+
+**Note:** This endpoint returns all matching accommodations without pagination, sorted alphabetically by name. It's optimized for UI components requiring simple selection lists.
+
+---
+
+### 7. Get All Accommodations (List with Filters)
 **GET** `/api/accommodations`
 
 Retrieves a paginated list of accommodations with extensive filtering options.
@@ -328,7 +387,7 @@ Retrieves a paginated list of accommodations with extensive filtering options.
 #### Hierarchy Filters
 - `isHeadquarters` (boolean) - Filter headquarters
 - `hasBranch` (boolean) - Filter accommodations with/without branches
-- `parentId` (long) - Filter branches of specific parent
+- `parentId` (string) - Filter branches of specific parent (obfuscated accommodation ID)
 - `hasNoParent` (boolean) - Filter only headquarters (no parent)
 
 #### Capacity Filters
@@ -420,8 +479,9 @@ GET /api/accommodations?region=Serengeti&category=LUXURY&minStarRating=4&isActiv
 
 3. **Find all branches of an accommodation:**
    ```
-   ?parentId=123
+   ?parentId=encoded_accommodation_id
    ```
+   **Note**: Use the obfuscated ID of the headquarters/parent accommodation
 
 4. **Find all headquarters (no branches):**
    ```
@@ -497,15 +557,20 @@ To create a branch of an existing accommodation:
 
 ### Querying Branch Hierarchy
 ```
-# Get all branches of a parent
-GET /api/accommodations?parentId=123
+# Get all branches of a parent headquarters
+GET /api/accommodations?parentId=encoded_accommodation_id
 
 # Get only headquarters
 GET /api/accommodations?isHeadquarters=true
 
 # Get accommodations without branches
 GET /api/accommodations?hasBranch=false
+
+# Get accommodations that have no parent (headquarters and single locations)
+GET /api/accommodations?hasNoParent=true
 ```
+
+**Note**: The `parentId` parameter accepts the obfuscated/encoded ID of the parent accommodation (headquarters). To get branches of an accommodation, pass its obfuscated ID as the `parentId` value.
 
 ### Deleting with Branches
 When you delete an accommodation with branches:

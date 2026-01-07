@@ -199,7 +199,7 @@ public class AccommodationGetService {
         Boolean isActive,
         Boolean isHeadquarters,
         Boolean hasBranch,
-        Long parentId,
+        String parentId,
         Boolean hasNoParent,
         Integer minRooms,
         Integer maxRooms,
@@ -263,8 +263,20 @@ public class AccommodationGetService {
             if (hasBranch != null) {
                 spec = spec.and(AccommodationSpecification.hasBranch(hasBranch));
             }
-            if (parentId != null) {
-                spec = spec.and(AccommodationSpecification.hasParentId(parentId));
+            if (parentId != null && !parentId.isEmpty()) {
+                try {
+                    Long decodedParentId = idObfuscator.decodeId(parentId);
+                    spec = spec.and(AccommodationSpecification.hasParentId(decodedParentId));
+                } catch (Exception e) {
+                    log.warn("Failed to decode parent ID: {}", parentId, e);
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(
+                            400,
+                            "Invalid parent accommodation ID",
+                            "INVALID_PARENT_ID"
+                        )
+                    );
+                }
             }
             if (hasNoParent != null && hasNoParent) {
                 spec = spec.and(AccommodationSpecification.hasNoParent());
@@ -419,20 +431,26 @@ public class AccommodationGetService {
             .documentCount(accommodation.getDocuments() != null ? accommodation.getDocuments().size() : 0)
             .build();
     }
-
+    
     /**
      * Get lightweight list of accommodations for dropdown/select purposes
      * Returns only essential fields (id, name, location, region, isActive)
      *
+     * @param hasBranch Optional filter for accommodations with branches
      * @return ResponseEntity with ApiResponse containing list of accommodations
      */
-    public ResponseEntity<ApiResponse<?>> getAccommodationsList() {
-        log.info("Fetching accommodations list for dropdown");
+    public ResponseEntity<ApiResponse<?>> getAccommodationsList(Boolean hasBranch) {
+        log.info("Fetching accommodations list for dropdown with hasBranch filter: {}", hasBranch);
 
         try {
             // Build specification
             Specification<Accommodation> spec = Specification.unrestricted();
-            
+
+            // Filter by hasBranch if provided
+            if (hasBranch != null) {
+                spec = spec.and(AccommodationSpecification.hasBranch(hasBranch));
+            }
+
             // Fetch all matching accommodations sorted by name
             Sort sort = Sort.by("name").ascending();
             List<Accommodation> accommodations = accommodationRepository.findAll(spec, sort);

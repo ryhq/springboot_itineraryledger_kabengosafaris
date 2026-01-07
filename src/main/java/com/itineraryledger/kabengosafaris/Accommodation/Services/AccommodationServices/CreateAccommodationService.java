@@ -113,6 +113,18 @@ public class CreateAccommodationService {
 
                     parentAccommodation = parentOpt.get();
 
+                    // Validate: Check if parent has a valid parent chain (no existing circular issues)
+                    if (hasCircularParentChain(parentAccommodation)) {
+                        log.warn("Parent accommodation has circular reference in its parent chain: {}", parentId);
+                        return ResponseEntity.badRequest().body(
+                            ApiResponse.error(
+                                400,
+                                "Cannot use this parent: it has a circular reference in its parent chain",
+                                "PARENT_HAS_CIRCULAR_REFERENCE"
+                            )
+                        );
+                    }
+
                     // Update parent to indicate it has branches
                     if (!parentAccommodation.getHasBranch()) {
                         parentAccommodation.setHasBranch(true);
@@ -229,6 +241,47 @@ public class CreateAccommodationService {
             .replaceAll("[^a-z0-9-]", "")
             .replaceAll("-+", "-")
             .replaceAll("^-|-$", "");
+    }
+
+    /**
+     * Check if an accommodation has a circular reference in its parent chain
+     *
+     * This validates that the parent accommodation's existing parent chain doesn't
+     * have any circular references. This is used during creation to ensure we're
+     * not adding a branch to an already corrupted hierarchy.
+     *
+     * @param accommodation The accommodation to check
+     * @return true if circular reference exists in parent chain, false otherwise
+     */
+    private boolean hasCircularParentChain(Accommodation accommodation) {
+        Accommodation current = accommodation.getParentAccommodation();
+        int maxDepth = 100; // Safety limit to prevent infinite loops
+        int depth = 0;
+
+        // Track visited accommodations to detect circular references
+        java.util.Set<Long> visited = new java.util.HashSet<>();
+        visited.add(accommodation.getId());
+
+        while (current != null && depth < maxDepth) {
+            // If we've seen this accommodation before in the chain, it's circular
+            if (visited.contains(current.getId())) {
+                log.warn("Circular reference detected in parent chain of accommodation: {}",
+                    accommodation.getId());
+                return true;
+            }
+
+            visited.add(current.getId());
+            current = current.getParentAccommodation();
+            depth++;
+        }
+
+        if (depth >= maxDepth) {
+            log.error("Maximum parent chain depth exceeded for accommodation: {}. Possible circular reference.",
+                accommodation.getId());
+            return true; // Treat as circular to be safe
+        }
+
+        return false;
     }
 
     /**
