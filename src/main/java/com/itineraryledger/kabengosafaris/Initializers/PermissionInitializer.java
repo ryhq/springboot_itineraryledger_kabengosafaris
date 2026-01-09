@@ -104,6 +104,8 @@ public class PermissionInitializer implements ApplicationRunner {
             "ACCOMMODATION_ROOM_TYPE",
             "ACCOMMODATION_ROOM_STANDARD",
             "ACCOMMODATION_DOCUMENT",
+            "SEASON",
+            "SEASON_PERIOD",
         };
 
         // Define standard actions (CREATE, READ, UPDATE, DELETE)

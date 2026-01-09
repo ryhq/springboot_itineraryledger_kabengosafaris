@@ -289,6 +289,88 @@ Same structure as "Get All Accommodation Room Standards" response.
 
 ---
 
+### 7. Get Unique Room Standards by Name
+
+**GET** `/api/accommodation-room-standards/unique`
+
+Retrieves unique room standards based on name. Returns one room standard per unique name, sorted alphabetically. This is useful for dropdowns where users can select existing room standard names to apply to new accommodations.
+
+**Required Permission:** `PERM_READ_ACCOMMODATION_ROOM_STANDARD`
+
+**Use Case:**
+When creating a room standard for a new accommodation, users can select from existing room standard names (e.g., "Deluxe Room", "Standard Suite", "Family Tent") instead of manually typing the name. If multiple room standards have the same name, only one is returned (the one with the lowest ID), sorted alphabetically by name.
+
+**Uniqueness Criteria:**
+Room standards are considered unique based on the `name` field only.
+
+**Example Request:**
+```
+GET /api/accommodation-room-standards/unique
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "status": 200,
+  "message": "Unique room standards retrieved successfully",
+  "data": [
+    {
+      "id": "encoded_room_standard_id_1",
+      "accommodationId": "encoded_accommodation_id",
+      "accommodationName": "Serengeti Safari Lodge",
+      "name": "Deluxe Room",
+      "description": "Spacious room with premium amenities and garden view",
+      "maxOccupancy": 3,
+      "amenities": "WiFi, AC, Minibar, Balcony, Safe, TV",
+      "viewType": "Garden View",
+      "floorLevel": "Ground Floor",
+      "isActive": true,
+      "createdAt": "2026-01-06T12:00:00",
+      "updatedAt": "2026-01-06T12:00:00"
+    },
+    {
+      "id": "encoded_room_standard_id_2",
+      "accommodationId": "encoded_accommodation_id",
+      "accommodationName": "Ngorongoro Crater Lodge",
+      "name": "Family Suite",
+      "description": "Large suite suitable for families with children",
+      "maxOccupancy": 5,
+      "amenities": "WiFi, AC, Kitchenette, Living Area, Safe, TV",
+      "viewType": "Mountain View",
+      "floorLevel": "First Floor",
+      "isActive": true,
+      "createdAt": "2026-01-05T10:00:00",
+      "updatedAt": "2026-01-05T10:00:00"
+    },
+    {
+      "id": "encoded_room_standard_id_3",
+      "accommodationId": "encoded_accommodation_id",
+      "accommodationName": "Tarangire Tented Camp",
+      "name": "Standard Room",
+      "description": "Comfortable room with essential amenities",
+      "maxOccupancy": 2,
+      "amenities": "WiFi, Fan, Safe",
+      "viewType": "Park View",
+      "floorLevel": "Ground Floor",
+      "isActive": true,
+      "createdAt": "2026-01-04T15:00:00",
+      "updatedAt": "2026-01-04T15:00:00"
+    }
+  ]
+}
+```
+
+**Response Details:**
+- Only active room standards (`isActive = true`) are included
+- Results are sorted alphabetically by name
+- Returns a simple array (not paginated) for easy dropdown population
+- Each unique name appears only once
+
+**Error Responses:**
+- `500 Internal Server Error` - Server error
+
+---
+
 ## Data Models
 
 ### CreateAccommodationRoomStandardDTO

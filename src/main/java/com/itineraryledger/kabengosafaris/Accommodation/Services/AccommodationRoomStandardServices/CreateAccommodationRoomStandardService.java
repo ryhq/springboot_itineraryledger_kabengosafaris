@@ -54,6 +54,12 @@ public class CreateAccommodationRoomStandardService {
         log.info("Creating new accommodation room standard: {}", createDTO.getName());
 
         try {
+            // Validate input fields
+            ResponseEntity<ApiResponse<?>> validationError = validateInputFields(createDTO);
+            if (validationError != null) {
+                return validationError;
+            }
+
             // Decode accommodation ID
             Long accommodationId;
             try {
@@ -130,6 +136,55 @@ public class CreateAccommodationRoomStandardService {
                 )
             );
         }
+    }
+
+    /**
+     * Validate input fields for room standard creation
+     */
+    private ResponseEntity<ApiResponse<?>> validateInputFields(CreateAccommodationRoomStandardDTO dto) {
+        // Validate and sanitize name
+        if (dto.getName() == null || dto.getName().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Room standard name cannot be empty", "INVALID_NAME")
+            );
+        }
+
+        String trimmedName = dto.getName().trim();
+        if (trimmedName.length() > 100) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Room standard name cannot exceed 100 characters", "NAME_TOO_LONG")
+            );
+        }
+        dto.setName(trimmedName);
+
+        // Validate viewType length if provided
+        if (dto.getViewType() != null && dto.getViewType().length() > 100) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "View type cannot exceed 100 characters", "VIEW_TYPE_TOO_LONG")
+            );
+        }
+
+        // Validate floorLevel length if provided
+        if (dto.getFloorLevel() != null && dto.getFloorLevel().length() > 50) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Floor level cannot exceed 50 characters", "FLOOR_LEVEL_TOO_LONG")
+            );
+        }
+
+        // Validate maxOccupancy if provided
+        if (dto.getMaxOccupancy() != null && dto.getMaxOccupancy() < 1) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Max occupancy must be at least 1", "INVALID_MAX_OCCUPANCY")
+            );
+        }
+
+        if (dto.getMaxOccupancy() != null && dto.getMaxOccupancy() > 50) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Max occupancy cannot exceed 50", "MAX_OCCUPANCY_TOO_HIGH")
+            );
+        }
+
+        return null; // No validation errors
     }
 
     /**

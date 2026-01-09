@@ -218,4 +218,18 @@ public class AccommodationBoardTypeController {
             pageable
         );
     }
+
+    /**
+     * Get unique board types based on meal configuration
+     * Returns one board type per unique meal configuration, sorted by name
+     * Useful for dropdowns where users select existing board type configurations
+     *
+     * @return ResponseEntity with ApiResponse containing list of unique board types
+     */
+    @GetMapping("/unique")
+    @PreAuthorize("hasAuthority('PERM_READ_ACCOMMODATION_BOARD_TYPE')")
+    public ResponseEntity<ApiResponse<?>> getUniqueBoardTypes() {
+        log.info("GET /api/accommodation-board-types/unique - Fetching unique board types");
+        return accommodationBoardTypeGetService.getUniqueBoardTypes();
+    }
 }

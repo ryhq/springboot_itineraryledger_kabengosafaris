@@ -1,6 +1,5 @@
 package com.itineraryledger.kabengosafaris.Accommodation.Services.AccommodationRoomTypeServices;
 
-import com.itineraryledger.kabengosafaris.Accommodation.AccommodationRoomTypeSpecification;
 import com.itineraryledger.kabengosafaris.Accommodation.DTOs.AccommodationRoomTypeDTOs.AccommodationRoomTypeDTO;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRoomType;
 import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRoomTypeRepository;
@@ -311,5 +310,44 @@ public class AccommodationRoomTypeGetService {
             .createdAt(roomType.getCreatedAt())
             .updatedAt(roomType.getUpdatedAt())
             .build();
+    }
+
+    /**
+     * Get unique room types based on name
+     * Returns one room type per unique name, sorted alphabetically
+     * This is useful for dropdowns where users select existing room type names
+     *
+     * @return ResponseEntity with ApiResponse containing list of unique room types
+     */
+    public ResponseEntity<ApiResponse<?>> getUniqueRoomTypes() {
+        log.info("Fetching unique room types by name");
+
+        try {
+            // Fetch unique room types from repository
+            List<AccommodationRoomType> uniqueRoomTypes = roomTypeRepository.findUniqueRoomTypesByName();
+
+            // Convert to DTOs
+            List<AccommodationRoomTypeDTO> dtos = uniqueRoomTypes.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(
+                    200,
+                    "Unique room types retrieved successfully",
+                    dtos
+                )
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching unique room types", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(
+                    500,
+                    "Failed to fetch unique room types",
+                    "UNIQUE_ROOM_TYPES_FETCH_FAILED"
+                )
+            );
+        }
     }
 }

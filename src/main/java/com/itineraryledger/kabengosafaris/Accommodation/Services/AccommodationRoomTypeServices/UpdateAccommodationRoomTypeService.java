@@ -53,6 +53,18 @@ public class UpdateAccommodationRoomTypeService {
         log.info("Updating accommodation room type: {}", idObfuscated);
 
         try {
+            // Validate that at least one field is provided for update
+            ResponseEntity<ApiResponse<?>> validationError = validateAtLeastOneFieldProvided(updateDTO);
+            if (validationError != null) {
+                return validationError;
+            }
+
+            // Validate input fields
+            validationError = validateInputFields(updateDTO);
+            if (validationError != null) {
+                return validationError;
+            }
+
             // Decode room type ID
             Long roomTypeId;
             try {
@@ -76,6 +88,24 @@ public class UpdateAccommodationRoomTypeService {
                         404,
                         "Room type not found",
                         "ROOM_TYPE_NOT_FOUND"
+                    )
+                );
+            }
+
+            // Validate occupancy logic against existing entity
+            Integer finalMinOccupancy = updateDTO.getMinOccupancy() != null
+                ? updateDTO.getMinOccupancy()
+                : roomType.getMinOccupancy();
+            Integer finalMaxOccupancy = updateDTO.getMaxOccupancy() != null
+                ? updateDTO.getMaxOccupancy()
+                : roomType.getMaxOccupancy();
+
+            if (finalMinOccupancy != null && finalMaxOccupancy != null && finalMinOccupancy > finalMaxOccupancy) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        "Min occupancy cannot be greater than max occupancy",
+                        "INVALID_OCCUPANCY_LOGIC"
                     )
                 );
             }
@@ -138,6 +168,92 @@ public class UpdateAccommodationRoomTypeService {
                 )
             );
         }
+    }
+
+    /**
+     * Validate that at least one field is provided for update
+     */
+    private ResponseEntity<ApiResponse<?>> validateAtLeastOneFieldProvided(UpdateAccommodationRoomTypeDTO dto) {
+        boolean hasUpdate =
+            dto.getName() != null ||
+            dto.getBedConfiguration() != null ||
+            dto.getMaxOccupancy() != null ||
+            dto.getMinOccupancy() != null ||
+            dto.getDescription() != null ||
+            dto.getIsActive() != null;
+
+        if (!hasUpdate) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "At least one field must be provided for update", "NO_FIELDS_TO_UPDATE")
+            );
+        }
+
+        return null;
+    }
+
+    /**
+     * Validate input fields for room type update
+     */
+    private ResponseEntity<ApiResponse<?>> validateInputFields(UpdateAccommodationRoomTypeDTO dto) {
+        // Validate and sanitize name if provided
+        if (dto.getName() != null) {
+            String trimmedName = dto.getName().trim();
+            if (trimmedName.isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Room type name cannot be empty", "INVALID_NAME")
+                );
+            }
+            if (trimmedName.length() > 100) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Room type name cannot exceed 100 characters", "NAME_TOO_LONG")
+                );
+            }
+            dto.setName(trimmedName);
+        }
+
+        // Validate bedConfiguration length if provided
+        if (dto.getBedConfiguration() != null && dto.getBedConfiguration().length() > 100) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Bed configuration cannot exceed 100 characters", "BED_CONFIGURATION_TOO_LONG")
+            );
+        }
+
+        // Validate maxOccupancy if provided
+        if (dto.getMaxOccupancy() != null && dto.getMaxOccupancy() < 1) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Max occupancy must be at least 1", "INVALID_MAX_OCCUPANCY")
+            );
+        }
+
+        if (dto.getMaxOccupancy() != null && dto.getMaxOccupancy() > 50) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Max occupancy cannot exceed 50", "MAX_OCCUPANCY_TOO_HIGH")
+            );
+        }
+
+        // Validate minOccupancy if provided
+        if (dto.getMinOccupancy() != null && dto.getMinOccupancy() < 1) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Min occupancy must be at least 1", "INVALID_MIN_OCCUPANCY")
+            );
+        }
+
+        if (dto.getMinOccupancy() != null && dto.getMinOccupancy() > 50) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Min occupancy cannot exceed 50", "MIN_OCCUPANCY_TOO_HIGH")
+            );
+        }
+
+        // Validate occupancy logic if both are being updated
+        if (dto.getMinOccupancy() != null && dto.getMaxOccupancy() != null) {
+            if (dto.getMinOccupancy() > dto.getMaxOccupancy()) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Min occupancy cannot be greater than max occupancy", "INVALID_OCCUPANCY_LOGIC")
+                );
+            }
+        }
+
+        return null; // No validation errors
     }
 
     /**

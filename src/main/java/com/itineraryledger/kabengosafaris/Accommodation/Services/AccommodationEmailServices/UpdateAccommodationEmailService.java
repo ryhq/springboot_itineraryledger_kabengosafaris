@@ -51,6 +51,18 @@ public class UpdateAccommodationEmailService {
         log.info("Updating accommodation email with ID: {}", idObfuscated);
 
         try {
+            // Validate that at least one field is provided for update
+            ResponseEntity<ApiResponse<?>> validationError = validateAtLeastOneFieldProvided(updateDTO);
+            if (validationError != null) {
+                return validationError;
+            }
+
+            // Validate input fields
+            validationError = validateInputFields(updateDTO);
+            if (validationError != null) {
+                return validationError;
+            }
+
             // Decode ID
             Long id;
             try {
@@ -145,6 +157,85 @@ public class UpdateAccommodationEmailService {
                 emailDTO
             )
         );
+    }
+
+    /**
+     * Validate that at least one field is provided for update
+     */
+    private ResponseEntity<ApiResponse<?>> validateAtLeastOneFieldProvided(UpdateAccommodationEmailDTO dto) {
+        boolean hasUpdate =
+            dto.getEmail() != null ||
+            dto.getEmailType() != null ||
+            dto.getIsPrimary() != null ||
+            dto.getIsActive() != null ||
+            dto.getLabel() != null;
+
+        if (!hasUpdate) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "At least one field must be provided for update", "NO_FIELDS_TO_UPDATE")
+            );
+        }
+
+        return null;
+    }
+
+    /**
+     * Validate input fields for email update
+     */
+    private ResponseEntity<ApiResponse<?>> validateInputFields(UpdateAccommodationEmailDTO dto) {
+        // Validate and sanitize email if provided
+        if (dto.getEmail() != null) {
+            String trimmedEmail = dto.getEmail().trim();
+
+            if (trimmedEmail.isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Email address cannot be empty", "INVALID_EMAIL")
+                );
+            }
+
+            trimmedEmail = trimmedEmail.toLowerCase();
+
+            // Validate email length (max 254 characters as per RFC 5321)
+            if (trimmedEmail.length() > 254) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Email address cannot exceed 254 characters", "EMAIL_TOO_LONG")
+                );
+            }
+
+            // Validate email format using RFC 5322 compliant regex
+            String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}$";
+            if (!trimmedEmail.matches(emailRegex)) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid email address format", "INVALID_EMAIL_FORMAT")
+                );
+            }
+
+            // Validate local part length (before @, max 64 characters as per RFC 5321)
+            String[] parts = trimmedEmail.split("@");
+            if (parts.length == 2 && parts[0].length() > 64) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Email local part cannot exceed 64 characters", "EMAIL_LOCAL_PART_TOO_LONG")
+                );
+            }
+
+            // Validate domain part length (after @, max 253 characters)
+            if (parts.length == 2 && parts[1].length() > 253) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Email domain cannot exceed 253 characters", "EMAIL_DOMAIN_TOO_LONG")
+                );
+            }
+
+            dto.setEmail(trimmedEmail);
+        }
+
+        // Validate label length if provided
+        if (dto.getLabel() != null && dto.getLabel().length() > 100) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Label cannot exceed 100 characters", "LABEL_TOO_LONG")
+            );
+        }
+
+        return null; // No validation errors
     }
 
     /**

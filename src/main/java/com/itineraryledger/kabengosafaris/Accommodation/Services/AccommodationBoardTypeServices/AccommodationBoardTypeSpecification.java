@@ -1,4 +1,4 @@
-package com.itineraryledger.kabengosafaris.Accommodation;
+package com.itineraryledger.kabengosafaris.Accommodation.Services.AccommodationBoardTypeServices;
 
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationBoardType;
 import org.springframework.data.jpa.domain.Specification;

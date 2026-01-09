@@ -53,6 +53,18 @@ public class UpdateAccommodationRoomStandardService {
         log.info("Updating accommodation room standard: {}", idObfuscated);
 
         try {
+            // Validate that at least one field is provided for update
+            ResponseEntity<ApiResponse<?>> validationError = validateAtLeastOneFieldProvided(updateDTO);
+            if (validationError != null) {
+                return validationError;
+            }
+
+            // Validate input fields
+            validationError = validateInputFields(updateDTO);
+            if (validationError != null) {
+                return validationError;
+            }
+
             // Decode room standard ID
             Long roomStandardId;
             try {
@@ -141,6 +153,78 @@ public class UpdateAccommodationRoomStandardService {
                 )
             );
         }
+    }
+
+    /**
+     * Validate that at least one field is provided for update
+     */
+    private ResponseEntity<ApiResponse<?>> validateAtLeastOneFieldProvided(UpdateAccommodationRoomStandardDTO dto) {
+        boolean hasUpdate =
+            dto.getName() != null ||
+            dto.getDescription() != null ||
+            dto.getMaxOccupancy() != null ||
+            dto.getAmenities() != null ||
+            dto.getViewType() != null ||
+            dto.getFloorLevel() != null ||
+            dto.getIsActive() != null;
+
+        if (!hasUpdate) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "At least one field must be provided for update", "NO_FIELDS_TO_UPDATE")
+            );
+        }
+
+        return null;
+    }
+
+    /**
+     * Validate input fields for room standard update
+     */
+    private ResponseEntity<ApiResponse<?>> validateInputFields(UpdateAccommodationRoomStandardDTO dto) {
+        // Validate and sanitize name if provided
+        if (dto.getName() != null) {
+            String trimmedName = dto.getName().trim();
+            if (trimmedName.isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Room standard name cannot be empty", "INVALID_NAME")
+                );
+            }
+            if (trimmedName.length() > 100) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Room standard name cannot exceed 100 characters", "NAME_TOO_LONG")
+                );
+            }
+            dto.setName(trimmedName);
+        }
+
+        // Validate viewType length if provided
+        if (dto.getViewType() != null && dto.getViewType().length() > 100) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "View type cannot exceed 100 characters", "VIEW_TYPE_TOO_LONG")
+            );
+        }
+
+        // Validate floorLevel length if provided
+        if (dto.getFloorLevel() != null && dto.getFloorLevel().length() > 50) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Floor level cannot exceed 50 characters", "FLOOR_LEVEL_TOO_LONG")
+            );
+        }
+
+        // Validate maxOccupancy if provided
+        if (dto.getMaxOccupancy() != null && dto.getMaxOccupancy() < 1) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Max occupancy must be at least 1", "INVALID_MAX_OCCUPANCY")
+            );
+        }
+
+        if (dto.getMaxOccupancy() != null && dto.getMaxOccupancy() > 50) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Max occupancy cannot exceed 50", "MAX_OCCUPANCY_TOO_HIGH")
+            );
+        }
+
+        return null; // No validation errors
     }
 
     /**

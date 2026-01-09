@@ -281,6 +281,85 @@ Same structure as "Get All Accommodation Room Types" response.
 
 ---
 
+### 7. Get Unique Room Types by Name
+
+**GET** `/api/accommodation-room-types/unique`
+
+Retrieves unique room types based on name. Returns one room type per unique name, sorted alphabetically. This is useful for dropdowns where users can select existing room type names to apply to new accommodations.
+
+**Required Permission:** `PERM_READ_ACCOMMODATION_ROOM_TYPE`
+
+**Use Case:**
+When creating a room type for a new accommodation, users can select from existing room type names (e.g., "Single Room", "Double Room", "Twin Room") instead of manually typing the name. If multiple room types have the same name, only one is returned (the one with the lowest ID), sorted alphabetically by name.
+
+**Uniqueness Criteria:**
+Room types are considered unique based on the `name` field only.
+
+**Example Request:**
+```
+GET /api/accommodation-room-types/unique
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "status": 200,
+  "message": "Unique room types retrieved successfully",
+  "data": [
+    {
+      "id": "encoded_room_type_id_1",
+      "accommodationId": "encoded_accommodation_id",
+      "accommodationName": "Serengeti Safari Lodge",
+      "name": "Double Room",
+      "bedConfiguration": "1 Queen Bed",
+      "maxOccupancy": 2,
+      "minOccupancy": 1,
+      "description": "Comfortable double room with queen-sized bed",
+      "isActive": true,
+      "createdAt": "2026-01-06T12:00:00",
+      "updatedAt": "2026-01-06T12:00:00"
+    },
+    {
+      "id": "encoded_room_type_id_2",
+      "accommodationId": "encoded_accommodation_id",
+      "accommodationName": "Ngorongoro Crater Lodge",
+      "name": "Single Room",
+      "bedConfiguration": "1 Single Bed",
+      "maxOccupancy": 1,
+      "minOccupancy": 1,
+      "description": "Cozy single room perfect for solo travelers",
+      "isActive": true,
+      "createdAt": "2026-01-05T10:00:00",
+      "updatedAt": "2026-01-05T10:00:00"
+    },
+    {
+      "id": "encoded_room_type_id_3",
+      "accommodationId": "encoded_accommodation_id",
+      "accommodationName": "Tarangire Tented Camp",
+      "name": "Twin Room",
+      "bedConfiguration": "2 Single Beds",
+      "maxOccupancy": 2,
+      "minOccupancy": 1,
+      "description": "Twin room with two separate single beds",
+      "isActive": true,
+      "createdAt": "2026-01-04T15:00:00",
+      "updatedAt": "2026-01-04T15:00:00"
+    }
+  ]
+}
+```
+
+**Response Details:**
+- Only active room types (`isActive = true`) are included
+- Results are sorted alphabetically by name
+- Returns a simple array (not paginated) for easy dropdown population
+- Each unique name appears only once
+
+**Error Responses:**
+- `500 Internal Server Error` - Server error
+
+---
+
 ## Data Models
 
 ### CreateAccommodationRoomTypeDTO

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -28,4 +29,20 @@ public interface AccommodationRoomStandardRepository extends JpaRepository<Accom
      */
     @Query("SELECT COUNT(rs) > 0 FROM AccommodationRoomStandard rs WHERE rs.accommodation.id = :accommodationId AND rs.name = :name AND rs.id != :excludeId")
     boolean existsByAccommodationIdAndNameExcludingId(@Param("accommodationId") Long accommodationId, @Param("name") String name, @Param("excludeId") Long excludeId);
+
+    /**
+     * Find unique room standards based on name (grouped by name)
+     * Returns one room standard per unique name, sorted alphabetically
+     */
+    @Query("""
+        SELECT rs FROM AccommodationRoomStandard rs
+        WHERE rs.id IN (
+            SELECT MIN(rs2.id)
+            FROM AccommodationRoomStandard rs2
+            WHERE rs2.isActive = true
+            GROUP BY rs2.name
+        )
+        ORDER BY rs.name ASC
+        """)
+    List<AccommodationRoomStandard> findUniqueRoomStandardsByName();
 }

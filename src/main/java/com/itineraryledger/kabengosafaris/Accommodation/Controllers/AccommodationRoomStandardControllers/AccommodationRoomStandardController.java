@@ -206,4 +206,18 @@ public class AccommodationRoomStandardController {
             pageable
         );
     }
+
+    /**
+     * Get unique room standards based on name
+     * Returns one room standard per unique name, sorted alphabetically
+     * Useful for dropdowns where users select existing room standard names
+     *
+     * @return ResponseEntity with ApiResponse containing list of unique room standards
+     */
+    @GetMapping("/unique")
+    @PreAuthorize("hasAuthority('PERM_READ_ACCOMMODATION_ROOM_STANDARD')")
+    public ResponseEntity<ApiResponse<?>> getUniqueRoomStandards() {
+        log.info("GET /api/accommodation-room-standards/unique - Fetching unique room standards");
+        return accommodationRoomStandardGetService.getUniqueRoomStandards();
+    }
 }

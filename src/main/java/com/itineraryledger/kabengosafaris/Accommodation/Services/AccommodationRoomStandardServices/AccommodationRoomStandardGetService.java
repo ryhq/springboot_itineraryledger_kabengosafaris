@@ -1,6 +1,5 @@
 package com.itineraryledger.kabengosafaris.Accommodation.Services.AccommodationRoomStandardServices;
 
-import com.itineraryledger.kabengosafaris.Accommodation.AccommodationRoomStandardSpecification;
 import com.itineraryledger.kabengosafaris.Accommodation.DTOs.AccommodationRoomStandardDTOs.AccommodationRoomStandardDTO;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRoomStandard;
 import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRoomStandardRepository;
@@ -332,5 +331,44 @@ public class AccommodationRoomStandardGetService {
             .createdAt(roomStandard.getCreatedAt())
             .updatedAt(roomStandard.getUpdatedAt())
             .build();
+    }
+
+    /**
+     * Get unique room standards based on name
+     * Returns one room standard per unique name, sorted alphabetically
+     * This is useful for dropdowns where users select existing room standard names
+     *
+     * @return ResponseEntity with ApiResponse containing list of unique room standards
+     */
+    public ResponseEntity<ApiResponse<?>> getUniqueRoomStandards() {
+        log.info("Fetching unique room standards by name");
+
+        try {
+            // Fetch unique room standards from repository
+            List<AccommodationRoomStandard> uniqueRoomStandards = roomStandardRepository.findUniqueRoomStandardsByName();
+
+            // Convert to DTOs
+            List<AccommodationRoomStandardDTO> dtos = uniqueRoomStandards.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(
+                    200,
+                    "Unique room standards retrieved successfully",
+                    dtos
+                )
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching unique room standards", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(
+                    500,
+                    "Failed to fetch unique room standards",
+                    "UNIQUE_ROOM_STANDARDS_FETCH_FAILED"
+                )
+            );
+        }
     }
 }

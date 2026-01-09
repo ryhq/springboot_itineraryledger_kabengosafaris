@@ -339,6 +339,119 @@ Same structure as "Get All Accommodation Board Types" response.
 
 ---
 
+### 7. Get Unique Board Types by Meal Configuration
+
+**GET** `/api/accommodation-board-types/unique`
+
+Retrieves unique board types based on meal configuration. Returns one board type per unique meal configuration combination, sorted by name. This is useful for dropdowns where users can select existing board type configurations to apply to new accommodations.
+
+**Required Permission:** `PERM_READ_ACCOMMODATION_BOARD_TYPE`
+
+**Use Case:**
+When creating a board type for a new accommodation, users can select from existing board type configurations (meal combinations) instead of manually configuring each meal setting. If multiple board types have the same meal configuration, only one is returned (the one with the lowest ID), sorted by name.
+
+**Uniqueness Criteria:**
+Board types are considered unique based on the following fields:
+- `mealsIncluded`
+- `breakfastIncluded`
+- `lunchIncluded`
+- `dinnerIncluded`
+- `snacksIncluded`
+- `drinksIncluded`
+- `alcoholicDrinksIncluded`
+
+**Example Request:**
+```
+GET /api/accommodation-board-types/unique
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "status": 200,
+  "message": "Unique board types retrieved successfully",
+  "data": [
+    {
+      "id": "encoded_board_type_id_1",
+      "accommodationId": "encoded_accommodation_id",
+      "accommodationName": "Serengeti Safari Lodge",
+      "name": "All Inclusive",
+      "description": "All meals, drinks, and snacks included",
+      "mealsIncluded": "Breakfast, Lunch, Dinner, Snacks",
+      "breakfastIncluded": true,
+      "lunchIncluded": true,
+      "dinnerIncluded": true,
+      "snacksIncluded": true,
+      "drinksIncluded": true,
+      "alcoholicDrinksIncluded": true,
+      "inclusions": "All meals, unlimited soft drinks, local alcoholic beverages",
+      "exclusions": "Premium imported alcoholic beverages",
+      "mealTimes": "Breakfast: 7-10am, Lunch: 12-3pm, Dinner: 7-10pm",
+      "isActive": true,
+      "mealCount": 3,
+      "isFullMealPlan": true,
+      "createdAt": "2026-01-06T12:00:00",
+      "updatedAt": "2026-01-06T12:00:00"
+    },
+    {
+      "id": "encoded_board_type_id_2",
+      "accommodationId": "encoded_accommodation_id",
+      "accommodationName": "Ngorongoro Crater Lodge",
+      "name": "Bed & Breakfast",
+      "description": "Includes breakfast only",
+      "mealsIncluded": "Breakfast",
+      "breakfastIncluded": true,
+      "lunchIncluded": false,
+      "dinnerIncluded": false,
+      "snacksIncluded": false,
+      "drinksIncluded": false,
+      "alcoholicDrinksIncluded": false,
+      "inclusions": "Continental breakfast",
+      "exclusions": "All other meals",
+      "mealTimes": "Breakfast: 7-10am",
+      "isActive": true,
+      "mealCount": 1,
+      "isFullMealPlan": false,
+      "createdAt": "2026-01-05T10:00:00",
+      "updatedAt": "2026-01-05T10:00:00"
+    },
+    {
+      "id": "encoded_board_type_id_3",
+      "accommodationId": "encoded_accommodation_id",
+      "accommodationName": "Tarangire Tented Camp",
+      "name": "Full Board",
+      "description": "Includes all three meals",
+      "mealsIncluded": "Breakfast, Lunch, Dinner",
+      "breakfastIncluded": true,
+      "lunchIncluded": true,
+      "dinnerIncluded": true,
+      "snacksIncluded": false,
+      "drinksIncluded": false,
+      "alcoholicDrinksIncluded": false,
+      "inclusions": "Breakfast, lunch, and dinner",
+      "exclusions": "Drinks, snacks",
+      "mealTimes": "Breakfast: 7-10am, Lunch: 12-3pm, Dinner: 7-10pm",
+      "isActive": true,
+      "mealCount": 3,
+      "isFullMealPlan": true,
+      "createdAt": "2026-01-04T15:00:00",
+      "updatedAt": "2026-01-04T15:00:00"
+    }
+  ]
+}
+```
+
+**Response Details:**
+- Only active board types (`isActive = true`) are included
+- Results are sorted alphabetically by name
+- Returns a simple array (not paginated) for easy dropdown population
+- Each unique meal configuration appears only once
+
+**Error Responses:**
+- `500 Internal Server Error` - Server error
+
+---
+
 ## Data Models
 
 ### CreateAccommodationBoardTypeDTO

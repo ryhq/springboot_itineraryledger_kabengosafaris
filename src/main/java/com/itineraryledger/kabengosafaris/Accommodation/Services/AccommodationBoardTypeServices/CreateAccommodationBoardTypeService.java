@@ -54,6 +54,12 @@ public class CreateAccommodationBoardTypeService {
         log.info("Creating new accommodation board type: {}", createDTO.getName());
 
         try {
+            // Validate input fields
+            ResponseEntity<ApiResponse<?>> validationError = validateInputFields(createDTO);
+            if (validationError != null) {
+                return validationError;
+            }
+
             // Decode accommodation ID
             Long accommodationId;
             try {
@@ -136,6 +142,67 @@ public class CreateAccommodationBoardTypeService {
                 )
             );
         }
+    }
+
+    /**
+     * Validate input fields for board type creation
+     */
+    private ResponseEntity<ApiResponse<?>> validateInputFields(CreateAccommodationBoardTypeDTO dto) {
+        // Validate and sanitize name
+        if (dto.getName() == null || dto.getName().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Board type name cannot be empty", "INVALID_NAME")
+            );
+        }
+
+        String trimmedName = dto.getName().trim();
+        if (trimmedName.length() > 100) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Board type name cannot exceed 100 characters", "NAME_TOO_LONG")
+            );
+        }
+        dto.setName(trimmedName);
+
+        // Validate mealsIncluded length
+        if (dto.getMealsIncluded() != null && dto.getMealsIncluded().length() > 255) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Meals included text cannot exceed 255 characters", "MEALS_INCLUDED_TOO_LONG")
+            );
+        }
+
+        // Validate mealTimes length
+        if (dto.getMealTimes() != null && dto.getMealTimes().length() > 500) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Meal times text cannot exceed 500 characters", "MEAL_TIMES_TOO_LONG")
+            );
+        }
+
+        // Validate meal consistency
+        Boolean breakfastIncluded = dto.getBreakfastIncluded() != null ? dto.getBreakfastIncluded() : false;
+        Boolean lunchIncluded = dto.getLunchIncluded() != null ? dto.getLunchIncluded() : false;
+        Boolean dinnerIncluded = dto.getDinnerIncluded() != null ? dto.getDinnerIncluded() : false;
+        Boolean snacksIncluded = dto.getSnacksIncluded() != null ? dto.getSnacksIncluded() : false;
+
+        if (dto.getMealsIncluded() != null && !dto.getMealsIncluded().trim().isEmpty()) {
+            boolean anyMealSelected = breakfastIncluded || lunchIncluded || dinnerIncluded || snacksIncluded;
+            if (!anyMealSelected) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "When meals are specified, at least one meal type must be selected", "NO_MEALS_SELECTED")
+                );
+            }
+        }
+
+        // Validate drink logic
+        Boolean drinksIncluded = dto.getDrinksIncluded() != null ? dto.getDrinksIncluded() : false;
+        Boolean alcoholicDrinksIncluded = dto.getAlcoholicDrinksIncluded() != null ? dto.getAlcoholicDrinksIncluded() : false;
+
+        if (alcoholicDrinksIncluded && !drinksIncluded) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Alcoholic drinks cannot be included without regular drinks being included", "INVALID_DRINK_LOGIC")
+            );
+        }
+
+        return null; // No validation errors
     }
 
     /**

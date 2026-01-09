@@ -54,6 +54,12 @@ public class CreateAccommodationPhoneService {
         log.info("Creating new accommodation phone: {}", createDTO.getPhoneNumber());
 
         try {
+            // Validate input fields
+            ResponseEntity<ApiResponse<?>> validationError = validateInputFields(createDTO);
+            if (validationError != null) {
+                return validationError;
+            }
+
             // Decode accommodation ID
             Long accommodationId;
             try {
@@ -138,6 +144,78 @@ public class CreateAccommodationPhoneService {
                 )
             );
         }
+    }
+
+    /**
+     * Validate input fields for phone creation
+     */
+    private ResponseEntity<ApiResponse<?>> validateInputFields(CreateAccommodationPhoneDTO dto) {
+        // Validate and sanitize phone number
+        if (dto.getPhoneNumber() == null || dto.getPhoneNumber().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Phone number cannot be empty", "INVALID_PHONE_NUMBER")
+            );
+        }
+
+        String trimmedPhoneNumber = dto.getPhoneNumber().trim();
+
+        // Validate phone number length (minimum 7 digits, maximum 15 digits as per E.164 standard)
+        if (trimmedPhoneNumber.length() < 7) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Phone number must be at least 7 characters", "PHONE_NUMBER_TOO_SHORT")
+            );
+        }
+
+        if (trimmedPhoneNumber.length() > 15) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Phone number cannot exceed 15 characters", "PHONE_NUMBER_TOO_LONG")
+            );
+        }
+
+        // Validate phone number format (should contain only digits, spaces, +, -, (, ))
+        if (!trimmedPhoneNumber.matches("^[0-9+\\-\\s()]+$")) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Phone number contains invalid characters", "INVALID_PHONE_NUMBER_FORMAT")
+            );
+        }
+
+        dto.setPhoneNumber(trimmedPhoneNumber);
+
+        // Validate country code if provided
+        if (dto.getCountryCode() != null) {
+            String trimmedCountryCode = dto.getCountryCode().trim();
+
+            if (trimmedCountryCode.length() > 5) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Country code cannot exceed 5 characters", "COUNTRY_CODE_TOO_LONG")
+                );
+            }
+
+            // Validate country code format (should start with + and contain only digits)
+            if (!trimmedCountryCode.matches("^\\+?[0-9]+$")) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Country code must contain only digits and optionally start with +", "INVALID_COUNTRY_CODE_FORMAT")
+                );
+            }
+
+            dto.setCountryCode(trimmedCountryCode);
+        }
+
+        // Validate label length if provided
+        if (dto.getLabel() != null && dto.getLabel().length() > 100) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Label cannot exceed 100 characters", "LABEL_TOO_LONG")
+            );
+        }
+
+        // Validate operating hours length if provided
+        if (dto.getOperatingHours() != null && dto.getOperatingHours().length() > 255) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Operating hours cannot exceed 255 characters", "OPERATING_HOURS_TOO_LONG")
+            );
+        }
+
+        return null; // No validation errors
     }
 
     /**

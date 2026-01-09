@@ -77,6 +77,16 @@ public class SeasonPeriod {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
+    /**
+     * Indicates if this is a system period (created by initializer)
+     * TRUE = System period (protected from deletion, created with system season)
+     * FALSE = User-created period (can be deleted)
+     * System periods can only be updated, never deleted
+     */
+    @Builder.Default
+    @Column(name = "is_system", nullable = false)
+    private Boolean isSystem = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -171,5 +181,12 @@ public class SeasonPeriod {
      */
     public boolean isYearWrapping() {
         return startDate.compareTo(endDate) > 0;
+    }
+
+    /**
+     * Check if this is a system period (protected from deletion)
+     */
+    public boolean isSystemPeriod() {
+        return isSystem != null && isSystem;
     }
 }

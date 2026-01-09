@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.itineraryledger.kabengosafaris.Season.Season;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -240,6 +242,10 @@ public class Accommodation {
     @Builder.Default
     private List<AccommodationDocument> documents = new ArrayList<>();
 
+    @OneToMany(mappedBy = "accommodation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Season> seasons = new ArrayList<>();
+
     // Helper methods for managing relationships
     public void addEmail(AccommodationEmail email) {
         emails.add(email);
@@ -331,5 +337,16 @@ public class Accommodation {
     public void removeDocument(AccommodationDocument document) {
         documents.remove(document);
         document.setAccommodation(null);
+    }
+
+    public void addSeason(Season season) {
+        seasons.add(season);
+        season.setAccommodation(this);
+        season.setIsGlobal(false);
+    }
+
+    public void removeSeason(Season season) {
+        seasons.remove(season);
+        season.setAccommodation(null);
     }
 }

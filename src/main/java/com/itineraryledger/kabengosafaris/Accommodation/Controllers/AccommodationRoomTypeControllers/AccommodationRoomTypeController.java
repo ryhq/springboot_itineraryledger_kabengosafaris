@@ -194,4 +194,18 @@ public class AccommodationRoomTypeController {
             pageable
         );
     }
+
+    /**
+     * Get unique room types based on name
+     * Returns one room type per unique name, sorted alphabetically
+     * Useful for dropdowns where users select existing room type names
+     *
+     * @return ResponseEntity with ApiResponse containing list of unique room types
+     */
+    @GetMapping("/unique")
+    @PreAuthorize("hasAuthority('PERM_READ_ACCOMMODATION_ROOM_TYPE')")
+    public ResponseEntity<ApiResponse<?>> getUniqueRoomTypes() {
+        log.info("GET /api/accommodation-room-types/unique - Fetching unique room types");
+        return accommodationRoomTypeGetService.getUniqueRoomTypes();
+    }
 }

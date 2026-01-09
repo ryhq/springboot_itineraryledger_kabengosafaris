@@ -54,6 +54,12 @@ public class CreateAccommodationEmailService {
         log.info("Creating new accommodation email: {}", createDTO.getEmail());
 
         try {
+            // Validate input fields
+            ResponseEntity<ApiResponse<?>> validationError = validateInputFields(createDTO);
+            if (validationError != null) {
+                return validationError;
+            }
+
             // Decode accommodation ID
             Long accommodationId;
             try {
@@ -137,6 +143,61 @@ public class CreateAccommodationEmailService {
                 )
             );
         }
+    }
+
+    /**
+     * Validate input fields for email creation
+     */
+    private ResponseEntity<ApiResponse<?>> validateInputFields(CreateAccommodationEmailDTO dto) {
+        // Validate and sanitize email
+        if (dto.getEmail() == null || dto.getEmail().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Email address cannot be empty", "INVALID_EMAIL")
+            );
+        }
+
+        String trimmedEmail = dto.getEmail().trim().toLowerCase();
+
+        // Validate email length (max 254 characters as per RFC 5321)
+        if (trimmedEmail.length() > 254) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Email address cannot exceed 254 characters", "EMAIL_TOO_LONG")
+            );
+        }
+
+        // Validate email format using RFC 5322 compliant regex
+        String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}$";
+        if (!trimmedEmail.matches(emailRegex)) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Invalid email address format", "INVALID_EMAIL_FORMAT")
+            );
+        }
+
+        // Validate local part length (before @, max 64 characters as per RFC 5321)
+        String[] parts = trimmedEmail.split("@");
+        if (parts.length == 2 && parts[0].length() > 64) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Email local part cannot exceed 64 characters", "EMAIL_LOCAL_PART_TOO_LONG")
+            );
+        }
+
+        // Validate domain part length (after @, max 253 characters)
+        if (parts.length == 2 && parts[1].length() > 253) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Email domain cannot exceed 253 characters", "EMAIL_DOMAIN_TOO_LONG")
+            );
+        }
+
+        dto.setEmail(trimmedEmail);
+
+        // Validate label length if provided
+        if (dto.getLabel() != null && dto.getLabel().length() > 100) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Label cannot exceed 100 characters", "LABEL_TOO_LONG")
+            );
+        }
+
+        return null; // No validation errors
     }
 
     /**

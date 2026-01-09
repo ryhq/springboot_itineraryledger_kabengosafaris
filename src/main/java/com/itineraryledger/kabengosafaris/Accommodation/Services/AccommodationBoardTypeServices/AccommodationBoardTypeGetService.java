@@ -1,6 +1,5 @@
 package com.itineraryledger.kabengosafaris.Accommodation.Services.AccommodationBoardTypeServices;
 
-import com.itineraryledger.kabengosafaris.Accommodation.AccommodationBoardTypeSpecification;
 import com.itineraryledger.kabengosafaris.Accommodation.DTOs.AccommodationBoardTypeDTOs.AccommodationBoardTypeDTO;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationBoardType;
 import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationBoardTypeRepository;
@@ -329,6 +328,45 @@ public class AccommodationBoardTypeGetService {
                     500,
                     "Failed to fetch board types",
                     "BOARD_TYPES_FETCH_FAILED"
+                )
+            );
+        }
+    }
+
+    /**
+     * Get unique board types based on meal configuration
+     * Returns one board type per unique meal configuration, sorted by name
+     * This is useful for dropdowns where users select existing board type configurations
+     *
+     * @return ResponseEntity with ApiResponse containing list of unique board types
+     */
+    public ResponseEntity<ApiResponse<?>> getUniqueBoardTypes() {
+        log.info("Fetching unique board types by meal configuration");
+
+        try {
+            // Fetch unique board types from repository
+            List<AccommodationBoardType> uniqueBoardTypes = boardTypeRepository.findUniqueBoardTypesByMealConfiguration();
+
+            // Convert to DTOs
+            List<AccommodationBoardTypeDTO> dtos = uniqueBoardTypes.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(
+                    200,
+                    "Unique board types retrieved successfully",
+                    dtos
+                )
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching unique board types", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(
+                    500,
+                    "Failed to fetch unique board types",
+                    "UNIQUE_BOARD_TYPES_FETCH_FAILED"
                 )
             );
         }

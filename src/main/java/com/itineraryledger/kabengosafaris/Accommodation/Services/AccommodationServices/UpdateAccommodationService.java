@@ -170,7 +170,7 @@ public class UpdateAccommodationService {
                         return ResponseEntity.badRequest().body(
                             ApiResponse.error(
                                 400,
-                                "An accommodation cannot be its own parent",
+                                "An accommodation cannot link to itself as main location",
                                 "SELF_PARENT_NOT_ALLOWED"
                             )
                         );
@@ -182,7 +182,7 @@ public class UpdateAccommodationService {
                         return ResponseEntity.badRequest().body(
                             ApiResponse.error(
                                 400,
-                                "Parent accommodation not found",
+                                "Main location not found",
                                 "PARENT_ACCOMMODATION_NOT_FOUND"
                             )
                         );
@@ -196,7 +196,7 @@ public class UpdateAccommodationService {
                         return ResponseEntity.badRequest().body(
                             ApiResponse.error(
                                 400,
-                                "Cannot set this parent: it would create a circular parent-child relationship",
+                                "Cannot link to this main location: it would create a circular relationship",
                                 "CIRCULAR_PARENT_CHILD_REFERENCE"
                             )
                         );
@@ -213,8 +213,8 @@ public class UpdateAccommodationService {
                     return ResponseEntity.badRequest().body(
                         ApiResponse.error(
                             400,
-                            "Invalid parent accommodation ID",
-                            "INVALID_PARENT_ACCOMMODATION_ID"
+                            "Invalid main location ID",
+                            "INVALID_MAIN_LOCATION_ID"
                         )
                     );
                 }

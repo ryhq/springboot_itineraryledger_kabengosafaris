@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -28,4 +29,20 @@ public interface AccommodationRoomTypeRepository extends JpaRepository<Accommoda
      */
     @Query("SELECT COUNT(r) > 0 FROM AccommodationRoomType r WHERE r.accommodation.id = :accommodationId AND r.name = :name AND r.id != :excludeId")
     boolean existsByAccommodationIdAndNameExcludingId(@Param("accommodationId") Long accommodationId, @Param("name") String name, @Param("excludeId") Long excludeId);
+
+    /**
+     * Find unique room types based on name (grouped by name)
+     * Returns one room type per unique name, sorted alphabetically
+     */
+    @Query("""
+        SELECT rt FROM AccommodationRoomType rt
+        WHERE rt.id IN (
+            SELECT MIN(rt2.id)
+            FROM AccommodationRoomType rt2
+            WHERE rt2.isActive = true
+            GROUP BY rt2.name
+        )
+        ORDER BY rt.name ASC
+        """)
+    List<AccommodationRoomType> findUniqueRoomTypesByName();
 }

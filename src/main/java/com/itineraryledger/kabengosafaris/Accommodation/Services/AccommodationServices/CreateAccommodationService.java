@@ -105,7 +105,7 @@ public class CreateAccommodationService {
                         return ResponseEntity.badRequest().body(
                             ApiResponse.error(
                                 400,
-                                "Parent accommodation not found",
+                                "Main location not found",
                                 "PARENT_ACCOMMODATION_NOT_FOUND"
                             )
                         );
@@ -119,7 +119,7 @@ public class CreateAccommodationService {
                         return ResponseEntity.badRequest().body(
                             ApiResponse.error(
                                 400,
-                                "Cannot use this parent: it has a circular reference in its parent chain",
+                                "Cannot link to this main location: it has a circular reference in its location chain",
                                 "PARENT_HAS_CIRCULAR_REFERENCE"
                             )
                         );
@@ -135,8 +135,8 @@ public class CreateAccommodationService {
                     return ResponseEntity.badRequest().body(
                         ApiResponse.error(
                             400,
-                            "Invalid parent accommodation ID",
-                            "INVALID_PARENT_ACCOMMODATION_ID"
+                            "Invalid main location ID",
+                            "INVALID_MAIN_LOCATION_ID"
                         )
                     );
                 }
