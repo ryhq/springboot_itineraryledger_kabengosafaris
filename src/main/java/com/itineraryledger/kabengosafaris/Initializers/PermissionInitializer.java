@@ -106,6 +106,8 @@ public class PermissionInitializer implements ApplicationRunner {
             "ACCOMMODATION_DOCUMENT",
             "SEASON",
             "SEASON_PERIOD",
+            "PAX_AGE_CATEGORY",
+            "PAX_NATION_CATEGORY",
         };
 
         // Define standard actions (CREATE, READ, UPDATE, DELETE)
