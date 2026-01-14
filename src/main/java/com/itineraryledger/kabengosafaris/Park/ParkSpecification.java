@@ -6,6 +6,7 @@ import jakarta.persistence.criteria.JoinType;
 import org.springframework.data.jpa.domain.Specification;
 
 import com.itineraryledger.kabengosafaris.ParkActivity.ParkActivity;
+import com.itineraryledger.kabengosafaris.ParkTariff.ParkTariff;
 
 /**
  * ParkSpecification - Provides reusable Specification objects for filtering Park entities
@@ -218,6 +219,42 @@ public class ParkSpecification {
             var subJoin = subRoot.join("parkActivities", JoinType.INNER);
             subquery.select(subRoot.get("id"))
                     .where(cb.equal(subJoin.get("activity").get("id"), activityId));
+
+            // Return parks whose ID is NOT in the subquery result
+            return cb.not(root.get("id").in(subquery));
+        };
+    }
+
+    /**
+     * Filter parks by tariff ID
+     * Returns parks that have the specified tariff assigned
+     */
+    public static Specification<Park> byTariffId(Long tariffId) {
+        return (root, query, cb) -> {
+            if (tariffId == null) {
+                return cb.conjunction();
+            }
+            // Join with ParkTariff table
+            Join<Park, ParkTariff> parkTariffJoin = root.join("parkTariffs", JoinType.INNER);
+            return cb.equal(parkTariffJoin.get("tariff").get("id"), tariffId);
+        };
+    }
+
+    /**
+     * Filter parks NOT associated with a specific tariff ID
+     * Returns parks that do NOT have the specified tariff assigned
+     */
+    public static Specification<Park> notByTariffId(Long tariffId) {
+        return (root, query, cb) -> {
+            if (tariffId == null) {
+                return cb.conjunction();
+            }
+            // Subquery to get park IDs that have this tariff
+            var subquery = query.subquery(Long.class);
+            var subRoot = subquery.from(Park.class);
+            var subJoin = subRoot.join("parkTariffs", JoinType.INNER);
+            subquery.select(subRoot.get("id"))
+                    .where(cb.equal(subJoin.get("tariff").get("id"), tariffId));
 
             // Return parks whose ID is NOT in the subquery result
             return cb.not(root.get("id").in(subquery));

@@ -65,7 +65,7 @@ The Park-Activity API manages the many-to-many relationship between parks and ac
     "data": {
         "activities": [
             {
-                "idObfuscated": "abc123",
+                "id": "abc123",
                 "name": "Game Drive Safari",
                 "slug": "game-drive-safari",
                 "hasTariff": true,
@@ -137,7 +137,7 @@ The Park-Activity API manages the many-to-many relationship between parks and ac
     "data": {
         "parks": [
             {
-                "idObfuscated": "xyz789",
+                "id": "xyz789",
                 "name": "Serengeti National Park",
                 "slug": "serengeti-national-park",
                 "parkType": "NATIONAL_PARK",

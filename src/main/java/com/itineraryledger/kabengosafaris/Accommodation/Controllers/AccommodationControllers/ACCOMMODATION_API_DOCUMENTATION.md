@@ -124,14 +124,14 @@ Creates a new accommodation (hotel, lodge, camp, etc.).
 ---
 
 ### 2. Update Accommodation
-**PUT** `/api/accommodations/{idObfuscated}`
+**PUT** `/api/accommodations/{id}`
 
 Updates an existing accommodation. Only provided fields will be updated.
 
 **Permission Required:** `PERM_UPDATE_ACCOMMODATION`
 
 **Path Parameters:**
-- `idObfuscated` (string) - Encoded accommodation ID
+- `id` (string) - Encoded accommodation ID
 
 **Request Body:**
 All fields are optional. Only include fields you want to update.
@@ -203,14 +203,14 @@ Result: **5 accommodations deleted** (1 HQ + 2 branches + 2 sub-branches)
 ---
 
 ### 4. Get Accommodation by ID
-**GET** `/api/accommodations/{idObfuscated}`
+**GET** `/api/accommodations/{id}`
 
 Retrieves a single accommodation by its encoded ID.
 
 **Permission Required:** `PERM_READ_ACCOMMODATION`
 
 **Path Parameters:**
-- `idObfuscated` (string) - Encoded accommodation ID
+- `id` (string) - Encoded accommodation ID
 
 **Response:**
 ```json

@@ -124,7 +124,7 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
                     .description(seasonData.description)
                     .accommodation(null) // Global season - not tied to any accommodation
                     .isGlobal(true)
-                    .isActive(true)
+                    .isActive(seasonData.isActive)
                     .isSystem(seasonData.isSystem) // Use isSystem from seasonData
                     .build();
 
@@ -197,7 +197,8 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
             "Tanzania's high tourism season during the dry months (June-October). Best time for wildlife viewing " +
             "as animals gather around water sources. Clear skies, minimal rain, and excellent game drives. " +
             "Highest prices and largest crowds. Prime time for Serengeti safaris and Ngorongoro Crater visits.",
-            true  // isSystem = true
+            true , // isSystem = true
+            true  // isActive = true
         );
         highSeason.addPeriod(
             MonthDay.of(6, 1),   // June 1
@@ -216,7 +217,8 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
             "Moderate demand period between high and low seasons (November-December and January-February). " +
             "Good wildlife viewing with fewer crowds and moderate pricing. Ideal for value-conscious travelers " +
             "seeking quality safari experience without peak season crowds.",
-            true  // isSystem = true
+            true , // isSystem = true
+            true  // isActive = true
         );
         shoulderSeason.addPeriod(
             MonthDay.of(11, 1),  // November 1
@@ -240,7 +242,8 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
             "Long rains season (March-May) offering the lowest rates and smallest crowds of the year. " +
             "Heaviest rainfall period with some lodges closing. However, lush green landscapes, excellent " +
             "bird watching, and dramatic storm photography. Budget-friendly with rates 30-50% lower than high season.",
-            true  // isSystem = true
+            true , // isSystem = true
+            true  // isActive = true
         );
         lowSeason.addPeriod(
             MonthDay.of(3, 1),   // March 1
@@ -262,7 +265,8 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
             "as animals gather around water sources. Clear skies, minimal rain, and excellent game drives. " +
             "Highest prices and largest crowds. Prime time for Serengeti safaris and Ngorongoro Crater visits. " +
             "TANAPA park entrance fees at premium rate (USD 70).",
-            false  // isSystem = false
+            false,  // isSystem = false
+            false  // isActive = false
         );
         peakSeason.addPeriod(
             MonthDay.of(6, 1),   // June 1
@@ -282,7 +286,8 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
             "Over 2 million wildebeest and zebra cross the Mara River, providing dramatic wildlife spectacles. " +
             "Peak season for Serengeti northern circuit. High demand period with premium pricing. " +
             "Best months for witnessing one of nature's greatest shows.",
-            false  // isSystem = false
+            false,  // isSystem = false
+            false  // isActive = false
         );
         migrationSeason.addPeriod(
             MonthDay.of(7, 1),   // July 1
@@ -302,7 +307,8 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
             "Over 400,000 calves born within a short period, attracting predators and creating incredible " +
             "photography opportunities. Excellent wildlife viewing with fewer crowds than peak season. " +
             "Ideal weather conditions - hot but dry. Moderate pricing. Perfect for wildlife photographers.",
-            false  // isSystem = false
+            false,  // isSystem = false
+            false  // isActive = false
         );
         calvingSeason.addPeriod(
             MonthDay.of(1, 1),   // January 1
@@ -323,7 +329,8 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
             "Intermittent rain showers, lush green landscapes, and migrating birds arrive. " +
             "Excellent value for budget-conscious travelers. TANAPA reduced entrance fees. " +
             "Perfect for photographers seeking dramatic skies and fewer safari vehicles.",
-            false  // isSystem = false
+            false,  // isSystem = false
+            false  // isActive = false
         );
         shortRainsSeason.addPeriod(
             MonthDay.of(11, 1),  // November 1
@@ -343,7 +350,8 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
             "Peak pricing across all accommodations and services. High international visitor numbers, " +
             "particularly families. Excellent weather conditions coinciding with wildebeest migration in southern " +
             "Serengeti. Book 6-12 months in advance. Premium rates but guaranteed good weather and wildlife viewing.",
-            false  // isSystem = false
+            false,  // isSystem = false
+            false  // isActive = false
         );
         festiveSeason.addPeriod(
             MonthDay.of(12, 15), // December 15
@@ -364,7 +372,8 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
             "excellent bird watching, and dramatic storm photography. Wildlife still visible but requires more effort. " +
             "Budget-friendly with rates 30-50% lower than peak season. April-May sees substantially discounted rates. " +
             "TANAPA reduced entrance fees (USD 50-60). Not recommended for first-time visitors.",
-            false  // isSystem = false
+            false,  // isSystem = false
+            false  // isActive = false
         );
         longRainsSeason.addPeriod(
             MonthDay.of(3, 1),   // March 1
@@ -386,7 +395,8 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
             "Clear sunny days, cool nights, minimal rainfall. Animals concentrated around water sources. " +
             "Expect crowds in popular areas like Ngorongoro Crater and northern Serengeti (July especially). " +
             "Premium rates but guaranteed excellent game viewing. TANAPA fees at USD 70.",
-            false  // isSystem = false
+            false,  // isSystem = false
+            false  // isActive = false
         );
         northernHighSeason.addPeriod(
             MonthDay.of(6, 1),   // June 1
@@ -406,7 +416,8 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
             "ideal for diving, snorkeling, and beach activities. Two peak periods: June-October (dry season) and " +
             "December-February (hot and dry). Minimal rainfall, excellent visibility for underwater activities. " +
             "Peak pricing for beach resorts and hotels. Perfect for post-safari beach extensions.",
-            false  // isSystem = false
+            false,  // isSystem = false
+            false  // isActive = false
         );
         // First period: June to October
         zanzibarHighSeason.addPeriod(
@@ -433,7 +444,8 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
             "rough seas. Many beach resorts offer significant discounts (30-50% off peak rates). Some properties may close. " +
             "Not ideal for diving/snorkeling due to reduced visibility. Good for budget travelers willing to accept " +
             "rain interruptions. Lush vegetation and fewer tourists. April-May sees the lowest rates.",
-            false  // isSystem = false
+            false,  // isSystem = false
+            false  // isActive = false
         );
         zanzibarLowSeason.addPeriod(
             MonthDay.of(3, 1),   // March 1
@@ -455,13 +467,15 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
         Season.SeasonType seasonType;
         String description;
         boolean isSystem;
+        boolean isActive;
         List<PeriodData> periods;
 
-        SeasonData(String name, Season.SeasonType seasonType, String description, boolean isSystem) {
+        SeasonData(String name, Season.SeasonType seasonType, String description, boolean isSystem, boolean isActive) {
             this.name = name;
             this.seasonType = seasonType;
             this.description = description;
             this.isSystem = isSystem;
+            this.isActive = isActive;
             this.periods = new ArrayList<>();
         }
 

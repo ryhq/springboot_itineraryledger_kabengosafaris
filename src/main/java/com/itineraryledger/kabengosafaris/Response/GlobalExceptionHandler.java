@@ -13,6 +13,7 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -336,6 +337,27 @@ public class GlobalExceptionHandler {
                 "Validation failed",
                 ErrorCode.VALIDATION_ERROR.getCode(),
                 fieldErrors
+        );
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Handle missing required request parameters
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingServletRequestParameterException(
+            MissingServletRequestParameterException ex,
+            WebRequest request) {
+
+        log.warn("Missing required parameter: {} (type: {})", ex.getParameterName(), ex.getParameterType());
+
+        String message = String.format("Required parameter '%s' is missing", ex.getParameterName());
+
+        ApiResponse<Void> response = ApiResponse.error(
+                HttpStatus.BAD_REQUEST.value(),
+                message,
+                ErrorCode.REQUIRED_FIELD_MISSING.getCode()
         );
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);

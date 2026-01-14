@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ParkWithNotesDTO {
-    private String idObfuscated;
+    private String id;
     private String name;
     private String slug;
     private ParkType parkType;

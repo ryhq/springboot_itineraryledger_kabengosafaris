@@ -47,7 +47,7 @@ The Activity API provides endpoints for managing tourism activities such as game
 ### Activity Object (ActivityDTO)
 ```json
 {
-  "idObfuscated": "string (obfuscated ID for security)",
+  "id": "string (obfuscated ID for security)",
   "name": "string",
   "slug": "string (URL-friendly identifier)",
   "hasTariff": "boolean",
@@ -113,7 +113,7 @@ The Activity API provides endpoints for managing tourism activities such as game
   "statusCode": 201,
   "message": "Activity created successfully",
   "data": {
-    "idObfuscated": "xY9Kp2Lm",
+    "id": "xY9Kp2Lm",
     "name": "Game Drive Safari",
     "slug": "game-drive-safari",
     "hasTariff": true,
@@ -143,14 +143,14 @@ The Activity API provides endpoints for managing tourism activities such as game
 
 ### 2. Update Activity
 
-**Endpoint**: `PUT /api/activities/{idObfuscated}`
+**Endpoint**: `PUT /api/activities/{id}`
 
 **Permission**: `PERM_UPDATE_ACTIVITY`
 
 **Description**: Updates an existing activity. Only provided fields will be updated (partial update).
 
 #### Path Parameters
-- `idObfuscated` (required): The obfuscated activity ID
+- `id` (required): The obfuscated activity ID
 
 #### Request Body (UpdateActivityDTO)
 ```json
@@ -170,7 +170,7 @@ The Activity API provides endpoints for managing tourism activities such as game
   "statusCode": 200,
   "message": "Activity updated successfully",
   "data": {
-    "idObfuscated": "xY9Kp2Lm",
+    "id": "xY9Kp2Lm",
     "name": "Game Drive Safari",
     "description": "Updated description",
     "minimumAge": 8,
@@ -259,14 +259,14 @@ The Activity API provides endpoints for managing tourism activities such as game
 
 ### 4. Get Activity by ID
 
-**Endpoint**: `GET /api/activities/{idObfuscated}`
+**Endpoint**: `GET /api/activities/{id}`
 
 **Permission**: `PERM_READ_ACTIVITY`
 
 **Description**: Retrieves a single activity by its obfuscated ID.
 
 #### Path Parameters
-- `idObfuscated` (required): The obfuscated activity ID
+- `id` (required): The obfuscated activity ID
 
 #### Success Response (200 OK)
 ```json
@@ -275,7 +275,7 @@ The Activity API provides endpoints for managing tourism activities such as game
   "statusCode": 200,
   "message": "Activity retrieved successfully",
   "data": {
-    "idObfuscated": "xY9Kp2Lm",
+    "id": "xY9Kp2Lm",
     "name": "Game Drive Safari",
     "slug": "game-drive-safari",
     "hasTariff": true,
@@ -321,7 +321,7 @@ The Activity API provides endpoints for managing tourism activities such as game
   "statusCode": 200,
   "message": "Activity retrieved successfully",
   "data": {
-    "idObfuscated": "xY9Kp2Lm",
+    "id": "xY9Kp2Lm",
     "name": "Game Drive Safari",
     "slug": "game-drive-safari",
     ...
@@ -409,7 +409,7 @@ GET /api/activities?hasTariff=true&isWebActive=true&isActive=true&page=0&size=15
   "data": {
     "activities": [
       {
-        "idObfuscated": "xY9Kp2Lm",
+        "id": "xY9Kp2Lm",
         "name": "Game Drive Safari",
         "slug": "game-drive-safari",
         "hasTariff": true,
@@ -417,7 +417,7 @@ GET /api/activities?hasTariff=true&isWebActive=true&isActive=true&page=0&size=15
         ...
       },
       {
-        "idObfuscated": "aB3Cd4Ef",
+        "id": "aB3Cd4Ef",
         "name": "Walking Safari",
         "slug": "walking-safari",
         "hasTariff": true,

@@ -205,7 +205,7 @@ public class ParkUpdateService {
      */
     private ParkDTO convertToDTO(Park park) {
         ParkDTO dto = new ParkDTO();
-        dto.setIdObfuscated(idObfuscator.encodeId(park.getId()));
+        dto.setId(idObfuscator.encodeId(park.getId()));
         dto.setName(park.getName());
         dto.setSlug(park.getSlug());
         dto.setParkType(park.getParkType());

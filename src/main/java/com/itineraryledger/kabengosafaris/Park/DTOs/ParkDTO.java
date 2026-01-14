@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ParkDTO {
-    private String idObfuscated;
+    private String id;
     private String name;
     private String slug;
     private ParkType parkType;

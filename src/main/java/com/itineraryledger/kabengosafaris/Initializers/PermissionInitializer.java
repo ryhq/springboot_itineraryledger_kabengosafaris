@@ -16,13 +16,17 @@ import com.itineraryledger.kabengosafaris.Permission.PermissionRepository;
 /**
  * PermissionInitializer - Initializes permissions in the database at application startup
  *
- * This initializer creates standard permissions for all entities following the pattern:
- * {ACTION}_{ENTITY}
+ * This initializer creates:
+ * 1. Standard CRUD permissions for all entities following the pattern: {ACTION}_{ENTITY}
+ * 2. Custom permissions for specific use cases (e.g., matrix views, composite operations)
  *
- * Examples:
+ * Standard Permission Examples:
  * - CREATE_USER, READ_USER, UPDATE_USER, DELETE_USER
  * - CREATE_ROLE, READ_ROLE, UPDATE_ROLE, DELETE_ROLE
- * - CREATE_EMAIL_ACCOUNT, READ_EMAIL_ACCOUNT, UPDATE_EMAIL_ACCOUNT, DELETE_EMAIL_ACCOUNT
+ *
+ * Custom Permission Examples:
+ * - READ_ACTIVITY_TARIFF_RATE_MATRIX - View rate matrix with related lookup data
+ * - READ_PARK_TARIFF_RATE_MATRIX - View park rate matrix with related lookup data
  *
  * Permissions are only created if they don't already exist (idempotent).
  * These permissions cannot be modified or deleted via API - they are system permissions.
@@ -108,6 +112,9 @@ public class PermissionInitializer implements ApplicationRunner {
             "SEASON_PERIOD",
             "PAX_AGE_CATEGORY",
             "PAX_NATION_CATEGORY",
+            "TARIFF",
+            "ACTIVITY_TARIFF_RATE",
+            "PARK_TARIFF_RATE",
         };
 
         // Define standard actions (CREATE, READ, UPDATE, DELETE)
@@ -148,6 +155,11 @@ public class PermissionInitializer implements ApplicationRunner {
             }
         }
 
+        // Initialize custom permissions
+        int[] customCounts = initializeCustomPermissions();
+        createdCount += customCounts[0];
+        existingCount += customCounts[1];
+
         log.info("Permission initialization complete: {} permissions created, {} already existed",
                 createdCount, existingCount);
 
@@ -156,6 +168,68 @@ public class PermissionInitializer implements ApplicationRunner {
             long count = permissionRepository.countByEntity(entity);
             log.debug("Entity '{}' has {} permissions", entity, count);
         }
+    }
+
+    /**
+     * Initialize custom permissions that don't follow the standard CRUD pattern.
+     * These are task-based permissions for specific use cases like matrix views,
+     * composite operations, or special access patterns.
+     *
+     * @return array with [createdCount, existingCount]
+     */
+    private int[] initializeCustomPermissions() {
+        int createdCount = 0;
+        int existingCount = 0;
+
+        // Define custom permissions: [name, action, entity, description]
+        String[][] customPermissions = {
+            // Activity Tariff Rate Matrix - allows viewing rate matrix with related lookup data
+            {
+                "READ_ACTIVITY_TARIFF_RATE_MATRIX",
+                "READ",
+                "ACTIVITY_TARIFF_RATE",
+                "Allows viewing the activity tariff rate matrix including seasons, age categories, and nation categories"
+            },
+            // Park Tariff Rate Matrix - allows viewing park rate matrix with related lookup data
+            {
+                "READ_PARK_TARIFF_RATE_MATRIX",
+                "READ",
+                "PARK_TARIFF_RATE",
+                "Allows viewing the park tariff rate matrix including seasons, age categories, and nation categories"
+            },
+        };
+
+        for (String[] customPerm : customPermissions) {
+            String permissionName = customPerm[0];
+            String actionStr = customPerm[1];
+            String entity = customPerm[2];
+            String description = customPerm[3];
+
+            if (!permissionRepository.existsByName(permissionName)) {
+                PermissionAction action = PermissionAction.valueOf(actionStr);
+
+                Permission permission = Permission.builder()
+                    .name(permissionName)
+                    .description(description)
+                    .action(action)
+                    .entity(entity)
+                    .active(true)
+                    .build();
+
+                permissionRepository.save(permission);
+                log.debug("Created custom permission: {}", permissionName);
+                createdCount++;
+            } else {
+                log.trace("Custom permission already exists: {}", permissionName);
+                existingCount++;
+            }
+        }
+
+        if (createdCount > 0 || existingCount > 0) {
+            log.info("Custom permissions: {} created, {} already existed", createdCount, existingCount);
+        }
+
+        return new int[]{createdCount, existingCount};
     }
 
     /**

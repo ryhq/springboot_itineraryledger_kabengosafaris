@@ -85,14 +85,14 @@ Creates a new board type (meal plan) for an accommodation.
 
 ### 2. Update Accommodation Board Type
 
-**PUT** `/api/accommodation-board-types/{idObfuscated}`
+**PUT** `/api/accommodation-board-types/{id}`
 
 Updates an existing board type.
 
 **Required Permission:** `PERM_UPDATE_ACCOMMODATION_BOARD_TYPE`
 
 **Path Parameters:**
-- `idObfuscated` - Encoded board type ID
+- `id` - Encoded board type ID
 
 **Request Body:**
 ```json
@@ -183,14 +183,14 @@ Deletes one or more board types by their IDs.
 
 ### 4. Get Accommodation Board Type by ID
 
-**GET** `/api/accommodation-board-types/{idObfuscated}`
+**GET** `/api/accommodation-board-types/{id}`
 
 Retrieves a single board type by its ID.
 
 **Required Permission:** `PERM_READ_ACCOMMODATION_BOARD_TYPE`
 
 **Path Parameters:**
-- `idObfuscated` - Encoded board type ID
+- `id` - Encoded board type ID
 
 **Success Response (200 OK):**
 ```json

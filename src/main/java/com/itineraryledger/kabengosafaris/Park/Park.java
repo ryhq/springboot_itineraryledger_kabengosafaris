@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Park;
 
 import com.itineraryledger.kabengosafaris.ParkActivity.ParkActivity;
+import com.itineraryledger.kabengosafaris.ParkTariff.ParkTariff;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -131,4 +132,8 @@ public class Park {
     @OneToMany(mappedBy = "park", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ParkActivity> parkActivities = new ArrayList<>();
+
+    @OneToMany(mappedBy = "park", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ParkTariff> parkTariffs = new ArrayList<>();
 }

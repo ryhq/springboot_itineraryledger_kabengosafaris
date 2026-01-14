@@ -47,7 +47,7 @@ The Park API provides endpoints for managing Tanzania National Parks, Wildlife R
 ### Park Object (ParkDTO)
 ```json
 {
-  "idObfuscated": "string (obfuscated ID for security)",
+  "id": "string (obfuscated ID for security)",
   "name": "string",
   "slug": "string (URL-friendly identifier)",
   "parkType": "ParkType enum",
@@ -130,7 +130,7 @@ The Park API provides endpoints for managing Tanzania National Parks, Wildlife R
   "statusCode": 201,
   "message": "Park created successfully",
   "data": {
-    "idObfuscated": "xY9Kp2Lm",
+    "id": "xY9Kp2Lm",
     "name": "Serengeti National Park",
     "slug": "serengeti-national-park",
     "parkType": "NATIONAL_PARK",
@@ -158,14 +158,14 @@ The Park API provides endpoints for managing Tanzania National Parks, Wildlife R
 
 ### 2. Update Park
 
-**Endpoint**: `PUT /api/parks/{idObfuscated}`
+**Endpoint**: `PUT /api/parks/{id}`
 
 **Permission**: `PERM_UPDATE_PARK`
 
 **Description**: Updates an existing park. Only provided fields will be updated (partial update).
 
 #### Path Parameters
-- `idObfuscated` (required): The obfuscated park ID
+- `id` (required): The obfuscated park ID
 
 #### Request Body (UpdateParkDTO)
 ```json
@@ -185,7 +185,7 @@ The Park API provides endpoints for managing Tanzania National Parks, Wildlife R
   "statusCode": 200,
   "message": "Park updated successfully",
   "data": {
-    "idObfuscated": "xY9Kp2Lm",
+    "id": "xY9Kp2Lm",
     "name": "Serengeti National Park - Updated",
     ...
     "updatedAt": "2025-12-30T11:00:00"
@@ -278,14 +278,14 @@ The Park API provides endpoints for managing Tanzania National Parks, Wildlife R
 
 ### 4. Get Park by ID
 
-**Endpoint**: `GET /api/parks/{idObfuscated}`
+**Endpoint**: `GET /api/parks/{id}`
 
 **Permission**: `PERM_READ_PARK`
 
 **Description**: Retrieves a single park by its obfuscated ID.
 
 #### Path Parameters
-- `idObfuscated` (required): The obfuscated park ID
+- `id` (required): The obfuscated park ID
 
 #### Success Response (200 OK)
 ```json
@@ -294,7 +294,7 @@ The Park API provides endpoints for managing Tanzania National Parks, Wildlife R
   "statusCode": 200,
   "message": "Park retrieved successfully",
   "data": {
-    "idObfuscated": "xY9Kp2Lm",
+    "id": "xY9Kp2Lm",
     "name": "Serengeti National Park",
     "slug": "serengeti-national-park",
     "parkType": "NATIONAL_PARK",
@@ -338,7 +338,7 @@ The Park API provides endpoints for managing Tanzania National Parks, Wildlife R
   "statusCode": 200,
   "message": "Park retrieved successfully",
   "data": {
-    "idObfuscated": "xY9Kp2Lm",
+    "id": "xY9Kp2Lm",
     "name": "Serengeti National Park",
     "slug": "serengeti-national-park",
     ...
@@ -427,14 +427,14 @@ GET /api/parks?parkType=NATIONAL_PARK&region=Northern&isActive=true&page=0&size=
   "data": {
     "parks": [
       {
-        "idObfuscated": "xY9Kp2Lm",
+        "id": "xY9Kp2Lm",
         "name": "Serengeti National Park",
         "slug": "serengeti-national-park",
         "parkType": "NATIONAL_PARK",
         ...
       },
       {
-        "idObfuscated": "aB3Cd4Ef",
+        "id": "aB3Cd4Ef",
         "name": "Ngorongoro Conservation Area",
         "slug": "ngorongoro-conservation-area",
         "parkType": "CONSERVATION_AREA",

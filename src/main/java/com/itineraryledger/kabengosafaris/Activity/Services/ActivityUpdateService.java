@@ -184,7 +184,7 @@ public class ActivityUpdateService {
      */
     private ActivityDTO convertToDTO(Activity activity) {
         ActivityDTO dto = new ActivityDTO();
-        dto.setIdObfuscated(idObfuscator.encodeId(activity.getId()));
+        dto.setId(idObfuscator.encodeId(activity.getId()));
         dto.setName(activity.getName());
         dto.setSlug(activity.getSlug());
         dto.setHasTariff(activity.getHasTariff());

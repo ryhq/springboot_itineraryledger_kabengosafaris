@@ -83,14 +83,14 @@ Creates a new email address for an accommodation.
 ---
 
 ### 2. Update Accommodation Email
-**PUT** `/api/accommodation-emails/{idObfuscated}`
+**PUT** `/api/accommodation-emails/{id}`
 
 Updates an existing accommodation email. Only provided fields will be updated.
 
 **Permission Required:** `PERM_UPDATE_ACCOMMODATION_EMAIL`
 
 **Path Parameters:**
-- `idObfuscated` (string) - Encoded email ID
+- `id` (string) - Encoded email ID
 
 **Request Body:**
 All fields are optional. Only include fields you want to update.
@@ -161,14 +161,14 @@ Deletes one or more accommodation emails by their IDs.
 ---
 
 ### 4. Get Accommodation Email by ID
-**GET** `/api/accommodation-emails/{idObfuscated}`
+**GET** `/api/accommodation-emails/{id}`
 
 Retrieves a single accommodation email by its ID.
 
 **Permission Required:** `PERM_READ_ACCOMMODATION_EMAIL`
 
 **Path Parameters:**
-- `idObfuscated` (string) - Encoded email ID
+- `id` (string) - Encoded email ID
 
 **Response:**
 ```json

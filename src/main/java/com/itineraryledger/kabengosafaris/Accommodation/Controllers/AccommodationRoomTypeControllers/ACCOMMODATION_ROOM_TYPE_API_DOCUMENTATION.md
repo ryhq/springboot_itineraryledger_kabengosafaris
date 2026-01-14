@@ -69,14 +69,14 @@ Creates a new room type for an accommodation.
 
 ### 2. Update Accommodation Room Type
 
-**PUT** `/api/accommodation-room-types/{idObfuscated}`
+**PUT** `/api/accommodation-room-types/{id}`
 
 Updates an existing room type.
 
 **Required Permission:** `PERM_UPDATE_ACCOMMODATION_ROOM_TYPE`
 
 **Path Parameters:**
-- `idObfuscated` - Encoded room type ID
+- `id` - Encoded room type ID
 
 **Request Body:**
 ```json
@@ -151,14 +151,14 @@ Deletes one or more room types by their IDs.
 
 ### 4. Get Accommodation Room Type by ID
 
-**GET** `/api/accommodation-room-types/{idObfuscated}`
+**GET** `/api/accommodation-room-types/{id}`
 
 Retrieves a single room type by its ID.
 
 **Required Permission:** `PERM_READ_ACCOMMODATION_ROOM_TYPE`
 
 **Path Parameters:**
-- `idObfuscated` - Encoded room type ID
+- `id` - Encoded room type ID
 
 **Success Response (200 OK):**
 ```json

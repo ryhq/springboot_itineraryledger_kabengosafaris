@@ -93,14 +93,14 @@ Creates a new phone number for an accommodation.
 ---
 
 ### 2. Update Accommodation Phone
-**PUT** `/api/accommodation-phones/{idObfuscated}`
+**PUT** `/api/accommodation-phones/{id}`
 
 Updates an existing accommodation phone. Only provided fields will be updated.
 
 **Permission Required:** `PERM_UPDATE_ACCOMMODATION_PHONE`
 
 **Path Parameters:**
-- `idObfuscated` (string) - Encoded phone ID
+- `id` (string) - Encoded phone ID
 
 **Request Body:**
 All fields are optional. Only include fields you want to update.
@@ -176,14 +176,14 @@ Deletes one or more accommodation phones by their IDs.
 ---
 
 ### 4. Get Accommodation Phone by ID
-**GET** `/api/accommodation-phones/{idObfuscated}`
+**GET** `/api/accommodation-phones/{id}`
 
 Retrieves a single accommodation phone by its ID.
 
 **Permission Required:** `PERM_READ_ACCOMMODATION_PHONE`
 
 **Path Parameters:**
-- `idObfuscated` (string) - Encoded phone ID
+- `id` (string) - Encoded phone ID
 
 **Response:**
 ```json

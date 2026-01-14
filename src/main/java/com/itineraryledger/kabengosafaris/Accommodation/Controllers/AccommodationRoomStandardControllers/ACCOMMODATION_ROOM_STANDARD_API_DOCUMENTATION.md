@@ -71,14 +71,14 @@ Creates a new room standard (room category) for an accommodation.
 
 ### 2. Update Accommodation Room Standard
 
-**PUT** `/api/accommodation-room-standards/{idObfuscated}`
+**PUT** `/api/accommodation-room-standards/{id}`
 
 Updates an existing room standard.
 
 **Required Permission:** `PERM_UPDATE_ACCOMMODATION_ROOM_STANDARD`
 
 **Path Parameters:**
-- `idObfuscated` - Encoded room standard ID
+- `id` - Encoded room standard ID
 
 **Request Body:**
 ```json
@@ -155,14 +155,14 @@ Deletes one or more room standards by their IDs.
 
 ### 4. Get Accommodation Room Standard by ID
 
-**GET** `/api/accommodation-room-standards/{idObfuscated}`
+**GET** `/api/accommodation-room-standards/{id}`
 
 Retrieves a single room standard by its ID.
 
 **Required Permission:** `PERM_READ_ACCOMMODATION_ROOM_STANDARD`
 
 **Path Parameters:**
-- `idObfuscated` - Encoded room standard ID
+- `id` - Encoded room standard ID
 
 **Success Response (200 OK):**
 ```json

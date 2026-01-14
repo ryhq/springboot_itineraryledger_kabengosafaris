@@ -347,7 +347,7 @@ public class ParkActivityService {
      */
     private ActivityWithNotesDTO convertActivityToWithNotesDTO(Activity activity, Long parkId) {
         ActivityWithNotesDTO dto = new ActivityWithNotesDTO();
-        dto.setIdObfuscated(idObfuscator.encodeId(activity.getId()));
+        dto.setId(idObfuscator.encodeId(activity.getId()));
         dto.setName(activity.getName());
         dto.setSlug(activity.getSlug());
         dto.setHasTariff(activity.getHasTariff());
@@ -382,7 +382,7 @@ public class ParkActivityService {
      */
     private ParkWithNotesDTO convertParkToWithNotesDTO(Park park, Long activityId) {
         ParkWithNotesDTO dto = new ParkWithNotesDTO();
-        dto.setIdObfuscated(idObfuscator.encodeId(park.getId()));
+        dto.setId(idObfuscator.encodeId(park.getId()));
         dto.setName(park.getName());
         dto.setSlug(park.getSlug());
         dto.setParkType(park.getParkType());
