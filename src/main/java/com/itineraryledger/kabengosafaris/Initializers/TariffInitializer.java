@@ -34,7 +34,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@Order(Ordered.HIGHEST_PRECEDENCE + 11) // Run after GlobalSeasonInitializer
+@Order(Ordered.HIGHEST_PRECEDENCE + 12) // Run after GlobalSeasonInitializer
 public class TariffInitializer implements ApplicationRunner {
 
     private final TariffRepository tariffRepository;

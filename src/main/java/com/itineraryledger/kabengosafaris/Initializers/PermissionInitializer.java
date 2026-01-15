@@ -115,6 +115,12 @@ public class PermissionInitializer implements ApplicationRunner {
             "TARIFF",
             "ACTIVITY_TARIFF_RATE",
             "PARK_TARIFF_RATE",
+            // Itinerary Module Entities
+            "ITINERARY",
+            "ITINERARY_DAY",
+            "ITINERARY_PAX",
+            "ITINERARY_DAY_PARK",
+            "ITINERARY_DAY_ACCOMMODATION",
         };
 
         // Define standard actions (CREATE, READ, UPDATE, DELETE)
@@ -203,6 +209,43 @@ public class PermissionInitializer implements ApplicationRunner {
                 "READ",
                 "ACCOMMODATION_RATE",
                 "Allows viewing the accommodation rate matrix including seasons, room types, room standards, and board types"
+            },
+            // Itinerary Custom Permissions
+            {
+                "PUBLISH_ITINERARY",
+                "UPDATE",
+                "ITINERARY",
+                "Allows publishing an itinerary to make it available for booking, that is, creating itinerary safari from it"
+            },
+            {
+                "UNPUBLISH_ITINERARY",
+                "UPDATE",
+                "ITINERARY",
+                "Allows unpublishing an itinerary to revert it from published status"
+            },
+            {
+                "ARCHIVE_ITINERARY",
+                "UPDATE",
+                "ITINERARY",
+                "Allows archiving an itinerary to mark it as no longer in use"
+            },
+            {
+                "UNARCHIVE_ITINERARY",
+                "UPDATE",
+                "ITINERARY",
+                "Allows unarchiving an itinerary to restore it from archived status"
+            },
+            {
+                "READ_FULL_ITINERARY",
+                "READ",
+                "ITINERARY",
+                "Allows viewing complete itinerary with all nested data (days, parks, accommodations, pax)"
+            },
+            {
+                "CLONE_ITINERARY",
+                "CREATE",
+                "ITINERARY",
+                "Allows duplicating an existing itinerary as a new template"
             },
         };
 

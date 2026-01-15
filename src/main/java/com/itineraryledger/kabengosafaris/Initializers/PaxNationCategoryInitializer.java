@@ -42,7 +42,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@Order(Ordered.HIGHEST_PRECEDENCE + 20) // Run after PaxAgeCategoryInitializer
+@Order(Ordered.HIGHEST_PRECEDENCE + 11) // Run after PaxAgeCategoryInitializer
 public class PaxNationCategoryInitializer implements ApplicationRunner {
 
     private final PaxNationCategoryRepository paxNationCategoryRepository;
