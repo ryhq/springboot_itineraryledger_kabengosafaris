@@ -197,6 +197,13 @@ public class PermissionInitializer implements ApplicationRunner {
                 "PARK_TARIFF_RATE",
                 "Allows viewing the park tariff rate matrix including seasons, age categories, and nation categories"
             },
+            // Accommodation Rate Matrix - allows viewing accommodation rate matrix with related lookup data
+            {
+                "READ_ACCOMMODATION_RATE_MATRIX",
+                "READ",
+                "ACCOMMODATION_RATE",
+                "Allows viewing the accommodation rate matrix including seasons, room types, room standards, and board types"
+            },
         };
 
         for (String[] customPerm : customPermissions) {

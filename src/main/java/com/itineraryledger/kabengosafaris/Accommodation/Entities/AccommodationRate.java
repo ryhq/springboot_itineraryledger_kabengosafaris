@@ -35,7 +35,8 @@ import java.time.LocalDateTime;
     @Index(name = "idx_accommodation_rate_season_id", columnList = "season_id"),
     @Index(name = "idx_accommodation_rate_room_type_id", columnList = "room_type_id"),
     @Index(name = "idx_accommodation_rate_room_standard_id", columnList = "room_standard_id"),
-    @Index(name = "idx_accommodation_rate_board_type_id", columnList = "board_type_id")
+    @Index(name = "idx_accommodation_rate_board_type_id", columnList = "board_type_id"),
+    @Index(name = "idx_accommodation_rate_is_active", columnList = "is_active")
 }, uniqueConstraints = {
     @UniqueConstraint(
         name = "uk_accommodation_rate_combination",
@@ -83,6 +84,19 @@ public class AccommodationRate {
     @Builder.Default
     private String currency = "USD"; // ISO 4217 currency code
 
+    /**
+     * Optional notes about this specific rate
+     */
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
+    /**
+     * Whether this rate is currently active
+     */
+    @Builder.Default
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -90,4 +104,57 @@ public class AccommodationRate {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    // ========================
+    // HELPER METHODS
+    // ========================
+
+    /**
+     * Get the effective rate (uses STO rate if available, else rack rate)
+     */
+    @Transient
+    public BigDecimal getEffectiveRate(boolean useStoRate) {
+        if (useStoRate && stoRate != null) {
+            return stoRate;
+        }
+        return rackRate;
+    }
+
+    /**
+     * Get profit amount (Rack Rate - STO Rate)
+     *
+     * Rack Rate = price charged to customer (revenue)
+     * STO Rate = cost paid on behalf of customer (expense)
+     * Profit = Revenue - Expense
+     */
+    @Transient
+    public BigDecimal getProfitAmount() {
+        if (stoRate == null || rackRate == null) {
+            return BigDecimal.ZERO;
+        }
+        return rackRate.subtract(stoRate);
+    }
+
+    /**
+     * Get profit percentage ((Rack Rate - STO Rate) / Rack Rate * 100)
+     *
+     * Represents the profit margin as a percentage of the charged price.
+     */
+    @Transient
+    public BigDecimal getProfitPercentage() {
+        if (stoRate == null || rackRate == null || rackRate.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+        return rackRate.subtract(stoRate)
+            .divide(rackRate, 4, java.math.RoundingMode.HALF_UP)
+            .multiply(new BigDecimal("100"));
+    }
+
+    /**
+     * Check if STO rate is available
+     */
+    @Transient
+    public boolean hasStoRate() {
+        return stoRate != null && stoRate.compareTo(BigDecimal.ZERO) > 0;
+    }
 }
