@@ -119,6 +119,7 @@ public class PermissionInitializer implements ApplicationRunner {
             "ITINERARY",
             "ITINERARY_DAY",
             "ITINERARY_PAX",
+            "ITINERARY_DAY_ACTIVITY",
             "ITINERARY_DAY_PARK",
             "ITINERARY_DAY_ACCOMMODATION",
         };

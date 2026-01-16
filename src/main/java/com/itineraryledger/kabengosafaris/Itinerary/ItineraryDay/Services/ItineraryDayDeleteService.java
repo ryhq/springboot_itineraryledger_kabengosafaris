@@ -20,6 +20,10 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * ItineraryDayDeleteService - Service for deleting itinerary days
+ *
+ * Provides bulk deletion of itinerary days with automatic renumbering.
+ * After deletion, remaining days are renumbered to maintain sequential order (1, 2, 3, ...).
+ * Uses a two-pass approach to avoid unique constraint violations on (itinerary_id, day_number).
  */
 @Service
 @Slf4j
@@ -39,11 +43,21 @@ public class ItineraryDayDeleteService {
     }
 
     /**
-     * Delete itinerary days by list of obfuscated IDs
+     * Delete itinerary days by list of obfuscated IDs.
+     *
+     * This method handles both single and bulk deletions:
+     * - For single deletion, pass a list with one ID
+     * - For bulk deletion, pass a list with multiple IDs
+     *
+     * After successful deletion, remaining days are automatically renumbered
+     * to maintain sequential day numbers (1, 2, 3, ...) and dayTags are updated accordingly.
      *
      * @param itineraryIdObfuscated The obfuscated itinerary ID
-     * @param dayIdObfuscatedList List of obfuscated day IDs
-     * @return ResponseEntity with ApiResponse containing success or error
+     * @param dayIdObfuscatedList List of obfuscated day IDs to delete (can be single or multiple)
+     * @return ResponseEntity with ApiResponse containing:
+     *         - 200: Success with count of deleted days
+     *         - 400: Invalid itinerary ID format
+     *         - 500: Internal server error
      */
     public ResponseEntity<ApiResponse<?>> deleteItineraryDays(String itineraryIdObfuscated, List<String> dayIdObfuscatedList) {
         log.info("Deleting {} days from itinerary: {}", dayIdObfuscatedList.size(), itineraryIdObfuscated);
@@ -81,61 +95,6 @@ public class ItineraryDayDeleteService {
     }
 
     /**
-     * Delete a single itinerary day
-     *
-     * @param itineraryIdObfuscated The obfuscated itinerary ID
-     * @param dayIdObfuscated The obfuscated day ID
-     * @return ResponseEntity with ApiResponse containing success or error
-     */
-    public ResponseEntity<ApiResponse<?>> deleteItineraryDay(String itineraryIdObfuscated, String dayIdObfuscated) {
-        log.info("Deleting day {} from itinerary: {}", dayIdObfuscated, itineraryIdObfuscated);
-
-        try {
-            // Decode IDs
-            Long itineraryId;
-            Long dayId;
-            try {
-                itineraryId = idObfuscator.decodeId(itineraryIdObfuscated);
-                dayId = idObfuscator.decodeId(dayIdObfuscated);
-            } catch (Exception e) {
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Invalid ID", "INVALID_ID")
-                );
-            }
-
-            // Find day
-            ItineraryDay day = itineraryDayRepository.findById(dayId).orElse(null);
-            if (day == null) {
-                return ResponseEntity.status(404).body(
-                    ApiResponse.error(404, "Itinerary day not found", "ITINERARY_DAY_NOT_FOUND")
-                );
-            }
-
-            // Verify day belongs to the itinerary
-            if (!day.getItinerary().getId().equals(itineraryId)) {
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Day does not belong to this itinerary", "DAY_ITINERARY_MISMATCH")
-                );
-            }
-
-            // Delete day
-            ((ItineraryDayDeleteService) AopContext.currentProxy()).deleteDay(dayId);
-
-            log.info("Itinerary day deleted successfully: {}", dayId);
-
-            return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Itinerary day deleted successfully", null)
-            );
-
-        } catch (Exception e) {
-            log.error("Error deleting itinerary day", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                ApiResponse.error(500, "Failed to delete itinerary day", "ITINERARY_DAY_DELETE_FAILED")
-            );
-        }
-    }
-
-    /**
      * Delete days by list of IDs (internal method)
      */
     private ResponseEntity<ApiResponse<?>> deleteDaysInternal(Long itineraryId, List<Long> dayIds) {
@@ -166,9 +125,65 @@ public class ItineraryDayDeleteService {
             }
         }
 
+        // Renumber remaining days to maintain sequential order
+        if (deletedCount > 0) {
+            renumberDaysAfterDeletion(itineraryId);
+        }
+
         return ResponseEntity.ok().body(
             ApiResponse.success(200, deletedCount + " day(s) deleted successfully", null)
         );
+    }
+
+    /**
+     * Renumber remaining days after deletion to maintain sequential day numbers.
+     * Uses two-pass approach to avoid unique constraint violations on (itinerary_id, day_number).
+     *
+     * @param itineraryId The itinerary ID
+     */
+    private void renumberDaysAfterDeletion(Long itineraryId) {
+        // Fetch remaining days ordered by current day number
+        List<ItineraryDay> remainingDays = itineraryDayRepository.findByItineraryIdOrderByDayNumberAsc(itineraryId);
+
+        if (remainingDays.isEmpty()) {
+            return;
+        }
+
+        // Check if renumbering is needed (gaps in day numbers)
+        boolean needsRenumbering = false;
+        int expectedDayNumber = 1;
+        for (ItineraryDay day : remainingDays) {
+            if (!day.getDayNumber().equals(expectedDayNumber)) {
+                needsRenumbering = true;
+                break;
+            }
+            expectedDayNumber++;
+        }
+
+        if (!needsRenumbering) {
+            return;
+        }
+
+        log.info("Renumbering {} days for itinerary {}", remainingDays.size(), itineraryId);
+
+        // Pass 1: Set temporary negative day numbers to avoid unique constraint violations
+        int tempNumber = -1;
+        for (ItineraryDay day : remainingDays) {
+            day.setDayNumber(tempNumber--);
+        }
+        itineraryDayRepository.saveAll(remainingDays);
+        itineraryDayRepository.flush();
+
+        // Pass 2: Set final sequential day numbers and update dayTag
+        int newDayNumber = 1;
+        for (ItineraryDay day : remainingDays) {
+            day.setDayNumber(newDayNumber);
+            day.setDayTag("Day " + newDayNumber);
+            newDayNumber++;
+        }
+        itineraryDayRepository.saveAll(remainingDays);
+
+        log.info("Days renumbered successfully for itinerary {}", itineraryId);
     }
 
     @AuditLogAnnotation(action = "DELETE_ITINERARY_DAY", description = "Deleting itinerary day", entityType = "ItineraryDay", entityIdParamName = "id")

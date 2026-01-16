@@ -63,6 +63,10 @@ public class ItineraryDayActivity {
     @Column(name = "is_included_in_price", nullable = false)
     private Boolean isIncludedInPrice = true;
 
+    @Builder.Default
+    @Column(name = "is_optional", nullable = false)
+    private Boolean isOptional = false; // Optional add-on activity
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

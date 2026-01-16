@@ -1,6 +1,5 @@
 package com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayActivity.DTOs;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,18 +7,15 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
 /**
- * CreateItineraryDayActivityDTO - Data Transfer Object for creating an ItineraryDayActivity
+ * UpdateItineraryDayActivityDTO - Data Transfer Object for updating an ItineraryDayActivity
  *
- * Note: sortOrder is auto-determined based on existing activities in the day.
- * First activity = 1, subsequent activities increment from there.
+ * Note: sortOrder cannot be updated directly - use the reorder endpoint.
+ * activityId cannot be changed after creation.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateItineraryDayActivityDTO {
-
-    @NotBlank(message = "Activity ID is required")
-    private String activityId; // Obfuscated ID
+public class UpdateItineraryDayActivityDTO {
 
     private BigDecimal durationHours;
     private String startTime;

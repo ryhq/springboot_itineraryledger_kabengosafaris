@@ -1,6 +1,5 @@
 package com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.DTOs;
 
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,16 +7,14 @@ import lombok.NoArgsConstructor;
 
 /**
  * UpdateItineraryDayDTO - Data Transfer Object for updating an ItineraryDay
+ *
+ * Note: dayNumber and dayTag cannot be updated as they are auto-managed.
+ * dayNumber is determined by creation order, dayTag is auto-generated from dayNumber.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateItineraryDayDTO {
-
-    @Min(value = 1, message = "Day number must be at least 1")
-    private Integer dayNumber;
-
-    private String dayTag;
 
     @Size(max = 200, message = "Title cannot exceed 200 characters")
     private String title;

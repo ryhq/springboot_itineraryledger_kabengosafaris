@@ -166,4 +166,34 @@ public class ActivitySpecification {
             return cb.not(root.get("id").in(subquery));
         };
     }
+
+    /**
+     * Filter by standalone status
+     * Standalone activities are NOT linked to any park (not in parks_activities table)
+     *
+     * @param isStandalone true = activities with no park associations, false = activities with at least one park association
+     */
+    public static Specification<Activity> isStandalone(Boolean isStandalone) {
+        return (root, query, cb) -> {
+            if (isStandalone == null) {
+                return cb.conjunction();
+            }
+
+            // Subquery to get activity IDs that are linked to any park
+            var subquery = query.subquery(Long.class);
+            var activityRoot = subquery.from(Activity.class);
+            var parkActivitiesJoin = activityRoot.join("parkActivities", JoinType.INNER);
+
+            // Select activity IDs that have park associations (using the join)
+            subquery.select(parkActivitiesJoin.get("activity").get("id"));
+
+            if (isStandalone) {
+                // Return activities whose ID is NOT in the subquery (standalone activities)
+                return cb.not(root.get("id").in(subquery));
+            } else {
+                // Return activities whose ID IS in the subquery (park-linked activities)
+                return root.get("id").in(subquery);
+            }
+        };
+    }
 }

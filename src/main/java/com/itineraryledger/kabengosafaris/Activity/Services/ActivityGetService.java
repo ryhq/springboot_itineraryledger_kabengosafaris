@@ -160,6 +160,7 @@ public class ActivityGetService {
      * @param isWebActive Filter by web active status
      * @param chargingBasis Filter by charging basis
      * @param isActive Filter by active status
+     * @param isStandalone Filter by standalone status (true = not linked to any park)
      * @param keyword Search keyword across multiple fields
      * @param page Page number (0-indexed)
      * @param size Page size
@@ -173,6 +174,7 @@ public class ActivityGetService {
         Boolean isWebActive,
         ChargingBasis chargingBasis,
         Boolean isActive,
+        Boolean isStandalone,
         String keyword,
         Integer page,
         Integer size,
@@ -201,6 +203,9 @@ public class ActivityGetService {
             }
             if (isActive != null) {
                 spec = spec.and(ActivitySpecification.isActive(isActive));
+            }
+            if (isStandalone != null) {
+                spec = spec.and(ActivitySpecification.isStandalone(isStandalone));
             }
             if (keyword != null && !keyword.isEmpty()) {
                 spec = spec.and(ActivitySpecification.searchKeyword(keyword));

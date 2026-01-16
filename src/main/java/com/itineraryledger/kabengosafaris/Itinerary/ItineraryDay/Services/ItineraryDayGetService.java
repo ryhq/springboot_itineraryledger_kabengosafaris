@@ -142,50 +142,6 @@ public class ItineraryDayGetService {
     }
 
     /**
-     * Get a specific day by day number
-     *
-     * @param itineraryIdObfuscated The obfuscated itinerary ID
-     * @param dayNumber The day number
-     * @return ResponseEntity with ApiResponse containing the day
-     */
-    public ResponseEntity<ApiResponse<?>> getItineraryDayByNumber(String itineraryIdObfuscated, Integer dayNumber) {
-        log.info("Fetching day number {} for itinerary: {}", dayNumber, itineraryIdObfuscated);
-
-        try {
-            // Decode itinerary ID
-            Long itineraryId;
-            try {
-                itineraryId = idObfuscator.decodeId(itineraryIdObfuscated);
-            } catch (Exception e) {
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Invalid itinerary ID", "INVALID_ITINERARY_ID")
-                );
-            }
-
-            // Find day by itinerary and day number
-            ItineraryDay day = itineraryDayRepository.findByItineraryIdAndDayNumber(itineraryId, dayNumber).orElse(null);
-            if (day == null) {
-                return ResponseEntity.status(404).body(
-                    ApiResponse.error(404, "Day " + dayNumber + " not found", "ITINERARY_DAY_NOT_FOUND")
-                );
-            }
-
-            // Convert to DTO
-            ItineraryDayDTO dayDTO = convertToDTO(day);
-
-            return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Itinerary day retrieved successfully", dayDTO)
-            );
-
-        } catch (Exception e) {
-            log.error("Error fetching itinerary day by number", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                ApiResponse.error(500, "Failed to fetch itinerary day", "ITINERARY_DAY_FETCH_FAILED")
-            );
-        }
-    }
-
-    /**
      * Convert ItineraryDay entity to ItineraryDayDTO
      */
     private ItineraryDayDTO convertToDTO(ItineraryDay day) {

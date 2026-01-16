@@ -6,12 +6,15 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * ItineraryDayDTO - Data Transfer Object for ItineraryDay entity
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ItineraryDayDTO {
     private String id;
     private String itineraryId;

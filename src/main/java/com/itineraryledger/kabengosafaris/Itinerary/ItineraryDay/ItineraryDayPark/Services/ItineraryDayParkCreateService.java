@@ -111,12 +111,16 @@ public class ItineraryDayParkCreateService {
                 );
             }
 
+            // Auto-determine sortOrder based on existing park visits count
+            long existingCount = itineraryDayParkRepository.countByItineraryDayId(dayId);
+            int nextSortOrder = (int) existingCount + 1;
+
             // Create park visit
             ItineraryDayPark dayPark = ItineraryDayPark.builder()
                 .itineraryDay(day)
                 .park(park)
                 .entryType(createDTO.getEntryType())
-                .sortOrder(createDTO.getSortOrder() != null ? createDTO.getSortOrder() : 0)
+                .sortOrder(nextSortOrder)
                 .arrivalTime(createDTO.getArrivalTime())
                 .departureTime(createDTO.getDepartureTime())
                 .notes(createDTO.getNotes())

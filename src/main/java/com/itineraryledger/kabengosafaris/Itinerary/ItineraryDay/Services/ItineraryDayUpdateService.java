@@ -80,34 +80,9 @@ public class ItineraryDayUpdateService {
                 );
             }
 
-            // Check if day number is being changed and if it's unique
-            if (updateDTO.getDayNumber() != null && !updateDTO.getDayNumber().equals(day.getDayNumber())) {
-                if (itineraryDayRepository.existsByItineraryIdAndDayNumberAndIdNot(itineraryId, updateDTO.getDayNumber(), dayId)) {
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(
-                            400,
-                            "Day " + updateDTO.getDayNumber() + " already exists in this itinerary",
-                            "DAY_NUMBER_EXISTS"
-                        )
-                    );
-                }
-                // Validate against total days
-                if (updateDTO.getDayNumber() > day.getItinerary().getTotalDays()) {
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(
-                            400,
-                            "Day number cannot exceed itinerary's total days",
-                            "DAY_NUMBER_EXCEEDS_TOTAL"
-                        )
-                    );
-                }
-                day.setDayNumber(updateDTO.getDayNumber());
-            }
+            // Note: dayNumber and dayTag are not updatable - they are auto-managed
 
-            // Update other fields if provided
-            if (updateDTO.getDayTag() != null) {
-                day.setDayTag(updateDTO.getDayTag());
-            }
+            // Update fields if provided
             if (updateDTO.getTitle() != null) {
                 day.setTitle(updateDTO.getTitle());
             }

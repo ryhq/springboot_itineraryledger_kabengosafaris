@@ -39,70 +39,16 @@ public class ItineraryDayParkDeleteService {
     }
 
     /**
-     * Delete a park visit
+     * Delete park visits by list of obfuscated IDs.
+     *
+     * This method handles both single and bulk deletions:
+     * - For single deletion, pass a list with one ID
+     * - For bulk deletion, pass a list with multiple IDs
      *
      * @param itineraryIdObfuscated The obfuscated itinerary ID
      * @param dayIdObfuscated The obfuscated day ID
-     * @param parkVisitIdObfuscated The obfuscated park visit ID
-     * @return ResponseEntity with ApiResponse
-     */
-    public ResponseEntity<ApiResponse<?>> deleteItineraryDayPark(
-        String itineraryIdObfuscated,
-        String dayIdObfuscated,
-        String parkVisitIdObfuscated
-    ) {
-        log.info("Deleting park visit: {}", parkVisitIdObfuscated);
-
-        try {
-            // Decode IDs
-            Long itineraryId;
-            Long dayId;
-            Long parkVisitId;
-            try {
-                itineraryId = idObfuscator.decodeId(itineraryIdObfuscated);
-                dayId = idObfuscator.decodeId(dayIdObfuscated);
-                parkVisitId = idObfuscator.decodeId(parkVisitIdObfuscated);
-            } catch (Exception e) {
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Invalid ID", "INVALID_ID")
-                );
-            }
-
-            // Find park visit
-            ItineraryDayPark parkVisit = itineraryDayParkRepository.findById(parkVisitId).orElse(null);
-            if (parkVisit == null) {
-                return ResponseEntity.status(404).body(
-                    ApiResponse.error(404, "Park visit not found", "PARK_VISIT_NOT_FOUND")
-                );
-            }
-
-            // Verify ownership chain
-            if (!parkVisit.getItineraryDay().getId().equals(dayId) ||
-                !parkVisit.getItineraryDay().getItinerary().getId().equals(itineraryId)) {
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Park visit does not belong to this day/itinerary", "OWNERSHIP_MISMATCH")
-                );
-            }
-
-            // Delete
-            ((ItineraryDayParkDeleteService) AopContext.currentProxy()).deleteParkVisit(parkVisitId);
-
-            log.info("Park visit deleted successfully: {}", parkVisitId);
-
-            return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Park visit deleted successfully", null)
-            );
-
-        } catch (Exception e) {
-            log.error("Error deleting park visit", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                ApiResponse.error(500, "Failed to delete park visit", "PARK_VISIT_DELETE_FAILED")
-            );
-        }
-    }
-
-    /**
-     * Delete multiple park visits
+     * @param parkVisitIdObfuscatedList List of obfuscated park visit IDs to delete
+     * @return ResponseEntity with ApiResponse containing count of deleted park visits
      */
     public ResponseEntity<ApiResponse<?>> deleteItineraryDayParks(
         String itineraryIdObfuscated,

@@ -135,6 +135,7 @@ public class ActivityController {
      * @param isWebActive Filter by web active status
      * @param chargingBasis Filter by charging basis
      * @param isActive Filter by active status
+     * @param isStandalone Filter by standalone status (true = not linked to any park, false = linked to at least one park)
      * @param keyword Search keyword across multiple fields
      * @param page Page number (0-indexed)
      * @param size Page size
@@ -150,6 +151,7 @@ public class ActivityController {
         @Parameter(description = "Filter by web active status") @RequestParam(required = false) Boolean isWebActive,
         @Parameter(description = "Filter by charging basis") @RequestParam(required = false) ChargingBasis chargingBasis,
         @Parameter(description = "Filter by active status") @RequestParam(required = false) Boolean isActive,
+        @Parameter(description = "Filter by standalone status (true = not linked to any park)") @RequestParam(required = false) Boolean isStandalone,
         @Parameter(description = "Search keyword across multiple fields") @RequestParam(required = false) String keyword,
         @Parameter(description = "Page number (0-indexed)") @RequestParam(required = false, defaultValue = "0") Integer page,
         @Parameter(description = "Page size") @RequestParam(required = false, defaultValue = "10") Integer size,
@@ -163,6 +165,7 @@ public class ActivityController {
             isWebActive,
             chargingBasis,
             isActive,
+            isStandalone,
             keyword,
             page,
             size,
