@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Response;
 
+import com.itineraryledger.kabengosafaris.PdfDocument.Exceptions.PdfTemplateValidationException;
 import com.itineraryledger.kabengosafaris.User.Services.RegistrationServices.RegistrationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -17,9 +18,11 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +46,58 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
     // ==================== Custom Business Exceptions ====================
+
+    /**
+     * Handle PdfTemplateValidationException
+     * Returns detailed validation errors for PDF template issues
+     */
+    @ExceptionHandler(PdfTemplateValidationException.class)
+    public ResponseEntity<ApiResponse<Object>> handlePdfTemplateValidationException(
+            PdfTemplateValidationException ex,
+            WebRequest request) {
+
+        log.warn("PDF template validation failed: {} - Template: {}",
+                ex.getMessage(), ex.getTemplateName());
+
+        // Build detailed error response
+        var validationDetails = new java.util.HashMap<String, Object>();
+        validationDetails.put("templateName", ex.getTemplateName());
+
+        // Convert validation errors to response format
+        var errorDetails = ex.getErrors().stream()
+                .map(error -> {
+                    var detail = new java.util.HashMap<String, Object>();
+                    detail.put("errorType", error.getErrorType());
+                    detail.put("message", error.getMessage());
+                    if (error.getLineNumber() != null) {
+                        detail.put("lineNumber", error.getLineNumber());
+                    }
+                    if (error.getColumnNumber() != null) {
+                        detail.put("columnNumber", error.getColumnNumber());
+                    }
+                    if (error.getSuggestion() != null) {
+                        detail.put("suggestion", error.getSuggestion());
+                    }
+                    if (error.getContext() != null) {
+                        detail.put("context", error.getContext());
+                    }
+                    return detail;
+                })
+                .toList();
+
+        validationDetails.put("errors", errorDetails);
+        validationDetails.put("errorCount", ex.getErrors().size());
+
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
+                .success(false)
+                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .message(ex.getMessage())
+                .errorCode(ErrorCode.PDF_TEMPLATE_VALIDATION_ERROR.getCode())
+                .data(validationDetails)
+                .build();
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
 
     /**
      * Handle RegistrationException
@@ -440,6 +495,59 @@ public class GlobalExceptionHandler {
     }
 
     // ==================== HTTP-Related Exceptions ====================
+
+    /**
+     * Handle AsyncRequestNotUsableException (client disconnection, broken pipe)
+     * This is a non-error situation - the client simply disconnected before receiving the response.
+     * Common causes: client timeout, user cancelled download, network interruption.
+     */
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public ResponseEntity<Void> handleAsyncRequestNotUsableException(
+            AsyncRequestNotUsableException ex,
+            WebRequest request) {
+
+        // Log at DEBUG level since this is expected behavior, not an error
+        log.debug("Client disconnected before response completed: {}", ex.getMessage());
+
+        // Return null - no point sending a response since the client is gone
+        return null;
+    }
+
+    /**
+     * Handle IOException (broken pipe, connection reset, etc.)
+     * These typically occur when the client disconnects during response.
+     */
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIOException(
+            IOException ex,
+            WebRequest request) {
+
+        String message = ex.getMessage() != null ? ex.getMessage().toLowerCase() : "";
+
+        // Check for client disconnection patterns
+        if (message.contains("broken pipe") ||
+            message.contains("connection reset") ||
+            message.contains("connection abort") ||
+            message.contains("client closed")) {
+
+            // Log at DEBUG level - this is expected when clients disconnect
+            log.debug("Client connection lost: {}", ex.getMessage());
+
+            // Return null - no point sending a response
+            return null;
+        }
+
+        // For other IO errors, treat as server error
+        log.error("IO exception occurred: {}", ex.getMessage(), ex);
+
+        ApiResponse<Void> response = ApiResponse.error(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "An I/O error occurred while processing your request",
+                ErrorCode.INTERNAL_SERVER_ERROR.getCode()
+        );
+
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 
     /**
      * Handle 404 Not Found

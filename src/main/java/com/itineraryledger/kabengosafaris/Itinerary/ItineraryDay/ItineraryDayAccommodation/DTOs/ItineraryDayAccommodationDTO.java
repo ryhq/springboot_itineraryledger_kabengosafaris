@@ -25,7 +25,6 @@ public class ItineraryDayAccommodationDTO {
     private String boardTypeId;
     private String boardTypeName;
     private Integer roomCount;
-    private Integer nights;
     private Boolean isAlternative;
     private String notes;
     private LocalDateTime createdAt;

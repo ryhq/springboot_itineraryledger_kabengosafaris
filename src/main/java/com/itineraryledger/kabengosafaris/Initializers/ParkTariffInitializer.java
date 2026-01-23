@@ -24,11 +24,12 @@ import java.util.*;
  *
  * Runs AFTER TariffInitializer (Order = HIGHEST_PRECEDENCE + 12)
  *
- * Tariff IDs (from TariffInitializer):
- * 1. Public Camping Fee, 2. Special Camping Fee, 3. Seasonal Camping Fee,
- * 4. Fly Campsites Fee, 5. Upper Barafu Camping Fee, 6. Premium Special Camping Fee,
- * 7. Parks Accommodations Fee, 8. Rescue Fee, 9. Concession Fee,
- * 10. Hiking / Mountaineering Fee, 11. WMA
+ * Tariff IDs (from TariffInitializer) - Updated with Conservation Fee:
+ * 1. Conservation Fee (park entry fee - formerly "Entrance" activity),
+ * 2. Public Camping Fee, 3. Special Camping Fee, 4. Seasonal Camping Fee,
+ * 5. Fly Campsites Fee, 6. Upper Barafu Camping Fee, 7. Premium Special Camping Fee,
+ * 8. Parks Accommodations Fee, 9. Rescue Fee, 10. Concession Fee,
+ * 11. Hiking / Mountaineering Fee, 12. WMA
  *
  * Behavior:
  * - Only creates relationships that don't already exist
@@ -182,20 +183,25 @@ public class ParkTariffInitializer implements ApplicationRunner {
      * IMPORTANT: These mappings match the production database exactly.
      * DO NOT modify unless the production database has been updated!
      *
+     * NOTE: Conservation Fee (Tariff ID 1) has been added to ALL parks.
+     * This was formerly the "Entrance" activity - it's mandatory for all national parks.
+     * All other tariff IDs have been shifted by +1.
+     *
      * Format: Map<ParkID, List<TariffIDs>>
      *
-     * Tariff IDs reference:
-     * 1. Public Camping Fee
-     * 2. Special Camping Fee
-     * 3. Seasonal Camping Fee
-     * 4. Fly Campsites Fee
-     * 5. Upper Barafu Camping Fee
-     * 6. Premium Special Camping Fee
-     * 7. Parks Accommodations Fee
-     * 8. Rescue Fee
-     * 9. Concession Fee
-     * 10. Hiking / Mountaineering Fee
-     * 11. WMA (Wildlife Management Area)
+     * Tariff IDs reference (updated):
+     * 1. Conservation Fee (park entry fee - NEW, applies to ALL parks)
+     * 2. Public Camping Fee (was 1)
+     * 3. Special Camping Fee (was 2)
+     * 4. Seasonal Camping Fee (was 3)
+     * 5. Fly Campsites Fee (was 4)
+     * 6. Upper Barafu Camping Fee (was 5)
+     * 7. Premium Special Camping Fee (was 6)
+     * 8. Parks Accommodations Fee (was 7)
+     * 9. Rescue Fee (was 8)
+     * 10. Concession Fee (was 9)
+     * 11. Hiking / Mountaineering Fee (was 10)
+     * 12. WMA (Wildlife Management Area) (was 11)
      *
      * Data extracted from INSERT INTO `parks_tariffs` statements in production SQL
      */
@@ -203,96 +209,100 @@ public class ParkTariffInitializer implements ApplicationRunner {
         Map<Long, List<Long>> mappings = new HashMap<>();
 
         // Park 1: Serengeti National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Premium Special Camping, Concession, WMA
-        mappings.put(1L, Arrays.asList(1L, 2L, 3L, 4L, 6L, 9L, 11L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Premium Special Camping, Concession, WMA
+        mappings.put(1L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 7L, 10L, 12L));
 
         // Park 2: Ngorongoro Conservation Area
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
-        mappings.put(2L, Arrays.asList(1L, 2L, 3L, 4L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
+        mappings.put(2L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L));
 
         // Park 3: Tarangire National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession, WMA
-        mappings.put(3L, Arrays.asList(1L, 2L, 3L, 4L, 9L, 11L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession, WMA
+        mappings.put(3L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L, 12L));
 
         // Park 4: Lake Manyara National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession, WMA
-        mappings.put(4L, Arrays.asList(1L, 2L, 3L, 4L, 9L, 11L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession, WMA
+        mappings.put(4L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L, 12L));
 
         // Park 5: Ruaha National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
-        mappings.put(5L, Arrays.asList(1L, 2L, 3L, 4L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
+        mappings.put(5L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L));
 
         // Park 6: Mikumi National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
-        mappings.put(6L, Arrays.asList(1L, 2L, 3L, 4L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
+        mappings.put(6L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L));
 
         // Park 7: Katavi National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
-        mappings.put(7L, Arrays.asList(1L, 2L, 3L, 4L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
+        mappings.put(7L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L));
 
         // Park 8: Selous Game Reserve
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites
-        mappings.put(8L, Arrays.asList(1L, 2L, 3L, 4L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites
+        mappings.put(8L, Arrays.asList(1L, 2L, 3L, 4L, 5L));
 
         // Park 9: Arusha National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
-        mappings.put(9L, Arrays.asList(1L, 2L, 3L, 4L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
+        mappings.put(9L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L));
 
         // Park 10: Gombe Stream National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
-        mappings.put(10L, Arrays.asList(1L, 2L, 3L, 4L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
+        mappings.put(10L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L));
 
         // Park 11: Burigi-Chato National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
-        mappings.put(11L, Arrays.asList(1L, 2L, 3L, 4L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
+        mappings.put(11L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L));
 
         // Park 12: Kilimanjaro National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Upper Barafu Camping, Parks Accommodations, Rescue, Concession
-        mappings.put(12L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 7L, 8L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Upper Barafu Camping, Parks Accommodations, Rescue, Concession
+        mappings.put(12L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 6L, 8L, 9L, 10L));
 
         // Park 13: Mahale Mountains National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
-        mappings.put(13L, Arrays.asList(1L, 2L, 3L, 4L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
+        mappings.put(13L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L));
 
         // Park 14: Mkomazi National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
-        mappings.put(14L, Arrays.asList(1L, 2L, 3L, 4L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
+        mappings.put(14L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L));
 
         // Park 15: Rubondo Island National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
-        mappings.put(15L, Arrays.asList(1L, 2L, 3L, 4L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
+        mappings.put(15L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L));
 
         // Park 16: Saadani National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
-        mappings.put(16L, Arrays.asList(1L, 2L, 3L, 4L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
+        mappings.put(16L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L));
 
         // Park 17: Udzungwa Mountains National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
-        mappings.put(17L, Arrays.asList(1L, 2L, 3L, 4L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
+        mappings.put(17L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L));
 
         // Park 18: Saanane Island National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
-        mappings.put(18L, Arrays.asList(1L, 2L, 3L, 4L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
+        mappings.put(18L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L));
 
         // Park 19: Ibanda-Kyerwa National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
-        mappings.put(19L, Arrays.asList(1L, 2L, 3L, 4L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
+        mappings.put(19L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L));
 
         // Park 20: Kitulo National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
-        mappings.put(20L, Arrays.asList(1L, 2L, 3L, 4L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
+        mappings.put(20L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L));
 
         // Park 21: Nyerere National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession, Hiking / Mountaineering
-        mappings.put(21L, Arrays.asList(1L, 2L, 3L, 4L, 9L, 10L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession, Hiking / Mountaineering
+        mappings.put(21L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L, 11L));
 
         // Park 22: Rumanyika-Karagwe National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
-        mappings.put(22L, Arrays.asList(1L, 2L, 3L, 4L, 9L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Concession
+        mappings.put(22L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 10L));
 
         // Park 23: Ugalla River National Park
-        // Tariffs: Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Hiking / Mountaineering
-        mappings.put(23L, Arrays.asList(1L, 2L, 3L, 4L, 10L));
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Seasonal Camping, Fly Campsites, Hiking / Mountaineering
+        mappings.put(23L, Arrays.asList(1L, 2L, 3L, 4L, 5L, 11L));
+
+        // Park 26: Kigosi National Park
+        // Tariffs: Conservation Fee, Public Camping, Special Camping, Fly Campsites, Hiking / Mountaineering
+        mappings.put(26L, Arrays.asList(1L, 2L, 3L, 5L, 11L));
 
         return mappings;
     }

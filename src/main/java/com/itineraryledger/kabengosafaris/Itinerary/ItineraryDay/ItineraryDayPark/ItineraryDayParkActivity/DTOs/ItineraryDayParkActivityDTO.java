@@ -22,6 +22,8 @@ public class ItineraryDayParkActivityDTO {
     private String activityName;
     private Integer sortOrder;
     private BigDecimal durationHours;
+    private String startTime;
+    private String endTime;
     private String notes;
     private Boolean isIncludedInPrice;
     private LocalDateTime createdAt;

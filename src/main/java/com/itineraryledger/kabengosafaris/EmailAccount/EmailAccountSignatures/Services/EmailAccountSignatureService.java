@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountSignatures.ModalEntity.EmailAccountSignature;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountSignatures.ModalEntity.SignatureVariable;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountSignatures.Repository.EmailAccountSignatureRepository;
+import com.itineraryledger.kabengosafaris.FileSettings.FileSettingGetterServices;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,14 +39,14 @@ public class EmailAccountSignatureService {
     @Value("${email.signature.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/email-signatures/}")
     private String signatureStoragePath;
 
-    @Value("${email.signature.max.file.size:1048576}")
-    private long maxFileSize;
-
     @Value("${email.signature.allowed.extensions:html,txt}")
     private String allowedExtensions;
 
     @Autowired
     private EmailAccountSignatureRepository emailAccountSignatureRepository;
+
+    @Autowired
+    private FileSettingGetterServices fileSettingGetterServices;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -84,9 +85,11 @@ public class EmailAccountSignatureService {
                 return false;
             }
 
-            // Check file size
+            // Check file size using database-driven settings
+            long maxFileSize = fileSettingGetterServices.getEmailSignatureMaxFileSize();
             if (signatureContent.getBytes().length > maxFileSize) {
-                log.warn("Signature content exceeds maximum file size: {} bytes", signatureContent.getBytes().length);
+                log.warn("Signature content exceeds maximum file size: {} bytes (limit: {} bytes)",
+                    signatureContent.getBytes().length, maxFileSize);
                 return false;
             }
 
@@ -141,9 +144,11 @@ public class EmailAccountSignatureService {
                 return false;
             }
 
-            // Check file size
+            // Check file size using database-driven settings
+            long maxFileSize = fileSettingGetterServices.getEmailSignatureMaxFileSize();
             if (newContent.getBytes().length > maxFileSize) {
-                log.warn("New signature content exceeds maximum file size: {} bytes", newContent.getBytes().length);
+                log.warn("New signature content exceeds maximum file size: {} bytes (limit: {} bytes)",
+                    newContent.getBytes().length, maxFileSize);
                 return false;
             }
 

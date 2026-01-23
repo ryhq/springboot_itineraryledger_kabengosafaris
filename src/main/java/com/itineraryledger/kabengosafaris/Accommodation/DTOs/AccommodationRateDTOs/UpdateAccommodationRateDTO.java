@@ -36,4 +36,12 @@ public class UpdateAccommodationRateDTO {
     private String notes;
 
     private Boolean isActive;
+
+    /**
+     * Rate charging model
+     *
+     * TRUE: Per Person Sharing (PPS) - rate is per guest
+     * FALSE: Per Room - rate is per room regardless of occupancy
+     */
+    private Boolean isPerPerson;
 }

@@ -47,13 +47,13 @@ public class AuditLogService {
             applyAuditPolicies(auditLog);
 
             // Set temporary name before first save (will be replaced with proper name)
-            auditLog.setName("TEMP_" + System.currentTimeMillis());
+            auditLog.setName("TEMP_" + System.currentTimeMillis() + "_" + System.nanoTime());
 
             // Save audit log to get the generated ID
             AuditLog savedLog = auditLogRepository.save(auditLog);
 
-            // Generate and set the audit log name
-            String logName = generateAuditLogName();
+            // Generate and set the audit log name with retry logic for concurrency
+            String logName = generateAuditLogNameWithRetry(savedLog.getId());
             savedLog.setName(logName);
             auditLogRepository.save(savedLog);
 
@@ -80,13 +80,13 @@ public class AuditLogService {
             applyAuditPolicies(auditLog);
 
             // Set temporary name before first save (will be replaced with proper name)
-            auditLog.setName("TEMP_" + System.currentTimeMillis());
+            auditLog.setName("TEMP_" + System.currentTimeMillis() + "_" + System.nanoTime());
 
             // Save audit log to get the generated ID
             AuditLog savedLog = auditLogRepository.save(auditLog);
 
-            // Generate and set the audit log name
-            String logName = generateAuditLogName();
+            // Generate and set the audit log name with retry logic for concurrency
+            String logName = generateAuditLogNameWithRetry(savedLog.getId());
             savedLog.setName(logName);
             auditLogRepository.save(savedLog);
 
@@ -464,6 +464,38 @@ public class AuditLogService {
     }
 
     /**
+     * Generate audit log name with retry logic to handle concurrent inserts.
+     * Uses the saved audit log ID as a fallback suffix to ensure uniqueness.
+     *
+     * Format: AUD_LOG_{####}{MM}{YY} or AUD_LOG_{####}{MM}{YY}_{ID} on collision
+     *
+     * @param auditLogId The saved audit log ID (used as fallback suffix)
+     * @return Unique formatted audit log name
+     */
+    public String generateAuditLogNameWithRetry(Long auditLogId) {
+        LocalDateTime now = LocalDateTime.now();
+        String month = String.format("%02d", now.getMonthValue());
+        String year = String.format("%02d", now.getYear() % 100);
+
+        // Try to generate unique name with up to 3 retries
+        for (int attempt = 0; attempt < 3; attempt++) {
+            long monthlyCount = auditLogRepository.countByYearAndMonth(now.getYear(), now.getMonthValue()) + 1 + attempt;
+            String countFormatted = String.format("%04d", monthlyCount);
+            String candidateName = String.format("AUD_LOG_%s%s%s", countFormatted, month, year);
+
+            // Check if name already exists
+            if (!auditLogRepository.existsByName(candidateName)) {
+                return candidateName;
+            }
+        }
+
+        // Fallback: use the audit log's own ID to guarantee uniqueness
+        long monthlyCount = auditLogRepository.countByYearAndMonth(now.getYear(), now.getMonthValue()) + 1;
+        String countFormatted = String.format("%04d", monthlyCount);
+        return String.format("AUD_LOG_%s%s%s_%d", countFormatted, month, year, auditLogId);
+    }
+
+    /**
      * Generate audit log name in format: AUD_LOG_{####}{MM}{YY}
      *
      * Format breakdown:
@@ -478,7 +510,9 @@ public class AuditLogService {
      * - 1st log in Jan 2025  → AUD_LOG_00010125 (count resets)
      *
      * @return Formatted audit log name
+     * @deprecated Use {@link #generateAuditLogNameWithRetry(Long)} instead for concurrency safety
      */
+    @Deprecated
     public String generateAuditLogName() {
         // Get current date
         LocalDateTime now = LocalDateTime.now();

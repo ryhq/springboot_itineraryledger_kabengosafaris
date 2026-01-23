@@ -42,8 +42,19 @@ The Accommodation Rate API manages pricing for accommodations based on:
 | **STO Rate** | The cost we pay on behalf of the customer (expense/tour operator rate) |
 | **Profit Amount** | Rack Rate - STO Rate (the profit we make per transaction) |
 | **Profit Percentage** | (Profit Amount / Rack Rate) × 100 |
+| **Per Person (PPS)** | Rate charged per guest (common in safari lodges/camps) |
+| **Per Room** | Rate charged per room regardless of occupancy (common in hotels) |
 
 > **Business Rule:** Rack Rate must always be greater than or equal to STO Rate. We charge the customer at least what we pay on their behalf.
+
+### Rate Charging Models
+
+| Model | `isPerPerson` | Description | Example |
+|-------|---------------|-------------|---------|
+| **Per Person Sharing (PPS)** | `true` (default) | Rate is per guest | Double room at $150/person = $300 total for 2 guests |
+| **Per Room** | `false` | Rate is per room | Double room at $250/room = $250 total regardless of occupancy |
+
+> **Note:** Safari lodges and camps typically use Per Person Sharing (PPS), while hotels and guesthouses often charge Per Room.
 
 ### Rate Dimensions
 
@@ -143,6 +154,7 @@ GET /api/accommodation-rates/{id}
     "currency": "USD",
     "profitAmount": 50.00,
     "profitPercentage": 14.29,
+    "isPerPerson": true,
     "notes": "Optional notes",
     "isActive": true,
     "createdAt": "2026-01-12T10:30:00",
@@ -150,6 +162,8 @@ GET /api/accommodation-rates/{id}
   }
 }
 ```
+
+> **Note:** `isPerPerson: true` indicates Per Person Sharing (PPS) pricing, common in safari lodges. When `false`, the rate is Per Room.
 
 #### Error Responses
 
@@ -180,6 +194,7 @@ GET /api/accommodation-rates
 | `roomStandardId` | String | No | - | Filter by room standard |
 | `boardTypeId` | String | No | - | Filter by board type |
 | `isActive` | Boolean | No | - | Filter by active status |
+| `isPerPerson` | Boolean | No | - | Filter by rate charging model: `true` for Per Person Sharing (PPS), `false` for Per Room |
 | `page` | Integer | No | `0` | Page number (0-indexed) |
 | `size` | Integer | No | `10` | Page size |
 | `sortDirection` | String | No | `desc` | Sort direction: `asc` or `desc` (always sorts by `createdAt`) |
@@ -204,6 +219,15 @@ GET /api/accommodation-rates?accommodationId=acc123&seasonId=s1&roomTypeId=rt1&b
 
 # Get only active rates
 GET /api/accommodation-rates?accommodationId=acc123&isActive=true
+
+# Get only Per Person Sharing (PPS) rates
+GET /api/accommodation-rates?accommodationId=acc123&isPerPerson=true
+
+# Get only Per Room rates
+GET /api/accommodation-rates?accommodationId=acc123&isPerPerson=false
+
+# Combined filter: active PPS rates for a season
+GET /api/accommodation-rates?accommodationId=acc123&seasonId=s1&isActive=true&isPerPerson=true
 ```
 
 #### Success Response (200 OK)
@@ -233,6 +257,7 @@ GET /api/accommodation-rates?accommodationId=acc123&isActive=true
         "currency": "USD",
         "profitAmount": 50.00,
         "profitPercentage": 14.29,
+        "isPerPerson": true,
         "notes": null,
         "isActive": true,
         "createdAt": "2026-01-12T10:30:00",
@@ -285,7 +310,8 @@ PUT /api/accommodation-rates/{id}
   "clearStoRate": false,
   "currency": "USD",
   "notes": "Updated notes",
-  "isActive": true
+  "isActive": true,
+  "isPerPerson": true
 }
 ```
 
@@ -299,6 +325,7 @@ PUT /api/accommodation-rates/{id}
 | `currency` | String | No | New currency code |
 | `notes` | String | No | New notes |
 | `isActive` | Boolean | No | New active status |
+| `isPerPerson` | Boolean | No | Rate charging model: `true` for Per Person Sharing (PPS), `false` for Per Room |
 
 #### Success Response (200 OK)
 
@@ -313,6 +340,7 @@ PUT /api/accommodation-rates/{id}
     "rackRate": 375.00,
     "stoRate": 320.00,
     "currency": "USD",
+    "isPerPerson": true,
     "notes": "Updated notes",
     "isActive": true,
     "updatedAt": "2026-01-12T11:00:00"
@@ -403,7 +431,8 @@ POST /api/accommodation-rates/bulk-upsert
     "stoRate": 300.00,
     "currency": "USD",
     "notes": null,
-    "isActive": true
+    "isActive": true,
+    "isPerPerson": true
   },
   {
     "accommodationId": "acc123",
@@ -415,7 +444,8 @@ POST /api/accommodation-rates/bulk-upsert
     "stoRate": 380.00,
     "currency": "USD",
     "notes": null,
-    "isActive": true
+    "isActive": true,
+    "isPerPerson": false
   }
 ]
 ```
@@ -434,6 +464,7 @@ POST /api/accommodation-rates/bulk-upsert
 | `currency` | String | Yes | ISO 4217 currency code (e.g., USD, EUR, TZS, KES) |
 | `notes` | String | No | Optional notes |
 | `isActive` | Boolean | No | Active status (defaults to `true`) |
+| `isPerPerson` | Boolean | No | Rate charging model: `true` (default) for Per Person Sharing, `false` for Per Room |
 
 #### How It Works
 
@@ -509,6 +540,7 @@ The unique key for matching is:
 | `currency` | String | ISO 4217 currency code |
 | `profitAmount` | BigDecimal | Calculated: Rack Rate - STO Rate |
 | `profitPercentage` | BigDecimal | Calculated: (Profit Amount / Rack Rate) × 100 |
+| `isPerPerson` | Boolean | Rate charging model: `true` = Per Person Sharing (PPS), `false` = Per Room |
 | `notes` | String | Optional notes |
 | `isActive` | Boolean | Active status |
 | `createdAt` | LocalDateTime | Creation timestamp |
@@ -563,6 +595,7 @@ All four dimensions (Season, Room Type, Room Standard, Board Type) must belong t
 - `rackRate` must be >= `stoRate` (cannot charge less than what we pay)
 - `currency` must be a valid ISO 4217 currency code (e.g., USD, EUR, TZS, KES)
 - `isActive` defaults to `true` if not provided
+- `isPerPerson` defaults to `true` (Per Person Sharing) if not provided
 
 ### Rate Relationship
 

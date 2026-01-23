@@ -1,12 +1,15 @@
 package com.itineraryledger.kabengosafaris.Season.Repositories;
 
 import com.itineraryledger.kabengosafaris.Season.Season;
+import com.itineraryledger.kabengosafaris.Season.Season.SeasonType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * SeasonRepository - Data access layer for Season entity
@@ -50,4 +53,51 @@ public interface SeasonRepository extends JpaRepository<Season, Long>, JpaSpecif
         ORDER BY s.name ASC
         """)
     List<Season> findUniqueSeasonsByType();
+
+    /**
+     * Find all active seasons for an accommodation
+     */
+    List<Season> findByAccommodationIdAndIsActiveTrue(Long accommodationId);
+
+    /**
+     * Check if an accommodation has any seasons configured
+     */
+    boolean existsByAccommodationId(Long accommodationId);
+
+    /**
+     * Find active season for an accommodation by season type
+     */
+    @Query("""
+        SELECT s FROM Season s
+        WHERE s.accommodation.id = :accommodationId
+        AND s.seasonType = :seasonType
+        AND s.isActive = true
+        """)
+    Optional<Season> findActiveByAccommodationIdAndSeasonType(
+        @Param("accommodationId") Long accommodationId,
+        @Param("seasonType") SeasonType seasonType
+    );
+
+    /**
+     * Find all active seasons for an accommodation ordered by season type priority.
+     * Priority order: HIGH_SEASON > PEAK_SEASON > SHOULDER_SEASON > FESTIVE_SEASON > SPECIAL_EVENT > LOW_SEASON > STANDARD > CUSTOM
+     */
+    @Query("""
+        SELECT s FROM Season s
+        WHERE s.accommodation.id = :accommodationId
+        AND s.isActive = true
+        ORDER BY
+            CASE s.seasonType
+                WHEN 'HIGH_SEASON' THEN 1
+                WHEN 'PEAK_SEASON' THEN 2
+                WHEN 'SHOULDER_SEASON' THEN 3
+                WHEN 'FESTIVE_SEASON' THEN 4
+                WHEN 'SPECIAL_EVENT' THEN 5
+                WHEN 'LOW_SEASON' THEN 6
+                WHEN 'STANDARD' THEN 7
+                WHEN 'CUSTOM' THEN 8
+                ELSE 9
+            END ASC
+        """)
+    List<Season> findActiveByAccommodationIdOrderedByTypePriority(@Param("accommodationId") Long accommodationId);
 }

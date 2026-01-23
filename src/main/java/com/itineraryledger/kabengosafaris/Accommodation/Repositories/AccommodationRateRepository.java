@@ -91,6 +91,38 @@ public interface AccommodationRateRepository extends JpaRepository<Accommodation
     List<AccommodationRate> findByAccommodationIdAndBoardTypeIdIn(Long accommodationId, List<Long> boardTypeIds);
 
     // ========================
+    // ACTIVE RATE LOOKUPS (for cost estimation)
+    // ========================
+
+    /**
+     * Find ACTIVE rate by exact combination
+     */
+    @Query("SELECT r FROM AccommodationRate r WHERE " +
+           "r.accommodation.id = :accommodationId AND " +
+           "r.season.id = :seasonId AND " +
+           "r.roomType.id = :roomTypeId AND " +
+           "r.roomStandard.id = :roomStandardId AND " +
+           "r.boardType.id = :boardTypeId AND " +
+           "r.isActive = true")
+    Optional<AccommodationRate> findActiveRate(
+        @Param("accommodationId") Long accommodationId,
+        @Param("seasonId") Long seasonId,
+        @Param("roomTypeId") Long roomTypeId,
+        @Param("roomStandardId") Long roomStandardId,
+        @Param("boardTypeId") Long boardTypeId
+    );
+
+    /**
+     * Find all ACTIVE rates for an accommodation
+     */
+    List<AccommodationRate> findByAccommodationIdAndIsActiveTrue(Long accommodationId);
+
+    /**
+     * Find all ACTIVE rates for an accommodation and season
+     */
+    List<AccommodationRate> findByAccommodationIdAndSeasonIdAndIsActiveTrue(Long accommodationId, Long seasonId);
+
+    // ========================
     // EXISTENCE CHECKS
     // ========================
 

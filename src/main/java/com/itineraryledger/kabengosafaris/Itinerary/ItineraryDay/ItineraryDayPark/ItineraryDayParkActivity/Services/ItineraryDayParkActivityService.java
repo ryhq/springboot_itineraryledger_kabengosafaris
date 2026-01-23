@@ -87,6 +87,13 @@ public class ItineraryDayParkActivityService {
             Long parkId = parkVisit.getPark().getId();
             List<ItineraryDayParkActivityDTO> resultDTOs = new ArrayList<>();
 
+            // Get current max sortOrder
+            int currentMaxSortOrder = parkActivityRepository.findByItineraryDayParkIdOrderBySortOrderAsc(parkVisitId)
+                .stream()
+                .mapToInt(ItineraryDayParkActivity::getSortOrder)
+                .max()
+                .orElse(0);
+
             for (CreateItineraryDayParkActivityDTO dto : createDTOs) {
                 try {
                     // Decode activity ID
@@ -106,12 +113,17 @@ public class ItineraryDayParkActivityService {
                         continue;
                     }
 
+                    // Auto-assign sortOrder (handled by reorder methods)
+                    int sortOrder = ++currentMaxSortOrder;
+
                     // Create entry
                     ItineraryDayParkActivity entry = ItineraryDayParkActivity.builder()
                         .itineraryDayPark(parkVisit)
                         .parkActivity(parkActivity)
-                        .sortOrder(dto.getSortOrder() != null ? dto.getSortOrder() : 0)
+                        .sortOrder(sortOrder)
                         .durationHours(dto.getDurationHours())
+                        .startTime(dto.getStartTime())
+                        .endTime(dto.getEndTime())
                         .notes(dto.getNotes())
                         .isIncludedInPrice(dto.getIsIncludedInPrice() != null ? dto.getIsIncludedInPrice() : true)
                         .build();
@@ -221,6 +233,8 @@ public class ItineraryDayParkActivityService {
         dto.setActivityName(entity.getParkActivity().getActivity().getName());
         dto.setSortOrder(entity.getSortOrder());
         dto.setDurationHours(entity.getDurationHours());
+        dto.setStartTime(entity.getStartTime());
+        dto.setEndTime(entity.getEndTime());
         dto.setNotes(entity.getNotes());
         dto.setIsIncludedInPrice(entity.getIsIncludedInPrice());
         dto.setCreatedAt(entity.getCreatedAt());

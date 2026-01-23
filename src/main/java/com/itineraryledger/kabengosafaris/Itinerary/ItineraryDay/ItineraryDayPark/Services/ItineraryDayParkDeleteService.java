@@ -20,6 +20,10 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * ItineraryDayParkDeleteService - Service for deleting itinerary day park visits
+ *
+ * Provides bulk deletion of park visits with automatic renumbering.
+ * After deletion, remaining park visits are renumbered to maintain sequential sortOrder (1, 2, 3, ...).
+ * Uses a two-pass approach to avoid unique constraint violations if any exist on sortOrder.
  */
 @Service
 @Slf4j
@@ -88,6 +92,11 @@ public class ItineraryDayParkDeleteService {
                 }
             }
 
+            // Renumber remaining park visits to maintain sequential order
+            if (deletedCount > 0) {
+                renumberParkVisitsAfterDeletion(dayId);
+            }
+
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, deletedCount + " park visit(s) deleted successfully", null)
             );
@@ -98,6 +107,55 @@ public class ItineraryDayParkDeleteService {
                 ApiResponse.error(500, "Failed to delete park visits", "PARK_VISITS_DELETE_FAILED")
             );
         }
+    }
+
+    /**
+     * Renumber remaining park visits after deletion to maintain sequential sortOrder.
+     * Uses two-pass approach to avoid potential unique constraint violations.
+     *
+     * @param dayId The itinerary day ID
+     */
+    private void renumberParkVisitsAfterDeletion(Long dayId) {
+        // Fetch remaining park visits ordered by current sortOrder
+        List<ItineraryDayPark> remainingParkVisits = itineraryDayParkRepository.findByItineraryDayIdOrderBySortOrderAsc(dayId);
+
+        if (remainingParkVisits.isEmpty()) {
+            return;
+        }
+
+        // Check if renumbering is needed (gaps in sortOrder)
+        boolean needsRenumbering = false;
+        int expectedSortOrder = 1;
+        for (ItineraryDayPark parkVisit : remainingParkVisits) {
+            if (!parkVisit.getSortOrder().equals(expectedSortOrder)) {
+                needsRenumbering = true;
+                break;
+            }
+            expectedSortOrder++;
+        }
+
+        if (!needsRenumbering) {
+            return;
+        }
+
+        log.info("Renumbering {} park visits for day {}", remainingParkVisits.size(), dayId);
+
+        // Pass 1: Set temporary negative sortOrder to avoid potential unique constraint violations
+        int tempOrder = -1;
+        for (ItineraryDayPark parkVisit : remainingParkVisits) {
+            parkVisit.setSortOrder(tempOrder--);
+        }
+        itineraryDayParkRepository.saveAll(remainingParkVisits);
+        itineraryDayParkRepository.flush();
+
+        // Pass 2: Set final sequential sortOrder
+        int newSortOrder = 1;
+        for (ItineraryDayPark parkVisit : remainingParkVisits) {
+            parkVisit.setSortOrder(newSortOrder++);
+        }
+        itineraryDayParkRepository.saveAll(remainingParkVisits);
+
+        log.info("Park visits renumbered successfully for day {}", dayId);
     }
 
     @AuditLogAnnotation(action = "DELETE_ITINERARY_DAY_PARK", description = "Deleting park visit", entityType = "ItineraryDayPark", entityIdParamName = "id")

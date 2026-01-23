@@ -1,8 +1,11 @@
 package com.itineraryledger.kabengosafaris.EmailEvent.Services;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import com.itineraryledger.kabengosafaris.FileSettings.FileSettingGetterServices;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,8 +30,8 @@ public class EmailTemplateService {
     @Value("${email.template.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/email-templates/}")
     private String templateStoragePath;
 
-    @Value("${email.template.max.file.size:2097152}")
-    private long maxFileSize; // 2MB default
+    @Autowired
+    private FileSettingGetterServices fileSettingGetterServices;
 
     /**
      * Initialize template storage directory
@@ -65,9 +68,11 @@ public class EmailTemplateService {
                 return false;
             }
 
-            // Check file size
+            // Check file size using database-driven settings
+            long maxFileSize = fileSettingGetterServices.getEmailTemplateMaxFileSize();
             if (templateContent.getBytes().length > maxFileSize) {
-                log.warn("Template content exceeds maximum file size: {} bytes", templateContent.getBytes().length);
+                log.warn("Template content exceeds maximum file size: {} bytes (limit: {} bytes)",
+                    templateContent.getBytes().length, maxFileSize);
                 return false;
             }
 
@@ -122,9 +127,11 @@ public class EmailTemplateService {
                 return false;
             }
 
-            // Check file size
+            // Check file size using database-driven settings
+            long maxFileSize = fileSettingGetterServices.getEmailTemplateMaxFileSize();
             if (newContent.getBytes().length > maxFileSize) {
-                log.warn("New template content exceeds maximum file size: {} bytes", newContent.getBytes().length);
+                log.warn("New template content exceeds maximum file size: {} bytes (limit: {} bytes)",
+                    newContent.getBytes().length, maxFileSize);
                 return false;
             }
 

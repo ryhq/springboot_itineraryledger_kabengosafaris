@@ -124,12 +124,13 @@ public class ParkInitializer implements ApplicationRunner {
      * (idealafr_idealafricantravels.sql) to ensure consistent auto-generated IDs.
      * DO NOT change the order of parks without updating the production database!
      *
-     * Order (IDs 1-23):
+     * Order (IDs 1-26):
      * 1. Serengeti, 2. Ngorongoro, 3. Tarangire, 4. Lake Manyara, 5. Ruaha,
      * 6. Mikumi, 7. Katavi, 8. Selous, 9. Arusha, 10. Gombe,
      * 11. Burigi-Chato, 12. Kilimanjaro, 13. Mahale, 14. Mkomazi, 15. Rubondo,
      * 16. Saadani, 17. Udzungwa, 18. Saanane, 19. Ibanda-Kyerwa, 20. Kitulo,
-     * 21. Nyerere, 22. Rumanyika-Karagwe, 23. Ugalla River
+     * 21. Nyerere, 22. Rumanyika-Karagwe, 23. Ugalla River, 24. Mafia Marine,
+     * 25. Mnazi Ruvuma, 26. Kigosi
      */
     private List<Park> getTanzaniaParks() {
         List<Park> parks = new ArrayList<>();
@@ -208,6 +209,9 @@ public class ParkInitializer implements ApplicationRunner {
 
         // ID 25: Mnazi Ruvuma Park
         parks.add(createMnaziRuvumaPark());
+
+        // ID 26: Kigosi National Park
+        parks.add(createKigosiPark());
 
         return parks;
     }
@@ -907,6 +911,33 @@ public class ParkInitializer implements ApplicationRunner {
                 .openingHours("6:00 AM - 6:00 PM daily")
                 .accessInformation("Located in Tabora Region, west-central Tanzania. Access from Tabora town. Limited infrastructure as newly established park.")
                 .tags("Miombo Woodland, Sable Antelope, Roan Antelope, Ugalla River, New Park 2019, Wild Dogs, Crocodiles, Wilderness, Western Tanzania")
+                .isActive(true)
+                .build();
+    }
+
+    private Park createKigosiPark() {
+        return Park.builder()
+                .name("Kigosi National Park")
+                .slug("kigosi-national-park")
+                .parkType(ParkType.NATIONAL_PARK)
+                .region("Shinyanga, Geita, and Tabora")
+                .district("Bukombe, Mbogwe, Biharamulo, Kahama, and Kaliua")
+                .location("Northwestern Tanzania, part of the Moyowosi-Malagarasi wetlands complex")
+                .latitude(new BigDecimal("-4.5000"))
+                .longitude(new BigDecimal("31.5000"))
+                .elevation("900-1,200 meters")
+                .size("8,265 km²")
+                .shortDescription("Part of East Africa's largest wetlands complex, home to Tanzania's biggest floodplain ecosystem with exceptional populations of lions, buffalo, sable, and roan antelope.")
+                .fullDescription("Kigosi National Park covers 8,265 square kilometers in northwestern Tanzania, making it one of the country's largest protected areas. The park was upgraded from Kigosi Game Reserve to national park status in 2019 by combining the former Kigosi and Moyowosi game reserves, which were divided by the Moyowosi River. Kigosi is part of the Moyowosi-Malagarasi wetlands complex, the largest wetlands system in East Africa covering almost 92,000 square kilometers - larger than the entire country of Portugal. The park encompasses a vast shallow basin drained by seven slow-moving rivers: Malagarasi, Moyowosi, Nikonga, Ugalla, Kigosi, and Gombe, which wind through an immense network of swamps, plains, lakes, and woodlands. The Miombo woodlands and extensive floodplains create a perfect environment for abundant wildlife, including well-known lion populations, numerous buffalo, sable antelope, roan antelope, kudu, leopards, and topi. The wetlands host Africa's largest concentrations of shoebill storks and wattled cranes, the largest flocks of pygmy geese in Africa, and the highest concentrations of Cape clawless otters on the continent.")
+                .history("Originally gazetted as Kigosi Game Reserve in 1983. Upgraded to national park status in 2019 by combining Kigosi and neighboring Moyowosi game reserves. The park represents Tanzania's commitment to protecting its vast western wetland ecosystems.")
+                .ecosystem("Miombo woodlands, extensive floodplains, seasonal swamps, permanent wetlands, slow-moving rivers, and scattered lakes. Part of the Moyowosi-Malagarasi wetlands complex - East Africa's largest wetland system.")
+                .wildlife("Lions, leopards, buffalo (large herds), elephants, sable antelope, roan antelope, kudu, topi, hippos, crocodiles. Exceptional birdlife including shoebill storks (Africa's largest concentration), wattled cranes (Africa's largest concentration), pygmy geese (Africa's largest flocks), and Cape clawless otters (Africa's highest concentration). Over 400 bird species recorded.")
+                .vegetation("Miombo woodland dominates higher ground, transitioning to extensive floodplain grasslands and seasonal swamps. Riverine forests along major waterways, papyrus swamps, and aquatic vegetation in permanent wetlands.")
+                .primaryImage(null)
+                .bestTimeToVisit("Mid-May to mid-October (dry season - best for wildlife viewing and accessibility)")
+                .openingHours("6:00 AM - 6:00 PM daily")
+                .accessInformation("Remote location in northwestern Tanzania. Accessible from Tabora or via Shinyanga/Geita regions. Limited infrastructure and facilities; requires well-planned expeditions.")
+                .tags("Wetlands, Moyowosi, Shoebill Stork, Miombo Woodland, Lions, Sable Antelope, Roan Antelope, Buffalo, Remote, Western Circuit, Floodplain, Ramsar Site")
                 .isActive(true)
                 .build();
     }

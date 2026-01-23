@@ -47,4 +47,12 @@ public class BulkUpsertAccommodationRateDTO {
     private String notes;
 
     private Boolean isActive;
+
+    /**
+     * Rate charging model
+     *
+     * TRUE (default): Per Person Sharing (PPS) - rate is per guest, common in safari lodges
+     * FALSE: Per Room - rate is per room regardless of occupancy, common in hotels
+     */
+    private Boolean isPerPerson;
 }

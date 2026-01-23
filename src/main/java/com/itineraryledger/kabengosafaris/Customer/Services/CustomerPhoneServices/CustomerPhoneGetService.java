@@ -1,0 +1,334 @@
+package com.itineraryledger.kabengosafaris.Customer.Services.CustomerPhoneServices;
+
+import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerPhoneRepository;
+import com.itineraryledger.kabengosafaris.Customer.DTOs.CustomerPhoneDTOs.CustomerPhoneDTO;
+import com.itineraryledger.kabengosafaris.Customer.Entity.CustomerPhone;
+import com.itineraryledger.kabengosafaris.Customer.Entity.CustomerPhone.PhoneType;
+import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+import jakarta.validation.constraints.NotBlank;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * CustomerPhoneGetService - Service for retrieving customer phones
+ */
+@Service
+@Slf4j
+@Transactional(readOnly = true)
+public class CustomerPhoneGetService {
+
+    private final CustomerPhoneRepository customerPhoneRepository;
+    private final IdObfuscator idObfuscator;
+
+    @Autowired
+    public CustomerPhoneGetService(
+        CustomerPhoneRepository customerPhoneRepository,
+        IdObfuscator idObfuscator
+    ) {
+        this.customerPhoneRepository = customerPhoneRepository;
+        this.idObfuscator = idObfuscator;
+    }
+
+    /**
+     * Get customer phone by obfuscated ID
+     *
+     * @param idObfuscated The obfuscated phone ID
+     * @return ResponseEntity with ApiResponse containing the phone
+     */
+    public ResponseEntity<ApiResponse<?>> getCustomerPhoneById(String idObfuscated) {
+        log.info("Fetching customer phone with ID: {}", idObfuscated);
+
+        try {
+            // Decode ID
+            Long id;
+            try {
+                id = idObfuscator.decodeId(idObfuscated);
+            } catch (Exception e) {
+                log.warn("Failed to decode phone ID: {}", idObfuscated, e);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        "Invalid phone ID",
+                        "INVALID_PHONE_ID"
+                    )
+                );
+            }
+
+            // Find phone
+            CustomerPhone phone = customerPhoneRepository.findById(id).orElse(null);
+            if (phone == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(
+                        404,
+                        "Customer phone not found",
+                        "CUSTOMER_PHONE_NOT_FOUND"
+                    )
+                );
+            }
+
+            // Convert to DTO
+            CustomerPhoneDTO phoneDTO = convertToDTO(phone);
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(
+                    200,
+                    "Customer phone retrieved successfully",
+                    phoneDTO
+                )
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching customer phone", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(
+                    500,
+                    "Failed to fetch customer phone",
+                    "CUSTOMER_PHONE_FETCH_FAILED"
+                )
+            );
+        }
+    }
+
+    /**
+     * Get all customer phones with filtering and pagination
+     * customerId is an optional filter parameter
+     *
+     * @param customerId Optional obfuscated customer ID filter
+     * @param phoneNumber Filter by phone number (optional)
+     * @param phoneType Filter by phone type (optional)
+     * @param isPrimary Filter by primary status (optional)
+     * @param isWhatsApp Filter by WhatsApp status (optional)
+     * @param isActive Filter by active status (optional)
+     * @param label Filter by label (optional)
+     * @param keyword Search keyword across multiple fields (optional)
+     * @param pageable Pagination and sorting parameters
+     * @return ResponseEntity with ApiResponse containing paginated phones
+     */
+    public ResponseEntity<ApiResponse<?>> getAllCustomerPhones(
+        String customerId,
+        String phoneNumber,
+        PhoneType phoneType,
+        Boolean isPrimary,
+        Boolean isWhatsApp,
+        Boolean isActive,
+        String label,
+        String keyword,
+        Pageable pageable
+    ) {
+        log.info("Fetching all customer phones with optional filters");
+
+        try {
+            // Build specification
+            Specification<CustomerPhone> spec = Specification.unrestricted();
+
+            // Add optional customer ID filter
+            if (customerId != null && !customerId.isEmpty()) {
+                try {
+                    Long decodedCustomerId = idObfuscator.decodeId(customerId);
+                    spec = spec.and(CustomerPhoneSpecification.hasCustomerId(decodedCustomerId));
+                } catch (Exception e) {
+                    log.warn("Failed to decode customer ID: {}", customerId, e);
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(
+                            400,
+                            "Invalid customer ID",
+                            "INVALID_CUSTOMER_ID"
+                        )
+                    );
+                }
+            }
+
+            // Add other optional filters
+            if (phoneNumber != null && !phoneNumber.isEmpty()) {
+                spec = spec.and(CustomerPhoneSpecification.phoneNumberLike(phoneNumber));
+            }
+            if (phoneType != null) {
+                spec = spec.and(CustomerPhoneSpecification.hasPhoneType(phoneType));
+            }
+            if (isPrimary != null) {
+                spec = spec.and(CustomerPhoneSpecification.isPrimary(isPrimary));
+            }
+            if (isWhatsApp != null) {
+                spec = spec.and(CustomerPhoneSpecification.isWhatsApp(isWhatsApp));
+            }
+            if (isActive != null) {
+                spec = spec.and(CustomerPhoneSpecification.isActive(isActive));
+            }
+            if (label != null && !label.isEmpty()) {
+                spec = spec.and(CustomerPhoneSpecification.labelLike(label));
+            }
+            if (keyword != null && !keyword.isEmpty()) {
+                spec = spec.and(CustomerPhoneSpecification.searchKeyword(keyword));
+            }
+
+            // Fetch paginated results
+            Page<CustomerPhone> phonePage = customerPhoneRepository.findAll(spec, pageable);
+
+            // Convert to DTOs
+            Page<CustomerPhoneDTO> phoneDTOPage = phonePage.map(this::convertToDTO);
+
+            // Build response with pagination metadata
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("phones", phoneDTOPage.getContent());
+            responseData.put("currentPage", phoneDTOPage.getNumber());
+            responseData.put("totalItems", phoneDTOPage.getTotalElements());
+            responseData.put("totalPages", phoneDTOPage.getTotalPages());
+            responseData.put("pageSize", phoneDTOPage.getSize());
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(
+                    200,
+                    "Customer phones retrieved successfully",
+                    responseData
+                )
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching customer phones", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(
+                    500,
+                    "Failed to fetch customer phones",
+                    "CUSTOMER_PHONES_FETCH_FAILED"
+                )
+            );
+        }
+    }
+
+    /**
+     * Get all phones for a specific customer
+     * customerId is REQUIRED
+     *
+     * @param customerId Required obfuscated customer ID
+     * @param phoneNumber Filter by phone number (optional)
+     * @param phoneType Filter by phone type (optional)
+     * @param isPrimary Filter by primary status (optional)
+     * @param isWhatsApp Filter by WhatsApp status (optional)
+     * @param isActive Filter by active status (optional)
+     * @param label Filter by label (optional)
+     * @param keyword Search keyword across multiple fields (optional)
+     * @param pageable Pagination and sorting parameters
+     * @return ResponseEntity with ApiResponse containing paginated phones for the customer
+     */
+    public ResponseEntity<ApiResponse<?>> getCustomersPhones(
+        @NotBlank(message = "Customer ID is required") String customerId,
+        String phoneNumber,
+        PhoneType phoneType,
+        Boolean isPrimary,
+        Boolean isWhatsApp,
+        Boolean isActive,
+        String label,
+        String keyword,
+        Pageable pageable
+    ) {
+        log.info("Fetching phones for customer: {}", customerId);
+
+        try {
+            // Decode customer ID (required)
+            Long decodedCustomerId;
+            try {
+                decodedCustomerId = idObfuscator.decodeId(customerId);
+            } catch (Exception e) {
+                log.warn("Failed to decode customer ID: {}", customerId, e);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        "Invalid customer ID",
+                        "INVALID_CUSTOMER_ID"
+                    )
+                );
+            }
+
+            // Build specification with required customer ID filter
+            Specification<CustomerPhone> spec = CustomerPhoneSpecification.hasCustomerId(decodedCustomerId);
+
+            // Add optional filters
+            if (phoneNumber != null && !phoneNumber.isEmpty()) {
+                spec = spec.and(CustomerPhoneSpecification.phoneNumberLike(phoneNumber));
+            }
+            if (phoneType != null) {
+                spec = spec.and(CustomerPhoneSpecification.hasPhoneType(phoneType));
+            }
+            if (isPrimary != null) {
+                spec = spec.and(CustomerPhoneSpecification.isPrimary(isPrimary));
+            }
+            if (isWhatsApp != null) {
+                spec = spec.and(CustomerPhoneSpecification.isWhatsApp(isWhatsApp));
+            }
+            if (isActive != null) {
+                spec = spec.and(CustomerPhoneSpecification.isActive(isActive));
+            }
+            if (label != null && !label.isEmpty()) {
+                spec = spec.and(CustomerPhoneSpecification.labelLike(label));
+            }
+            if (keyword != null && !keyword.isEmpty()) {
+                spec = spec.and(CustomerPhoneSpecification.searchKeyword(keyword));
+            }
+
+            // Fetch paginated results
+            Page<CustomerPhone> phonePage = customerPhoneRepository.findAll(spec, pageable);
+
+            // Convert to DTOs
+            Page<CustomerPhoneDTO> phoneDTOPage = phonePage.map(this::convertToDTO);
+
+            // Build response with pagination metadata
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("phones", phoneDTOPage.getContent());
+            responseData.put("currentPage", phoneDTOPage.getNumber());
+            responseData.put("totalItems", phoneDTOPage.getTotalElements());
+            responseData.put("totalPages", phoneDTOPage.getTotalPages());
+            responseData.put("pageSize", phoneDTOPage.getSize());
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(
+                    200,
+                    "Customer phones retrieved successfully",
+                    responseData
+                )
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching customer phones", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(
+                    500,
+                    "Failed to fetch customer phones",
+                    "CUSTOMER_PHONES_FETCH_FAILED"
+                )
+            );
+        }
+    }
+
+    /**
+     * Convert CustomerPhone entity to DTO
+     */
+    public CustomerPhoneDTO convertToDTO(CustomerPhone phone) {
+        return CustomerPhoneDTO.builder()
+            .id(idObfuscator.encodeId(phone.getId()))
+            .customerId(idObfuscator.encodeId(phone.getCustomer().getId()))
+            .customerDisplayName(phone.getCustomer().getDisplayName())
+            .phoneNumber(phone.getPhoneNumber())
+            .countryCode(phone.getCountryCode())
+            .phoneType(phone.getPhoneType())
+            .phoneTypeDisplayName(phone.getPhoneType() != null ? phone.getPhoneType().getDisplayName() : null)
+            .phoneTypeDescription(phone.getPhoneType() != null ? phone.getPhoneType().getDescription() : null)
+            .isPrimary(phone.getIsPrimary())
+            .isWhatsApp(phone.getIsWhatsApp())
+            .isActive(phone.getIsActive())
+            .label(phone.getLabel())
+            .createdAt(phone.getCreatedAt())
+            .updatedAt(phone.getUpdatedAt())
+            .build();
+    }
+}

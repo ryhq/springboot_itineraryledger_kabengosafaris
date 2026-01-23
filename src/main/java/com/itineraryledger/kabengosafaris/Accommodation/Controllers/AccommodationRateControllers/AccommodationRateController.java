@@ -56,6 +56,8 @@ public class AccommodationRateController {
 
     /**
      * Get all rates with filtering and pagination
+     *
+     * @param isPerPerson Filter by rate charging model: true = Per Person Sharing (PPS), false = Per Room
      */
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_ACCOMMODATION_RATE')")
@@ -66,12 +68,13 @@ public class AccommodationRateController {
         @RequestParam(required = false) String roomStandardId,
         @RequestParam(required = false) String boardTypeId,
         @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) Boolean isPerPerson,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/accommodation-rates - Fetching all rates with filters");
-        return getService.getAllRates(accommodationId, seasonId, roomTypeId, roomStandardId, boardTypeId, isActive, page, size, sortDirection);
+        return getService.getAllRates(accommodationId, seasonId, roomTypeId, roomStandardId, boardTypeId, isActive, isPerPerson, page, size, sortDirection);
     }
 
     /**

@@ -74,6 +74,8 @@ public class AccommodationRateGetService {
 
     /**
      * Get all rates with filtering and pagination
+     *
+     * @param isPerPerson Filter by rate charging model: true = Per Person Sharing (PPS), false = Per Room
      */
     public ResponseEntity<ApiResponse<?>> getAllRates(
         String accommodationIdObfuscated,
@@ -82,6 +84,7 @@ public class AccommodationRateGetService {
         String roomStandardIdObfuscated,
         String boardTypeIdObfuscated,
         Boolean isActive,
+        Boolean isPerPerson,
         Integer page,
         Integer size,
         String sortDirection
@@ -161,6 +164,10 @@ public class AccommodationRateGetService {
                 spec = spec.and(AccommodationRateSpecification.isActive(isActive));
             }
 
+            if (isPerPerson != null) {
+                spec = spec.and(AccommodationRateSpecification.isPerPerson(isPerPerson));
+            }
+
             // Build pageable - always sort by createdAt
             Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC;
             Pageable pageable = PageRequest.of(
@@ -237,6 +244,9 @@ public class AccommodationRateGetService {
             if (dto.getIsActive() != null) {
                 rate.setIsActive(dto.getIsActive());
             }
+            if (dto.getIsPerPerson() != null) {
+                rate.setIsPerPerson(dto.getIsPerPerson());
+            }
 
             // Validate rack rate >= sto rate
             if (rate.getStoRate() != null && rate.getRackRate().compareTo(rate.getStoRate()) < 0) {
@@ -282,6 +292,7 @@ public class AccommodationRateGetService {
             .currency(rate.getCurrency())
             .profitAmount(rate.getProfitAmount())
             .profitPercentage(rate.getProfitPercentage())
+            .isPerPerson(rate.getIsPerPerson())
             .notes(rate.getNotes())
             .isActive(rate.getIsActive())
             .createdAt(rate.getCreatedAt())

@@ -85,6 +85,19 @@ public class AccommodationRate {
     private String currency = "USD"; // ISO 4217 currency code
 
     /**
+     * Indicates how the rate is charged:
+     * - TRUE (default): Per Person Sharing (PPS) - common in safari lodges/camps
+     * - FALSE: Per Room - common in hotels/guesthouses
+     *
+     * Example:
+     * - Per Person: Double room at $150/person = $300 total for 2 guests
+     * - Per Room: Double room at $250/room = $250 total regardless of occupancy
+     */
+    @Builder.Default
+    @Column(name = "is_per_person", nullable = false)
+    private Boolean isPerPerson = true;
+
+    /**
      * Optional notes about this specific rate
      */
     @Column(columnDefinition = "TEXT")

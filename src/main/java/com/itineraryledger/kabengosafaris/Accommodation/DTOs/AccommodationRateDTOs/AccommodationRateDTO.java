@@ -70,6 +70,16 @@ public class AccommodationRateDTO {
     private BigDecimal profitAmount;
     private BigDecimal profitPercentage;
 
+    /**
+     * Rate charging model
+     *
+     * TRUE: Per Person Sharing (PPS) - rate is per guest, common in safari lodges/camps
+     *       Example: Double room at $150/person = $300 total for 2 guests
+     * FALSE: Per Room - rate is per room regardless of occupancy, common in hotels
+     *       Example: Double room at $250/room = $250 total regardless of occupancy
+     */
+    private Boolean isPerPerson;
+
     // Metadata
     private String notes;
     private Boolean isActive;

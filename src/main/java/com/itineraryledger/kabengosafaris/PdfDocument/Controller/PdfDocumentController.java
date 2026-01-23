@@ -1,0 +1,66 @@
+package com.itineraryledger.kabengosafaris.PdfDocument.Controller;
+
+import com.itineraryledger.kabengosafaris.PdfDocument.Services.PdfDocumentGetService;
+import com.itineraryledger.kabengosafaris.PdfDocument.Services.PdfDocumentUpdateService;
+import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * Controller for PDF Document Types
+ *
+ * PDF Document types are built-in and cannot be created/deleted via API.
+ * This controller provides read access and the ability to enable/disable document types.
+ */
+@RestController
+@RequestMapping("/api/pdf-documents")
+@RequiredArgsConstructor
+@Slf4j
+public class PdfDocumentController {
+
+    private final PdfDocumentGetService getService;
+    private final PdfDocumentUpdateService updateService;
+
+    /**
+     * Get all PDF document types
+     */
+    @GetMapping
+    @PreAuthorize("hasAuthority('PERM_READ_PDF_DOCUMENT')")
+    public ResponseEntity<ApiResponse<?>> getAllDocuments() {
+        log.info("GET /api/pdf-documents - Fetching all PDF document types");
+        return getService.getAllDocuments();
+    }
+
+    /**
+     * Get a PDF document type by ID
+     */
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('PERM_READ_PDF_DOCUMENT')")
+    public ResponseEntity<ApiResponse<?>> getDocumentById(@PathVariable String id) {
+        log.info("GET /api/pdf-documents/{} - Fetching PDF document type", id);
+        return getService.getDocumentById(id);
+    }
+
+    /**
+     * Get the variable schema for a document type
+     */
+    @GetMapping("/{id}/schema")
+    @PreAuthorize("hasAuthority('PERM_READ_PDF_DOCUMENT')")
+    public ResponseEntity<ApiResponse<?>> getDocumentSchema(@PathVariable String id) {
+        log.info("GET /api/pdf-documents/{}/schema - Fetching document schema", id);
+        return getService.getDocumentSchema(id);
+    }
+
+    /**
+     * Toggle the enabled status of a PDF document type
+     */
+    @PatchMapping("/{id}/toggle-enabled")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_PDF_DOCUMENT')")
+    public ResponseEntity<ApiResponse<?>> toggleEnabled(@PathVariable String id) {
+        log.info("PATCH /api/pdf-documents/{}/toggle-enabled - Toggling enabled status", id);
+        return updateService.toggleEnabled(id);
+    }
+}

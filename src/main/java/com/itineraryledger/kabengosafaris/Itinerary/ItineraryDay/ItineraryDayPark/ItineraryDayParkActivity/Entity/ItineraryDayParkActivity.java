@@ -57,6 +57,12 @@ public class ItineraryDayParkActivity {
     @Column(name = "duration_hours", precision = 5, scale = 2)
     private BigDecimal durationHours;
 
+    @Column(name = "start_time", length = 10)
+    private String startTime; // e.g., "06:00"
+
+    @Column(name = "end_time", length = 10)
+    private String endTime;
+
     @Lob
     @Column(columnDefinition = "TEXT")
     private String notes;

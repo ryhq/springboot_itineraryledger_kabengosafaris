@@ -1,0 +1,46 @@
+services:
+  # LibreTranslate - Self-hosted translation API
+  # Used for translating PDF documents to multiple languages
+  libretranslate:
+    image: libretranslate/libretranslate:v1.6.1
+    container_name: kabengosafaris-libretranslate
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      # Load only the languages needed for safari tourism
+      # en=English, fr=French, de=German, es=Spanish, it=Italian, pt=Portuguese
+      # Note: Swahili (sw) is not available in LibreTranslate
+      - LT_LOAD_ONLY=en,fr,de,es,it,pt
+      # Enable web UI for testing (disable in production if not needed)
+      - LT_DISABLE_WEB_UI=false
+      # Auto-update language models on startup
+      - LT_UPDATE_MODELS=true
+      # Disable suggestions API (not needed)
+      - LT_SUGGESTIONS=false
+      # Max characters per request (matches application.properties setting)
+      - LT_CHAR_LIMIT=10000
+      # API rate limiting (requests per minute, 0 = unlimited)
+      - LT_REQ_LIMIT=0
+      # Number of threads for translation
+      - LT_THREADS=4
+    volumes:
+      # Persist language models to avoid re-downloading on restart
+      - libretranslate_data:/home/libretranslate/.local/share/argos-translate
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/languages"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s  # 5 minutes for initial model download
+    # Resource limits (adjust based on your server)
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+volumes:
+  libretranslate_data:
+    driver: local

@@ -15,10 +15,6 @@ import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPar
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.Services.ItineraryDayParkGetService;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.Services.ItineraryDayParkUpdateService;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.Services.ItineraryDayParkReorderService;
-import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkActivity.DTOs.CreateItineraryDayParkActivityDTO;
-import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkActivity.Services.ItineraryDayParkActivityService;
-import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.DTOs.CreateItineraryDayParkTariffDTO;
-import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.Services.ItineraryDayParkTariffService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 
 import jakarta.validation.Valid;
@@ -37,8 +33,6 @@ public class ItineraryDayParkController {
     private final ItineraryDayParkUpdateService updateService;
     private final ItineraryDayParkDeleteService deleteService;
     private final ItineraryDayParkReorderService reorderService;
-    private final ItineraryDayParkActivityService activityService;
-    private final ItineraryDayParkTariffService tariffService;
 
     @Autowired
     public ItineraryDayParkController(
@@ -46,17 +40,13 @@ public class ItineraryDayParkController {
         ItineraryDayParkGetService getService,
         ItineraryDayParkUpdateService updateService,
         ItineraryDayParkDeleteService deleteService,
-        ItineraryDayParkReorderService reorderService,
-        ItineraryDayParkActivityService activityService,
-        ItineraryDayParkTariffService tariffService
+        ItineraryDayParkReorderService reorderService
     ) {
         this.createService = createService;
         this.getService = getService;
         this.updateService = updateService;
         this.deleteService = deleteService;
         this.reorderService = reorderService;
-        this.activityService = activityService;
-        this.tariffService = tariffService;
     }
 
     @PostMapping
@@ -78,6 +68,17 @@ public class ItineraryDayParkController {
     ) {
         log.info("GET /api/itineraries/{}/days/{}/parks - Fetching park visits", itineraryId, dayId);
         return getService.getItineraryDayParks(itineraryId, dayId);
+    }
+
+    @GetMapping("/{parkVisitId}")
+    @PreAuthorize("hasAuthority('PERM_READ_ITINERARY_DAY_PARK')")
+    public ResponseEntity<ApiResponse<?>> getParkVisit(
+        @PathVariable String itineraryId,
+        @PathVariable String dayId,
+        @PathVariable String parkVisitId
+    ) {
+        log.info("GET /api/itineraries/{}/days/{}/parks/{} - Fetching park visit", itineraryId, dayId, parkVisitId);
+        return getService.getItineraryDayPark(itineraryId, dayId, parkVisitId);
     }
 
     @PutMapping("/{parkVisitId}")
@@ -112,67 +113,5 @@ public class ItineraryDayParkController {
     ) {
         log.info("DELETE /api/itineraries/{}/days/{}/parks - Deleting {} park visits", itineraryId, dayId, parkVisitIds.size());
         return deleteService.deleteItineraryDayParks(itineraryId, dayId, parkVisitIds);
-    }
-
-    // Park Activities endpoints
-
-    @PostMapping("/{parkVisitId}/activities")
-    @PreAuthorize("hasAuthority('PERM_UPDATE_ITINERARY_DAY_PARK')")
-    public ResponseEntity<ApiResponse<?>> addParkActivities(
-        @PathVariable String parkVisitId,
-        @Valid @RequestBody List<CreateItineraryDayParkActivityDTO> createDTOs
-    ) {
-        log.info("POST /api/.../parks/{}/activities - Adding {} activities", parkVisitId, createDTOs.size());
-        return activityService.addParkActivities(parkVisitId, createDTOs);
-    }
-
-    @GetMapping("/{parkVisitId}/activities")
-    @PreAuthorize("hasAuthority('PERM_READ_ITINERARY_DAY_PARK')")
-    public ResponseEntity<ApiResponse<?>> getParkActivities(
-        @PathVariable String parkVisitId
-    ) {
-        log.info("GET /api/.../parks/{}/activities - Fetching activities", parkVisitId);
-        return activityService.getParkActivities(parkVisitId);
-    }
-
-    @DeleteMapping("/{parkVisitId}/activities")
-    @PreAuthorize("hasAuthority('PERM_UPDATE_ITINERARY_DAY_PARK')")
-    public ResponseEntity<ApiResponse<?>> deleteParkActivities(
-        @PathVariable String parkVisitId,
-        @RequestBody List<String> activityIds
-    ) {
-        log.info("DELETE /api/.../parks/{}/activities - Deleting {} activities", parkVisitId, activityIds.size());
-        return activityService.deleteParkActivities(parkVisitId, activityIds);
-    }
-
-    // Park Tariffs endpoints
-
-    @PostMapping("/{parkVisitId}/tariffs")
-    @PreAuthorize("hasAuthority('PERM_UPDATE_ITINERARY_DAY_PARK')")
-    public ResponseEntity<ApiResponse<?>> addParkTariffs(
-        @PathVariable String parkVisitId,
-        @Valid @RequestBody List<CreateItineraryDayParkTariffDTO> createDTOs
-    ) {
-        log.info("POST /api/.../parks/{}/tariffs - Adding {} tariffs", parkVisitId, createDTOs.size());
-        return tariffService.addParkTariffs(parkVisitId, createDTOs);
-    }
-
-    @GetMapping("/{parkVisitId}/tariffs")
-    @PreAuthorize("hasAuthority('PERM_READ_ITINERARY_DAY_PARK')")
-    public ResponseEntity<ApiResponse<?>> getParkTariffs(
-        @PathVariable String parkVisitId
-    ) {
-        log.info("GET /api/.../parks/{}/tariffs - Fetching tariffs", parkVisitId);
-        return tariffService.getParkTariffs(parkVisitId);
-    }
-
-    @DeleteMapping("/{parkVisitId}/tariffs")
-    @PreAuthorize("hasAuthority('PERM_UPDATE_ITINERARY_DAY_PARK')")
-    public ResponseEntity<ApiResponse<?>> deleteParkTariffs(
-        @PathVariable String parkVisitId,
-        @RequestBody List<String> tariffIds
-    ) {
-        log.info("DELETE /api/.../parks/{}/tariffs - Deleting {} tariffs", parkVisitId, tariffIds.size());
-        return tariffService.deleteParkTariffs(parkVisitId, tariffIds);
     }
 }

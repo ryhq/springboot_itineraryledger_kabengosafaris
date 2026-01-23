@@ -1,0 +1,22 @@
+services:
+  # LibreTranslate - Self-hosted translation API
+  # Used for translating PDF documents to multiple languages
+  libretranslate:
+    image: libretranslate/libretranslate:v1.6.1
+    container_name: kabengosafaris-libretranslate
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      # Load only the languages needed for safari tourism
+      - LT_LOAD_ONLY=en,fr,de,es,it
+      # Disable suggestions API (not needed)
+      - LT_SUGGESTIONS=false
+      # Max characters per request
+      - LT_CHAR_LIMIT=10000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/languages"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s

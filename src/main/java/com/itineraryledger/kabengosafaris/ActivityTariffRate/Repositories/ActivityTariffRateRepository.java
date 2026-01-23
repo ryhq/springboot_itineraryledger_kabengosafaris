@@ -139,6 +139,78 @@ public interface ActivityTariffRateRepository extends JpaRepository<ActivityTari
     );
 
     // ========================
+    // ACTIVE RATE LOOKUPS (for cost estimation)
+    // ========================
+
+    /**
+     * Find ACTIVE global rate for PER_PERSON activity (with age category, no park)
+     */
+    @Query("SELECT r FROM ActivityTariffRate r WHERE " +
+           "r.activity.id = :activityId AND " +
+           "r.season.id = :seasonId AND " +
+           "r.nationCategory.id = :nationCategoryId AND " +
+           "r.ageCategory.id = :ageCategoryId AND " +
+           "r.park IS NULL AND " +
+           "r.isActive = true")
+    Optional<ActivityTariffRate> findActiveGlobalRateForPerson(
+        @Param("activityId") Long activityId,
+        @Param("seasonId") Long seasonId,
+        @Param("nationCategoryId") Long nationCategoryId,
+        @Param("ageCategoryId") Long ageCategoryId
+    );
+
+    /**
+     * Find ACTIVE park-specific rate for PER_PERSON activity
+     */
+    @Query("SELECT r FROM ActivityTariffRate r WHERE " +
+           "r.activity.id = :activityId AND " +
+           "r.park.id = :parkId AND " +
+           "r.season.id = :seasonId AND " +
+           "r.nationCategory.id = :nationCategoryId AND " +
+           "r.ageCategory.id = :ageCategoryId AND " +
+           "r.isActive = true")
+    Optional<ActivityTariffRate> findActiveParkRateForPerson(
+        @Param("activityId") Long activityId,
+        @Param("parkId") Long parkId,
+        @Param("seasonId") Long seasonId,
+        @Param("nationCategoryId") Long nationCategoryId,
+        @Param("ageCategoryId") Long ageCategoryId
+    );
+
+    /**
+     * Find ACTIVE global rate for non-PER_PERSON activity (no age category, no park)
+     */
+    @Query("SELECT r FROM ActivityTariffRate r WHERE " +
+           "r.activity.id = :activityId AND " +
+           "r.season.id = :seasonId AND " +
+           "r.nationCategory.id = :nationCategoryId AND " +
+           "r.park IS NULL AND " +
+           "r.ageCategory IS NULL AND " +
+           "r.isActive = true")
+    Optional<ActivityTariffRate> findActiveGlobalRateForGroup(
+        @Param("activityId") Long activityId,
+        @Param("seasonId") Long seasonId,
+        @Param("nationCategoryId") Long nationCategoryId
+    );
+
+    /**
+     * Find ACTIVE park-specific rate for non-PER_PERSON activity
+     */
+    @Query("SELECT r FROM ActivityTariffRate r WHERE " +
+           "r.activity.id = :activityId AND " +
+           "r.park.id = :parkId AND " +
+           "r.season.id = :seasonId AND " +
+           "r.nationCategory.id = :nationCategoryId AND " +
+           "r.ageCategory IS NULL AND " +
+           "r.isActive = true")
+    Optional<ActivityTariffRate> findActiveParkRateForGroup(
+        @Param("activityId") Long activityId,
+        @Param("parkId") Long parkId,
+        @Param("seasonId") Long seasonId,
+        @Param("nationCategoryId") Long nationCategoryId
+    );
+
+    // ========================
     // EXISTENCE CHECKS
     // ========================
 

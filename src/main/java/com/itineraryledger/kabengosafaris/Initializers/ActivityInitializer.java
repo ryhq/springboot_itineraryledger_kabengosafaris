@@ -22,13 +22,16 @@ import java.util.List;
  * (idealafr_idealafricantravels.sql) to ensure consistent auto-generated IDs.
  * DO NOT change the order of activities without updating the production database!
  *
- * Order (IDs 1-26):
- * 1. Entrance, 2. Walking Safari, 3. Ranger, 4. Bush Meals, 5. Canopy Walk,
- * 6. Night Game Drive, 7. Canoeing, 8. Filming, 9. Others, 10. Sport Fishing,
- * 11. Horse Riding, 12. Cycling, 13. Boating, 14. Rhino Viewing, 15. Crater Service,
- * 16. Sun Down, 17. Hot Air Balloon, 18. Olduvai Gorge, 19. Shifting Sand, 20. Laetoli Footprints,
- * 21. Guided Lectures, 22. Bird Watching, 23. Cultural Tours, 24. Photography Safaris,
- * 25. Rock Climbing, 26. Wildlife Tracking
+ * NOTE: "Entrance" was moved to TariffInitializer as "Conservation Fee" (Tariff ID 1)
+ * since park entry fees are tariffs, not activities. All IDs shifted down by 1.
+ *
+ * Order (IDs 1-25):
+ * 1. Walking Safari, 2. Ranger, 3. Bush Meals, 4. Canopy Walk,
+ * 5. Night Game Drive, 6. Canoeing, 7. Filming, 8. Others, 9. Sport Fishing,
+ * 10. Horse Riding, 11. Cycling, 12. Boating, 13. Rhino Viewing, 14. Crater Service,
+ * 15. Sun Down, 16. Hot Air Balloon, 17. Olduvai Gorge, 18. Shifting Sand, 19. Laetoli Footprints,
+ * 20. Guided Lectures, 21. Bird Watching, 22. Cultural Tours, 23. Photography Safaris,
+ * 24. Rock Climbing, 25. Wildlife Tracking
  *
  * Runs AFTER ParkInitializer (Order = HIGHEST_PRECEDENCE + 7)
  *
@@ -119,119 +122,101 @@ public class ActivityInitializer implements ApplicationRunner {
      * (idealafr_idealafricantravels.sql) to ensure consistent auto-generated IDs.
      * DO NOT change the order of activities without updating the production database!
      *
-     * Order (IDs 1-26):
-     * 1. Entrance, 2. Walking Safari, 3. Ranger, 4. Bush Meals, 5. Canopy Walk,
-     * 6. Night Game Drive, 7. Canoeing, 8. Filming, 9. Others, 10. Sport Fishing,
-     * 11. Horse Riding, 12. Cycling, 13. Boating, 14. Rhino Viewing, 15. Crater Service,
-     * 16. Sun Down, 17. Hot Air Balloon, 18. Olduvai Gorge, 19. Shifting Sand, 20. Laetoli Footprints,
-     * 21. Guided Lectures, 22. Bird Watching, 23. Cultural Tours, 24. Photography Safaris,
-     * 25. Rock Climbing, 26. Wildlife Tracking
+     * NOTE: "Entrance" was moved to TariffInitializer as "Conservation Fee" (Tariff ID 1)
+     *
+     * Order (IDs 1-25):
+     * 1. Walking Safari, 2. Ranger, 3. Bush Meals, 4. Canopy Walk,
+     * 5. Night Game Drive, 6. Canoeing, 7. Filming, 8. Others, 9. Sport Fishing,
+     * 10. Horse Riding, 11. Cycling, 12. Boating, 13. Rhino Viewing, 14. Crater Service,
+     * 15. Sun Down, 16. Hot Air Balloon, 17. Olduvai Gorge, 18. Shifting Sand, 19. Laetoli Footprints,
+     * 20. Guided Lectures, 21. Bird Watching, 22. Cultural Tours, 23. Photography Safaris,
+     * 24. Rock Climbing, 25. Wildlife Tracking
      */
     private List<Activity> getTanzaniaActivities() {
         List<Activity> activities = new ArrayList<>();
 
-        // ID 1: Entrance
-        activities.add(createEntranceActivity());
-
-        // ID 2: Walking Safari
+        // ID 1: Walking Safari (was ID 2)
         activities.add(createWalkingSafariActivity());
 
-        // ID 3: Ranger
+        // ID 2: Ranger (was ID 3)
         activities.add(createRangerActivity());
 
-        // ID 4: Bush Meals
+        // ID 3: Bush Meals (was ID 4)
         activities.add(createBushMealsActivity());
 
-        // ID 5: Canopy Walk
+        // ID 4: Canopy Walk (was ID 5)
         activities.add(createCanopyWalkActivity());
 
-        // ID 6: Night Game Drive
+        // ID 5: Night Game Drive (was ID 6)
         activities.add(createNightGameDriveActivity());
 
-        // ID 7: Canoeing
+        // ID 6: Canoeing (was ID 7)
         activities.add(createCanoeingActivity());
 
-        // ID 8: Filming
+        // ID 7: Filming (was ID 8)
         activities.add(createFilmingActivity());
 
-        // ID 9: Others
+        // ID 8: Others (was ID 9)
         activities.add(createOthersActivity());
 
-        // ID 10: Sport Fishing
+        // ID 9: Sport Fishing (was ID 10)
         activities.add(createSportFishingActivity());
 
-        // ID 11: Horse Riding
+        // ID 10: Horse Riding (was ID 11)
         activities.add(createHorseRidingActivity());
 
-        // ID 12: Cycling
+        // ID 11: Cycling (was ID 12)
         activities.add(createCyclingActivity());
 
-        // ID 13: Boating
+        // ID 12: Boating (was ID 13)
         activities.add(createBoatingActivity());
 
-        // ID 14: Rhino Viewing
+        // ID 13: Rhino Viewing (was ID 14)
         activities.add(createRhinoViewingActivity());
 
-        // ID 15: Crater Service
+        // ID 14: Crater Service (was ID 15)
         activities.add(createCraterServiceActivity());
 
-        // ID 16: Sun Down
+        // ID 15: Sun Down (was ID 16)
         activities.add(createSunDownActivity());
 
-        // ID 17: Hot Air Balloon
+        // ID 16: Hot Air Balloon (was ID 17)
         activities.add(createHotAirBalloonActivity());
 
-        // ID 18: Olduvai Gorge
+        // ID 17: Olduvai Gorge (was ID 18)
         activities.add(createOlduvaiGorgeActivity());
 
-        // ID 19: Shifting Sand
+        // ID 18: Shifting Sand (was ID 19)
         activities.add(createShiftingSandActivity());
 
-        // ID 20: Laetoli Footprints
+        // ID 19: Laetoli Footprints (was ID 20)
         activities.add(createLaetoliFootprintsActivity());
 
-        // ID 21: Guided Lectures
+        // ID 20: Guided Lectures (was ID 21)
         activities.add(createGuidedLecturesActivity());
 
-        // ID 22: Bird Watching
+        // ID 21: Bird Watching (was ID 22)
         activities.add(createBirdWatchingActivity());
 
-        // ID 23: Cultural Tours
+        // ID 22: Cultural Tours (was ID 23)
         activities.add(createCulturalToursActivity());
 
-        // ID 24: Photography Safaris
+        // ID 23: Photography Safaris (was ID 24)
         activities.add(createPhotographySafarisActivity());
 
-        // ID 25: Rock Climbing
+        // ID 24: Rock Climbing (was ID 25)
         activities.add(createRockClimbingActivity());
 
-        // ID 26: Wildlife Tracking
+        // ID 25: Wildlife Tracking (was ID 26)
         activities.add(createWildlifeTrackingActivity());
 
         return activities;
     }
 
     // =====================================================================
-    // ESSENTIAL PARK SERVICES (IDs 1-3)
+    // ESSENTIAL PARK SERVICES (IDs 1-2)
+    // NOTE: "Entrance" moved to TariffInitializer as "Conservation Fee"
     // =====================================================================
-
-    private Activity createEntranceActivity() {
-        return Activity.builder()
-                .name("Entrance")
-                .hasTariff(true)
-                .isWebActive(false)
-                .chargingBasis(ChargingBasis.PER_PERSON)
-                .description("Park entrance fee providing access to park amenities and the opportunity to experience game drives, walking safaris, and the natural scenery and wildlife.")
-                .detailedDescription("The entrance fee is a mandatory charge for accessing Tanzania's national parks and conservation areas. This fee supports park management, conservation efforts, anti-poaching operations, infrastructure maintenance, and community development programs. Upon payment, visitors receive access to the park's full range of offerings including game drives, designated picnic areas, viewing points, and visitor centers. The fee varies by park and visitor category (international, resident, East African). Some parks offer multi-day passes at discounted rates. Revenue from entrance fees directly contributes to wildlife protection and habitat preservation. Park rangers at entrance gates provide maps, safety briefings, and current wildlife sighting information. The entrance process includes vehicle registration and visitor documentation for security and conservation monitoring purposes.")
-                .minimumAge(0)
-                .maximumParticipants(999)
-                .equipmentRequired("Valid identification, park permit or booking confirmation, payment method (cash USD or card where accepted)")
-                .seasonAvailability("Year-round; All parks require entrance fees regardless of season")
-                .tags("Entrance Fee, Park Access, Conservation Fee, Mandatory, Park Services, Gate Fee")
-                .safetyInformation("Keep your entrance receipt as it may be checked at various points within the park. Follow all park rules and regulations. Respect gate opening and closing times. Ensure your vehicle is registered if driving yourself.")
-                .isActive(true)
-                .build();
-    }
 
     private Activity createWalkingSafariActivity() {
         return Activity.builder()
@@ -256,7 +241,7 @@ public class ActivityInitializer implements ApplicationRunner {
                 .name("Ranger")
                 .hasTariff(true)
                 .isWebActive(false)
-                .chargingBasis(ChargingBasis.PER_PERSON)
+                .chargingBasis(ChargingBasis.PER_VEHICLE)
                 .description("Hire a professional park ranger or guide to accompany you during activities, providing safety, expert guidance, and in-depth knowledge about wildlife and conservation.")
                 .detailedDescription("Park rangers are trained professionals who enhance safari experiences through their extensive knowledge of wildlife behavior, tracking skills, and understanding of park ecosystems. Hiring a ranger is mandatory for certain activities like walking safaris, hiking in restricted areas, and visiting specific conservation zones. Rangers ensure visitor safety, particularly in areas with dangerous wildlife, and are trained in first aid and emergency response. They provide expert interpretation of animal behavior, identify species, explain conservation challenges, and share insights about anti-poaching efforts. Rangers know the best locations for wildlife sightings based on recent activity and seasonal patterns. Many rangers have specialized knowledge in areas like ornithology, botany, or large mammal behavior. Their presence supports local communities as many rangers are recruited from nearby villages. Ranger fees contribute to their salaries and professional development, supporting conservation career pathways.")
                 .minimumAge(0)
@@ -270,7 +255,7 @@ public class ActivityInitializer implements ApplicationRunner {
     }
 
     // =====================================================================
-    // DINING & ENTERTAINMENT EXPERIENCES (IDs 4, 16)
+    // DINING & ENTERTAINMENT EXPERIENCES (IDs 3, 15)
     // =====================================================================
 
     private Activity createBushMealsActivity() {
@@ -310,7 +295,7 @@ public class ActivityInitializer implements ApplicationRunner {
     }
 
     // =====================================================================
-    // ADVENTURE ACTIVITIES (IDs 5-7, 10-13, 25)
+    // ADVENTURE ACTIVITIES (IDs 4-6, 9-12, 24)
     // =====================================================================
 
     private Activity createCanopyWalkActivity() {
@@ -458,7 +443,7 @@ public class ActivityInitializer implements ApplicationRunner {
     }
 
     // =====================================================================
-    // PROFESSIONAL SERVICES (IDs 8, 9)
+    // PROFESSIONAL SERVICES (IDs 7, 8)
     // =====================================================================
 
     private Activity createFilmingActivity() {
@@ -498,7 +483,7 @@ public class ActivityInitializer implements ApplicationRunner {
     }
 
     // =====================================================================
-    // SPECIALIZED WILDLIFE ACTIVITIES (IDs 14, 26, 22)
+    // SPECIALIZED WILDLIFE ACTIVITIES (IDs 13, 25, 21)
     // =====================================================================
 
     private Activity createRhinoViewingActivity() {
@@ -556,7 +541,7 @@ public class ActivityInitializer implements ApplicationRunner {
     }
 
     // =====================================================================
-    // NGORONGORO CRATER ACTIVITIES (IDs 15, 18-20)
+    // NGORONGORO CRATER ACTIVITIES (IDs 14, 17-19)
     // =====================================================================
 
     private Activity createCraterServiceActivity() {
@@ -632,7 +617,7 @@ public class ActivityInitializer implements ApplicationRunner {
     }
 
     // =====================================================================
-    // AERIAL & SPECIAL EXPERIENCES (IDs 17, 21, 23-24)
+    // AERIAL & SPECIAL EXPERIENCES (IDs 16, 20, 22-23)
     // =====================================================================
 
     private Activity createHotAirBalloonActivity() {
@@ -658,7 +643,7 @@ public class ActivityInitializer implements ApplicationRunner {
                 .name("Guided Lectures")
                 .hasTariff(true)
                 .isWebActive(true)
-                .chargingBasis(ChargingBasis.PER_SESSION)
+                .chargingBasis(ChargingBasis.PER_GROUP)
                 .description("Attend educational presentations by expert naturalists covering ecology, conservation, and wildlife behavior.")
                 .detailedDescription("Guided nature lectures provide in-depth education about Tanzania's ecosystems, wildlife, and conservation challenges. Presented by expert naturalists, park rangers, researchers, and conservationists, these sessions cover topics including animal behavior, ecological relationships, conservation success stories, anti-poaching efforts, climate change impacts, and community-based conservation. Lectures typically last 45-60 minutes and may include multimedia presentations, specimen displays, and Q&A sessions. Topics are tailored to current wildlife events (migration timing, recent sightings, breeding seasons) and visitor interests. Some lectures focus on specific subjects like elephant communication, predator-prey dynamics, bird migration, or the role of scavengers in ecosystems. These educational experiences enhance safari understanding and appreciation. Many lodges include evening lectures as part of the safari experience. Lectures may be conducted at visitor centers, lodge common areas, or outdoor amphitheaters. Special lectures by visiting researchers or conservationists provide cutting-edge insights into ongoing projects.")
                 .minimumAge(8)

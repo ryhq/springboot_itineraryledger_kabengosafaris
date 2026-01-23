@@ -12,11 +12,15 @@ import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary.ItineraryStatus;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.CreateItineraryDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.UpdateItineraryDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryCostEstimationService;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryCreateService;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryDeleteService;
+import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryFullGetService;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryGetService;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryUpdateService;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryStatusService;
+
+import java.time.LocalDate;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 
 import jakarta.validation.Valid;
@@ -34,7 +38,9 @@ public class ItineraryController {
     private final ItineraryUpdateService updateService;
     private final ItineraryDeleteService deleteService;
     private final ItineraryGetService getService;
+    private final ItineraryFullGetService fullGetService;
     private final ItineraryStatusService statusService;
+    private final ItineraryCostEstimationService costEstimationService;
 
     @Autowired
     public ItineraryController(
@@ -42,13 +48,17 @@ public class ItineraryController {
         ItineraryUpdateService updateService,
         ItineraryDeleteService deleteService,
         ItineraryGetService getService,
-        ItineraryStatusService statusService
+        ItineraryFullGetService fullGetService,
+        ItineraryStatusService statusService,
+        ItineraryCostEstimationService costEstimationService
     ) {
         this.createService = createService;
         this.updateService = updateService;
         this.deleteService = deleteService;
         this.getService = getService;
+        this.fullGetService = fullGetService;
         this.statusService = statusService;
+        this.costEstimationService = costEstimationService;
     }
 
     @PostMapping
@@ -95,6 +105,15 @@ public class ItineraryController {
     ) {
         log.info("GET /api/itineraries/code/{} - Fetching itinerary by code", code);
         return getService.getItineraryByCode(code);
+    }
+
+    @GetMapping("/{id}/full")
+    @PreAuthorize("hasAuthority('PERM_READ_ITINERARY')")
+    public ResponseEntity<ApiResponse<?>> getFullItinerary(
+        @PathVariable String id
+    ) {
+        log.info("GET /api/itineraries/{}/full - Fetching full itinerary with all nested data", id);
+        return fullGetService.getFullItinerary(id);
     }
 
     @GetMapping
@@ -155,5 +174,37 @@ public class ItineraryController {
     ) {
         log.info("POST /api/itineraries/{}/unarchive - Unarchiving itinerary", id);
         return statusService.unarchiveItinerary(id);
+    }
+
+    // ========================
+    // COST ESTIMATION
+    // ========================
+
+    /**
+     * Estimate costs for an itinerary
+     *
+     * Returns a quick budget calculation based on:
+     * - Park fees (tariffs)
+     * - Accommodation rates
+     * - Activity rates
+     *
+     * Uses current rates based on season determined from start date.
+     *
+     * @param id Itinerary ID (obfuscated)
+     * @param startDate Optional start date for season determination (defaults to today)
+     * @param useStoRate Whether to use STO rates (default: true)
+     * @param currency Preferred output currency (default: USD)
+     */
+    @GetMapping("/{id}/estimate-cost")
+    @PreAuthorize("hasAuthority('PERM_READ_ITINERARY')")
+    public ResponseEntity<ApiResponse<?>> estimateCost(
+        @PathVariable String id,
+        @RequestParam(required = false) LocalDate startDate,
+        @RequestParam(required = false, defaultValue = "true") Boolean useStoRate,
+        @RequestParam(required = false, defaultValue = "USD") String currency
+    ) {
+        log.info("GET /api/itineraries/{}/estimate-cost - Estimating costs (startDate: {}, useStoRate: {}, currency: {})",
+            id, startDate, useStoRate, currency);
+        return costEstimationService.estimateCosts(id, startDate, useStoRate, currency);
     }
 }

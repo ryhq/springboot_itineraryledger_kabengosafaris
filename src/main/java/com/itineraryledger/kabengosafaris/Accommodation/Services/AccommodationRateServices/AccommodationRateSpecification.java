@@ -173,6 +173,34 @@ public class AccommodationRateSpecification {
         return isActive(true);
     }
 
+    /**
+     * Filter by rate charging model (per person vs per room)
+     *
+     * @param isPerPerson true for Per Person Sharing (PPS), false for Per Room
+     */
+    public static Specification<AccommodationRate> isPerPerson(Boolean isPerPerson) {
+        return (root, query, cb) -> {
+            if (isPerPerson == null) {
+                return cb.conjunction();
+            }
+            return cb.equal(root.get("isPerPerson"), isPerPerson);
+        };
+    }
+
+    /**
+     * Filter Per Person Sharing (PPS) rates only
+     */
+    public static Specification<AccommodationRate> perPersonOnly() {
+        return isPerPerson(true);
+    }
+
+    /**
+     * Filter Per Room rates only
+     */
+    public static Specification<AccommodationRate> perRoomOnly() {
+        return isPerPerson(false);
+    }
+
     // ========================
     // COMBINED SPECIFICATIONS
     // ========================

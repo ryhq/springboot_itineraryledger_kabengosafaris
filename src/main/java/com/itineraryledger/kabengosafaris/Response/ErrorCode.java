@@ -53,6 +53,16 @@ public enum ErrorCode {
     OPERATION_NOT_ALLOWED("OPERATION_NOT_ALLOWED", "This operation is not allowed"),
     EXPIRED_DATA("EXPIRED_DATA", "Data has expired"),
 
+    // PDF Generation Errors (400/500)
+    PDF_TEMPLATE_VALIDATION_ERROR("PDF_TEMPLATE_VALIDATION_ERROR", "PDF template validation failed"),
+    PDF_TEMPLATE_INVALID_XHTML("PDF_TEMPLATE_INVALID_XHTML", "Template is not valid XHTML"),
+    PDF_TEMPLATE_EMBEDDED_XML("PDF_TEMPLATE_EMBEDDED_XML", "Embedded XML declaration found in template"),
+    PDF_TEMPLATE_MISSING_DOCTYPE("PDF_TEMPLATE_MISSING_DOCTYPE", "Template missing XHTML doctype"),
+    PDF_TEMPLATE_UNCLOSED_TAGS("PDF_TEMPLATE_UNCLOSED_TAGS", "Template contains unclosed tags"),
+    PDF_GENERATION_FAILED("PDF_GENERATION_FAILED", "PDF generation failed"),
+    PDF_TEMPLATE_NOT_FOUND("PDF_TEMPLATE_NOT_FOUND", "PDF template not found"),
+    PDF_DOCUMENT_TYPE_NOT_FOUND("PDF_DOCUMENT_TYPE_NOT_FOUND", "PDF document type not found"),
+
     // Server Errors (500)
     INTERNAL_SERVER_ERROR("INTERNAL_SERVER_ERROR", "Internal server error"),
     DATABASE_ERROR("DATABASE_ERROR", "Database error occurred"),

@@ -49,25 +49,21 @@ public class ItineraryDayAccommodation {
     @JoinColumn(name = "accommodation_id", nullable = false)
     private Accommodation accommodation;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_type_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "room_type_id", nullable = false)
     private AccommodationRoomType roomType; // e.g., Single, Double, Twin, Triple
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_standard_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "room_standard_id", nullable = false)
     private AccommodationRoomStandard roomStandard; // e.g., Standard, Deluxe, Suite
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "board_type_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "board_type_id", nullable = false)
     private AccommodationBoardType boardType; // e.g., Room Only, B&B, Half Board, Full Board
 
     @Column(name = "room_count")
     @Builder.Default
     private Integer roomCount = 1;
-
-    @Column(name = "nights")
-    @Builder.Default
-    private Integer nights = 1;
 
     @Builder.Default
     @Column(name = "is_alternative", nullable = false)

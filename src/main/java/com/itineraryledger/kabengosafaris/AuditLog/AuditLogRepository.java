@@ -22,4 +22,6 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long>, JpaSp
 
     @Query("SELECT COUNT(a) FROM AuditLog a WHERE YEAR(a.createdAt) = :year AND MONTH(a.createdAt) = :month AND a.name NOT LIKE 'TEMP_%'")
     long countByYearAndMonth(@Param("year") int year, @Param("month") int month);
+
+    boolean existsByName(String name);
 }

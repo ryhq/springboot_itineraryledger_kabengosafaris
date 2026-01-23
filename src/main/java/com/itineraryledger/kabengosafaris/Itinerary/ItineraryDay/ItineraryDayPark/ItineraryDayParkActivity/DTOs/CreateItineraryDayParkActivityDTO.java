@@ -21,8 +21,9 @@ public class CreateItineraryDayParkActivityDTO {
     @NotBlank(message = "Activity ID is required")
     private String activityId; // Obfuscated ID
 
-    private Integer sortOrder;
     private BigDecimal durationHours;
+    private String startTime; // e.g., "06:00"
+    private String endTime;
     private String notes;
     private Boolean isIncludedInPrice;
 }

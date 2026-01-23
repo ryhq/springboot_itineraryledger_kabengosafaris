@@ -31,14 +31,21 @@ The Rate Matrix API provides all the data needed to render a rate input grid for
 ### Grid Structure
 
 ```
-Season × Room Standard × Room Type × Board Type | STO Rate | Rack Rate | Currency
+Season × Room Standard × Room Type × Board Type | STO Rate | Rack Rate | Currency | Per Person
 ```
 
 Or when filtered by a specific season:
 
 ```
-Room Standard × Room Type × Board Type | STO Rate | Rack Rate | Currency
+Room Standard × Room Type × Board Type | STO Rate | Rack Rate | Currency | Per Person
 ```
+
+### Rate Charging Models
+
+| Model | `isPerPerson` | Description | Common Usage |
+|-------|---------------|-------------|--------------|
+| **Per Person Sharing (PPS)** | `true` (default) | Rate is per guest | Safari lodges, camps |
+| **Per Room** | `false` | Rate is per room regardless of occupancy | Hotels, guesthouses |
 
 ### Key Differences from Activity/Park Tariff Rates
 
@@ -196,6 +203,7 @@ GET /api/accommodation-rates/matrix?accommodationId=acc123&excludeRoomStandardId
         "currency": "USD",
         "profitAmount": 50.00,
         "profitPercentage": 14.29,
+        "isPerPerson": true,
         "notes": null,
         "isActive": true
       }
@@ -361,6 +369,7 @@ Example: 3 seasons × 3 standards × 3 types × 4 boards = 108 rows
 | STO Rate | Editable - Tour operator rate |
 | Rack Rate | Editable - Customer rate |
 | Currency | Editable - ISO 4217 code |
+| Per Person | Editable - `true` for Per Person Sharing (PPS), `false` for Per Room |
 
 ### Filtered Grid (3 Dimensions)
 
@@ -380,6 +389,7 @@ Example: 3 standards × 3 types × 4 boards = 36 rows
 | STO Rate | Editable |
 | Rack Rate | Editable |
 | Currency | Editable |
+| Per Person | Editable - `true` for Per Person Sharing (PPS), `false` for Per Room |
 
 ---
 
@@ -452,7 +462,8 @@ function getTableColumns(includesSeason) {
     { key: 'boardTypeName', header: 'Board Type' },
     { key: 'stoRate', header: 'STO Rate', editable: true },
     { key: 'rackRate', header: 'Rack Rate', editable: true },
-    { key: 'currency', header: 'Currency', editable: true }
+    { key: 'currency', header: 'Currency', editable: true },
+    { key: 'isPerPerson', header: 'Per Person', editable: true, type: 'boolean' }
   );
 
   return columns;
@@ -492,31 +503,32 @@ async function onSeasonChange(seasonId) {
 ### UI Flow Recommendation
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ Configure Rates for: Serena Hotel                            │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  Season Filter: [All Seasons ▼]                              │
-│                 ├── All Seasons    ✓                         │
-│                 ├── High Season                              │
-│                 ├── Low Season                               │
-│                 └── Shoulder Season                          │
-│                                                              │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │ # │ Season  │ Standard │ Type   │ Board │ STO │ Rack  │  │
-│  │───│─────────│──────────│────────│───────│─────│───────│  │
-│  │ 1 │ High    │ Standard │ Single │ RO    │     │       │  │
-│  │ 2 │ High    │ Standard │ Single │ B&B   │     │       │  │
-│  │ 3 │ High    │ Standard │ Single │ HB    │     │       │  │
-│  │ 4 │ High    │ Standard │ Single │ FB    │     │       │  │
-│  │...│ ...     │ ...      │ ...    │ ...   │ ... │ ...   │  │
-│  └────────────────────────────────────────────────────────┘  │
-│                                                              │
-│  Summary: 108 possible rates | 12 configured | 96 missing    │
-│                                                              │
-│  [Save Changes]  [Reset]                                     │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│ Configure Rates for: Serena Hotel                                     │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  Season Filter: [All Seasons ▼]                                       │
+│                 ├── All Seasons    ✓                                  │
+│                 ├── High Season                                       │
+│                 ├── Low Season                                        │
+│                 └── Shoulder Season                                   │
+│                                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐  │
+│  │ # │ Season │ Std  │ Type   │ Board │ STO │ Rack │ Curr │ PPS   │  │
+│  │───│────────│──────│────────│───────│─────│──────│──────│───────│  │
+│  │ 1 │ High   │ Std  │ Single │ RO    │     │      │ USD  │ [✓]   │  │
+│  │ 2 │ High   │ Std  │ Single │ B&B   │     │      │ USD  │ [✓]   │  │
+│  │ 3 │ High   │ Std  │ Single │ HB    │     │      │ USD  │ [✓]   │  │
+│  │ 4 │ High   │ Std  │ Single │ FB    │     │      │ USD  │ [✓]   │  │
+│  │...│ ...    │ ...  │ ...    │ ...   │ ... │ ...  │ ...  │ ...   │  │
+│  └─────────────────────────────────────────────────────────────────┘  │
+│                                                                       │
+│  Legend: PPS = Per Person Sharing (✓) / Per Room (☐)                  │
+│  Summary: 108 possible rates | 12 configured | 96 missing             │
+│                                                                       │
+│  [Save Changes]  [Reset]                                              │
+│                                                                       │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -541,7 +553,8 @@ function collectModifiedRates(rows, accommodationId) {
       stoRate: row.stoRate,
       currency: row.currency || 'USD',
       notes: row.notes || null,
-      isActive: row.isActive !== false
+      isActive: row.isActive !== false,
+      isPerPerson: row.isPerPerson !== false // Defaults to true (PPS)
     }));
 }
 ```
@@ -561,7 +574,8 @@ Content-Type: application/json
     "boardTypeId": "bt4",
     "rackRate": 350.00,
     "stoRate": 300.00,
-    "currency": "USD"
+    "currency": "USD",
+    "isPerPerson": true
   },
   {
     "accommodationId": "acc123",
@@ -571,7 +585,8 @@ Content-Type: application/json
     "boardTypeId": "bt4",
     "rackRate": 450.00,
     "stoRate": 380.00,
-    "currency": "USD"
+    "currency": "USD",
+    "isPerPerson": false
   }
 ]
 ```
@@ -611,11 +626,21 @@ async function saveRates() {
 
 | Scenario | API Call | Grid Columns |
 | -------- | -------- | ------------ |
-| Full matrix (4D) | `?accommodationId=x` | Season, Room Standard, Room Type, Board Type, STO, Rack, Currency |
-| Season filtered (3D) | `?accommodationId=x&seasonId=y` | Room Standard, Room Type, Board Type, STO, Rack, Currency |
+| Full matrix (4D) | `?accommodationId=x` | Season, Room Standard, Room Type, Board Type, STO, Rack, Currency, Per Person |
+| Season filtered (3D) | `?accommodationId=x&seasonId=y` | Room Standard, Room Type, Board Type, STO, Rack, Currency, Per Person |
 | With exclusions | `?accommodationId=x&excludeSeasonIds=a,b` | Filtered rows based on exclusions |
 
 The key difference from Activity/Park Tariff Rates is that **all 4 dimensions are accommodation-specific** (not global), so the grid always includes Season, Room Standard, Room Type, and Board Type - with no conditional age category logic.
+
+### Per Person vs Per Room
+
+The `isPerPerson` field indicates the rate charging model:
+- **`true` (default)**: Per Person Sharing (PPS) - common in safari lodges/camps
+- **`false`**: Per Room - common in hotels/guesthouses
+
+This affects how costs are calculated in itinerary cost estimation:
+- **PPS**: Rate × Number of guests
+- **Per Room**: Rate × Number of rooms
 
 ### Total Possible Rates Calculation
 

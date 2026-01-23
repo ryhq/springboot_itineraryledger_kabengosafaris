@@ -1,0 +1,245 @@
+package com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayAccommodation.Services;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayAccommodation.Entity.ItineraryDayAccommodation;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayAccommodation.Repository.ItineraryDayAccommodationRepository;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayAccommodation.DTOs.UpdateItineraryDayAccommodationDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayAccommodation.DTOs.ItineraryDayAccommodationDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryPax.Entity.ItineraryPax;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryPax.Repository.ItineraryPaxRepository;
+import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * ItineraryDayAccommodationUpdateService - Service for updating itinerary day accommodations
+ *
+ * Allows updating room count, alternative status, and notes.
+ * Core accommodation configuration cannot be changed.
+ */
+@Service
+@Slf4j
+@Transactional
+public class ItineraryDayAccommodationUpdateService {
+
+    private final ItineraryDayAccommodationRepository accommodationRepository;
+    private final ItineraryPaxRepository paxRepository;
+    private final IdObfuscator idObfuscator;
+
+    @Autowired
+    public ItineraryDayAccommodationUpdateService(
+        ItineraryDayAccommodationRepository accommodationRepository,
+        ItineraryPaxRepository paxRepository,
+        IdObfuscator idObfuscator
+    ) {
+        this.accommodationRepository = accommodationRepository;
+        this.paxRepository = paxRepository;
+        this.idObfuscator = idObfuscator;
+    }
+
+    /**
+     * Update an existing accommodation for an itinerary day
+     *
+     * @param itineraryIdObfuscated The obfuscated itinerary ID
+     * @param dayIdObfuscated The obfuscated day ID
+     * @param accommodationIdObfuscated The obfuscated accommodation entry ID
+     * @param updateDTO The accommodation update data
+     * @return ResponseEntity with ApiResponse containing the updated accommodation
+     */
+    @AuditLogAnnotation(action = "UPDATE_ITINERARY_DAY_ACCOMMODATION", description = "Updating accommodation for itinerary day", entityType = "ItineraryDayAccommodation")
+    public ResponseEntity<ApiResponse<?>> updateItineraryDayAccommodation(
+        String itineraryIdObfuscated,
+        String dayIdObfuscated,
+        String accommodationIdObfuscated,
+        UpdateItineraryDayAccommodationDTO updateDTO
+    ) {
+        log.info("Updating accommodation: {}", accommodationIdObfuscated);
+
+        try {
+            // Decode IDs
+            Long itineraryId;
+            Long dayId;
+            Long accommodationEntryId;
+            try {
+                itineraryId = idObfuscator.decodeId(itineraryIdObfuscated);
+                dayId = idObfuscator.decodeId(dayIdObfuscated);
+                accommodationEntryId = idObfuscator.decodeId(accommodationIdObfuscated);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid ID", "INVALID_ID")
+                );
+            }
+
+            // Find accommodation entry
+            ItineraryDayAccommodation dayAccommodation = accommodationRepository.findById(accommodationEntryId).orElse(null);
+            if (dayAccommodation == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Accommodation not found", "ACCOMMODATION_NOT_FOUND")
+                );
+            }
+
+            // Verify accommodation belongs to the specified day
+            if (!dayAccommodation.getItineraryDay().getId().equals(dayId)) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Accommodation does not belong to this day", "ACCOMMODATION_DAY_MISMATCH")
+                );
+            }
+
+            // Verify day belongs to the specified itinerary
+            if (!dayAccommodation.getItineraryDay().getItinerary().getId().equals(itineraryId)) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Day does not belong to this itinerary", "DAY_ITINERARY_MISMATCH")
+                );
+            }
+
+            // Update fields if provided
+            if (updateDTO.getRoomCount() != null) {
+                dayAccommodation.setRoomCount(updateDTO.getRoomCount());
+            }
+
+            if (updateDTO.getIsAlternative() != null) {
+                dayAccommodation.setIsAlternative(updateDTO.getIsAlternative());
+            }
+
+            // Notes can be set to null to clear it
+            dayAccommodation.setNotes(updateDTO.getNotes());
+
+            // Validate pax capacity if this is a primary (non-alternative) accommodation
+            Boolean isAlternative = updateDTO.getIsAlternative() != null
+                ? updateDTO.getIsAlternative()
+                : dayAccommodation.getIsAlternative();
+
+            if (!isAlternative) {
+                ResponseEntity<ApiResponse<?>> capacityError = validatePaxCapacity(
+                    itineraryId, dayId, dayAccommodation);
+                if (capacityError != null) {
+                    return capacityError;
+                }
+            }
+
+            // Save
+            dayAccommodation = accommodationRepository.save(dayAccommodation);
+
+            // Convert to DTO
+            ItineraryDayAccommodationDTO dto = convertToDTO(dayAccommodation);
+
+            log.info("Accommodation updated: {} for day {}",
+                dayAccommodation.getAccommodation().getName(),
+                dayAccommodation.getItineraryDay().getDayNumber());
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, "Accommodation updated successfully", dto)
+            );
+
+        } catch (Exception e) {
+            log.error("Error updating accommodation", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to update accommodation", "ACCOMMODATION_UPDATE_FAILED")
+            );
+        }
+    }
+
+    /**
+     * Convert entity to DTO
+     */
+    private ItineraryDayAccommodationDTO convertToDTO(ItineraryDayAccommodation entity) {
+        ItineraryDayAccommodationDTO dto = new ItineraryDayAccommodationDTO();
+        dto.setId(idObfuscator.encodeId(entity.getId()));
+        dto.setItineraryDayId(idObfuscator.encodeId(entity.getItineraryDay().getId()));
+        dto.setAccommodationId(idObfuscator.encodeId(entity.getAccommodation().getId()));
+        dto.setAccommodationName(entity.getAccommodation().getName());
+        dto.setAccommodationSlug(entity.getAccommodation().getSlug());
+
+        dto.setRoomTypeId(idObfuscator.encodeId(entity.getRoomType().getId()));
+        dto.setRoomTypeName(entity.getRoomType().getName());
+        dto.setRoomStandardId(idObfuscator.encodeId(entity.getRoomStandard().getId()));
+        dto.setRoomStandardName(entity.getRoomStandard().getName());
+        dto.setBoardTypeId(idObfuscator.encodeId(entity.getBoardType().getId()));
+        dto.setBoardTypeName(entity.getBoardType().getName());
+
+        dto.setRoomCount(entity.getRoomCount());
+        dto.setIsAlternative(entity.getIsAlternative());
+        dto.setNotes(entity.getNotes());
+        dto.setCreatedAt(entity.getCreatedAt());
+        dto.setUpdatedAt(entity.getUpdatedAt());
+        return dto;
+    }
+
+    /**
+     * Validate that primary accommodations don't exceed reasonable capacity for total pax.
+     * Prevents overbooking (booking more rooms than needed for passengers).
+     *
+     * Note: Underbooking validation (capacity < pax) is NOT checked here because
+     * users may need to add multiple accommodations to reach required capacity.
+     * Underbooking should be validated at itinerary level (e.g., when publishing).
+     *
+     * @param itineraryId The itinerary ID
+     * @param dayId The day ID
+     * @param updatedAccommodation The accommodation being updated (with new values applied)
+     * @return Error response if validation fails, null if valid
+     */
+    private ResponseEntity<ApiResponse<?>> validatePaxCapacity(
+        Long itineraryId,
+        Long dayId,
+        ItineraryDayAccommodation updatedAccommodation
+    ) {
+        // Get total pax count for the itinerary
+        List<ItineraryPax> paxList = paxRepository.findByItineraryId(itineraryId);
+        int totalPax = paxList.stream()
+            .mapToInt(pax -> pax.getCount() != null ? pax.getCount() : 0)
+            .sum();
+
+        // If no pax configured, skip validation
+        if (totalPax == 0) {
+            return null;
+        }
+
+        // Get all primary accommodations for this day
+        List<ItineraryDayAccommodation> primaryAccommodations =
+            accommodationRepository.findByItineraryDayIdAndIsAlternativeFalse(dayId);
+
+        // Calculate total minimum occupancy, replacing the updated accommodation's values
+        int totalMinOccupancy = 0;
+
+        for (ItineraryDayAccommodation acc : primaryAccommodations) {
+            int roomCount;
+            Integer minOccupancy;
+
+            if (acc.getId().equals(updatedAccommodation.getId())) {
+                // Use updated values
+                roomCount = updatedAccommodation.getRoomCount() != null ? updatedAccommodation.getRoomCount() : 1;
+                minOccupancy = updatedAccommodation.getRoomType().getMinOccupancy();
+            } else {
+                roomCount = acc.getRoomCount() != null ? acc.getRoomCount() : 1;
+                minOccupancy = acc.getRoomType().getMinOccupancy();
+            }
+
+            if (minOccupancy != null) {
+                totalMinOccupancy += roomCount * minOccupancy;
+            }
+        }
+
+        // Validate against overbooking (minimum occupancy exceeds pax count)
+        if (totalMinOccupancy > totalPax) {
+            String message = String.format(
+                "Accommodation overbooking detected. Total pax: %d, Minimum room occupancy required: %d. " +
+                "You are booking more rooms than needed for your passengers. Please reduce room count.",
+                totalPax, totalMinOccupancy);
+            log.warn("Overbooking validation failed: {}", message);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, message, "ACCOMMODATION_OVERBOOKING")
+            );
+        }
+
+        return null;
+    }
+}

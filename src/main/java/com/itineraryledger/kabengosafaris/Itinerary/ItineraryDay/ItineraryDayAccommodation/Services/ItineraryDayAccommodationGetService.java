@@ -111,21 +111,14 @@ public class ItineraryDayAccommodationGetService {
         dto.setAccommodationName(entity.getAccommodation().getName());
         dto.setAccommodationSlug(entity.getAccommodation().getSlug());
 
-        if (entity.getRoomType() != null) {
-            dto.setRoomTypeId(idObfuscator.encodeId(entity.getRoomType().getId()));
-            dto.setRoomTypeName(entity.getRoomType().getName());
-        }
-        if (entity.getRoomStandard() != null) {
-            dto.setRoomStandardId(idObfuscator.encodeId(entity.getRoomStandard().getId()));
-            dto.setRoomStandardName(entity.getRoomStandard().getName());
-        }
-        if (entity.getBoardType() != null) {
-            dto.setBoardTypeId(idObfuscator.encodeId(entity.getBoardType().getId()));
-            dto.setBoardTypeName(entity.getBoardType().getName());
-        }
+        dto.setRoomTypeId(idObfuscator.encodeId(entity.getRoomType().getId()));
+        dto.setRoomTypeName(entity.getRoomType().getName());
+        dto.setRoomStandardId(idObfuscator.encodeId(entity.getRoomStandard().getId()));
+        dto.setRoomStandardName(entity.getRoomStandard().getName());
+        dto.setBoardTypeId(idObfuscator.encodeId(entity.getBoardType().getId()));
+        dto.setBoardTypeName(entity.getBoardType().getName());
 
         dto.setRoomCount(entity.getRoomCount());
-        dto.setNights(entity.getNights());
         dto.setIsAlternative(entity.getIsAlternative());
         dto.setNotes(entity.getNotes());
         dto.setCreatedAt(entity.getCreatedAt());

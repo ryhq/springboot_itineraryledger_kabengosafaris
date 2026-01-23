@@ -20,6 +20,10 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * ItineraryDayActivityDeleteService - Service for deleting itinerary day activities
+ *
+ * Provides bulk deletion of itinerary day activities with automatic renumbering.
+ * After deletion, remaining activities are renumbered to maintain sequential sortOrder (1, 2, 3, ...).
+ * Uses a two-pass approach to avoid unique constraint violations if any exist on sortOrder.
  */
 @Service
 @Slf4j
@@ -124,9 +128,63 @@ public class ItineraryDayActivityDeleteService {
             }
         }
 
+        // Renumber remaining activities to maintain sequential order
+        if (deletedCount > 0) {
+            renumberActivitiesAfterDeletion(dayId);
+        }
+
         return ResponseEntity.ok().body(
             ApiResponse.success(200, deletedCount + " activity(ies) deleted successfully", null)
         );
+    }
+
+    /**
+     * Renumber remaining activities after deletion to maintain sequential sortOrder.
+     * Uses two-pass approach to avoid potential unique constraint violations.
+     *
+     * @param dayId The itinerary day ID
+     */
+    private void renumberActivitiesAfterDeletion(Long dayId) {
+        // Fetch remaining activities ordered by current sortOrder
+        List<ItineraryDayActivity> remainingActivities = activityRepository.findByItineraryDayIdOrderBySortOrderAsc(dayId);
+
+        if (remainingActivities.isEmpty()) {
+            return;
+        }
+
+        // Check if renumbering is needed (gaps in sortOrder)
+        boolean needsRenumbering = false;
+        int expectedSortOrder = 1;
+        for (ItineraryDayActivity activity : remainingActivities) {
+            if (!activity.getSortOrder().equals(expectedSortOrder)) {
+                needsRenumbering = true;
+                break;
+            }
+            expectedSortOrder++;
+        }
+
+        if (!needsRenumbering) {
+            return;
+        }
+
+        log.info("Renumbering {} activities for day {}", remainingActivities.size(), dayId);
+
+        // Pass 1: Set temporary negative sortOrder to avoid potential unique constraint violations
+        int tempOrder = -1;
+        for (ItineraryDayActivity activity : remainingActivities) {
+            activity.setSortOrder(tempOrder--);
+        }
+        activityRepository.saveAll(remainingActivities);
+        activityRepository.flush();
+
+        // Pass 2: Set final sequential sortOrder
+        int newSortOrder = 1;
+        for (ItineraryDayActivity activity : remainingActivities) {
+            activity.setSortOrder(newSortOrder++);
+        }
+        activityRepository.saveAll(remainingActivities);
+
+        log.info("Activities renumbered successfully for day {}", dayId);
     }
 
     @AuditLogAnnotation(action = "DELETE_ITINERARY_DAY_ACTIVITY", description = "Deleting itinerary day activity", entityType = "ItineraryDayActivity", entityIdParamName = "id")

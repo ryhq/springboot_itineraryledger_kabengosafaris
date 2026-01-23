@@ -18,11 +18,11 @@ import java.util.List;
 /**
  * TariffInitializer - Initializes Tanzania Park Tariffs at application startup
  *
- * Order (IDs 1-11):
- * 1. Public Camping Fee, 2. Special Camping Fee, 3. Seasonal Camping Fee,
- * 4. Fly Campsites Fee, 5. Upper Barafu Camping Fee, 6. Premium Special Camping Fee,
- * 7. Parks Accommodations Fee, 8. Rescue Fee, 9. Concession Fee,
- * 10. Hiking / Mountaineering Fee, 11. WMA
+ * Order (IDs 1-12):
+ * 1. Conservation Fee (park entry fee), 2. Public Camping Fee, 3. Special Camping Fee,
+ * 4. Seasonal Camping Fee, 5. Fly Campsites Fee, 6. Upper Barafu Camping Fee,
+ * 7. Premium Special Camping Fee, 8. Parks Accommodations Fee, 9. Rescue Fee,
+ * 10. Concession Fee, 11. Hiking / Mountaineering Fee, 12. WMA
  *
  * Runs AFTER GlobalSeasonInitializer (Order = HIGHEST_PRECEDENCE + 11)
  *
@@ -114,57 +114,80 @@ public class TariffInitializer implements ApplicationRunner {
      * to ensure consistent auto-generated IDs.
      * DO NOT change the order of tariffs without updating the production database!
      *
-     * Order (IDs 1-11):
-     * 1. Public Camping Fee, 2. Special Camping Fee, 3. Seasonal Camping Fee,
-     * 4. Fly Campsites Fee, 5. Upper Barafu Camping Fee, 6. Premium Special Camping Fee,
-     * 7. Parks Accommodations Fee, 8. Rescue Fee, 9. Concession Fee,
-     * 10. Hiking / Mountaineering Fee, 11. WMA
+     * Order (IDs 1-12):
+     * 1. Conservation Fee (park entry fee), 2. Public Camping Fee, 3. Special Camping Fee,
+     * 4. Seasonal Camping Fee, 5. Fly Campsites Fee, 6. Upper Barafu Camping Fee,
+     * 7. Premium Special Camping Fee, 8. Parks Accommodations Fee, 9. Rescue Fee,
+     * 10. Concession Fee, 11. Hiking / Mountaineering Fee, 12. WMA
      */
     private List<Tariff> getTanzaniaTariffs() {
         List<Tariff> tariffs = new ArrayList<>();
 
-        // ID 1: Public Camping Fee
+        // ID 1: Conservation Fee (park entry fee - formerly "Entrance" activity)
+        tariffs.add(createConservationFeeTariff());
+
+        // ID 2: Public Camping Fee
         tariffs.add(createPublicCampingFeeTariff());
 
-        // ID 2: Special Camping Fee
+        // ID 3: Special Camping Fee
         tariffs.add(createSpecialCampingFeeTariff());
 
-        // ID 3: Seasonal Camping Fee
+        // ID 4: Seasonal Camping Fee
         tariffs.add(createSeasonalCampingFeeTariff());
 
-        // ID 4: Fly Campsites Fee
+        // ID 5: Fly Campsites Fee
         tariffs.add(createFlyCampsitesFeeTariff());
 
-        // ID 5: Upper Barafu Camping Fee
+        // ID 6: Upper Barafu Camping Fee
         tariffs.add(createUpperBarafuCampingFeeTariff());
 
-        // ID 6: Premium Special Camping Fee
+        // ID 7: Premium Special Camping Fee
         tariffs.add(createPremiumSpecialCampingFeeTariff());
 
-        // ID 7: Parks Accommodations Fee
+        // ID 8: Parks Accommodations Fee
         tariffs.add(createParksAccommodationsFeeTariff());
 
-        // ID 8: Rescue Fee
+        // ID 9: Rescue Fee
         tariffs.add(createRescueFeeTariff());
 
-        // ID 9: Concession Fee
+        // ID 10: Concession Fee
         tariffs.add(createConcessionFeeTariff());
 
-        // ID 10: Hiking / Mountaineering Fee
+        // ID 11: Hiking / Mountaineering Fee
         tariffs.add(createHikingMountaineeringFeeTariff());
 
-        // ID 11: WMA (Wildlife Management Area)
+        // ID 12: WMA (Wildlife Management Area)
         tariffs.add(createWmaTariff());
 
         return tariffs;
     }
 
     // =====================================================================
-    // CAMPING FEES (IDs 1-6)
+    // CONSERVATION FEE (ID 1) - Park Entry Fee
     // =====================================================================
 
     /**
-     * ID 1: Public Camping Fee
+     * ID 1: Conservation Fee
+     * Mandatory park entry fee charged per person per day for all Tanzania national parks.
+     * This is the primary fee for accessing any national park, covering park entry and
+     * contributing to conservation efforts, anti-poaching operations, and park infrastructure.
+     */
+    private Tariff createConservationFeeTariff() {
+        return Tariff.builder()
+                .name("Conservation Fee")
+                .chargingBasis(ChargingBasis.PER_PERSON)
+                .description("Park entry fee providing access to park amenities and the opportunity to experience game drives, walking safaris, and the natural scenery and wildlife. This is the mandatory conservation fee charged by TANAPA for all national park visitors.")
+                .isActive(true)
+                .isSystem(true)
+                .build();
+    }
+
+    // =====================================================================
+    // CAMPING FEES (IDs 2-7)
+    // =====================================================================
+
+    /**
+     * ID 2: Public Camping Fee (was ID 1)
      * TANAPA-managed public campsites with basic shared facilities.
      */
     private Tariff createPublicCampingFeeTariff() {
@@ -178,7 +201,7 @@ public class TariffInitializer implements ApplicationRunner {
     }
 
     /**
-     * ID 2: Special Camping Fee
+     * ID 3: Special Camping Fee (was ID 2)
      * Private wilderness camping with exclusivity and no shared facilities.
      */
     private Tariff createSpecialCampingFeeTariff() {
@@ -192,7 +215,7 @@ public class TariffInitializer implements ApplicationRunner {
     }
 
     /**
-     * ID 3: Seasonal Camping Fee
+     * ID 4: Seasonal Camping Fee (was ID 3)
      * Campsites operational only during specific seasons, often in migration areas.
      */
     private Tariff createSeasonalCampingFeeTariff() {
@@ -206,7 +229,7 @@ public class TariffInitializer implements ApplicationRunner {
     }
 
     /**
-     * ID 4: Fly Campsites Fee
+     * ID 5: Fly Campsites Fee (was ID 4)
      * Temporary mobile bush camps for walking safaris and authentic wilderness experiences.
      */
     private Tariff createFlyCampsitesFeeTariff() {
@@ -220,7 +243,7 @@ public class TariffInitializer implements ApplicationRunner {
     }
 
     /**
-     * ID 5: Upper Barafu Camping Fee
+     * ID 6: Upper Barafu Camping Fee (was ID 5)
      * High-altitude camping fee for Mount Kilimanjaro summit attempts.
      */
     private Tariff createUpperBarafuCampingFeeTariff() {
@@ -234,7 +257,7 @@ public class TariffInitializer implements ApplicationRunner {
     }
 
     /**
-     * ID 6: Premium Special Camping Fee
+     * ID 7: Premium Special Camping Fee (was ID 6)
      * Exclusive luxury wilderness camping in prime locations.
      */
     private Tariff createPremiumSpecialCampingFeeTariff() {
@@ -248,11 +271,11 @@ public class TariffInitializer implements ApplicationRunner {
     }
 
     // =====================================================================
-    // ACCOMMODATION & SERVICE FEES (IDs 7-9)
+    // ACCOMMODATION & SERVICE FEES (IDs 8-10)
     // =====================================================================
 
     /**
-     * ID 7: Parks Accommodations Fee
+     * ID 8: Parks Accommodations Fee (was ID 7)
      * Fee for TANAPA-owned accommodation facilities within parks.
      */
     private Tariff createParksAccommodationsFeeTariff() {
@@ -266,7 +289,7 @@ public class TariffInitializer implements ApplicationRunner {
     }
 
     /**
-     * ID 8: Rescue Fee
+     * ID 9: Rescue Fee (was ID 8)
      * Mandatory mountain safety fee covering emergency evacuation services.
      */
     private Tariff createRescueFeeTariff() {
@@ -280,13 +303,13 @@ public class TariffInitializer implements ApplicationRunner {
     }
 
     /**
-     * ID 9: Concession Fee
+     * ID 10: Concession Fee (was ID 9)
      * Overnight fee for guests staying at lodges and camps within park boundaries.
      */
     private Tariff createConcessionFeeTariff() {
         return Tariff.builder()
                 .name("Concession Fee")
-                .chargingBasis(ChargingBasis.PER_VEHICLE)
+                .chargingBasis(ChargingBasis.PER_PERSON)
                 .description("Charged to visitors staying overnight at lodges, tented camps, and hotels located within national park or conservation area boundaries. This fee is distinct from park entry/conservation fees and applies specifically to overnight accommodation guests. Concession fees are paid by lodges and camps to TANAPA or NCAA (Ngorongoro Conservation Area Authority) for the privilege of operating within protected areas, and this cost is passed on to guests. For Serengeti National Park, the concession fee is approximately USD 60-70 per adult per night during peak season, with reduced rates for children aged 5-15 and during low season (October-June). This fee is in addition to the daily park conservation fee, so guests staying inside parks pay both fees. Some lodges include concession fees in their quoted rates while others list them separately - always confirm what's included when booking. Since 2017, these fees are typically paid directly at park gates rather than through accommodation providers. Revenue supports infrastructure maintenance, anti-poaching operations, and community development programs. All rates subject to 18% VAT.")
                 .isActive(true)
                 .isSystem(true)
@@ -294,11 +317,11 @@ public class TariffInitializer implements ApplicationRunner {
     }
 
     // =====================================================================
-    // ACTIVITY FEES (IDs 10-11)
+    // ACTIVITY FEES (IDs 11-12)
     // =====================================================================
 
     /**
-     * ID 10: Hiking / Mountaineering Fee
+     * ID 11: Hiking / Mountaineering Fee (was ID 10)
      * Fee for guided hiking and climbing activities in protected areas.
      */
     private Tariff createHikingMountaineeringFeeTariff() {
@@ -312,7 +335,7 @@ public class TariffInitializer implements ApplicationRunner {
     }
 
     /**
-     * ID 11: WMA (Wildlife Management Area)
+     * ID 12: WMA (Wildlife Management Area) (was ID 11)
      * Community conservation area access and bed night levy fees.
      */
     private Tariff createWmaTariff() {

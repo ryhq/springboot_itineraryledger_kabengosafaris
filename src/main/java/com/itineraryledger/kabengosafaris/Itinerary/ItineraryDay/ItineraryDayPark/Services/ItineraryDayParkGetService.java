@@ -98,6 +98,68 @@ public class ItineraryDayParkGetService {
     }
 
     /**
+     * Get a single park visit by ID
+     *
+     * @param itineraryIdObfuscated The obfuscated itinerary ID
+     * @param dayIdObfuscated The obfuscated day ID
+     * @param parkVisitIdObfuscated The obfuscated park visit ID
+     * @return ResponseEntity with ApiResponse containing the park visit
+     */
+    public ResponseEntity<ApiResponse<?>> getItineraryDayPark(
+        String itineraryIdObfuscated,
+        String dayIdObfuscated,
+        String parkVisitIdObfuscated
+    ) {
+        log.info("Fetching park visit: {}", parkVisitIdObfuscated);
+
+        try {
+            // Decode IDs
+            Long itineraryId;
+            Long dayId;
+            Long parkVisitId;
+            try {
+                itineraryId = idObfuscator.decodeId(itineraryIdObfuscated);
+                dayId = idObfuscator.decodeId(dayIdObfuscated);
+                parkVisitId = idObfuscator.decodeId(parkVisitIdObfuscated);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid ID", "INVALID_ID")
+                );
+            }
+
+            // Find park visit
+            ItineraryDayPark parkVisit = itineraryDayParkRepository.findById(parkVisitId).orElse(null);
+            if (parkVisit == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Park visit not found", "PARK_VISIT_NOT_FOUND")
+                );
+            }
+
+            // Verify ownership chain
+            if (!parkVisit.getItineraryDay().getId().equals(dayId)) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Park visit does not belong to this day", "OWNERSHIP_MISMATCH")
+                );
+            }
+            if (!parkVisit.getItineraryDay().getItinerary().getId().equals(itineraryId)) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Day does not belong to this itinerary", "OWNERSHIP_MISMATCH")
+                );
+            }
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, "Park visit retrieved successfully", convertToDTO(parkVisit))
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching park visit", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to fetch park visit", "PARK_VISIT_FETCH_FAILED")
+            );
+        }
+    }
+
+    /**
      * Convert ItineraryDayPark entity to DTO
      */
     private ItineraryDayParkDTO convertToDTO(ItineraryDayPark dayPark) {

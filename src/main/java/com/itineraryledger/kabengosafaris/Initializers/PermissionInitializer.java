@@ -121,7 +121,36 @@ public class PermissionInitializer implements ApplicationRunner {
             "ITINERARY_PAX",
             "ITINERARY_DAY_ACTIVITY",
             "ITINERARY_DAY_PARK",
+            "ITINERARY_DAY_PARK_ACTIVITY",
+            "ITINERARY_DAY_PARK_TARIFF",
             "ITINERARY_DAY_ACCOMMODATION",
+            // Safari Module Entities
+            "SAFARI",
+            "SAFARI_PAX",
+            "SAFARI_DAY",
+            "SAFARI_DAY_ACTIVITY",
+            "SAFARI_DAY_PARK",
+            "SAFARI_DAY_ACCOMMODATION",
+            // PDF Module Entities
+            "PDF_DOCUMENT",
+            "PDF_TEMPLATE",
+            // Translation Module Entities
+            "TRANSLATION_SETTING",
+            "TRANSLATION_CACHE",
+            // Customer Module Entities
+            "CUSTOMER",
+            "CUSTOMER_EMAIL",
+            "CUSTOMER_PHONE",
+            "CUSTOMER_DOCUMENT",
+            "CUSTOMER_NOTE",
+            // Quotation Module Entities
+            "QUOTATION",
+            "QUOTATION_PAX",
+            "QUOTATION_LINE_ITEM",
+            // Image Settings Entity
+            "IMAGE_SETTING",
+            // File Settings Entity
+            "FILE_SETTING"
         };
 
         // Define standard actions (CREATE, READ, UPDATE, DELETE)
@@ -247,6 +276,282 @@ public class PermissionInitializer implements ApplicationRunner {
                 "CREATE",
                 "ITINERARY",
                 "Allows duplicating an existing itinerary as a new template"
+            },
+
+            // ========================
+            // SAFARI STATE TRANSITION PERMISSIONS
+            // ========================
+
+            // Booking State Transitions
+            {
+                "SUBMIT_SAFARI_FOR_APPROVAL",
+                "UPDATE",
+                "SAFARI",
+                "Allows submitting a draft safari for management approval (DRAFT -> PENDING_APPROVAL)"
+            },
+            {
+                "APPROVE_SAFARI",
+                "UPDATE",
+                "SAFARI",
+                "Allows approving a safari booking (PENDING_APPROVAL -> APPROVED)"
+            },
+            {
+                "REJECT_SAFARI",
+                "UPDATE",
+                "SAFARI",
+                "Allows rejecting a safari booking (PENDING_APPROVAL -> DRAFT)"
+            },
+            {
+                "CONFIRM_SAFARI",
+                "UPDATE",
+                "SAFARI",
+                "Allows confirming a safari with client and suppliers (APPROVED -> CONFIRMED)"
+            },
+
+            // Payment State Transitions
+            {
+                "REQUEST_SAFARI_DEPOSIT",
+                "UPDATE",
+                "SAFARI",
+                "Allows transitioning safari to pending deposit state (CONFIRMED -> PENDING_DEPOSIT)"
+            },
+            {
+                "RECORD_SAFARI_DEPOSIT",
+                "UPDATE",
+                "SAFARI",
+                "Allows recording deposit payment received (PENDING_DEPOSIT -> DEPOSIT_PAID)"
+            },
+            {
+                "RECORD_SAFARI_FULL_PAYMENT",
+                "UPDATE",
+                "SAFARI",
+                "Allows recording full payment received (DEPOSIT_PAID -> FULLY_PAID)"
+            },
+
+            // Operational State Transitions
+            {
+                "MARK_SAFARI_READY",
+                "UPDATE",
+                "SAFARI",
+                "Allows marking safari as ready to commence (FULLY_PAID -> READY)"
+            },
+            {
+                "START_SAFARI",
+                "UPDATE",
+                "SAFARI",
+                "Allows starting a safari (READY -> IN_PROGRESS)"
+            },
+            {
+                "COMPLETE_SAFARI",
+                "UPDATE",
+                "SAFARI",
+                "Allows marking safari as completed (IN_PROGRESS -> COMPLETED)"
+            },
+
+            // Post-Safari State Transitions
+            {
+                "REQUEST_SAFARI_REVIEW",
+                "UPDATE",
+                "SAFARI",
+                "Allows transitioning safari to pending review (COMPLETED -> PENDING_REVIEW)"
+            },
+            {
+                "CLOSE_SAFARI",
+                "UPDATE",
+                "SAFARI",
+                "Allows closing a safari after all post-trip tasks are done (PENDING_REVIEW/COMPLETED -> CLOSED)"
+            },
+
+            // Hold/Pause State Transitions
+            {
+                "HOLD_SAFARI",
+                "UPDATE",
+                "SAFARI",
+                "Allows putting a safari on hold (-> ON_HOLD)"
+            },
+            {
+                "RELEASE_SAFARI_HOLD",
+                "UPDATE",
+                "SAFARI",
+                "Allows releasing a safari from hold state (ON_HOLD -> previous active state)"
+            },
+            {
+                "MARK_SAFARI_PENDING_DOCUMENTS",
+                "UPDATE",
+                "SAFARI",
+                "Allows marking safari as awaiting documents (-> PENDING_DOCUMENTS)"
+            },
+            {
+                "MARK_SAFARI_DOCUMENTS_RECEIVED",
+                "UPDATE",
+                "SAFARI",
+                "Allows marking that required documents have been received (PENDING_DOCUMENTS -> previous state)"
+            },
+            {
+                "MARK_SAFARI_PENDING_AVAILABILITY",
+                "UPDATE",
+                "SAFARI",
+                "Allows marking safari as awaiting availability confirmation (-> PENDING_AVAILABILITY)"
+            },
+            {
+                "MARK_SAFARI_AVAILABILITY_CONFIRMED",
+                "UPDATE",
+                "SAFARI",
+                "Allows confirming availability (PENDING_AVAILABILITY -> previous state)"
+            },
+
+            // Reschedule State Transitions
+            {
+                "POSTPONE_SAFARI",
+                "UPDATE",
+                "SAFARI",
+                "Allows postponing a safari to a later date (-> POSTPONED)"
+            },
+            {
+                "INITIATE_SAFARI_RESCHEDULE",
+                "UPDATE",
+                "SAFARI",
+                "Allows initiating safari date change process (-> RESCHEDULING)"
+            },
+            {
+                "COMPLETE_SAFARI_RESCHEDULE",
+                "UPDATE",
+                "SAFARI",
+                "Allows completing safari reschedule with new dates (RESCHEDULING -> CONFIRMED)"
+            },
+
+            // Cancellation State Transitions
+            {
+                "REQUEST_SAFARI_CANCELLATION",
+                "CANCEL",
+                "SAFARI",
+                "Allows requesting safari cancellation (-> CANCELLATION_REQUESTED)"
+            },
+            {
+                "CANCEL_SAFARI",
+                "CANCEL",
+                "SAFARI",
+                "Allows cancelling a safari (-> CANCELLED)"
+            },
+            {
+                "CANCEL_SAFARI_BY_CLIENT",
+                "CANCEL",
+                "SAFARI",
+                "Allows recording client-initiated cancellation (-> CANCELLED_BY_CLIENT)"
+            },
+            {
+                "CANCEL_SAFARI_BY_OPERATOR",
+                "CANCEL",
+                "SAFARI",
+                "Allows operator-initiated cancellation (-> CANCELLED_BY_OPERATOR)"
+            },
+            {
+                "CANCEL_SAFARI_FORCE_MAJEURE",
+                "CANCEL",
+                "SAFARI",
+                "Allows force majeure cancellation (-> CANCELLED_FORCE_MAJEURE)"
+            },
+
+            // Refund State Transitions
+            {
+                "INITIATE_SAFARI_REFUND",
+                "UPDATE",
+                "SAFARI",
+                "Allows initiating refund process (CANCELLED_* -> REFUND_PENDING)"
+            },
+            {
+                "RECORD_SAFARI_PARTIAL_REFUND",
+                "UPDATE",
+                "SAFARI",
+                "Allows recording partial refund issued (REFUND_PENDING -> REFUND_PARTIAL)"
+            },
+            {
+                "RECORD_SAFARI_FULL_REFUND",
+                "UPDATE",
+                "SAFARI",
+                "Allows recording full refund issued (REFUND_PENDING/REFUND_PARTIAL -> REFUND_COMPLETE)"
+            },
+
+            // Dispute State Transitions
+            {
+                "MARK_SAFARI_DISPUTED",
+                "UPDATE",
+                "SAFARI",
+                "Allows marking a safari as disputed by client (-> DISPUTED)"
+            },
+            {
+                "INVESTIGATE_SAFARI_DISPUTE",
+                "UPDATE",
+                "SAFARI",
+                "Allows marking dispute as under investigation (DISPUTED -> UNDER_INVESTIGATION)"
+            },
+            {
+                "RESOLVE_SAFARI_DISPUTE",
+                "UPDATE",
+                "SAFARI",
+                "Allows resolving a safari dispute (UNDER_INVESTIGATION/DISPUTED -> appropriate resolution state)"
+            },
+
+            // Full Safari View Permission
+            {
+                "READ_FULL_SAFARI",
+                "READ",
+                "SAFARI",
+                "Allows viewing complete safari with all nested data (days, parks, accommodations, pax)"
+            },
+
+            // ========================
+            // PDF GENERATION PERMISSIONS
+            // ========================
+            {
+                "GENERATE_PDF",
+                "CREATE",
+                "PDF_TEMPLATE",
+                "Allows generating PDF documents from templates"
+            },
+
+            // ========================
+            // TRANSLATION PERMISSIONS
+            // ========================
+            {
+                "READ_TRANSLATION_CACHE_STATS",
+                "READ",
+                "TRANSLATION_SETTING",
+                "Allows viewing translation cache statistics"
+            },
+            {
+                "CLEAR_TRANSLATION_CACHE",
+                "DELETE",
+                "TRANSLATION_SETTING",
+                "Allows clearing translation cache entries"
+            },
+            {
+                "TEST_TRANSLATION_SERVICE",
+                "EXECUTE",
+                "TRANSLATION_SETTING",
+                "Allows testing the translation service connection"
+            },
+
+            // ========================
+            // QUOTATION PERMISSIONS
+            // ========================
+            {
+                "SEND_QUOTATION",
+                "UPDATE",
+                "QUOTATION",
+                "Allows sending a quotation to the customer (DRAFT -> SENT)"
+            },
+            {
+                "CONVERT_QUOTATION_TO_SAFARI",
+                "CREATE",
+                "SAFARI",
+                "Allows converting an accepted quotation into a Safari booking"
+            },
+            {
+                "READ_FULL_QUOTATION",
+                "READ",
+                "QUOTATION",
+                "Allows viewing complete quotation with all nested data (pax list, line items)"
             },
         };
 

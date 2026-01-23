@@ -225,6 +225,9 @@ public class AccommodationRateUpsertService {
                         if (request.getIsActive() != null) {
                             rate.setIsActive(request.getIsActive());
                         }
+                        if (request.getIsPerPerson() != null) {
+                            rate.setIsPerPerson(request.getIsPerPerson());
+                        }
                         rateRepository.save(rate);
                         response.setUpdated(response.getUpdated() + 1);
                     }
@@ -241,6 +244,7 @@ public class AccommodationRateUpsertService {
                         .currency(request.getCurrency().toUpperCase().trim())
                         .notes(request.getNotes())
                         .isActive(request.getIsActive() != null ? request.getIsActive() : true)
+                        .isPerPerson(request.getIsPerPerson() != null ? request.getIsPerPerson() : true)
                         .build();
                     rateRepository.save(rate);
                     response.setCreated(response.getCreated() + 1);

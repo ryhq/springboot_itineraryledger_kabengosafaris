@@ -70,6 +70,11 @@
 			<groupId>org.thymeleaf.extras</groupId>
 			<artifactId>thymeleaf-extras-springsecurity6</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.thymeleaf.extras</groupId>
+			<artifactId>thymeleaf-extras-java8time</artifactId>
+			<version>3.0.4.RELEASE</version>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -186,6 +191,29 @@
 			<artifactId>gson</artifactId>
 			<version>2.13.2</version>
 		</dependency>
+
+		<!-- PDF Generation: OpenHTMLToPDF (HTML to PDF with modern CSS support) -->
+		<!-- Core PDF rendering -->
+		<dependency>
+			<groupId>com.openhtmltopdf</groupId>
+			<artifactId>openhtmltopdf-pdfbox</artifactId>
+			<version>1.0.10</version>
+		</dependency>
+
+		<!-- SVG support for OpenHTMLToPDF -->
+		<dependency>
+			<groupId>com.openhtmltopdf</groupId>
+			<artifactId>openhtmltopdf-svg-support</artifactId>
+			<version>1.0.10</version>
+		</dependency>
+
+		<!-- MathML support (optional, useful for scientific documents) -->
+		<dependency>
+			<groupId>com.openhtmltopdf</groupId>
+			<artifactId>openhtmltopdf-mathml-support</artifactId>
+			<version>1.0.10</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>

@@ -31,8 +31,8 @@ import lombok.extern.slf4j.Slf4j;
  * - Activity must exist
  * - Activity must be active (isActive = true)
  * - Activity must NOT be linked to any park (not in parks_activities table)
- * - Activity must not already exist for this day
  *
+ * Note: The same activity can be added multiple times per day (e.g., morning and evening game drives).
  * For park-specific activities, use ItineraryDayParkActivity instead.
  */
 @Service
@@ -140,13 +140,6 @@ public class ItineraryDayActivityCreateService {
                         "Activity '" + baseActivity.getName() + "' is a park activity. Use park activities endpoint instead.",
                         "ACTIVITY_IS_PARK_LINKED"
                     )
-                );
-            }
-
-            // Check if activity already exists for this day
-            if (activityRepository.existsByItineraryDayIdAndActivityId(dayId, baseActivityId)) {
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Activity already exists for this day", "ACTIVITY_ALREADY_EXISTS")
                 );
             }
 
