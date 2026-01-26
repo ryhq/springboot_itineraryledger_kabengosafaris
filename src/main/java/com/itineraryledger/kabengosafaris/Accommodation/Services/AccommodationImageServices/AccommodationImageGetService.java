@@ -54,6 +54,7 @@ public class AccommodationImageGetService {
             .accommodationId(idObfuscator.encodeId(image.getAccommodation().getId()))
             .accommodationName(image.getAccommodation().getName())
             .imageUrl(storageService.constructImageUrl(obfuscatedId))
+            .fileImageUrl(storageService.constructFileImageUrl(image.getFileName()))
             .fileName(image.getFileName())
             .originalFileName(image.getOriginalFileName())
             .imageType(image.getImageType())
@@ -94,6 +95,7 @@ public class AccommodationImageGetService {
             ImageType imageType,
             Boolean isPrimary,
             Boolean isActive,
+            Integer displayOrder,
             int page,
             int size,
             String sortDirection
@@ -133,6 +135,9 @@ public class AccommodationImageGetService {
         }
         if (isActive != null) {
             spec = spec.and(AccommodationImageSpecification.byIsActive(isActive));
+        }
+        if (displayOrder != null) {
+            spec = spec.and(AccommodationImageSpecification.byDisplayOrder(displayOrder));
         }
 
         // Sort direction - default DESC for createdAt

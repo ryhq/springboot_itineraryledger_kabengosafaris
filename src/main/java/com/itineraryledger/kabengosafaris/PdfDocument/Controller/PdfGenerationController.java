@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.PdfDocument.Controller;
 
+import com.itineraryledger.kabengosafaris.Itinerary.Entity.ItineraryDocument;
 import com.itineraryledger.kabengosafaris.PdfDocument.DTOs.GeneratePdfRequestDTO;
 import com.itineraryledger.kabengosafaris.PdfDocument.DTOs.ValidateTemplateRequestDTO;
 import com.itineraryledger.kabengosafaris.PdfDocument.Services.PdfGenerationService;
@@ -32,13 +33,29 @@ public class PdfGenerationController {
     /**
      * Generate PDF using default template for document type
      * Supports optional language parameter for translation
+     * Supports optional saveToDocuments to save the PDF as an ItineraryDocument
      */
     @PostMapping("/generate")
     @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
     public ResponseEntity<?> generatePdf(@Valid @RequestBody GeneratePdfRequestDTO request) {
-        log.info("POST /api/pdf/generate - Generating PDF for {} / {}{}",
+        log.info("POST /api/pdf/generate - Generating PDF for {} / {}{}{}",
             request.getDocumentType(), request.getDataId(),
-            request.getLanguage() != null ? ", language: " + request.getLanguage() : "");
+            request.getLanguage() != null ? ", language: " + request.getLanguage() : "",
+            Boolean.TRUE.equals(request.getSaveToDocuments()) ? ", saving to documents" : "");
+
+        // If saveToDocuments is true and this is an itinerary-related PDF, use the save method
+        if (Boolean.TRUE.equals(request.getSaveToDocuments()) && "FULL_ITINERARY".equals(request.getDocumentType())) {
+            return generationService.generateAndSaveItineraryPdf(
+                request.getDataId(),
+                request.getTemplateId(),
+                request.getLanguage(),
+                request.getItineraryDocumentType(),
+                request.getDocumentTitle(),
+                request.getDocumentVersion(),
+                request.getDocumentNotes()
+            );
+        }
+
         return generationService.generatePdf(
             request.getDocumentType(),
             request.getDataId(),
@@ -49,51 +66,88 @@ public class PdfGenerationController {
 
     /**
      * Preview PDF (returns rendered HTML)
+     * Supports optional language parameter for translation preview
      */
     @PostMapping("/preview")
     @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
     public ResponseEntity<ApiResponse<?>> previewPdf(@Valid @RequestBody GeneratePdfRequestDTO request) {
-        log.info("POST /api/pdf/preview - Preview for {} / {}",
-            request.getDocumentType(), request.getDataId());
+        log.info("POST /api/pdf/preview - Preview for {} / {}{}",
+            request.getDocumentType(), request.getDataId(),
+            request.getLanguage() != null ? ", language: " + request.getLanguage() : "");
         return generationService.previewPdf(
             request.getDocumentType(),
             request.getDataId(),
-            request.getTemplateId()
+            request.getTemplateId(),
+            request.getLanguage()
         );
     }
 
     /**
      * Generate itinerary PDF (convenience endpoint)
      * Supports optional language parameter for translation
+     * Supports optional saveToDocuments to save the PDF as an ItineraryDocument
      *
      * @param itineraryId The obfuscated itinerary ID
      * @param templateId Optional template ID to use
      * @param language Optional target language code (e.g., "fr", "de", "es")
      *                 If not provided or "en", PDF is generated in English
+     * @param saveToDocuments If true, save the PDF as an ItineraryDocument
+     * @param documentType The ItineraryDocument type (e.g., QUOTATION, FINAL_ITINERARY)
+     * @param documentTitle Optional title for the saved document
+     * @param documentVersion Optional version string
+     * @param documentNotes Optional notes
      */
     @GetMapping("/itinerary/{itineraryId}")
     @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
     public ResponseEntity<?> generateItineraryPdf(
         @PathVariable String itineraryId,
         @RequestParam(required = false) String templateId,
-        @RequestParam(required = false) String language
+        @RequestParam(required = false) String language,
+        @RequestParam(required = false, defaultValue = "false") Boolean saveToDocuments,
+        @RequestParam(required = false) ItineraryDocument.DocumentType documentType,
+        @RequestParam(required = false) String documentTitle,
+        @RequestParam(required = false) String documentVersion,
+        @RequestParam(required = false) String documentNotes
     ) {
-        log.info("GET /api/pdf/itinerary/{} - Generating itinerary PDF{}",
-            itineraryId, language != null ? ", language: " + language : "");
+        log.info("GET /api/pdf/itinerary/{} - Generating itinerary PDF{}{}",
+            itineraryId,
+            language != null ? ", language: " + language : "",
+            Boolean.TRUE.equals(saveToDocuments) ? ", saving to documents" : "");
+
+        if (Boolean.TRUE.equals(saveToDocuments)) {
+            return generationService.generateAndSaveItineraryPdf(
+                itineraryId,
+                templateId,
+                language,
+                documentType,
+                documentTitle,
+                documentVersion,
+                documentNotes
+            );
+        }
+
         return generationService.generateItineraryPdf(itineraryId, templateId, language);
     }
 
     /**
      * Preview itinerary PDF (convenience endpoint)
+     * Supports optional language parameter for translation preview
+     *
+     * @param itineraryId The obfuscated itinerary ID
+     * @param templateId Optional template ID to use
+     * @param language Optional target language code (e.g., "fr", "de", "es")
+     *                 If not provided or "en", preview is in English
      */
     @GetMapping("/itinerary/{itineraryId}/preview")
     @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
     public ResponseEntity<ApiResponse<?>> previewItineraryPdf(
         @PathVariable String itineraryId,
-        @RequestParam(required = false) String templateId
+        @RequestParam(required = false) String templateId,
+        @RequestParam(required = false) String language
     ) {
-        log.info("GET /api/pdf/itinerary/{}/preview - Preview itinerary", itineraryId);
-        return generationService.previewPdf("FULL_ITINERARY", itineraryId, templateId);
+        log.info("GET /api/pdf/itinerary/{}/preview - Preview itinerary{}",
+            itineraryId, language != null ? ", language: " + language : "");
+        return generationService.previewPdf("FULL_ITINERARY", itineraryId, templateId, language);
     }
 
     /**

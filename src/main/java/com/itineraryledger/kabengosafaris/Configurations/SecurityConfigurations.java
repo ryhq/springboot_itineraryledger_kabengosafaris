@@ -91,6 +91,15 @@ public class SecurityConfigurations {
         .authorizeHttpRequests(authorizeHttpRequest -> authorizeHttpRequest
                 .requestMatchers("/api/auth/**").permitAll() // Allow unauthenticated access to auth endpoints
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Allow unauthenticated access to Swagger documentation
+                .requestMatchers("/api/accommodation-images/*/file", "/api/accommodation-images/file/*").permitAll() // Allow public access to accommodation image files
+                .requestMatchers("/api/accommodation-documents/*/file", "/api/accommodation-documents/file/*").permitAll() // Allow public access to accommodation document files
+                .requestMatchers("/api/park-images/*/file", "/api/park-images/file/*").permitAll() // Allow public access to park image files
+                .requestMatchers("/api/park-documents/*/file", "/api/park-documents/file/*").permitAll() // Allow public access to park document files
+                .requestMatchers("/api/activity-images/*/file", "/api/activity-images/file/*").permitAll() // Allow public access to activity image files
+                .requestMatchers("/api/activity-documents/*/file", "/api/activity-documents/file/*").permitAll() // Allow public access to activity document files
+                .requestMatchers("/api/park-activity-images/*/file", "/api/park-activity-images/file/*").permitAll() // Allow public access to park activity image files
+                .requestMatchers("/api/park-activity-documents/*/file", "/api/park-activity-documents/file/*").permitAll() // Allow public access to park activity document files
+                .requestMatchers("/api/itinerary-documents/*/file", "/api/itinerary-documents/file/*").permitAll() // Allow public access to itinerary document files
                 .anyRequest().authenticated() // Require authentication for any other request
         )
         // Enable HTTP Basic authentication for Rest API clients

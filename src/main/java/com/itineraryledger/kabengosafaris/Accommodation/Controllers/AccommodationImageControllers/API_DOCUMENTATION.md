@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Accommodation Image API provides endpoints for managing images associated with accommodations. Images are stored on the filesystem with generated filenames, while only the filename is stored in the database. The full URL is constructed dynamically using the configured base URL.
+The Accommodation Image API provides endpoints for managing images associated with accommodations. Images are stored on the filesystem with SHA-256 hashed filenames, while only the filename is stored in the database. The full URL is constructed dynamically using the configured base URL.
 
 **Base URL:** `/api/accommodation-images`
 
@@ -23,6 +23,7 @@ Authorization: Bearer <jwt_token>
 | GET (file serving) | None (public access) |
 | POST (upload) | `PERM_CREATE_ACCOMMODATION_IMAGE` |
 | PUT (update) | `PERM_UPDATE_ACCOMMODATION_IMAGE` |
+| POST (reorder) | `PERM_UPDATE_ACCOMMODATION_IMAGE` |
 | DELETE | `PERM_DELETE_ACCOMMODATION_IMAGE` |
 
 ---
@@ -32,8 +33,8 @@ Authorization: Bearer <jwt_token>
 - **Storage Path:** Configured via `accommodation.image.storage.path` in application.properties
 - **URL Construction:** `app.base.url` + `/api/accommodation-images/{obfuscatedId}/file`
 - **Alternative URL:** `app.base.url` + `/api/accommodation-images/file/{fileName}`
-- **Filename Format:** UUID-based (e.g., `a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6.jpg`)
-- **Validation:** Uses `ImageSettingGetterServices` for file size and format validation
+- **Filename Format:** SHA-256 hash + timestamp (e.g., `f2e5a046548d723b59874286c9d528188b50881b215a49341b03998d7f2d00eb_1701304567890.jpg`)
+- **Validation:** Uses `FileSettingGetterServices` for file size and `ImageSettingGetterServices` for format validation
 
 ---
 
@@ -55,11 +56,10 @@ Get all images with optional filters, pagination, and sorting. Always sorted by 
 | `accommodationName` | String | No | - | Filter by accommodation name (contains) |
 | `accommodationType` | Enum | No | - | Filter by accommodation type (HOTEL, LODGE, etc.) |
 | `accommodationCategory` | Enum | No | - | Filter by category (LUXURY, MID_RANGE, BUDGET, etc.) |
-| `region` | String | No | - | Filter by accommodation region (contains) |
-| `district` | String | No | - | Filter by accommodation district (contains) |
 | `imageType` | Enum | No | - | Filter by image type (EXTERIOR, ROOM, etc.) |
 | `isPrimary` | Boolean | No | - | Filter by primary status |
 | `isActive` | Boolean | No | - | Filter by active status |
+| `displayOrder` | Integer | No | - | Filter by display order (exact match) |
 | `page` | Integer | No | 0 | Page number (0-indexed) |
 | `size` | Integer | No | 20 | Page size |
 | `sortDirection` | String | No | desc | Sort direction (asc/desc) |
@@ -85,7 +85,7 @@ curl -X GET "http://localhost:4450/api/accommodation-images?accommodationName=Se
         "accommodationId": "obfuscated_accommodation_id",
         "accommodationName": "Serengeti Safari Lodge",
         "imageUrl": "http://localhost:4450/api/accommodation-images/obfuscated_id/file",
-        "fileName": "a1b2c3d4e5f6.jpg",
+        "fileName": "f2e5a046548d723b_1701304567890.jpg",
         "imageType": "EXTERIOR",
         "isPrimary": true,
         "isActive": true,
@@ -125,7 +125,7 @@ Get a specific image by its obfuscated ID.
     "accommodationId": "obfuscated_accommodation_id",
     "accommodationName": "Serengeti Safari Lodge",
     "imageUrl": "http://localhost:4450/api/accommodation-images/obfuscated_id/file",
-    "fileName": "a1b2c3d4e5f6.jpg",
+    "fileName": "f2e5a046548d723b_1701304567890.jpg",
     "originalFileName": "front_view.jpg",
     "imageType": "EXTERIOR",
     "imageTypeDisplayName": "Exterior",
@@ -154,7 +154,7 @@ Serve the actual image file by its stored filename.
 
 **Permission:** None (public access for image display)
 
-**Example:** `GET /api/accommodation-images/file/a1b2c3d4e5f6.jpg`
+**Example:** `GET /api/accommodation-images/file/f2e5a046548d723b_1701304567890.jpg`
 
 **Response:** Binary image data with appropriate Content-Type header
 
@@ -165,7 +165,7 @@ Serve the actual image file by its stored filename.
 
 **Usage:**
 ```html
-<img src="http://localhost:4450/api/accommodation-images/file/a1b2c3d4e5f6.jpg" alt="Accommodation Image" />
+<img src="http://localhost:4450/api/accommodation-images/file/f2e5a046548d723b_1701304567890.jpg" alt="Accommodation Image" />
 ```
 
 **Error Responses:**
@@ -201,30 +201,39 @@ Serve the actual image file by its obfuscated ID.
 
 ### 5. Upload Multiple Images
 
-Upload multiple images for an accommodation in a single request.
+Upload multiple images for accommodations in a single request.
 
-**Endpoint:** `POST /api/accommodation-images/accommodation/{accommodationId}/upload`
+**Endpoint:** `POST /api/accommodation-images/upload`
 
 **Content-Type:** `multipart/form-data`
 
 **Permission:** `PERM_CREATE_ACCOMMODATION_IMAGE`
 
-#### Parameters
+#### Request Body (UploadAccommodationImagesDTO)
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `files` | File[] | Yes | List of image files to upload |
-| `imageType` | Enum | No | Common image type for all uploads (defaults to `OTHER`) |
+The request uses a wrapper DTO with an `images` array. Each item in the `images` array should contain:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `accommodationId` | String | Yes | Obfuscated accommodation ID |
+| `image` | File | Yes | The image file to upload |
+| `imageType` | Enum | No | Image type (defaults to `OTHER`) |
+| `altText` | String | No | Alt text for accessibility |
+| `caption` | String | No | Image caption |
+| `description` | String | No | Detailed description |
 
 #### Example Request (cURL)
 
 ```bash
-curl -X POST "http://localhost:4450/api/accommodation-images/accommodation/{accommodationId}/upload" \
+curl -X POST "http://localhost:4450/api/accommodation-images/upload" \
   -H "Authorization: Bearer <jwt_token>" \
-  -F "files=@/path/to/image1.jpg" \
-  -F "files=@/path/to/image2.jpg" \
-  -F "files=@/path/to/image3.jpg" \
-  -F "imageType=EXTERIOR"
+  -F "images[0].accommodationId=abc123" \
+  -F "images[0].image=@/path/to/image1.jpg" \
+  -F "images[0].imageType=EXTERIOR" \
+  -F "images[0].altText=Front view" \
+  -F "images[1].accommodationId=abc123" \
+  -F "images[1].image=@/path/to/image2.jpg" \
+  -F "images[1].imageType=ROOM"
 ```
 
 #### Response
@@ -233,27 +242,31 @@ curl -X POST "http://localhost:4450/api/accommodation-images/accommodation/{acco
 {
   "success": true,
   "status": 201,
-  "message": "3 image(s) uploaded successfully.",
+  "message": "2 image(s) uploaded successfully",
   "data": [
     {
       "id": "obfuscated_id_1",
-      "accommodationId": "obfuscated_accommodation_id",
+      "accommodationId": "abc123",
       "accommodationName": "Serengeti Safari Lodge",
       "imageUrl": "http://localhost:4450/api/accommodation-images/obfuscated_id_1/file",
-      "fileName": "a1b2c3d4e5f6.jpg",
+      "fileName": "f2e5a046548d723b_1701304567890.jpg",
       "originalFileName": "image1.jpg",
       "imageType": "EXTERIOR",
+      "altText": "Front view",
       "isPrimary": false,
       "isActive": true,
       "displayOrder": 1
     },
     {
       "id": "obfuscated_id_2",
+      "accommodationId": "abc123",
+      "accommodationName": "Serengeti Safari Lodge",
       "imageUrl": "http://localhost:4450/api/accommodation-images/obfuscated_id_2/file",
-      "fileName": "g7h8i9j0k1l2.jpg",
+      "fileName": "a1b2c3d4e5f6g7h8_1701304567891.jpg",
       "originalFileName": "image2.jpg",
-      "imageType": "EXTERIOR",
+      "imageType": "ROOM",
       "isPrimary": false,
+      "isActive": true,
       "displayOrder": 2
     }
   ]
@@ -266,12 +279,8 @@ curl -X POST "http://localhost:4450/api/accommodation-images/accommodation/{acco
 {
   "success": false,
   "status": 400,
-  "message": "Validation failed for one or more files.",
-  "errorCode": "VALIDATION_ERROR",
-  "data": [
-    "File 1 (invalid.exe): File extension not allowed",
-    "File 3 (large.jpg): File size exceeds maximum allowed (5 MB)"
-  ]
+  "message": "Validation failed: Image 1: Accommodation ID is required; Image 2 (large.jpg): File size (15.0 MB) exceeds maximum allowed size (10MB)",
+  "errorCode": "VALIDATION_ERROR"
 }
 ```
 
@@ -279,7 +288,7 @@ curl -X POST "http://localhost:4450/api/accommodation-images/accommodation/{acco
 
 ### 6. Update Image Metadata
 
-Update image metadata (not the image file itself).
+Update image metadata (not the image file itself). To replace the actual image file, delete the old image and upload a new one.
 
 **Endpoint:** `PUT /api/accommodation-images/{id}`
 
@@ -294,14 +303,15 @@ Update image metadata (not the image file itself).
   "caption": "Updated caption",
   "description": "Updated description",
   "isPrimary": true,
-  "isActive": true,
-  "displayOrder": 5
+  "isActive": true
 }
 ```
 
 All fields are optional. Only provided fields will be updated.
 
-**Note:** Setting `isPrimary` to `true` will automatically unset the primary flag on other images for the same accommodation.
+**Note:**
+- Setting `isPrimary` to `true` will automatically unset the primary flag on other images for the same accommodation.
+- `displayOrder` is managed via the reorder endpoint and cannot be updated directly.
 
 #### Response
 
@@ -309,19 +319,115 @@ All fields are optional. Only provided fields will be updated.
 {
   "success": true,
   "status": 200,
-  "message": "Accommodation image updated successfully.",
+  "message": "Accommodation image updated successfully",
   "data": {
     "id": "obfuscated_id",
     "imageType": "ROOM",
     "isPrimary": true,
-    "displayOrder": 5
+    "isActive": true
   }
 }
 ```
 
 ---
 
-### 7. Bulk Delete Images
+### 7. Reorder Images
+
+Reorder images within an accommodation using drag-and-drop.
+
+**Endpoint:** `POST /api/accommodation-images/reorder`
+
+**Permission:** `PERM_UPDATE_ACCOMMODATION_IMAGE`
+
+#### Request Body
+
+```json
+{
+  "accommodationId": "obfuscated_accommodation_id",
+  "imageOrder": [
+    { "imageId": "obfuscated_image_id_3", "expectedDisplayOrder": 1 },
+    { "imageId": "obfuscated_image_id_1", "expectedDisplayOrder": 2 },
+    { "imageId": "obfuscated_image_id_2", "expectedDisplayOrder": 3 }
+  ]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `accommodationId` | String | Yes | Obfuscated accommodation ID |
+| `imageOrder` | Array | Yes | List of image order items |
+| `imageOrder[].imageId` | String | Yes | Obfuscated image ID |
+| `imageOrder[].expectedDisplayOrder` | Integer | No | Expected position (for validation) |
+
+**Important Notes:**
+- The `imageOrder` list must contain ALL image IDs for the accommodation
+- The position in the list determines the new `displayOrder` (1-indexed)
+- First item becomes `displayOrder` 1, second becomes 2, etc.
+- `expectedDisplayOrder` is optional and used for validation only
+
+#### Example Request
+
+```bash
+curl -X POST "http://localhost:4450/api/accommodation-images/reorder" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "accommodationId": "abc123",
+    "imageOrder": [
+      { "imageId": "img3" },
+      { "imageId": "img1" },
+      { "imageId": "img2" }
+    ]
+  }'
+```
+
+#### Response
+
+```json
+{
+  "success": true,
+  "status": 200,
+  "message": "Images reordered successfully",
+  "data": [
+    {
+      "id": "img3",
+      "displayOrder": 1
+    },
+    {
+      "id": "img1",
+      "displayOrder": 2
+    },
+    {
+      "id": "img2",
+      "displayOrder": 3
+    }
+  ]
+}
+```
+
+#### Error Responses
+
+```json
+{
+  "success": false,
+  "status": 400,
+  "message": "Image order list must contain exactly 5 images. Received: 3",
+  "errorCode": "IMAGE_COUNT_MISMATCH"
+}
+```
+
+```json
+{
+  "success": false,
+  "status": 400,
+  "message": "Missing image ID(s) in reorder list: img4, img5",
+  "errorCode": "MISSING_IMAGE_IDS"
+}
+```
+
+---
+
+### 8. Bulk Delete Images
 
 Permanently delete multiple images by their IDs. Removes from both database and filesystem.
 
@@ -348,26 +454,8 @@ curl -X DELETE "http://localhost:4450/api/accommodation-images?ids=obfuscated_id
 {
   "success": true,
   "status": 200,
-  "message": "3 image(s) deleted successfully.",
-  "data": {
-    "deletedCount": 3,
-    "requestedCount": 3
-  }
-}
-```
-
-#### Partial Success Response
-
-```json
-{
-  "success": true,
-  "status": 200,
-  "message": "2 image(s) deleted, 1 failed.",
-  "data": {
-    "deletedCount": 2,
-    "requestedCount": 3,
-    "failedIds": ["obfuscated_id_3"]
-  }
+  "message": "3 accommodation image(s) deleted successfully",
+  "data": null
 }
 ```
 
@@ -407,8 +495,9 @@ curl -X DELETE "http://localhost:4450/api/accommodation-images?ids=obfuscated_id
 | `id` | String | Obfuscated image ID |
 | `accommodationId` | String | Obfuscated accommodation ID |
 | `accommodationName` | String | Name of the accommodation |
-| `imageUrl` | String | Full URL to the image |
-| `fileName` | String | Stored filename |
+| `imageUrl` | String | Full URL to the image using ID (`/api/accommodation-images/{id}/file`) |
+| `fileImageUrl` | String | Full URL to the image using filename (`/api/accommodation-images/file/{fileName}`) |
+| `fileName` | String | Stored filename (SHA-256 hash format) |
 | `originalFileName` | String | Original uploaded filename |
 | `imageType` | Enum | Image type |
 | `imageTypeDisplayName` | String | Human-readable type name |
@@ -427,6 +516,48 @@ curl -X DELETE "http://localhost:4450/api/accommodation-images?ids=obfuscated_id
 | `createdAt` | DateTime | Creation timestamp |
 | `updatedAt` | DateTime | Last update timestamp |
 
+### UploadAccommodationImagesDTO (Wrapper)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `images` | Array | Yes | List of CreateAccommodationImageDTO |
+
+### CreateAccommodationImageDTO
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `accommodationId` | String | Yes | Obfuscated accommodation ID |
+| `image` | MultipartFile | Yes | The image file |
+| `imageType` | Enum | No | Image type (defaults to OTHER) |
+| `altText` | String | No | Alt text for accessibility |
+| `caption` | String | No | Image caption |
+| `description` | String | No | Detailed description |
+
+### UpdateAccommodationImageDTO
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `imageType` | Enum | No | Image type |
+| `altText` | String | No | Alt text for accessibility |
+| `caption` | String | No | Image caption |
+| `description` | String | No | Detailed description |
+| `isPrimary` | Boolean | No | Is this the primary image |
+| `isActive` | Boolean | No | Is the image active |
+
+### ReorderAccommodationImagesDTO
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `accommodationId` | String | Yes | Obfuscated accommodation ID |
+| `imageOrder` | Array | Yes | List of ImageOrderItem |
+
+### ImageOrderItem
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `imageId` | String | Yes | Obfuscated image ID |
+| `expectedDisplayOrder` | Integer | No | Expected position (for validation) |
+
 ---
 
 ## Configuration
@@ -442,14 +573,19 @@ app.base.url=http://localhost:4450
 
 # Image URL is constructed as: app.base.url + /api/accommodation-images/{imageId}/file
 # Alternative: app.base.url + /api/accommodation-images/file/{fileName}
+
+# File upload size limits (Spring Multipart)
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=50MB
 ```
 
 ### Image Validation
 
-Image uploads are validated using `ImageSettingGetterServices`:
+Image uploads are validated using:
 
-- **Max file size:** Configured via `image.upload.max.file.size`
-- **Allowed formats:** Configured via `image.upload.allowed.formats`
+- **Max file size:** `spring.servlet.multipart.max-file-size` (default: 10MB)
+- **Max request size:** `spring.servlet.multipart.max-request-size` (default: 50MB)
+- **Allowed formats:** Configured via `ImageSettingGetterServices`
 - **Upload enabled:** Configured via `image.upload.enabled`
 
 ---
@@ -458,22 +594,38 @@ Image uploads are validated using `ImageSettingGetterServices`:
 
 | HTTP Status | Error Code | Description |
 |-------------|------------|-------------|
+| 400 | `NO_IMAGES_PROVIDED` | No images in upload request |
+| 400 | `REQUEST_SIZE_EXCEEDED` | Total request size exceeds limit |
 | 400 | `VALIDATION_ERROR` | Invalid request data or failed validation |
+| 400 | `INVALID_ACCOMMODATION_ID` | Invalid accommodation ID format |
+| 400 | `INVALID_IMAGE_ID` | Invalid image ID format |
+| 400 | `INVALID_IMAGE_ID_FORMAT` | Invalid image ID format in reorder |
+| 400 | `DUPLICATE_IMAGE_IDS` | Duplicate image IDs in reorder list |
+| 400 | `IMAGE_COUNT_MISMATCH` | Reorder list count doesn't match |
+| 400 | `IMAGE_ACCOMMODATION_MISMATCH` | Image doesn't belong to accommodation |
+| 400 | `MISSING_IMAGE_IDS` | Missing image IDs in reorder list |
+| 400 | `EXPECTED_ORDER_MISMATCH` | Expected display order doesn't match position |
+| 400 | `NO_IDS_PROVIDED` | No image IDs provided for delete |
+| 400 | `NO_IMAGES_TO_REORDER` | Accommodation has no images |
 | 401 | `UNAUTHORIZED` | Missing or invalid JWT token |
 | 403 | `FORBIDDEN` | Insufficient permissions |
-| 404 | `NOT_FOUND` | Image or accommodation not found |
+| 404 | `ACCOMMODATION_NOT_FOUND` | Accommodation not found |
+| 404 | `IMAGE_NOT_FOUND` | Image not found |
 | 500 | `STORAGE_ERROR` | Failed to save image file |
 | 500 | `DATABASE_ERROR` | Failed to save image record |
-| 500 | `DELETE_ERROR` | Failed to delete images |
+| 500 | `IMAGE_UPDATE_FAILED` | Failed to update image |
+| 500 | `ACCOMMODATION_IMAGES_REORDER_FAILED` | Failed to reorder images |
+| 500 | `ACCOMMODATION_IMAGE_DELETE_FAILED` | Failed to delete images |
 
 ---
 
 ## Audit Logging
 
-All create, update, and delete operations are logged:
+All create, update, reorder, and delete operations are logged:
 
 | Action | Description |
 |--------|-------------|
 | `CREATE_ACCOMMODATION_IMAGES` | Images uploaded |
 | `UPDATE_ACCOMMODATION_IMAGE` | Image metadata updated |
-| `BULK_DELETE_ACCOMMODATION_IMAGES` | Images permanently deleted |
+| `REORDER_ACCOMMODATION_IMAGES` | Images reordered |
+| `DELETE_ACCOMMODATION_IMAGE` | Image permanently deleted |

@@ -42,6 +42,12 @@ public class AccommodationImageSpecification {
             : cb.equal(root.get("isActive"), isActive);
     }
 
+    public static Specification<AccommodationImage> byDisplayOrder(Integer displayOrder) {
+        return (root, query, cb) -> displayOrder == null
+            ? cb.conjunction()
+            : cb.equal(root.get("displayOrder"), displayOrder);
+    }
+
     // ========================
     // ACCOMMODATION SPECIFICATIONS
     // ========================

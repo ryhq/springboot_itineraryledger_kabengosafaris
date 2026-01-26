@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.PdfDocument.DTOs;
 
+import com.itineraryledger.kabengosafaris.Itinerary.Entity.ItineraryDocument;
+
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -44,4 +46,34 @@ public class GeneratePdfRequestDTO {
      * Supported languages depend on the translation settings configuration.
      */
     private String language;
+
+    /**
+     * Optional: if true, the generated PDF will be saved as an ItineraryDocument.
+     * Only applicable for itinerary-related PDFs (FULL_ITINERARY, etc.)
+     */
+    @Builder.Default
+    private Boolean saveToDocuments = false;
+
+    /**
+     * Optional: the ItineraryDocument type to use when saving.
+     * Required if saveToDocuments is true.
+     * Examples: QUOTATION, FINAL_ITINERARY, TRAVEL_PLAN, INVOICE, etc.
+     */
+    private ItineraryDocument.DocumentType itineraryDocumentType;
+
+    /**
+     * Optional: title for the saved document.
+     * If not provided, a default title will be generated.
+     */
+    private String documentTitle;
+
+    /**
+     * Optional: version string for the saved document.
+     */
+    private String documentVersion;
+
+    /**
+     * Optional: notes for the saved document.
+     */
+    private String documentNotes;
 }

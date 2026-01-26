@@ -3,6 +3,9 @@ package com.itineraryledger.kabengosafaris.PdfDocument.Services;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLog;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogService;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.FullItineraryDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.DTOs.ItineraryDocumentDTOs.ItineraryDocumentDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.Entity.ItineraryDocument;
+import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryDocumentServices.ItineraryDocumentCreateService;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryFullGetService;
 import com.itineraryledger.kabengosafaris.PdfDocument.Entity.PdfDocument;
 import com.itineraryledger.kabengosafaris.PdfDocument.Entity.PdfTemplate;
@@ -54,6 +57,9 @@ public class PdfGenerationService {
 
     // Translation service
     private final TranslationService translationService;
+
+    // Document storage service
+    private final ItineraryDocumentCreateService itineraryDocumentCreateService;
 
     /**
      * Generate PDF for a specific document type and data ID
@@ -228,11 +234,145 @@ public class PdfGenerationService {
     }
 
     /**
+     * Generate PDF for itinerary and save it to ItineraryDocuments.
+     * Returns the PDF bytes and also stores it as a system-generated document.
+     *
+     * @param itineraryIdObfuscated The obfuscated itinerary ID
+     * @param templateIdObfuscated Optional template ID
+     * @param language Optional target language code for translation
+     * @param itineraryDocumentType The type of document to save as (e.g., QUOTATION, FINAL_ITINERARY)
+     * @param title Optional custom title (auto-generated if null)
+     * @param version Optional version string
+     * @param notes Optional notes
+     * @return ResponseEntity with PDF bytes (document is also saved) or error
+     */
+    @Transactional
+    public ResponseEntity<?> generateAndSaveItineraryPdf(
+            String itineraryIdObfuscated,
+            String templateIdObfuscated,
+            String language,
+            ItineraryDocument.DocumentType itineraryDocumentType,
+            String title,
+            String version,
+            String notes
+    ) {
+        try {
+            // 1. Fetch itinerary data first to get code and name for title generation
+            FullItineraryDTO itineraryData = fetchItineraryData(itineraryIdObfuscated);
+            if (itineraryData == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Itinerary not found: " + itineraryIdObfuscated, "ITINERARY_NOT_FOUND")
+                );
+            }
+
+            // 2. Decode itinerary ID for saving
+            Long itineraryId;
+            try {
+                itineraryId = idObfuscator.decodeId(itineraryIdObfuscated);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid itinerary ID", "INVALID_ITINERARY_ID")
+                );
+            }
+
+            // 3. Generate the PDF using existing method
+            ResponseEntity<?> pdfResponse = generatePdf("FULL_ITINERARY", itineraryIdObfuscated, templateIdObfuscated, language);
+
+            // If PDF generation failed, return the error response
+            if (!pdfResponse.getStatusCode().is2xxSuccessful()) {
+                return pdfResponse;
+            }
+
+            // 4. Extract PDF bytes from response
+            byte[] pdfBytes = (byte[]) pdfResponse.getBody();
+            if (pdfBytes == null || pdfBytes.length == 0) {
+                return ResponseEntity.status(500).body(
+                    ApiResponse.error(500, "Generated PDF is empty", "EMPTY_PDF")
+                );
+            }
+
+            // 5. Generate filename and title
+            String itineraryCode = itineraryData.getCode() != null ? itineraryData.getCode() : "ITI";
+            String itineraryName = itineraryData.getName() != null ? itineraryData.getName() : "Itinerary";
+
+            ItineraryDocument.DocumentType docType = itineraryDocumentType != null
+                ? itineraryDocumentType
+                : ItineraryDocument.DocumentType.FINAL_ITINERARY;
+
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String languageSuffix = (language != null && !language.isBlank() && !"en".equalsIgnoreCase(language))
+                ? "_" + language.toLowerCase()
+                : "";
+            String fileName = String.format("%s_%s%s_%s.pdf",
+                docType.name().toLowerCase(), itineraryCode, languageSuffix, timestamp);
+
+            String documentTitle = title != null && !title.isBlank()
+                ? title
+                : String.format("%s - %s", docType.getDisplayName(), itineraryName);
+
+            // 6. Save the document
+            ItineraryDocumentDTO savedDocument = itineraryDocumentCreateService.saveGeneratedDocument(
+                itineraryId,
+                pdfBytes,
+                fileName,
+                docType,
+                documentTitle,
+                null, // description
+                version,
+                notes
+            );
+
+            if (savedDocument == null) {
+                log.warn("PDF generated but failed to save to documents for itinerary: {}", itineraryIdObfuscated);
+                // Still return the PDF even if saving failed
+                return pdfResponse;
+            }
+
+            log.info("Generated and saved PDF document: {} for itinerary {} (document ID: {})",
+                fileName, itineraryIdObfuscated, savedDocument.getId());
+
+            // 7. Return the PDF response with additional header indicating document was saved
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", fileName);
+            headers.setContentLength(pdfBytes.length);
+            headers.set("X-Document-Saved", "true");
+            headers.set("X-Document-Id", savedDocument.getId());
+            headers.set("X-Document-Url", savedDocument.getDocumentUrl());
+
+            return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdfBytes);
+
+        } catch (Exception e) {
+            log.error("Failed to generate and save PDF for itinerary: {}", itineraryIdObfuscated, e);
+            return ResponseEntity.status(500).body(
+                ApiResponse.error(500, "Failed to generate and save PDF: " + e.getMessage(), "PDF_SAVE_FAILED")
+            );
+        }
+    }
+
+    /**
      * Preview PDF (return rendered HTML instead of PDF)
      * Useful for template development
      */
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<?>> previewPdf(String documentName, String dataId, String templateIdObfuscated) {
+        return previewPdf(documentName, dataId, templateIdObfuscated, null);
+    }
+
+    /**
+     * Preview PDF with optional translation (return rendered HTML instead of PDF)
+     * Useful for template development and translation preview
+     *
+     * @param documentName The PDF document type name
+     * @param dataId The ID of the data source
+     * @param templateIdObfuscated Optional specific template ID
+     * @param language Optional target language code for translation
+     * @return ResponseEntity with rendered HTML or error
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<?>> previewPdf(String documentName, String dataId, String templateIdObfuscated, String language) {
         try {
             // Similar to generatePdf but returns HTML
             PdfDocument document = pdfDocumentRepository.findByName(documentName).orElse(null);
@@ -270,15 +410,39 @@ public class PdfGenerationService {
 
             String renderedHtml = renderer.renderTemplate(template.getFileName(), dataModel);
 
+            // Translate HTML if language is specified and not English
+            String finalHtml = renderedHtml;
+            boolean translated = false;
+            String translationError = null;
+            if (language != null && !language.isBlank() && !"en".equalsIgnoreCase(language)) {
+                try {
+                    log.info("Translating preview content to language: {}", language);
+                    String translatedHtml = translationService.translateHtml(renderedHtml, language);
+                    if (translatedHtml != null && !translatedHtml.equals(renderedHtml)) {
+                        finalHtml = translatedHtml;
+                        translated = true;
+                        log.info("Preview content translated successfully to: {}", language);
+                    }
+                } catch (Exception e) {
+                    log.warn("Translation failed for preview, using original English content: {}", e.getMessage());
+                    translationError = e.getMessage();
+                }
+            }
+
             // Validate the rendered HTML and include validation status in response
-            var validationResult = validationService.validate(renderedHtml, template.getName());
+            var validationResult = validationService.validate(finalHtml, template.getName());
 
             Map<String, Object> response = new HashMap<>();
-            response.put("html", renderedHtml);
+            response.put("html", finalHtml);
             response.put("templateName", template.getName());
             response.put("paperSize", template.getPaperSize().getDisplayName());
             response.put("orientation", template.getOrientation().getDisplayName());
             response.put("validForPdf", validationResult.valid());
+            response.put("language", translated ? language : "en");
+            response.put("translated", translated);
+            if (translationError != null) {
+                response.put("translationError", translationError);
+            }
 
             if (!validationResult.valid()) {
                 response.put("validationErrors", validationResult.errors().stream()
@@ -297,7 +461,11 @@ public class PdfGenerationService {
                         .toList());
             }
 
-            return ResponseEntity.ok(ApiResponse.success(200, "Preview generated successfully", response));
+            String message = translated
+                ? "Preview generated and translated successfully"
+                : "Preview generated successfully";
+
+            return ResponseEntity.ok(ApiResponse.success(200, message, response));
 
         } catch (Exception e) {
             log.error("PDF preview failed for {} / {}", documentName, dataId, e);

@@ -1,0 +1,239 @@
+package com.itineraryledger.kabengosafaris.Park.Services.ParkDocumentServices;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.itineraryledger.kabengosafaris.Park.DTOs.ParkDocumentDTOs.ParkDocumentDTO;
+import com.itineraryledger.kabengosafaris.Park.Entities.ParkDocument;
+import com.itineraryledger.kabengosafaris.Park.Entities.ParkDocument.DocumentType;
+import com.itineraryledger.kabengosafaris.Park.ParkType;
+import com.itineraryledger.kabengosafaris.Park.Repositories.ParkDocumentRepository;
+import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Service for retrieving park documents.
+ */
+@Service
+@Slf4j
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class ParkDocumentGetService {
+
+    private final ParkDocumentRepository parkDocumentRepository;
+    private final ParkDocumentStorageService storageService;
+    private final IdObfuscator idObfuscator;
+
+    public ResponseEntity<ApiResponse<?>> getAllDocuments(
+            String parkId,
+            DocumentType documentType,
+            Boolean isActive,
+            String title,
+            String version,
+            Boolean currentlyValid,
+            String parkName,
+            ParkType parkType,
+            String region,
+            Boolean tariffDocumentsOnly,
+            String sortBy,
+            String sortDirection,
+            int page,
+            int size
+    ) {
+        log.info("Fetching park documents with filters");
+
+        try {
+            Long decodedParkId = null;
+            if (parkId != null && !parkId.isBlank()) {
+                try {
+                    decodedParkId = idObfuscator.decodeId(parkId);
+                } catch (Exception e) {
+                    log.warn("Failed to decode park ID: {}", parkId);
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Invalid park ID", "INVALID_PARK_ID")
+                    );
+                }
+            }
+
+            Sort sort = Sort.by(
+                sortDirection.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC,
+                sortBy
+            );
+            Pageable pageable = PageRequest.of(page, size, sort);
+
+            Specification<ParkDocument> spec = ParkDocumentSpecification.byParkId(decodedParkId)
+                .and(ParkDocumentSpecification.byDocumentType(documentType))
+                .and(ParkDocumentSpecification.byIsActive(isActive))
+                .and(ParkDocumentSpecification.byTitleContains(title))
+                .and(ParkDocumentSpecification.byVersion(version))
+                .and(ParkDocumentSpecification.byParkName(parkName))
+                .and(ParkDocumentSpecification.byParkType(parkType))
+                .and(ParkDocumentSpecification.byParkRegion(region));
+
+            if (Boolean.TRUE.equals(currentlyValid)) {
+                spec = spec.and(ParkDocumentSpecification.byCurrentlyValid(LocalDateTime.now()));
+            }
+
+            if (Boolean.TRUE.equals(tariffDocumentsOnly)) {
+                spec = spec.and(ParkDocumentSpecification.byTariffDocument());
+            }
+
+            Page<ParkDocument> documentPage = parkDocumentRepository.findAll(spec, pageable);
+            Page<ParkDocumentDTO> dtoPage = documentPage.map(this::toDTO);
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, "Park documents retrieved successfully", Map.of(
+                    "documents", dtoPage.getContent(),
+                    "currentPage", dtoPage.getNumber(),
+                    "totalPages", dtoPage.getTotalPages(),
+                    "totalElements", dtoPage.getTotalElements(),
+                    "pageSize", dtoPage.getSize(),
+                    "hasNext", dtoPage.hasNext(),
+                    "hasPrevious", dtoPage.hasPrevious()
+                ))
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching park documents", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to fetch park documents", "DOCUMENT_FETCH_FAILED")
+            );
+        }
+    }
+
+    public ResponseEntity<ApiResponse<?>> getDocumentById(String obfuscatedId) {
+        log.info("Fetching park document with ID: {}", obfuscatedId);
+
+        try {
+            Long id;
+            try {
+                id = idObfuscator.decodeId(obfuscatedId);
+            } catch (Exception e) {
+                log.warn("Failed to decode park document ID: {}", obfuscatedId, e);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid document ID", "INVALID_DOCUMENT_ID")
+                );
+            }
+
+            ParkDocument document = parkDocumentRepository.findById(id).orElse(null);
+            if (document == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Park document not found", "DOCUMENT_NOT_FOUND")
+                );
+            }
+
+            ParkDocumentDTO documentDTO = toDTO(document);
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, "Park document retrieved successfully", documentDTO)
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching park document", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to fetch park document", "DOCUMENT_FETCH_FAILED")
+            );
+        }
+    }
+
+    public ResponseEntity<ApiResponse<?>> getDocumentsByParkId(String parkId) {
+        log.info("Fetching documents for park: {}", parkId);
+
+        try {
+            Long decodedParkId;
+            try {
+                decodedParkId = idObfuscator.decodeId(parkId);
+            } catch (Exception e) {
+                log.warn("Failed to decode park ID: {}", parkId, e);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid park ID", "INVALID_PARK_ID")
+                );
+            }
+
+            List<ParkDocument> documents = parkDocumentRepository.findByParkIdOrderByCreatedAtDesc(decodedParkId);
+            List<ParkDocumentDTO> documentDTOs = documents.stream()
+                .map(this::toDTO)
+                .toList();
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, "Park documents retrieved successfully", documentDTOs)
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching park documents", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to fetch park documents", "DOCUMENT_FETCH_FAILED")
+            );
+        }
+    }
+
+    public ParkDocument getDocumentEntityById(String obfuscatedId) {
+        try {
+            Long id = idObfuscator.decodeId(obfuscatedId);
+            return parkDocumentRepository.findById(id).orElse(null);
+        } catch (Exception e) {
+            log.warn("Failed to get park document entity: {}", obfuscatedId, e);
+            return null;
+        }
+    }
+
+    public ParkDocument getDocumentEntityByFileName(String fileName) {
+        return parkDocumentRepository.findByFileName(fileName).orElse(null);
+    }
+
+    public ParkDocumentDTO toDTO(ParkDocument document) {
+        if (document == null) {
+            return null;
+        }
+
+        String obfuscatedId = idObfuscator.encodeId(document.getId());
+        String parkObfuscatedId = document.getPark() != null
+            ? idObfuscator.encodeId(document.getPark().getId())
+            : null;
+
+        LocalDateTime now = LocalDateTime.now();
+        Boolean isCurrentlyValid = document.getIsActive() &&
+            (document.getValidFrom() == null || !document.getValidFrom().isAfter(now)) &&
+            (document.getValidTo() == null || !document.getValidTo().isBefore(now));
+
+        return ParkDocumentDTO.builder()
+            .id(obfuscatedId)
+            .parkId(parkObfuscatedId)
+            .parkName(document.getPark() != null ? document.getPark().getName() : null)
+            .title(document.getTitle())
+            .documentType(document.getDocumentType())
+            .documentTypeDisplayName(document.getDocumentType() != null ? document.getDocumentType().getDisplayName() : null)
+            .documentTypeDescription(document.getDocumentType() != null ? document.getDocumentType().getDescription() : null)
+            .documentUrl(storageService.constructDocumentUrl(obfuscatedId))
+            .fileDocumentUrl(storageService.constructFileDocumentUrl(document.getFileName()))
+            .fileName(document.getFileName())
+            .originalFileName(document.getOriginalFileName())
+            .fileSize(document.getFileSize())
+            .fileSizeFormatted(document.getFileSize() != null ? storageService.formatFileSize(document.getFileSize()) : null)
+            .fileType(storageService.getExtension(document.getFileName()))
+            .description(document.getDescription())
+            .version(document.getVersion())
+            .notes(document.getNotes())
+            .validFrom(document.getValidFrom())
+            .validTo(document.getValidTo())
+            .isCurrentlyValid(isCurrentlyValid)
+            .isActive(document.getIsActive())
+            .createdAt(document.getCreatedAt())
+            .updatedAt(document.getUpdatedAt())
+            .build();
+    }
+}

@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.Accommodation.Controllers.AccommodationImageControllers;
 
+import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -8,9 +10,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
+import com.itineraryledger.kabengosafaris.Accommodation.DTOs.AccommodationImageDTOs.ReorderAccommodationImagesDTO;
 import com.itineraryledger.kabengosafaris.Accommodation.DTOs.AccommodationImageDTOs.UpdateAccommodationImageDTO;
+import com.itineraryledger.kabengosafaris.Accommodation.DTOs.AccommodationImageDTOs.UploadAccommodationImagesDTO;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationCategory;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationType;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationImage;
@@ -19,7 +22,9 @@ import com.itineraryledger.kabengosafaris.Accommodation.Repositories.Accommodati
 import com.itineraryledger.kabengosafaris.Accommodation.Services.AccommodationImageServices.AccommodationImageCreateService;
 import com.itineraryledger.kabengosafaris.Accommodation.Services.AccommodationImageServices.AccommodationImageDeleteService;
 import com.itineraryledger.kabengosafaris.Accommodation.Services.AccommodationImageServices.AccommodationImageGetService;
+import com.itineraryledger.kabengosafaris.Accommodation.Services.AccommodationImageServices.AccommodationImageReorderService;
 import com.itineraryledger.kabengosafaris.Accommodation.Services.AccommodationImageServices.AccommodationImageStorageService;
+import com.itineraryledger.kabengosafaris.Accommodation.Services.AccommodationImageServices.AccommodationImageUpdateService;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 
 import java.util.List;
@@ -32,8 +37,9 @@ import java.util.List;
  * - Get image by ID
  * - Get image file by filename
  * - Serve image file by ID
- * - Upload multiple images for an accommodation
+ * - Upload multiple images
  * - Update image metadata
+ * - Reorder images within an accommodation
  * - Bulk delete images
  */
 @RestController
@@ -41,23 +47,35 @@ import java.util.List;
 @Validated
 public class AccommodationImageController {
 
-    @Autowired
-    private AccommodationImageGetService getService;
+    private final AccommodationImageGetService getService;
+    private final AccommodationImageCreateService createService;
+    private final AccommodationImageUpdateService updateService;
+    private final AccommodationImageReorderService reorderService;
+    private final AccommodationImageDeleteService deleteService;
+    private final AccommodationImageStorageService storageService;
+    private final AccommodationImageRepository accommodationImageRepository;
+    private final IdObfuscator idObfuscator;
 
     @Autowired
-    private AccommodationImageCreateService createService;
-
-    @Autowired
-    private AccommodationImageDeleteService deleteService;
-
-    @Autowired
-    private AccommodationImageStorageService storageService;
-
-    @Autowired
-    private AccommodationImageRepository accommodationImageRepository;
-
-    @Autowired
-    private IdObfuscator idObfuscator;
+    public AccommodationImageController(
+        AccommodationImageGetService getService,
+        AccommodationImageCreateService createService,
+        AccommodationImageUpdateService updateService,
+        AccommodationImageReorderService reorderService,
+        AccommodationImageDeleteService deleteService,
+        AccommodationImageStorageService storageService,
+        AccommodationImageRepository accommodationImageRepository,
+        IdObfuscator idObfuscator
+    ) {
+        this.getService = getService;
+        this.createService = createService;
+        this.updateService = updateService;
+        this.reorderService = reorderService;
+        this.deleteService = deleteService;
+        this.storageService = storageService;
+        this.accommodationImageRepository = accommodationImageRepository;
+        this.idObfuscator = idObfuscator;
+    }
 
     // =====================================================================
     // READ ENDPOINTS
@@ -79,6 +97,7 @@ public class AccommodationImageController {
             @RequestParam(value = "imageType", required = false) ImageType imageType,
             @RequestParam(value = "isPrimary", required = false) Boolean isPrimary,
             @RequestParam(value = "isActive", required = false) Boolean isActive,
+            @RequestParam(value = "displayOrder", required = false) Integer displayOrder,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size,
             @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection
@@ -91,6 +110,7 @@ public class AccommodationImageController {
             imageType,
             isPrimary,
             isActive,
+            displayOrder,
             page,
             size,
             sortDirection
@@ -112,7 +132,7 @@ public class AccommodationImageController {
      * GET /api/accommodation-images/file/{fileName}
      *
      * Returns the actual image file as a resource.
-     * Example: GET /api/accommodation-images/file/a1b2c3d4.jpg
+     * Example: GET /api/accommodation-images/file/f2e5a046548d723b_1701304567890.jpg
      *
      * No authentication required for image viewing (public access).
      */
@@ -190,23 +210,23 @@ public class AccommodationImageController {
     // =====================================================================
 
     /**
-     * Upload multiple images for an accommodation
-     * POST /api/accommodation-images/accommodation/{accommodationId}/upload
+     * Upload multiple images
+     * POST /api/accommodation-images/upload
      *
      * Content-Type: multipart/form-data
      *
-     * @param accommodationId The accommodation ID (obfuscated)
-     * @param files List of image files to upload
-     * @param imageType Common image type for all uploads (optional, defaults to OTHER)
+     * Request body should contain an "images" array where each item has:
+     * - accommodationId: The accommodation ID (obfuscated)
+     * - image: The image file
+     * - imageType: Optional image type (defaults to OTHER)
+     * - altText: Optional alt text
+     * - caption: Optional caption
+     * - description: Optional description
      */
-    @PostMapping(value = "/accommodation/{accommodationId}/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAuthority('PERM_CREATE_ACCOMMODATION_IMAGE')")
-    public ResponseEntity<?> uploadImages(
-            @PathVariable("accommodationId") String accommodationId,
-            @RequestParam("files") List<MultipartFile> files,
-            @RequestParam(value = "imageType", required = false) ImageType imageType
-    ) {
-        return createService.uploadImages(accommodationId, files, imageType);
+    public ResponseEntity<?> uploadImages(@ModelAttribute UploadAccommodationImagesDTO uploadDTO) {
+        return createService.uploadImages(uploadDTO.getImages());
     }
 
     // =====================================================================
@@ -217,8 +237,12 @@ public class AccommodationImageController {
      * Update image metadata
      * PUT /api/accommodation-images/{id}
      *
-     * Updates image metadata (not the actual image file).
-     * Can update: imageType, altText, caption, description, isPrimary, isActive, displayOrder
+     * Updates metadata fields only (imageType, altText, caption, description, isPrimary, isActive).
+     * Note: displayOrder is managed via the reorder endpoint.
+     * To replace the actual image file, delete and upload a new one.
+     *
+     * @param id The obfuscated image ID
+     * @param updateDTO The update DTO containing fields to update
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_UPDATE_ACCOMMODATION_IMAGE')")
@@ -226,7 +250,27 @@ public class AccommodationImageController {
             @PathVariable("id") String id,
             @RequestBody UpdateAccommodationImageDTO updateDTO
     ) {
-        return createService.updateImage(id, updateDTO);
+        return updateService.updateImage(id, updateDTO);
+    }
+
+    // =====================================================================
+    // REORDER ENDPOINTS
+    // =====================================================================
+
+    /**
+     * Reorder images within an accommodation
+     * POST /api/accommodation-images/reorder
+     *
+     * Reorders the images based on the new order provided.
+     * The image order list must contain ALL image IDs for the accommodation.
+     * The position in the list determines the new displayOrder (1-indexed).
+     *
+     * @param reorderDTO The reorder DTO containing accommodation ID and new image order
+     */
+    @PostMapping("/reorder")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_ACCOMMODATION_IMAGE')")
+    public ResponseEntity<?> reorderImages(@Valid @RequestBody ReorderAccommodationImagesDTO reorderDTO) {
+        return reorderService.reorderImages(reorderDTO);
     }
 
     // =====================================================================

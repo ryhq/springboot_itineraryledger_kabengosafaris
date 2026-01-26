@@ -26,10 +26,16 @@ public class AccommodationImageDTO {
     private String accommodationName;
 
     /**
-     * Full URL to the image (constructed from base URL + filename)
-     * Example: "http://localhost/kabengosafaris/accommodation-images/a1b2c3d4.jpg"
+     * Full URL to the image using obfuscated ID
+     * Example: "http://localhost:4450/api/accommodation-images/{id}/file"
      */
     private String imageUrl;
+
+    /**
+     * Full URL to the image using filename
+     * Example: "http://localhost:4450/api/accommodation-images/file/{fileName}"
+     */
+    private String fileImageUrl;
 
     /**
      * Stored filename only (for reference)

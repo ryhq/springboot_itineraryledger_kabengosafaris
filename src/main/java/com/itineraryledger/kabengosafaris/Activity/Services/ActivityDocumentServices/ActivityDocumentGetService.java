@@ -1,0 +1,238 @@
+package com.itineraryledger.kabengosafaris.Activity.Services.ActivityDocumentServices;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.itineraryledger.kabengosafaris.Activity.DTOs.ActivityDocumentDTOs.ActivityDocumentDTO;
+import com.itineraryledger.kabengosafaris.Activity.Entities.ActivityDocument;
+import com.itineraryledger.kabengosafaris.Activity.Entities.ActivityDocument.DocumentType;
+import com.itineraryledger.kabengosafaris.Activity.Repositories.ActivityDocumentRepository;
+import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Service for retrieving activity documents.
+ */
+@Service
+@Slf4j
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class ActivityDocumentGetService {
+
+    private final ActivityDocumentRepository activityDocumentRepository;
+    private final ActivityDocumentStorageService storageService;
+    private final IdObfuscator idObfuscator;
+
+    public ResponseEntity<ApiResponse<?>> getAllDocuments(
+            String activityId,
+            DocumentType documentType,
+            Boolean isActive,
+            String title,
+            String version,
+            Boolean currentlyValid,
+            String activityName,
+            Boolean activityIsActive,
+            Boolean hasTariff,
+            Boolean safetyDocumentsOnly,
+            String sortBy,
+            String sortDirection,
+            int page,
+            int size
+    ) {
+        log.info("Fetching activity documents with filters");
+
+        try {
+            Long decodedActivityId = null;
+            if (activityId != null && !activityId.isBlank()) {
+                try {
+                    decodedActivityId = idObfuscator.decodeId(activityId);
+                } catch (Exception e) {
+                    log.warn("Failed to decode activity ID: {}", activityId);
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Invalid activity ID", "INVALID_ACTIVITY_ID")
+                    );
+                }
+            }
+
+            Sort sort = Sort.by(
+                sortDirection.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC,
+                sortBy
+            );
+            Pageable pageable = PageRequest.of(page, size, sort);
+
+            Specification<ActivityDocument> spec = ActivityDocumentSpecification.byActivityId(decodedActivityId)
+                .and(ActivityDocumentSpecification.byDocumentType(documentType))
+                .and(ActivityDocumentSpecification.byIsActive(isActive))
+                .and(ActivityDocumentSpecification.byTitleContains(title))
+                .and(ActivityDocumentSpecification.byVersion(version))
+                .and(ActivityDocumentSpecification.byActivityName(activityName))
+                .and(ActivityDocumentSpecification.byActivityIsActive(activityIsActive))
+                .and(ActivityDocumentSpecification.byActivityHasTariff(hasTariff));
+
+            if (Boolean.TRUE.equals(currentlyValid)) {
+                spec = spec.and(ActivityDocumentSpecification.byCurrentlyValid(LocalDateTime.now()));
+            }
+
+            if (Boolean.TRUE.equals(safetyDocumentsOnly)) {
+                spec = spec.and(ActivityDocumentSpecification.bySafetyDocument());
+            }
+
+            Page<ActivityDocument> documentPage = activityDocumentRepository.findAll(spec, pageable);
+            Page<ActivityDocumentDTO> dtoPage = documentPage.map(this::toDTO);
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, "Activity documents retrieved successfully", Map.of(
+                    "documents", dtoPage.getContent(),
+                    "currentPage", dtoPage.getNumber(),
+                    "totalPages", dtoPage.getTotalPages(),
+                    "totalElements", dtoPage.getTotalElements(),
+                    "pageSize", dtoPage.getSize(),
+                    "hasNext", dtoPage.hasNext(),
+                    "hasPrevious", dtoPage.hasPrevious()
+                ))
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching activity documents", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to fetch activity documents", "DOCUMENT_FETCH_FAILED")
+            );
+        }
+    }
+
+    public ResponseEntity<ApiResponse<?>> getDocumentById(String obfuscatedId) {
+        log.info("Fetching activity document with ID: {}", obfuscatedId);
+
+        try {
+            Long id;
+            try {
+                id = idObfuscator.decodeId(obfuscatedId);
+            } catch (Exception e) {
+                log.warn("Failed to decode activity document ID: {}", obfuscatedId, e);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid document ID", "INVALID_DOCUMENT_ID")
+                );
+            }
+
+            ActivityDocument document = activityDocumentRepository.findById(id).orElse(null);
+            if (document == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Activity document not found", "DOCUMENT_NOT_FOUND")
+                );
+            }
+
+            ActivityDocumentDTO documentDTO = toDTO(document);
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, "Activity document retrieved successfully", documentDTO)
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching activity document", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to fetch activity document", "DOCUMENT_FETCH_FAILED")
+            );
+        }
+    }
+
+    public ResponseEntity<ApiResponse<?>> getDocumentsByActivityId(String activityId) {
+        log.info("Fetching documents for activity: {}", activityId);
+
+        try {
+            Long decodedActivityId;
+            try {
+                decodedActivityId = idObfuscator.decodeId(activityId);
+            } catch (Exception e) {
+                log.warn("Failed to decode activity ID: {}", activityId, e);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid activity ID", "INVALID_ACTIVITY_ID")
+                );
+            }
+
+            List<ActivityDocument> documents = activityDocumentRepository.findByActivityIdOrderByCreatedAtDesc(decodedActivityId);
+            List<ActivityDocumentDTO> documentDTOs = documents.stream()
+                .map(this::toDTO)
+                .toList();
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, "Activity documents retrieved successfully", documentDTOs)
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching activity documents", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to fetch activity documents", "DOCUMENT_FETCH_FAILED")
+            );
+        }
+    }
+
+    public ActivityDocument getDocumentEntityById(String obfuscatedId) {
+        try {
+            Long id = idObfuscator.decodeId(obfuscatedId);
+            return activityDocumentRepository.findById(id).orElse(null);
+        } catch (Exception e) {
+            log.warn("Failed to get activity document entity: {}", obfuscatedId, e);
+            return null;
+        }
+    }
+
+    public ActivityDocument getDocumentEntityByFileName(String fileName) {
+        return activityDocumentRepository.findByFileName(fileName).orElse(null);
+    }
+
+    public ActivityDocumentDTO toDTO(ActivityDocument document) {
+        if (document == null) {
+            return null;
+        }
+
+        String obfuscatedId = idObfuscator.encodeId(document.getId());
+        String activityObfuscatedId = document.getActivity() != null
+            ? idObfuscator.encodeId(document.getActivity().getId())
+            : null;
+
+        LocalDateTime now = LocalDateTime.now();
+        Boolean isCurrentlyValid = document.getIsActive() &&
+            (document.getValidFrom() == null || !document.getValidFrom().isAfter(now)) &&
+            (document.getValidTo() == null || !document.getValidTo().isBefore(now));
+
+        return ActivityDocumentDTO.builder()
+            .id(obfuscatedId)
+            .activityId(activityObfuscatedId)
+            .activityName(document.getActivity() != null ? document.getActivity().getName() : null)
+            .title(document.getTitle())
+            .documentType(document.getDocumentType())
+            .documentTypeDisplayName(document.getDocumentType() != null ? document.getDocumentType().getDisplayName() : null)
+            .documentTypeDescription(document.getDocumentType() != null ? document.getDocumentType().getDescription() : null)
+            .documentUrl(storageService.constructDocumentUrl(obfuscatedId))
+            .fileDocumentUrl(storageService.constructFileDocumentUrl(document.getFileName()))
+            .fileName(document.getFileName())
+            .originalFileName(document.getOriginalFileName())
+            .fileSize(document.getFileSize())
+            .fileSizeFormatted(document.getFileSize() != null ? storageService.formatFileSize(document.getFileSize()) : null)
+            .fileType(storageService.getExtension(document.getFileName()))
+            .description(document.getDescription())
+            .version(document.getVersion())
+            .notes(document.getNotes())
+            .validFrom(document.getValidFrom())
+            .validTo(document.getValidTo())
+            .isCurrentlyValid(isCurrentlyValid)
+            .isActive(document.getIsActive())
+            .createdAt(document.getCreatedAt())
+            .updatedAt(document.getUpdatedAt())
+            .build();
+    }
+}

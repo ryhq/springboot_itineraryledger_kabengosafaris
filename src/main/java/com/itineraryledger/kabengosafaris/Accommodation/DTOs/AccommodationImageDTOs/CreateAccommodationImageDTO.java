@@ -4,26 +4,32 @@ import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationIm
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * DTO for creating AccommodationImage.
- * Note: The actual image file is uploaded via multipart form data.
- * This DTO contains the metadata for the image.
+ * Contains the image file and metadata for upload.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class CreateAccommodationImageDTO {
 
-    @NotNull(message = "Image type is required")
+    @NotNull(message = "Accommodation ID is required")
+    private String accommodationId;
+
+    @NotNull(message = "Image file is required")
+    private MultipartFile image;
+
     private ImageType imageType;
 
     private String altText;
-    private String caption;
-    private String description;
 
-    private Boolean isPrimary = false;
-    private Integer displayOrder;
+    private String caption;
+
+    private String description;
 }

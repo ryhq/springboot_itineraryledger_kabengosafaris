@@ -6,22 +6,25 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.itineraryledger.kabengosafaris.FileSettings.FileSettingGetterServices;
 import com.itineraryledger.kabengosafaris.ImageSettings.ImageSettingGetterServices;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.UUID;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Service for handling accommodation image file storage.
  *
  * Responsibilities:
- * - Save uploaded images to the filesystem with generated filenames
+ * - Save uploaded images to the filesystem with SHA-256 hashed filenames
  * - Delete images from the filesystem
- * - Validate image uploads using ImageSettingGetterServices
+ * - Validate image uploads using ImageSettingGetterServices and FileSettingGetterServices
  * - Generate unique filenames for stored images
  * - Construct full URLs from stored filenames
  */
@@ -37,6 +40,9 @@ public class AccommodationImageStorageService {
 
     @Autowired
     private ImageSettingGetterServices imageSettingGetterServices;
+
+    @Autowired
+    private FileSettingGetterServices fileSettingGetterServices;
 
     /**
      * Initialize storage directory if it doesn't exist
@@ -56,6 +62,8 @@ public class AccommodationImageStorageService {
 
     /**
      * Validate an image file before upload
+     * Uses both ImageSettingGetterServices for format validation
+     * and FileSettingGetterServices for size validation
      *
      * @param file the multipart file to validate
      * @return null if valid, error message if invalid
@@ -68,8 +76,68 @@ public class AccommodationImageStorageService {
         String originalFilename = file.getOriginalFilename();
         long fileSize = file.getSize();
 
-        // Use ImageSettingGetterServices for validation
+        // Validate file size using FileSettingGetterServices
+        Long maxFileSize = fileSettingGetterServices.getMaxFileSize();
+        if (fileSize > maxFileSize) {
+            return String.format("File size (%s) exceeds maximum allowed size (%s)",
+                formatFileSize(fileSize),
+                fileSettingGetterServices.getMaxFileSizeString());
+        }
+
+        // Validate image format using ImageSettingGetterServices
         return imageSettingGetterServices.validateImageUpload(originalFilename, fileSize);
+    }
+
+    /**
+     * Validate total request size for multiple file uploads
+     *
+     * @param totalSize total size of all files in bytes
+     * @return null if valid, error message if invalid
+     */
+    public String validateRequestSize(long totalSize) {
+        Long maxRequestSize = fileSettingGetterServices.getMaxRequestSize();
+        if (totalSize > maxRequestSize) {
+            return String.format("Total request size (%s) exceeds maximum allowed size (%s)",
+                formatFileSize(totalSize),
+                fileSettingGetterServices.getMaxRequestSizeString());
+        }
+        return null;
+    }
+
+    /**
+     * Get maximum file size in bytes
+     *
+     * @return max file size in bytes
+     */
+    public Long getMaxFileSize() {
+        return fileSettingGetterServices.getMaxFileSize();
+    }
+
+    /**
+     * Get maximum file size as string (e.g., "10MB")
+     *
+     * @return max file size string
+     */
+    public String getMaxFileSizeString() {
+        return fileSettingGetterServices.getMaxFileSizeString();
+    }
+
+    /**
+     * Get maximum request size in bytes
+     *
+     * @return max request size in bytes
+     */
+    public Long getMaxRequestSize() {
+        return fileSettingGetterServices.getMaxRequestSize();
+    }
+
+    /**
+     * Get maximum request size as string (e.g., "50MB")
+     *
+     * @return max request size string
+     */
+    public String getMaxRequestSizeString() {
+        return fileSettingGetterServices.getMaxRequestSizeString();
     }
 
     /**
@@ -89,10 +157,10 @@ public class AccommodationImageStorageService {
                 return null;
             }
 
-            // Generate unique filename
+            // Generate SHA-256 hashed filename
             String originalFilename = file.getOriginalFilename();
             String extension = getExtension(originalFilename);
-            String generatedFilename = generateFilename(extension);
+            String generatedFilename = generateHashedFilename(originalFilename, extension);
 
             // Save file
             Path targetPath = Paths.get(storagePath, generatedFilename);
@@ -160,6 +228,22 @@ public class AccommodationImageStorageService {
     }
 
     /**
+     * Construct full URL from filename
+     * URL format: {app.base.url}/api/accommodation-images/file/{fileName}
+     *
+     * @param fileName the stored filename
+     * @return full URL to the image API endpoint
+     */
+    public String constructFileImageUrl(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            return null;
+        }
+        // Construct: app.base.url + /api/accommodation-images/file/{fileName}
+        String normalizedBaseUrl = appBaseUrl.endsWith("/") ? appBaseUrl.substring(0, appBaseUrl.length() - 1) : appBaseUrl;
+        return normalizedBaseUrl + "/api/accommodation-images/file/" + fileName;
+    }
+
+    /**
      * Get the configured base URL
      *
      * @return application base URL
@@ -198,14 +282,41 @@ public class AccommodationImageStorageService {
     }
 
     /**
-     * Generate a unique filename with the given extension
+     * Generate a SHA-256 hashed filename
+     * Format: SHA-256(originalFileName)_timestamp.extension
+     * Example: f2e5a046548d723b59874286c9d528188b50881b215a49341b03998d7f2d00eb_1701304567890.jpg
      *
+     * @param originalFilename the original filename
      * @param extension file extension (e.g., "jpg", "png")
-     * @return generated filename
+     * @return generated hashed filename
      */
-    private String generateFilename(String extension) {
-        String uuid = UUID.randomUUID().toString().replace("-", "");
-        return uuid + "." + extension.toLowerCase();
+    private String generateHashedFilename(String originalFilename, String extension) {
+        try {
+            // Get current timestamp
+            long timestamp = System.currentTimeMillis();
+
+            // Create SHA-256 hash of original filename
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(originalFilename.getBytes(StandardCharsets.UTF_8));
+
+            // Convert hash bytes to hex string
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hashBytes) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+
+            // Combine: hash_timestamp.extension
+            return hexString.toString() + "_" + timestamp + "." + extension.toLowerCase();
+
+        } catch (NoSuchAlgorithmException e) {
+            log.error("SHA-256 algorithm not available, falling back to timestamp-based naming", e);
+            // Fallback to timestamp-based naming
+            return System.currentTimeMillis() + "_" + System.nanoTime() + "." + extension.toLowerCase();
+        }
     }
 
     /**
@@ -214,7 +325,7 @@ public class AccommodationImageStorageService {
      * @param filename the original filename
      * @return extension without dot, or "jpg" as default
      */
-    private String getExtension(String filename) {
+    public String getExtension(String filename) {
         if (filename == null || filename.isBlank()) {
             return "jpg";
         }

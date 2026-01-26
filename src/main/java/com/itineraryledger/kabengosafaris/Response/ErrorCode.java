@@ -78,6 +78,10 @@ public enum ErrorCode {
     RATE_LIMIT_EXCEEDED("RATE_LIMIT_EXCEEDED", "Rate limit exceeded"),
     TOO_MANY_REQUESTS("TOO_MANY_REQUESTS", "Too many requests"),
 
+    // File Upload Errors (413)
+    REQUEST_SIZE_EXCEEDED("REQUEST_SIZE_EXCEEDED", "Request size limit exceeded"),
+    FILE_SIZE_EXCEEDED("FILE_SIZE_EXCEEDED", "File size limit exceeded"),
+
     // Generic Error
     UNKNOWN_ERROR("UNKNOWN_ERROR", "An unknown error occurred");
 

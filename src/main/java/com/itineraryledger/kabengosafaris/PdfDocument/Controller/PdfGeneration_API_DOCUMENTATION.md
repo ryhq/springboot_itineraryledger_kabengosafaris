@@ -23,7 +23,12 @@ Used for POST endpoints to specify what PDF to generate.
   "dataId": "string (required - obfuscated ID of the data source)",
   "templateId": "string (optional - specific template ID to use)",
   "fileName": "string (optional - custom filename for the generated PDF)",
-  "language": "string (optional - target language code for translation)"
+  "language": "string (optional - target language code for translation)",
+  "saveToDocuments": "boolean (optional - save PDF as ItineraryDocument)",
+  "itineraryDocumentType": "string (optional - document type when saving)",
+  "documentTitle": "string (optional - custom title when saving)",
+  "documentVersion": "string (optional - version string when saving)",
+  "documentNotes": "string (optional - notes when saving)"
 }
 ```
 
@@ -36,6 +41,14 @@ Used for POST endpoints to specify what PDF to generate.
 | `templateId` | String | No | Specific template ID to use. If not provided, uses the default template for the document type |
 | `fileName` | String | No | Custom file name for the generated PDF |
 | `language` | String | No | Target language code for translation (e.g., "fr", "de", "es"). If not provided or "en", PDF is generated in English |
+| `saveToDocuments` | Boolean | No | If true, saves the generated PDF as an ItineraryDocument (only for itinerary-related PDFs). Default: false |
+| `itineraryDocumentType` | String | No | The ItineraryDocument type when saving (e.g., "QUOTATION", "FINAL_ITINERARY"). Default: "FINAL_ITINERARY" |
+| `documentTitle` | String | No | Custom title for the saved document. Auto-generated if not provided |
+| `documentVersion` | String | No | Version string for the saved document |
+| `documentNotes` | String | No | Additional notes for the saved document |
+
+**Available ItineraryDocumentType Values (for saveToDocuments):**
+- `QUOTATION`, `TRAVEL_PLAN`, `FINAL_ITINERARY`, `BOOKING_CONFIRMATION`, `INVOICE`, `PROFORMA_INVOICE`, `RECEIPT`, `VISA_SUPPORT_LETTER`, `FLIGHT_ITINERARY`, `ACCOMMODATION_VOUCHER`, `ACTIVITY_VOUCHER`, `PARK_PERMITS`, `TRANSFER_VOUCHER`, `TRAVEL_INSURANCE`, `EMERGENCY_CONTACTS`, `PACKING_LIST`, `TERMS_CONDITIONS`, `CANCELLATION_POLICY`, `HEALTH_REQUIREMENTS`, `VISA_REQUIREMENTS`, `SAFARI_GUIDELINES`, `CUSTOM`, `OTHER`
 
 **Supported Languages:**
 
@@ -67,6 +80,31 @@ Used for POST endpoints to specify what PDF to generate.
 }
 ```
 
+**Example Request Body with Save to Documents:**
+```json
+{
+  "documentType": "FULL_ITINERARY",
+  "dataId": "encoded_itinerary_xyz",
+  "saveToDocuments": true,
+  "itineraryDocumentType": "QUOTATION",
+  "documentTitle": "Safari Quotation - Johnson Family",
+  "documentVersion": "1.0",
+  "documentNotes": "Initial quotation for 7-day safari"
+}
+```
+
+**Example Request Body with Translation AND Save:**
+```json
+{
+  "documentType": "FULL_ITINERARY",
+  "dataId": "encoded_itinerary_xyz",
+  "language": "fr",
+  "saveToDocuments": true,
+  "itineraryDocumentType": "FINAL_ITINERARY",
+  "documentTitle": "Itinéraire Final - Famille Johnson"
+}
+```
+
 ---
 
 ## API Response Wrapper
@@ -93,7 +131,7 @@ All responses follow a standard format:
 ### 1. Generate PDF
 **POST** `/api/pdf/generate`
 
-Generates a PDF document using the specified document type, data source, and optionally a specific template. Returns the PDF file as a binary download.
+Generates a PDF document using the specified document type, data source, and optionally a specific template. Returns the PDF file as a binary download. Optionally saves the generated PDF as an ItineraryDocument.
 
 **Permission Required:** `PERM_GENERATE_PDF`
 
@@ -110,9 +148,31 @@ curl -X POST http://localhost:8080/api/pdf/generate \
   }'
 ```
 
+**Example Request with Save to Documents:**
+```bash
+curl -X POST http://localhost:8080/api/pdf/generate \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "documentType": "FULL_ITINERARY",
+    "dataId": "encoded_itinerary_xyz",
+    "saveToDocuments": true,
+    "itineraryDocumentType": "QUOTATION",
+    "documentTitle": "Safari Quotation - Johnson Family"
+  }'
+```
+
 **Success Response (200):**
 - Content-Type: `application/pdf`
 - Content-Disposition: `attachment; filename="<generated_filename>.pdf"`
+- Body: Binary PDF content
+
+**Success Response with saveToDocuments=true (200):**
+- Content-Type: `application/pdf`
+- Content-Disposition: `attachment; filename="<generated_filename>.pdf"`
+- `X-Document-Saved`: `true`
+- `X-Document-Id`: `<obfuscated_document_id>`
+- `X-Document-Url`: `<url_to_access_saved_document>`
 - Body: Binary PDF content
 
 **Error Response (400 - Validation Error):**
@@ -175,7 +235,7 @@ curl -X POST http://localhost:8080/api/pdf/generate \
 ### 2. Preview PDF (HTML)
 **POST** `/api/pdf/preview`
 
-Generates a preview of the PDF by returning the rendered HTML content. Useful for template development and debugging.
+Generates a preview of the PDF by returning the rendered HTML content. Useful for template development, debugging, and previewing translations.
 
 **Permission Required:** `PERM_GENERATE_PDF`
 
@@ -193,6 +253,18 @@ curl -X POST http://localhost:8080/api/pdf/preview \
   }'
 ```
 
+**Example Request with Translation:**
+```bash
+curl -X POST http://localhost:8080/api/pdf/preview \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "documentType": "FULL_ITINERARY",
+    "dataId": "encoded_itinerary_xyz",
+    "language": "fr"
+  }'
+```
+
 **Success Response (200):**
 ```json
 {
@@ -201,9 +273,31 @@ curl -X POST http://localhost:8080/api/pdf/preview \
   "message": "Preview generated successfully",
   "data": {
     "html": "<!DOCTYPE html><html>...(rendered HTML content)...</html>",
-    "documentType": "FULL_ITINERARY",
-    "templateId": "encoded_template_abc",
-    "templateName": "Default Itinerary Template"
+    "templateName": "Default Itinerary Template",
+    "paperSize": "A4",
+    "orientation": "Portrait",
+    "validForPdf": true,
+    "language": "en",
+    "translated": false
+  },
+  "timestamp": "2025-01-19T10:30:45"
+}
+```
+
+**Success Response with Translation (200):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Preview generated and translated successfully",
+  "data": {
+    "html": "<!DOCTYPE html><html>...(translated HTML content)...</html>",
+    "templateName": "Default Itinerary Template",
+    "paperSize": "A4",
+    "orientation": "Portrait",
+    "validForPdf": true,
+    "language": "fr",
+    "translated": true
   },
   "timestamp": "2025-01-19T10:30:45"
 }
@@ -247,7 +341,7 @@ curl -X POST http://localhost:8080/api/pdf/preview \
 ### 3. Generate Itinerary PDF (Convenience)
 **GET** `/api/pdf/itinerary/{itineraryId}`
 
-Convenience endpoint for generating a Full Itinerary PDF directly by itinerary ID. Returns the PDF file as a binary download. Supports optional translation to other languages.
+Convenience endpoint for generating a Full Itinerary PDF directly by itinerary ID. Returns the PDF file as a binary download. Supports optional translation to other languages and saving to ItineraryDocuments.
 
 **Permission Required:** `PERM_GENERATE_PDF`
 
@@ -257,10 +351,15 @@ Convenience endpoint for generating a Full Itinerary PDF directly by itinerary I
 | `itineraryId` | String | Yes | Obfuscated itinerary ID |
 
 **Query Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `templateId` | String | No | Specific template ID to use. If not provided, uses the default template |
-| `language` | String | No | Target language code (e.g., "fr", "de", "es"). If not provided or "en", PDF is in English |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `templateId` | String | No | - | Specific template ID to use. If not provided, uses the default template |
+| `language` | String | No | - | Target language code (e.g., "fr", "de", "es"). If not provided or "en", PDF is in English |
+| `saveToDocuments` | Boolean | No | false | If true, saves the generated PDF as an ItineraryDocument |
+| `documentType` | String | No | FINAL_ITINERARY | The ItineraryDocument type when saving (e.g., "QUOTATION", "FINAL_ITINERARY") |
+| `documentTitle` | String | No | Auto-generated | Custom title for the saved document |
+| `documentVersion` | String | No | - | Version string for the saved document |
+| `documentNotes` | String | No | - | Additional notes for the saved document |
 
 **Example Request:**
 ```bash
@@ -283,11 +382,29 @@ curl -X GET "http://localhost:8080/api/pdf/itinerary/encoded_itinerary_xyz?langu
 curl -X GET "http://localhost:8080/api/pdf/itinerary/encoded_itinerary_xyz?templateId=encoded_template_abc&language=de" \
   -H "Authorization: Bearer <token>" \
   --output itinerary_de.pdf
+
+# Generate and save as QUOTATION document
+curl -X GET "http://localhost:8080/api/pdf/itinerary/encoded_itinerary_xyz?saveToDocuments=true&documentType=QUOTATION&documentTitle=Safari%20Quotation" \
+  -H "Authorization: Bearer <token>" \
+  --output quotation.pdf
+
+# Generate French version and save as FINAL_ITINERARY
+curl -X GET "http://localhost:8080/api/pdf/itinerary/encoded_itinerary_xyz?language=fr&saveToDocuments=true&documentType=FINAL_ITINERARY" \
+  -H "Authorization: Bearer <token>" \
+  --output final_itinerary_fr.pdf
 ```
 
 **Success Response (200):**
 - Content-Type: `application/pdf`
 - Content-Disposition: `attachment; filename="<itinerary_name>.pdf"`
+- Body: Binary PDF content
+
+**Success Response with saveToDocuments=true (200):**
+- Content-Type: `application/pdf`
+- Content-Disposition: `attachment; filename="<generated_filename>.pdf"`
+- `X-Document-Saved`: `true`
+- `X-Document-Id`: `<obfuscated_document_id>`
+- `X-Document-Url`: `<url_to_access_saved_document>`
 - Body: Binary PDF content
 
 **Error Response (400 - Invalid ID):**
@@ -328,7 +445,7 @@ curl -X GET "http://localhost:8080/api/pdf/itinerary/encoded_itinerary_xyz?templ
 ### 4. Preview Itinerary PDF (Convenience)
 **GET** `/api/pdf/itinerary/{itineraryId}/preview`
 
-Convenience endpoint for previewing a Full Itinerary PDF as rendered HTML. Useful for template development.
+Convenience endpoint for previewing a Full Itinerary PDF as rendered HTML. Useful for template development and translation preview.
 
 **Permission Required:** `PERM_GENERATE_PDF`
 
@@ -341,15 +458,24 @@ Convenience endpoint for previewing a Full Itinerary PDF as rendered HTML. Usefu
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `templateId` | String | No | Specific template ID to use. If not provided, uses the default template |
+| `language` | String | No | Target language code (e.g., "fr", "de", "es"). If not provided or "en", preview is in English |
 
 **Example Request:**
 ```bash
-# Using default template
+# Using default template (English)
 curl -X GET "http://localhost:8080/api/pdf/itinerary/encoded_itinerary_xyz/preview" \
   -H "Authorization: Bearer <token>"
 
 # Using specific template
 curl -X GET "http://localhost:8080/api/pdf/itinerary/encoded_itinerary_xyz/preview?templateId=encoded_template_abc" \
+  -H "Authorization: Bearer <token>"
+
+# Preview with French translation
+curl -X GET "http://localhost:8080/api/pdf/itinerary/encoded_itinerary_xyz/preview?language=fr" \
+  -H "Authorization: Bearer <token>"
+
+# Preview with German translation using specific template
+curl -X GET "http://localhost:8080/api/pdf/itinerary/encoded_itinerary_xyz/preview?templateId=encoded_template_abc&language=de" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -361,9 +487,31 @@ curl -X GET "http://localhost:8080/api/pdf/itinerary/encoded_itinerary_xyz/previ
   "message": "Preview generated successfully",
   "data": {
     "html": "<!DOCTYPE html><html>...(rendered HTML content)...</html>",
-    "documentType": "FULL_ITINERARY",
-    "templateId": "encoded_template_abc",
-    "templateName": "Default Itinerary Template"
+    "templateName": "Default Itinerary Template",
+    "paperSize": "A4",
+    "orientation": "Portrait",
+    "validForPdf": true,
+    "language": "en",
+    "translated": false
+  },
+  "timestamp": "2025-01-19T10:30:45"
+}
+```
+
+**Success Response with Translation (200):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Preview generated and translated successfully",
+  "data": {
+    "html": "<!DOCTYPE html><html>...(translated HTML content)...</html>",
+    "templateName": "Default Itinerary Template",
+    "paperSize": "A4",
+    "orientation": "Portrait",
+    "validForPdf": true,
+    "language": "fr",
+    "translated": true
   },
   "timestamp": "2025-01-19T10:30:45"
 }
@@ -466,7 +614,25 @@ curl -X POST http://localhost:8080/api/pdf/generate \
   --output "safari_itinerary_custom.pdf"
 ```
 
-### Workflow 4: Programmatic PDF Generation
+### Workflow 4: Generate and Save PDF as Document
+
+```bash
+# Step 1: Generate and save a quotation PDF
+curl -X GET "http://localhost:8080/api/pdf/itinerary/encoded_itinerary_xyz?saveToDocuments=true&documentType=QUOTATION&documentTitle=Safari%20Quotation%20-%20Johnson%20Family" \
+  -H "Authorization: Bearer <token>" \
+  --output "quotation.pdf"
+
+# The response headers will include:
+# X-Document-Saved: true
+# X-Document-Id: obfuscated_document_id
+# X-Document-Url: http://localhost:8080/api/itinerary-documents/obfuscated_document_id/file
+
+# Step 2: Later, retrieve the saved document via the Itinerary Documents API
+curl -X GET "http://localhost:8080/api/itinerary-documents/obfuscated_document_id" \
+  -H "Authorization: Bearer <token>"
+```
+
+### Workflow 5: Programmatic PDF Generation
 
 ```javascript
 // JavaScript/Fetch example
@@ -488,6 +654,45 @@ if (response.ok) {
   const a = document.createElement('a');
   a.href = url;
   a.download = 'itinerary.pdf';
+  a.click();
+}
+```
+
+### Workflow 6: Programmatic PDF Generation with Save
+
+```javascript
+// JavaScript/Fetch example - Generate and save PDF
+const response = await fetch('/api/pdf/generate', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer ' + token,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    documentType: 'FULL_ITINERARY',
+    dataId: 'encoded_itinerary_xyz',
+    saveToDocuments: true,
+    itineraryDocumentType: 'QUOTATION',
+    documentTitle: 'Safari Quotation - Johnson Family'
+  })
+});
+
+if (response.ok) {
+  // Check if document was saved
+  const documentSaved = response.headers.get('X-Document-Saved') === 'true';
+  const documentId = response.headers.get('X-Document-Id');
+  const documentUrl = response.headers.get('X-Document-Url');
+
+  console.log('Document saved:', documentSaved);
+  console.log('Document ID:', documentId);
+  console.log('Document URL:', documentUrl);
+
+  // Download the PDF
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'quotation.pdf';
   a.click();
 }
 ```
@@ -571,6 +776,30 @@ See `/api/translation-settings` for full configuration options.
 
 ---
 
+## Save to Documents Feature
+
+When `saveToDocuments=true` is specified, the generated PDF is automatically saved as an ItineraryDocument with `isGenerated=true`. This is useful for:
+
+- **Quotations**: Save generated quotation PDFs for client records
+- **Final Itineraries**: Archive the final confirmed itinerary
+- **Invoices**: Keep generated invoices attached to the itinerary
+- **Travel Plans**: Store travel plan documents for reference
+
+**Key Points:**
+1. The document is saved with `isGenerated=true` to distinguish it from manually uploaded documents
+2. The response includes custom headers with the saved document ID and URL
+3. If saving fails, the PDF is still returned (with a warning logged)
+4. You can retrieve saved documents via the Itinerary Documents API
+
+**Response Headers when saved:**
+| Header | Description |
+|--------|-------------|
+| `X-Document-Saved` | "true" if document was successfully saved |
+| `X-Document-Id` | Obfuscated ID of the saved document |
+| `X-Document-Url` | URL to access the saved document |
+
+---
+
 ## Related APIs
 
 | API | Description |
@@ -578,6 +807,7 @@ See `/api/translation-settings` for full configuration options.
 | `/api/pdf-documents` | Manage PDF document types and view variable schemas |
 | `/api/pdf-templates` | Manage PDF templates (create, update, delete) |
 | `/api/itineraries/{id}/full` | Retrieve full itinerary data (used as PDF data source) |
+| `/api/itinerary-documents` | Manage itinerary documents (including system-generated PDFs) |
 | `/api/translation/languages` | Get available translation languages |
 | `/api/translation/health` | Check translation service health |
 | `/api/translation-settings` | Manage translation configuration |
@@ -585,6 +815,6 @@ See `/api/translation-settings` for full configuration options.
 ---
 
 ## Version
-API Version: 1.1
+API Version: 1.2
 
-Last Updated: 2026-01-22
+Last Updated: 2026-01-26

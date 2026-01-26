@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.io.IOException;
@@ -495,6 +497,68 @@ public class GlobalExceptionHandler {
     }
 
     // ==================== HTTP-Related Exceptions ====================
+
+    /**
+     * Handle MaxUploadSizeExceededException (file/request size exceeded)
+     * Thrown when uploaded file or total request exceeds configured limits
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException ex,
+            WebRequest request) {
+
+        log.warn("Upload size exceeded: {}", ex.getMessage());
+
+        String message = "Upload size limit exceeded. Please reduce file size or upload fewer files at once.";
+
+        ApiResponse<Void> response = ApiResponse.error(
+                HttpStatus.PAYLOAD_TOO_LARGE.value(),
+                message,
+                ErrorCode.REQUEST_SIZE_EXCEEDED.getCode()
+        );
+
+        return new ResponseEntity<>(response, HttpStatus.PAYLOAD_TOO_LARGE);
+    }
+
+    /**
+     * Handle MultipartException (multipart request parsing errors)
+     * Thrown when multipart request cannot be parsed (size exceeded, malformed, etc.)
+     */
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMultipartException(
+            MultipartException ex,
+            WebRequest request) {
+
+        log.warn("Multipart exception: {}", ex.getMessage());
+
+        String message = "Failed to process file upload.";
+        String errorCode = ErrorCode.INVALID_INPUT.getCode();
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        // Check for size-related errors
+        String exMessage = ex.getMessage() != null ? ex.getMessage().toLowerCase() : "";
+        Throwable cause = ex.getCause();
+        String causeMessage = cause != null && cause.getMessage() != null
+                ? cause.getMessage().toLowerCase() : "";
+
+        if (exMessage.contains("size") || exMessage.contains("exceeded") ||
+            causeMessage.contains("size") || causeMessage.contains("exceeded")) {
+            message = "Upload size limit exceeded. Please reduce file size or upload fewer files at once.";
+            errorCode = ErrorCode.REQUEST_SIZE_EXCEEDED.getCode();
+            status = HttpStatus.PAYLOAD_TOO_LARGE;
+        } else if (exMessage.contains("stream") || exMessage.contains("ended") ||
+                   causeMessage.contains("stream") || causeMessage.contains("ended")) {
+            message = "Upload interrupted. Please try again.";
+        }
+
+        ApiResponse<Void> response = ApiResponse.error(
+                status.value(),
+                message,
+                errorCode
+        );
+
+        return new ResponseEntity<>(response, status);
+    }
 
     /**
      * Handle AsyncRequestNotUsableException (client disconnection, broken pipe)
