@@ -99,6 +99,7 @@ public class SecurityConfigurations {
                 .requestMatchers("/api/activity-documents/*/file", "/api/activity-documents/file/*").permitAll() // Allow public access to activity document files
                 .requestMatchers("/api/park-activity-images/*/file", "/api/park-activity-images/file/*").permitAll() // Allow public access to park activity image files
                 .requestMatchers("/api/park-activity-documents/*/file", "/api/park-activity-documents/file/*").permitAll() // Allow public access to park activity document files
+                .requestMatchers("/api/customer-documents/*/file", "/api/customer-documents/file/*").permitAll() // Allow public access to customer document files
                 .requestMatchers("/api/itinerary-documents/*/file", "/api/itinerary-documents/file/*").permitAll() // Allow public access to itinerary document files
                 .anyRequest().authenticated() // Require authentication for any other request
         )

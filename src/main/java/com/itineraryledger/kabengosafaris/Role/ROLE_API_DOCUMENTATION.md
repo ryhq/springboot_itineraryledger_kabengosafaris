@@ -22,8 +22,10 @@ The Role Management API provides endpoints for managing roles in the system. Rol
 8. [Get Entity Permissions for Role](#8-get-entity-permissions-for-role)
 9. [Update Role Permissions for Entity](#9-update-role-permissions-for-entity)
 10. [Reset Role Permissions to System Defaults](#10-reset-role-permissions-to-system-defaults)
-11. [Error Codes](#error-codes)
-12. [Data Models](#data-models)
+11. [Get Users for Role](#11-get-users-for-role)
+12. [Batch Assign/Remove Users from Roles](#12-batch-assignremove-users-from-roles)
+13. [Error Codes](#error-codes)
+14. [Data Models](#data-models)
 
 ---
 
@@ -1256,6 +1258,397 @@ This will reset the GUEST role's EMAIL_ACCOUNT permissions to: READ_EMAIL_ACCOUN
 
 ---
 
+## 11. Get Users for Role
+
+Get all users with their assignment status for a specific role. This endpoint returns a paginated list of all users, each with a boolean `assigned` field indicating whether the user is assigned to this role.
+
+### Endpoint
+
+```
+GET /api/roles/{roleId}/users
+```
+
+### Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `roleId` | String | Yes | Obfuscated role ID |
+
+### Query Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `page` | Integer | No | 0 | Page number (0-based) |
+| `size` | Integer | No | 10 | Number of items per page |
+| `search` | String | No | - | Search keyword (searches username, email, firstName, lastName - case-insensitive) |
+| `sortDir` | String | No | asc | Sort direction: "asc" or "desc" (sorts by firstName, lastName) |
+
+### Success Response
+
+**Status Code:** `200 OK`
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Users retrieved successfully",
+  "data": {
+    "role": {
+      "id": "encoded_role_id",
+      "name": "ADMIN",
+      "displayName": "Administrator"
+    },
+    "users": [
+      {
+        "id": "encoded_user_id_1",
+        "username": "john.doe",
+        "email": "john@example.com",
+        "firstName": "John",
+        "lastName": "Doe",
+        "fullName": "John Doe",
+        "enabled": true,
+        "assigned": true
+      },
+      {
+        "id": "encoded_user_id_2",
+        "username": "jane.smith",
+        "email": "jane@example.com",
+        "firstName": "Jane",
+        "lastName": "Smith",
+        "fullName": "Jane Smith",
+        "enabled": true,
+        "assigned": false
+      }
+    ],
+    "currentPage": 0,
+    "totalItems": 50,
+    "totalPages": 5,
+    "assignedCount": 5
+  }
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `role.id` | String | Obfuscated role ID |
+| `role.name` | String | Role name |
+| `role.displayName` | String | Human-readable role name |
+| `users` | Array | Paginated list of users |
+| `users[].id` | String | Obfuscated user ID |
+| `users[].username` | String | User's username |
+| `users[].email` | String | User's email address |
+| `users[].firstName` | String | User's first name |
+| `users[].lastName` | String | User's last name |
+| `users[].fullName` | String | User's full name (firstName + lastName) |
+| `users[].enabled` | Boolean | Whether the user account is enabled |
+| `users[].assigned` | Boolean | **true** if user has this role, **false** otherwise |
+| `currentPage` | Integer | Current page number |
+| `totalItems` | Long | Total number of users |
+| `totalPages` | Integer | Total number of pages |
+| `assignedCount` | Integer | Total number of users assigned to this role |
+
+### Error Responses
+
+#### Invalid Role ID
+
+**Status Code:** `400 Bad Request`
+
+```json
+{
+  "success": false,
+  "statusCode": 400,
+  "message": "Invalid role ID",
+  "errorCode": "INVALID_ROLE_ID"
+}
+```
+
+#### Role Not Found
+
+**Status Code:** `404 Not Found`
+
+```json
+{
+  "success": false,
+  "statusCode": 404,
+  "message": "Role not found",
+  "errorCode": "ROLE_NOT_FOUND"
+}
+```
+
+### Example cURL Requests
+
+#### Basic Request (Default Pagination)
+
+```bash
+curl -X GET "https://api.example.com/api/roles/encoded_role_id/users" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+#### With Search and Pagination
+
+```bash
+curl -X GET "https://api.example.com/api/roles/encoded_role_id/users?page=0&size=20&search=john" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+#### With Sorting
+
+```bash
+curl -X GET "https://api.example.com/api/roles/encoded_role_id/users?sortDir=desc" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Use Cases
+
+1. **User-Role Assignment UI**: Display all users with checkboxes showing which users have the role
+2. **Role Member Management**: View and manage which users belong to a specific role
+3. **Audit**: Track which users have a specific role
+
+---
+
+## 12. Batch Assign/Remove Users from Roles
+
+Batch assign or remove users from roles. This endpoint accepts a list of assignment requests, where each request specifies a user, a role, and whether to assign or remove.
+
+### Endpoint
+
+```
+POST /api/roles/user-assignments
+```
+
+### Request Headers
+
+```
+Content-Type: application/json
+Authorization: Bearer {token}
+```
+
+### Request Body
+
+```json
+[
+  {
+    "userId": "encoded_user_id_1",
+    "roleId": "encoded_role_id",
+    "assign": true
+  },
+  {
+    "userId": "encoded_user_id_2",
+    "roleId": "encoded_role_id",
+    "assign": false
+  }
+]
+```
+
+### Request Body Parameters
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `userId` | String | Yes | Obfuscated user ID |
+| `roleId` | String | Yes | Obfuscated role ID |
+| `assign` | Boolean | Yes | `true` to assign role to user, `false` to remove role from user |
+
+### Success Response
+
+**Status Code:** `200 OK`
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Processed 2 assignments: 2 succeeded, 0 failed",
+  "data": {
+    "results": [
+      {
+        "userId": "encoded_user_id_1",
+        "roleId": "encoded_role_id",
+        "requestedAction": "assign",
+        "success": true,
+        "message": "Role assigned successfully",
+        "action": "assigned",
+        "roleName": "ADMIN",
+        "roleDisplayName": "Administrator",
+        "userName": "john.doe",
+        "userFullName": "John Doe"
+      },
+      {
+        "userId": "encoded_user_id_2",
+        "roleId": "encoded_role_id",
+        "requestedAction": "remove",
+        "success": true,
+        "message": "Role removed successfully",
+        "action": "removed",
+        "roleName": "ADMIN",
+        "roleDisplayName": "Administrator",
+        "userName": "jane.smith",
+        "userFullName": "Jane Smith"
+      }
+    ],
+    "totalProcessed": 2,
+    "successCount": 2,
+    "failCount": 0
+  }
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `results` | Array | Results for each assignment request |
+| `results[].userId` | String | Obfuscated user ID from request |
+| `results[].roleId` | String | Obfuscated role ID from request |
+| `results[].requestedAction` | String | "assign" or "remove" |
+| `results[].success` | Boolean | Whether this assignment succeeded |
+| `results[].message` | String | Human-readable result message |
+| `results[].action` | String | Action taken: "assigned", "removed", or "no_change" |
+| `results[].roleName` | String | Role name (if successful) |
+| `results[].roleDisplayName` | String | Role display name (if successful) |
+| `results[].userName` | String | Username (if successful) |
+| `results[].userFullName` | String | User's full name (if successful) |
+| `results[].error` | String | Error message (if failed) |
+| `results[].errorCode` | String | Error code (if failed) |
+| `totalProcessed` | Integer | Total number of requests processed |
+| `successCount` | Integer | Number of successful assignments |
+| `failCount` | Integer | Number of failed assignments |
+
+### Possible Action Values
+
+| Action | Description |
+|--------|-------------|
+| `assigned` | Role was successfully assigned to user |
+| `removed` | Role was successfully removed from user |
+| `no_change` | No change was needed (user already had/didn't have role) |
+
+### Error Responses
+
+#### Empty Request List
+
+**Status Code:** `400 Bad Request`
+
+```json
+{
+  "success": false,
+  "statusCode": 400,
+  "message": "Request list cannot be empty",
+  "errorCode": "EMPTY_REQUEST"
+}
+```
+
+### Individual Assignment Errors
+
+Even when the overall request succeeds, individual assignments can fail. Check `results[].success` for each item:
+
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Processed 3 assignments: 2 succeeded, 1 failed",
+  "data": {
+    "results": [
+      {
+        "userId": "encoded_user_id_1",
+        "roleId": "encoded_role_id",
+        "requestedAction": "assign",
+        "success": true,
+        "action": "assigned",
+        "message": "Role assigned successfully"
+      },
+      {
+        "userId": "invalid_user_id",
+        "roleId": "encoded_role_id",
+        "requestedAction": "assign",
+        "success": false,
+        "error": "Invalid user ID",
+        "errorCode": "INVALID_USER_ID"
+      },
+      {
+        "userId": "encoded_user_id_3",
+        "roleId": "encoded_inactive_role",
+        "requestedAction": "assign",
+        "success": false,
+        "error": "Cannot assign inactive role: Archived Role",
+        "errorCode": "INACTIVE_ROLE"
+      }
+    ],
+    "totalProcessed": 3,
+    "successCount": 1,
+    "failCount": 2
+  }
+}
+```
+
+### Possible Error Codes (per item)
+
+| Error Code | Description |
+|------------|-------------|
+| `INVALID_USER_ID` | User ID format is invalid |
+| `INVALID_ROLE_ID` | Role ID format is invalid |
+| `USER_NOT_FOUND` | User with specified ID not found |
+| `ROLE_NOT_FOUND` | Role with specified ID not found |
+| `INACTIVE_ROLE` | Cannot assign an inactive role |
+| `PROCESSING_ERROR` | Internal error during processing |
+
+### Example cURL Requests
+
+#### Assign Multiple Users to a Role
+
+```bash
+curl -X POST "https://api.example.com/api/roles/user-assignments" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '[
+    { "userId": "user_id_1", "roleId": "role_id", "assign": true },
+    { "userId": "user_id_2", "roleId": "role_id", "assign": true },
+    { "userId": "user_id_3", "roleId": "role_id", "assign": true }
+  ]'
+```
+
+#### Remove Multiple Users from a Role
+
+```bash
+curl -X POST "https://api.example.com/api/roles/user-assignments" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '[
+    { "userId": "user_id_1", "roleId": "role_id", "assign": false },
+    { "userId": "user_id_2", "roleId": "role_id", "assign": false }
+  ]'
+```
+
+#### Mixed Assign and Remove
+
+```bash
+curl -X POST "https://api.example.com/api/roles/user-assignments" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '[
+    { "userId": "user_id_1", "roleId": "admin_role", "assign": true },
+    { "userId": "user_id_1", "roleId": "guest_role", "assign": false },
+    { "userId": "user_id_2", "roleId": "admin_role", "assign": true }
+  ]'
+```
+
+### Use Cases
+
+1. **Bulk Role Assignment**: Assign a role to multiple users at once
+2. **Role Transition**: Remove one role and assign another in a single request
+3. **User-Role Matrix**: Manage user-role assignments from a checkbox grid UI
+4. **Onboarding**: Assign default roles to new users
+5. **Team Management**: Update role assignments for a group of users
+
+### Important Notes
+
+- **Non-Atomic Operation**: Each assignment is processed independently. If some fail, others will still succeed.
+- **Idempotent-like Behavior**: Assigning a role to a user who already has it (or removing from one who doesn't have it) returns success with `action: "no_change"`.
+- **Inactive Roles**: Inactive roles cannot be assigned but can be removed.
+- **Permission Required**: Requires `PERM_UPDATE_USER` permission.
+- **Audit Logging**: All successful assignments/removals are logged for audit purposes.
+
+---
+
 ## Error Codes
 
 | Error Code | HTTP Status | Description |
@@ -1264,11 +1657,21 @@ This will reset the GUEST role's EMAIL_ACCOUNT permissions to: READ_EMAIL_ACCOUN
 | `VALIDATION_ERROR` | 400 | Request validation failed (missing required fields) |
 | `SYSTEM_ROLE_PROTECTED` | 400 | Attempted to modify or delete a system role |
 | `CANNOT_DELETE_SYSTEM_ROLES` | 400 | Batch delete request contains system roles |
+| `INVALID_ROLE_ID` | 400 | Role ID format is invalid |
+| `INVALID_USER_ID` | 400 | User ID format is invalid |
+| `INACTIVE_ROLE` | 400 | Cannot assign an inactive role to a user |
+| `EMPTY_REQUEST` | 400 | Request list cannot be empty |
+| `INVALID_PAGE` | 400 | Page number cannot be negative |
+| `INVALID_SIZE` | 400 | Page size must be greater than 0 |
 | `ROLE_NOT_FOUND` | 404 | Role with specified ID not found |
+| `USER_NOT_FOUND` | 404 | User with specified ID not found |
 | `ROLE_CREATE_FAILED` | 500 | Internal error during role creation |
 | `ROLE_UPDATE_FAILED` | 500 | Internal error during role update |
 | `ROLES_DELETE_FAILED` | 500 | Internal error during role deletion |
 | `GET_ROLE_FAILED` | 500 | Internal error during role retrieval |
+| `GET_USERS_FAILED` | 500 | Internal error during user retrieval |
+| `ASSIGNMENT_FAILED` | 500 | Internal error during user-role assignment |
+| `PROCESSING_ERROR` | 500 | Internal error during processing |
 
 ---
 
@@ -1376,6 +1779,35 @@ Request model for updating role permissions.
 }
 ```
 
+### RoleUserDTO
+
+Response model for user with role assignment status.
+
+```json
+{
+  "id": "string",                        // Obfuscated user ID
+  "username": "string",                  // User's username
+  "email": "string",                     // User's email address
+  "firstName": "string",                 // User's first name
+  "lastName": "string",                  // User's last name
+  "fullName": "string",                  // User's full name (firstName + lastName)
+  "enabled": "boolean",                  // Whether user account is enabled
+  "assigned": "boolean"                  // Whether user is assigned to the role
+}
+```
+
+### RoleUserAssignmentDTO
+
+Request model for assigning/removing users from roles.
+
+```json
+{
+  "userId": "string",                    // Required: Obfuscated user ID
+  "roleId": "string",                    // Required: Obfuscated role ID
+  "assign": "boolean"                    // Required: true to assign, false to remove
+}
+```
+
 ---
 
 ## System Roles
@@ -1427,6 +1859,16 @@ The system includes predefined roles that cannot be modified or deleted:
 ---
 
 ## Changelog
+
+### Version 1.3.0 (2026-01-27)
+
+- Added user-role assignment management endpoints
+- New endpoint: `GET /api/roles/{roleId}/users` - Get all users with role assignment status
+- New endpoint: `POST /api/roles/user-assignments` - Batch assign or remove users from roles
+- Added new DTOs: RoleUserDTO, RoleUserAssignmentDTO
+- User search with pagination support (search by username, email, firstName, lastName)
+- Batch assignment supports mixed assign/remove operations
+- Individual assignment results with detailed success/error information
 
 ### Version 1.2.0 (2025-12-28)
 

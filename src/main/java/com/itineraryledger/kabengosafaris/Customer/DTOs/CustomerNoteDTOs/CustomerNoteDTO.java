@@ -35,8 +35,6 @@ public class CustomerNoteDTO {
     private LocalDateTime followUpDate;
     private Boolean followUpCompleted;
     private LocalDateTime followUpCompletedAt;
-    private String followUpCompletedById; // Obfuscated user ID
-    private String followUpCompletedByName;
     private Boolean isFollowUpOverdue;
 
     // Visibility & Priority
@@ -46,13 +44,7 @@ public class CustomerNoteDTO {
     private String priorityDisplayName;
     private String priorityDescription;
 
-    // Related entities
-    private String relatedEntityType;
-    private String relatedEntityId; // Obfuscated ID
-
     // Metadata
-    private String createdById; // Obfuscated user ID
-    private String createdByName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

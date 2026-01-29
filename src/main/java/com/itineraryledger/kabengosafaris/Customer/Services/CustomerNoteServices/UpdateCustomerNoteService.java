@@ -7,13 +7,10 @@ import com.itineraryledger.kabengosafaris.Customer.Entity.CustomerNote;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
-import com.itineraryledger.kabengosafaris.User.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -162,22 +159,9 @@ public class UpdateCustomerNoteService {
                 );
             }
 
-            // Get current user info
-            Long currentUserId = null;
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.isAuthenticated() &&
-                !authentication.getPrincipal().equals("anonymousUser")) {
-                Object principal = authentication.getPrincipal();
-                if (principal instanceof User) {
-                    User user = (User) principal;
-                    currentUserId = user.getId();
-                }
-            }
-
             // Mark as completed
             note.setFollowUpCompleted(true);
             note.setFollowUpCompletedAt(LocalDateTime.now());
-            note.setFollowUpCompletedBy(currentUserId);
 
             // Save updated note
             note = customerNoteRepository.save(note);
@@ -233,31 +217,6 @@ public class UpdateCustomerNoteService {
         if (updateDTO.getContent() != null) {
             note.setContent(updateDTO.getContent());
         }
-        if (updateDTO.getFollowUpDate() != null) {
-            note.setFollowUpDate(updateDTO.getFollowUpDate());
-        }
-        if (updateDTO.getFollowUpCompleted() != null) {
-            note.setFollowUpCompleted(updateDTO.getFollowUpCompleted());
-            if (updateDTO.getFollowUpCompleted()) {
-                // Get current user info for follow-up completion
-                Long currentUserId = null;
-                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-                if (authentication != null && authentication.isAuthenticated() &&
-                    !authentication.getPrincipal().equals("anonymousUser")) {
-                    Object principal = authentication.getPrincipal();
-                    if (principal instanceof User) {
-                        User user = (User) principal;
-                        currentUserId = user.getId();
-                    }
-                }
-                note.setFollowUpCompletedAt(LocalDateTime.now());
-                note.setFollowUpCompletedBy(currentUserId);
-            } else {
-                // If un-completing, clear completion data
-                note.setFollowUpCompletedAt(null);
-                note.setFollowUpCompletedBy(null);
-            }
-        }
         if (updateDTO.getIsPinned() != null) {
             note.setIsPinned(updateDTO.getIsPinned());
         }
@@ -266,24 +225,6 @@ public class UpdateCustomerNoteService {
         }
         if (updateDTO.getPriority() != null) {
             note.setPriority(updateDTO.getPriority());
-        }
-        if (updateDTO.getRelatedEntityType() != null) {
-            note.setRelatedEntityType(updateDTO.getRelatedEntityType());
-        }
-        if (updateDTO.getRelatedEntityId() != null) {
-            try {
-                Long relatedEntityId = idObfuscator.decodeId(updateDTO.getRelatedEntityId());
-                note.setRelatedEntityId(relatedEntityId);
-            } catch (Exception e) {
-                log.warn("Failed to decode related entity ID: {}", updateDTO.getRelatedEntityId(), e);
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(
-                        400,
-                        "Invalid related entity ID",
-                        "INVALID_RELATED_ENTITY_ID"
-                    )
-                );
-            }
         }
 
         // Save updated note
@@ -311,13 +252,9 @@ public class UpdateCustomerNoteService {
             dto.getNoteType() != null ||
             dto.getSubject() != null ||
             dto.getContent() != null ||
-            dto.getFollowUpDate() != null ||
-            dto.getFollowUpCompleted() != null ||
             dto.getIsPinned() != null ||
             dto.getIsPrivate() != null ||
-            dto.getPriority() != null ||
-            dto.getRelatedEntityType() != null ||
-            dto.getRelatedEntityId() != null;
+            dto.getPriority() != null;
 
         if (!hasUpdate) {
             return ResponseEntity.badRequest().body(
@@ -346,13 +283,6 @@ public class UpdateCustomerNoteService {
             );
         }
 
-        // Validate related entity type length if provided
-        if (dto.getRelatedEntityType() != null && dto.getRelatedEntityType().length() > 50) {
-            return ResponseEntity.badRequest().body(
-                ApiResponse.error(400, "Related entity type cannot exceed 50 characters", "RELATED_ENTITY_TYPE_TOO_LONG")
-            );
-        }
-
         return null; // No validation errors
     }
 
@@ -372,17 +302,12 @@ public class UpdateCustomerNoteService {
             .followUpDate(note.getFollowUpDate())
             .followUpCompleted(note.getFollowUpCompleted())
             .followUpCompletedAt(note.getFollowUpCompletedAt())
-            .followUpCompletedById(note.getFollowUpCompletedBy() != null ? idObfuscator.encodeId(note.getFollowUpCompletedBy()) : null)
             .isFollowUpOverdue(note.isFollowUpOverdue())
             .isPinned(note.getIsPinned())
             .isPrivate(note.getIsPrivate())
             .priority(note.getPriority())
             .priorityDisplayName(note.getPriority() != null ? note.getPriority().getDisplayName() : null)
             .priorityDescription(note.getPriority() != null ? note.getPriority().getDescription() : null)
-            .relatedEntityType(note.getRelatedEntityType())
-            .relatedEntityId(note.getRelatedEntityId() != null ? idObfuscator.encodeId(note.getRelatedEntityId()) : null)
-            .createdById(note.getCreatedBy() != null ? idObfuscator.encodeId(note.getCreatedBy()) : null)
-            .createdByName(note.getCreatedByName())
             .createdAt(note.getCreatedAt())
             .updatedAt(note.getUpdatedAt())
             .build();

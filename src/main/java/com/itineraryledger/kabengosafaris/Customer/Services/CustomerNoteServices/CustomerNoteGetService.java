@@ -7,7 +7,6 @@ import com.itineraryledger.kabengosafaris.Customer.Entity.CustomerNote.NoteType;
 import com.itineraryledger.kabengosafaris.Customer.Entity.CustomerNote.NotePriority;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
-import jakarta.validation.constraints.NotBlank;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -112,9 +111,8 @@ public class CustomerNoteGetService {
      * @param isPrivate Filter by private status (optional)
      * @param priority Filter by priority (optional)
      * @param followUpCompleted Filter by follow-up completed status (optional)
-     * @param createdById Filter by creator ID (optional)
-     * @param relatedEntityType Filter by related entity type (optional)
-     * @param relatedEntityId Filter by related entity ID (optional)
+     * @param pendingFollowUpsOnly Filter only notes with pending follow-ups (optional)
+     * @param overdueFollowUpsOnly Filter only notes with overdue follow-ups (optional)
      * @param keyword Search keyword across multiple fields (optional)
      * @param pageable Pagination and sorting parameters
      * @return ResponseEntity with ApiResponse containing paginated notes
@@ -127,9 +125,8 @@ public class CustomerNoteGetService {
         Boolean isPrivate,
         NotePriority priority,
         Boolean followUpCompleted,
-        String createdById,
-        String relatedEntityType,
-        String relatedEntityId,
+        Boolean pendingFollowUpsOnly,
+        Boolean overdueFollowUpsOnly,
         String keyword,
         Pageable pageable
     ) {
@@ -175,38 +172,11 @@ public class CustomerNoteGetService {
             if (followUpCompleted != null) {
                 spec = spec.and(CustomerNoteSpecification.isFollowUpCompleted(followUpCompleted));
             }
-            if (createdById != null && !createdById.isEmpty()) {
-                try {
-                    Long decodedCreatedById = idObfuscator.decodeId(createdById);
-                    spec = spec.and(CustomerNoteSpecification.createdBy(decodedCreatedById));
-                } catch (Exception e) {
-                    log.warn("Failed to decode created by ID: {}", createdById, e);
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(
-                            400,
-                            "Invalid created by ID",
-                            "INVALID_CREATED_BY_ID"
-                        )
-                    );
-                }
+            if (pendingFollowUpsOnly != null && pendingFollowUpsOnly) {
+                spec = spec.and(CustomerNoteSpecification.hasPendingFollowUp());
             }
-            if (relatedEntityType != null && !relatedEntityType.isEmpty()) {
-                spec = spec.and(CustomerNoteSpecification.hasRelatedEntityType(relatedEntityType));
-            }
-            if (relatedEntityId != null && !relatedEntityId.isEmpty()) {
-                try {
-                    Long decodedRelatedEntityId = idObfuscator.decodeId(relatedEntityId);
-                    spec = spec.and(CustomerNoteSpecification.hasRelatedEntityId(decodedRelatedEntityId));
-                } catch (Exception e) {
-                    log.warn("Failed to decode related entity ID: {}", relatedEntityId, e);
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(
-                            400,
-                            "Invalid related entity ID",
-                            "INVALID_RELATED_ENTITY_ID"
-                        )
-                    );
-                }
+            if (overdueFollowUpsOnly != null && overdueFollowUpsOnly) {
+                spec = spec.and(CustomerNoteSpecification.hasOverdueFollowUp());
             }
             if (keyword != null && !keyword.isEmpty()) {
                 spec = spec.and(CustomerNoteSpecification.searchKeyword(keyword));
@@ -241,283 +211,6 @@ public class CustomerNoteGetService {
                     500,
                     "Failed to fetch customer notes",
                     "CUSTOMER_NOTES_FETCH_FAILED"
-                )
-            );
-        }
-    }
-
-    /**
-     * Get all notes for a specific customer
-     * customerId is REQUIRED
-     *
-     * @param customerId Required obfuscated customer ID
-     * @param noteType Filter by note type (optional)
-     * @param subject Filter by subject (optional)
-     * @param isPinned Filter by pinned status (optional)
-     * @param isPrivate Filter by private status (optional)
-     * @param priority Filter by priority (optional)
-     * @param followUpCompleted Filter by follow-up completed status (optional)
-     * @param createdById Filter by creator ID (optional)
-     * @param relatedEntityType Filter by related entity type (optional)
-     * @param relatedEntityId Filter by related entity ID (optional)
-     * @param keyword Search keyword across multiple fields (optional)
-     * @param pageable Pagination and sorting parameters
-     * @return ResponseEntity with ApiResponse containing paginated notes for the customer
-     */
-    public ResponseEntity<ApiResponse<?>> getCustomersNotes(
-        @NotBlank(message = "Customer ID is required") String customerId,
-        NoteType noteType,
-        String subject,
-        Boolean isPinned,
-        Boolean isPrivate,
-        NotePriority priority,
-        Boolean followUpCompleted,
-        String createdById,
-        String relatedEntityType,
-        String relatedEntityId,
-        String keyword,
-        Pageable pageable
-    ) {
-        log.info("Fetching notes for customer: {}", customerId);
-
-        try {
-            // Decode customer ID (required)
-            Long decodedCustomerId;
-            try {
-                decodedCustomerId = idObfuscator.decodeId(customerId);
-            } catch (Exception e) {
-                log.warn("Failed to decode customer ID: {}", customerId, e);
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(
-                        400,
-                        "Invalid customer ID",
-                        "INVALID_CUSTOMER_ID"
-                    )
-                );
-            }
-
-            // Build specification with required customer ID filter
-            Specification<CustomerNote> spec = CustomerNoteSpecification.hasCustomerId(decodedCustomerId);
-
-            // Add optional filters
-            if (noteType != null) {
-                spec = spec.and(CustomerNoteSpecification.hasNoteType(noteType));
-            }
-            if (subject != null && !subject.isEmpty()) {
-                spec = spec.and(CustomerNoteSpecification.subjectLike(subject));
-            }
-            if (isPinned != null) {
-                spec = spec.and(CustomerNoteSpecification.isPinned(isPinned));
-            }
-            if (isPrivate != null) {
-                spec = spec.and(CustomerNoteSpecification.isPrivate(isPrivate));
-            }
-            if (priority != null) {
-                spec = spec.and(CustomerNoteSpecification.hasPriority(priority));
-            }
-            if (followUpCompleted != null) {
-                spec = spec.and(CustomerNoteSpecification.isFollowUpCompleted(followUpCompleted));
-            }
-            if (createdById != null && !createdById.isEmpty()) {
-                try {
-                    Long decodedCreatedById = idObfuscator.decodeId(createdById);
-                    spec = spec.and(CustomerNoteSpecification.createdBy(decodedCreatedById));
-                } catch (Exception e) {
-                    log.warn("Failed to decode created by ID: {}", createdById, e);
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(
-                            400,
-                            "Invalid created by ID",
-                            "INVALID_CREATED_BY_ID"
-                        )
-                    );
-                }
-            }
-            if (relatedEntityType != null && !relatedEntityType.isEmpty()) {
-                spec = spec.and(CustomerNoteSpecification.hasRelatedEntityType(relatedEntityType));
-            }
-            if (relatedEntityId != null && !relatedEntityId.isEmpty()) {
-                try {
-                    Long decodedRelatedEntityId = idObfuscator.decodeId(relatedEntityId);
-                    spec = spec.and(CustomerNoteSpecification.hasRelatedEntityId(decodedRelatedEntityId));
-                } catch (Exception e) {
-                    log.warn("Failed to decode related entity ID: {}", relatedEntityId, e);
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(
-                            400,
-                            "Invalid related entity ID",
-                            "INVALID_RELATED_ENTITY_ID"
-                        )
-                    );
-                }
-            }
-            if (keyword != null && !keyword.isEmpty()) {
-                spec = spec.and(CustomerNoteSpecification.searchKeyword(keyword));
-            }
-
-            // Fetch paginated results
-            Page<CustomerNote> notePage = customerNoteRepository.findAll(spec, pageable);
-
-            // Convert to DTOs
-            Page<CustomerNoteDTO> noteDTOPage = notePage.map(this::convertToDTO);
-
-            // Build response with pagination metadata
-            Map<String, Object> responseData = new HashMap<>();
-            responseData.put("notes", noteDTOPage.getContent());
-            responseData.put("currentPage", noteDTOPage.getNumber());
-            responseData.put("totalItems", noteDTOPage.getTotalElements());
-            responseData.put("totalPages", noteDTOPage.getTotalPages());
-            responseData.put("pageSize", noteDTOPage.getSize());
-
-            return ResponseEntity.ok().body(
-                ApiResponse.success(
-                    200,
-                    "Customer notes retrieved successfully",
-                    responseData
-                )
-            );
-
-        } catch (Exception e) {
-            log.error("Error fetching customer notes", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                ApiResponse.error(
-                    500,
-                    "Failed to fetch customer notes",
-                    "CUSTOMER_NOTES_FETCH_FAILED"
-                )
-            );
-        }
-    }
-
-    /**
-     * Get notes with pending follow-ups for a customer
-     *
-     * @param customerId Required obfuscated customer ID
-     * @param pageable Pagination and sorting parameters
-     * @return ResponseEntity with ApiResponse containing paginated pending follow-ups
-     */
-    public ResponseEntity<ApiResponse<?>> getPendingFollowUps(
-        @NotBlank(message = "Customer ID is required") String customerId,
-        Pageable pageable
-    ) {
-        log.info("Fetching pending follow-ups for customer: {}", customerId);
-
-        try {
-            // Decode customer ID (required)
-            Long decodedCustomerId;
-            try {
-                decodedCustomerId = idObfuscator.decodeId(customerId);
-            } catch (Exception e) {
-                log.warn("Failed to decode customer ID: {}", customerId, e);
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(
-                        400,
-                        "Invalid customer ID",
-                        "INVALID_CUSTOMER_ID"
-                    )
-                );
-            }
-
-            // Build specification for pending follow-ups
-            Specification<CustomerNote> spec = CustomerNoteSpecification.hasCustomerId(decodedCustomerId)
-                .and(CustomerNoteSpecification.hasPendingFollowUp());
-
-            // Fetch paginated results
-            Page<CustomerNote> notePage = customerNoteRepository.findAll(spec, pageable);
-
-            // Convert to DTOs
-            Page<CustomerNoteDTO> noteDTOPage = notePage.map(this::convertToDTO);
-
-            // Build response with pagination metadata
-            Map<String, Object> responseData = new HashMap<>();
-            responseData.put("notes", noteDTOPage.getContent());
-            responseData.put("currentPage", noteDTOPage.getNumber());
-            responseData.put("totalItems", noteDTOPage.getTotalElements());
-            responseData.put("totalPages", noteDTOPage.getTotalPages());
-            responseData.put("pageSize", noteDTOPage.getSize());
-
-            return ResponseEntity.ok().body(
-                ApiResponse.success(
-                    200,
-                    "Pending follow-ups retrieved successfully",
-                    responseData
-                )
-            );
-
-        } catch (Exception e) {
-            log.error("Error fetching pending follow-ups", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                ApiResponse.error(
-                    500,
-                    "Failed to fetch pending follow-ups",
-                    "PENDING_FOLLOW_UPS_FETCH_FAILED"
-                )
-            );
-        }
-    }
-
-    /**
-     * Get overdue follow-ups for a customer
-     *
-     * @param customerId Required obfuscated customer ID
-     * @param pageable Pagination and sorting parameters
-     * @return ResponseEntity with ApiResponse containing paginated overdue follow-ups
-     */
-    public ResponseEntity<ApiResponse<?>> getOverdueFollowUps(
-        @NotBlank(message = "Customer ID is required") String customerId,
-        Pageable pageable
-    ) {
-        log.info("Fetching overdue follow-ups for customer: {}", customerId);
-
-        try {
-            // Decode customer ID (required)
-            Long decodedCustomerId;
-            try {
-                decodedCustomerId = idObfuscator.decodeId(customerId);
-            } catch (Exception e) {
-                log.warn("Failed to decode customer ID: {}", customerId, e);
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(
-                        400,
-                        "Invalid customer ID",
-                        "INVALID_CUSTOMER_ID"
-                    )
-                );
-            }
-
-            // Build specification for overdue follow-ups
-            Specification<CustomerNote> spec = CustomerNoteSpecification.hasCustomerId(decodedCustomerId)
-                .and(CustomerNoteSpecification.hasOverdueFollowUp());
-
-            // Fetch paginated results
-            Page<CustomerNote> notePage = customerNoteRepository.findAll(spec, pageable);
-
-            // Convert to DTOs
-            Page<CustomerNoteDTO> noteDTOPage = notePage.map(this::convertToDTO);
-
-            // Build response with pagination metadata
-            Map<String, Object> responseData = new HashMap<>();
-            responseData.put("notes", noteDTOPage.getContent());
-            responseData.put("currentPage", noteDTOPage.getNumber());
-            responseData.put("totalItems", noteDTOPage.getTotalElements());
-            responseData.put("totalPages", noteDTOPage.getTotalPages());
-            responseData.put("pageSize", noteDTOPage.getSize());
-
-            return ResponseEntity.ok().body(
-                ApiResponse.success(
-                    200,
-                    "Overdue follow-ups retrieved successfully",
-                    responseData
-                )
-            );
-
-        } catch (Exception e) {
-            log.error("Error fetching overdue follow-ups", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                ApiResponse.error(
-                    500,
-                    "Failed to fetch overdue follow-ups",
-                    "OVERDUE_FOLLOW_UPS_FETCH_FAILED"
                 )
             );
         }
@@ -539,17 +232,12 @@ public class CustomerNoteGetService {
             .followUpDate(note.getFollowUpDate())
             .followUpCompleted(note.getFollowUpCompleted())
             .followUpCompletedAt(note.getFollowUpCompletedAt())
-            .followUpCompletedById(note.getFollowUpCompletedBy() != null ? idObfuscator.encodeId(note.getFollowUpCompletedBy()) : null)
             .isFollowUpOverdue(note.isFollowUpOverdue())
             .isPinned(note.getIsPinned())
             .isPrivate(note.getIsPrivate())
             .priority(note.getPriority())
             .priorityDisplayName(note.getPriority() != null ? note.getPriority().getDisplayName() : null)
             .priorityDescription(note.getPriority() != null ? note.getPriority().getDescription() : null)
-            .relatedEntityType(note.getRelatedEntityType())
-            .relatedEntityId(note.getRelatedEntityId() != null ? idObfuscator.encodeId(note.getRelatedEntityId()) : null)
-            .createdById(note.getCreatedBy() != null ? idObfuscator.encodeId(note.getCreatedBy()) : null)
-            .createdByName(note.getCreatedByName())
             .createdAt(note.getCreatedAt())
             .updatedAt(note.getUpdatedAt())
             .build();

@@ -44,10 +44,4 @@ public class CreateCustomerNoteDTO {
 
     @Builder.Default
     private NotePriority priority = NotePriority.NORMAL;
-
-    // Related entities
-    @Size(max = 50, message = "Related entity type must not exceed 50 characters")
-    private String relatedEntityType;
-
-    private String relatedEntityId; // Obfuscated ID of related entity
 }

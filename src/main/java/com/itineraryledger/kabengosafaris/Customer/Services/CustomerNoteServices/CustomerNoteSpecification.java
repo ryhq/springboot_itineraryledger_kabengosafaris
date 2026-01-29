@@ -118,42 +118,6 @@ public class CustomerNoteSpecification {
     }
 
     /**
-     * Filter by created by user ID
-     */
-    public static Specification<CustomerNote> createdBy(Long createdBy) {
-        return (root, query, cb) -> {
-            if (createdBy == null) {
-                return cb.conjunction();
-            }
-            return cb.equal(root.get("createdBy"), createdBy);
-        };
-    }
-
-    /**
-     * Filter by related entity type
-     */
-    public static Specification<CustomerNote> hasRelatedEntityType(String relatedEntityType) {
-        return (root, query, cb) -> {
-            if (relatedEntityType == null || relatedEntityType.isEmpty()) {
-                return cb.conjunction();
-            }
-            return cb.equal(root.get("relatedEntityType"), relatedEntityType);
-        };
-    }
-
-    /**
-     * Filter by related entity ID
-     */
-    public static Specification<CustomerNote> hasRelatedEntityId(Long relatedEntityId) {
-        return (root, query, cb) -> {
-            if (relatedEntityId == null) {
-                return cb.conjunction();
-            }
-            return cb.equal(root.get("relatedEntityId"), relatedEntityId);
-        };
-    }
-
-    /**
      * Search across subject and content fields
      */
     public static Specification<CustomerNote> searchKeyword(String keyword) {

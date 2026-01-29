@@ -8,7 +8,8 @@ public enum TokenType {
     ACCESS("access"),      // Can access any endpoint
     REFRESH("refresh"),    // Only for obtaining new access tokens
     MFA("mfa"),            // Only for MFA verification
-    REGISTRATION("registration"); // Only for user registration account activation
+    REGISTRATION("registration"), // Only for user registration account activation
+    PASSWORD_RESET("password_reset"); // Only for password reset
 
     private final String type;
 

@@ -53,6 +53,9 @@ public class JwtTokenProvider {
     @Value("${security.registration.jwt.expiration.time.minutes:60}")
     private long registrationJwtExpirationMinutes;
 
+    @Value("${security.password-reset.jwt.expiration.time.minutes:30}")
+    private long passwordResetJwtExpirationMinutes;
+
     private long jwtExpirationTimeMillis;
 
     private long jwtRefreshExpirationTimeMillis;
@@ -60,6 +63,8 @@ public class JwtTokenProvider {
     private long mfaJwtExpirationTimeMillis;
 
     private long registrationJwtExpirationTimeMillis;
+
+    private long passwordResetJwtExpirationTimeMillis;
 
     @Autowired
     public JwtTokenProvider(SecuritySettingsGetterServices securitySettingsGetterServices) {
@@ -87,11 +92,13 @@ public class JwtTokenProvider {
             jwtExpirationMinutes = securitySettingsGetterServices.getJwtExpirationMinutes();
             mfaJwtExpirationTimeSeconds = securitySettingsGetterServices.getMFAJwtExpirationMinutes();
             registrationJwtExpirationMinutes = securitySettingsGetterServices.getRegistrationJwtExpirationMinutes();
+            passwordResetJwtExpirationMinutes = securitySettingsGetterServices.getPasswordResetJwtExpirationMinutes();
             jwtRefreshExpirationMinutes = securitySettingsGetterServices.getJwtRefreshExpirationMinutes();
 
             this.jwtExpirationTimeMillis = jwtExpirationMinutes * 60 * 1000;
             this.mfaJwtExpirationTimeMillis = mfaJwtExpirationTimeSeconds * 1000;
             this.registrationJwtExpirationTimeMillis = registrationJwtExpirationMinutes * 60 * 1000;
+            this.passwordResetJwtExpirationTimeMillis = passwordResetJwtExpirationMinutes * 60 * 1000;
             this.jwtRefreshExpirationTimeMillis = jwtRefreshExpirationMinutes * 60 * 1000;
 
             log.info("JwtTokenProvider: Loaded JWT expiration time from SecuritySettingsServices: {} milliseconds ({} minutes)",
@@ -100,6 +107,8 @@ public class JwtTokenProvider {
                     mfaJwtExpirationTimeMillis, mfaJwtExpirationTimeSeconds);
             log.info("JwtTokenProvider: Loaded Registration JWT expiration time from SecuritySettingsServices: {} milliseconds ({} minutes)",
                     registrationJwtExpirationTimeMillis, registrationJwtExpirationMinutes);
+            log.info("JwtTokenProvider: Loaded Password Reset JWT expiration time from SecuritySettingsServices: {} milliseconds ({} minutes)",
+                    passwordResetJwtExpirationTimeMillis, passwordResetJwtExpirationMinutes);
             log.info("JwtTokenProvider: Loaded JWT refresh token expiration time from SecuritySettingsServices: {} milliseconds ({} minutes)",
                     jwtRefreshExpirationTimeMillis, jwtRefreshExpirationMinutes);
             
@@ -109,6 +118,7 @@ public class JwtTokenProvider {
             this.jwtExpirationTimeMillis = jwtExpirationMinutes * 60 * 1000;
             this.mfaJwtExpirationTimeMillis = mfaJwtExpirationTimeSeconds * 1000;
             this.registrationJwtExpirationTimeMillis = registrationJwtExpirationMinutes * 60 * 1000;
+            this.passwordResetJwtExpirationTimeMillis = passwordResetJwtExpirationMinutes * 60 * 1000;
             this.jwtRefreshExpirationTimeMillis = jwtRefreshExpirationMinutes * 60 * 1000;
             log.info("JwtTokenProvider: Fallback to application.properties JWT expiration time: {} milliseconds ({} minutes)",
                     jwtExpirationTimeMillis, jwtExpirationMinutes);
@@ -116,6 +126,8 @@ public class JwtTokenProvider {
                     mfaJwtExpirationTimeMillis, mfaJwtExpirationTimeSeconds);
             log.info("JwtTokenProvider: Fallback to application.properties Registration JWT expiration time: {} milliseconds ({} minutes)",
                     registrationJwtExpirationTimeMillis, registrationJwtExpirationMinutes);
+            log.info("JwtTokenProvider: Fallback to application.properties Password Reset JWT expiration time: {} milliseconds ({} minutes)",
+                    passwordResetJwtExpirationTimeMillis, passwordResetJwtExpirationMinutes);
             log.info("JwtTokenProvider: Fallback to application.properties JWT refresh token expiration time: {} milliseconds ({} minutes)",
                     jwtRefreshExpirationTimeMillis, jwtRefreshExpirationMinutes);
         }
@@ -155,6 +167,17 @@ public class JwtTokenProvider {
                 .claim("type", TokenType.REGISTRATION.getType())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + registrationJwtExpirationTimeMillis))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public String generatePasswordResetTokenFromUsername(String name) {
+        return Jwts.builder()
+                .subject(name)
+                .claim("type", TokenType.PASSWORD_RESET.getType())
+                .claim("purpose", "password_reset")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + passwordResetJwtExpirationTimeMillis))
                 .signWith(getSigningKey())
                 .compact();
     }

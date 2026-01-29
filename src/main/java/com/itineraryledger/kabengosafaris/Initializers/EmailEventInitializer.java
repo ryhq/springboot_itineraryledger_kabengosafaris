@@ -20,9 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
  * Each event is created with system-defined variables and a system default template.
  *
  * Email Events:
- * - USER_REGISTRATION: Sent when a new user registers (currently implemented)
+ * - USER_REGISTRATION: Sent when a new user registers
+ * - PASSWORD_RESET: Sent when a user requests to reset their password
  *
- * Note: Other events (PASSWORD_RESET, EMAIL_VERIFICATION, etc.) will be added in future iterations.
+ * Note: Other events (EMAIL_VERIFICATION, ACCOUNT_ACTIVATED, etc.) will be added in future iterations.
  */
 @Component
 @RequiredArgsConstructor
@@ -105,8 +106,13 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
             "Sent when a new user registers in the system. Contains welcome message and account activation instructions."
         );
 
+        // Initialize PASSWORD_RESET event with system-defined variables
+        initializeEvent(
+            "PASSWORD_RESET",
+            "Sent when a user requests to reset their password. Contains password reset link and instructions."
+        );
+
         // TODO: Add other events in future iterations:
-        // - PASSWORD_RESET
         // - EMAIL_VERIFICATION
         // - ACCOUNT_ACTIVATED
         // - ACCOUNT_DEACTIVATED

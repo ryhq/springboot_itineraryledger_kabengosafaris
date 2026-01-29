@@ -77,9 +77,6 @@ public class CustomerNote {
     @Column(name = "follow_up_completed_at")
     private LocalDateTime followUpCompletedAt;
 
-    @Column(name = "follow_up_completed_by")
-    private Long followUpCompletedBy;
-
     // ========================
     // VISIBILITY & PRIORITY
     // ========================
@@ -98,27 +95,8 @@ public class CustomerNote {
     private NotePriority priority = NotePriority.NORMAL;
 
     // ========================
-    // RELATED ENTITIES
-    // ========================
-
-    /**
-     * Optional reference to related entity (e.g., Safari, Quotation)
-     */
-    @Column(name = "related_entity_type", length = 50)
-    private String relatedEntityType;
-
-    @Column(name = "related_entity_id")
-    private Long relatedEntityId;
-
-    // ========================
     // METADATA
     // ========================
-
-    @Column(name = "created_by", nullable = false)
-    private Long createdBy;
-
-    @Column(name = "created_by_name", length = 200)
-    private String createdByName; // Denormalized for display
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

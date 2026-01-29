@@ -11,13 +11,10 @@ import com.itineraryledger.kabengosafaris.Customer.Entity.CustomerNote.NotePrior
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
-import com.itineraryledger.kabengosafaris.User.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -93,38 +90,6 @@ public class CreateCustomerNoteService {
                 );
             }
 
-            // Decode related entity ID if provided
-            Long relatedEntityId = null;
-            if (createDTO.getRelatedEntityId() != null && !createDTO.getRelatedEntityId().isEmpty()) {
-                try {
-                    relatedEntityId = idObfuscator.decodeId(createDTO.getRelatedEntityId());
-                } catch (Exception e) {
-                    log.warn("Invalid related entity ID: {}", createDTO.getRelatedEntityId());
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(
-                            400,
-                            "Invalid related entity ID",
-                            "INVALID_RELATED_ENTITY_ID"
-                        )
-                    );
-                }
-            }
-
-            // Get current user info
-            Long currentUserId = null;
-            String currentUserName = "SYSTEM";
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.isAuthenticated() &&
-                !authentication.getPrincipal().equals("anonymousUser")) {
-                currentUserName = authentication.getName();
-                Object principal = authentication.getPrincipal();
-                if (principal instanceof User) {
-                    User user = (User) principal;
-                    currentUserId = user.getId();
-                    currentUserName = user.getFirstName() + " " + user.getLastName();
-                }
-            }
-
             // Create note entity
             CustomerNote note = CustomerNote.builder()
                 .customer(customer)
@@ -136,10 +101,6 @@ public class CreateCustomerNoteService {
                 .isPinned(createDTO.getIsPinned() != null ? createDTO.getIsPinned() : false)
                 .isPrivate(createDTO.getIsPrivate() != null ? createDTO.getIsPrivate() : false)
                 .priority(createDTO.getPriority() != null ? createDTO.getPriority() : NotePriority.NORMAL)
-                .relatedEntityType(createDTO.getRelatedEntityType())
-                .relatedEntityId(relatedEntityId)
-                .createdBy(currentUserId)
-                .createdByName(currentUserName)
                 .build();
 
             // Save to database
@@ -188,13 +149,6 @@ public class CreateCustomerNoteService {
             );
         }
 
-        // Validate related entity type length if provided
-        if (dto.getRelatedEntityType() != null && dto.getRelatedEntityType().length() > 50) {
-            return ResponseEntity.badRequest().body(
-                ApiResponse.error(400, "Related entity type cannot exceed 50 characters", "RELATED_ENTITY_TYPE_TOO_LONG")
-            );
-        }
-
         return null; // No validation errors
     }
 
@@ -214,17 +168,12 @@ public class CreateCustomerNoteService {
             .followUpDate(note.getFollowUpDate())
             .followUpCompleted(note.getFollowUpCompleted())
             .followUpCompletedAt(note.getFollowUpCompletedAt())
-            .followUpCompletedById(note.getFollowUpCompletedBy() != null ? idObfuscator.encodeId(note.getFollowUpCompletedBy()) : null)
             .isFollowUpOverdue(note.isFollowUpOverdue())
             .isPinned(note.getIsPinned())
             .isPrivate(note.getIsPrivate())
             .priority(note.getPriority())
             .priorityDisplayName(note.getPriority() != null ? note.getPriority().getDisplayName() : null)
             .priorityDescription(note.getPriority() != null ? note.getPriority().getDescription() : null)
-            .relatedEntityType(note.getRelatedEntityType())
-            .relatedEntityId(note.getRelatedEntityId() != null ? idObfuscator.encodeId(note.getRelatedEntityId()) : null)
-            .createdById(note.getCreatedBy() != null ? idObfuscator.encodeId(note.getCreatedBy()) : null)
-            .createdByName(note.getCreatedByName())
             .createdAt(note.getCreatedAt())
             .updatedAt(note.getUpdatedAt())
             .build();

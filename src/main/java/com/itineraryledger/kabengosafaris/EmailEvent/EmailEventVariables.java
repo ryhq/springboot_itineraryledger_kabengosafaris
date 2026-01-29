@@ -86,6 +86,56 @@ public class EmailEventVariables {
                 ]
                 """;
 
+            case "PASSWORD_RESET" -> """
+                [
+                    {
+                        "name":"username",
+                        "description":"User's username",
+                        "isRequired":true
+                    },
+                    {
+                        "name":"email",
+                        "description":"User's email address",
+                        "isRequired":true
+                    },
+                    {
+                        "name":"firstName",
+                        "description":"User's first name",
+                        "isRequired":false
+                    },
+                    {
+                        "name":"lastName",
+                        "description":"User's last name",
+                        "isRequired":false
+                    },
+                    {
+                        "name":"resetToken",
+                        "description":"Password reset token (JWT)",
+                        "isRequired":true
+                    },
+                    {
+                        "name":"resetLink",
+                        "description":"Full password reset URL with token",
+                        "isRequired":true
+                    },
+                    {
+                        "name":"expirationMinutes",
+                        "description":"Number of minutes until reset link expires",
+                        "isRequired":true
+                    },
+                    {
+                        "name":"expirationDateTime",
+                        "description":"Exact date and time when reset link expires (yyyy-MM-dd HH:mm:ss format)",
+                        "isRequired":true
+                    },
+                    {
+                        "name":"requestedAt",
+                        "description":"Date and time when password reset was requested",
+                        "isRequired":false
+                    }
+                ]
+                """;
+
             default -> "[]";
         };
     }
@@ -97,7 +147,8 @@ public class EmailEventVariables {
      */
     public static String[] getSupportedEvents() {
         return new String[]{
-            "USER_REGISTRATION"
+            "USER_REGISTRATION",
+            "PASSWORD_RESET"
         };
     }
 }

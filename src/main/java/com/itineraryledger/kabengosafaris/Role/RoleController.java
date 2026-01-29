@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Role.DTOs.CreateRoleDTO;
+import com.itineraryledger.kabengosafaris.Role.DTOs.RoleUserAssignmentDTO;
 import com.itineraryledger.kabengosafaris.Role.DTOs.UpdateRoleDTO;
 import com.itineraryledger.kabengosafaris.Role.DTOs.UpdateRolePermissionsDTO;
 import com.itineraryledger.kabengosafaris.Role.Services.CreateRoleService;
@@ -22,6 +23,7 @@ import com.itineraryledger.kabengosafaris.Role.Services.RoleDeleteService;
 import com.itineraryledger.kabengosafaris.Role.Services.RoleGetService;
 import com.itineraryledger.kabengosafaris.Role.Services.RolePermissionService;
 import com.itineraryledger.kabengosafaris.Role.Services.RoleUpdateService;
+import com.itineraryledger.kabengosafaris.Role.Services.RoleUserAssignmentService;
 
 import jakarta.validation.Valid;
 import java.util.ArrayList;
@@ -55,6 +57,9 @@ public class RoleController {
 
     @Autowired
     private RolePermissionService rolePermissionService;
+
+    @Autowired
+    private RoleUserAssignmentService roleUserAssignmentService;
 
     /**
      * Create a new role
@@ -501,5 +506,139 @@ public class RoleController {
         @PathVariable String entity
     ) {
         return rolePermissionService.resetRoleEntityPermissionsToDefaults(roleId, entity);
+    }
+
+    // ==================== User Assignment Endpoints ====================
+
+    /**
+     * Get all users with their assignment status for a specific role.
+     *
+     * Returns a paginated list of all users, each with a boolean 'assigned' field
+     * indicating whether the user is assigned to this role.
+     *
+     * @param roleId The obfuscated role ID
+     * @param page Page number (0-based), default: 0
+     * @param size Page size, default: 10
+     * @param search Optional search keyword (searches username, email, firstName, lastName)
+     * @param sortDir Sort direction: "asc" or "desc", default: "asc"
+     * @return ResponseEntity with paginated users and their assignment status
+     *
+     * Example request:
+     * GET /api/roles/{roleId}/users?page=0&size=20&search=john
+     *
+     * Example response:
+     * {
+     *   "success": true,
+     *   "statusCode": 200,
+     *   "message": "Users retrieved successfully",
+     *   "data": {
+     *     "role": {
+     *       "id": "abc123",
+     *       "name": "ADMIN",
+     *       "displayName": "Administrator"
+     *     },
+     *     "users": [
+     *       {
+     *         "id": "user123",
+     *         "username": "john.doe",
+     *         "email": "john@example.com",
+     *         "firstName": "John",
+     *         "lastName": "Doe",
+     *         "fullName": "John Doe",
+     *         "enabled": true,
+     *         "assigned": true
+     *       },
+     *       {
+     *         "id": "user456",
+     *         "username": "jane.smith",
+     *         "email": "jane@example.com",
+     *         "firstName": "Jane",
+     *         "lastName": "Smith",
+     *         "fullName": "Jane Smith",
+     *         "enabled": true,
+     *         "assigned": false
+     *       }
+     *     ],
+     *     "currentPage": 0,
+     *     "totalItems": 50,
+     *     "totalPages": 3,
+     *     "assignedCount": 5
+     *   }
+     * }
+     */
+    @GetMapping("/{roleId}/users")
+    @PreAuthorize("hasAuthority('PERM_READ_ROLE')")
+    public ResponseEntity<?> getUsersForRole(
+        @PathVariable String roleId,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(required = false) String search,
+        @RequestParam(defaultValue = "asc") String sortDir
+    ) {
+        return roleUserAssignmentService.getUsersForRole(roleId, page, size, search, sortDir);
+    }
+
+    /**
+     * Batch assign or remove users from roles.
+     *
+     * Accepts a list of assignment requests. Each request specifies:
+     * - userId: The obfuscated user ID
+     * - roleId: The obfuscated role ID
+     * - assign: true to assign, false to remove
+     *
+     * @param requests List of assignment requests
+     * @return ResponseEntity with results for each operation
+     *
+     * Example request:
+     * POST /api/roles/user-assignments
+     * [
+     *   { "userId": "user123", "roleId": "role456", "assign": true },
+     *   { "userId": "user789", "roleId": "role456", "assign": false }
+     * ]
+     *
+     * Example response:
+     * {
+     *   "success": true,
+     *   "statusCode": 200,
+     *   "message": "Processed 2 assignments: 2 succeeded, 0 failed",
+     *   "data": {
+     *     "results": [
+     *       {
+     *         "userId": "user123",
+     *         "roleId": "role456",
+     *         "requestedAction": "assign",
+     *         "success": true,
+     *         "message": "Role assigned successfully",
+     *         "action": "assigned",
+     *         "roleName": "ADMIN",
+     *         "roleDisplayName": "Administrator",
+     *         "userName": "john.doe",
+     *         "userFullName": "John Doe"
+     *       },
+     *       {
+     *         "userId": "user789",
+     *         "roleId": "role456",
+     *         "requestedAction": "remove",
+     *         "success": true,
+     *         "message": "Role removed successfully",
+     *         "action": "removed",
+     *         "roleName": "ADMIN",
+     *         "roleDisplayName": "Administrator",
+     *         "userName": "jane.smith",
+     *         "userFullName": "Jane Smith"
+     *       }
+     *     ],
+     *     "totalProcessed": 2,
+     *     "successCount": 2,
+     *     "failCount": 0
+     *   }
+     * }
+     */
+    @PostMapping("/user-assignments")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_USER')")
+    public ResponseEntity<?> assignUserRoles(
+        @Valid @RequestBody List<RoleUserAssignmentDTO> requests
+    ) {
+        return roleUserAssignmentService.assignUserRoles(requests);
     }
 }

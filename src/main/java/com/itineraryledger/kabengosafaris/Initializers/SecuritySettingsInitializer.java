@@ -42,6 +42,9 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
     @Value("${security.registration.jwt.expiration.time.minutes:60}")
     private long registrationJwtExpirationMinutes;
 
+    @Value("${security.password-reset.jwt.expiration.time.minutes:30}")
+    private long passwordResetJwtExpirationMinutes;
+
     @Value("${security.jwt.refresh.expiration.time.minutes:10080}")
     private Long jwtRefreshExpirationTimeMinutes;
 
@@ -177,6 +180,15 @@ public class SecuritySettingsInitializer implements ApplicationRunner, Ordered {
                 String.valueOf(registrationJwtExpirationMinutes),
                 SettingDataType.LONG,
                 "Registration JWT token expiration time in minutes. This token is only sent in user's registration email to allow them to activate their account.",
+                SecuritySetting.Category.JWT,
+                false
+        );
+
+        createOrUpdateSetting(
+                "password-reset.jwt.expiration.time.minutes",
+                String.valueOf(passwordResetJwtExpirationMinutes),
+                SettingDataType.LONG,
+                "Password reset JWT token expiration time in minutes. This token is sent in password reset emails to allow users to reset their password.",
                 SecuritySetting.Category.JWT,
                 false
         );

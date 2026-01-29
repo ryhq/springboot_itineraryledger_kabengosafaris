@@ -50,8 +50,8 @@ public class EmailTemplateTestService {
     private final SecuritySettingsGetterServices securitySettingsGetterServices;
     private final IdObfuscator idObfuscator;
 
-    @Value("${app.base.url}")
-    private String appBaseUrl;
+    @Value("${app.management.base.url}")
+    private String appManagementBaseUrl;
 
     /**
      * Send a test email using a specific template to the authenticated user
@@ -172,10 +172,10 @@ public class EmailTemplateTestService {
             case "USER_REGISTRATION":
                 return generateUserRegistrationTestData(user);
 
+            case "PASSWORD_RESET":
+                return generatePasswordResetTestData(user);
+
             // Add more cases as email events are implemented
-            // case "PASSWORD_RESET":
-            //     return generatePasswordResetTestData(user);
-            //
             // case "EMAIL_VERIFICATION":
             //     return generateEmailVerificationTestData(user);
 
@@ -198,7 +198,7 @@ public class EmailTemplateTestService {
 
         // Generate test activation token
         String activationToken = jwtTokenProvider.generateRegistrationTokenFromUsername(user.getUsername());
-        String activationLink = appBaseUrl + "/api/auth/activate?token=" + activationToken;
+        String activationLink = appManagementBaseUrl + "/account-activation?token=" + activationToken;
 
         // Calculate expiration time
         Long expirationMinutes = securitySettingsGetterServices.getRegistrationJwtExpirationMinutes();
@@ -224,14 +224,41 @@ public class EmailTemplateTestService {
         return new TestEmailData(variables, subject);
     }
 
+    /**
+     * Generate test data for PASSWORD_RESET email event
+     *
+     * @param user The user to send the test email to
+     * @return TestEmailData with password reset-specific variables and subject
+     */
+    private TestEmailData generatePasswordResetTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+
+        // Generate test password reset token
+        String resetToken = jwtTokenProvider.generatePasswordResetTokenFromUsername(user.getUsername());
+        String resetLink = appManagementBaseUrl + "/reset-password?token=" + resetToken;
+
+        // Calculate expiration time
+        Long expirationMinutes = securitySettingsGetterServices.getPasswordResetJwtExpirationMinutes();
+        LocalDateTime expirationDateTime = LocalDateTime.now().plusMinutes(expirationMinutes);
+        LocalDateTime requestedAt = LocalDateTime.now();
+
+        // Populate variables
+        variables.put("username", user.getUsername());
+        variables.put("email", user.getEmail());
+        variables.put("firstName", user.getFirstName() != null ? user.getFirstName() : "");
+        variables.put("lastName", user.getLastName() != null ? user.getLastName() : "");
+        variables.put("resetToken", resetToken);
+        variables.put("resetLink", resetLink);
+        variables.put("expirationMinutes", String.valueOf(expirationMinutes));
+        variables.put("expirationDateTime", expirationDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        variables.put("requestedAt", requestedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+
+        String subject = "[TEST] Password Reset Request - Kabengosafaris";
+
+        return new TestEmailData(variables, subject);
+    }
+
     // Add more test data generators for other email event types as needed
-    // private TestEmailData generatePasswordResetTestData(User user) {
-    //     Map<String, String> variables = new HashMap<>();
-    //     variables.put("username", user.getUsername());
-    //     variables.put("resetLink", appBaseUrl + "/reset-password?token=test_token");
-    //     String subject = "[TEST] Password Reset Request";
-    //     return new TestEmailData(variables, subject);
-    // }
 
     /**
      * Replace {{variableName}} placeholders with actual values

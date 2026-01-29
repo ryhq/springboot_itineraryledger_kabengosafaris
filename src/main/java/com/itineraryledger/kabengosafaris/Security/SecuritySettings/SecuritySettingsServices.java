@@ -78,6 +78,9 @@ public class SecuritySettingsServices {
     @Value("${security.registration.jwt.expiration.time.minutes:60}")
     private long registrationJwtExpirationMinutes;
 
+    @Value("${security.password-reset.jwt.expiration.time.minutes:30}")
+    private long passwordResetJwtExpirationMinutes;
+
     /**
      * #######################################
      * ### Login Rate Limit Configurations ###
@@ -449,6 +452,7 @@ public class SecuritySettingsServices {
         updateSettingIfExists("jwt.refresh.expiration.time.minutes", String.valueOf(jwtRefreshExpirationMinutes));
         updateSettingIfExists("mfa.jwt.expiration.time.seconds", String.valueOf(mfaJwtExpirationTimeSeconds));
         updateSettingIfExists("registration.jwt.expiration.time.minutes", String.valueOf(registrationJwtExpirationMinutes));
+        updateSettingIfExists("password-reset.jwt.expiration.time.minutes", String.valueOf(passwordResetJwtExpirationMinutes));
         // Reload configurations
         jwtTokenProvider.reloadConfig(securitySettingsGetterServices);
         return ResponseEntity.ok(

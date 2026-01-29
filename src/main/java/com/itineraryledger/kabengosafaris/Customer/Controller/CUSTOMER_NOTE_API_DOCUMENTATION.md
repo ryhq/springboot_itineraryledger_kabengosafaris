@@ -66,9 +66,7 @@ Creates a new note for a customer.
   "followUpDate": "2024-01-20T10:00:00",
   "isPinned": false,
   "isPrivate": false,
-  "priority": "HIGH",
-  "relatedEntityType": "Safari",
-  "relatedEntityId": "safari456def"
+  "priority": "HIGH"
 }
 ```
 
@@ -84,8 +82,6 @@ Creates a new note for a customer.
 | isPinned | Boolean | No | Pin to top of notes list (default: false) |
 | isPrivate | Boolean | No | Only visible to creator (default: false) |
 | priority | NotePriority | No | Note priority (default: NORMAL) |
-| relatedEntityType | String | No | Related entity type e.g., Safari, Quotation (max 50 chars) |
-| relatedEntityId | String | No | Obfuscated ID of related entity |
 
 **Success Response (201):**
 
@@ -104,16 +100,13 @@ Creates a new note for a customer.
     "content": "Customer is interested in a 5-day Serengeti safari...",
     "followUpDate": "2024-01-20T10:00:00",
     "followUpCompleted": false,
+    "followUpCompletedAt": null,
     "isFollowUpOverdue": false,
     "isPinned": false,
     "isPrivate": false,
     "priority": "HIGH",
     "priorityDisplayName": "High",
     "priorityDescription": "High priority - requires prompt attention",
-    "relatedEntityType": "Safari",
-    "relatedEntityId": "safari456def",
-    "createdById": "user789ghi",
-    "createdByName": "Jane Smith",
     "createdAt": "2024-01-15T10:30:00",
     "updatedAt": "2024-01-15T10:30:00"
   }
@@ -128,7 +121,6 @@ Creates a new note for a customer.
 | 400 | CUSTOMER_NOT_FOUND | Customer does not exist |
 | 400 | INVALID_CONTENT | Note content is empty |
 | 400 | SUBJECT_TOO_LONG | Subject exceeds 200 characters |
-| 400 | INVALID_RELATED_ENTITY_ID | Invalid related entity ID |
 
 ---
 
@@ -155,13 +147,9 @@ All fields are optional. Only provided fields will be updated.
   "noteType": "FOLLOW_UP",
   "subject": "Updated: Safari package follow-up",
   "content": "Customer confirmed interest. Sent quotation via email.",
-  "followUpDate": "2024-01-25T14:00:00",
-  "followUpCompleted": false,
   "isPinned": true,
   "isPrivate": false,
-  "priority": "NORMAL",
-  "relatedEntityType": "Quotation",
-  "relatedEntityId": "quote789jkl"
+  "priority": "NORMAL"
 }
 ```
 
@@ -172,18 +160,13 @@ All fields are optional. Only provided fields will be updated.
 | noteType | NoteType | No | New note type |
 | subject | String | No | New subject |
 | content | String | No | New content (cannot be empty if provided) |
-| followUpDate | DateTime | No | New follow-up date |
-| followUpCompleted | Boolean | No | Mark follow-up as completed |
 | isPinned | Boolean | No | Pin status |
 | isPrivate | Boolean | No | Private status |
 | priority | NotePriority | No | New priority |
-| relatedEntityType | String | No | New related entity type |
-| relatedEntityId | String | No | New related entity ID |
 
 **Notes:**
 - At least one field must be provided for update
-- When `followUpCompleted` is set to true, the system records the completion time and user
-- When `followUpCompleted` is set to false, completion data is cleared
+- Follow-up status cannot be updated through this endpoint - use the dedicated "Mark Follow-Up as Completed" endpoint
 
 **Success Response (200):**
 
@@ -201,14 +184,27 @@ All fields are optional. Only provided fields will be updated.
     "content": "Customer confirmed interest. Sent quotation via email.",
     "followUpDate": "2024-01-25T14:00:00",
     "followUpCompleted": false,
+    "followUpCompletedAt": null,
     "isFollowUpOverdue": false,
     "isPinned": true,
+    "isPrivate": false,
     "priority": "NORMAL",
     "priorityDisplayName": "Normal",
+    "createdAt": "2024-01-15T10:30:00",
     "updatedAt": "2024-01-15T11:00:00"
   }
 }
 ```
+
+**Error Responses:**
+
+| Code | Error Code | Description |
+|------|------------|-------------|
+| 400 | INVALID_NOTE_ID | Invalid or malformed note ID |
+| 400 | INVALID_CONTENT | Note content is empty |
+| 400 | SUBJECT_TOO_LONG | Subject exceeds 200 characters |
+| 400 | NO_FIELDS_TO_UPDATE | At least one field must be provided for update |
+| 404 | CUSTOMER_NOTE_NOT_FOUND | Customer note not found |
 
 ---
 
@@ -234,10 +230,11 @@ Marks a note's follow-up as completed.
   "message": "Follow-up marked as completed successfully",
   "data": {
     "id": "note123abc",
+    "customerId": "abc123xyz",
+    "customerDisplayName": "John Doe",
     "followUpDate": "2024-01-20T10:00:00",
     "followUpCompleted": true,
     "followUpCompletedAt": "2024-01-20T09:45:00",
-    "followUpCompletedById": "user789ghi",
     "isFollowUpOverdue": false,
     "updatedAt": "2024-01-20T09:45:00"
   }
@@ -248,8 +245,10 @@ Marks a note's follow-up as completed.
 
 | Code | Error Code | Description |
 |------|------------|-------------|
+| 400 | INVALID_NOTE_ID | Invalid or malformed note ID |
 | 400 | NO_FOLLOW_UP_DATE | Note does not have a follow-up date |
 | 400 | FOLLOW_UP_ALREADY_COMPLETED | Follow-up is already completed |
+| 404 | CUSTOMER_NOTE_NOT_FOUND | Customer note not found |
 
 ---
 
@@ -276,6 +275,13 @@ Deletes one or more customer notes.
   "data": null
 }
 ```
+
+**Error Responses:**
+
+| Code | Error Code | Description |
+|------|------------|-------------|
+| 400 | INVALID_NOTE_ID | One or more invalid note IDs |
+| 404 | CUSTOMER_NOTE_NOT_FOUND | One or more notes not found |
 
 ---
 
@@ -310,16 +316,13 @@ Retrieves a single customer note by its obfuscated ID.
     "content": "Customer is interested in a 5-day Serengeti safari...",
     "followUpDate": "2024-01-20T10:00:00",
     "followUpCompleted": false,
+    "followUpCompletedAt": null,
     "isFollowUpOverdue": true,
     "isPinned": false,
     "isPrivate": false,
     "priority": "HIGH",
     "priorityDisplayName": "High",
     "priorityDescription": "High priority - requires prompt attention",
-    "relatedEntityType": "Safari",
-    "relatedEntityId": "safari456def",
-    "createdById": "user789ghi",
-    "createdByName": "Jane Smith",
     "createdAt": "2024-01-15T10:30:00",
     "updatedAt": "2024-01-15T10:30:00"
   }
@@ -357,18 +360,28 @@ Retrieves a paginated list of customer notes with optional filtering.
 | isPrivate | Boolean | null | Filter by private status |
 | priority | NotePriority | null | Filter by priority |
 | followUpCompleted | Boolean | null | Filter by follow-up completed status |
-| createdById | String | null | Filter by creator ID |
-| relatedEntityType | String | null | Filter by related entity type |
-| relatedEntityId | String | null | Filter by related entity ID |
+| pendingFollowUpsOnly | Boolean | null | Show only notes with pending follow-ups |
+| overdueFollowUpsOnly | Boolean | null | Show only notes with overdue follow-ups |
 | keyword | String | null | Search across subject and content |
 | page | Integer | 0 | Page number (0-indexed) |
 | size | Integer | 10 | Page size |
 | sortDirection | String | desc | Sort direction (asc/desc) |
 
-**Example Request:**
+**Filter Notes:**
+- `pendingFollowUpsOnly`: When true, returns only notes with `followUpDate` set and `followUpCompleted` = false
+- `overdueFollowUpsOnly`: When true, returns only notes with `followUpDate` in the past and `followUpCompleted` = false
+- `customerId`: Use this parameter to filter notes for a specific customer
+
+**Example Requests:**
 
 ```
 GET /api/customer-notes?noteType=PHONE_CALL&priority=HIGH&followUpCompleted=false&page=0&size=20
+
+GET /api/customer-notes?customerId=abc123xyz&isPinned=true
+
+GET /api/customer-notes?customerId=abc123xyz&pendingFollowUpsOnly=true&sortDirection=asc
+
+GET /api/customer-notes?customerId=abc123xyz&overdueFollowUpsOnly=true
 ```
 
 **Success Response (200):**
@@ -385,172 +398,25 @@ GET /api/customer-notes?noteType=PHONE_CALL&priority=HIGH&followUpCompleted=fals
         "customerDisplayName": "John Doe",
         "noteType": "PHONE_CALL",
         "noteTypeDisplayName": "Phone Call",
+        "noteTypeDescription": "Notes from a phone conversation",
         "subject": "Discussed safari package options",
+        "content": "Customer is interested in a 5-day Serengeti safari...",
         "followUpDate": "2024-01-20T10:00:00",
         "followUpCompleted": false,
+        "followUpCompletedAt": null,
         "isFollowUpOverdue": true,
         "isPinned": false,
+        "isPrivate": false,
         "priority": "HIGH",
         "priorityDisplayName": "High",
-        "createdByName": "Jane Smith",
-        "createdAt": "2024-01-15T10:30:00"
+        "priorityDescription": "High priority - requires prompt attention",
+        "createdAt": "2024-01-15T10:30:00",
+        "updatedAt": "2024-01-15T10:30:00"
       }
     ],
     "currentPage": 0,
     "totalItems": 50,
     "totalPages": 5,
-    "pageSize": 10
-  }
-}
-```
-
----
-
-### 7. Get Notes for a Specific Customer
-
-Retrieves all notes for a specific customer with optional filtering.
-
-**Endpoint:** `GET /api/customer-notes/customer/{customerId}`
-
-**Permission:** `PERM_READ_CUSTOMER_NOTE`
-
-**Path Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| customerId | String | Required obfuscated customer ID |
-
-**Query Parameters:**
-
-Same as "Get All Customer Notes" endpoint (excluding customerId).
-
-**Example Request:**
-
-```
-GET /api/customer-notes/customer/abc123xyz?isPinned=true
-```
-
-**Success Response (200):**
-
-```json
-{
-  "status": 200,
-  "message": "Customer notes retrieved successfully",
-  "data": {
-    "notes": [...],
-    "currentPage": 0,
-    "totalItems": 10,
-    "totalPages": 1,
-    "pageSize": 10
-  }
-}
-```
-
----
-
-### 8. Get Pending Follow-Ups
-
-Retrieves notes with pending follow-ups (follow-up date set but not completed).
-
-**Endpoint:** `GET /api/customer-notes/customer/{customerId}/pending-follow-ups`
-
-**Permission:** `PERM_READ_CUSTOMER_NOTE`
-
-**Path Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| customerId | String | Required obfuscated customer ID |
-
-**Query Parameters:**
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| page | Integer | 0 | Page number (0-indexed) |
-| size | Integer | 10 | Page size |
-| sortDirection | String | asc | Sort by follow-up date (asc/desc) |
-
-**Example Request:**
-
-```
-GET /api/customer-notes/customer/abc123xyz/pending-follow-ups?sortDirection=asc
-```
-
-**Success Response (200):**
-
-```json
-{
-  "status": 200,
-  "message": "Pending follow-ups retrieved successfully",
-  "data": {
-    "notes": [
-      {
-        "id": "note123abc",
-        "subject": "Follow up on safari inquiry",
-        "followUpDate": "2024-01-20T10:00:00",
-        "followUpCompleted": false,
-        "isFollowUpOverdue": false,
-        "priority": "HIGH"
-      }
-    ],
-    "currentPage": 0,
-    "totalItems": 3,
-    "totalPages": 1,
-    "pageSize": 10
-  }
-}
-```
-
----
-
-### 9. Get Overdue Follow-Ups
-
-Retrieves notes with overdue follow-ups (follow-up date in the past and not completed).
-
-**Endpoint:** `GET /api/customer-notes/customer/{customerId}/overdue-follow-ups`
-
-**Permission:** `PERM_READ_CUSTOMER_NOTE`
-
-**Path Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| customerId | String | Required obfuscated customer ID |
-
-**Query Parameters:**
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| page | Integer | 0 | Page number (0-indexed) |
-| size | Integer | 10 | Page size |
-| sortDirection | String | asc | Sort by follow-up date (asc/desc) |
-
-**Example Request:**
-
-```
-GET /api/customer-notes/customer/abc123xyz/overdue-follow-ups
-```
-
-**Success Response (200):**
-
-```json
-{
-  "status": 200,
-  "message": "Overdue follow-ups retrieved successfully",
-  "data": {
-    "notes": [
-      {
-        "id": "note456def",
-        "subject": "Urgent: Respond to complaint",
-        "followUpDate": "2024-01-10T10:00:00",
-        "followUpCompleted": false,
-        "isFollowUpOverdue": true,
-        "priority": "URGENT"
-      }
-    ],
-    "currentPage": 0,
-    "totalItems": 1,
-    "totalPages": 1,
     "pageSize": 10
   }
 }

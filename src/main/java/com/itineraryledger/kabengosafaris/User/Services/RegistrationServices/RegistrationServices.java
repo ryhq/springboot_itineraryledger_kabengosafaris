@@ -52,8 +52,8 @@ public class RegistrationServices {
     @Autowired
     private EmailSendingService emailSendingService;
 
-    @Value("${app.base.url}")
-    private String appBaseUrl;
+    @Value("${app.management.base.url}")
+    private String appManagementBaseUrl;
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
             "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
@@ -144,7 +144,7 @@ public class RegistrationServices {
             String activationToken = jwtTokenProvider.generateRegistrationTokenFromUsername(user.getUsername());
 
             // Build activation link
-            String activationLink = appBaseUrl + "/api/auth/activate?token=" + activationToken;
+            String activationLink = appManagementBaseUrl + "/account-activation?token=" + activationToken;
 
             // Calculate expiration time
             Long expirationMinutes = securitySettingsGetterServices.getRegistrationJwtExpirationMinutes();

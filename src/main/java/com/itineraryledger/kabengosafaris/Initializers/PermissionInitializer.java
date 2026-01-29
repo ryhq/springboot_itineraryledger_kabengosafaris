@@ -103,6 +103,10 @@ public class PermissionInitializer implements ApplicationRunner {
             "ACTIVITY",
             "ACTIVITY_IMAGE",
             "ACTIVITY_DOCUMENT",
+            
+            "PARK_ACTIVITY_IMAGE",
+            "PARK_ACTIVITY_DOCUMENT",
+
             "ACCOMMODATION",
             "ACCOMMODATION_EMAIL",
             "ACCOMMODATION_PHONE",

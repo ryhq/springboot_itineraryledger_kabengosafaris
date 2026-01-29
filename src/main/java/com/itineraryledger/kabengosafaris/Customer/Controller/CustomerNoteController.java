@@ -10,7 +10,6 @@ import com.itineraryledger.kabengosafaris.Customer.Services.CustomerNoteServices
 import com.itineraryledger.kabengosafaris.Customer.Services.CustomerNoteServices.UpdateCustomerNoteService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -137,9 +136,8 @@ public class CustomerNoteController {
      * @param isPrivate Filter by private status
      * @param priority Filter by priority
      * @param followUpCompleted Filter by follow-up completed status
-     * @param createdById Filter by creator ID
-     * @param relatedEntityType Filter by related entity type
-     * @param relatedEntityId Filter by related entity ID
+     * @param pendingFollowUpsOnly Filter only notes with pending follow-ups
+     * @param overdueFollowUpsOnly Filter only notes with overdue follow-ups
      * @param keyword Search keyword across multiple fields
      * @param page Page number (0-indexed)
      * @param size Page size
@@ -156,9 +154,8 @@ public class CustomerNoteController {
         @RequestParam(required = false) Boolean isPrivate,
         @RequestParam(required = false) NotePriority priority,
         @RequestParam(required = false) Boolean followUpCompleted,
-        @RequestParam(required = false) String createdById,
-        @RequestParam(required = false) String relatedEntityType,
-        @RequestParam(required = false) String relatedEntityId,
+        @RequestParam(required = false) Boolean pendingFollowUpsOnly,
+        @RequestParam(required = false) Boolean overdueFollowUpsOnly,
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
@@ -179,125 +176,11 @@ public class CustomerNoteController {
             isPrivate,
             priority,
             followUpCompleted,
-            createdById,
-            relatedEntityType,
-            relatedEntityId,
+            pendingFollowUpsOnly,
+            overdueFollowUpsOnly,
             keyword,
             pageable
         );
     }
 
-    /**
-     * Get all notes for a specific customer
-     *
-     * @param customerId Required customer ID
-     * @param noteType Filter by note type
-     * @param subject Filter by subject (partial match)
-     * @param isPinned Filter by pinned status
-     * @param isPrivate Filter by private status
-     * @param priority Filter by priority
-     * @param followUpCompleted Filter by follow-up completed status
-     * @param createdById Filter by creator ID
-     * @param relatedEntityType Filter by related entity type
-     * @param relatedEntityId Filter by related entity ID
-     * @param keyword Search keyword across multiple fields
-     * @param page Page number (0-indexed)
-     * @param size Page size
-     * @param sortDirection Sort direction (asc/desc)
-     * @return ResponseEntity with ApiResponse containing paginated notes
-     */
-    @GetMapping("/customer/{customerId}")
-    @PreAuthorize("hasAuthority('PERM_READ_CUSTOMER_NOTE')")
-    public ResponseEntity<ApiResponse<?>> getCustomersNotes(
-        @PathVariable @NotBlank(message = "Customer ID is required") String customerId,
-        @RequestParam(required = false) NoteType noteType,
-        @RequestParam(required = false) String subject,
-        @RequestParam(required = false) Boolean isPinned,
-        @RequestParam(required = false) Boolean isPrivate,
-        @RequestParam(required = false) NotePriority priority,
-        @RequestParam(required = false) Boolean followUpCompleted,
-        @RequestParam(required = false) String createdById,
-        @RequestParam(required = false) String relatedEntityType,
-        @RequestParam(required = false) String relatedEntityId,
-        @RequestParam(required = false) String keyword,
-        @RequestParam(required = false, defaultValue = "0") Integer page,
-        @RequestParam(required = false, defaultValue = "10") Integer size,
-        @RequestParam(required = false, defaultValue = "desc") String sortDirection
-    ) {
-        log.info("GET /api/customer-notes/customer/{} - Fetching notes for customer", customerId);
-
-        Sort sort = sortDirection.equalsIgnoreCase("asc")
-            ? Sort.by("createdAt").ascending()
-            : Sort.by("createdAt").descending();
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        return customerNoteGetService.getCustomersNotes(
-            customerId,
-            noteType,
-            subject,
-            isPinned,
-            isPrivate,
-            priority,
-            followUpCompleted,
-            createdById,
-            relatedEntityType,
-            relatedEntityId,
-            keyword,
-            pageable
-        );
-    }
-
-    /**
-     * Get pending follow-ups for a specific customer
-     *
-     * @param customerId Required customer ID
-     * @param page Page number (0-indexed)
-     * @param size Page size
-     * @param sortDirection Sort direction (asc/desc)
-     * @return ResponseEntity with ApiResponse containing paginated pending follow-ups
-     */
-    @GetMapping("/customer/{customerId}/pending-follow-ups")
-    @PreAuthorize("hasAuthority('PERM_READ_CUSTOMER_NOTE')")
-    public ResponseEntity<ApiResponse<?>> getPendingFollowUps(
-        @PathVariable @NotBlank(message = "Customer ID is required") String customerId,
-        @RequestParam(required = false, defaultValue = "0") Integer page,
-        @RequestParam(required = false, defaultValue = "10") Integer size,
-        @RequestParam(required = false, defaultValue = "asc") String sortDirection
-    ) {
-        log.info("GET /api/customer-notes/customer/{}/pending-follow-ups - Fetching pending follow-ups", customerId);
-
-        Sort sort = sortDirection.equalsIgnoreCase("asc")
-            ? Sort.by("followUpDate").ascending()
-            : Sort.by("followUpDate").descending();
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        return customerNoteGetService.getPendingFollowUps(customerId, pageable);
-    }
-
-    /**
-     * Get overdue follow-ups for a specific customer
-     *
-     * @param customerId Required customer ID
-     * @param page Page number (0-indexed)
-     * @param size Page size
-     * @param sortDirection Sort direction (asc/desc)
-     * @return ResponseEntity with ApiResponse containing paginated overdue follow-ups
-     */
-    @GetMapping("/customer/{customerId}/overdue-follow-ups")
-    @PreAuthorize("hasAuthority('PERM_READ_CUSTOMER_NOTE')")
-    public ResponseEntity<ApiResponse<?>> getOverdueFollowUps(
-        @PathVariable @NotBlank(message = "Customer ID is required") String customerId,
-        @RequestParam(required = false, defaultValue = "0") Integer page,
-        @RequestParam(required = false, defaultValue = "10") Integer size,
-        @RequestParam(required = false, defaultValue = "asc") String sortDirection
-    ) {
-        log.info("GET /api/customer-notes/customer/{}/overdue-follow-ups - Fetching overdue follow-ups", customerId);
-
-        Sort sort = sortDirection.equalsIgnoreCase("asc")
-            ? Sort.by("followUpDate").ascending()
-            : Sort.by("followUpDate").descending();
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        return customerNoteGetService.getOverdueFollowUps(customerId, pageable);
-    }
 }

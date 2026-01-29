@@ -8,6 +8,7 @@ import com.itineraryledger.kabengosafaris.Customer.Entity.CustomerEmail;
 import com.itineraryledger.kabengosafaris.Customer.Entity.CustomerPhone;
 import com.itineraryledger.kabengosafaris.Customer.Enums.CustomerType;
 import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerEmailRepository;
+import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerPhoneRepository;
 import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerRepository;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -34,6 +35,7 @@ public class CustomerCreateService {
 
     private final CustomerRepository customerRepository;
     private final CustomerEmailRepository customerEmailRepository;
+    private final CustomerPhoneRepository customerPhoneRepository;
     private final IdObfuscator idObfuscator;
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
@@ -93,12 +95,23 @@ public class CustomerCreateService {
                 }
             }
 
-            // Validate phone formats
+            // Validate phone formats and check for duplicates
             if (createDTO.getPhones() != null && !createDTO.getPhones().isEmpty()) {
                 for (CreateCustomerDTO.CustomerPhoneDTO phoneDTO : createDTO.getPhones()) {
+                    // Validate phone format
                     if (!PHONE_PATTERN.matcher(phoneDTO.getPhoneNumber()).matches()) {
                         return ResponseEntity.badRequest().body(
                             ApiResponse.error(400, "Invalid phone number format: " + phoneDTO.getPhoneNumber(), "INVALID_PHONE_FORMAT")
+                        );
+                    }
+                    // Check for duplicate phone number
+                    if (customerPhoneRepository.existsByPhoneNumber(phoneDTO.getPhoneNumber())) {
+                        return ResponseEntity.badRequest().body(
+                            ApiResponse.error(
+                                400,
+                                "Phone number '" + phoneDTO.getPhoneNumber() + "' is already in use",
+                                "PHONE_EXISTS"
+                            )
                         );
                     }
                 }
