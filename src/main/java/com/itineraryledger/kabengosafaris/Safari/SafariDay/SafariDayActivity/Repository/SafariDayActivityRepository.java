@@ -14,6 +14,10 @@ public interface SafariDayActivityRepository extends JpaRepository<SafariDayActi
 
     List<SafariDayActivity> findBySafariDayIdOrderBySortOrderAsc(Long safariDayId);
 
+    boolean existsBySafariDayIdAndActivityId(Long safariDayId, Long activityId);
+
+    long countBySafariDayId(Long safariDayId);
+
     @Query("SELECT sda FROM SafariDayActivity sda WHERE sda.safariDay.id = :dayId AND sda.isCompleted = true")
     List<SafariDayActivity> findCompletedActivitiesByDayId(@Param("dayId") Long dayId);
 

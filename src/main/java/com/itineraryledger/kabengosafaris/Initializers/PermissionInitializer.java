@@ -139,7 +139,10 @@ public class PermissionInitializer implements ApplicationRunner {
             "SAFARI_DAY",
             "SAFARI_DAY_ACTIVITY",
             "SAFARI_DAY_PARK",
+            "SAFARI_DAY_PARK_ACTIVITY",
+            "SAFARI_DAY_PARK_TARIFF",
             "SAFARI_DAY_ACCOMMODATION",
+            "SAFARI_DOCUMENT",
             // PDF Module Entities
             "PDF_DOCUMENT",
             "PDF_TEMPLATE",
@@ -152,14 +155,19 @@ public class PermissionInitializer implements ApplicationRunner {
             "CUSTOMER_PHONE",
             "CUSTOMER_DOCUMENT",
             "CUSTOMER_NOTE",
-            // Quotation Module Entities
-            "QUOTATION",
-            "QUOTATION_PAX",
-            "QUOTATION_LINE_ITEM",
             // Image Settings Entity
             "IMAGE_SETTING",
             // File Settings Entity
-            "FILE_SETTING"
+            "FILE_SETTING",
+            // Quote Module Entities
+            "QUOTE",
+            "QUOTE_ITEM",
+            "QUOTE_DOCUMENT",
+            // Bank Account Module Entities
+            "BANK_ACCOUNT",
+            // Invoice Module Entities
+            "INVOICE",
+            "INVOICE_LINE_ITEM",
         };
 
         // Define standard actions (CREATE, READ, UPDATE, DELETE)

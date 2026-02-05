@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
+import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
 import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayPark.SafariDayParkActivity.Entity.SafariDayParkActivity;
 import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayPark.SafariDayParkActivity.Repository.SafariDayParkActivityRepository;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
@@ -72,6 +73,8 @@ public class SafariDayParkActivityDeleteService {
             }
 
             int deletedCount = 0;
+            Safari safari = null;
+
             for (String idObfuscated : activityIdObfuscatedList) {
                 try {
                     Long activityEntryId = idObfuscator.decodeId(idObfuscated);
@@ -81,11 +84,28 @@ public class SafariDayParkActivityDeleteService {
                         continue;
                     }
 
+                    // Get safari instance for editable check
+                    if (safari == null) {
+                        safari = entry.getSafariDayPark().getSafariDay().getSafari();
+                    }
+
                     ((SafariDayParkActivityDeleteService) AopContext.currentProxy()).deleteActivity(activityEntryId);
                     deletedCount++;
                 } catch (Exception e) {
                     log.error("Error deleting safari park activity", e);
                 }
+            }
+
+            // Check safari is editable after collecting safari instance
+            if (safari != null && !safari.isEditable()) {
+                log.warn("Safari is not editable: {} (state: {})", safari.getCode(), safari.getState());
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        "Safari cannot be edited in state: " + safari.getState().getDisplayName(),
+                        "SAFARI_NOT_EDITABLE"
+                    )
+                );
             }
 
             // Renumber remaining activities to maintain sequential order

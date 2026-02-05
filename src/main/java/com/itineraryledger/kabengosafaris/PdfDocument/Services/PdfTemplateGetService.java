@@ -39,6 +39,8 @@ public class PdfTemplateGetService {
      */
     public ResponseEntity<ApiResponse<?>> getAllTemplates(
         String documentIdObfuscated,
+        String documentType,
+        String rootVariableName,
         Boolean enabled,
         Boolean isDefault,
         Boolean isSystemDefault,
@@ -58,6 +60,12 @@ public class PdfTemplateGetService {
                 if (documentId != null) {
                     spec = spec.and(PdfTemplateSpecification.pdfDocumentId(documentId));
                 }
+            }
+            if (documentType != null && !documentType.isBlank()) {
+                spec = spec.and(PdfTemplateSpecification.documentTypeName(documentType));
+            }
+            if (rootVariableName != null && !rootVariableName.isBlank()) {
+                spec = spec.and(PdfTemplateSpecification.rootVariableName(rootVariableName));
             }
             if (enabled != null) {
                 spec = spec.and(PdfTemplateSpecification.enabled(enabled));

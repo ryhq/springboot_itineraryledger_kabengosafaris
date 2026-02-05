@@ -26,6 +26,12 @@ public class CreateSafariFromItineraryDTO {
     private String itineraryId;
 
     /**
+     * Obfuscated ID of the customer this safari is for
+     */
+    @NotBlank(message = "Customer ID is required")
+    private String customerId;
+
+    /**
      * Start date of the safari
      */
     @NotNull(message = "Start date is required")

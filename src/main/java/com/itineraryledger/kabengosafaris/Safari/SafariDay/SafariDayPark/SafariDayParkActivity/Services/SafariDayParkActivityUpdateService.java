@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayPark.SafariDayParkActivity.Services;
 
+import java.time.LocalDateTime;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -7,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
+import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
 import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayPark.SafariDayParkActivity.DTOs.SafariDayParkActivityDTO;
 import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayPark.SafariDayParkActivity.DTOs.UpdateSafariDayParkActivityDTO;
 import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayPark.SafariDayParkActivity.Entity.SafariDayParkActivity;
@@ -18,6 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * SafariDayParkActivityUpdateService - Service for updating safari day park activities
+ *
+ * Implements dual update modes:
+ * - Planning updates (duration, times, notes, pricing) require editable safari state
+ * - Operational updates (completion, sightings, feedback) allowed anytime
  */
 @Service
 @Slf4j
@@ -80,7 +87,28 @@ public class SafariDayParkActivityUpdateService {
                 );
             }
 
-            // Update fields if provided (sortOrder is handled by reorder methods)
+            // Determine if this is an operational update
+            boolean isOperationalUpdate = updateDTO.getIsCompleted() != null ||
+                updateDTO.getActualDurationHours() != null ||
+                updateDTO.getSightingsNotes() != null ||
+                updateDTO.getGuestExperience() != null ||
+                updateDTO.getIsSkipped() != null ||
+                updateDTO.getSkipReason() != null;
+
+            // Check if safari is editable for planning updates
+            Safari safari = activity.getSafariDayPark().getSafariDay().getSafari();
+            if (!isOperationalUpdate && !safari.isEditable()) {
+                log.warn("Safari is not editable: {} (state: {})", safari.getCode(), safari.getState());
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        "Safari cannot be edited in state: " + safari.getState().getDisplayName(),
+                        "SAFARI_NOT_EDITABLE"
+                    )
+                );
+            }
+
+            // Update planning fields if provided (sortOrder is handled by reorder methods)
             if (updateDTO.getDurationHours() != null) {
                 activity.setDurationHours(updateDTO.getDurationHours());
             }
@@ -95,6 +123,37 @@ public class SafariDayParkActivityUpdateService {
             }
             if (updateDTO.getIsIncludedInPrice() != null) {
                 activity.setIsIncludedInPrice(updateDTO.getIsIncludedInPrice());
+            }
+
+            // Update Safari-specific operational fields
+            if (updateDTO.getIsCompleted() != null) {
+                activity.setIsCompleted(updateDTO.getIsCompleted());
+                // Auto-set completedAt timestamp when marking as completed
+                if (Boolean.TRUE.equals(updateDTO.getIsCompleted())) {
+                    activity.setCompletedAt(LocalDateTime.now());
+                } else {
+                    activity.setCompletedAt(null);
+                }
+            }
+
+            if (updateDTO.getActualDurationHours() != null) {
+                activity.setActualDurationHours(updateDTO.getActualDurationHours());
+            }
+
+            if (updateDTO.getSightingsNotes() != null) {
+                activity.setSightingsNotes(updateDTO.getSightingsNotes());
+            }
+
+            if (updateDTO.getGuestExperience() != null) {
+                activity.setGuestExperience(updateDTO.getGuestExperience());
+            }
+
+            if (updateDTO.getIsSkipped() != null) {
+                activity.setIsSkipped(updateDTO.getIsSkipped());
+            }
+
+            if (updateDTO.getSkipReason() != null) {
+                activity.setSkipReason(updateDTO.getSkipReason());
             }
 
             // Save

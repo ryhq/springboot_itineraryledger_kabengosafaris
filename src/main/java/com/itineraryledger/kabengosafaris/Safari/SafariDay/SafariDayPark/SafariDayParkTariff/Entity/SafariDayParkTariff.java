@@ -7,7 +7,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -19,11 +18,13 @@ import java.time.LocalDateTime;
  * E.g., "Park Entry Fee", "Conservation Fee", "Concession Fee"
  *
  * Safari-specific additions:
- * - actualAmount: Actual amount paid (may differ from standard rate)
  * - isPaid: Whether this tariff has been paid
  * - paidAt: When the tariff was paid
  * - receiptNumber: Payment receipt number
  * - paymentNotes: Notes about the payment
+ * - paxCount: Number of pax this tariff applies to
+ * - isWaived: Whether this tariff was waived
+ * - waiverReason: Reason for waiving the tariff
  */
 @Entity
 @Table(name = "safari_day_park_tariffs",
@@ -70,19 +71,6 @@ public class SafariDayParkTariff {
     // ========================
     // SAFARI-SPECIFIC FIELDS
     // ========================
-
-    /**
-     * Actual amount paid for this tariff
-     * May differ from standard rate due to promotions, negotiations, etc.
-     */
-    @Column(name = "actual_amount", precision = 12, scale = 2)
-    private BigDecimal actualAmount;
-
-    /**
-     * Currency of the actual amount paid
-     */
-    @Column(name = "currency", length = 3)
-    private String currency;
 
     /**
      * Whether this tariff has been paid
@@ -140,10 +128,9 @@ public class SafariDayParkTariff {
     /**
      * Mark tariff as paid
      */
-    public void markPaid(BigDecimal amount, String receipt) {
+    public void markPaid(String receipt) {
         this.isPaid = true;
         this.paidAt = LocalDateTime.now();
-        this.actualAmount = amount;
         this.receiptNumber = receipt;
     }
 

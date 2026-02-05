@@ -1,5 +1,8 @@
 package com.itineraryledger.kabengosafaris.Safari.Services;
 
+import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
+import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
+import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Entity.ItineraryDay;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayAccommodation.Entity.ItineraryDayAccommodation;
@@ -23,10 +26,14 @@ import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayPark.SafariD
 import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayPark.SafariDayParkTariff.Entity.SafariDayParkTariff;
 import com.itineraryledger.kabengosafaris.Safari.SafariPax.Entity.SafariPax;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+import com.itineraryledger.kabengosafaris.User.User;
+import com.itineraryledger.kabengosafaris.User.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,16 +51,22 @@ public class SafariCreateService {
 
     private final SafariRepository safariRepository;
     private final ItineraryRepository itineraryRepository;
+    private final CustomerRepository customerRepository;
+    private final UserRepository userRepository;
     private final IdObfuscator idObfuscator;
 
     @Autowired
     public SafariCreateService(
             SafariRepository safariRepository,
             ItineraryRepository itineraryRepository,
+            CustomerRepository customerRepository,
+            UserRepository userRepository,
             IdObfuscator idObfuscator
     ) {
         this.safariRepository = safariRepository;
         this.itineraryRepository = itineraryRepository;
+        this.customerRepository = customerRepository;
+        this.userRepository = userRepository;
         this.idObfuscator = idObfuscator;
     }
 
@@ -64,6 +77,7 @@ public class SafariCreateService {
      * @return ResponseEntity with ApiResponse containing the created Safari
      */
     @Transactional
+    @AuditLogAnnotation(action = "CREATE_SAFARI", description = "Creating a new safari from itinerary", entityType = "Safari")
     public ResponseEntity<ApiResponse<?>> createSafariFromItinerary(CreateSafariFromItineraryDTO dto) {
         log.info("Creating Safari from Itinerary: {}", dto.getItineraryId());
 
@@ -97,6 +111,34 @@ public class SafariCreateService {
                 );
             }
 
+            // Decode and validate customer ID
+            Long customerId;
+            try {
+                customerId = idObfuscator.decodeId(dto.getCustomerId());
+            } catch (Exception e) {
+                log.warn("Failed to decode customer ID: {}", dto.getCustomerId(), e);
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Invalid customer ID", "INVALID_CUSTOMER_ID")
+                );
+            }
+
+            // Find the customer
+            Customer customer = customerRepository.findById(customerId).orElse(null);
+            if (customer == null) {
+                return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Customer not found", "CUSTOMER_NOT_FOUND")
+                );
+            }
+
+            // Validate customer can book safaris
+            if (!customer.canBook()) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Customer cannot book safaris. Customer may be inactive or blacklisted.",
+                                "CUSTOMER_CANNOT_BOOK")
+                );
+            }
+
             // Validate start date
             if (dto.getStartDate() == null) {
                 return ResponseEntity.badRequest().body(
@@ -104,12 +146,30 @@ public class SafariCreateService {
                 );
             }
 
+            // Validate start date is not in the past
+            if (dto.getStartDate().isBefore(LocalDate.now())) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Start date cannot be in the past. Provided: " + dto.getStartDate() + ", Today: " + LocalDate.now(),
+                                "START_DATE_IN_PAST")
+                );
+            }
+
             // Calculate end date based on itinerary totalDays
             LocalDate endDate = dto.getStartDate().plusDays(itinerary.getTotalDays() - 1);
+
+            // Get current user for audit tracking
+            User currentUser = null;
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
+                String username = authentication.getName();
+                currentUser = userRepository.findByUsername(username).orElse(null);
+            }
 
             // Create the Safari entity (code will be generated after save)
             Safari safari = Safari.builder()
                     .itinerary(itinerary)
+                    .customer(customer)
                     .name(dto.getName() != null ? dto.getName() : itinerary.getName())
                     .slug(generateSlug(dto.getName() != null ? dto.getName() : itinerary.getName()))
                     .startDate(dto.getStartDate())
@@ -125,6 +185,7 @@ public class SafariCreateService {
                     .specialRequests(dto.getSpecialRequests())
                     .dietaryRequirements(dto.getDietaryRequirements())
                     .emergencyContact(dto.getEmergencyContact())
+                    .createdBy(currentUser)
                     .isActive(true)
                     .build();
 
@@ -159,14 +220,25 @@ public class SafariCreateService {
     }
 
     /**
-     * Generate URL-friendly slug from name
+     * Generate unique URL-friendly slug from name
+     * If slug already exists, append a counter to make it unique
      */
     private String generateSlug(String name) {
-        return name.toLowerCase()
+        String baseSlug = name.toLowerCase()
                 .replaceAll("[^a-z0-9\\s-]", "")
                 .replaceAll("\\s+", "-")
                 .replaceAll("-+", "-")
                 .trim();
+
+        // Check if slug is unique
+        String slug = baseSlug;
+        int counter = 1;
+        while (safariRepository.existsBySlug(slug)) {
+            slug = baseSlug + "-" + counter;
+            counter++;
+        }
+
+        return slug;
     }
 
     /**
@@ -219,7 +291,6 @@ public class SafariCreateService {
                     .isOvernight(itineraryDay.getIsOvernight())
                     .mealsIncluded(itineraryDay.getMealsIncluded())
                     .internalNotes(itineraryDay.getInternalNotes())
-                    .isModified(false)
                     .build();
 
             // Copy activities
@@ -375,6 +446,13 @@ public class SafariCreateService {
             dto.setItineraryCode(safari.getItinerary().getCode());
         }
 
+        // Customer reference
+        if (safari.getCustomer() != null) {
+            dto.setCustomerId(idObfuscator.encodeId(safari.getCustomer().getId()));
+            dto.setCustomerName(safari.getCustomer().getDisplayName());
+            dto.setCustomerCode(safari.getCustomer().getCode());
+        }
+
         // State information (booking/operational)
         dto.setState(safari.getState());
         dto.setStateDisplayName(safari.getState().getDisplayName());
@@ -427,6 +505,18 @@ public class SafariCreateService {
         // Counts
         dto.setTotalPaxCount(safari.getTotalPaxCount());
         dto.setTotalDaysCount(safari.getDays() != null ? safari.getDays().size() : 0);
+
+        // Audit information
+        if (safari.getCreatedBy() != null) {
+            dto.setCreatedById(idObfuscator.encodeId(safari.getCreatedBy().getId()));
+            dto.setCreatedByUsername(safari.getCreatedBy().getUsername());
+            dto.setCreatedByFullName(safari.getCreatedBy().getUsername());
+        }
+        if (safari.getUpdatedBy() != null) {
+            dto.setUpdatedById(idObfuscator.encodeId(safari.getUpdatedBy().getId()));
+            dto.setUpdatedByUsername(safari.getUpdatedBy().getUsername());
+            dto.setUpdatedByFullName(safari.getUpdatedBy().getUsername());
+        }
 
         // Metadata
         dto.setCreatedAt(safari.getCreatedAt());

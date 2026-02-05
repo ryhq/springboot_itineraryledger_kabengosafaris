@@ -1,6 +1,8 @@
 package com.itineraryledger.kabengosafaris.PdfDocument.Controller;
 
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.ItineraryDocument;
+import com.itineraryledger.kabengosafaris.Quote.Entity.QuoteDocument;
+import com.itineraryledger.kabengosafaris.Safari.Entity.SafariDocument;
 import com.itineraryledger.kabengosafaris.PdfDocument.DTOs.GeneratePdfRequestDTO;
 import com.itineraryledger.kabengosafaris.PdfDocument.DTOs.ValidateTemplateRequestDTO;
 import com.itineraryledger.kabengosafaris.PdfDocument.Services.PdfGenerationService;
@@ -33,7 +35,7 @@ public class PdfGenerationController {
     /**
      * Generate PDF using default template for document type
      * Supports optional language parameter for translation
-     * Supports optional saveToDocuments to save the PDF as an ItineraryDocument
+     * Supports optional saveToDocuments to save the PDF as an ItineraryDocument or QuoteDocument
      */
     @PostMapping("/generate")
     @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
@@ -50,6 +52,32 @@ public class PdfGenerationController {
                 request.getTemplateId(),
                 request.getLanguage(),
                 request.getItineraryDocumentType(),
+                request.getDocumentTitle(),
+                request.getDocumentVersion(),
+                request.getDocumentNotes()
+            );
+        }
+
+        // If saveToDocuments is true and this is a quote-related PDF, use the save method
+        if (Boolean.TRUE.equals(request.getSaveToDocuments()) && "FULL_QUOTE".equals(request.getDocumentType())) {
+            return generationService.generateAndSaveQuotePdf(
+                request.getDataId(),
+                request.getTemplateId(),
+                request.getLanguage(),
+                request.getQuoteDocumentType(),
+                request.getDocumentTitle(),
+                request.getDocumentVersion(),
+                request.getDocumentNotes()
+            );
+        }
+
+        // If saveToDocuments is true and this is a safari-related PDF, use the save method
+        if (Boolean.TRUE.equals(request.getSaveToDocuments()) && "FULL_SAFARI".equals(request.getDocumentType())) {
+            return generationService.generateAndSaveSafariPdf(
+                request.getDataId(),
+                request.getTemplateId(),
+                request.getLanguage(),
+                request.getSafariDocumentType(),
                 request.getDocumentTitle(),
                 request.getDocumentVersion(),
                 request.getDocumentNotes()
@@ -148,6 +176,142 @@ public class PdfGenerationController {
         log.info("GET /api/pdf/itinerary/{}/preview - Preview itinerary{}",
             itineraryId, language != null ? ", language: " + language : "");
         return generationService.previewPdf("FULL_ITINERARY", itineraryId, templateId, language);
+    }
+
+    /**
+     * Generate quote PDF (convenience endpoint)
+     * Supports optional language parameter for translation
+     * Supports optional saveToDocuments to save the PDF as a QuoteDocument
+     *
+     * @param quoteId The obfuscated quote ID
+     * @param templateId Optional template ID to use
+     * @param language Optional target language code (e.g., "fr", "de", "es")
+     *                 If not provided or "en", PDF is generated in English
+     * @param saveToDocuments If true, save the PDF as a QuoteDocument
+     * @param documentType The QuoteDocument type (e.g., QUOTATION, PROPOSAL, FINAL_QUOTE)
+     * @param documentTitle Optional title for the saved document
+     * @param documentVersion Optional version string
+     * @param documentNotes Optional notes
+     */
+    @GetMapping("/quote/{quoteId}")
+    @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
+    public ResponseEntity<?> generateQuotePdf(
+        @PathVariable String quoteId,
+        @RequestParam(required = false) String templateId,
+        @RequestParam(required = false) String language,
+        @RequestParam(required = false, defaultValue = "false") Boolean saveToDocuments,
+        @RequestParam(required = false) QuoteDocument.DocumentType documentType,
+        @RequestParam(required = false) String documentTitle,
+        @RequestParam(required = false) String documentVersion,
+        @RequestParam(required = false) String documentNotes
+    ) {
+        log.info("GET /api/pdf/quote/{} - Generating quote PDF{}{}",
+            quoteId,
+            language != null ? ", language: " + language : "",
+            Boolean.TRUE.equals(saveToDocuments) ? ", saving to documents" : "");
+
+        if (Boolean.TRUE.equals(saveToDocuments)) {
+            return generationService.generateAndSaveQuotePdf(
+                quoteId,
+                templateId,
+                language,
+                documentType,
+                documentTitle,
+                documentVersion,
+                documentNotes
+            );
+        }
+
+        return generationService.generateQuotePdf(quoteId, templateId, language);
+    }
+
+    /**
+     * Preview quote PDF (convenience endpoint)
+     * Supports optional language parameter for translation preview
+     *
+     * @param quoteId The obfuscated quote ID
+     * @param templateId Optional template ID to use
+     * @param language Optional target language code (e.g., "fr", "de", "es")
+     *                 If not provided or "en", preview is in English
+     */
+    @GetMapping("/quote/{quoteId}/preview")
+    @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
+    public ResponseEntity<ApiResponse<?>> previewQuotePdf(
+        @PathVariable String quoteId,
+        @RequestParam(required = false) String templateId,
+        @RequestParam(required = false) String language
+    ) {
+        log.info("GET /api/pdf/quote/{}/preview - Preview quote{}",
+            quoteId, language != null ? ", language: " + language : "");
+        return generationService.previewPdf("FULL_QUOTE", quoteId, templateId, language);
+    }
+
+    /**
+     * Generate safari PDF (convenience endpoint)
+     * Supports optional language parameter for translation
+     * Supports optional saveToDocuments to save the PDF as a SafariDocument
+     *
+     * @param safariId The obfuscated safari ID
+     * @param templateId Optional template ID to use
+     * @param language Optional target language code (e.g., "fr", "de", "es")
+     *                 If not provided or "en", PDF is generated in English
+     * @param saveToDocuments If true, save the PDF as a SafariDocument
+     * @param documentType The SafariDocument type (e.g., QUOTATION, FINAL_ITINERARY, TRAVEL_PLAN)
+     * @param documentTitle Optional title for the saved document
+     * @param documentVersion Optional version string
+     * @param documentNotes Optional notes
+     */
+    @GetMapping("/safari/{safariId}")
+    @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
+    public ResponseEntity<?> generateSafariPdf(
+        @PathVariable String safariId,
+        @RequestParam(required = false) String templateId,
+        @RequestParam(required = false) String language,
+        @RequestParam(required = false, defaultValue = "false") Boolean saveToDocuments,
+        @RequestParam(required = false) SafariDocument.DocumentType documentType,
+        @RequestParam(required = false) String documentTitle,
+        @RequestParam(required = false) String documentVersion,
+        @RequestParam(required = false) String documentNotes
+    ) {
+        log.info("GET /api/pdf/safari/{} - Generating safari PDF{}{}",
+            safariId,
+            language != null ? ", language: " + language : "",
+            Boolean.TRUE.equals(saveToDocuments) ? ", saving to documents" : "");
+
+        if (Boolean.TRUE.equals(saveToDocuments)) {
+            return generationService.generateAndSaveSafariPdf(
+                safariId,
+                templateId,
+                language,
+                documentType,
+                documentTitle,
+                documentVersion,
+                documentNotes
+            );
+        }
+
+        return generationService.generateSafariPdf(safariId, templateId, language);
+    }
+
+    /**
+     * Preview safari PDF (convenience endpoint)
+     * Supports optional language parameter for translation preview
+     *
+     * @param safariId The obfuscated safari ID
+     * @param templateId Optional template ID to use
+     * @param language Optional target language code (e.g., "fr", "de", "es")
+     *                 If not provided or "en", preview is in English
+     */
+    @GetMapping("/safari/{safariId}/preview")
+    @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
+    public ResponseEntity<ApiResponse<?>> previewSafariPdf(
+        @PathVariable String safariId,
+        @RequestParam(required = false) String templateId,
+        @RequestParam(required = false) String language
+    ) {
+        log.info("GET /api/pdf/safari/{}/preview - Preview safari{}",
+            safariId, language != null ? ", language: " + language : "");
+        return generationService.previewPdf("FULL_SAFARI", safariId, templateId, language);
     }
 
     /**

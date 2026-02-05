@@ -7,6 +7,16 @@ import com.itineraryledger.kabengosafaris.Itinerary.DTOs.ItineraryDocumentDTOs.I
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.ItineraryDocument;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryDocumentServices.ItineraryDocumentCreateService;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryFullGetService;
+import com.itineraryledger.kabengosafaris.Quote.DTOs.FullQuoteDTO;
+import com.itineraryledger.kabengosafaris.Quote.DTOs.QuoteDocumentDTOs.QuoteDocumentDTO;
+import com.itineraryledger.kabengosafaris.Quote.Entity.QuoteDocument;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteDocumentServices.QuoteDocumentCreateService;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteFullGetService;
+import com.itineraryledger.kabengosafaris.Safari.DTOs.FullSafariDTO;
+import com.itineraryledger.kabengosafaris.Safari.DTOs.SafariDocumentDTOs.SafariDocumentDTO;
+import com.itineraryledger.kabengosafaris.Safari.Entity.SafariDocument;
+import com.itineraryledger.kabengosafaris.Safari.Services.SafariDocumentServices.SafariDocumentCreateService;
+import com.itineraryledger.kabengosafaris.Safari.Services.SafariFullGetService;
 import com.itineraryledger.kabengosafaris.PdfDocument.Entity.PdfDocument;
 import com.itineraryledger.kabengosafaris.PdfDocument.Entity.PdfTemplate;
 import com.itineraryledger.kabengosafaris.PdfDocument.Repository.PdfDocumentRepository;
@@ -54,12 +64,16 @@ public class PdfGenerationService {
 
     // Data providers
     private final ItineraryFullGetService itineraryFullGetService;
+    private final QuoteFullGetService quoteFullGetService;
+    private final SafariFullGetService safariFullGetService;
 
     // Translation service
     private final TranslationService translationService;
 
-    // Document storage service
+    // Document storage services
     private final ItineraryDocumentCreateService itineraryDocumentCreateService;
+    private final QuoteDocumentCreateService quoteDocumentCreateService;
+    private final SafariDocumentCreateService safariDocumentCreateService;
 
     /**
      * Generate PDF for a specific document type and data ID
@@ -352,6 +366,275 @@ public class PdfGenerationService {
         }
     }
 
+    // =====================================================================
+    // QUOTE PDF GENERATION METHODS
+    // =====================================================================
+
+    /**
+     * Convenience method to generate quote PDF
+     *
+     * @param quoteIdObfuscated The obfuscated quote ID
+     * @param templateIdObfuscated Optional template ID
+     * @param language Optional target language code for translation
+     * @return ResponseEntity with PDF bytes or error
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> generateQuotePdf(String quoteIdObfuscated, String templateIdObfuscated, String language) {
+        return generatePdf("FULL_QUOTE", quoteIdObfuscated, templateIdObfuscated, language);
+    }
+
+    /**
+     * Generate and save quote PDF to QuoteDocuments
+     *
+     * @param quoteIdObfuscated The obfuscated quote ID
+     * @param templateIdObfuscated Optional template ID
+     * @param language Optional target language code for translation
+     * @param quoteDocumentType The type of document to save as (e.g., QUOTATION, FINAL_QUOTE)
+     * @param title Optional custom title (auto-generated if null)
+     * @param version Optional version string
+     * @param notes Optional notes
+     * @return ResponseEntity with PDF bytes (document is also saved) or error
+     */
+    @Transactional
+    public ResponseEntity<?> generateAndSaveQuotePdf(
+            String quoteIdObfuscated,
+            String templateIdObfuscated,
+            String language,
+            QuoteDocument.DocumentType quoteDocumentType,
+            String title,
+            String version,
+            String notes
+    ) {
+        try {
+            // 1. Fetch quote data first to get code and title for filename generation
+            FullQuoteDTO quoteData = fetchQuoteData(quoteIdObfuscated);
+            if (quoteData == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Quote not found: " + quoteIdObfuscated, "QUOTE_NOT_FOUND")
+                );
+            }
+
+            // 2. Decode quote ID for saving
+            Long quoteId;
+            try {
+                quoteId = idObfuscator.decodeId(quoteIdObfuscated);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid quote ID", "INVALID_QUOTE_ID")
+                );
+            }
+
+            // 3. Generate the PDF using existing method
+            ResponseEntity<?> pdfResponse = generatePdf("FULL_QUOTE", quoteIdObfuscated, templateIdObfuscated, language);
+
+            // If PDF generation failed, return the error response
+            if (!pdfResponse.getStatusCode().is2xxSuccessful()) {
+                return pdfResponse;
+            }
+
+            // 4. Extract PDF bytes from response
+            byte[] pdfBytes = (byte[]) pdfResponse.getBody();
+            if (pdfBytes == null || pdfBytes.length == 0) {
+                return ResponseEntity.status(500).body(
+                    ApiResponse.error(500, "Generated PDF is empty", "EMPTY_PDF")
+                );
+            }
+
+            // 5. Generate filename and title
+            String quoteCode = quoteData.getQuoteCode() != null ? quoteData.getQuoteCode() : "QTE";
+            String quoteTitle = quoteData.getTitle() != null ? quoteData.getTitle() : "Quote";
+
+            QuoteDocument.DocumentType docType = quoteDocumentType != null
+                ? quoteDocumentType
+                : QuoteDocument.DocumentType.QUOTE_PDF;
+
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String languageSuffix = (language != null && !language.isBlank() && !"en".equalsIgnoreCase(language))
+                ? "_" + language.toLowerCase()
+                : "";
+            String fileName = String.format("%s_%s%s_%s.pdf",
+                docType.name().toLowerCase(), quoteCode, languageSuffix, timestamp);
+
+            String documentTitle = title != null && !title.isBlank()
+                ? title
+                : String.format("%s - %s", docType.getDisplayName(), quoteTitle);
+
+            // 6. Save the document
+            QuoteDocumentDTO savedDocument = quoteDocumentCreateService.saveGeneratedDocument(
+                quoteId,
+                pdfBytes,
+                fileName,
+                docType,
+                documentTitle,
+                null, // description
+                version,
+                notes
+            );
+
+            if (savedDocument == null) {
+                log.warn("PDF generated but failed to save to documents for quote: {}", quoteIdObfuscated);
+                // Still return the PDF even if saving failed
+                return pdfResponse;
+            }
+
+            log.info("Generated and saved PDF document: {} for quote {} (document ID: {})",
+                fileName, quoteIdObfuscated, savedDocument.getId());
+
+            // 7. Return the PDF response with additional header indicating document was saved
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", fileName);
+            headers.setContentLength(pdfBytes.length);
+            headers.set("X-Document-Saved", "true");
+            headers.set("X-Document-Id", savedDocument.getId());
+            headers.set("X-Document-Url", savedDocument.getDocumentUrl());
+
+            return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdfBytes);
+
+        } catch (Exception e) {
+            log.error("Failed to generate and save PDF for quote: {}", quoteIdObfuscated, e);
+            return ResponseEntity.status(500).body(
+                ApiResponse.error(500, "Failed to generate and save PDF: " + e.getMessage(), "PDF_SAVE_FAILED")
+            );
+        }
+    }
+
+    // =====================================================================
+    // SAFARI PDF GENERATION METHODS
+    // =====================================================================
+
+    /**
+     * Convenience method to generate safari PDF
+     *
+     * @param safariIdObfuscated The obfuscated safari ID
+     * @param templateIdObfuscated Optional template ID
+     * @param language Optional target language code for translation
+     * @return ResponseEntity with PDF bytes or error
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> generateSafariPdf(String safariIdObfuscated, String templateIdObfuscated, String language) {
+        return generatePdf("FULL_SAFARI", safariIdObfuscated, templateIdObfuscated, language);
+    }
+
+    /**
+     * Generate Safari PDF and save it as a SafariDocument
+     *
+     * @param safariIdObfuscated The obfuscated safari ID
+     * @param templateIdObfuscated Optional template ID
+     * @param language Optional target language code for translation
+     * @param safariDocumentType The document type (e.g., QUOTATION, FINAL_ITINERARY)
+     * @param title Optional custom title for the document
+     * @param version Optional version string
+     * @param notes Optional notes
+     * @return ResponseEntity with PDF bytes and saved document metadata
+     */
+    public ResponseEntity<?> generateAndSaveSafariPdf(
+            String safariIdObfuscated,
+            String templateIdObfuscated,
+            String language,
+            SafariDocument.DocumentType safariDocumentType,
+            String title,
+            String version,
+            String notes
+    ) {
+        try {
+            // 1. Fetch safari data first to get code and name for title generation
+            FullSafariDTO safariData = fetchSafariData(safariIdObfuscated);
+            if (safariData == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Safari not found: " + safariIdObfuscated, "SAFARI_NOT_FOUND")
+                );
+            }
+
+            // 2. Decode safari ID for saving
+            Long safariId;
+            try {
+                safariId = idObfuscator.decodeId(safariIdObfuscated);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid safari ID", "INVALID_SAFARI_ID")
+                );
+            }
+
+            // 3. Generate the PDF using existing method
+            ResponseEntity<?> pdfResponse = generatePdf("FULL_SAFARI", safariIdObfuscated, templateIdObfuscated, language);
+
+            // If PDF generation failed, return the error response
+            if (!pdfResponse.getStatusCode().is2xxSuccessful()) {
+                return pdfResponse;
+            }
+
+            // 4. Extract PDF bytes from response
+            byte[] pdfBytes = (byte[]) pdfResponse.getBody();
+            if (pdfBytes == null || pdfBytes.length == 0) {
+                return ResponseEntity.status(500).body(
+                    ApiResponse.error(500, "Generated PDF is empty", "EMPTY_PDF")
+                );
+            }
+
+            // 5. Generate filename and title
+            String safariCode = safariData.getCode() != null ? safariData.getCode() : "SAF";
+            String safariName = safariData.getName() != null ? safariData.getName() : "Safari";
+
+            SafariDocument.DocumentType docType = safariDocumentType != null
+                ? safariDocumentType
+                : SafariDocument.DocumentType.FINAL_ITINERARY;
+
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String languageSuffix = (language != null && !language.isBlank() && !"en".equalsIgnoreCase(language))
+                ? "_" + language.toLowerCase()
+                : "";
+            String fileName = String.format("%s_%s%s_%s.pdf",
+                docType.name().toLowerCase(), safariCode, languageSuffix, timestamp);
+
+            String documentTitle = title != null && !title.isBlank()
+                ? title
+                : String.format("%s - %s", docType.getDisplayName(), safariName);
+
+            // 6. Save the document
+            SafariDocumentDTO savedDocument = safariDocumentCreateService.saveGeneratedDocument(
+                safariId,
+                pdfBytes,
+                fileName,
+                docType,
+                documentTitle,
+                null, // description
+                version,
+                notes
+            );
+
+            if (savedDocument == null) {
+                log.warn("PDF generated but failed to save to documents for safari: {}", safariIdObfuscated);
+                // Still return the PDF even if saving failed
+                return pdfResponse;
+            }
+
+            log.info("Generated and saved PDF document: {} for safari {} (document ID: {})",
+                fileName, safariIdObfuscated, savedDocument.getId());
+
+            // 7. Return the PDF response with additional header indicating document was saved
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", fileName);
+            headers.setContentLength(pdfBytes.length);
+            headers.set("X-Document-Saved", "true");
+            headers.set("X-Document-Id", savedDocument.getId());
+            headers.set("X-Document-Url", savedDocument.getDocumentUrl());
+
+            return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdfBytes);
+
+        } catch (Exception e) {
+            log.error("Failed to generate and save PDF for safari: {}", safariIdObfuscated, e);
+            return ResponseEntity.status(500).body(
+                ApiResponse.error(500, "Failed to generate and save PDF: " + e.getMessage(), "PDF_SAVE_FAILED")
+            );
+        }
+    }
+
     /**
      * Preview PDF (return rendered HTML instead of PDF)
      * Useful for template development
@@ -485,6 +768,8 @@ public class PdfGenerationService {
     private Object fetchData(String documentName, String dataId) {
         return switch (documentName) {
             case "FULL_ITINERARY" -> fetchItineraryData(dataId);
+            case "FULL_QUOTE" -> fetchQuoteData(dataId);
+            case "FULL_SAFARI" -> fetchSafariData(dataId);
             // Add more document types here as needed
             default -> {
                 log.warn("Unknown document type: {}", documentName);
@@ -509,6 +794,46 @@ public class PdfGenerationService {
             return null;
         } catch (Exception e) {
             log.error("Failed to fetch itinerary data: {}", itineraryIdObfuscated, e);
+            return null;
+        }
+    }
+
+    /**
+     * Fetch full quote data
+     */
+    private FullQuoteDTO fetchQuoteData(String quoteIdObfuscated) {
+        try {
+            ResponseEntity<ApiResponse<?>> response = quoteFullGetService.getFullQuote(quoteIdObfuscated);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                ApiResponse<?> apiResponse = response.getBody();
+                if (apiResponse != null && apiResponse.getData() instanceof FullQuoteDTO) {
+                    return (FullQuoteDTO) apiResponse.getData();
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("Failed to fetch quote data: {}", quoteIdObfuscated, e);
+            return null;
+        }
+    }
+
+    /**
+     * Fetch full safari data
+     */
+    private FullSafariDTO fetchSafariData(String safariIdObfuscated) {
+        try {
+            ResponseEntity<ApiResponse<?>> response = safariFullGetService.getFullSafari(safariIdObfuscated);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                ApiResponse<?> apiResponse = response.getBody();
+                if (apiResponse != null && apiResponse.getData() instanceof FullSafariDTO) {
+                    return (FullSafariDTO) apiResponse.getData();
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("Failed to fetch safari data: {}", safariIdObfuscated, e);
             return null;
         }
     }
@@ -550,6 +875,24 @@ public class PdfGenerationService {
                     }
                 }
                 yield "itinerary";
+            }
+            case "FULL_QUOTE" -> {
+                if (data instanceof FullQuoteDTO quote) {
+                    String code = quote.getQuoteCode();
+                    if (code != null && !code.isBlank()) {
+                        yield code;
+                    }
+                }
+                yield "quote";
+            }
+            case "FULL_SAFARI" -> {
+                if (data instanceof FullSafariDTO safari) {
+                    String code = safari.getCode();
+                    if (code != null && !code.isBlank()) {
+                        yield code;
+                    }
+                }
+                yield "safari";
             }
             // Add more document types here as needed
             default -> documentType.toLowerCase().replace("_", "-");

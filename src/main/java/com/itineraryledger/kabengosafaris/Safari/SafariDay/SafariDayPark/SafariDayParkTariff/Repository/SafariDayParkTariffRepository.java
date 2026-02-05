@@ -23,8 +23,5 @@ public interface SafariDayParkTariffRepository extends JpaRepository<SafariDayPa
     @Query("SELECT sdpt FROM SafariDayParkTariff sdpt WHERE sdpt.safariDayPark.safariDay.safari.id = :safariId AND sdpt.isPaid = false AND sdpt.isWaived = false")
     List<SafariDayParkTariff> findAllUnpaidBySafariId(@Param("safariId") Long safariId);
 
-    @Query("SELECT SUM(sdpt.actualAmount) FROM SafariDayParkTariff sdpt WHERE sdpt.safariDayPark.safariDay.safari.id = :safariId AND sdpt.isPaid = true")
-    java.math.BigDecimal getTotalPaidAmountBySafariId(@Param("safariId") Long safariId);
-
     void deleteBySafariDayParkId(Long safariDayParkId);
 }

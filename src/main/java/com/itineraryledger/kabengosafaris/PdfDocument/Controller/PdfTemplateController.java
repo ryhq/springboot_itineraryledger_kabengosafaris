@@ -53,11 +53,26 @@ public class PdfTemplateController {
 
     /**
      * Get all templates with filtering and pagination
+     *
+     * @param documentId Filter by obfuscated PdfDocument ID
+     * @param documentType Filter by PdfDocument name (e.g., "FULL_QUOTE", "FULL_ITINERARY")
+     * @param rootVariableName Filter by PdfDocument root variable name (e.g., "quote", "itinerary")
+     * @param enabled Filter by enabled status
+     * @param isDefault Filter by default status
+     * @param isSystemDefault Filter by system default status
+     * @param name Filter by template name (partial match)
+     * @param paperSize Filter by paper size
+     * @param orientation Filter by orientation
+     * @param page Page number (0-indexed)
+     * @param size Page size
+     * @param sortDirection Sort direction (asc/desc)
      */
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_PDF_TEMPLATE')")
     public ResponseEntity<ApiResponse<?>> getAllTemplates(
         @RequestParam(required = false) String documentId,
+        @RequestParam(required = false) String documentType,
+        @RequestParam(required = false) String rootVariableName,
         @RequestParam(required = false) Boolean enabled,
         @RequestParam(required = false) Boolean isDefault,
         @RequestParam(required = false) Boolean isSystemDefault,
@@ -69,7 +84,7 @@ public class PdfTemplateController {
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/pdf-templates - Fetching templates with filters");
-        return getService.getAllTemplates(documentId, enabled, isDefault, isSystemDefault, name, paperSize, orientation, page, size, sortDirection);
+        return getService.getAllTemplates(documentId, documentType, rootVariableName, enabled, isDefault, isSystemDefault, name, paperSize, orientation, page, size, sortDirection);
     }
 
     /**

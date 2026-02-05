@@ -15,6 +15,10 @@ public interface SafariDayParkRepository extends JpaRepository<SafariDayPark, Lo
 
     List<SafariDayPark> findBySafariDayIdOrderBySortOrderAsc(Long safariDayId);
 
+    boolean existsBySafariDayIdAndParkId(Long safariDayId, Long parkId);
+
+    long countBySafariDayId(Long safariDayId);
+
     @Query("SELECT sdp FROM SafariDayPark sdp WHERE sdp.safariDay.safari.id = :safariId ORDER BY sdp.safariDay.dayNumber, sdp.sortOrder")
     List<SafariDayPark> findAllBySafariId(@Param("safariId") Long safariId);
 

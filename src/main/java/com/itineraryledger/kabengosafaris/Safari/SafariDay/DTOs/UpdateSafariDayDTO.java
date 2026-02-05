@@ -34,7 +34,6 @@ public class UpdateSafariDayDTO {
     private String internalNotes;
 
     // Safari-specific
-    private String modificationNotes;
     private String weatherNotes;
     private String actualStartTime;
     private String actualEndTime;

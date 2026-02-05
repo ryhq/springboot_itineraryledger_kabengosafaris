@@ -29,6 +29,11 @@ public class SafariDTO {
     private String itineraryName;
     private String itineraryCode;
 
+    // Customer reference
+    private String customerId;
+    private String customerName;
+    private String customerCode;
+
     // State information (booking/operational - manually managed)
     private SafariState state;
     private String stateDisplayName;
@@ -80,6 +85,14 @@ public class SafariDTO {
     // Counts
     private Integer totalPaxCount;
     private Integer totalDaysCount;
+
+    // Audit information
+    private String createdById;
+    private String createdByUsername;
+    private String createdByFullName;
+    private String updatedById;
+    private String updatedByUsername;
+    private String updatedByFullName;
 
     // Metadata
     private LocalDateTime createdAt;

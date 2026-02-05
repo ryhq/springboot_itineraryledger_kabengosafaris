@@ -24,14 +24,10 @@ public class SafariPaxDTO {
     private String ageCategoryId;
     private String ageCategoryName;
 
-    // Counts
+    // Count
     private Integer count;
-    private Integer actualCount;
-    private Integer effectiveCount;
-    private Boolean hasCountVariance;
 
     // Safari-specific
-    private LocalDateTime confirmedAt;
     private String specialRequirements;
     private String notes;
 

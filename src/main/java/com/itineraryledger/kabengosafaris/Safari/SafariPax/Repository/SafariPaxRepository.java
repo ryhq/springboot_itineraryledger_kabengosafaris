@@ -24,8 +24,5 @@ public interface SafariPaxRepository extends JpaRepository<SafariPax, Long>, Jpa
     @Query("SELECT SUM(sp.count) FROM SafariPax sp WHERE sp.safari.id = :safariId")
     Integer getTotalPaxCountBySafariId(@Param("safariId") Long safariId);
 
-    @Query("SELECT SUM(COALESCE(sp.actualCount, sp.count)) FROM SafariPax sp WHERE sp.safari.id = :safariId")
-    Integer getEffectivePaxCountBySafariId(@Param("safariId") Long safariId);
-
     void deleteBySafariId(Long safariId);
 }

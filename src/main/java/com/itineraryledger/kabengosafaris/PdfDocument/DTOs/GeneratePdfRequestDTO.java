@@ -1,6 +1,8 @@
 package com.itineraryledger.kabengosafaris.PdfDocument.DTOs;
 
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.ItineraryDocument;
+import com.itineraryledger.kabengosafaris.Quote.Entity.QuoteDocument;
+import com.itineraryledger.kabengosafaris.Safari.Entity.SafariDocument;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -56,10 +58,24 @@ public class GeneratePdfRequestDTO {
 
     /**
      * Optional: the ItineraryDocument type to use when saving.
-     * Required if saveToDocuments is true.
+     * Required if saveToDocuments is true and documentType is FULL_ITINERARY.
      * Examples: QUOTATION, FINAL_ITINERARY, TRAVEL_PLAN, INVOICE, etc.
      */
     private ItineraryDocument.DocumentType itineraryDocumentType;
+
+    /**
+     * Optional: the QuoteDocument type to use when saving.
+     * Required if saveToDocuments is true and documentType is FULL_QUOTE.
+     * Examples: QUOTATION, PROPOSAL, FINAL_QUOTE, INVOICE, etc.
+     */
+    private QuoteDocument.DocumentType quoteDocumentType;
+
+    /**
+     * Optional: the SafariDocument type to use when saving.
+     * Required if saveToDocuments is true and documentType is FULL_SAFARI.
+     * Examples: QUOTATION, TRAVEL_PLAN, FINAL_ITINERARY, BOOKING_CONFIRMATION, etc.
+     */
+    private SafariDocument.DocumentType safariDocumentType;
 
     /**
      * Optional: title for the saved document.

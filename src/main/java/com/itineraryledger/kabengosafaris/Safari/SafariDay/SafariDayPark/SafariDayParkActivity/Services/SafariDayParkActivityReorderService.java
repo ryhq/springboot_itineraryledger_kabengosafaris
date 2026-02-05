@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
+import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
 import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayPark.Entity.SafariDayPark;
 import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayPark.Repository.SafariDayParkRepository;
 import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayPark.SafariDayParkActivity.DTOs.SafariDayParkActivityDTO;
@@ -88,6 +89,19 @@ public class SafariDayParkActivityReorderService {
                 log.warn("Safari park visit not found: {}", parkVisitId);
                 return ResponseEntity.status(404).body(
                     ApiResponse.error(404, "Safari park visit not found", "SAFARI_PARK_VISIT_NOT_FOUND")
+                );
+            }
+
+            // Check if safari is editable
+            Safari safari = parkVisit.getSafariDay().getSafari();
+            if (!safari.isEditable()) {
+                log.warn("Safari is not editable: {} (state: {})", safari.getCode(), safari.getState());
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        "Safari cannot be edited in state: " + safari.getState().getDisplayName(),
+                        "SAFARI_NOT_EDITABLE"
+                    )
                 );
             }
 

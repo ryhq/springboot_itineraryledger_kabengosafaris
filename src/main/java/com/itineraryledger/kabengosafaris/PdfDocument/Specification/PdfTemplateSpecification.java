@@ -91,4 +91,30 @@ public class PdfTemplateSpecification {
             return cb.equal(root.get("orientation").as(String.class), orientation);
         };
     }
+
+    /**
+     * Filter by PDF document type name (e.g., "FULL_QUOTE", "FULL_ITINERARY")
+     * This filters by PdfDocument.name field
+     */
+    public static Specification<PdfTemplate> documentTypeName(String documentType) {
+        return (root, query, cb) -> {
+            if (documentType == null || documentType.isBlank()) {
+                return null;
+            }
+            return cb.equal(root.get("pdfDocument").get("name"), documentType);
+        };
+    }
+
+    /**
+     * Filter by root variable name (e.g., "quote", "itinerary")
+     * This filters by PdfDocument.rootVariableName field
+     */
+    public static Specification<PdfTemplate> rootVariableName(String rootVariableName) {
+        return (root, query, cb) -> {
+            if (rootVariableName == null || rootVariableName.isBlank()) {
+                return null;
+            }
+            return cb.equal(root.get("pdfDocument").get("rootVariableName"), rootVariableName);
+        };
+    }
 }

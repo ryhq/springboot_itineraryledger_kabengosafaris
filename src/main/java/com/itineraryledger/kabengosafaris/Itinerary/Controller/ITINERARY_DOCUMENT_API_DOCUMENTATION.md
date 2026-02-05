@@ -360,4 +360,4 @@ curl -X GET "http://localhost:4450/api/itinerary-documents?isGenerated=false" \
 ## Version
 API Version: 1.1
 
-Last Updated: 2026-01-26
+Last Updated: 2026-01-30

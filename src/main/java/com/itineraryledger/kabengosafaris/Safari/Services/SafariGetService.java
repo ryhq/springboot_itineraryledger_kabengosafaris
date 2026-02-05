@@ -230,6 +230,23 @@ public class SafariGetService {
             dto.setItineraryCode(safari.getItinerary().getCode());
         }
 
+        // Customer information
+        if (safari.getCustomer() != null) {
+            dto.setCustomerId(idObfuscator.encodeId(safari.getCustomer().getId()));
+            dto.setCustomerCode(safari.getCustomer().getCode());
+
+            // Build customer name based on customer type
+            String customerName = switch (safari.getCustomer().getCustomerType()) {
+                case INDIVIDUAL -> {
+                    String firstName = safari.getCustomer().getFirstName() != null ? safari.getCustomer().getFirstName() : "";
+                    String lastName = safari.getCustomer().getLastName() != null ? safari.getCustomer().getLastName() : "";
+                    yield (firstName + " " + lastName).trim();
+                }
+                case CORPORATE, TRAVEL_AGENT -> safari.getCustomer().getCompanyName() != null ? safari.getCustomer().getCompanyName() : "";
+            };
+            dto.setCustomerName(customerName);
+        }
+
         // State information (booking/operational)
         dto.setState(safari.getState());
         dto.setStateDisplayName(safari.getState().getDisplayName());
@@ -276,6 +293,22 @@ public class SafariGetService {
 
         dto.setTotalPaxCount(safari.getTotalPaxCount());
         dto.setTotalDaysCount(safari.getDays() != null ? safari.getDays().size() : 0);
+
+        // Audit information - Created By
+        if (safari.getCreatedBy() != null) {
+            dto.setCreatedById(idObfuscator.encodeId(safari.getCreatedBy().getId()));
+            dto.setCreatedByUsername(safari.getCreatedBy().getUsername());
+            String createdByFullName = (safari.getCreatedBy().getFirstName() + " " + safari.getCreatedBy().getLastName()).trim();
+            dto.setCreatedByFullName(createdByFullName);
+        }
+
+        // Audit information - Updated By
+        if (safari.getUpdatedBy() != null) {
+            dto.setUpdatedById(idObfuscator.encodeId(safari.getUpdatedBy().getId()));
+            dto.setUpdatedByUsername(safari.getUpdatedBy().getUsername());
+            String updatedByFullName = (safari.getUpdatedBy().getFirstName() + " " + safari.getUpdatedBy().getLastName()).trim();
+            dto.setUpdatedByFullName(updatedByFullName);
+        }
 
         dto.setCreatedAt(safari.getCreatedAt());
         dto.setUpdatedAt(safari.getUpdatedAt());

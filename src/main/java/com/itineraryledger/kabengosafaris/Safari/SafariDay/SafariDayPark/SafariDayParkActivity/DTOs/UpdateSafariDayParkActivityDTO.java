@@ -14,14 +14,16 @@ import java.math.BigDecimal;
  *
  * sortOrder is handled by reorder methods.
  *
- * Safari-specific fields (isCompleted, actualDurationHours, sightingsNotes, guestExperience,
- * isSkipped, skipReason) are updated via separate tracking endpoints.
+ * Supports dual update modes:
+ * - Planning updates (durationHours, startTime, endTime, notes, isIncludedInPrice) require editable safari state
+ * - Operational updates (isCompleted, actualDurationHours, sightingsNotes, guestExperience, isSkipped, skipReason) allowed anytime
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateSafariDayParkActivityDTO {
 
+    // Planning fields (require editable safari)
     private BigDecimal durationHours;
 
     private String startTime; // e.g., "06:00"
@@ -31,4 +33,17 @@ public class UpdateSafariDayParkActivityDTO {
     private String notes;
 
     private Boolean isIncludedInPrice;
+
+    // Safari-specific operational fields (allowed anytime)
+    private Boolean isCompleted;
+
+    private BigDecimal actualDurationHours;
+
+    private String sightingsNotes;
+
+    private String guestExperience;
+
+    private Boolean isSkipped;
+
+    private String skipReason;
 }

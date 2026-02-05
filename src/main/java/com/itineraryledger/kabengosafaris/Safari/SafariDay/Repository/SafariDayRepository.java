@@ -25,9 +25,6 @@ public interface SafariDayRepository extends JpaRepository<SafariDay, Long>, Jpa
     @Query("SELECT MAX(sd.dayNumber) FROM SafariDay sd WHERE sd.safari.id = :safariId")
     Integer findMaxDayNumberBySafariId(@Param("safariId") Long safariId);
 
-    @Query("SELECT sd FROM SafariDay sd WHERE sd.safari.id = :safariId AND sd.isModified = true")
-    List<SafariDay> findModifiedDaysBySafariId(@Param("safariId") Long safariId);
-
     @Query("SELECT sd FROM SafariDay sd WHERE sd.actualDate = :date")
     List<SafariDay> findByActualDate(@Param("date") LocalDate date);
 

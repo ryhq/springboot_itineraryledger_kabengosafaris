@@ -27,7 +27,6 @@ import java.util.List;
  *
  * Safari-specific additions:
  * - actualDate: The actual calendar date for this day
- * - isModified: Flag indicating changes from original itinerary
  * - modificationNotes: Notes about what was modified
  * - weatherNotes: Weather observations for the day
  * - actualStartTime: When activities actually started
@@ -145,20 +144,6 @@ public class SafariDay {
     // ========================
     // SAFARI-SPECIFIC FIELDS
     // ========================
-
-    /**
-     * Flag indicating this day was modified from original itinerary
-     */
-    @Builder.Default
-    @Column(name = "is_modified", nullable = false)
-    private Boolean isModified = false;
-
-    /**
-     * Notes about modifications made to this day
-     */
-    @Lob
-    @Column(name = "modification_notes", columnDefinition = "TEXT")
-    private String modificationNotes;
 
     /**
      * Weather observations or notes for the day

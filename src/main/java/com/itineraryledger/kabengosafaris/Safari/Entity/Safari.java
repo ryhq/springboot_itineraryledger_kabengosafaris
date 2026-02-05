@@ -11,11 +11,13 @@ import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
 import com.itineraryledger.kabengosafaris.Safari.Enums.SafariPhase;
 import com.itineraryledger.kabengosafaris.Safari.Enums.SafariState;
 import com.itineraryledger.kabengosafaris.Safari.SafariDay.Entity.SafariDay;
 import com.itineraryledger.kabengosafaris.Safari.SafariPax.Entity.SafariPax;
+import com.itineraryledger.kabengosafaris.User.User;
 
 import java.time.temporal.ChronoUnit;
 
@@ -41,11 +43,14 @@ import lombok.*;
 @Table(name = "safaris",
     indexes = {
         @Index(name = "idx_safari_itinerary_id", columnList = "itinerary_id"),
+        @Index(name = "idx_safari_customer_id", columnList = "customer_id"),
         @Index(name = "idx_safari_code", columnList = "code"),
         @Index(name = "idx_safari_state", columnList = "state"),
         @Index(name = "idx_safari_start_date", columnList = "start_date"),
         @Index(name = "idx_safari_end_date", columnList = "end_date"),
-        @Index(name = "idx_safari_is_active", columnList = "is_active")
+        @Index(name = "idx_safari_is_active", columnList = "is_active"),
+        @Index(name = "idx_safari_created_by_id", columnList = "created_by_id"),
+        @Index(name = "idx_safari_updated_by_id", columnList = "updated_by_id")
     },
     uniqueConstraints = {
         @UniqueConstraint(name = "uk_safari_code", columnNames = {"code"})
@@ -74,6 +79,15 @@ public class Safari {
     @OnDelete(action = OnDeleteAction.SET_NULL)
     @JsonIgnore
     private Itinerary itinerary;
+
+    /**
+     * The customer this safari is for.
+     * Every safari must be associated with a customer.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id", nullable = false)
+    @JsonIgnore
+    private Customer customer;
 
     // ========================
     // SAFARI IDENTIFICATION
@@ -197,8 +211,23 @@ public class Safari {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
-    @Column(name = "created_by")
-    private Long createdBy;
+    // ========================
+    // AUDIT FIELDS
+    // ========================
+
+    /**
+     * User who created this safari
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    private User createdBy;
+
+    /**
+     * User who last updated this safari
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by_id")
+    private User updatedBy;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

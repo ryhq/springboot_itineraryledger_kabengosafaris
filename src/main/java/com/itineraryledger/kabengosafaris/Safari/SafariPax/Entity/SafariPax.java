@@ -60,30 +60,10 @@ public class SafariPax {
     @JoinColumn(name = "age_category_id", nullable = false)
     private PaxAgeCategory ageCategory;
 
-    /**
-     * Planned/expected passenger count (from itinerary template)
-     */
     @Min(value = 1, message = "Pax count cannot be less than one (01)")
     @Column(nullable = false)
     @Builder.Default
     private Integer count = 1;
-
-    // ========================
-    // SAFARI-SPECIFIC FIELDS
-    // ========================
-
-    /**
-     * Actual passenger count (may differ from planned count)
-     * Used when actual travelers differ from booking
-     */
-    @Column(name = "actual_count")
-    private Integer actualCount;
-
-    /**
-     * When this pax category was confirmed
-     */
-    @Column(name = "confirmed_at")
-    private LocalDateTime confirmedAt;
 
     /**
      * Special requirements for this passenger group
@@ -117,24 +97,7 @@ public class SafariPax {
     public String getDisplayName() {
         String nation = nationCategory != null ? nationCategory.getName() : "Unknown";
         String age = ageCategory != null ? ageCategory.getName() : "Unknown";
-        int displayCount = actualCount != null ? actualCount : count;
-        return nation + " " + age + " (" + displayCount + ")";
-    }
-
-    /**
-     * Get the effective count (actual if set, otherwise planned)
-     */
-    @Transient
-    public int getEffectiveCount() {
-        return actualCount != null ? actualCount : count;
-    }
-
-    /**
-     * Check if actual count differs from planned count
-     */
-    @Transient
-    public boolean hasCountVariance() {
-        return actualCount != null && !actualCount.equals(count);
+        return nation + " " + age + " (" + count + ")";
     }
 
     @PrePersist

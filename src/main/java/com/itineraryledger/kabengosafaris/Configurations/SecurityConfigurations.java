@@ -101,6 +101,9 @@ public class SecurityConfigurations {
                 .requestMatchers("/api/park-activity-documents/*/file", "/api/park-activity-documents/file/*").permitAll() // Allow public access to park activity document files
                 .requestMatchers("/api/customer-documents/*/file", "/api/customer-documents/file/*").permitAll() // Allow public access to customer document files
                 .requestMatchers("/api/itinerary-documents/*/file", "/api/itinerary-documents/file/*").permitAll() // Allow public access to itinerary document files
+                .requestMatchers("/api/quote-documents/*/file", "/api/quote-documents/file/*").permitAll() // Allow public access to quote document files
+                .requestMatchers("/api/safari-documents/*/file", "/api/safari-documents/file/*").permitAll() // Allow public access to safari document files
+
                 .anyRequest().authenticated() // Require authentication for any other request
         )
         // Enable HTTP Basic authentication for Rest API clients

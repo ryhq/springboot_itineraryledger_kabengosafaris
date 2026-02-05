@@ -1,0 +1,317 @@
+[
+    {
+        "path": "id",
+        "type": "String",
+        "description": "Obfuscated quote ID",
+        "isRequired": true
+    },
+    {
+        "path": "quoteCode",
+        "type": "String",
+        "description": "Unique quote code (e.g., 'QT-1001-0126-1')",
+        "isRequired": true
+    },
+    {
+        "path": "title",
+        "type": "String",
+        "description": "Quote title/name",
+        "isRequired": true
+    },
+    {
+        "path": "description",
+        "type": "String",
+        "description": "Optional quote description or summary",
+        "isRequired": false
+    },
+    {
+        "path": "status",
+        "type": "Enum",
+        "description": "Quote status (DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED, ARCHIVED)",
+        "isRequired": true
+    },
+    {
+        "path": "statusDisplayName",
+        "type": "String",
+        "description": "Human-readable status name",
+        "isRequired": false
+    },
+    {
+        "path": "version",
+        "type": "Integer",
+        "description": "Version number (1, 2, 3, etc.)",
+        "isRequired": true
+    },
+    {
+        "path": "versionNotes",
+        "type": "String",
+        "description": "Notes explaining changes in this version",
+        "isRequired": false
+    },
+    {
+        "path": "isStoRate",
+        "type": "Boolean",
+        "description": "Whether prices are STO (System Tour Operator) rates or Rack rates",
+        "isRequired": false
+    },
+    {
+        "path": "taxPercentage",
+        "type": "BigDecimal",
+        "description": "Tax percentage applied",
+        "isRequired": false
+    },
+    {
+        "path": "discountPercentage",
+        "type": "BigDecimal",
+        "description": "Discount percentage applied",
+        "isRequired": false
+    },
+    {
+        "path": "discountReason",
+        "type": "String",
+        "description": "Reason for discount",
+        "isRequired": false
+    },
+    {
+        "path": "sentDate",
+        "type": "LocalDate",
+        "description": "Date quote was sent to customer",
+        "isRequired": false
+    },
+    {
+        "path": "validFrom",
+        "type": "LocalDate",
+        "description": "Quote validity start date",
+        "isRequired": true
+    },
+    {
+        "path": "validTo",
+        "type": "LocalDate",
+        "description": "Quote validity end date",
+        "isRequired": true
+    },
+    {
+        "path": "isValid",
+        "type": "Boolean",
+        "description": "Whether quote is currently valid",
+        "isRequired": false
+    },
+    {
+        "path": "validityStatusMessage",
+        "type": "String",
+        "description": "Human-readable validity status message",
+        "isRequired": false
+    },
+    {
+        "path": "depositPercentage",
+        "type": "BigDecimal",
+        "description": "Deposit percentage required",
+        "isRequired": false
+    },
+    {
+        "path": "depositDueDate",
+        "type": "LocalDate",
+        "description": "Deposit due date",
+        "isRequired": false
+    },
+    {
+        "path": "fullPaymentDueDate",
+        "type": "LocalDate",
+        "description": "Full payment due date",
+        "isRequired": false
+    },
+    {
+        "path": "customerNotes",
+        "type": "String",
+        "description": "Customer-facing notes/remarks",
+        "isRequired": false
+    },
+    {
+        "path": "internalNotes",
+        "type": "String",
+        "description": "Internal notes (not visible to customer)",
+        "isRequired": false
+    },
+    {
+        "path": "approverName",
+        "type": "String",
+        "description": "Name of user who needs to approve",
+        "isRequired": false
+    },
+    {
+        "path": "approvedByName",
+        "type": "String",
+        "description": "Name of user who approved",
+        "isRequired": false
+    },
+    {
+        "path": "approvedAt",
+        "type": "LocalDateTime",
+        "description": "Approval timestamp",
+        "isRequired": false
+    },
+    {
+        "path": "approvalNotes",
+        "type": "String",
+        "description": "Approval notes/comments",
+        "isRequired": false
+    },
+    {
+        "path": "isActive",
+        "type": "Boolean",
+        "description": "Whether quote is active",
+        "isRequired": false
+    },
+    {
+        "path": "createdByName",
+        "type": "String",
+        "description": "Name of user who created quote",
+        "isRequired": false
+    },
+    {
+        "path": "updatedByName",
+        "type": "String",
+        "description": "Name of user who last updated quote",
+        "isRequired": false
+    },
+    {
+        "path": "createdAt",
+        "type": "LocalDateTime",
+        "description": "Creation timestamp",
+        "isRequired": false
+    },
+    {
+        "path": "updatedAt",
+        "type": "LocalDateTime",
+        "description": "Last update timestamp",
+        "isRequired": false
+    },
+    {
+        "path": "totalItemsCount",
+        "type": "Integer",
+        "description": "Total number of line items",
+        "isRequired": false
+    },
+    {
+        "path": "totalCurrenciesCount",
+        "type": "Integer",
+        "description": "Total number of currencies used",
+        "isRequired": false
+    },
+    {
+        "path": "currencies",
+        "type": "List<String>",
+        "description": "List of unique currency codes used in the quote (e.g., ['USD', 'TZS', 'EUR']). Access with: th:each='currency : ${quote.currencies}'",
+        "isRequired": false
+    },
+    {
+        "path": "customer",
+        "type": "CustomerDTO",
+        "description": "Customer information",
+        "isRequired": false,
+        "children": [
+            {"path": "id", "type": "String", "description": "Obfuscated customer ID"},
+            {"path": "customerName", "type": "String", "description": "Customer full name"},
+            {"path": "email", "type": "String", "description": "Customer email address"},
+            {"path": "phone", "type": "String", "description": "Customer phone number"},
+            {"path": "nationality", "type": "String", "description": "Customer nationality"},
+            {"path": "address", "type": "String", "description": "Customer address"},
+            {"path": "city", "type": "String", "description": "Customer city"},
+            {"path": "country", "type": "String", "description": "Customer country"}
+        ]
+    },
+    {
+        "path": "itinerary",
+        "type": "ItineraryDTO",
+        "description": "Itinerary summary information",
+        "isRequired": false,
+        "children": [
+            {"path": "id", "type": "String", "description": "Obfuscated itinerary ID"},
+            {"path": "name", "type": "String", "description": "Itinerary name"},
+            {"path": "code", "type": "String", "description": "Itinerary code"},
+            {"path": "status", "type": "String", "description": "Itinerary status"},
+            {"path": "statusDisplayName", "type": "String", "description": "Human-readable status"},
+            {"path": "tripType", "type": "String", "description": "Trip type"},
+            {"path": "tripTypeDisplayName", "type": "String", "description": "Human-readable trip type"},
+            {"path": "budgetCategory", "type": "String", "description": "Budget category"},
+            {"path": "budgetCategoryDisplayName", "type": "String", "description": "Human-readable budget category"},
+            {"path": "totalDays", "type": "Integer", "description": "Total number of days"},
+            {"path": "totalNights", "type": "Integer", "description": "Total number of nights"},
+            {"path": "description", "type": "String", "description": "Itinerary description"},
+            {"path": "startLocation", "type": "String", "description": "Starting location"},
+            {"path": "endLocation", "type": "String", "description": "Ending location"}
+        ]
+    },
+    {
+        "path": "items",
+        "type": "List<QuoteItemDTO>",
+        "description": "Quote line items. Access with: th:each='item : ${quote.items}'",
+        "isRequired": false,
+        "children": [
+            {"path": "id", "type": "String", "description": "Obfuscated item ID"},
+            {"path": "itemType", "type": "Enum", "description": "Item type (ACCOMMODATION, PARK_FEE, ACTIVITY, etc.)"},
+            {"path": "itemTypeDisplayName", "type": "String", "description": "Human-readable item type"},
+            {"path": "itemName", "type": "String", "description": "Item display name"},
+            {"path": "description", "type": "String", "description": "Item description"},
+            {"path": "displayOrder", "type": "Integer", "description": "Display sequence number"},
+            {"path": "isActive", "type": "Boolean", "description": "Whether item is active"},
+            {
+                "path": "prices",
+                "type": "List<PriceDTO>",
+                "description": "Prices in different currencies. Access: th:each='price : ${item.prices}'",
+                "children": [
+                    {"path": "currency", "type": "String", "description": "Currency code (USD, TZS, etc.)"},
+                    {"path": "quantity", "type": "Integer", "description": "Quantity"},
+                    {"path": "unitPrice", "type": "BigDecimal", "description": "Unit price"},
+                    {"path": "totalPrice", "type": "BigDecimal", "description": "Total price (quantity × unitPrice)"},
+                    {"path": "breakdown", "type": "String", "description": "Optional pricing breakdown details"},
+                    {"path": "formattedUnitPrice", "type": "String", "description": "Formatted unit price with currency symbol"},
+                    {"path": "formattedTotalPrice", "type": "String", "description": "Formatted total price with currency symbol"}
+                ]
+            }
+        ]
+    },
+    {
+        "path": "subtotals",
+        "type": "List<PriceDTO>",
+        "description": "Subtotals by currency. Access with: th:each='subtotal : ${quote.subtotals}'",
+        "isRequired": false,
+        "children": [
+            {"path": "currency", "type": "String", "description": "Currency code"},
+            {"path": "totalPrice", "type": "BigDecimal", "description": "Subtotal amount"},
+            {"path": "formattedTotalPrice", "type": "String", "description": "Formatted subtotal"}
+        ]
+    },
+    {
+        "path": "taxes",
+        "type": "List<PriceDTO>",
+        "description": "Tax amounts by currency. Access with: th:each='tax : ${quote.taxes}'",
+        "isRequired": false,
+        "children": [
+            {"path": "currency", "type": "String", "description": "Currency code"},
+            {"path": "totalPrice", "type": "BigDecimal", "description": "Tax amount"},
+            {"path": "formattedTotalPrice", "type": "String", "description": "Formatted tax amount"}
+        ]
+    },
+    {
+        "path": "discounts",
+        "type": "List<PriceDTO>",
+        "description": "Discount amounts by currency. Access with: th:each='discount : ${quote.discounts}'",
+        "isRequired": false,
+        "children": [
+            {"path": "currency", "type": "String", "description": "Currency code"},
+            {"path": "totalPrice", "type": "BigDecimal", "description": "Discount amount"},
+            {"path": "formattedTotalPrice", "type": "String", "description": "Formatted discount amount"}
+        ]
+    },
+    {
+        "path": "grandTotals",
+        "type": "List<PriceDTO>",
+        "description": "Grand totals by currency (subtotal + taxes - discounts). Access with: th:each='grandTotal : ${quote.grandTotals}'",
+        "isRequired": false,
+        "children": [
+            {"path": "currency", "type": "String", "description": "Currency code"},
+            {"path": "totalPrice", "type": "BigDecimal", "description": "Grand total amount"},
+            {"path": "formattedTotalPrice", "type": "String", "description": "Formatted grand total"}
+        ]
+    }
+]
