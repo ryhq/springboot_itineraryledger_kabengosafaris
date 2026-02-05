@@ -74,9 +74,9 @@ public class InvoiceLineItemCreateService {
                 );
             }
 
-            // Automatically determine display order (max + 1, or 0 if no items exist)
+            // Automatically determine display order (max + 1, or 1 if no items exist)
             Integer maxDisplayOrder = invoiceLineItemRepository.findMaxDisplayOrderByInvoiceId(decodedInvoiceId);
-            int nextDisplayOrder = (maxDisplayOrder != null) ? maxDisplayOrder + 1 : 0;
+            int nextDisplayOrder = (maxDisplayOrder != null) ? maxDisplayOrder + 1 : 1;
 
             // Validate prices
             if (createDTO.getPrices() == null || createDTO.getPrices().isEmpty()) {

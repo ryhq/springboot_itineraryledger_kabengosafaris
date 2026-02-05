@@ -1,0 +1,320 @@
+[
+    {
+        "path": "id",
+        "type": "String",
+        "description": "Obfuscated invoice ID",
+        "isRequired": true
+    },
+    {
+        "path": "invoiceCode",
+        "type": "String",
+        "description": "Unique invoice code (e.g., 'INV-2024-001')",
+        "isRequired": true
+    },
+    {
+        "path": "title",
+        "type": "String",
+        "description": "Invoice title/name",
+        "isRequired": true
+    },
+    {
+        "path": "description",
+        "type": "String",
+        "description": "Optional invoice description or summary",
+        "isRequired": false
+    },
+    {
+        "path": "status",
+        "type": "Enum",
+        "description": "Invoice status (DRAFT, SENT, VIEWED, OVERDUE, PAID, PARTIALLY_PAID, CANCELLED, VOID)",
+        "isRequired": true
+    },
+    {
+        "path": "statusDisplayName",
+        "type": "String",
+        "description": "Human-readable invoice status name",
+        "isRequired": false
+    },
+    {
+        "path": "paymentStatus",
+        "type": "Enum",
+        "description": "Payment status (UNPAID, PARTIALLY_PAID, PAID, OVERDUE, REFUNDED, CANCELLED)",
+        "isRequired": true
+    },
+    {
+        "path": "paymentStatusDisplayName",
+        "type": "String",
+        "description": "Human-readable payment status name",
+        "isRequired": false
+    },
+    {
+        "path": "taxPercentage",
+        "type": "BigDecimal",
+        "description": "Tax percentage applied (e.g., 18.00 for 18% VAT)",
+        "isRequired": false
+    },
+    {
+        "path": "discountPercentage",
+        "type": "BigDecimal",
+        "description": "Discount percentage applied",
+        "isRequired": false
+    },
+    {
+        "path": "discountReason",
+        "type": "String",
+        "description": "Reason for discount",
+        "isRequired": false
+    },
+    {
+        "path": "issueDate",
+        "type": "LocalDate",
+        "description": "Invoice issue date",
+        "isRequired": true
+    },
+    {
+        "path": "dueDate",
+        "type": "LocalDate",
+        "description": "Payment due date",
+        "isRequired": true
+    },
+    {
+        "path": "sentDate",
+        "type": "LocalDate",
+        "description": "Date invoice was sent to customer",
+        "isRequired": false
+    },
+    {
+        "path": "paidDate",
+        "type": "LocalDate",
+        "description": "Date invoice was fully paid",
+        "isRequired": false
+    },
+    {
+        "path": "isOverdue",
+        "type": "Boolean",
+        "description": "Whether invoice is overdue (past due date and not paid)",
+        "isRequired": false
+    },
+    {
+        "path": "customerNotes",
+        "type": "String",
+        "description": "Customer-facing notes/remarks",
+        "isRequired": false
+    },
+    {
+        "path": "internalNotes",
+        "type": "String",
+        "description": "Internal notes (not visible to customer on PDF)",
+        "isRequired": false
+    },
+    {
+        "path": "paymentTerms",
+        "type": "String",
+        "description": "Payment terms and conditions",
+        "isRequired": false
+    },
+    {
+        "path": "isActive",
+        "type": "Boolean",
+        "description": "Whether invoice is active",
+        "isRequired": false
+    },
+    {
+        "path": "createdByName",
+        "type": "String",
+        "description": "Name of user who created invoice",
+        "isRequired": false
+    },
+    {
+        "path": "updatedByName",
+        "type": "String",
+        "description": "Name of user who last updated invoice",
+        "isRequired": false
+    },
+    {
+        "path": "createdAt",
+        "type": "LocalDateTime",
+        "description": "Creation timestamp",
+        "isRequired": false
+    },
+    {
+        "path": "updatedAt",
+        "type": "LocalDateTime",
+        "description": "Last update timestamp",
+        "isRequired": false
+    },
+    {
+        "path": "totalLineItemsCount",
+        "type": "Integer",
+        "description": "Total number of invoice line items",
+        "isRequired": false
+    },
+    {
+        "path": "totalCurrenciesCount",
+        "type": "Integer",
+        "description": "Total number of currencies used",
+        "isRequired": false
+    },
+    {
+        "path": "currencies",
+        "type": "List<String>",
+        "description": "List of unique currency codes used in the invoice (e.g., ['USD', 'TZS', 'EUR']). Access with: th:each='currency : ${invoice.currencies}'",
+        "isRequired": false
+    },
+    {
+        "path": "customer",
+        "type": "CustomerDTO",
+        "description": "Customer information",
+        "isRequired": false,
+        "children": [
+            {"path": "id", "type": "String", "description": "Obfuscated customer ID"},
+            {"path": "customerCode", "type": "String", "description": "Customer code (e.g., CUST-2023-042)"},
+            {"path": "customerName", "type": "String", "description": "Customer full name or company name"},
+            {"path": "email", "type": "String", "description": "Customer email address"},
+            {"path": "phone", "type": "String", "description": "Customer phone number"},
+            {"path": "nationality", "type": "String", "description": "Customer nationality"},
+            {"path": "address", "type": "String", "description": "Customer street address"},
+            {"path": "city", "type": "String", "description": "Customer city"},
+            {"path": "country", "type": "String", "description": "Customer country"}
+        ]
+    },
+    {
+        "path": "safari",
+        "type": "SafariDTO",
+        "description": "Safari summary information",
+        "isRequired": false,
+        "children": [
+            {"path": "id", "type": "String", "description": "Obfuscated safari ID"},
+            {"path": "name", "type": "String", "description": "Safari name"},
+            {"path": "code", "type": "String", "description": "Safari code"},
+            {"path": "state", "type": "String", "description": "Safari state (PLANNING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED)"},
+            {"path": "stateDisplayName", "type": "String", "description": "Human-readable safari state"},
+            {"path": "totalDays", "type": "Integer", "description": "Total number of days"},
+            {"path": "totalNights", "type": "Integer", "description": "Total number of nights"},
+            {"path": "startDate", "type": "LocalDate", "description": "Safari start date"},
+            {"path": "endDate", "type": "LocalDate", "description": "Safari end date"},
+            {"path": "description", "type": "String", "description": "Safari description"},
+            {"path": "startLocation", "type": "String", "description": "Safari starting location"},
+            {"path": "endLocation", "type": "String", "description": "Safari ending location"}
+        ]
+    },
+    {
+        "path": "lineItems",
+        "type": "List<LineItemDTO>",
+        "description": "Invoice line items. Access with: th:each='lineItem : ${invoice.lineItems}'",
+        "isRequired": false,
+        "children": [
+            {"path": "id", "type": "String", "description": "Obfuscated line item ID"},
+            {"path": "itemType", "type": "String", "description": "Item type (ACCOMMODATION, PARK_FEE, ACTIVITY, TRANSPORT, GUIDE, MEAL, EQUIPMENT, INSURANCE, OTHER)"},
+            {"path": "itemTypeDisplayName", "type": "String", "description": "Human-readable item type"},
+            {"path": "itemName", "type": "String", "description": "Line item display name"},
+            {"path": "description", "type": "String", "description": "Line item description"},
+            {"path": "displayOrder", "type": "Integer", "description": "Display sequence number"},
+            {"path": "isActive", "type": "Boolean", "description": "Whether line item is active"},
+            {
+                "path": "prices",
+                "type": "List<PriceDTO>",
+                "description": "Prices in different currencies. Access: th:each='price : ${lineItem.prices}'",
+                "children": [
+                    {"path": "currency", "type": "String", "description": "Currency code (USD, TZS, EUR, etc.)"},
+                    {"path": "quantity", "type": "Integer", "description": "Quantity"},
+                    {"path": "unitPrice", "type": "BigDecimal", "description": "Unit price"},
+                    {"path": "totalPrice", "type": "BigDecimal", "description": "Total price (quantity × unitPrice)"},
+                    {"path": "breakdown", "type": "String", "description": "Optional pricing breakdown details"},
+                    {"path": "formattedUnitPrice", "type": "String", "description": "Formatted unit price with currency symbol"},
+                    {"path": "formattedTotalPrice", "type": "String", "description": "Formatted total price with currency symbol"}
+                ]
+            }
+        ]
+    },
+    {
+        "path": "subtotals",
+        "type": "List<PriceDTO>",
+        "description": "Subtotals by currency. Access with: th:each='subtotal : ${invoice.subtotals}'",
+        "isRequired": false,
+        "children": [
+            {"path": "currency", "type": "String", "description": "Currency code"},
+            {"path": "totalPrice", "type": "BigDecimal", "description": "Subtotal amount"},
+            {"path": "formattedTotalPrice", "type": "String", "description": "Formatted subtotal"}
+        ]
+    },
+    {
+        "path": "taxes",
+        "type": "List<PriceDTO>",
+        "description": "Tax amounts by currency. Access with: th:each='tax : ${invoice.taxes}'",
+        "isRequired": false,
+        "children": [
+            {"path": "currency", "type": "String", "description": "Currency code"},
+            {"path": "totalPrice", "type": "BigDecimal", "description": "Tax amount"},
+            {"path": "formattedTotalPrice", "type": "String", "description": "Formatted tax amount"}
+        ]
+    },
+    {
+        "path": "discounts",
+        "type": "List<PriceDTO>",
+        "description": "Discount amounts by currency. Access with: th:each='discount : ${invoice.discounts}'",
+        "isRequired": false,
+        "children": [
+            {"path": "currency", "type": "String", "description": "Currency code"},
+            {"path": "totalPrice", "type": "BigDecimal", "description": "Discount amount"},
+            {"path": "formattedTotalPrice", "type": "String", "description": "Formatted discount amount"}
+        ]
+    },
+    {
+        "path": "grandTotals",
+        "type": "List<PriceDTO>",
+        "description": "Grand totals by currency (subtotal + taxes - discounts). Access with: th:each='grandTotal : ${invoice.grandTotals}'",
+        "isRequired": false,
+        "children": [
+            {"path": "currency", "type": "String", "description": "Currency code"},
+            {"path": "totalPrice", "type": "BigDecimal", "description": "Grand total amount"},
+            {"path": "formattedTotalPrice", "type": "String", "description": "Formatted grand total"}
+        ]
+    },
+    {
+        "path": "amountsPaid",
+        "type": "List<PriceDTO>",
+        "description": "Amounts paid by currency. Access with: th:each='amountPaid : ${invoice.amountsPaid}'",
+        "isRequired": false,
+        "children": [
+            {"path": "currency", "type": "String", "description": "Currency code"},
+            {"path": "totalPrice", "type": "BigDecimal", "description": "Amount paid"},
+            {"path": "formattedTotalPrice", "type": "String", "description": "Formatted amount paid"}
+        ]
+    },
+    {
+        "path": "balances",
+        "type": "List<PriceDTO>",
+        "description": "Outstanding balances by currency (grandTotal - amountPaid). Access with: th:each='balance : ${invoice.balances}'",
+        "isRequired": false,
+        "children": [
+            {"path": "currency", "type": "String", "description": "Currency code"},
+            {"path": "totalPrice", "type": "BigDecimal", "description": "Balance amount"},
+            {"path": "formattedTotalPrice", "type": "String", "description": "Formatted balance amount"}
+        ]
+    },
+    {
+        "path": "bankAccounts",
+        "type": "List<BankAccountDTO>",
+        "description": "Active bank accounts for payment (matching invoice currencies). Access with: th:each='bankAccount : ${invoice.bankAccounts}'",
+        "isRequired": false,
+        "children": [
+            {"path": "accountName", "type": "String", "description": "Display name for the bank account"},
+            {"path": "accountHolderName", "type": "String", "description": "Legal name of account holder"},
+            {"path": "bankName", "type": "String", "description": "Name of the bank"},
+            {"path": "bankBranch", "type": "String", "description": "Bank branch name"},
+            {"path": "branchAddress", "type": "String", "description": "Branch physical address"},
+            {"path": "branchCity", "type": "String", "description": "Branch city"},
+            {"path": "branchCountry", "type": "String", "description": "Branch country"},
+            {"path": "accountNumber", "type": "String", "description": "Bank account number"},
+            {"path": "currency", "type": "String", "description": "Account currency code (USD, EUR, TZS, etc.)"},
+            {"path": "swiftBicCode", "type": "String", "description": "SWIFT/BIC code for international wire transfers"},
+            {"path": "iban", "type": "String", "description": "IBAN for European/international transfers"},
+            {"path": "routingNumber", "type": "String", "description": "US ACH routing number"},
+            {"path": "sortCode", "type": "String", "description": "UK sort code"},
+            {"path": "intermediaryBankName", "type": "String", "description": "Intermediary/correspondent bank name"},
+            {"path": "intermediarySwiftCode", "type": "String", "description": "Intermediary bank SWIFT code"},
+            {"path": "invoiceDisplayNotes", "type": "String", "description": "Customer-facing payment instructions and notes"}
+        ]
+    }
+]

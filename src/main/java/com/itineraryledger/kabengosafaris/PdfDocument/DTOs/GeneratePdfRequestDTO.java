@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.PdfDocument.DTOs;
 
+import com.itineraryledger.kabengosafaris.Invoice.Entity.InvoiceDocument;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.ItineraryDocument;
 import com.itineraryledger.kabengosafaris.Quote.Entity.QuoteDocument;
 import com.itineraryledger.kabengosafaris.Safari.Entity.SafariDocument;
@@ -76,6 +77,13 @@ public class GeneratePdfRequestDTO {
      * Examples: QUOTATION, TRAVEL_PLAN, FINAL_ITINERARY, BOOKING_CONFIRMATION, etc.
      */
     private SafariDocument.DocumentType safariDocumentType;
+
+    /**
+     * Optional: the InvoiceDocument type to use when saving.
+     * Required if saveToDocuments is true and documentType is FULL_INVOICE.
+     * Examples: INVOICE_PDF, TAX_INVOICE, PROFORMA_INVOICE, COMMERCIAL_INVOICE, etc.
+     */
+    private InvoiceDocument.DocumentType invoiceDocumentType;
 
     /**
      * Optional: title for the saved document.

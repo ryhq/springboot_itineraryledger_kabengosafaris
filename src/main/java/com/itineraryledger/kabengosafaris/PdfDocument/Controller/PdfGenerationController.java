@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.PdfDocument.Controller;
 
+import com.itineraryledger.kabengosafaris.Invoice.Entity.InvoiceDocument;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.ItineraryDocument;
 import com.itineraryledger.kabengosafaris.Quote.Entity.QuoteDocument;
 import com.itineraryledger.kabengosafaris.Safari.Entity.SafariDocument;
@@ -78,6 +79,19 @@ public class PdfGenerationController {
                 request.getTemplateId(),
                 request.getLanguage(),
                 request.getSafariDocumentType(),
+                request.getDocumentTitle(),
+                request.getDocumentVersion(),
+                request.getDocumentNotes()
+            );
+        }
+
+        // If saveToDocuments is true and this is an invoice-related PDF, use the save method
+        if (Boolean.TRUE.equals(request.getSaveToDocuments()) && "FULL_INVOICE".equals(request.getDocumentType())) {
+            return generationService.generateAndSaveInvoicePdf(
+                request.getDataId(),
+                request.getTemplateId(),
+                request.getLanguage(),
+                request.getInvoiceDocumentType(),
                 request.getDocumentTitle(),
                 request.getDocumentVersion(),
                 request.getDocumentNotes()
@@ -312,6 +326,74 @@ public class PdfGenerationController {
         log.info("GET /api/pdf/safari/{}/preview - Preview safari{}",
             safariId, language != null ? ", language: " + language : "");
         return generationService.previewPdf("FULL_SAFARI", safariId, templateId, language);
+    }
+
+    /**
+     * Generate invoice PDF (convenience endpoint)
+     * Supports optional language parameter for translation
+     * Supports optional saveToDocuments to save the PDF as an InvoiceDocument
+     *
+     * @param invoiceId The obfuscated invoice ID
+     * @param templateId Optional template ID to use
+     * @param language Optional target language code (e.g., "fr", "de", "es")
+     *                 If not provided or "en", PDF is generated in English
+     * @param saveToDocuments If true, save the PDF as an InvoiceDocument
+     * @param documentType The InvoiceDocument type (e.g., INVOICE_PDF, TAX_INVOICE, PROFORMA_INVOICE)
+     * @param documentTitle Optional title for the saved document
+     * @param documentVersion Optional version string
+     * @param documentNotes Optional notes
+     */
+    @GetMapping("/invoice/{invoiceId}")
+    @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
+    public ResponseEntity<?> generateInvoicePdf(
+        @PathVariable String invoiceId,
+        @RequestParam(required = false) String templateId,
+        @RequestParam(required = false) String language,
+        @RequestParam(required = false, defaultValue = "false") Boolean saveToDocuments,
+        @RequestParam(required = false) InvoiceDocument.DocumentType documentType,
+        @RequestParam(required = false) String documentTitle,
+        @RequestParam(required = false) String documentVersion,
+        @RequestParam(required = false) String documentNotes
+    ) {
+        log.info("GET /api/pdf/invoice/{} - Generating invoice PDF{}{}",
+            invoiceId,
+            language != null ? ", language: " + language : "",
+            Boolean.TRUE.equals(saveToDocuments) ? ", saving to documents" : "");
+
+        if (Boolean.TRUE.equals(saveToDocuments)) {
+            return generationService.generateAndSaveInvoicePdf(
+                invoiceId,
+                templateId,
+                language,
+                documentType,
+                documentTitle,
+                documentVersion,
+                documentNotes
+            );
+        }
+
+        return generationService.generateInvoicePdf(invoiceId, templateId, language);
+    }
+
+    /**
+     * Preview invoice PDF (convenience endpoint)
+     * Supports optional language parameter for translation preview
+     *
+     * @param invoiceId The obfuscated invoice ID
+     * @param templateId Optional template ID to use
+     * @param language Optional target language code (e.g., "fr", "de", "es")
+     *                 If not provided or "en", preview is in English
+     */
+    @GetMapping("/invoice/{invoiceId}/preview")
+    @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
+    public ResponseEntity<ApiResponse<?>> previewInvoicePdf(
+        @PathVariable String invoiceId,
+        @RequestParam(required = false) String templateId,
+        @RequestParam(required = false) String language
+    ) {
+        log.info("GET /api/pdf/invoice/{}/preview - Preview invoice{}",
+            invoiceId, language != null ? ", language: " + language : "");
+        return generationService.previewPdf("FULL_INVOICE", invoiceId, templateId, language);
     }
 
     /**

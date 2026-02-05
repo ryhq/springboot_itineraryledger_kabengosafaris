@@ -37,6 +37,7 @@ public class PdfDocumentVariables {
             case "FULL_ITINERARY" -> loadSchema("full-itinerary-schema.json");
             case "FULL_QUOTE" -> loadSchema("full-quote-schema.json");
             case "FULL_SAFARI" -> loadSchema("full-safari-schema.json");
+            case "FULL_INVOICE" -> loadSchema("full-invoice-schema.json");
             default -> "[]";
         };
     }
@@ -49,6 +50,7 @@ public class PdfDocumentVariables {
             case "FULL_ITINERARY" -> "Full Safari Itinerary";
             case "FULL_QUOTE" -> "Full Safari Quote";
             case "FULL_SAFARI" -> "Full Safari Document";
+            case "FULL_INVOICE" -> "Full Safari Invoice";
             default -> documentName;
         };
     }
@@ -61,6 +63,7 @@ public class PdfDocumentVariables {
             case "FULL_ITINERARY" -> "Complete itinerary document with all days, parks, activities, accommodations, and passenger configurations. Ideal for client proposals and booking confirmations.";
             case "FULL_QUOTE" -> "Complete quote/quotation document with itemized pricing in multiple currencies, customer information, payment terms, and validity period. Ideal for price quotations and proposals.";
             case "FULL_SAFARI" -> "Complete safari booking document with actual dates, customer information, real-time tracking (current phase, day number), operational fields (payment tracking, waiver management), and all nested data. Ideal for confirmed safari bookings and operational management.";
+            case "FULL_INVOICE" -> "Complete invoice document with line items, multi-currency support, payment tracking (amounts paid, balances), tax and discount calculations, bank account details, and due dates. Ideal for billing and payment collection.";
             default -> "";
         };
     }
@@ -73,6 +76,7 @@ public class PdfDocumentVariables {
             case "FULL_ITINERARY" -> "com.itineraryledger.kabengosafaris.Itinerary.DTOs.FullItineraryDTO";
             case "FULL_QUOTE" -> "com.itineraryledger.kabengosafaris.Quote.DTOs.FullQuoteDTO";
             case "FULL_SAFARI" -> "com.itineraryledger.kabengosafaris.Safari.DTOs.FullSafariDTO";
+            case "FULL_INVOICE" -> "com.itineraryledger.kabengosafaris.Invoice.DTOs.FullInvoiceDTO";
             default -> "";
         };
     }
@@ -88,6 +92,8 @@ public class PdfDocumentVariables {
             case "FULL_QUOTE" -> "quote";
             // From FullSafariDTO
             case "FULL_SAFARI" -> "safari";
+            // From FullInvoiceDTO
+            case "FULL_INVOICE" -> "invoice";
             default -> "data";
         };
     }
@@ -101,10 +107,10 @@ public class PdfDocumentVariables {
         return new String[]{
             "FULL_ITINERARY",
             "FULL_QUOTE",
-            "FULL_SAFARI"
+            "FULL_SAFARI",
+            "FULL_INVOICE"
             // Future document types:
-            // "BOOKING_CONFIRMATION",
-            // "INVOICE"
+            // "BOOKING_CONFIRMATION"
         };
     }
 

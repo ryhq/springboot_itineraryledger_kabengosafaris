@@ -21,7 +21,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Service for updating invoices
+ * Service for updating invoices (metadata only)
+ *
+ * NOTE: Customer and Safari relationships cannot be updated after creation.
+ * These relationships are established at creation time and remain fixed.
  */
 @Service
 @Slf4j

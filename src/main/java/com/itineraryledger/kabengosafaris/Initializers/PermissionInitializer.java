@@ -168,6 +168,7 @@ public class PermissionInitializer implements ApplicationRunner {
             // Invoice Module Entities
             "INVOICE",
             "INVOICE_LINE_ITEM",
+            "INVOICE_DOCUMENT",
         };
 
         // Define standard actions (CREATE, READ, UPDATE, DELETE)

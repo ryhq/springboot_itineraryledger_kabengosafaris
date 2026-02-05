@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
-import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerRepository;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.CreateInvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.InvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
@@ -38,7 +37,6 @@ import lombok.extern.slf4j.Slf4j;
 public class InvoiceCreateService {
 
     private final InvoiceRepository invoiceRepository;
-    private final CustomerRepository customerRepository;
     private final SafariRepository safariRepository;
     private final UserRepository userRepository;
     private final IdObfuscator idObfuscator;
@@ -53,43 +51,41 @@ public class InvoiceCreateService {
         log.info("Creating new invoice");
 
         try {
-            // Validate and decode customer ID (nullable)
-            Customer customer = null;
-            if (createDTO.getCustomerId() != null && !createDTO.getCustomerId().isBlank()) {
-                try {
-                    Long customerId = idObfuscator.decodeId(createDTO.getCustomerId());
-                    customer = customerRepository.findById(customerId).orElse(null);
-                    if (customer == null) {
-                        return ResponseEntity.badRequest().body(
-                            ApiResponse.error(400, "Customer not found", "CUSTOMER_NOT_FOUND")
-                        );
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to decode customer ID: {}", createDTO.getCustomerId(), e);
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400, "Invalid customer ID", "INVALID_CUSTOMER_ID")
-                    );
-                }
+            // Safari ID is REQUIRED
+            if (createDTO.getSafariId() == null || createDTO.getSafariId().isBlank()) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Safari ID is required", "SAFARI_ID_REQUIRED")
+                );
             }
 
-            // Validate and decode safari ID (nullable)
-            Safari safari = null;
-            if (createDTO.getSafariId() != null && !createDTO.getSafariId().isBlank()) {
-                try {
-                    Long safariId = idObfuscator.decodeId(createDTO.getSafariId());
-                    safari = safariRepository.findById(safariId).orElse(null);
-                    if (safari == null) {
-                        return ResponseEntity.badRequest().body(
-                            ApiResponse.error(400, "Safari not found", "SAFARI_NOT_FOUND")
-                        );
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to decode safari ID: {}", createDTO.getSafariId(), e);
+            // Validate and decode safari ID
+            Safari safari;
+            try {
+                Long safariId = idObfuscator.decodeId(createDTO.getSafariId());
+                safari = safariRepository.findById(safariId).orElse(null);
+                if (safari == null) {
                     return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400, "Invalid safari ID", "INVALID_SAFARI_ID")
+                        ApiResponse.error(400, "Safari not found", "SAFARI_NOT_FOUND")
                     );
                 }
+            } catch (Exception e) {
+                log.warn("Failed to decode safari ID: {}", createDTO.getSafariId(), e);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid safari ID", "INVALID_SAFARI_ID")
+                );
             }
+
+            // Derive customer from safari (REQUIRED)
+            if (safari.getCustomer() == null) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400,
+                        "Cannot create invoice: Safari has no customer linked. Please link a customer to the safari first.",
+                        "SAFARI_NO_CUSTOMER")
+                );
+            }
+
+            Customer customer = safari.getCustomer();
+            log.info("Customer derived from safari: {}", customer.getDisplayName());
 
             // Validate due date is after issue date
             if (!createDTO.getIssueDate().isBefore(createDTO.getDueDate())) {

@@ -11,7 +11,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * DTO for creating an Invoice from an existing Safari
+ * DTO for creating an Invoice from an existing Safari with cost estimation
+ *
+ * Both Safari and Customer must be explicitly provided to ensure proper linking
  */
 @Data
 @NoArgsConstructor
@@ -22,11 +24,15 @@ public class CreateInvoiceFromSafariDTO {
     @NotBlank(message = "Safari ID is required")
     private String safariId;
 
-    @NotBlank(message = "Title is required")
+    // Optional: if not provided, defaults will be used
     private String title;
-
     private String description;
 
+    // Cost estimation parameters
+    private Boolean useStoRate; // Default: false (RACK rates), true for STO rates
+    private String currency; // Default: USD
+
+    // Invoice pricing
     private BigDecimal taxPercentage;
     private BigDecimal discountPercentage;
     private String discountReason;

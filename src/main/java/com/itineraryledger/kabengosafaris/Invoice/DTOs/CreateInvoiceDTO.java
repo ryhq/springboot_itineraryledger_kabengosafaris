@@ -12,6 +12,8 @@ import lombok.NoArgsConstructor;
 
 /**
  * DTO for creating a new Invoice
+ *
+ * Safari ID is REQUIRED. Customer will be automatically derived from the Safari.
  */
 @Data
 @NoArgsConstructor
@@ -24,9 +26,8 @@ public class CreateInvoiceDTO {
 
     private String description;
 
-    private String customerId; // Nullable
-
-    private String safariId; // Nullable
+    @NotBlank(message = "Safari ID is required")
+    private String safariId;
 
     private BigDecimal taxPercentage;
     private BigDecimal discountPercentage;

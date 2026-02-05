@@ -7,7 +7,7 @@ import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteItemRepository;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
+// import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,7 +45,7 @@ public class QuoteTotalsCalculationService {
      *
      * @param quoteId The quote ID to recalculate
      */
-    @Async
+    // @Async
     @Transactional
     public void recalculateTotals(Long quoteId) {
         Quote quote = quoteRepository.findById(quoteId)
@@ -60,7 +60,7 @@ public class QuoteTotalsCalculationService {
      *
      * @param quote The quote entity to recalculate
      */
-    @Async
+    // @Async
     @Transactional
     public void recalculateTotals(Quote quote) {
         log.debug("Recalculating totals for quote: {}", quote.getId());

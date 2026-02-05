@@ -26,7 +26,8 @@ import java.util.List;
  * ├── discounts (by currency)
  * ├── grandTotals (by currency)
  * ├── amountsPaid (by currency)
- * └── balances (by currency)
+ * ├── balances (by currency)
+ * └── bankAccounts (active bank accounts matching invoice currencies)
  */
 @Data
 @NoArgsConstructor
@@ -91,6 +92,7 @@ public class FullInvoiceDTO {
     private List<PriceDTO> grandTotals;
     private List<PriceDTO> amountsPaid;
     private List<PriceDTO> balances;
+    private List<BankAccountDTO> bankAccounts;
 
     // ========================
     // SUMMARY STATISTICS
@@ -181,5 +183,32 @@ public class FullInvoiceDTO {
         private String breakdown;
         private String formattedUnitPrice;
         private String formattedTotalPrice;
+    }
+
+    /**
+     * Bank account information for payment
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class BankAccountDTO {
+        private String accountName;
+        private String accountHolderName;
+        private String bankName;
+        private String bankBranch;
+        private String branchAddress;
+        private String branchCity;
+        private String branchCountry;
+        private String accountNumber;
+        private String currency;
+        private String swiftBicCode;
+        private String iban;
+        private String routingNumber;
+        private String sortCode;
+        private String intermediaryBankName;
+        private String intermediarySwiftCode;
+        private String invoiceDisplayNotes;
     }
 }

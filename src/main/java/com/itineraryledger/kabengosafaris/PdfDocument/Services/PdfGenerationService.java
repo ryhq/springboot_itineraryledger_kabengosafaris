@@ -2,6 +2,11 @@ package com.itineraryledger.kabengosafaris.PdfDocument.Services;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLog;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogService;
+import com.itineraryledger.kabengosafaris.Invoice.DTOs.FullInvoiceDTO;
+import com.itineraryledger.kabengosafaris.Invoice.DTOs.InvoiceDocumentDTOs.InvoiceDocumentDTO;
+import com.itineraryledger.kabengosafaris.Invoice.Entity.InvoiceDocument;
+import com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceDocumentServices.InvoiceDocumentCreateService;
+import com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceServices.InvoiceFullGetService;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.FullItineraryDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.ItineraryDocumentDTOs.ItineraryDocumentDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.ItineraryDocument;
@@ -63,6 +68,7 @@ public class PdfGenerationService {
     private final AuditLogService auditLogService;
 
     // Data providers
+    private final InvoiceFullGetService invoiceFullGetService;
     private final ItineraryFullGetService itineraryFullGetService;
     private final QuoteFullGetService quoteFullGetService;
     private final SafariFullGetService safariFullGetService;
@@ -71,6 +77,7 @@ public class PdfGenerationService {
     private final TranslationService translationService;
 
     // Document storage services
+    private final InvoiceDocumentCreateService invoiceDocumentCreateService;
     private final ItineraryDocumentCreateService itineraryDocumentCreateService;
     private final QuoteDocumentCreateService quoteDocumentCreateService;
     private final SafariDocumentCreateService safariDocumentCreateService;
@@ -770,6 +777,7 @@ public class PdfGenerationService {
             case "FULL_ITINERARY" -> fetchItineraryData(dataId);
             case "FULL_QUOTE" -> fetchQuoteData(dataId);
             case "FULL_SAFARI" -> fetchSafariData(dataId);
+            case "FULL_INVOICE" -> fetchInvoiceData(dataId);
             // Add more document types here as needed
             default -> {
                 log.warn("Unknown document type: {}", documentName);
@@ -838,6 +846,150 @@ public class PdfGenerationService {
         }
     }
 
+    // =====================================================================
+    // INVOICE PDF GENERATION METHODS
+    // =====================================================================
+
+    /**
+     * Convenience method to generate invoice PDF
+     *
+     * @param invoiceIdObfuscated The obfuscated invoice ID
+     * @param templateIdObfuscated Optional template ID
+     * @param language Optional target language code for translation
+     * @return ResponseEntity with PDF bytes or error
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> generateInvoicePdf(String invoiceIdObfuscated, String templateIdObfuscated, String language) {
+        return generatePdf("FULL_INVOICE", invoiceIdObfuscated, templateIdObfuscated, language);
+    }
+
+    /**
+     * Generate and save invoice PDF to InvoiceDocuments
+     *
+     * @param invoiceIdObfuscated The obfuscated invoice ID
+     * @param templateIdObfuscated Optional template ID
+     * @param language Optional target language code for translation
+     * @param invoiceDocumentType The type of document to save as (e.g., INVOICE_PDF, TAX_INVOICE)
+     * @param title Optional custom title (auto-generated if null)
+     * @param version Optional version string
+     * @param notes Optional notes
+     * @return ResponseEntity with PDF bytes (document is also saved) or error
+     */
+    @Transactional
+    public ResponseEntity<?> generateAndSaveInvoicePdf(
+            String invoiceIdObfuscated,
+            String templateIdObfuscated,
+            String language,
+            InvoiceDocument.DocumentType invoiceDocumentType,
+            String title,
+            String version,
+            String notes
+    ) {
+        try {
+            // 1. Fetch invoice data first to get code and title for filename generation
+            FullInvoiceDTO invoiceData = fetchInvoiceData(invoiceIdObfuscated);
+            if (invoiceData == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Invoice not found: " + invoiceIdObfuscated, "INVOICE_NOT_FOUND")
+                );
+            }
+
+            // 2. Decode invoice ID for saving
+            Long invoiceId;
+            try {
+                invoiceId = idObfuscator.decodeId(invoiceIdObfuscated);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid invoice ID", "INVALID_INVOICE_ID")
+                );
+            }
+
+            // 3. Generate the PDF using existing method
+            ResponseEntity<?> pdfResponse = generatePdf("FULL_INVOICE", invoiceIdObfuscated, templateIdObfuscated, language);
+
+            // If PDF generation failed, return the error response
+            if (!pdfResponse.getStatusCode().is2xxSuccessful()) {
+                return pdfResponse;
+            }
+
+            // 4. Extract PDF bytes from response
+            byte[] pdfBytes = (byte[]) pdfResponse.getBody();
+            if (pdfBytes == null || pdfBytes.length == 0) {
+                return ResponseEntity.status(500).body(
+                    ApiResponse.error(500, "Generated PDF is empty", "EMPTY_PDF")
+                );
+            }
+
+            // 5. Generate filename and title
+            String invoiceCode = invoiceData.getInvoiceCode() != null ? invoiceData.getInvoiceCode() : "INV";
+            String invoiceTitle = invoiceData.getTitle() != null ? invoiceData.getTitle() : "Invoice";
+
+            InvoiceDocument.DocumentType docType = invoiceDocumentType != null
+                ? invoiceDocumentType
+                : InvoiceDocument.DocumentType.INVOICE_PDF;
+
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String languageSuffix = (language != null && !language.isBlank() && !"en".equalsIgnoreCase(language))
+                ? "_" + language.toLowerCase()
+                : "";
+            String fileName = String.format("%s_%s%s_%s.pdf",
+                docType.name().toLowerCase(), invoiceCode, languageSuffix, timestamp);
+
+            String documentTitle = title != null && !title.isBlank()
+                ? title
+                : String.format("%s - %s", docType.getDisplayName(), invoiceTitle);
+
+            // 6. Save the document
+            InvoiceDocumentDTO savedDocument = invoiceDocumentCreateService.saveGeneratedDocument(
+                invoiceId,
+                pdfBytes,
+                fileName,
+                docType,
+                documentTitle,
+                null, // description
+                version,
+                notes
+            );
+
+            if (savedDocument == null) {
+                log.warn("PDF generated but failed to save to documents for invoice: {}", invoiceIdObfuscated);
+                // Still return the PDF even if saving failed
+                return pdfResponse;
+            }
+
+            log.info("PDF generated and saved for invoice: {}, document ID: {}", invoiceIdObfuscated, savedDocument.getId());
+
+            // Return the PDF bytes with same headers as original response
+            return pdfResponse;
+
+        } catch (Exception e) {
+            log.error("Failed to generate and save PDF for invoice: {}", invoiceIdObfuscated, e);
+            return ResponseEntity.status(500).body(
+                ApiResponse.error(500, "Failed to generate and save PDF: " + e.getMessage(), "PDF_SAVE_FAILED")
+            );
+        }
+    }
+
+    /**
+     * Fetch full invoice data
+     */
+    private FullInvoiceDTO fetchInvoiceData(String invoiceIdObfuscated) {
+        try {
+            ResponseEntity<ApiResponse<?>> response = invoiceFullGetService.getFullInvoice(invoiceIdObfuscated);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                ApiResponse<?> apiResponse = response.getBody();
+                if (apiResponse != null && apiResponse.getData() instanceof FullInvoiceDTO) {
+                    return (FullInvoiceDTO) apiResponse.getData();
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("Failed to fetch invoice data: {}", invoiceIdObfuscated, e);
+            return null;
+        }
+    }
+
     /**
      * Generate a filename for the PDF using document code with optional language suffix
      *
@@ -893,6 +1045,15 @@ public class PdfGenerationService {
                     }
                 }
                 yield "safari";
+            }
+            case "FULL_INVOICE" -> {
+                if (data instanceof FullInvoiceDTO invoice) {
+                    String code = invoice.getInvoiceCode();
+                    if (code != null && !code.isBlank()) {
+                        yield code;
+                    }
+                }
+                yield "invoice";
             }
             // Add more document types here as needed
             default -> documentType.toLowerCase().replace("_", "-");

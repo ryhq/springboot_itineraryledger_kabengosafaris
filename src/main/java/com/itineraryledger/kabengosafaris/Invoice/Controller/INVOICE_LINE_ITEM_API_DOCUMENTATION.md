@@ -88,7 +88,7 @@ Used when creating or updating invoice line items. The system automatically comp
   "itemTypeDisplayName": "Accommodation",
   "itemName": "Serengeti Safari Lodge",
   "description": "Luxury tented camp with full board",
-  "displayOrder": 0,
+  "displayOrder": 1,
   "prices": [
     {
       "currency": "USD",
@@ -129,7 +129,6 @@ Create a new item within an invoice.
   "itemType": "ACCOMMODATION",                    // Required
   "itemName": "Serengeti Safari Lodge",           // Required
   "description": "Luxury tented camp",            // Optional
-  "displayOrder": 0,                              // Optional
   "prices": [                                     // Required: At least 1 price
     {
       "currency": "USD",
@@ -144,9 +143,10 @@ Create a new item within an invoice.
 
 **Important Notes:**
 - `invoiceId` in request body is automatically set from the path parameter
-- `displayOrder` can be specified during creation, but if not provided:
-  - First item for an invoice: `displayOrder = 0`
+- `displayOrder` is **automatically assigned** by the system:
+  - First item for an invoice: `displayOrder = 1`
   - Subsequent items: `displayOrder = max(existing) + 1`
+- **Users cannot specify displayOrder during creation** - it must be set through the `/reorder` endpoint
 - To change display order after creation, use the dedicated `/reorder` endpoint
 
 #### Response
@@ -165,7 +165,7 @@ Create a new item within an invoice.
     "itemTypeDisplayName": "Accommodation",
     "itemName": "Serengeti Safari Lodge",
     "description": "Luxury tented camp",
-    "displayOrder": 0,
+    "displayOrder": 1,
     "prices": [
       {
         "currency": "USD",
@@ -216,7 +216,6 @@ All fields are optional. Only provided fields will be updated.
   "itemType": "ACCOMMODATION",
   "itemName": "Updated Lodge Name",
   "description": "Updated description",
-  "displayOrder": 1,
   "prices": [
     {
       "currency": "USD",
@@ -230,7 +229,7 @@ All fields are optional. Only provided fields will be updated.
 ```
 
 **Note:**
-- `displayOrder` can be updated through this endpoint, but for reordering multiple items at once, use the `/reorder` endpoint
+- `displayOrder` **cannot be updated** through this endpoint - it can **only** be changed using the `/reorder` endpoint
 - When updating prices, provide complete price list (replaces existing prices)
 - `totalPrice` is computed automatically from `quantity × unitPrice`
 
@@ -466,7 +465,7 @@ Retrieve a specific invoice line item by its ID.
     "itemTypeDisplayName": "Accommodation",
     "itemName": "Serengeti Safari Lodge",
     "description": "Luxury tented camp",
-    "displayOrder": 0,
+    "displayOrder": 1,
     "prices": [
       {
         "currency": "USD",
@@ -653,7 +652,7 @@ Content-Type: application/json
     "itemTypeDisplayName": "Accommodation",
     "itemName": "Serengeti Serena Safari Lodge",
     "description": "Full board accommodation in a luxury lodge",
-    "displayOrder": 0,
+    "displayOrder": 1,
     "prices": [
       {
         "currency": "USD",
@@ -672,7 +671,7 @@ Content-Type: application/json
 
 **Notes:**
 - The system automatically calculated `totalPrice = 4 × 250.00 = 1000.00`
-- The system automatically assigned `displayOrder = 0` (first item for this invoice)
+- The system automatically assigned `displayOrder = 1` (first item for this invoice)
 
 ---
 
@@ -721,7 +720,7 @@ Content-Type: application/json
     "itemTypeDisplayName": "Park Fee",
     "itemName": "Serengeti National Park Entry Fee",
     "description": "Per person per day",
-    "displayOrder": 1,
+    "displayOrder": 2,
     "prices": [
       {
         "currency": "USD",
@@ -745,7 +744,7 @@ Content-Type: application/json
 }
 ```
 
-**Note:** The system automatically assigned `displayOrder = 1` (second item for this invoice, after the accommodation item created in Example 1).
+**Note:** The system automatically assigned `displayOrder = 2` (second item for this invoice, after the accommodation item created in Example 1).
 
 ---
 
@@ -784,7 +783,7 @@ Content-Type: application/json
     "itemTypeDisplayName": "Accommodation",
     "itemName": "Serengeti Serena Safari Lodge",
     "description": "Full board accommodation in a luxury lodge",
-    "displayOrder": 0,
+    "displayOrder": 1,
     "prices": [
       {
         "currency": "USD",
@@ -827,7 +826,7 @@ Authorization: Bearer eyJhbGc...
         "itemType": "ACCOMMODATION",
         "itemTypeDisplayName": "Accommodation",
         "itemName": "Serengeti Serena Safari Lodge",
-        "displayOrder": 0,
+        "displayOrder": 1,
         "prices": [{"currency": "USD", "totalPrice": 1100.00}],
         "isActive": true
       },
@@ -836,7 +835,7 @@ Authorization: Bearer eyJhbGc...
         "itemType": "PARK_FEE",
         "itemTypeDisplayName": "Park Fee",
         "itemName": "Serengeti National Park Entry Fee",
-        "displayOrder": 1,
+        "displayOrder": 2,
         "prices": [
           {"currency": "USD", "totalPrice": 280.00},
           {"currency": "TZS", "totalPrice": 20000.00}
@@ -941,7 +940,6 @@ Content-Type: application/json
       "breakdown": "Per person for 7-day safari"
     }
   ],
-  "displayOrder": 2,
   "isActive": true
 }
 ```
@@ -960,7 +958,7 @@ Content-Type: application/json
     "itemTypeDisplayName": "Insurance",
     "itemName": "Safari Travel Insurance",
     "description": "Comprehensive travel and medical insurance coverage",
-    "displayOrder": 2,
+    "displayOrder": 3,
     "prices": [
       {
         "currency": "USD",
@@ -977,7 +975,7 @@ Content-Type: application/json
 }
 ```
 
-**Note:** The `displayOrder` was explicitly set to 2 in the request.
+**Note:** The `displayOrder` was automatically assigned as 3 by the system (third item for this invoice).
 
 ---
 
@@ -986,10 +984,10 @@ Content-Type: application/json
 1. **Automatic Price Calculation:** When creating or updating items, users only provide `currency`, `quantity`, `unitPrice`, and optional `breakdown`. The system automatically computes `totalPrice = quantity × unitPrice`.
 
 2. **Display Order Management:**
-   - When creating a new item, the `displayOrder` can be optionally specified
-   - If not specified: **First item** for an invoice gets `displayOrder = 0`, **subsequent items** get `displayOrder = max(existing displayOrders) + 1`
-   - Display order can be updated through the PUT endpoint or the dedicated `/reorder` endpoint
-   - For reordering multiple items efficiently, use the `/reorder` endpoint
+   - When creating a new item, `displayOrder` is **automatically assigned** by the system and **cannot be specified by users**
+   - **First item** for an invoice gets `displayOrder = 1`, **subsequent items** get `displayOrder = max(existing displayOrders) + 1`
+   - Display order can only be changed using the dedicated `/reorder` endpoint
+   - For reordering multiple items efficiently, always use the `/reorder` endpoint
 
 3. **Multi-Currency Support:** Each invoice line item can have multiple prices in different currencies, useful for mixed payment scenarios or international clients.
 

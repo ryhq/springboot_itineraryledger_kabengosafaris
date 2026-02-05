@@ -28,7 +28,6 @@ public class UpdateInvoiceLineItemDTO {
     private InvoiceItemType itemType;
     private String itemName;
     private String description;
-    private Integer displayOrder;
 
     @Valid
     private List<PriceInput> prices;

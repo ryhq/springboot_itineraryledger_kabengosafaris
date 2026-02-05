@@ -87,7 +87,7 @@ Used when creating or updating quote items. The system automatically computes `t
   "itemType": "ACCOMMODATION",
   "itemName": "Serengeti Safari Lodge",
   "description": "Luxury tented camp with full board",
-  "displayOrder": 0,
+  "displayOrder": 1,
   "prices": [
     {
       "currency": "USD",
@@ -143,7 +143,7 @@ Create a new item within a quote.
 **Important Notes:**
 - `quoteId` in request body is automatically set from the path parameter
 - `displayOrder` is **automatically assigned** by the system (cannot be specified by user):
-  - First item for a quote: `displayOrder = 0`
+  - First item for a quote: `displayOrder = 1`
   - Subsequent items: `displayOrder = max(existing) + 1`
   - To change display order, use the dedicated `/reorder` endpoint
 
@@ -162,7 +162,7 @@ Create a new item within a quote.
     "itemType": "ACCOMMODATION",
     "itemName": "Serengeti Safari Lodge",
     "description": "Luxury tented camp",
-    "displayOrder": 0,
+    "displayOrder": 1,
     "prices": [
       {
         "currency": "USD",
@@ -245,7 +245,7 @@ All fields are optional. Only provided fields will be updated.
     "itemType": "ACCOMMODATION",
     "itemName": "Updated Lodge Name",
     "description": "Updated description",
-    "displayOrder": 0,
+    "displayOrder": 1,
     "prices": [
       {
         "currency": "USD",
@@ -378,7 +378,7 @@ Retrieve quote items with optional filtering, pagination, and sorting.
         "itemType": "ACCOMMODATION",
         "itemName": "Serengeti Safari Lodge",
         "description": "Luxury tented camp",
-        "displayOrder": 0,
+        "displayOrder": 1,
         "prices": [
           {
             "currency": "USD",
@@ -461,7 +461,7 @@ Retrieve a specific quote item by its ID.
     "itemType": "ACCOMMODATION",
     "itemName": "Serengeti Safari Lodge",
     "description": "Luxury tented camp",
-    "displayOrder": 0,
+    "displayOrder": 1,
     "prices": [
       {
         "currency": "USD",
@@ -525,7 +525,7 @@ Update the display order of quote items. This is the ONLY way to change item dis
 
 **Important Notes:**
 
-1. The array defines the new order - first item gets displayOrder=0, second gets 1, etc.
+1. The array defines the new order - first item gets displayOrder=1, second gets 2, etc.
 2. `expectedDisplayOrder` is optional and used for optimistic locking validation
 3. All items for the quote must be included in the reorder request
 4. Uses a two-pass approach to avoid unique constraint violations
@@ -544,7 +544,7 @@ Update the display order of quote items. This is the ONLY way to change item dis
     "items": [
       {
         "id": "item_id_3",
-        "displayOrder": 0,
+        "displayOrder": 1,
         "itemName": "First Item"
       },
       {
@@ -645,7 +645,7 @@ Content-Type: application/json
     "itemType": "ACCOMMODATION",
     "itemName": "Serengeti Serena Safari Lodge",
     "description": "Full board accommodation in a luxury lodge",
-    "displayOrder": 0,
+    "displayOrder": 1,
     "prices": [
       {
         "currency": "USD",
@@ -664,7 +664,7 @@ Content-Type: application/json
 
 **Notes:**
 - The system automatically calculated `totalPrice = 4 × 250.00 = 1000.00`
-- The system automatically assigned `displayOrder = 0` (first item for this quote)
+- The system automatically assigned `displayOrder = 1` (first item for this quote)
 
 ---
 
@@ -712,7 +712,7 @@ Content-Type: application/json
     "itemType": "PARK_FEE_ENTRY",
     "itemName": "Serengeti National Park Entry Fee",
     "description": "Per person per day",
-    "displayOrder": 1,
+    "displayOrder": 2,
     "prices": [
       {
         "currency": "USD",
@@ -736,7 +736,7 @@ Content-Type: application/json
 }
 ```
 
-**Note:** The system automatically assigned `displayOrder = 1` (second item for this quote, after the accommodation item created in Example 1).
+**Note:** The system automatically assigned `displayOrder = 2` (second item for this quote, after the accommodation item created in Example 1).
 
 ---
 
@@ -774,7 +774,7 @@ Content-Type: application/json
     "itemType": "ACCOMMODATION",
     "itemName": "Serengeti Serena Safari Lodge",
     "description": "Full board accommodation in a luxury lodge",
-    "displayOrder": 0,
+    "displayOrder": 1,
     "prices": [
       {
         "currency": "USD",
@@ -816,7 +816,7 @@ Authorization: Bearer eyJhbGc...
         "id": "xyz789",
         "itemType": "ACCOMMODATION",
         "itemName": "Serengeti Serena Safari Lodge",
-        "displayOrder": 0,
+        "displayOrder": 1,
         "prices": [{"currency": "USD", "totalPrice": 1100.00}],
         "isActive": true
       }
@@ -860,9 +860,9 @@ Content-Type: application/json
   "data": {
     "reorderedCount": 3,
     "items": [
-      {"id": "item_3", "displayOrder": 0, "itemName": "Park Entry Fee"},
-      {"id": "item_1", "displayOrder": 1, "itemName": "Accommodation"},
-      {"id": "item_2", "displayOrder": 2, "itemName": "Activity Fee"}
+      {"id": "item_3", "displayOrder": 1, "itemName": "Park Entry Fee"},
+      {"id": "item_1", "displayOrder": 2, "itemName": "Accommodation"},
+      {"id": "item_2", "displayOrder": 3, "itemName": "Activity Fee"}
     ]
   }
 }
@@ -902,7 +902,7 @@ Content-Type: application/json
 1. **Automatic Price Calculation:** When creating or updating items, users only provide `currency`, `quantity`, `unitPrice`, and optional `breakdown`. The system automatically computes `totalPrice = quantity × unitPrice`.
 
 2. **Automatic Display Order Assignment:** When creating a new item, the `displayOrder` is automatically assigned by the system:
-   - **First item** for a quote: `displayOrder = 0`
+   - **First item** for a quote: `displayOrder = 1`
    - **Subsequent items**: `displayOrder = max(existing displayOrders) + 1`
    - Users **cannot** specify displayOrder during creation or update
    - To change display order, use the dedicated `/reorder` endpoint

@@ -85,7 +85,8 @@ public class Invoice {
 
     /**
      * The customer this invoice is for (nullable)
-     * Set to NULL if Customer is deleted (keeps Invoice intact)
+     * Foreign key constraint configured with ON DELETE SET NULL at database level
+     * If Customer is deleted, this field will be automatically set to NULL
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = true)
@@ -93,7 +94,8 @@ public class Invoice {
 
     /**
      * The safari this invoice is for (nullable)
-     * Set to NULL if Safari is deleted (keeps Invoice intact)
+     * Foreign key constraint configured with ON DELETE SET NULL at database level
+     * If Safari is deleted, this field will be automatically set to NULL
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "safari_id", nullable = true)

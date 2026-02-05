@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.itineraryledger.kabengosafaris.BankAccount.Entity.BankAccount;
+import com.itineraryledger.kabengosafaris.BankAccount.Repository.BankAccountRepository;
 import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
 import com.itineraryledger.kabengosafaris.Customer.Enums.CustomerType;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.FullInvoiceDTO;
@@ -36,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
  * - Safari summary (nullable)
  * - All line items ordered by displayOrder
  * - All totals by currency
+ * - Active bank accounts matching invoice currencies
  */
 @Service
 @Slf4j
@@ -44,16 +47,19 @@ public class InvoiceFullGetService {
 
     private final InvoiceRepository invoiceRepository;
     private final InvoiceLineItemRepository invoiceLineItemRepository;
+    private final BankAccountRepository bankAccountRepository;
     private final IdObfuscator idObfuscator;
 
     @Autowired
     public InvoiceFullGetService(
         InvoiceRepository invoiceRepository,
         InvoiceLineItemRepository invoiceLineItemRepository,
+        BankAccountRepository bankAccountRepository,
         IdObfuscator idObfuscator
     ) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceLineItemRepository = invoiceLineItemRepository;
+        this.bankAccountRepository = bankAccountRepository;
         this.idObfuscator = idObfuscator;
     }
 
@@ -254,6 +260,23 @@ public class InvoiceFullGetService {
         }
 
         // ========================
+        // BANK ACCOUNTS
+        // ========================
+        // Fetch active bank accounts for currencies in the invoice
+        if (invoice.getGrandTotals() != null && !invoice.getGrandTotals().isEmpty()) {
+            List<String> currencies = invoice.getGrandTotals().stream()
+                .map(Price::getCurrency)
+                .distinct()
+                .collect(Collectors.toList());
+
+            List<BankAccount> bankAccounts = bankAccountRepository.findByCurrencyInAndIsActive(currencies, true);
+            List<BankAccountDTO> bankAccountDTOs = bankAccounts.stream()
+                .map(this::convertBankAccountToDTO)
+                .collect(Collectors.toList());
+            dto.setBankAccounts(bankAccountDTOs);
+        }
+
+        // ========================
         // SUMMARY STATISTICS
         // ========================
         dto.setTotalLineItemsCount(lineItems.size());
@@ -358,5 +381,29 @@ public class InvoiceFullGetService {
         }
 
         return name.length() > 0 ? name.toString() : customer.getCode();
+    }
+
+    /**
+     * Convert BankAccount entity to BankAccountDTO
+     */
+    private BankAccountDTO convertBankAccountToDTO(BankAccount bankAccount) {
+        return BankAccountDTO.builder()
+            .accountName(bankAccount.getAccountName())
+            .accountHolderName(bankAccount.getAccountHolderName())
+            .bankName(bankAccount.getBankName())
+            .bankBranch(bankAccount.getBankBranch())
+            .branchAddress(bankAccount.getBranchAddress())
+            .branchCity(bankAccount.getBranchCity())
+            .branchCountry(bankAccount.getBranchCountry())
+            .accountNumber(bankAccount.getAccountNumber())
+            .currency(bankAccount.getCurrency())
+            .swiftBicCode(bankAccount.getSwiftBicCode())
+            .iban(bankAccount.getIban())
+            .routingNumber(bankAccount.getRoutingNumber())
+            .sortCode(bankAccount.getSortCode())
+            .intermediaryBankName(bankAccount.getIntermediaryBankName())
+            .intermediarySwiftCode(bankAccount.getIntermediarySwiftCode())
+            .invoiceDisplayNotes(bankAccount.getInvoiceDisplayNotes())
+            .build();
     }
 }

@@ -7,7 +7,7 @@ import com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceRepository;
 import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
+// import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,7 +47,7 @@ public class InvoiceTotalsCalculationService {
      *
      * @param invoiceId The invoice ID to recalculate
      */
-    @Async
+    // @Async
     @Transactional
     public void recalculateTotals(Long invoiceId) {
         Invoice invoice = invoiceRepository.findById(invoiceId)
@@ -62,7 +62,7 @@ public class InvoiceTotalsCalculationService {
      *
      * @param invoice The invoice entity to recalculate
      */
-    @Async
+    // @Async
     @Transactional
     public void recalculateTotals(Invoice invoice) {
         log.debug("Recalculating totals for invoice: {}", invoice.getId());

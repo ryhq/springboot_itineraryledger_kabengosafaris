@@ -34,8 +34,6 @@ public class CreateInvoiceLineItemDTO {
 
     private String description;
 
-    private Integer displayOrder;
-
     @NotEmpty(message = "At least one price is required")
     @Valid
     private List<PriceInput> prices;

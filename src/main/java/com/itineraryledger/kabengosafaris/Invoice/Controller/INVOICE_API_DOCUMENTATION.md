@@ -112,10 +112,10 @@ Invoices can be filtered by status groups for easier management:
   "invoiceCode": "string (system-generated, e.g., INV-2024-0001)",
   "title": "string",
   "description": "string",
-  "customerId": "string (obfuscated)",
+  "customerId": "string (obfuscated, nullable if customer deleted)",
   "customerName": "string",
   "customerEmail": "string",
-  "safariId": "string (obfuscated, nullable)",
+  "safariId": "string (obfuscated, nullable if safari deleted)",
   "safariCode": "string",
   "safariName": "string",
   "subtotals": "Price object (multi-currency)",
@@ -151,6 +151,8 @@ Invoices can be filtered by status groups for easier management:
 }
 ```
 
+**Note**: `customerId` and `safariId` can be null if the customer or safari has been deleted from the system. The invoice record is preserved with ON DELETE SET NULL behavior.
+
 ---
 
 ## Endpoints
@@ -163,12 +165,13 @@ Invoices can be filtered by status groups for easier management:
 
 **Description**: Creates a new invoice for a customer. The invoice code is automatically generated. The invoice starts in DRAFT status by default.
 
+**IMPORTANT**: Safari ID is REQUIRED for all invoice creation. The customer will be automatically derived from the Safari's customer relationship. If the Safari has no customer linked, invoice creation will be rejected.
+
 #### Request Body (CreateInvoiceDTO)
 ```json
 {
   "title": "Safari Tour Invoice - Northern Circuit Package",
   "description": "Invoice for 7-day Northern Circuit safari tour",
-  "customerId": "aB3Cd4Ef",
   "safariId": "xY9Kp2Lm",
   "taxPercentage": 18.00,
   "discountPercentage": 5.00,
@@ -178,19 +181,21 @@ Invoices can be filtered by status groups for easier management:
   "paymentTerms": "Net 30",
   "invoiceNotes": "Payment can be made via bank transfer or credit card",
   "internalNotes": "VIP client - priority processing",
+  "customerNotes": "Customer requested extended payment terms",
   "isActive": true
 }
 ```
 
 **Required Fields**:
 - `title` (string, not blank)
-- `customerId` (string, obfuscated ID)
+- `safariId` (string, obfuscated ID) - REQUIRED for all invoice creation
 - `issueDate` (date)
 - `dueDate` (date)
 
 **Optional Fields**: All other fields are optional.
 
 **System-Managed Fields** (auto-generated, not in request):
+- `customerId` - Automatically derived from Safari's customer relationship
 - `invoiceCode` - Auto-generated (e.g., INV-2024-0001)
 - `status` - Starts at DRAFT
 - `paymentStatus` - Starts at UNPAID
@@ -248,7 +253,7 @@ Invoices can be filtered by status groups for easier management:
     "paymentTerms": "Net 30",
     "invoiceNotes": "Payment can be made via bank transfer or credit card",
     "internalNotes": "VIP client - priority processing",
-    "customerNotes": null,
+    "customerNotes": "Customer requested extended payment terms",
     "isActive": true,
     "itemCount": 0,
     "documentCount": 0,
@@ -265,13 +270,46 @@ Invoices can be filtered by status groups for easier management:
 
 #### Error Responses
 
-**400 Bad Request** - Validation errors
+**400 Bad Request** - Safari ID required
 ```json
 {
   "success": false,
   "statusCode": 400,
-  "message": "Invalid customer ID",
-  "errorCode": "INVALID_CUSTOMER_ID",
+  "message": "Safari ID is required",
+  "errorCode": "SAFARI_ID_REQUIRED",
+  "timestamp": "2024-06-01T10:30:00"
+}
+```
+
+**400 Bad Request** - Invalid Safari ID
+```json
+{
+  "success": false,
+  "statusCode": 400,
+  "message": "Invalid safari ID",
+  "errorCode": "INVALID_SAFARI_ID",
+  "timestamp": "2024-06-01T10:30:00"
+}
+```
+
+**404 Not Found** - Safari not found
+```json
+{
+  "success": false,
+  "statusCode": 404,
+  "message": "Safari not found",
+  "errorCode": "SAFARI_NOT_FOUND",
+  "timestamp": "2024-06-01T10:30:00"
+}
+```
+
+**400 Bad Request** - Safari has no customer
+```json
+{
+  "success": false,
+  "statusCode": 400,
+  "message": "Cannot create invoice: Safari has no customer linked. Please link a customer to the safari first.",
+  "errorCode": "SAFARI_NO_CUSTOMER",
   "timestamp": "2024-06-01T10:30:00"
 }
 ```
@@ -283,17 +321,6 @@ Invoices can be filtered by status groups for easier management:
   "statusCode": 400,
   "message": "Due date must be after issue date",
   "errorCode": "INVALID_DUE_DATE",
-  "timestamp": "2024-06-01T10:30:00"
-}
-```
-
-**404 Not Found** - Customer not found
-```json
-{
-  "success": false,
-  "statusCode": 404,
-  "message": "Customer not found",
-  "errorCode": "CUSTOMER_NOT_FOUND",
   "timestamp": "2024-06-01T10:30:00"
 }
 ```
@@ -317,7 +344,9 @@ Invoices can be filtered by status groups for easier management:
 
 **Permission**: `PERM_CREATE_INVOICE`
 
-**Description**: Automatically generates an invoice from a confirmed safari. This endpoint analyzes the safari data and creates invoice line items for accommodations, activities, park fees, and other services.
+**Description**: Automatically generates an invoice from a confirmed safari with cost estimation. This endpoint analyzes the safari data, calculates costs using the Safari Cost Estimation Service, and creates invoice line items for accommodations, activities, and park fees. The customer is automatically derived from the Safari's customer relationship.
+
+**IMPORTANT**: Safari MUST have a customer linked. If not, invoice creation will be rejected.
 
 #### Request Body (CreateInvoiceFromSafariDTO)
 ```json
@@ -325,43 +354,63 @@ Invoices can be filtered by status groups for easier management:
   "safariId": "xY9Kp2Lm",
   "title": "Safari Tour Invoice - Northern Circuit",
   "description": "Invoice for confirmed safari tour",
+  "useStoRate": false,
+  "currency": "USD",
   "taxPercentage": 18.00,
-  "discountPercentage": 0.00,
+  "discountPercentage": 5.00,
+  "discountReason": "Returning customer discount",
   "issueDate": "2024-06-01",
   "dueDate": "2024-06-15",
   "paymentTerms": "Net 30",
-  "invoiceNotes": "Thank you for your booking",
   "internalNotes": "Generated from safari SAF-7D6N-01001",
-  "includeAccommodations": true,
-  "includeActivities": true,
-  "includeParkFees": true,
-  "includeTransport": true
+  "customerNotes": "Thank you for your booking"
 }
 ```
 
 **Required Fields**:
-- `safariId` (string, obfuscated ID)
+- `safariId` (string, obfuscated ID) - REQUIRED
 - `issueDate` (date)
 - `dueDate` (date)
 
-**Optional Fields**: All other fields are optional. If `title` is not provided, it will be auto-generated from the safari name.
+**Optional Fields**:
+- `title` (string) - If not provided, defaults to safari name + " - Invoice"
+- `description` (string) - If not provided, defaults to safari description
+- `useStoRate` (boolean) - Default: `false` (RACK rates). Set to `true` for STO rates
+- `currency` (string) - Default: `"USD"`. Preferred currency for cost estimation
+- `taxPercentage` (decimal)
+- `discountPercentage` (decimal)
+- `discountReason` (string)
+- `paymentTerms` (string)
+- `internalNotes` (string)
+- `customerNotes` (string)
+- `isActive` (boolean)
 
-**Include Flags** (all default to true if not specified):
-- `includeAccommodations` - Include accommodation costs
-- `includeActivities` - Include activity costs
-- `includeParkFees` - Include park entry fees
-- `includeTransport` - Include transportation costs
+**Cost Estimation Parameters**:
+- `useStoRate`: When `false` (default), uses RACK rates. When `true`, uses STO rates for pricing
+- `currency`: Specifies the preferred currency for cost estimation (e.g., "USD", "TZS", "EUR")
 
-#### Success Response (200 OK)
+**System Behavior**:
+1. Fetches Safari by ID and validates it exists
+2. Derives Customer from `safari.getCustomer()` (rejects if null)
+3. Calls Safari Cost Estimation Service with `useStoRate` and `currency` parameters
+4. Creates Invoice entity linked to both Customer and Safari
+5. Converts cost estimation line items to InvoiceLineItems:
+   - Accommodations (per day, per pax category)
+   - Park fees (per day, per pax category)
+   - Activities (per day, per pax category)
+6. Calculates totals with tax and discount applied
+7. Returns created invoice with auto-calculated totals
+
+#### Success Response (201 Created)
 ```json
 {
   "success": true,
-  "statusCode": 200,
-  "message": "Invoice generated from safari successfully",
+  "statusCode": 201,
+  "message": "Invoice generated successfully from safari",
   "data": {
     "id": "pQ7Rs8Tv",
     "invoiceCode": "INV-2024-0002",
-    "title": "Safari Tour Invoice - Northern Circuit",
+    "title": "7-Day Serengeti Adventure - Invoice",
     "customerId": "aB3Cd4Ef",
     "customerName": "John Smith",
     "safariId": "xY9Kp2Lm",
@@ -381,6 +430,17 @@ Invoices can be filtered by status groups for easier management:
 
 #### Error Responses
 
+**400 Bad Request** - Invalid Safari ID
+```json
+{
+  "success": false,
+  "statusCode": 400,
+  "message": "Invalid safari ID",
+  "errorCode": "INVALID_SAFARI_ID",
+  "timestamp": "2024-06-01T11:00:00"
+}
+```
+
 **404 Not Found** - Safari not found
 ```json
 {
@@ -392,13 +452,35 @@ Invoices can be filtered by status groups for easier management:
 }
 ```
 
-**400 Bad Request** - Safari not confirmed
+**400 Bad Request** - Safari has no customer
 ```json
 {
   "success": false,
   "statusCode": 400,
-  "message": "Safari must be confirmed before generating invoice",
-  "errorCode": "SAFARI_NOT_CONFIRMED",
+  "message": "Cannot create invoice: Safari has no customer linked. Please link a customer to the safari first.",
+  "errorCode": "SAFARI_NO_CUSTOMER",
+  "timestamp": "2024-06-01T11:00:00"
+}
+```
+
+**500 Internal Server Error** - Cost estimation failed
+```json
+{
+  "success": false,
+  "statusCode": 500,
+  "message": "Failed to estimate costs",
+  "errorCode": "COST_ESTIMATION_FAILED",
+  "timestamp": "2024-06-01T11:00:00"
+}
+```
+
+**500 Internal Server Error** - Invoice creation failed
+```json
+{
+  "success": false,
+  "statusCode": 500,
+  "message": "Failed to create invoice",
+  "errorCode": "INVOICE_CREATION_FAILED",
   "timestamp": "2024-06-01T11:00:00"
 }
 ```
@@ -412,6 +494,8 @@ Invoices can be filtered by status groups for easier management:
 **Permission**: `PERM_UPDATE_INVOICE`
 
 **Description**: Updates an existing invoice's metadata. Only provided fields will be updated (partial update). Line items are updated through separate endpoints.
+
+**IMPORTANT**: Customer and Safari relationships CANNOT be updated after invoice creation. These relationships are fixed at creation time and remain immutable. Only metadata fields can be modified.
 
 #### Path Parameters
 - `idObfuscated` (required): The obfuscated invoice ID
@@ -428,22 +512,36 @@ Invoices can be filtered by status groups for easier management:
   "discountReason": "Updated discount reason",
   "issueDate": "2024-06-01",
   "dueDate": "2024-06-30",
+  "sentDate": "2024-06-02",
+  "paidDate": "2024-06-15",
   "paymentTerms": "Net 30",
-  "invoiceNotes": "Updated payment instructions",
   "internalNotes": "Updated internal notes",
   "customerNotes": "Customer requested extended payment terms",
   "isActive": true
 }
 ```
 
-**Updatable Fields**: All fields in the request body are optional. Only include fields you want to update.
+**Updatable Fields** (all optional):
+- `title` (string)
+- `description` (string)
+- `taxPercentage` (decimal)
+- `discountPercentage` (decimal)
+- `discountReason` (string)
+- `issueDate` (date)
+- `dueDate` (date)
+- `sentDate` (date)
+- `paidDate` (date)
+- `status` (InvoiceStatus enum)
+- `paymentStatus` (PaymentStatus enum)
+- `internalNotes` (string)
+- `customerNotes` (string)
+- `paymentTerms` (string)
+- `isActive` (boolean)
 
-**Non-Updatable Fields** (system-managed):
+**Non-Updatable Fields** (system-managed or immutable):
 - `invoiceCode` - System-generated, never changes
-- `sentDate` - System-set when status changes to SENT
-- `paidDate` - System-set when paymentStatus changes to PAID
-- `customerId` - Cannot change invoice's customer
-- `safariId` - Cannot change invoice's safari
+- `customerId` - **CANNOT be updated** (relationship fixed at creation)
+- `safariId` - **CANNOT be updated** (relationship fixed at creation)
 - `subtotals`, `taxes`, `discounts`, `grandTotals`, `amountPaid`, `amountDue` - Recalculated from items
 - `isOverdue`, `daysPastDue` - Computed fields
 
@@ -899,13 +997,14 @@ All API responses follow a consistent format:
 |------------|-------------|-------------|
 | `INVOICE_NOT_FOUND` | 404 | Invoice with specified ID or code not found |
 | `INVALID_INVOICE_ID` | 400 | The provided obfuscated ID is invalid or malformed |
-| `INVALID_CUSTOMER_ID` | 400 | The provided customer ID is invalid |
+| `SAFARI_ID_REQUIRED` | 400 | Safari ID must be provided for invoice creation |
 | `INVALID_SAFARI_ID` | 400 | The provided safari ID is invalid |
-| `CUSTOMER_NOT_FOUND` | 404 | Specified customer does not exist |
 | `SAFARI_NOT_FOUND` | 404 | Specified safari does not exist |
-| `SAFARI_NOT_CONFIRMED` | 400 | Safari must be confirmed before generating invoice |
+| `SAFARI_NO_CUSTOMER` | 400 | Safari has no customer linked - cannot create invoice |
 | `INVALID_DUE_DATE` | 400 | Due date must be after issue date |
 | `INVALID_ISSUE_DATE` | 400 | Issue date is invalid |
+| `COST_ESTIMATION_FAILED` | 500 | Failed to estimate safari costs |
+| `INVOICE_CREATION_FAILED` | 500 | Failed to create invoice (internal error) |
 | `INVOICE_CREATE_FAILED` | 500 | Failed to create invoice (internal error) |
 | `INVOICE_UPDATE_FAILED` | 500 | Failed to update invoice (internal error) |
 | `INVOICE_FETCH_FAILED` | 500 | Failed to fetch invoice (internal error) |
@@ -938,36 +1037,49 @@ All endpoints require:
 
 ## Best Practices
 
-1. **Use Invoice Codes for Customer Communication**: Use the `invoiceCode` (e.g., INV-2024-0001) in customer-facing communications for easy reference.
+1. **Safari is Required**: All invoice creation requires a valid Safari ID. The customer will be automatically derived from the Safari's customer relationship.
 
-2. **Use IDs for Management**: Use obfuscated IDs for administrative operations (update, delete) in internal systems.
+2. **Ensure Safari has Customer**: Before creating an invoice, ensure the Safari has a customer linked. If not, link the customer to the safari first.
 
-3. **Status Workflow**: Follow the proper status workflow:
+3. **Immutable Relationships**: Customer and Safari relationships are fixed at invoice creation and cannot be changed. Plan accordingly before creating invoices.
+
+4. **Use Invoice Codes for Customer Communication**: Use the `invoiceCode` (e.g., INV-2024-0001) in customer-facing communications for easy reference.
+
+5. **Use IDs for Management**: Use obfuscated IDs for administrative operations (update, delete) in internal systems.
+
+6. **Status Workflow**: Follow the proper status workflow:
    - DRAFT → PENDING_APPROVAL → APPROVED → SENT → PAID
    - Use OVERDUE for invoices past their due date
    - Use CANCELLED or VOID for invoices that won't be paid
 
-4. **Generate from Safari**: Use the `/from-safari` endpoint to automatically generate invoices with all safari line items, reducing manual data entry.
+7. **Generate from Safari**: Use the `/from-safari` endpoint to automatically generate invoices with cost estimation and line items, reducing manual data entry.
 
-5. **Recalculate Totals**: Always call the `/recalculate-totals` endpoint after modifying invoice items to ensure totals are accurate.
+8. **Cost Estimation Parameters**: Choose appropriate rate type (`useStoRate`) and currency when generating invoices from safaris:
+   - `useStoRate: false` (default) - Use RACK rates
+   - `useStoRate: true` - Use STO rates
+   - `currency: "USD"` (default) - Specify preferred currency
 
-6. **Multi-Currency Support**: The system supports multiple currencies in price objects. Always check which currencies are present in the response.
+9. **Recalculate Totals**: Always call the `/recalculate-totals` endpoint after modifying invoice items to ensure totals are accurate.
 
-7. **Payment Tracking**: Keep `paymentStatus` updated as payments are received. The system distinguishes between invoice status and payment status.
+10. **Multi-Currency Support**: The system supports multiple currencies in price objects. Always check which currencies are present in the response.
 
-8. **Overdue Monitoring**: Use the `isOverdue` filter to monitor invoices needing follow-up.
+11. **Payment Tracking**: Keep `paymentStatus` updated as payments are received. The system distinguishes between invoice status and payment status.
 
-9. **Date Validation**: Ensure `issueDate` and `dueDate` are logical when creating invoices.
+12. **Overdue Monitoring**: Use the `isOverdue` filter to monitor invoices needing follow-up.
 
-10. **Handle Partial Updates**: When updating, only send fields that need to be changed.
+13. **Date Validation**: Ensure `issueDate` and `dueDate` are logical when creating invoices.
 
-11. **System-Managed Fields**: Don't attempt to update system-managed fields (invoiceCode, sentDate, paidDate, computed totals).
+14. **Handle Partial Updates**: When updating, only send fields that need to be changed.
 
-12. **Pagination**: Always use pagination for list endpoints to improve performance.
+15. **System-Managed Fields**: Don't attempt to update system-managed or immutable fields (invoiceCode, customerId, safariId, sentDate, paidDate, computed totals).
 
-13. **Full vs Summary**: Use `/full` endpoint only when you need complete data with items. Use the regular GET endpoint for list views.
+16. **Pagination**: Always use pagination for list endpoints to improve performance.
 
-14. **Soft Deletes**: Consider using `isActive=false` instead of deletion to maintain audit history.
+17. **Full vs Summary**: Use `/full` endpoint only when you need complete data with items. Use the regular GET endpoint for list views.
+
+18. **Soft Deletes**: Consider using `isActive=false` instead of deletion to maintain audit history.
+
+19. **ON DELETE SET NULL**: If a Customer or Safari is deleted, the invoice record is preserved with `customerId` or `safariId` set to NULL for historical accounting.
 
 ---
 
@@ -975,7 +1087,7 @@ All endpoints require:
 
 ### cURL Examples
 
-**Create an invoice**:
+**Create an invoice (Safari ID required)**:
 ```bash
 curl -X POST http://localhost:8080/api/invoices \
   -H "Authorization: Bearer <your-token>" \
@@ -983,7 +1095,6 @@ curl -X POST http://localhost:8080/api/invoices \
   -d '{
     "title": "Safari Tour Invoice - Northern Circuit",
     "description": "Invoice for 7-day safari tour",
-    "customerId": "aB3Cd4Ef",
     "safariId": "xY9Kp2Lm",
     "taxPercentage": 18.00,
     "issueDate": "2024-06-01",
@@ -993,19 +1104,20 @@ curl -X POST http://localhost:8080/api/invoices \
   }'
 ```
 
-**Generate invoice from safari**:
+**Generate invoice from safari with cost estimation**:
 ```bash
 curl -X POST http://localhost:8080/api/invoices/from-safari \
   -H "Authorization: Bearer <your-token>" \
   -H "Content-Type: application/json" \
   -d '{
     "safariId": "xY9Kp2Lm",
+    "useStoRate": false,
+    "currency": "USD",
     "issueDate": "2024-06-01",
     "dueDate": "2024-06-15",
     "taxPercentage": 18.00,
-    "includeAccommodations": true,
-    "includeActivities": true,
-    "includeParkFees": true
+    "discountPercentage": 5.00,
+    "discountReason": "Returning customer"
   }'
 ```
 
@@ -1074,7 +1186,13 @@ curl -X DELETE http://localhost:8080/api/invoices \
 
 - **Internal vs Customer Notes**: Use `internalNotes` for staff-only information and `invoiceNotes` for information visible to customers.
 
-- **Safari Integration**: Invoices can be linked to safaris, enabling automatic generation of line items from safari bookings.
+- **Safari Integration**: Invoices are always linked to safaris. Customer is automatically derived from the safari's customer relationship.
+
+- **Customer Derivation**: Customer is ALWAYS derived from Safari. Safari MUST have a customer linked or invoice creation will be rejected.
+
+- **Immutable Relationships**: Once created, the Customer and Safari relationships cannot be changed. Only metadata can be updated.
+
+- **Database Cascade Behavior**: If a Customer or Safari is deleted, the foreign key is set to NULL (ON DELETE SET NULL) and the invoice record is preserved for historical accounting.
 
 - **Sorting**: All list queries are sorted by `createdAt` in descending order by default (newest first).
 
