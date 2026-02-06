@@ -2,7 +2,6 @@ package com.itineraryledger.kabengosafaris.Invoice.DTOs;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
-import com.itineraryledger.kabengosafaris.Invoice.Enums.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -45,8 +44,6 @@ public class FullInvoiceDTO {
     private String description;
     private InvoiceStatus status;
     private String statusDisplayName;
-    private PaymentStatus paymentStatus;
-    private String paymentStatusDisplayName;
 
     // ========================
     // PRICING DETAILS

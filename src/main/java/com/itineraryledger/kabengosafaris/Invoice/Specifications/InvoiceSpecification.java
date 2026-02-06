@@ -6,7 +6,6 @@ import org.springframework.data.jpa.domain.Specification;
 
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
-import com.itineraryledger.kabengosafaris.Invoice.Enums.PaymentStatus;
 
 /**
  * JPA Specifications for Invoice filtering.
@@ -39,12 +38,6 @@ public class InvoiceSpecification {
         return (root, query, cb) -> status == null
             ? cb.conjunction()
             : cb.equal(root.get("status"), status);
-    }
-
-    public static Specification<Invoice> byPaymentStatus(PaymentStatus paymentStatus) {
-        return (root, query, cb) -> paymentStatus == null
-            ? cb.conjunction()
-            : cb.equal(root.get("paymentStatus"), paymentStatus);
     }
 
     public static Specification<Invoice> byIsActive(Boolean isActive) {
@@ -93,13 +86,17 @@ public class InvoiceSpecification {
             : cb.lessThanOrEqualTo(root.get("sentDate"), sentDate);
     }
 
+    /**
+     * Filter invoices that are overdue
+     * An invoice is overdue if it's past the due date and not yet PAID or REFUNDED
+     */
     public static Specification<Invoice> byOverdue() {
         return (root, query, cb) -> {
             LocalDate today = LocalDate.now();
             return cb.and(
                 cb.lessThan(root.get("dueDate"), today),
-                cb.notEqual(root.get("paymentStatus"), PaymentStatus.PAID),
-                cb.notEqual(root.get("paymentStatus"), PaymentStatus.REFUNDED)
+                cb.notEqual(root.get("status"), InvoiceStatus.PAID),
+                cb.notEqual(root.get("status"), InvoiceStatus.REFUNDED)
             );
         };
     }

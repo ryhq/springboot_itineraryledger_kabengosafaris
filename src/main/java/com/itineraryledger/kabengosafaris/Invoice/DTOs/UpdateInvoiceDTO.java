@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
-import com.itineraryledger.kabengosafaris.Invoice.Enums.PaymentStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,8 +31,9 @@ public class UpdateInvoiceDTO {
     private LocalDate sentDate;
     private LocalDate paidDate;
 
+    // Note: status should generally be updated via workflow transitions
+    // at /api/invoices/{id}/state/* endpoints, not via this update endpoint
     private InvoiceStatus status;
-    private PaymentStatus paymentStatus;
 
     private String internalNotes;
     private String customerNotes;

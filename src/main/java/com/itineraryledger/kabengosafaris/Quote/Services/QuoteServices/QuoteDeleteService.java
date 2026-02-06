@@ -66,6 +66,8 @@ public class QuoteDeleteService {
      */
     private ResponseEntity<ApiResponse<?>> deleteQuotesInternal(List<Long> ids) {
         int deletedCount = 0;
+        int skippedCount = 0;
+        List<String> errors = new ArrayList<>();
 
         for (Long id : ids) {
             try {
@@ -73,21 +75,73 @@ public class QuoteDeleteService {
 
                 if (quote == null) {
                     log.warn("Quote not found: {}", id);
+                    skippedCount++;
+                    errors.add("Quote with ID " + id + " not found");
                     continue;
+                }
+
+                // WORKFLOW ENFORCEMENT: Validate status before deletion
+                switch (quote.getStatus()) {
+                    case SENT:
+                        log.warn("Cannot delete SENT quote: {} ({})", quote.getQuoteCode(), id);
+                        skippedCount++;
+                        errors.add(String.format("Cannot delete SENT quote '%s'. Cancel it first or create a new version.",
+                            quote.getTitle()));
+                        continue;
+
+                    case ACCEPTED:
+                        log.warn("Cannot delete ACCEPTED quote: {} ({})", quote.getQuoteCode(), id);
+                        skippedCount++;
+                        errors.add(String.format("Cannot delete ACCEPTED quote '%s'", quote.getTitle()));
+                        continue;
+
+                    case CONVERTED:
+                        log.warn("Cannot delete CONVERTED quote: {} ({})", quote.getQuoteCode(), id);
+                        skippedCount++;
+                        errors.add(String.format("Cannot delete CONVERTED quote '%s' - it has been converted to a booking",
+                            quote.getTitle()));
+                        continue;
+
+                    default:
+                        // DRAFT, READY, REJECTED, EXPIRED, CANCELLED can be deleted
+                        break;
                 }
 
                 // Use AopContext to get proxy and trigger AOP aspect
                 ((QuoteDeleteService) AopContext.currentProxy()).deleteQuote(id);
                 deletedCount++;
-                log.info("Quote deleted successfully: {}", id);
+                log.info("Quote deleted successfully: {} (status: {})", quote.getQuoteCode(), quote.getStatus());
 
             } catch (Exception e) {
                 log.error("Error deleting quote: {}", id, e);
+                skippedCount++;
+                errors.add("Error deleting quote: " + e.getMessage());
             }
         }
 
+        String message = deletedCount > 1 ? " quotes deleted successfully" : " quote deleted successfully";
+
+        if (skippedCount > 0) {
+            message += ", " + skippedCount + " skipped";
+        }
+
+        // Return error if nothing was deleted
+        if (deletedCount == 0 && !errors.isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(
+                    400,
+                    String.join("; ", errors),
+                    "DELETION_BLOCKED"
+                )
+            );
+        }
+
         return ResponseEntity.ok().body(
-            ApiResponse.success(200, deletedCount + " quote(s) deleted successfully", null)
+            ApiResponse.success(
+                200,
+                deletedCount + message,
+                errors.isEmpty() ? null : errors
+            )
         );
     }
 

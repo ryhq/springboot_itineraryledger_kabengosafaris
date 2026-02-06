@@ -51,6 +51,7 @@ public class QuoteController {
     private final QuoteFullGetService quoteFullGetService;
     private final QuoteFromItineraryGenerationService quoteFromItineraryGenerationService;
     private final QuoteTotalsCalculationService totalsCalculationService;
+    private final com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteStatusService quoteStatusService;
     private final IdObfuscator idObfuscator;
 
     /**
@@ -294,5 +295,113 @@ public class QuoteController {
             size,
             sortDirection
         );
+    }
+
+    // ========================
+    // STATUS MANAGEMENT ENDPOINTS
+    // ========================
+
+    /**
+     * Mark quote as READY (ready to send to customer)
+     * Only allowed from DRAFT status
+     */
+    @PostMapping("/{id}/mark-ready")
+    @PreAuthorize("hasAuthority('PERM_READY_QUOTE')")
+    public ResponseEntity<ApiResponse<?>> markAsReady(
+        @PathVariable String id
+    ) {
+        log.info("POST /api/quotes/{}/mark-ready - Marking quote as ready", id);
+        return quoteStatusService.markAsReady(id);
+    }
+
+    /**
+     * Send quote to customer
+     * Allowed from DRAFT (if ready), READY, SENT (resend), ACCEPTED (resend), CONVERTED (resend)
+     */
+    @PostMapping("/{id}/send")
+    @PreAuthorize("hasAuthority('PERM_SEND_QUOTE')")
+    public ResponseEntity<ApiResponse<?>> sendQuote(
+        @PathVariable String id
+    ) {
+        log.info("POST /api/quotes/{}/send - Sending quote to customer", id);
+        return quoteStatusService.sendQuote(id);
+    }
+
+    /**
+     * Mark quote as ACCEPTED by customer
+     * Only allowed from SENT status
+     */
+    @PostMapping("/{id}/accept")
+    @PreAuthorize("hasAuthority('PERM_ACCEPT_QUOTE')")
+    public ResponseEntity<ApiResponse<?>> acceptQuote(
+        @PathVariable String id
+    ) {
+        log.info("POST /api/quotes/{}/accept - Marking quote as accepted", id);
+        return quoteStatusService.acceptQuote(id);
+    }
+
+    /**
+     * Mark quote as REJECTED by customer
+     * Only allowed from SENT status
+     */
+    @PostMapping("/{id}/reject")
+    @PreAuthorize("hasAuthority('PERM_REJECT_QUOTE')")
+    public ResponseEntity<ApiResponse<?>> rejectQuote(
+        @PathVariable String id
+    ) {
+        log.info("POST /api/quotes/{}/reject - Marking quote as rejected", id);
+        return quoteStatusService.rejectQuote(id);
+    }
+
+    /**
+     * Mark quote as EXPIRED
+     * Allowed from SENT or READY status
+     */
+    @PostMapping("/{id}/expire")
+    @PreAuthorize("hasAuthority('PERM_EXPIRE_QUOTE')")
+    public ResponseEntity<ApiResponse<?>> expireQuote(
+        @PathVariable String id
+    ) {
+        log.info("POST /api/quotes/{}/expire - Marking quote as expired", id);
+        return quoteStatusService.expireQuote(id);
+    }
+
+    /**
+     * Cancel a quote
+     * Allowed from any status except CONVERTED
+     */
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasAuthority('PERM_CANCEL_QUOTE')")
+    public ResponseEntity<ApiResponse<?>> cancelQuote(
+        @PathVariable String id
+    ) {
+        log.info("POST /api/quotes/{}/cancel - Cancelling quote", id);
+        return quoteStatusService.cancelQuote(id);
+    }
+
+    /**
+     * Revert quote to DRAFT status
+     * Allowed from READY or SENT status
+     */
+    @PostMapping("/{id}/revert-to-draft")
+    @PreAuthorize("hasAuthority('PERM_REVERT_QUOTE_TO_DRAFT')")
+    public ResponseEntity<ApiResponse<?>> revertToDraft(
+        @PathVariable String id
+    ) {
+        log.info("POST /api/quotes/{}/revert-to-draft - Reverting quote to draft", id);
+        return quoteStatusService.revertToDraft(id);
+    }
+
+    /**
+     * Convert quote to booking/safari
+     * Only allowed from ACCEPTED status
+     */
+    @PostMapping("/{id}/convert")
+    @PreAuthorize("hasAuthority('PERM_CONVERT_QUOTE')")
+    public ResponseEntity<ApiResponse<?>> convertQuote(
+        @PathVariable String id
+    ) {
+        log.info("POST /api/quotes/{}/convert - Converting quote to booking", id);
+        return quoteStatusService.convertQuote(id);
     }
 }

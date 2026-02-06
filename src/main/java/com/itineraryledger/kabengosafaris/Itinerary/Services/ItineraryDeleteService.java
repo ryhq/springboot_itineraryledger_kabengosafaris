@@ -78,6 +78,8 @@ public class ItineraryDeleteService {
      */
     private ResponseEntity<ApiResponse<?>> deleteItinerariesInternal(List<Long> ids) {
         int deletedCount = 0;
+        int skippedCount = 0;
+        List<String> errors = new ArrayList<>();
 
         for (Long id : ids) {
             try {
@@ -85,26 +87,64 @@ public class ItineraryDeleteService {
 
                 if (itinerary == null) {
                     log.warn("Itinerary not found: {}", id);
+                    skippedCount++;
+                    errors.add("Itinerary with ID " + id + " not found");
                     continue;
                 }
 
+                // WORKFLOW ENFORCEMENT: Validate status before deletion
+                if (itinerary.getStatus() == Itinerary.ItineraryStatus.PUBLISHED) {
+                    log.warn("Cannot delete PUBLISHED itinerary: {} ({}). Use archive instead.",
+                        itinerary.getCode(), id);
+                    skippedCount++;
+                    errors.add(String.format("Cannot delete PUBLISHED itinerary '%s'. Archive it instead.",
+                        itinerary.getName()));
+                    continue;
+                }
+
+                if (itinerary.getStatus() == Itinerary.ItineraryStatus.ARCHIVED) {
+                    log.warn("Cannot delete ARCHIVED itinerary: {} ({})", itinerary.getCode(), id);
+                    skippedCount++;
+                    errors.add(String.format("Cannot delete ARCHIVED itinerary '%s'", itinerary.getName()));
+                    continue;
+                }
+
+                // Only DRAFT and COMPLETE can be deleted
                 // Use AopContext to get proxy and trigger AOP aspect
                 ((ItineraryDeleteService) AopContext.currentProxy()).deleteItinerary(id);
                 deletedCount++;
-                log.info("Itinerary deleted successfully: {}", id);
+                log.info("Itinerary deleted successfully: {} (status: {})",
+                    itinerary.getCode(), itinerary.getStatus());
 
             } catch (Exception e) {
                 log.error("Error deleting itinerary: {}", id, e);
+                skippedCount++;
+                errors.add("Error deleting itinerary: " + e.getMessage());
             }
         }
 
-        String message =  deletedCount > 1 ? " itineraries deleted successfully" : " itinerary deleted successfully" ;
+        String message = deletedCount > 1 ? " itineraries deleted successfully" : " itinerary deleted successfully";
+
+        if (skippedCount > 0) {
+            message += ", " + skippedCount + " skipped";
+        }
+
+        // Return error if nothing was deleted
+        if (deletedCount == 0 && !errors.isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(
+                    400,
+                    String.join("; ", errors),
+                    "DELETION_BLOCKED"
+                )
+            );
+        }
 
         return ResponseEntity.ok().body(
             ApiResponse.success(
                 200,
                 deletedCount + message,
-                null
+                errors.isEmpty() ? null : errors
             )
         );
     }

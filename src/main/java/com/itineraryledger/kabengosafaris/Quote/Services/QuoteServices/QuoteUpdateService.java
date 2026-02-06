@@ -1,5 +1,8 @@
 package com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -11,6 +14,7 @@ import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.QuoteDTO;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.UpdateQuoteDTO;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
+import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteStatus;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteTotalsCalculationService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
@@ -64,6 +68,103 @@ public class QuoteUpdateService {
                 );
             }
 
+            // WORKFLOW ENFORCEMENT: Check status-based edit restrictions
+            QuoteStatus status = quote.getStatus();
+
+            // ACCEPTED, REJECTED, EXPIRED, CANCELLED, CONVERTED quotes cannot be edited at all
+            if (status == QuoteStatus.ACCEPTED || status == QuoteStatus.REJECTED ||
+                status == QuoteStatus.EXPIRED || status == QuoteStatus.CANCELLED ||
+                status == QuoteStatus.CONVERTED) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        String.format("Cannot edit %s quote. Create a new version instead.", status.getDisplayName()),
+                        "EDIT_BLOCKED"
+                    )
+                );
+            }
+
+            // SENT quotes can only edit display fields
+            if (status == QuoteStatus.SENT) {
+                List<String> blockedFields = new ArrayList<>();
+
+                // Check if any non-display fields are being changed
+                if (updateDTO.getTitle() != null && !updateDTO.getTitle().equals(quote.getTitle())) {
+                    blockedFields.add("title");
+                }
+                if (updateDTO.getIsStoRate() != null && !updateDTO.getIsStoRate().equals(quote.getIsStoRate())) {
+                    blockedFields.add("isStoRate");
+                }
+                if (updateDTO.getTaxPercentage() != null && !updateDTO.getTaxPercentage().equals(quote.getTaxPercentage())) {
+                    blockedFields.add("taxPercentage");
+                }
+                if (updateDTO.getDiscountPercentage() != null && !updateDTO.getDiscountPercentage().equals(quote.getDiscountPercentage())) {
+                    blockedFields.add("discountPercentage");
+                }
+                if (updateDTO.getValidFrom() != null && !updateDTO.getValidFrom().equals(quote.getValidFrom())) {
+                    blockedFields.add("validFrom");
+                }
+                if (updateDTO.getValidTo() != null && !updateDTO.getValidTo().equals(quote.getValidTo())) {
+                    blockedFields.add("validTo");
+                }
+                if (updateDTO.getDepositPercentage() != null && !updateDTO.getDepositPercentage().equals(quote.getDepositPercentage())) {
+                    blockedFields.add("depositPercentage");
+                }
+
+                if (!blockedFields.isEmpty()) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(
+                            400,
+                            String.format("Cannot modify fields (%s) on SENT quote. Only description and customerNotes can be edited. Revert to DRAFT for other changes.",
+                                String.join(", ", blockedFields)),
+                            "SENT_EDIT_BLOCKED"
+                        )
+                    );
+                }
+
+                log.info("Allowing display-only field updates to SENT quote: {}", quote.getQuoteCode());
+            }
+
+            // READY quotes can only edit non-critical fields
+            if (status == QuoteStatus.READY) {
+                List<String> blockedFields = new ArrayList<>();
+
+                // Check if any critical fields are being changed
+                if (updateDTO.getIsStoRate() != null && !updateDTO.getIsStoRate().equals(quote.getIsStoRate())) {
+                    blockedFields.add("isStoRate");
+                }
+                if (updateDTO.getTaxPercentage() != null && !updateDTO.getTaxPercentage().equals(quote.getTaxPercentage())) {
+                    blockedFields.add("taxPercentage");
+                }
+                if (updateDTO.getDiscountPercentage() != null && !updateDTO.getDiscountPercentage().equals(quote.getDiscountPercentage())) {
+                    blockedFields.add("discountPercentage");
+                }
+
+                if (!blockedFields.isEmpty()) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(
+                            400,
+                            String.format("Cannot modify critical fields (%s) on READY quote. Revert to DRAFT first.",
+                                String.join(", ", blockedFields)),
+                            "READY_CRITICAL_EDIT_BLOCKED"
+                        )
+                    );
+                }
+
+                log.info("Allowing non-critical field updates to READY quote: {}", quote.getQuoteCode());
+            }
+
+            // Block direct status updates (must use workflow endpoints)
+            if (updateDTO.getStatus() != null && updateDTO.getStatus() != status) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        "Cannot change quote status directly. Use the workflow endpoints (e.g., /mark-ready, /send, /accept).",
+                        "DIRECT_STATUS_CHANGE_BLOCKED"
+                    )
+                );
+            }
+
             // Update title
             if (updateDTO.getTitle() != null) {
                 quote.setTitle(updateDTO.getTitle());
@@ -88,10 +189,8 @@ public class QuoteUpdateService {
                 quote.setDiscountReason(updateDTO.getDiscountReason());
             }
 
-            // Update status
-            if (updateDTO.getStatus() != null) {
-                quote.setStatus(updateDTO.getStatus());
-            }
+            // Note: Status updates are blocked - must use workflow endpoints
+            // (Already validated above)
 
             // Update dates (validFrom, validTo, isValid only - sentDate is set by system)
             if (updateDTO.getValidFrom() != null) {

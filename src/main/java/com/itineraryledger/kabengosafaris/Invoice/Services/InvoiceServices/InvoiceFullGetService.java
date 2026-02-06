@@ -126,8 +126,6 @@ public class InvoiceFullGetService {
         dto.setDescription(invoice.getDescription());
         dto.setStatus(invoice.getStatus());
         dto.setStatusDisplayName(invoice.getStatus() != null ? invoice.getStatus().getDisplayName() : null);
-        dto.setPaymentStatus(invoice.getPaymentStatus());
-        dto.setPaymentStatusDisplayName(invoice.getPaymentStatus() != null ? invoice.getPaymentStatus().getDisplayName() : null);
 
         // ========================
         // PRICING DETAILS

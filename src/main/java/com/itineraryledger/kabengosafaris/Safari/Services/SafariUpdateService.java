@@ -5,6 +5,7 @@ import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Safari.DTOs.SafariDTO;
 import com.itineraryledger.kabengosafaris.Safari.DTOs.UpdateSafariDTO;
 import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
+import com.itineraryledger.kabengosafaris.Safari.Enums.SafariState;
 import com.itineraryledger.kabengosafaris.Safari.Repository.SafariRepository;
 import com.itineraryledger.kabengosafaris.Safari.SafariDay.Entity.SafariDay;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -20,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * SafariUpdateService - Service for updating Safari entities
@@ -69,12 +72,422 @@ public class SafariUpdateService {
                 );
             }
 
-            // Check if safari is editable
-            if (!safari.isEditable()) {
+            // WORKFLOW ENFORCEMENT: Check state-based edit restrictions
+            SafariState state = safari.getState();
+
+            // FULLY_PAID safaris - Read-only except notes
+            if (state == SafariState.FULLY_PAID) {
+                List<String> blockedFields = new ArrayList<>();
+
+                // Check if any non-notes fields are being changed
+                if (dto.getName() != null && !dto.getName().equals(safari.getName())) {
+                    blockedFields.add("name");
+                }
+                if (dto.getStartDate() != null && !dto.getStartDate().equals(safari.getStartDate())) {
+                    blockedFields.add("startDate");
+                }
+                if (dto.getCarCount() != null && !dto.getCarCount().equals(safari.getCarCount())) {
+                    blockedFields.add("carCount");
+                }
+                if (dto.getDescription() != null && !dto.getDescription().equals(safari.getDescription())) {
+                    blockedFields.add("description");
+                }
+                if (dto.getHighlights() != null && !dto.getHighlights().equals(safari.getHighlights())) {
+                    blockedFields.add("highlights");
+                }
+                if (dto.getStartLocation() != null && !dto.getStartLocation().equals(safari.getStartLocation())) {
+                    blockedFields.add("startLocation");
+                }
+                if (dto.getEndLocation() != null && !dto.getEndLocation().equals(safari.getEndLocation())) {
+                    blockedFields.add("endLocation");
+                }
+                if (dto.getSpecialRequests() != null && !dto.getSpecialRequests().equals(safari.getSpecialRequests())) {
+                    blockedFields.add("specialRequests");
+                }
+                if (dto.getDietaryRequirements() != null && !dto.getDietaryRequirements().equals(safari.getDietaryRequirements())) {
+                    blockedFields.add("dietaryRequirements");
+                }
+                if (dto.getEmergencyContact() != null && !dto.getEmergencyContact().equals(safari.getEmergencyContact())) {
+                    blockedFields.add("emergencyContact");
+                }
+
+                if (!blockedFields.isEmpty()) {
+                    return ResponseEntity.badRequest().body(
+                            ApiResponse.error(
+                                    400,
+                                    String.format("Cannot modify fields (%s) on FULLY_PAID safari. Only internalNotes can be edited. Use workflow endpoints to manage the safari.",
+                                            String.join(", ", blockedFields)),
+                                    "FULLY_PAID_EDIT_BLOCKED"
+                            )
+                    );
+                }
+
+                log.info("Allowing notes-only updates to FULLY_PAID safari: {}", safari.getCode());
+            }
+
+            // IN_PROGRESS safaris - Critical operational data only (essentially read-only)
+            if (state == SafariState.IN_PROGRESS) {
+                List<String> blockedFields = new ArrayList<>();
+
+                // Only internalNotes allowed
+                if (dto.getName() != null && !dto.getName().equals(safari.getName())) {
+                    blockedFields.add("name");
+                }
+                if (dto.getStartDate() != null && !dto.getStartDate().equals(safari.getStartDate())) {
+                    blockedFields.add("startDate");
+                }
+                if (dto.getCarCount() != null && !dto.getCarCount().equals(safari.getCarCount())) {
+                    blockedFields.add("carCount");
+                }
+                if (dto.getDescription() != null && !dto.getDescription().equals(safari.getDescription())) {
+                    blockedFields.add("description");
+                }
+                if (dto.getHighlights() != null && !dto.getHighlights().equals(safari.getHighlights())) {
+                    blockedFields.add("highlights");
+                }
+                if (dto.getStartLocation() != null && !dto.getStartLocation().equals(safari.getStartLocation())) {
+                    blockedFields.add("startLocation");
+                }
+                if (dto.getEndLocation() != null && !dto.getEndLocation().equals(safari.getEndLocation())) {
+                    blockedFields.add("endLocation");
+                }
+                if (dto.getSpecialRequests() != null && !dto.getSpecialRequests().equals(safari.getSpecialRequests())) {
+                    blockedFields.add("specialRequests");
+                }
+                if (dto.getDietaryRequirements() != null && !dto.getDietaryRequirements().equals(safari.getDietaryRequirements())) {
+                    blockedFields.add("dietaryRequirements");
+                }
+                if (dto.getEmergencyContact() != null && !dto.getEmergencyContact().equals(safari.getEmergencyContact())) {
+                    blockedFields.add("emergencyContact");
+                }
+
+                if (!blockedFields.isEmpty()) {
+                    return ResponseEntity.badRequest().body(
+                            ApiResponse.error(
+                                    400,
+                                    String.format("Cannot modify fields (%s) on IN_PROGRESS safari. Safari is currently running and operational data is locked.",
+                                            String.join(", ", blockedFields)),
+                                    "IN_PROGRESS_EDIT_BLOCKED"
+                            )
+                    );
+                }
+
+                log.info("Allowing notes-only updates to IN_PROGRESS safari: {}", safari.getCode());
+            }
+
+            // COMPLETED safaris - Notes/review fields only
+            if (state == SafariState.COMPLETED) {
+                List<String> blockedFields = new ArrayList<>();
+
+                // Only internalNotes allowed
+                if (dto.getName() != null && !dto.getName().equals(safari.getName())) {
+                    blockedFields.add("name");
+                }
+                if (dto.getStartDate() != null && !dto.getStartDate().equals(safari.getStartDate())) {
+                    blockedFields.add("startDate");
+                }
+                if (dto.getCarCount() != null && !dto.getCarCount().equals(safari.getCarCount())) {
+                    blockedFields.add("carCount");
+                }
+                if (dto.getDescription() != null && !dto.getDescription().equals(safari.getDescription())) {
+                    blockedFields.add("description");
+                }
+                if (dto.getHighlights() != null && !dto.getHighlights().equals(safari.getHighlights())) {
+                    blockedFields.add("highlights");
+                }
+                if (dto.getStartLocation() != null && !dto.getStartLocation().equals(safari.getStartLocation())) {
+                    blockedFields.add("startLocation");
+                }
+                if (dto.getEndLocation() != null && !dto.getEndLocation().equals(safari.getEndLocation())) {
+                    blockedFields.add("endLocation");
+                }
+                if (dto.getSpecialRequests() != null && !dto.getSpecialRequests().equals(safari.getSpecialRequests())) {
+                    blockedFields.add("specialRequests");
+                }
+                if (dto.getDietaryRequirements() != null && !dto.getDietaryRequirements().equals(safari.getDietaryRequirements())) {
+                    blockedFields.add("dietaryRequirements");
+                }
+                if (dto.getEmergencyContact() != null && !dto.getEmergencyContact().equals(safari.getEmergencyContact())) {
+                    blockedFields.add("emergencyContact");
+                }
+
+                if (!blockedFields.isEmpty()) {
+                    return ResponseEntity.badRequest().body(
+                            ApiResponse.error(
+                                    400,
+                                    String.format("Cannot modify fields (%s) on COMPLETED safari. Safari has ended - only review notes can be added.",
+                                            String.join(", ", blockedFields)),
+                                    "COMPLETED_EDIT_BLOCKED"
+                            )
+                    );
+                }
+
+                log.info("Allowing notes-only updates to COMPLETED safari: {}", safari.getCode());
+            }
+
+            // CLOSED safaris - Read-only
+            if (state == SafariState.CLOSED) {
                 return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400, "Safari cannot be edited in state: " + safari.getState().getDisplayName(), "SAFARI_NOT_EDITABLE")
+                        ApiResponse.error(
+                                400,
+                                "Cannot edit CLOSED safari. Safari is fully completed and archived.",
+                                "CLOSED_EDIT_BLOCKED"
+                        )
                 );
             }
+
+            // CANCELLED safaris - Notes only
+            if (state == SafariState.CANCELLED) {
+                List<String> blockedFields = new ArrayList<>();
+
+                // Only internalNotes allowed
+                if (dto.getName() != null && !dto.getName().equals(safari.getName())) {
+                    blockedFields.add("name");
+                }
+                if (dto.getStartDate() != null && !dto.getStartDate().equals(safari.getStartDate())) {
+                    blockedFields.add("startDate");
+                }
+                if (dto.getCarCount() != null && !dto.getCarCount().equals(safari.getCarCount())) {
+                    blockedFields.add("carCount");
+                }
+                if (dto.getDescription() != null && !dto.getDescription().equals(safari.getDescription())) {
+                    blockedFields.add("description");
+                }
+                if (dto.getHighlights() != null && !dto.getHighlights().equals(safari.getHighlights())) {
+                    blockedFields.add("highlights");
+                }
+                if (dto.getStartLocation() != null && !dto.getStartLocation().equals(safari.getStartLocation())) {
+                    blockedFields.add("startLocation");
+                }
+                if (dto.getEndLocation() != null && !dto.getEndLocation().equals(safari.getEndLocation())) {
+                    blockedFields.add("endLocation");
+                }
+                if (dto.getSpecialRequests() != null && !dto.getSpecialRequests().equals(safari.getSpecialRequests())) {
+                    blockedFields.add("specialRequests");
+                }
+                if (dto.getDietaryRequirements() != null && !dto.getDietaryRequirements().equals(safari.getDietaryRequirements())) {
+                    blockedFields.add("dietaryRequirements");
+                }
+                if (dto.getEmergencyContact() != null && !dto.getEmergencyContact().equals(safari.getEmergencyContact())) {
+                    blockedFields.add("emergencyContact");
+                }
+
+                if (!blockedFields.isEmpty()) {
+                    return ResponseEntity.badRequest().body(
+                            ApiResponse.error(
+                                    400,
+                                    String.format("Cannot modify fields (%s) on CANCELLED safari. Only internalNotes can be edited.",
+                                            String.join(", ", blockedFields)),
+                                    "CANCELLED_EDIT_BLOCKED"
+                            )
+                    );
+                }
+
+                log.info("Allowing notes-only updates to CANCELLED safari: {}", safari.getCode());
+            }
+
+            // REFUND_PENDING safaris - Refund tracking fields only (essentially read-only for basic updates)
+            if (state == SafariState.REFUND_PENDING) {
+                List<String> blockedFields = new ArrayList<>();
+
+                // Only internalNotes allowed
+                if (dto.getName() != null && !dto.getName().equals(safari.getName())) {
+                    blockedFields.add("name");
+                }
+                if (dto.getStartDate() != null && !dto.getStartDate().equals(safari.getStartDate())) {
+                    blockedFields.add("startDate");
+                }
+                if (dto.getCarCount() != null && !dto.getCarCount().equals(safari.getCarCount())) {
+                    blockedFields.add("carCount");
+                }
+                if (dto.getDescription() != null && !dto.getDescription().equals(safari.getDescription())) {
+                    blockedFields.add("description");
+                }
+                if (dto.getHighlights() != null && !dto.getHighlights().equals(safari.getHighlights())) {
+                    blockedFields.add("highlights");
+                }
+                if (dto.getStartLocation() != null && !dto.getStartLocation().equals(safari.getStartLocation())) {
+                    blockedFields.add("startLocation");
+                }
+                if (dto.getEndLocation() != null && !dto.getEndLocation().equals(safari.getEndLocation())) {
+                    blockedFields.add("endLocation");
+                }
+                if (dto.getSpecialRequests() != null && !dto.getSpecialRequests().equals(safari.getSpecialRequests())) {
+                    blockedFields.add("specialRequests");
+                }
+                if (dto.getDietaryRequirements() != null && !dto.getDietaryRequirements().equals(safari.getDietaryRequirements())) {
+                    blockedFields.add("dietaryRequirements");
+                }
+                if (dto.getEmergencyContact() != null && !dto.getEmergencyContact().equals(safari.getEmergencyContact())) {
+                    blockedFields.add("emergencyContact");
+                }
+
+                if (!blockedFields.isEmpty()) {
+                    return ResponseEntity.badRequest().body(
+                            ApiResponse.error(
+                                    400,
+                                    String.format("Cannot modify fields (%s) on REFUND_PENDING safari. Refund is being processed.",
+                                            String.join(", ", blockedFields)),
+                                    "REFUND_PENDING_EDIT_BLOCKED"
+                            )
+                    );
+                }
+
+                log.info("Allowing notes-only updates to REFUND_PENDING safari: {}", safari.getCode());
+            }
+
+            // REFUND_COMPLETE safaris - Read-only
+            if (state == SafariState.REFUND_COMPLETE) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(
+                                400,
+                                "Cannot edit REFUND_COMPLETE safari. Refund has been completed and safari is archived.",
+                                "REFUND_COMPLETE_EDIT_BLOCKED"
+                        )
+                );
+            }
+
+            // DISPUTED safaris - Investigation notes only
+            if (state == SafariState.DISPUTED) {
+                List<String> blockedFields = new ArrayList<>();
+
+                // Only internalNotes allowed
+                if (dto.getName() != null && !dto.getName().equals(safari.getName())) {
+                    blockedFields.add("name");
+                }
+                if (dto.getStartDate() != null && !dto.getStartDate().equals(safari.getStartDate())) {
+                    blockedFields.add("startDate");
+                }
+                if (dto.getCarCount() != null && !dto.getCarCount().equals(safari.getCarCount())) {
+                    blockedFields.add("carCount");
+                }
+                if (dto.getDescription() != null && !dto.getDescription().equals(safari.getDescription())) {
+                    blockedFields.add("description");
+                }
+                if (dto.getHighlights() != null && !dto.getHighlights().equals(safari.getHighlights())) {
+                    blockedFields.add("highlights");
+                }
+                if (dto.getStartLocation() != null && !dto.getStartLocation().equals(safari.getStartLocation())) {
+                    blockedFields.add("startLocation");
+                }
+                if (dto.getEndLocation() != null && !dto.getEndLocation().equals(safari.getEndLocation())) {
+                    blockedFields.add("endLocation");
+                }
+                if (dto.getSpecialRequests() != null && !dto.getSpecialRequests().equals(safari.getSpecialRequests())) {
+                    blockedFields.add("specialRequests");
+                }
+                if (dto.getDietaryRequirements() != null && !dto.getDietaryRequirements().equals(safari.getDietaryRequirements())) {
+                    blockedFields.add("dietaryRequirements");
+                }
+                if (dto.getEmergencyContact() != null && !dto.getEmergencyContact().equals(safari.getEmergencyContact())) {
+                    blockedFields.add("emergencyContact");
+                }
+
+                if (!blockedFields.isEmpty()) {
+                    return ResponseEntity.badRequest().body(
+                            ApiResponse.error(
+                                    400,
+                                    String.format("Cannot modify fields (%s) on DISPUTED safari. Safari is under investigation - only investigation notes can be added.",
+                                            String.join(", ", blockedFields)),
+                                    "DISPUTED_EDIT_BLOCKED"
+                            )
+                    );
+                }
+
+                log.info("Allowing notes-only updates to DISPUTED safari: {}", safari.getCode());
+            }
+
+            // APPROVED safaris - Non-critical fields only
+            if (state == SafariState.APPROVED) {
+                List<String> blockedFields = new ArrayList<>();
+
+                // Critical fields that cannot be changed
+                if (dto.getStartDate() != null && !dto.getStartDate().equals(safari.getStartDate())) {
+                    blockedFields.add("startDate");
+                }
+                if (dto.getName() != null && !dto.getName().equals(safari.getName())) {
+                    blockedFields.add("name");
+                }
+
+                if (!blockedFields.isEmpty()) {
+                    return ResponseEntity.badRequest().body(
+                            ApiResponse.error(
+                                    400,
+                                    String.format("Cannot modify critical fields (%s) on APPROVED safari. Revert to DRAFT first.",
+                                            String.join(", ", blockedFields)),
+                                    "APPROVED_CRITICAL_EDIT_BLOCKED"
+                            )
+                    );
+                }
+
+                log.info("Allowing non-critical field updates to APPROVED safari: {}", safari.getCode());
+            }
+
+            // CONFIRMED safaris - Limited fields only
+            if (state == SafariState.CONFIRMED) {
+                List<String> blockedFields = new ArrayList<>();
+
+                // Very restricted - only logistics and notes
+                if (dto.getStartDate() != null && !dto.getStartDate().equals(safari.getStartDate())) {
+                    blockedFields.add("startDate");
+                }
+                if (dto.getName() != null && !dto.getName().equals(safari.getName())) {
+                    blockedFields.add("name");
+                }
+                if (dto.getDescription() != null && !dto.getDescription().equals(safari.getDescription())) {
+                    blockedFields.add("description");
+                }
+                if (dto.getHighlights() != null && !dto.getHighlights().equals(safari.getHighlights())) {
+                    blockedFields.add("highlights");
+                }
+
+                if (!blockedFields.isEmpty()) {
+                    return ResponseEntity.badRequest().body(
+                            ApiResponse.error(
+                                    400,
+                                    String.format("Cannot modify fields (%s) on CONFIRMED safari. Only logistics fields (carCount, locations, special requests, dietary requirements, emergency contact, internal notes) can be edited.",
+                                            String.join(", ", blockedFields)),
+                                    "CONFIRMED_EDIT_BLOCKED"
+                            )
+                    );
+                }
+
+                log.info("Allowing limited field updates to CONFIRMED safari: {}", safari.getCode());
+            }
+
+            // PENDING_PAYMENT safaris - Payment-related fields only
+            if (state == SafariState.PENDING_PAYMENT) {
+                List<String> blockedFields = new ArrayList<>();
+
+                // Only logistics and notes, no core booking details
+                if (dto.getStartDate() != null && !dto.getStartDate().equals(safari.getStartDate())) {
+                    blockedFields.add("startDate");
+                }
+                if (dto.getName() != null && !dto.getName().equals(safari.getName())) {
+                    blockedFields.add("name");
+                }
+                if (dto.getDescription() != null && !dto.getDescription().equals(safari.getDescription())) {
+                    blockedFields.add("description");
+                }
+                if (dto.getHighlights() != null && !dto.getHighlights().equals(safari.getHighlights())) {
+                    blockedFields.add("highlights");
+                }
+
+                if (!blockedFields.isEmpty()) {
+                    return ResponseEntity.badRequest().body(
+                            ApiResponse.error(
+                                    400,
+                                    String.format("Cannot modify fields (%s) on PENDING_PAYMENT safari. Only payment-related and logistics fields can be edited.",
+                                            String.join(", ", blockedFields)),
+                                    "PENDING_PAYMENT_EDIT_BLOCKED"
+                            )
+                    );
+                }
+
+                log.info("Allowing payment-related field updates to PENDING_PAYMENT safari: {}", safari.getCode());
+            }
+
+            // DRAFT, PENDING_APPROVAL, ON_HOLD - Fully editable (no restrictions)
 
             // Get current user for audit tracking
             User currentUser = null;

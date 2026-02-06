@@ -130,22 +130,7 @@ public class PdfGenerator {
             throw new RuntimeException("Failed to generate PDF: " + e.getMessage(), e);
         }
     }
-
-    /**
-     * Generate PDF with default A4 portrait settings
-     *
-     * @param html The rendered HTML content
-     * @return PDF as byte array
-     */
-    public byte[] generatePdf(String html) {
-        return generatePdf(
-            html,
-            PaperSize.A4,
-            Orientation.PORTRAIT,
-            20, 20, 15, 15
-        );
-    }
-
+    
     /**
      * Inject @page CSS rules into HTML for controlling page size and margins
      */
@@ -197,17 +182,5 @@ public class PdfGenerator {
         } else {
             return pageRule + html;
         }
-    }
-
-    /**
-     * Estimate PDF file size based on HTML length
-     * This is a rough estimate for validation purposes
-     *
-     * @param htmlLength Length of HTML content
-     * @return Estimated PDF size in bytes
-     */
-    public long estimatePdfSize(int htmlLength) {
-        // Rough estimate: PDF is typically 0.5-2x the HTML size
-        return (long) (htmlLength * 1.5);
     }
 }

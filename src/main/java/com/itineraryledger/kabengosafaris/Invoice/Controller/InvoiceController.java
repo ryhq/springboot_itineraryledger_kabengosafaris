@@ -19,7 +19,6 @@ import com.itineraryledger.kabengosafaris.Invoice.DTOs.CreateInvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.CreateInvoiceFromSafariDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.UpdateInvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
-import com.itineraryledger.kabengosafaris.Invoice.Enums.PaymentStatus;
 import com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceServices.InvoiceCreateService;
 import com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceServices.InvoiceDeleteService;
 import com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceServices.InvoiceFromSafariGenerationService;
@@ -107,7 +106,6 @@ public class InvoiceController {
         @RequestParam(required = false) String invoiceCode,
         @RequestParam(required = false) String title,
         @RequestParam(required = false) InvoiceStatus status,
-        @RequestParam(required = false) PaymentStatus paymentStatus,
         @RequestParam(required = false) String customerId,
         @RequestParam(required = false) String safariId,
         @RequestParam(required = false) String createdById,
@@ -127,7 +125,7 @@ public class InvoiceController {
     ) {
         log.info("GET /api/invoices - Fetching all invoices with filters");
         return invoiceGetService.getAllInvoices(
-            invoiceCode, title, status, paymentStatus, customerId, safariId,
+            invoiceCode, title, status, customerId, safariId,
             createdById, updatedById, isActive, issueDateAfter, issueDateBefore,
             dueDateAfter, dueDateBefore, sentAfter, sentBefore, isOverdue,
             statusGroup, page, size, sortDirection

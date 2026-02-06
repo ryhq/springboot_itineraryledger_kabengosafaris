@@ -1,11 +1,14 @@
 package com.itineraryledger.kabengosafaris.Initializers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,12 +16,19 @@ import com.itineraryledger.kabengosafaris.Permission.Permission;
 import com.itineraryledger.kabengosafaris.Permission.PermissionAction;
 import com.itineraryledger.kabengosafaris.Permission.PermissionRepository;
 
+import java.io.IOException;
+import java.util.List;
+
 /**
  * PermissionInitializer - Initializes permissions in the database at application startup
  *
  * This initializer creates:
  * 1. Standard CRUD permissions for all entities following the pattern: {ACTION}_{ENTITY}
  * 2. Custom permissions for specific use cases (e.g., matrix views, composite operations)
+ *
+ * Configuration is loaded from JSON files in src/main/resources/permissions/:
+ * - entities.json: List of entities that need CRUD permissions
+ * - custom-permissions.json: Custom permissions with name, action, entity, and description
  *
  * Standard Permission Examples:
  * - CREATE_USER, READ_USER, UPDATE_USER, DELETE_USER
@@ -38,6 +48,31 @@ import com.itineraryledger.kabengosafaris.Permission.PermissionRepository;
 public class PermissionInitializer implements ApplicationRunner {
 
     private final PermissionRepository permissionRepository;
+    private final ObjectMapper objectMapper;
+
+    /**
+     * DTO for deserializing entities.json
+     */
+    @Data
+    private static class EntitiesConfig {
+        private List<String> entities;
+    }
+
+    /**
+     * DTO for deserializing custom-permissions.json
+     */
+    @Data
+    private static class CustomPermissionsConfig {
+        private List<CustomPermissionDTO> customPermissions;
+    }
+
+    @Data
+    private static class CustomPermissionDTO {
+        private String name;
+        private String action;
+        private String entity;
+        private String description;
+    }
 
     /**
      * Runs at application startup to initialize permissions
@@ -85,91 +120,8 @@ public class PermissionInitializer implements ApplicationRunner {
     }
 
     private void initializePermissions() {
-        // Define entities that need CRUD permissions
-        String[] entities = {
-            "USER",
-            "ROLE",
-            "PERMISSION",
-            "EMAIL_ACCOUNT",
-            "EMAIL_ACCOUNT_SIGNATURE",
-            "EMAIL_EVENT",
-            "EMAIL_TEMPLATE",
-            "SECURITY_SETTING",
-            "AUDIT_LOG_SETTING",
-            "AUDIT_LOG",
-            "PARK",
-            "PARK_IMAGE",
-            "PARK_DOCUMENT",
-            "ACTIVITY",
-            "ACTIVITY_IMAGE",
-            "ACTIVITY_DOCUMENT",
-            
-            "PARK_ACTIVITY_IMAGE",
-            "PARK_ACTIVITY_DOCUMENT",
-
-            "ACCOMMODATION",
-            "ACCOMMODATION_EMAIL",
-            "ACCOMMODATION_PHONE",
-            "ACCOMMODATION_IMAGE",
-            "ACCOMMODATION_RATE",
-            "ACCOMMODATION_BOARD_TYPE",
-            "ACCOMMODATION_ROOM_TYPE",
-            "ACCOMMODATION_ROOM_STANDARD",
-            "ACCOMMODATION_DOCUMENT",
-            "SEASON",
-            "SEASON_PERIOD",
-            "PAX_AGE_CATEGORY",
-            "PAX_NATION_CATEGORY",
-            "TARIFF",
-            "ACTIVITY_TARIFF_RATE",
-            "PARK_TARIFF_RATE",
-            // Itinerary Module Entities
-            "ITINERARY",
-            "ITINERARY_DAY",
-            "ITINERARY_PAX",
-            "ITINERARY_DAY_ACTIVITY",
-            "ITINERARY_DAY_PARK",
-            "ITINERARY_DAY_PARK_ACTIVITY",
-            "ITINERARY_DAY_PARK_TARIFF",
-            "ITINERARY_DAY_ACCOMMODATION",
-            "ITINERARY_DOCUMENT",
-            // Safari Module Entities
-            "SAFARI",
-            "SAFARI_PAX",
-            "SAFARI_DAY",
-            "SAFARI_DAY_ACTIVITY",
-            "SAFARI_DAY_PARK",
-            "SAFARI_DAY_PARK_ACTIVITY",
-            "SAFARI_DAY_PARK_TARIFF",
-            "SAFARI_DAY_ACCOMMODATION",
-            "SAFARI_DOCUMENT",
-            // PDF Module Entities
-            "PDF_DOCUMENT",
-            "PDF_TEMPLATE",
-            // Translation Module Entities
-            "TRANSLATION_SETTING",
-            "TRANSLATION_CACHE",
-            // Customer Module Entities
-            "CUSTOMER",
-            "CUSTOMER_EMAIL",
-            "CUSTOMER_PHONE",
-            "CUSTOMER_DOCUMENT",
-            "CUSTOMER_NOTE",
-            // Image Settings Entity
-            "IMAGE_SETTING",
-            // File Settings Entity
-            "FILE_SETTING",
-            // Quote Module Entities
-            "QUOTE",
-            "QUOTE_ITEM",
-            "QUOTE_DOCUMENT",
-            // Bank Account Module Entities
-            "BANK_ACCOUNT",
-            // Invoice Module Entities
-            "INVOICE",
-            "INVOICE_LINE_ITEM",
-            "INVOICE_DOCUMENT",
-        };
+        // Load entities from JSON file
+        List<String> entities = loadEntitiesFromJson();
 
         // Define standard actions (CREATE, READ, UPDATE, DELETE)
         PermissionAction[] standardActions = {
@@ -235,366 +187,26 @@ public class PermissionInitializer implements ApplicationRunner {
         int createdCount = 0;
         int existingCount = 0;
 
-        // Define custom permissions: [name, action, entity, description]
-        String[][] customPermissions = {
-            // Activity Tariff Rate Matrix - allows viewing rate matrix with related lookup data
-            {
-                "READ_ACTIVITY_TARIFF_RATE_MATRIX",
-                "READ",
-                "ACTIVITY_TARIFF_RATE",
-                "Allows viewing the activity tariff rate matrix including seasons, age categories, and nation categories"
-            },
-            // Park Tariff Rate Matrix - allows viewing park rate matrix with related lookup data
-            {
-                "READ_PARK_TARIFF_RATE_MATRIX",
-                "READ",
-                "PARK_TARIFF_RATE",
-                "Allows viewing the park tariff rate matrix including seasons, age categories, and nation categories"
-            },
-            // Accommodation Rate Matrix - allows viewing accommodation rate matrix with related lookup data
-            {
-                "READ_ACCOMMODATION_RATE_MATRIX",
-                "READ",
-                "ACCOMMODATION_RATE",
-                "Allows viewing the accommodation rate matrix including seasons, room types, room standards, and board types"
-            },
-            // Itinerary Custom Permissions
-            {
-                "PUBLISH_ITINERARY",
-                "UPDATE",
-                "ITINERARY",
-                "Allows publishing an itinerary to make it available for booking, that is, creating itinerary safari from it"
-            },
-            {
-                "UNPUBLISH_ITINERARY",
-                "UPDATE",
-                "ITINERARY",
-                "Allows unpublishing an itinerary to revert it from published status"
-            },
-            {
-                "ARCHIVE_ITINERARY",
-                "UPDATE",
-                "ITINERARY",
-                "Allows archiving an itinerary to mark it as no longer in use"
-            },
-            {
-                "UNARCHIVE_ITINERARY",
-                "UPDATE",
-                "ITINERARY",
-                "Allows unarchiving an itinerary to restore it from archived status"
-            },
-            {
-                "READ_FULL_ITINERARY",
-                "READ",
-                "ITINERARY",
-                "Allows viewing complete itinerary with all nested data (days, parks, accommodations, pax)"
-            },
-            {
-                "CLONE_ITINERARY",
-                "CREATE",
-                "ITINERARY",
-                "Allows duplicating an existing itinerary as a new template"
-            },
+        // Load custom permissions from JSON file
+        List<CustomPermissionDTO> customPermissions = loadCustomPermissionsFromJson();
 
-            // ========================
-            // SAFARI STATE TRANSITION PERMISSIONS
-            // ========================
-
-            // Booking State Transitions
-            {
-                "SUBMIT_SAFARI_FOR_APPROVAL",
-                "UPDATE",
-                "SAFARI",
-                "Allows submitting a draft safari for management approval (DRAFT -> PENDING_APPROVAL)"
-            },
-            {
-                "APPROVE_SAFARI",
-                "UPDATE",
-                "SAFARI",
-                "Allows approving a safari booking (PENDING_APPROVAL -> APPROVED)"
-            },
-            {
-                "REJECT_SAFARI",
-                "UPDATE",
-                "SAFARI",
-                "Allows rejecting a safari booking (PENDING_APPROVAL -> DRAFT)"
-            },
-            {
-                "CONFIRM_SAFARI",
-                "UPDATE",
-                "SAFARI",
-                "Allows confirming a safari with client and suppliers (APPROVED -> CONFIRMED)"
-            },
-
-            // Payment State Transitions
-            {
-                "REQUEST_SAFARI_DEPOSIT",
-                "UPDATE",
-                "SAFARI",
-                "Allows transitioning safari to pending deposit state (CONFIRMED -> PENDING_DEPOSIT)"
-            },
-            {
-                "RECORD_SAFARI_DEPOSIT",
-                "UPDATE",
-                "SAFARI",
-                "Allows recording deposit payment received (PENDING_DEPOSIT -> DEPOSIT_PAID)"
-            },
-            {
-                "RECORD_SAFARI_FULL_PAYMENT",
-                "UPDATE",
-                "SAFARI",
-                "Allows recording full payment received (DEPOSIT_PAID -> FULLY_PAID)"
-            },
-
-            // Operational State Transitions
-            {
-                "MARK_SAFARI_READY",
-                "UPDATE",
-                "SAFARI",
-                "Allows marking safari as ready to commence (FULLY_PAID -> READY)"
-            },
-            {
-                "START_SAFARI",
-                "UPDATE",
-                "SAFARI",
-                "Allows starting a safari (READY -> IN_PROGRESS)"
-            },
-            {
-                "COMPLETE_SAFARI",
-                "UPDATE",
-                "SAFARI",
-                "Allows marking safari as completed (IN_PROGRESS -> COMPLETED)"
-            },
-
-            // Post-Safari State Transitions
-            {
-                "REQUEST_SAFARI_REVIEW",
-                "UPDATE",
-                "SAFARI",
-                "Allows transitioning safari to pending review (COMPLETED -> PENDING_REVIEW)"
-            },
-            {
-                "CLOSE_SAFARI",
-                "UPDATE",
-                "SAFARI",
-                "Allows closing a safari after all post-trip tasks are done (PENDING_REVIEW/COMPLETED -> CLOSED)"
-            },
-
-            // Hold/Pause State Transitions
-            {
-                "HOLD_SAFARI",
-                "UPDATE",
-                "SAFARI",
-                "Allows putting a safari on hold (-> ON_HOLD)"
-            },
-            {
-                "RELEASE_SAFARI_HOLD",
-                "UPDATE",
-                "SAFARI",
-                "Allows releasing a safari from hold state (ON_HOLD -> previous active state)"
-            },
-            {
-                "MARK_SAFARI_PENDING_DOCUMENTS",
-                "UPDATE",
-                "SAFARI",
-                "Allows marking safari as awaiting documents (-> PENDING_DOCUMENTS)"
-            },
-            {
-                "MARK_SAFARI_DOCUMENTS_RECEIVED",
-                "UPDATE",
-                "SAFARI",
-                "Allows marking that required documents have been received (PENDING_DOCUMENTS -> previous state)"
-            },
-            {
-                "MARK_SAFARI_PENDING_AVAILABILITY",
-                "UPDATE",
-                "SAFARI",
-                "Allows marking safari as awaiting availability confirmation (-> PENDING_AVAILABILITY)"
-            },
-            {
-                "MARK_SAFARI_AVAILABILITY_CONFIRMED",
-                "UPDATE",
-                "SAFARI",
-                "Allows confirming availability (PENDING_AVAILABILITY -> previous state)"
-            },
-
-            // Reschedule State Transitions
-            {
-                "POSTPONE_SAFARI",
-                "UPDATE",
-                "SAFARI",
-                "Allows postponing a safari to a later date (-> POSTPONED)"
-            },
-            {
-                "INITIATE_SAFARI_RESCHEDULE",
-                "UPDATE",
-                "SAFARI",
-                "Allows initiating safari date change process (-> RESCHEDULING)"
-            },
-            {
-                "COMPLETE_SAFARI_RESCHEDULE",
-                "UPDATE",
-                "SAFARI",
-                "Allows completing safari reschedule with new dates (RESCHEDULING -> CONFIRMED)"
-            },
-
-            // Cancellation State Transitions
-            {
-                "REQUEST_SAFARI_CANCELLATION",
-                "CANCEL",
-                "SAFARI",
-                "Allows requesting safari cancellation (-> CANCELLATION_REQUESTED)"
-            },
-            {
-                "CANCEL_SAFARI",
-                "CANCEL",
-                "SAFARI",
-                "Allows cancelling a safari (-> CANCELLED)"
-            },
-            {
-                "CANCEL_SAFARI_BY_CLIENT",
-                "CANCEL",
-                "SAFARI",
-                "Allows recording client-initiated cancellation (-> CANCELLED_BY_CLIENT)"
-            },
-            {
-                "CANCEL_SAFARI_BY_OPERATOR",
-                "CANCEL",
-                "SAFARI",
-                "Allows operator-initiated cancellation (-> CANCELLED_BY_OPERATOR)"
-            },
-            {
-                "CANCEL_SAFARI_FORCE_MAJEURE",
-                "CANCEL",
-                "SAFARI",
-                "Allows force majeure cancellation (-> CANCELLED_FORCE_MAJEURE)"
-            },
-
-            // Refund State Transitions
-            {
-                "INITIATE_SAFARI_REFUND",
-                "UPDATE",
-                "SAFARI",
-                "Allows initiating refund process (CANCELLED_* -> REFUND_PENDING)"
-            },
-            {
-                "RECORD_SAFARI_PARTIAL_REFUND",
-                "UPDATE",
-                "SAFARI",
-                "Allows recording partial refund issued (REFUND_PENDING -> REFUND_PARTIAL)"
-            },
-            {
-                "RECORD_SAFARI_FULL_REFUND",
-                "UPDATE",
-                "SAFARI",
-                "Allows recording full refund issued (REFUND_PENDING/REFUND_PARTIAL -> REFUND_COMPLETE)"
-            },
-
-            // Dispute State Transitions
-            {
-                "MARK_SAFARI_DISPUTED",
-                "UPDATE",
-                "SAFARI",
-                "Allows marking a safari as disputed by client (-> DISPUTED)"
-            },
-            {
-                "INVESTIGATE_SAFARI_DISPUTE",
-                "UPDATE",
-                "SAFARI",
-                "Allows marking dispute as under investigation (DISPUTED -> UNDER_INVESTIGATION)"
-            },
-            {
-                "RESOLVE_SAFARI_DISPUTE",
-                "UPDATE",
-                "SAFARI",
-                "Allows resolving a safari dispute (UNDER_INVESTIGATION/DISPUTED -> appropriate resolution state)"
-            },
-
-            // Full Safari View Permission
-            {
-                "READ_FULL_SAFARI",
-                "READ",
-                "SAFARI",
-                "Allows viewing complete safari with all nested data (days, parks, accommodations, pax)"
-            },
-
-            // ========================
-            // PDF GENERATION PERMISSIONS
-            // ========================
-            {
-                "GENERATE_PDF",
-                "CREATE",
-                "PDF_TEMPLATE",
-                "Allows generating PDF documents from templates"
-            },
-
-            // ========================
-            // TRANSLATION PERMISSIONS
-            // ========================
-            {
-                "READ_TRANSLATION_CACHE_STATS",
-                "READ",
-                "TRANSLATION_SETTING",
-                "Allows viewing translation cache statistics"
-            },
-            {
-                "CLEAR_TRANSLATION_CACHE",
-                "DELETE",
-                "TRANSLATION_SETTING",
-                "Allows clearing translation cache entries"
-            },
-            {
-                "TEST_TRANSLATION_SERVICE",
-                "EXECUTE",
-                "TRANSLATION_SETTING",
-                "Allows testing the translation service connection"
-            },
-
-            // ========================
-            // QUOTATION PERMISSIONS
-            // ========================
-            {
-                "SEND_QUOTATION",
-                "UPDATE",
-                "QUOTATION",
-                "Allows sending a quotation to the customer (DRAFT -> SENT)"
-            },
-            {
-                "CONVERT_QUOTATION_TO_SAFARI",
-                "CREATE",
-                "SAFARI",
-                "Allows converting an accepted quotation into a Safari booking"
-            },
-            {
-                "READ_FULL_QUOTATION",
-                "READ",
-                "QUOTATION",
-                "Allows viewing complete quotation with all nested data (pax list, line items)"
-            },
-        };
-
-        for (String[] customPerm : customPermissions) {
-            String permissionName = customPerm[0];
-            String actionStr = customPerm[1];
-            String entity = customPerm[2];
-            String description = customPerm[3];
-
-            if (!permissionRepository.existsByName(permissionName)) {
-                PermissionAction action = PermissionAction.valueOf(actionStr);
+        for (CustomPermissionDTO customPerm : customPermissions) {
+            if (!permissionRepository.existsByName(customPerm.getName())) {
+                PermissionAction action = PermissionAction.valueOf(customPerm.getAction());
 
                 Permission permission = Permission.builder()
-                    .name(permissionName)
-                    .description(description)
+                    .name(customPerm.getName())
+                    .description(customPerm.getDescription())
                     .action(action)
-                    .entity(entity)
+                    .entity(customPerm.getEntity())
                     .active(true)
                     .build();
 
                 permissionRepository.save(permission);
-                log.debug("Created custom permission: {}", permissionName);
+                log.debug("Created custom permission: {}", customPerm.getName());
                 createdCount++;
             } else {
-                log.trace("Custom permission already exists: {}", permissionName);
+                log.trace("Custom permission already exists: {}", customPerm.getName());
                 existingCount++;
             }
         }
@@ -604,6 +216,44 @@ public class PermissionInitializer implements ApplicationRunner {
         }
 
         return new int[]{createdCount, existingCount};
+    }
+
+    /**
+     * Load entities from JSON configuration file
+     *
+     * @return list of entity names
+     */
+    private List<String> loadEntitiesFromJson() {
+        try {
+            ClassPathResource resource = new ClassPathResource("permissions/entities.json");
+            EntitiesConfig config = objectMapper.readValue(resource.getInputStream(), EntitiesConfig.class);
+            log.info("Loaded {} entities from entities.json", config.getEntities().size());
+            return config.getEntities();
+        } catch (IOException e) {
+            log.error("Failed to load entities from entities.json", e);
+            throw new RuntimeException("Failed to load entities configuration", e);
+        }
+    }
+
+    /**
+     * Load custom permissions from JSON configuration file
+     *
+     * @return list of custom permission DTOs
+     */
+    private List<CustomPermissionDTO> loadCustomPermissionsFromJson() {
+        try {
+            ClassPathResource resource = new ClassPathResource("permissions/custom-permissions.json");
+            CustomPermissionsConfig config = objectMapper.readValue(
+                resource.getInputStream(),
+                CustomPermissionsConfig.class
+            );
+            log.info("Loaded {} custom permissions from custom-permissions.json",
+                config.getCustomPermissions().size());
+            return config.getCustomPermissions();
+        } catch (IOException e) {
+            log.error("Failed to load custom permissions from custom-permissions.json", e);
+            throw new RuntimeException("Failed to load custom permissions configuration", e);
+        }
     }
 
     /**

@@ -22,8 +22,12 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * SafariDeleteService - Service for deleting safaris
  *
- * Only allows deletion of DRAFT safaris to prevent accidental deletion
- * of confirmed bookings or operational safaris.
+ * WORKFLOW ENFORCEMENT:
+ * - Allows deletion of: DRAFT, PENDING_APPROVAL
+ * - Blocks deletion of: All other states (APPROVED, CONFIRMED, PENDING_PAYMENT, FULLY_PAID,
+ *   IN_PROGRESS, COMPLETED, CLOSED, ON_HOLD, CANCELLED, REFUND_PENDING, REFUND_COMPLETE, DISPUTED)
+ *
+ * Prevents accidental deletion of approved, confirmed, or operational safaris.
  */
 @Service
 @Slf4j
@@ -45,7 +49,8 @@ public class SafariDeleteService {
     /**
      * Delete safaris by list of obfuscated IDs
      *
-     * Only DRAFT safaris can be deleted. Safaris in other states will be skipped.
+     * WORKFLOW ENFORCEMENT: Only DRAFT and PENDING_APPROVAL safaris can be deleted.
+     * Safaris in other states will be skipped with detailed error messages.
      *
      * @param idObfuscatedList List of obfuscated safari IDs
      * @return ResponseEntity with ApiResponse containing success or error
@@ -98,15 +103,66 @@ public class SafariDeleteService {
                     continue;
                 }
 
-                // Only allow deletion of DRAFT safaris
-                if (safari.getState() != SafariState.DRAFT) {
-                    log.warn("Cannot delete safari {} - state is {} (only DRAFT safaris can be deleted)",
-                             safari.getCode(), safari.getState().getDisplayName());
+                // WORKFLOW ENFORCEMENT: Only allow deletion of DRAFT and PENDING_APPROVAL safaris
+                SafariState state = safari.getState();
+
+                if (state == SafariState.APPROVED || state == SafariState.CONFIRMED ||
+                    state == SafariState.PENDING_PAYMENT || state == SafariState.FULLY_PAID) {
+                    log.warn("Cannot delete safari {} - state is {} (approved/confirmed safaris cannot be deleted)",
+                             safari.getCode(), state.getDisplayName());
                     skippedCount++;
-                    skippedReasons.add(String.format("Safari %s cannot be deleted - state is %s (only DRAFT safaris can be deleted)",
-                                                     safari.getCode(), safari.getState().getDisplayName()));
+                    skippedReasons.add(String.format("Cannot delete safari %s - state is %s (cannot delete approved/confirmed bookings)",
+                                                     safari.getCode(), state.getDisplayName()));
                     continue;
                 }
+
+                if (state == SafariState.IN_PROGRESS) {
+                    log.warn("Cannot delete safari {} - safari is currently running",
+                             safari.getCode());
+                    skippedCount++;
+                    skippedReasons.add(String.format("Cannot delete safari %s - safari is currently IN_PROGRESS",
+                                                     safari.getCode()));
+                    continue;
+                }
+
+                if (state == SafariState.COMPLETED || state == SafariState.CLOSED) {
+                    log.warn("Cannot delete safari {} - safari has already ended ({})",
+                             safari.getCode(), state.getDisplayName());
+                    skippedCount++;
+                    skippedReasons.add(String.format("Cannot delete safari %s - safari has ended (%s)",
+                                                     safari.getCode(), state.getDisplayName()));
+                    continue;
+                }
+
+                if (state == SafariState.CANCELLED || state == SafariState.REFUND_PENDING ||
+                    state == SafariState.REFUND_COMPLETE) {
+                    log.warn("Cannot delete safari {} - safari has been cancelled/refunded ({})",
+                             safari.getCode(), state.getDisplayName());
+                    skippedCount++;
+                    skippedReasons.add(String.format("Cannot delete safari %s - safari has been cancelled/refunded (%s)",
+                                                     safari.getCode(), state.getDisplayName()));
+                    continue;
+                }
+
+                if (state == SafariState.DISPUTED) {
+                    log.warn("Cannot delete safari {} - safari is under investigation",
+                             safari.getCode());
+                    skippedCount++;
+                    skippedReasons.add(String.format("Cannot delete safari %s - safari is DISPUTED and under investigation",
+                                                     safari.getCode()));
+                    continue;
+                }
+
+                if (state == SafariState.ON_HOLD) {
+                    log.warn("Cannot delete safari {} - safari is ON_HOLD",
+                             safari.getCode());
+                    skippedCount++;
+                    skippedReasons.add(String.format("Cannot delete safari %s - safari is ON_HOLD (release from hold or cancel first)",
+                                                     safari.getCode()));
+                    continue;
+                }
+
+                // Only DRAFT and PENDING_APPROVAL reach here
 
                 // Use AopContext to get proxy and trigger AOP aspect
                 ((SafariDeleteService) AopContext.currentProxy()).deleteSafari(id);

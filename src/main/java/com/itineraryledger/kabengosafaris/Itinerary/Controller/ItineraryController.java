@@ -138,8 +138,54 @@ public class ItineraryController {
         return getService.getAllItineraries(name, code, status, tripType, budgetCategory, startLocation, endLocation, totalDays, isActive, isDayTrip, keyword, page, size, sortDirection);
     }
 
-    // Status management endpoints
+    // ========================
+    // STATUS MANAGEMENT ENDPOINTS
+    // ========================
 
+    /**
+     * Evaluate itinerary status automatically based on completeness
+     * This endpoint can be called to check if itinerary meets requirements
+     * and automatically transitions between DRAFT and COMPLETE
+     */
+    @PostMapping("/{id}/evaluate-status")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_ITINERARY')")
+    public ResponseEntity<ApiResponse<?>> evaluateStatus(
+        @PathVariable String id
+    ) {
+        log.info("POST /api/itineraries/{}/evaluate-status - Evaluating itinerary status", id);
+        return statusService.evaluateStatus(id);
+    }
+
+    /**
+     * Explicitly mark itinerary as COMPLETE
+     * Only allowed if in DRAFT status and meets all requirements
+     */
+    @PostMapping("/{id}/complete")
+    @PreAuthorize("hasAuthority('PERM_COMPLETE_ITINERARY')")
+    public ResponseEntity<ApiResponse<?>> markAsComplete(
+        @PathVariable String id
+    ) {
+        log.info("POST /api/itineraries/{}/complete - Marking itinerary as complete", id);
+        return statusService.markAsComplete(id);
+    }
+
+    /**
+     * Revert itinerary to DRAFT status
+     * Allowed from COMPLETE or PUBLISHED status
+     */
+    @PostMapping("/{id}/revert-to-draft")
+    @PreAuthorize("hasAuthority('PERM_REVERT_ITINERARY_TO_DRAFT')")
+    public ResponseEntity<ApiResponse<?>> revertToDraft(
+        @PathVariable String id
+    ) {
+        log.info("POST /api/itineraries/{}/revert-to-draft - Reverting itinerary to draft", id);
+        return statusService.revertToDraft(id);
+    }
+
+    /**
+     * Publish itinerary (make available for booking/creating safaris)
+     * Only allowed if status is COMPLETE
+     */
     @PostMapping("/{id}/publish")
     @PreAuthorize("hasAuthority('PERM_PUBLISH_ITINERARY')")
     public ResponseEntity<ApiResponse<?>> publishItinerary(

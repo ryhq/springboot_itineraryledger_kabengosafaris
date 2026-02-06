@@ -2,7 +2,6 @@ package com.itineraryledger.kabengosafaris.Invoice.Repository;
 
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
-import com.itineraryledger.kabengosafaris.Invoice.Enums.PaymentStatus;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -41,11 +40,6 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
      * Count invoices by status
      */
     long countByStatus(InvoiceStatus status);
-
-    /**
-     * Count invoices by payment status
-     */
-    long countByPaymentStatus(PaymentStatus paymentStatus);
 
     /**
      * Count active invoices

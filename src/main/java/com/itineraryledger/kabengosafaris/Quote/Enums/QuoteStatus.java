@@ -4,21 +4,20 @@ import lombok.Getter;
 
 /**
  * Status enum for Quote workflow states
+ *
+ * Simplified workflow (8 states):
+ * DRAFT → READY → SENT → [ACCEPTED/REJECTED/EXPIRED] → [CONVERTED/CANCELLED]
  */
 @Getter
 public enum QuoteStatus {
     DRAFT("Draft", "Quote is being prepared"),
-    PENDING_REVIEW("Pending Review", "Quote submitted for internal review"),
-    APPROVED("Approved", "Quote approved internally, ready to send"),
-    SENT("Sent", "Quote sent to customer"),
-    CUSTOMER_REVIEWING("Customer Reviewing", "Customer is reviewing the quote"),
-    CUSTOMER_REQUESTED_CHANGES("Customer Requested Changes", "Customer requested modifications"),
-    REVISED("Revised", "Quote has been revised based on feedback"),
+    READY("Ready", "Quote is complete and ready to send to customer"),
+    SENT("Sent", "Quote sent to customer for review"),
     ACCEPTED("Accepted", "Customer accepted the quote"),
     REJECTED("Rejected", "Customer rejected the quote"),
     EXPIRED("Expired", "Quote validity period has passed"),
-    CANCELLED("Cancelled", "Quote cancelled"),
-    CONVERTED("Converted", "Quote converted to booking/invoice");
+    CANCELLED("Cancelled", "Quote cancelled by company"),
+    CONVERTED("Converted", "Quote converted to booking/safari");
 
     private final String displayName;
     private final String description;

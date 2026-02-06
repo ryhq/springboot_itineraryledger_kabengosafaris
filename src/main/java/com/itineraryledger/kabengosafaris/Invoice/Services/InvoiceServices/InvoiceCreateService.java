@@ -15,7 +15,6 @@ import com.itineraryledger.kabengosafaris.Invoice.DTOs.CreateInvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.InvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
-import com.itineraryledger.kabengosafaris.Invoice.Enums.PaymentStatus;
 import com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceRepository;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
@@ -117,7 +116,6 @@ public class InvoiceCreateService {
                 .issueDate(createDTO.getIssueDate())
                 .dueDate(createDTO.getDueDate())
                 .status(InvoiceStatus.DRAFT)
-                .paymentStatus(PaymentStatus.UNPAID)
                 .createdBy(currentUser)
                 .internalNotes(createDTO.getInternalNotes())
                 .customerNotes(createDTO.getCustomerNotes())
@@ -182,8 +180,6 @@ public class InvoiceCreateService {
             .paidDate(invoice.getPaidDate())
             .status(invoice.getStatus())
             .statusDisplayName(invoice.getStatus().getDisplayName())
-            .paymentStatus(invoice.getPaymentStatus())
-            .paymentStatusDisplayName(invoice.getPaymentStatus().getDisplayName())
             .internalNotes(invoice.getInternalNotes())
             .customerNotes(invoice.getCustomerNotes())
             .paymentTerms(invoice.getPaymentTerms())

@@ -11,7 +11,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
-import com.itineraryledger.kabengosafaris.Invoice.Enums.PaymentStatus;
 import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
 import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
 import com.itineraryledger.kabengosafaris.User.User;
@@ -200,15 +199,9 @@ public class Invoice {
     // =====================================================================
 
     /**
-     * Current payment status
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_status", nullable = false, length = 50)
-    @Builder.Default
-    private PaymentStatus paymentStatus = PaymentStatus.UNPAID;
-
-    /**
      * Amount paid so far (for partial payments)
+     * Payment status is now tracked via the main 'status' field using
+     * InvoiceStatus enum (PARTIALLY_PAID, PAID, OVERDUE, etc.)
      */
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "invoice_amounts_paid", joinColumns = @JoinColumn(name = "invoice_id"))
@@ -311,10 +304,11 @@ public class Invoice {
 
     /**
      * Check if invoice is overdue
+     * An invoice is overdue if it's past the due date and not yet fully paid or refunded
      */
     @Transient
     public boolean isOverdue() {
-        if (paymentStatus == PaymentStatus.PAID || paymentStatus == PaymentStatus.REFUNDED) {
+        if (status == InvoiceStatus.PAID || status == InvoiceStatus.REFUNDED) {
             return false;
         }
         return LocalDate.now().isAfter(dueDate);
@@ -322,17 +316,19 @@ public class Invoice {
 
     /**
      * Check if invoice can be edited
+     * Delegates to InvoiceStatus.isEditable()
      */
     @Transient
     public boolean isEditable() {
-        return status == InvoiceStatus.DRAFT;
+        return status != null && status.isEditable();
     }
 
     /**
      * Check if invoice can be deleted
+     * Delegates to InvoiceStatus.isDeletable()
      */
     @Transient
     public boolean isDeletable() {
-        return status == InvoiceStatus.DRAFT;
+        return status != null && status.isDeletable();
     }
 }

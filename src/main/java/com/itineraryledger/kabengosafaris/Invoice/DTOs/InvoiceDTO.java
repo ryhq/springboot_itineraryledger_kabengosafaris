@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
-import com.itineraryledger.kabengosafaris.Invoice.Enums.PaymentStatus;
 import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
 
 import lombok.AllArgsConstructor;
@@ -56,11 +55,9 @@ public class InvoiceDTO {
     private LocalDate sentDate;
     private LocalDate paidDate;
 
-    // Status
+    // Status - using single InvoiceStatus enum for both workflow and payment tracking
     private InvoiceStatus status;
     private String statusDisplayName;
-    private PaymentStatus paymentStatus;
-    private String paymentStatusDisplayName;
 
     // Additional
     private String internalNotes;

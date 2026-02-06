@@ -39,6 +39,7 @@ public class ItineraryStatusService {
     /**
      * Evaluate and update itinerary status based on completeness
      * Called after adding/removing days, pax, etc.
+     * Can also be called explicitly by users to check status
      *
      * @param idObfuscated The obfuscated itinerary ID
      * @return ResponseEntity with ApiResponse containing the updated itinerary
@@ -81,6 +82,115 @@ public class ItineraryStatusService {
             log.error("Error evaluating itinerary status", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 ApiResponse.error(500, "Failed to evaluate status", "STATUS_EVAL_FAILED")
+            );
+        }
+    }
+
+    /**
+     * Explicitly mark an itinerary as COMPLETE
+     * Only allowed if itinerary meets publishing requirements and is in DRAFT status
+     *
+     * @param idObfuscated The obfuscated itinerary ID
+     * @return ResponseEntity with ApiResponse containing the updated itinerary
+     */
+    @AuditLogAnnotation(action = "COMPLETE_ITINERARY", description = "Marking itinerary as complete", entityType = "Itinerary", entityIdParamName = "idObfuscated")
+    public ResponseEntity<ApiResponse<?>> markAsComplete(String idObfuscated) {
+        log.info("Marking itinerary as complete: {}", idObfuscated);
+
+        try {
+            Long id = idObfuscator.decodeId(idObfuscated);
+            Itinerary itinerary = itineraryRepository.findById(id).orElse(null);
+
+            if (itinerary == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Itinerary not found", "ITINERARY_NOT_FOUND")
+                );
+            }
+
+            // Validate current status
+            if (itinerary.getStatus() != ItineraryStatus.DRAFT) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Only DRAFT itineraries can be marked as COMPLETE", "INVALID_STATUS_TRANSITION")
+                );
+            }
+
+            // Validate completeness
+            if (!itinerary.canPublish()) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        "Itinerary does not meet completion requirements. Ensure it has all days defined and at least one passenger category.",
+                        "INCOMPLETE_ITINERARY"
+                    )
+                );
+            }
+
+            // Update status
+            itinerary.setStatus(ItineraryStatus.COMPLETE);
+            itinerary = itineraryRepository.save(itinerary);
+
+            log.info("Itinerary marked as complete: {}", itinerary.getCode());
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, "Itinerary marked as complete successfully", convertToDTO(itinerary))
+            );
+
+        } catch (Exception e) {
+            log.error("Error marking itinerary as complete", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to mark itinerary as complete", "COMPLETE_FAILED")
+            );
+        }
+    }
+
+    /**
+     * Explicitly revert an itinerary to DRAFT status
+     * Allowed from COMPLETE or PUBLISHED status (not from ARCHIVED)
+     *
+     * @param idObfuscated The obfuscated itinerary ID
+     * @return ResponseEntity with ApiResponse containing the updated itinerary
+     */
+    @AuditLogAnnotation(action = "REVERT_ITINERARY_TO_DRAFT", description = "Reverting itinerary to draft", entityType = "Itinerary", entityIdParamName = "idObfuscated")
+    public ResponseEntity<ApiResponse<?>> revertToDraft(String idObfuscated) {
+        log.info("Reverting itinerary to draft: {}", idObfuscated);
+
+        try {
+            Long id = idObfuscator.decodeId(idObfuscated);
+            Itinerary itinerary = itineraryRepository.findById(id).orElse(null);
+
+            if (itinerary == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Itinerary not found", "ITINERARY_NOT_FOUND")
+                );
+            }
+
+            // Validate current status
+            if (itinerary.getStatus() == ItineraryStatus.DRAFT) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Itinerary is already in DRAFT status", "ALREADY_DRAFT")
+                );
+            }
+
+            if (itinerary.getStatus() == ItineraryStatus.ARCHIVED) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Cannot revert archived itinerary to DRAFT. Use unarchive endpoint instead.", "INVALID_STATUS_TRANSITION")
+                );
+            }
+
+            // Update status to DRAFT
+            itinerary.setStatus(ItineraryStatus.DRAFT);
+            itinerary = itineraryRepository.save(itinerary);
+
+            log.info("Itinerary reverted to draft: {}", itinerary.getCode());
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, "Itinerary reverted to draft successfully", convertToDTO(itinerary))
+            );
+
+        } catch (Exception e) {
+            log.error("Error reverting itinerary to draft", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to revert itinerary to draft", "REVERT_TO_DRAFT_FAILED")
             );
         }
     }

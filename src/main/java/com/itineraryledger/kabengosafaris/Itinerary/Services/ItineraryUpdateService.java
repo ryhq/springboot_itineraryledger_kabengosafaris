@@ -1,5 +1,8 @@
 package com.itineraryledger.kabengosafaris.Itinerary.Services;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -93,7 +96,56 @@ public class ItineraryUpdateService {
             );
         }
 
-        // Check if name is being changed and if it's unique
+        // WORKFLOW ENFORCEMENT: Check status-based edit restrictions
+        Itinerary.ItineraryStatus status = itinerary.getStatus();
+
+        // ARCHIVED itineraries cannot be edited at all
+        if (status == Itinerary.ItineraryStatus.ARCHIVED) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(
+                    400,
+                    "Cannot edit ARCHIVED itinerary. Unarchive it first to make changes.",
+                    "ARCHIVED_EDIT_BLOCKED"
+                )
+            );
+        }
+
+        // PUBLISHED itineraries can only edit non-critical fields
+        if (status == Itinerary.ItineraryStatus.PUBLISHED) {
+            // Check if any critical fields are being changed
+            List<String> blockedFields = new ArrayList<>();
+
+            if (updateItineraryDTO.getName() != null && !updateItineraryDTO.getName().equals(itinerary.getName())) {
+                blockedFields.add("name");
+            }
+            if (updateItineraryDTO.getTotalDays() != null && !updateItineraryDTO.getTotalDays().equals(itinerary.getTotalDays())) {
+                blockedFields.add("totalDays");
+            }
+            if (updateItineraryDTO.getTotalNights() != null && !updateItineraryDTO.getTotalNights().equals(itinerary.getTotalNights())) {
+                blockedFields.add("totalNights");
+            }
+            if (updateItineraryDTO.getTripType() != null && updateItineraryDTO.getTripType() != itinerary.getTripType()) {
+                blockedFields.add("tripType");
+            }
+            if (updateItineraryDTO.getBudgetCategory() != null && updateItineraryDTO.getBudgetCategory() != itinerary.getBudgetCategory()) {
+                blockedFields.add("budgetCategory");
+            }
+
+            if (!blockedFields.isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        String.format("Cannot modify critical fields (%s) on PUBLISHED itinerary. Unpublish or revert to DRAFT first.",
+                            String.join(", ", blockedFields)),
+                        "PUBLISHED_CRITICAL_EDIT_BLOCKED"
+                    )
+                );
+            }
+
+            log.info("Allowing non-critical field updates to PUBLISHED itinerary: {}", itinerary.getCode());
+        }
+
+        // Check if name is being changed and if it's unique (for DRAFT and COMPLETE only)
         if (updateItineraryDTO.getName() != null && !updateItineraryDTO.getName().equals(itinerary.getName())) {
             if (itineraryRepository.existsByNameIgnoreCaseAndIdNot(updateItineraryDTO.getName(), id)) {
                 return ResponseEntity.badRequest().body(

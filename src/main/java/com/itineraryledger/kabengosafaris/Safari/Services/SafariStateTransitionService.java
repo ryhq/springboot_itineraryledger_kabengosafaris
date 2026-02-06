@@ -25,6 +25,12 @@ import java.util.Set;
 /**
  * SafariStateTransitionService - Service for managing Safari state transitions
  *
+ * Simplified workflow (14 states):
+ * Core Journey: DRAFT → PENDING_APPROVAL → APPROVED → CONFIRMED →
+ *               PENDING_PAYMENT → FULLY_PAID → IN_PROGRESS → COMPLETED → CLOSED
+ *
+ * Exception/Special: ON_HOLD, CANCELLED, REFUND_PENDING, REFUND_COMPLETE, DISPUTED
+ *
  * This service handles all state transitions with validation rules ensuring
  * that only valid transitions are allowed and proper audit logging is performed.
  */
@@ -48,7 +54,7 @@ public class SafariStateTransitionService {
     }
 
     // ========================
-    // BOOKING STATE TRANSITIONS
+    // CORE JOURNEY TRANSITIONS
     // ========================
 
     /**
@@ -56,13 +62,59 @@ public class SafariStateTransitionService {
      */
     @Transactional
     public ResponseEntity<ApiResponse<?>> submitForApproval(String idObfuscated, SafariStateTransitionDTO dto) {
-        return executeTransition(
-                idObfuscated,
-                SafariState.PENDING_APPROVAL,
-                dto != null ? dto.getReason() : "Submitted for approval",
-                Set.of(SafariState.DRAFT),
-                "SUBMIT_FOR_APPROVAL"
-        );
+        try {
+            Long id = decodeId(idObfuscated);
+            if (id == null) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Invalid safari ID", "INVALID_SAFARI_ID")
+                );
+            }
+
+            Safari safari = safariRepository.findById(id).orElse(null);
+            if (safari == null) {
+                return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
+                );
+            }
+
+            if (safari.getState() != SafariState.DRAFT) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Can only submit DRAFT safaris for approval. Current state: " + safari.getState().getDisplayName(),
+                                "INVALID_STATE_TRANSITION")
+                );
+            }
+
+            // Validation: must have basic requirements
+            if (!canSubmitForApproval(safari)) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Safari must have itinerary, customer, dates, and at least one pax to submit for approval",
+                                "VALIDATION_FAILED")
+                );
+            }
+
+            SafariState previousState = safari.getState();
+            safari.changeState(SafariState.PENDING_APPROVAL,
+                    dto != null && dto.getReason() != null ? dto.getReason() : "Submitted for approval");
+            Safari savedSafari = safariRepository.save(safari);
+
+            logStateChange(savedSafari.getId(), "SUBMIT_FOR_APPROVAL",
+                    "Safari submitted for approval",
+                    previousState.name(), SafariState.PENDING_APPROVAL.name());
+
+            log.info("Safari {} submitted for approval", savedSafari.getId());
+
+            return ResponseEntity.ok().body(
+                    ApiResponse.success(200, "Safari submitted for approval successfully", convertToDTO(savedSafari))
+            );
+
+        } catch (Exception e) {
+            log.error("Error submitting safari for approval", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.error(500, "Failed to submit safari for approval", "STATE_TRANSITION_FAILED")
+            );
+        }
     }
 
     /**
@@ -113,81 +165,146 @@ public class SafariStateTransitionService {
     }
 
     // ========================
-    // PAYMENT STATE TRANSITIONS
+    // PAYMENT TRANSITIONS (Simplified)
     // ========================
 
     /**
-     * Request deposit payment (CONFIRMED -> PENDING_DEPOSIT)
+     * Request payment (CONFIRMED -> PENDING_PAYMENT)
+     * Replaces separate requestDeposit method
      */
     @Transactional
-    public ResponseEntity<ApiResponse<?>> requestDeposit(String idObfuscated, SafariStateTransitionDTO dto) {
+    public ResponseEntity<ApiResponse<?>> requestPayment(String idObfuscated, SafariStateTransitionDTO dto) {
         return executeTransition(
                 idObfuscated,
-                SafariState.PENDING_DEPOSIT,
-                dto != null ? dto.getReason() : "Deposit payment requested",
+                SafariState.PENDING_PAYMENT,
+                dto != null ? dto.getReason() : "Payment requested",
                 Set.of(SafariState.CONFIRMED),
-                "REQUEST_DEPOSIT"
+                "REQUEST_PAYMENT"
         );
     }
 
     /**
-     * Record deposit payment received (PENDING_DEPOSIT -> DEPOSIT_PAID)
+     * Record payment received (PENDING_PAYMENT -> FULLY_PAID if complete, or stays in PENDING_PAYMENT)
+     * Replaces separate recordDeposit and recordFullPayment methods
      */
     @Transactional
-    public ResponseEntity<ApiResponse<?>> recordDeposit(String idObfuscated, SafariStateTransitionDTO dto) {
-        return executeTransition(
-                idObfuscated,
-                SafariState.DEPOSIT_PAID,
-                dto != null ? dto.getReason() : "Deposit payment received",
-                Set.of(SafariState.PENDING_DEPOSIT),
-                "RECORD_DEPOSIT"
-        );
-    }
+    public ResponseEntity<ApiResponse<?>> recordPayment(String idObfuscated, SafariStateTransitionDTO dto) {
+        try {
+            Long id = decodeId(idObfuscated);
+            if (id == null) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Invalid safari ID", "INVALID_SAFARI_ID")
+                );
+            }
 
-    /**
-     * Record full payment received (DEPOSIT_PAID/CONFIRMED -> FULLY_PAID)
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> recordFullPayment(String idObfuscated, SafariStateTransitionDTO dto) {
-        return executeTransition(
-                idObfuscated,
-                SafariState.FULLY_PAID,
-                dto != null ? dto.getReason() : "Full payment received",
-                Set.of(SafariState.DEPOSIT_PAID, SafariState.CONFIRMED, SafariState.PENDING_DEPOSIT),
-                "RECORD_FULL_PAYMENT"
-        );
+            Safari safari = safariRepository.findById(id).orElse(null);
+            if (safari == null) {
+                return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
+                );
+            }
+
+            if (safari.getState() != SafariState.PENDING_PAYMENT) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Can only record payment for safaris in PENDING_PAYMENT state. Current state: " + safari.getState().getDisplayName(),
+                                "INVALID_STATE_TRANSITION")
+                );
+            }
+
+            SafariState previousState = safari.getState();
+
+            // Determine if payment is complete based on DTO or safari data
+            boolean isFullyPaid = dto != null && dto.getIsFullPayment() != null ? dto.getIsFullPayment() : false;
+
+            SafariState targetState = isFullyPaid ? SafariState.FULLY_PAID : SafariState.PENDING_PAYMENT;
+            String reason = dto != null && dto.getReason() != null ? dto.getReason() :
+                    (isFullyPaid ? "Full payment received" : "Partial payment received");
+
+            safari.changeState(targetState, reason);
+            Safari savedSafari = safariRepository.save(safari);
+
+            logStateChange(savedSafari.getId(), "RECORD_PAYMENT", reason,
+                    previousState.name(), targetState.name());
+
+            log.info("Payment recorded for safari {}, new state: {}", savedSafari.getId(), targetState);
+
+            return ResponseEntity.ok().body(
+                    ApiResponse.success(200,
+                            isFullyPaid ? "Full payment recorded successfully" : "Partial payment recorded successfully",
+                            convertToDTO(savedSafari))
+            );
+
+        } catch (Exception e) {
+            log.error("Error recording payment", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.error(500, "Failed to record payment", "STATE_TRANSITION_FAILED")
+            );
+        }
     }
 
     // ========================
-    // OPERATIONAL STATE TRANSITIONS
+    // OPERATIONAL TRANSITIONS
     // ========================
 
     /**
-     * Mark safari as ready to commence (FULLY_PAID -> READY)
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> markReady(String idObfuscated, SafariStateTransitionDTO dto) {
-        return executeTransition(
-                idObfuscated,
-                SafariState.READY,
-                dto != null ? dto.getReason() : "Safari preparations complete, ready to commence",
-                Set.of(SafariState.FULLY_PAID),
-                "MARK_READY"
-        );
-    }
-
-    /**
-     * Start safari (READY -> IN_PROGRESS)
+     * Start safari (FULLY_PAID -> IN_PROGRESS)
+     * Note: READY state removed - SafariPhase handles time urgency
      */
     @Transactional
     public ResponseEntity<ApiResponse<?>> startSafari(String idObfuscated, SafariStateTransitionDTO dto) {
-        return executeTransition(
-                idObfuscated,
-                SafariState.IN_PROGRESS,
-                dto != null ? dto.getReason() : "Safari started",
-                Set.of(SafariState.READY),
-                "START"
-        );
+        try {
+            Long id = decodeId(idObfuscated);
+            if (id == null) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Invalid safari ID", "INVALID_SAFARI_ID")
+                );
+            }
+
+            Safari safari = safariRepository.findById(id).orElse(null);
+            if (safari == null) {
+                return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
+                );
+            }
+
+            if (safari.getState() != SafariState.FULLY_PAID) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Can only start safaris in FULLY_PAID state. Current state: " + safari.getState().getDisplayName(),
+                                "INVALID_STATE_TRANSITION")
+                );
+            }
+
+            // Validation: start date should be today or in the past
+            if (safari.getStartDate() != null && safari.getStartDate().isAfter(LocalDate.now())) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Cannot start safari before its start date: " + safari.getStartDate(),
+                                "VALIDATION_FAILED")
+                );
+            }
+
+            SafariState previousState = safari.getState();
+            safari.changeState(SafariState.IN_PROGRESS,
+                    dto != null && dto.getReason() != null ? dto.getReason() : "Safari started");
+            Safari savedSafari = safariRepository.save(safari);
+
+            logStateChange(savedSafari.getId(), "START", "Safari started",
+                    previousState.name(), SafariState.IN_PROGRESS.name());
+
+            log.info("Safari {} started", savedSafari.getId());
+
+            return ResponseEntity.ok().body(
+                    ApiResponse.success(200, "Safari started successfully", convertToDTO(savedSafari))
+            );
+
+        } catch (Exception e) {
+            log.error("Error starting safari", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.error(500, "Failed to start safari", "STATE_TRANSITION_FAILED")
+            );
+        }
     }
 
     /**
@@ -195,35 +312,63 @@ public class SafariStateTransitionService {
      */
     @Transactional
     public ResponseEntity<ApiResponse<?>> completeSafari(String idObfuscated, SafariStateTransitionDTO dto) {
-        return executeTransition(
-                idObfuscated,
-                SafariState.COMPLETED,
-                dto != null ? dto.getReason() : "Safari completed successfully",
-                Set.of(SafariState.IN_PROGRESS),
-                "COMPLETE"
-        );
+        try {
+            Long id = decodeId(idObfuscated);
+            if (id == null) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Invalid safari ID", "INVALID_SAFARI_ID")
+                );
+            }
+
+            Safari safari = safariRepository.findById(id).orElse(null);
+            if (safari == null) {
+                return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
+                );
+            }
+
+            if (safari.getState() != SafariState.IN_PROGRESS) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Can only complete safaris in IN_PROGRESS state. Current state: " + safari.getState().getDisplayName(),
+                                "INVALID_STATE_TRANSITION")
+                );
+            }
+
+            // Validation: end date should be today or in the past
+            if (safari.getEndDate() != null && safari.getEndDate().isAfter(LocalDate.now())) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Cannot complete safari before its end date: " + safari.getEndDate(),
+                                "VALIDATION_FAILED")
+                );
+            }
+
+            SafariState previousState = safari.getState();
+            safari.changeState(SafariState.COMPLETED,
+                    dto != null && dto.getReason() != null ? dto.getReason() : "Safari completed successfully");
+            Safari savedSafari = safariRepository.save(safari);
+
+            logStateChange(savedSafari.getId(), "COMPLETE", "Safari completed",
+                    previousState.name(), SafariState.COMPLETED.name());
+
+            log.info("Safari {} completed", savedSafari.getId());
+
+            return ResponseEntity.ok().body(
+                    ApiResponse.success(200, "Safari completed successfully", convertToDTO(savedSafari))
+            );
+
+        } catch (Exception e) {
+            log.error("Error completing safari", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.error(500, "Failed to complete safari", "STATE_TRANSITION_FAILED")
+            );
+        }
     }
 
-    // ========================
-    // POST-SAFARI STATE TRANSITIONS
-    // ========================
-
     /**
-     * Request review (COMPLETED -> PENDING_REVIEW)
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> requestReview(String idObfuscated, SafariStateTransitionDTO dto) {
-        return executeTransition(
-                idObfuscated,
-                SafariState.PENDING_REVIEW,
-                dto != null ? dto.getReason() : "Post-trip review requested",
-                Set.of(SafariState.COMPLETED),
-                "REQUEST_REVIEW"
-        );
-    }
-
-    /**
-     * Close safari (COMPLETED/PENDING_REVIEW -> CLOSED)
+     * Close safari (COMPLETED -> CLOSED)
+     * Note: PENDING_REVIEW state removed - reviews happen in COMPLETED state
      */
     @Transactional
     public ResponseEntity<ApiResponse<?>> closeSafari(String idObfuscated, SafariStateTransitionDTO dto) {
@@ -231,184 +376,29 @@ public class SafariStateTransitionService {
                 idObfuscated,
                 SafariState.CLOSED,
                 dto != null ? dto.getReason() : "Safari closed, all post-trip tasks completed",
-                Set.of(SafariState.COMPLETED, SafariState.PENDING_REVIEW),
+                Set.of(SafariState.COMPLETED),
                 "CLOSE"
         );
     }
 
     // ========================
-    // HOLD/PAUSE STATE TRANSITIONS
+    // HOLD/PAUSE TRANSITIONS (Simplified)
     // ========================
 
     /**
      * Put safari on hold (multiple states -> ON_HOLD)
+     * Replaces separate holdSafari, markPendingDocuments, markPendingAvailability, postponeSafari methods
      */
     @Transactional
     public ResponseEntity<ApiResponse<?>> holdSafari(String idObfuscated, SafariStateTransitionDTO dto) {
-        if (dto == null || dto.getReason() == null || dto.getReason().isEmpty()) {
+        if (dto == null || dto.getHoldReason() == null) {
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Reason is required for hold", "REASON_REQUIRED")
+                    ApiResponse.error(400, "Hold reason is required", "REASON_REQUIRED")
             );
         }
-        return executeTransitionWithPreviousState(
-                idObfuscated,
-                SafariState.ON_HOLD,
-                dto.getReason(),
-                Set.of(SafariState.DRAFT, SafariState.PENDING_APPROVAL, SafariState.APPROVED,
-                        SafariState.CONFIRMED, SafariState.PENDING_DEPOSIT, SafariState.DEPOSIT_PAID,
-                        SafariState.FULLY_PAID, SafariState.READY),
-                "HOLD"
-        );
-    }
-
-    /**
-     * Release hold (ON_HOLD -> previous state or CONFIRMED)
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> releaseHold(String idObfuscated, SafariStateTransitionDTO dto) {
-        // For simplicity, returning to CONFIRMED state
-        // In a full implementation, you might track the previous state
-        SafariState targetState = dto != null && dto.getTargetState() != null
-                ? dto.getTargetState()
-                : SafariState.CONFIRMED;
-
-        return executeTransition(
-                idObfuscated,
-                targetState,
-                dto != null ? dto.getReason() : "Hold released",
-                Set.of(SafariState.ON_HOLD),
-                "RELEASE_HOLD"
-        );
-    }
-
-    /**
-     * Mark pending documents (multiple states -> PENDING_DOCUMENTS)
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> markPendingDocuments(String idObfuscated, SafariStateTransitionDTO dto) {
-        if (dto == null || dto.getReason() == null || dto.getReason().isEmpty()) {
+        if (dto.getReason() == null || dto.getReason().isEmpty()) {
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Reason is required (specify which documents are pending)", "REASON_REQUIRED")
-            );
-        }
-        return executeTransitionWithPreviousState(
-                idObfuscated,
-                SafariState.PENDING_DOCUMENTS,
-                dto.getReason(),
-                Set.of(SafariState.DRAFT, SafariState.PENDING_APPROVAL, SafariState.APPROVED,
-                        SafariState.CONFIRMED, SafariState.PENDING_DEPOSIT, SafariState.DEPOSIT_PAID),
-                "MARK_PENDING_DOCUMENTS"
-        );
-    }
-
-    /**
-     * Mark documents received (PENDING_DOCUMENTS -> previous state or CONFIRMED)
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> markDocumentsReceived(String idObfuscated, SafariStateTransitionDTO dto) {
-        SafariState targetState = dto != null && dto.getTargetState() != null
-                ? dto.getTargetState()
-                : SafariState.CONFIRMED;
-
-        return executeTransition(
-                idObfuscated,
-                targetState,
-                dto != null ? dto.getReason() : "Required documents received",
-                Set.of(SafariState.PENDING_DOCUMENTS),
-                "MARK_DOCUMENTS_RECEIVED"
-        );
-    }
-
-    /**
-     * Mark pending availability (multiple states -> PENDING_AVAILABILITY)
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> markPendingAvailability(String idObfuscated, SafariStateTransitionDTO dto) {
-        if (dto == null || dto.getReason() == null || dto.getReason().isEmpty()) {
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Reason is required (specify what availability is pending)", "REASON_REQUIRED")
-            );
-        }
-        return executeTransitionWithPreviousState(
-                idObfuscated,
-                SafariState.PENDING_AVAILABILITY,
-                dto.getReason(),
-                Set.of(SafariState.APPROVED, SafariState.CONFIRMED),
-                "MARK_PENDING_AVAILABILITY"
-        );
-    }
-
-    /**
-     * Mark availability confirmed (PENDING_AVAILABILITY -> previous state or CONFIRMED)
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> markAvailabilityConfirmed(String idObfuscated, SafariStateTransitionDTO dto) {
-        SafariState targetState = dto != null && dto.getTargetState() != null
-                ? dto.getTargetState()
-                : SafariState.CONFIRMED;
-
-        return executeTransition(
-                idObfuscated,
-                targetState,
-                dto != null ? dto.getReason() : "Availability confirmed",
-                Set.of(SafariState.PENDING_AVAILABILITY),
-                "MARK_AVAILABILITY_CONFIRMED"
-        );
-    }
-
-    // ========================
-    // RESCHEDULE STATE TRANSITIONS
-    // ========================
-
-    /**
-     * Postpone safari (multiple states -> POSTPONED)
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> postponeSafari(String idObfuscated, SafariStateTransitionDTO dto) {
-        if (dto == null || dto.getReason() == null || dto.getReason().isEmpty()) {
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Reason is required for postponement", "REASON_REQUIRED")
-            );
-        }
-        return executeTransition(
-                idObfuscated,
-                SafariState.POSTPONED,
-                dto.getReason(),
-                Set.of(SafariState.DRAFT, SafariState.PENDING_APPROVAL, SafariState.APPROVED,
-                        SafariState.CONFIRMED, SafariState.PENDING_DEPOSIT, SafariState.DEPOSIT_PAID,
-                        SafariState.FULLY_PAID, SafariState.READY, SafariState.ON_HOLD),
-                "POSTPONE"
-        );
-    }
-
-    /**
-     * Initiate reschedule (multiple states -> RESCHEDULING)
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> initiateReschedule(String idObfuscated, SafariStateTransitionDTO dto) {
-        if (dto == null || dto.getReason() == null || dto.getReason().isEmpty()) {
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Reason is required for rescheduling", "REASON_REQUIRED")
-            );
-        }
-        return executeTransition(
-                idObfuscated,
-                SafariState.RESCHEDULING,
-                dto.getReason(),
-                Set.of(SafariState.CONFIRMED, SafariState.PENDING_DEPOSIT, SafariState.DEPOSIT_PAID,
-                        SafariState.FULLY_PAID, SafariState.READY, SafariState.POSTPONED),
-                "INITIATE_RESCHEDULE"
-        );
-    }
-
-    /**
-     * Complete reschedule with new dates (RESCHEDULING -> CONFIRMED)
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> completeReschedule(String idObfuscated, SafariStateTransitionDTO dto) {
-        if (dto == null || dto.getNewStartDate() == null) {
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "New start date is required to complete reschedule", "NEW_DATE_REQUIRED")
+                    ApiResponse.error(400, "Detailed reason is required for hold", "REASON_REQUIRED")
             );
         }
 
@@ -427,53 +417,120 @@ public class SafariStateTransitionService {
                 );
             }
 
-            if (safari.getState() != SafariState.RESCHEDULING) {
+            Set<SafariState> allowedStates = Set.of(
+                    SafariState.DRAFT, SafariState.PENDING_APPROVAL, SafariState.APPROVED,
+                    SafariState.CONFIRMED, SafariState.PENDING_PAYMENT, SafariState.FULLY_PAID
+            );
+
+            if (!allowedStates.contains(safari.getState())) {
                 return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400, "Safari must be in RESCHEDULING state to complete reschedule", "INVALID_STATE")
+                        ApiResponse.error(400,
+                                "Cannot put safari on hold from state: " + safari.getState().getDisplayName(),
+                                "INVALID_STATE_TRANSITION")
                 );
             }
 
-            // Update dates
-            LocalDate newStartDate = dto.getNewStartDate();
-            LocalDate newEndDate = newStartDate.plusDays(safari.getTotalDays() - 1);
+            SafariState previousState = safari.getState();
 
-            safari.setStartDate(newStartDate);
-            safari.setEndDate(newEndDate);
-            safari.changeState(SafariState.CONFIRMED, dto.getReason() != null ? dto.getReason() : "Reschedule completed with new dates");
+            // Store hold reason and previous state for later resumption
+            // Note: These fields should be added to Safari entity
+            String fullReason = String.format("[%s] %s", dto.getHoldReason().getDisplayName(), dto.getReason());
+            safari.changeState(SafariState.ON_HOLD, fullReason);
 
             Safari savedSafari = safariRepository.save(safari);
 
-            // Audit log
-            logStateChange(savedSafari.getId(), "COMPLETE_RESCHEDULE",
-                    "Safari rescheduled to new dates: " + newStartDate + " - " + newEndDate,
-                    SafariState.RESCHEDULING.name(), SafariState.CONFIRMED.name());
+            logStateChange(savedSafari.getId(), "HOLD", fullReason,
+                    previousState.name(), SafariState.ON_HOLD.name());
 
-            log.info("Safari {} rescheduled to {} - {}", savedSafari.getId(), newStartDate, newEndDate);
+            log.info("Safari {} put on hold (reason: {})", savedSafari.getId(), dto.getHoldReason());
 
             return ResponseEntity.ok().body(
-                    ApiResponse.success(200, "Safari rescheduled successfully", convertToDTO(savedSafari))
+                    ApiResponse.success(200, "Safari put on hold successfully", convertToDTO(savedSafari))
             );
 
         } catch (Exception e) {
-            log.error("Error completing reschedule", e);
+            log.error("Error putting safari on hold", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.error(500, "Failed to complete reschedule", "RESCHEDULE_FAILED")
+                    ApiResponse.error(500, "Failed to put safari on hold", "STATE_TRANSITION_FAILED")
+            );
+        }
+    }
+
+    /**
+     * Release hold (ON_HOLD -> previous state or specified state)
+     * Replaces separate release methods
+     */
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> releaseHold(String idObfuscated, SafariStateTransitionDTO dto) {
+        try {
+            Long id = decodeId(idObfuscated);
+            if (id == null) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Invalid safari ID", "INVALID_SAFARI_ID")
+                );
+            }
+
+            Safari safari = safariRepository.findById(id).orElse(null);
+            if (safari == null) {
+                return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
+                );
+            }
+
+            if (safari.getState() != SafariState.ON_HOLD) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Can only release safaris in ON_HOLD state. Current state: " + safari.getState().getDisplayName(),
+                                "INVALID_STATE_TRANSITION")
+                );
+            }
+
+            // Determine target state: specified in DTO or default to CONFIRMED
+            SafariState targetState = dto != null && dto.getTargetState() != null
+                    ? dto.getTargetState()
+                    : SafariState.CONFIRMED;
+
+            String reason = dto != null && dto.getReason() != null ? dto.getReason() : "Hold released";
+
+            SafariState previousState = safari.getState();
+            safari.changeState(targetState, reason);
+            Safari savedSafari = safariRepository.save(safari);
+
+            logStateChange(savedSafari.getId(), "RELEASE_HOLD", reason,
+                    previousState.name(), targetState.name());
+
+            log.info("Hold released for safari {}, returned to {}", savedSafari.getId(), targetState);
+
+            return ResponseEntity.ok().body(
+                    ApiResponse.success(200, "Hold released successfully", convertToDTO(savedSafari))
+            );
+
+        } catch (Exception e) {
+            log.error("Error releasing hold", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.error(500, "Failed to release hold", "STATE_TRANSITION_FAILED")
             );
         }
     }
 
     // ========================
-    // CANCELLATION STATE TRANSITIONS
+    // CANCELLATION TRANSITIONS (Simplified)
     // ========================
 
     /**
-     * Request cancellation (multiple states -> CANCELLATION_REQUESTED)
+     * Cancel safari (multiple states -> CANCELLED)
+     * Replaces separate cancelSafari, cancelByClient, cancelByOperator, cancelForceMajeure methods
      */
     @Transactional
-    public ResponseEntity<ApiResponse<?>> requestCancellation(String idObfuscated, SafariStateTransitionDTO dto) {
-        if (dto == null || dto.getReason() == null || dto.getReason().isEmpty()) {
+    public ResponseEntity<ApiResponse<?>> cancelSafari(String idObfuscated, SafariStateTransitionDTO dto) {
+        if (dto == null || dto.getCancellationReason() == null) {
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Reason is required for cancellation request", "REASON_REQUIRED")
+                    ApiResponse.error(400, "Cancellation reason is required", "REASON_REQUIRED")
+            );
+        }
+        if (dto.getReason() == null || dto.getReason().isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Detailed reason is required for cancellation", "REASON_REQUIRED")
             );
         }
 
@@ -494,88 +551,43 @@ public class SafariStateTransitionService {
 
             if (!safari.getState().isCancellable()) {
                 return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400, "Safari cannot be cancelled in state: " + safari.getState().getDisplayName(), "NOT_CANCELLABLE")
+                        ApiResponse.error(400,
+                                "Safari cannot be cancelled in state: " + safari.getState().getDisplayName(),
+                                "NOT_CANCELLABLE")
                 );
             }
 
             SafariState previousState = safari.getState();
-            safari.changeState(SafariState.CANCELLATION_REQUESTED, dto.getReason());
+
+            // Store cancellation reason
+            String fullReason = String.format("[%s] %s", dto.getCancellationReason().getDisplayName(), dto.getReason());
+            safari.changeState(SafariState.CANCELLED, fullReason);
+
             Safari savedSafari = safariRepository.save(safari);
 
-            logStateChange(savedSafari.getId(), "REQUEST_CANCELLATION", dto.getReason(),
-                    previousState.name(), SafariState.CANCELLATION_REQUESTED.name());
-            log.info("Cancellation requested for safari {}", savedSafari.getId());
+            logStateChange(savedSafari.getId(), "CANCEL", fullReason,
+                    previousState.name(), SafariState.CANCELLED.name());
+
+            log.info("Safari {} cancelled (reason: {})", savedSafari.getId(), dto.getCancellationReason());
 
             return ResponseEntity.ok().body(
-                    ApiResponse.success(200, "Cancellation requested successfully", convertToDTO(savedSafari))
+                    ApiResponse.success(200, "Safari cancelled successfully", convertToDTO(savedSafari))
             );
 
         } catch (Exception e) {
-            log.error("Error requesting cancellation", e);
+            log.error("Error cancelling safari", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.error(500, "Failed to request cancellation", "CANCELLATION_REQUEST_FAILED")
+                    ApiResponse.error(500, "Failed to cancel safari", "STATE_TRANSITION_FAILED")
             );
         }
-    }
-
-    /**
-     * Cancel safari (generic cancellation)
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> cancelSafari(String idObfuscated, SafariStateTransitionDTO dto) {
-        if (dto == null || dto.getReason() == null || dto.getReason().isEmpty()) {
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Reason is required for cancellation", "REASON_REQUIRED")
-            );
-        }
-        return executeCancellation(idObfuscated, SafariState.CANCELLED, dto.getReason(), "CANCEL");
-    }
-
-    /**
-     * Cancel safari by client
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> cancelByClient(String idObfuscated, SafariStateTransitionDTO dto) {
-        if (dto == null || dto.getReason() == null || dto.getReason().isEmpty()) {
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Reason is required for cancellation", "REASON_REQUIRED")
-            );
-        }
-        return executeCancellation(idObfuscated, SafariState.CANCELLED_BY_CLIENT, dto.getReason(), "CANCEL_BY_CLIENT");
-    }
-
-    /**
-     * Cancel safari by operator
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> cancelByOperator(String idObfuscated, SafariStateTransitionDTO dto) {
-        if (dto == null || dto.getReason() == null || dto.getReason().isEmpty()) {
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Reason is required for cancellation", "REASON_REQUIRED")
-            );
-        }
-        return executeCancellation(idObfuscated, SafariState.CANCELLED_BY_OPERATOR, dto.getReason(), "CANCEL_BY_OPERATOR");
-    }
-
-    /**
-     * Cancel safari due to force majeure
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> cancelForceMajeure(String idObfuscated, SafariStateTransitionDTO dto) {
-        if (dto == null || dto.getReason() == null || dto.getReason().isEmpty()) {
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Reason is required for force majeure cancellation", "REASON_REQUIRED")
-            );
-        }
-        return executeCancellation(idObfuscated, SafariState.CANCELLED_FORCE_MAJEURE, dto.getReason(), "CANCEL_FORCE_MAJEURE");
     }
 
     // ========================
-    // REFUND STATE TRANSITIONS
+    // REFUND TRANSITIONS (Simplified)
     // ========================
 
     /**
-     * Initiate refund (CANCELLED_* -> REFUND_PENDING)
+     * Initiate refund (CANCELLED -> REFUND_PENDING)
      */
     @Transactional
     public ResponseEntity<ApiResponse<?>> initiateRefund(String idObfuscated, SafariStateTransitionDTO dto) {
@@ -583,47 +595,78 @@ public class SafariStateTransitionService {
                 idObfuscated,
                 SafariState.REFUND_PENDING,
                 dto != null ? dto.getReason() : "Refund process initiated",
-                Set.of(SafariState.CANCELLED, SafariState.CANCELLED_BY_CLIENT,
-                        SafariState.CANCELLED_BY_OPERATOR, SafariState.CANCELLED_FORCE_MAJEURE,
-                        SafariState.CANCELLATION_REQUESTED),
+                Set.of(SafariState.CANCELLED),
                 "INITIATE_REFUND"
         );
     }
 
     /**
-     * Record partial refund (REFUND_PENDING -> REFUND_PARTIAL)
+     * Record refund (REFUND_PENDING -> REFUND_COMPLETE if full, or stays in REFUND_PENDING if partial)
+     * Replaces separate recordPartialRefund and recordFullRefund methods
      */
     @Transactional
-    public ResponseEntity<ApiResponse<?>> recordPartialRefund(String idObfuscated, SafariStateTransitionDTO dto) {
-        return executeTransition(
-                idObfuscated,
-                SafariState.REFUND_PARTIAL,
-                dto != null ? dto.getReason() : "Partial refund issued",
-                Set.of(SafariState.REFUND_PENDING),
-                "RECORD_PARTIAL_REFUND"
-        );
-    }
+    public ResponseEntity<ApiResponse<?>> recordRefund(String idObfuscated, SafariStateTransitionDTO dto) {
+        try {
+            Long id = decodeId(idObfuscated);
+            if (id == null) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Invalid safari ID", "INVALID_SAFARI_ID")
+                );
+            }
 
-    /**
-     * Record full refund (REFUND_PENDING/REFUND_PARTIAL -> REFUND_COMPLETE)
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> recordFullRefund(String idObfuscated, SafariStateTransitionDTO dto) {
-        return executeTransition(
-                idObfuscated,
-                SafariState.REFUND_COMPLETE,
-                dto != null ? dto.getReason() : "Full refund completed",
-                Set.of(SafariState.REFUND_PENDING, SafariState.REFUND_PARTIAL),
-                "RECORD_FULL_REFUND"
-        );
+            Safari safari = safariRepository.findById(id).orElse(null);
+            if (safari == null) {
+                return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
+                );
+            }
+
+            if (safari.getState() != SafariState.REFUND_PENDING) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Can only record refund for safaris in REFUND_PENDING state. Current state: " + safari.getState().getDisplayName(),
+                                "INVALID_STATE_TRANSITION")
+                );
+            }
+
+            SafariState previousState = safari.getState();
+
+            // Determine if refund is complete based on DTO
+            boolean isFinalRefund = dto != null && dto.getIsFinalRefund() != null ? dto.getIsFinalRefund() : true;
+
+            SafariState targetState = isFinalRefund ? SafariState.REFUND_COMPLETE : SafariState.REFUND_PENDING;
+            String reason = dto != null && dto.getReason() != null ? dto.getReason() :
+                    (isFinalRefund ? "Full refund completed" : "Partial refund issued");
+
+            safari.changeState(targetState, reason);
+            Safari savedSafari = safariRepository.save(safari);
+
+            logStateChange(savedSafari.getId(), "RECORD_REFUND", reason,
+                    previousState.name(), targetState.name());
+
+            log.info("Refund recorded for safari {}, new state: {}", savedSafari.getId(), targetState);
+
+            return ResponseEntity.ok().body(
+                    ApiResponse.success(200,
+                            isFinalRefund ? "Full refund recorded successfully" : "Partial refund recorded successfully",
+                            convertToDTO(savedSafari))
+            );
+
+        } catch (Exception e) {
+            log.error("Error recording refund", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.error(500, "Failed to record refund", "STATE_TRANSITION_FAILED")
+            );
+        }
     }
 
     // ========================
-    // DISPUTE STATE TRANSITIONS
+    // DISPUTE TRANSITIONS (Simplified)
     // ========================
 
     /**
-     * Mark safari as disputed (multiple states -> DISPUTED)
+     * Mark safari as disputed (post-trip/cancellation states -> DISPUTED)
+     * Replaces separate markDisputed and investigateDispute methods
      */
     @Transactional
     public ResponseEntity<ApiResponse<?>> markDisputed(String idObfuscated, SafariStateTransitionDTO dto) {
@@ -636,30 +679,14 @@ public class SafariStateTransitionService {
                 idObfuscated,
                 SafariState.DISPUTED,
                 dto.getReason(),
-                Set.of(SafariState.COMPLETED, SafariState.PENDING_REVIEW, SafariState.CLOSED,
-                        SafariState.CANCELLED, SafariState.CANCELLED_BY_CLIENT,
-                        SafariState.CANCELLED_BY_OPERATOR, SafariState.CANCELLED_FORCE_MAJEURE,
-                        SafariState.REFUND_PENDING, SafariState.REFUND_PARTIAL, SafariState.REFUND_COMPLETE),
+                Set.of(SafariState.COMPLETED, SafariState.CLOSED, SafariState.CANCELLED,
+                        SafariState.REFUND_PENDING, SafariState.REFUND_COMPLETE),
                 "MARK_DISPUTED"
         );
     }
 
     /**
-     * Start investigation (DISPUTED -> UNDER_INVESTIGATION)
-     */
-    @Transactional
-    public ResponseEntity<ApiResponse<?>> investigateDispute(String idObfuscated, SafariStateTransitionDTO dto) {
-        return executeTransition(
-                idObfuscated,
-                SafariState.UNDER_INVESTIGATION,
-                dto != null ? dto.getReason() : "Dispute under investigation",
-                Set.of(SafariState.DISPUTED),
-                "INVESTIGATE_DISPUTE"
-        );
-    }
-
-    /**
-     * Resolve dispute (DISPUTED/UNDER_INVESTIGATION -> resolution state)
+     * Resolve dispute (DISPUTED -> resolution state)
      */
     @Transactional
     public ResponseEntity<ApiResponse<?>> resolveDispute(String idObfuscated, SafariStateTransitionDTO dto) {
@@ -669,23 +696,73 @@ public class SafariStateTransitionService {
             );
         }
 
-        SafariState targetState = dto.getTargetState() != null
-                ? dto.getTargetState()
-                : SafariState.CLOSED;
+        try {
+            Long id = decodeId(idObfuscated);
+            if (id == null) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Invalid safari ID", "INVALID_SAFARI_ID")
+                );
+            }
 
-        return executeTransition(
-                idObfuscated,
-                targetState,
-                dto.getReason(),
-                Set.of(SafariState.DISPUTED, SafariState.UNDER_INVESTIGATION),
-                "RESOLVE_DISPUTE"
-        );
+            Safari safari = safariRepository.findById(id).orElse(null);
+            if (safari == null) {
+                return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
+                );
+            }
+
+            if (safari.getState() != SafariState.DISPUTED) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Can only resolve disputes for safaris in DISPUTED state. Current state: " + safari.getState().getDisplayName(),
+                                "INVALID_STATE_TRANSITION")
+                );
+            }
+
+            // Determine target state: specified in DTO or default to CLOSED
+            SafariState targetState = dto.getTargetState() != null
+                    ? dto.getTargetState()
+                    : SafariState.CLOSED;
+
+            SafariState previousState = safari.getState();
+            safari.changeState(targetState, dto.getReason());
+            Safari savedSafari = safariRepository.save(safari);
+
+            logStateChange(savedSafari.getId(), "RESOLVE_DISPUTE", dto.getReason(),
+                    previousState.name(), targetState.name());
+
+            log.info("Dispute resolved for safari {}, new state: {}", savedSafari.getId(), targetState);
+
+            return ResponseEntity.ok().body(
+                    ApiResponse.success(200, "Dispute resolved successfully", convertToDTO(savedSafari))
+            );
+
+        } catch (Exception e) {
+            log.error("Error resolving dispute", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.error(500, "Failed to resolve dispute", "STATE_TRANSITION_FAILED")
+            );
+        }
     }
 
     // ========================
     // HELPER METHODS
     // ========================
 
+    /**
+     * Check if safari can be submitted for approval
+     */
+    private boolean canSubmitForApproval(Safari safari) {
+        return safari.getItinerary() != null
+                && safari.getStartDate() != null
+                && safari.getEndDate() != null
+                && safari.getTotalPaxCount() > 0
+                && safari.getDays() != null && !safari.getDays().isEmpty();
+    }
+
+    /**
+     * Generic state transition executor
+     */
     private ResponseEntity<ApiResponse<?>> executeTransition(
             String idObfuscated,
             SafariState targetState,
@@ -734,69 +811,6 @@ public class SafariStateTransitionService {
             log.error("Error executing state transition", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                     ApiResponse.error(500, "Failed to change safari state", "STATE_TRANSITION_FAILED")
-            );
-        }
-    }
-
-    private ResponseEntity<ApiResponse<?>> executeTransitionWithPreviousState(
-            String idObfuscated,
-            SafariState targetState,
-            String reason,
-            Set<SafariState> allowedFromStates,
-            String actionName
-    ) {
-        // For states that need to track previous state for returning
-        // This is a simplified implementation - full implementation would store previous state
-        return executeTransition(idObfuscated, targetState, reason, allowedFromStates, actionName);
-    }
-
-    private ResponseEntity<ApiResponse<?>> executeCancellation(
-            String idObfuscated,
-            SafariState cancellationState,
-            String reason,
-            String actionName
-    ) {
-        try {
-            Long id = decodeId(idObfuscated);
-            if (id == null) {
-                return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400, "Invalid safari ID", "INVALID_SAFARI_ID")
-                );
-            }
-
-            Safari safari = safariRepository.findById(id).orElse(null);
-            if (safari == null) {
-                return ResponseEntity.status(404).body(
-                        ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
-                );
-            }
-
-            if (!safari.getState().isCancellable() && safari.getState() != SafariState.CANCELLATION_REQUESTED) {
-                return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400,
-                                "Safari cannot be cancelled in state: " + safari.getState().getDisplayName(),
-                                "NOT_CANCELLABLE")
-                );
-            }
-
-            SafariState previousState = safari.getState();
-            safari.changeState(cancellationState, reason);
-            Safari savedSafari = safariRepository.save(safari);
-
-            logStateChange(savedSafari.getId(), actionName,
-                    "Safari cancelled from " + previousState + ": " + reason,
-                    previousState.name(), cancellationState.name());
-
-            log.info("Safari {} cancelled ({})", savedSafari.getId(), cancellationState);
-
-            return ResponseEntity.ok().body(
-                    ApiResponse.success(200, "Safari cancelled successfully", convertToDTO(savedSafari))
-            );
-
-        } catch (Exception e) {
-            log.error("Error cancelling safari", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.error(500, "Failed to cancel safari", "CANCELLATION_FAILED")
             );
         }
     }

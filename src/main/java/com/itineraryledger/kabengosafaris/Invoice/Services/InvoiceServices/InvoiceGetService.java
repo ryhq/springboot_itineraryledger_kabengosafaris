@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.InvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
-import com.itineraryledger.kabengosafaris.Invoice.Enums.PaymentStatus;
 import com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceRepository;
 import com.itineraryledger.kabengosafaris.Invoice.Specifications.InvoiceSpecification;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
@@ -146,7 +145,6 @@ public class InvoiceGetService {
         String invoiceCode,
         String title,
         InvoiceStatus status,
-        PaymentStatus paymentStatus,
         String customerId,
         String safariId,
         String createdById,
@@ -178,9 +176,6 @@ public class InvoiceGetService {
             }
             if (status != null) {
                 spec = spec.and(InvoiceSpecification.byStatus(status));
-            }
-            if (paymentStatus != null) {
-                spec = spec.and(InvoiceSpecification.byPaymentStatus(paymentStatus));
             }
             if (isActive != null) {
                 spec = spec.and(InvoiceSpecification.byIsActive(isActive));
@@ -325,8 +320,6 @@ public class InvoiceGetService {
             .paidDate(invoice.getPaidDate())
             .status(invoice.getStatus())
             .statusDisplayName(invoice.getStatus().getDisplayName())
-            .paymentStatus(invoice.getPaymentStatus())
-            .paymentStatusDisplayName(invoice.getPaymentStatus().getDisplayName())
             .internalNotes(invoice.getInternalNotes())
             .customerNotes(invoice.getCustomerNotes())
             .paymentTerms(invoice.getPaymentTerms())

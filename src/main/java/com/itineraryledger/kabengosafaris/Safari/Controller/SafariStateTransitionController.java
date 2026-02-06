@@ -12,6 +12,15 @@ import org.springframework.web.bind.annotation.*;
 /**
  * SafariStateTransitionController - REST API endpoints for Safari state transitions
  *
+ * Implements the simplified 14-state Safari workflow:
+ *
+ * Core Journey (9 states):
+ *   DRAFT → PENDING_APPROVAL → APPROVED → CONFIRMED →
+ *   PENDING_PAYMENT → FULLY_PAID → IN_PROGRESS → COMPLETED → CLOSED
+ *
+ * Exception/Special (5 states):
+ *   ON_HOLD, CANCELLED, REFUND_PENDING, REFUND_COMPLETE, DISPUTED
+ *
  * Each endpoint is protected by a specific permission that controls who can
  * perform that state transition. This enables fine-grained access control
  * over the safari booking lifecycle.
@@ -30,13 +39,19 @@ public class SafariStateTransitionController {
     }
 
     // ========================
-    // BOOKING STATE TRANSITIONS
+    // CORE JOURNEY - BOOKING PHASE
     // ========================
 
     /**
      * Submit safari for approval (DRAFT -> PENDING_APPROVAL)
      *
      * POST /api/safaris/{id}/state/submit-for-approval
+     *
+     * Validates:
+     * - Safari has itinerary assigned
+     * - Safari has customer assigned
+     * - Safari has dates set
+     * - Safari has at least 1 pax
      */
     @PostMapping("/submit-for-approval")
     @PreAuthorize("hasAuthority('PERM_SUBMIT_SAFARI_FOR_APPROVAL')")
@@ -65,6 +80,9 @@ public class SafariStateTransitionController {
      * Reject safari booking (PENDING_APPROVAL -> DRAFT)
      *
      * POST /api/safaris/{id}/state/reject
+     *
+     * Request body:
+     * - reason: (required) Detailed explanation for rejection
      */
     @PostMapping("/reject")
     @PreAuthorize("hasAuthority('PERM_REJECT_SAFARI')")
@@ -90,71 +108,37 @@ public class SafariStateTransitionController {
     }
 
     // ========================
-    // PAYMENT STATE TRANSITIONS
+    // CORE JOURNEY - PAYMENT PHASE
     // ========================
 
     /**
-     * Request deposit payment (CONFIRMED -> PENDING_DEPOSIT)
+     * Record safari payment (deposit or full payment)
      *
-     * POST /api/safaris/{id}/state/request-deposit
-     */
-    @PostMapping("/request-deposit")
-    @PreAuthorize("hasAuthority('PERM_REQUEST_SAFARI_DEPOSIT')")
-    public ResponseEntity<ApiResponse<?>> requestDeposit(
-            @PathVariable String id,
-            @RequestBody(required = false) SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.requestDeposit(id, dto);
-    }
-
-    /**
-     * Record deposit payment received (PENDING_DEPOSIT -> DEPOSIT_PAID)
+     * POST /api/safaris/{id}/state/record-payment
      *
-     * POST /api/safaris/{id}/state/record-deposit
-     */
-    @PostMapping("/record-deposit")
-    @PreAuthorize("hasAuthority('PERM_RECORD_SAFARI_DEPOSIT')")
-    public ResponseEntity<ApiResponse<?>> recordDeposit(
-            @PathVariable String id,
-            @RequestBody(required = false) SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.recordDeposit(id, dto);
-    }
-
-    /**
-     * Record full payment received (DEPOSIT_PAID/CONFIRMED -> FULLY_PAID)
+     * State transitions:
+     * - PENDING_PAYMENT -> PENDING_PAYMENT (partial payment/deposit)
+     * - PENDING_PAYMENT -> FULLY_PAID (full payment complete)
      *
-     * POST /api/safaris/{id}/state/record-full-payment
+     * Request body:
+     * - isFullPayment: (required) true for full payment, false for partial/deposit
+     * - notes: (optional) Payment reference, amount, method details
      */
-    @PostMapping("/record-full-payment")
-    @PreAuthorize("hasAuthority('PERM_RECORD_SAFARI_FULL_PAYMENT')")
-    public ResponseEntity<ApiResponse<?>> recordFullPayment(
+    @PostMapping("/record-payment")
+    @PreAuthorize("hasAuthority('PERM_RECORD_SAFARI_PAYMENT')")
+    public ResponseEntity<ApiResponse<?>> recordPayment(
             @PathVariable String id,
-            @RequestBody(required = false) SafariStateTransitionDTO dto
+            @Valid @RequestBody SafariStateTransitionDTO dto
     ) {
-        return stateTransitionService.recordFullPayment(id, dto);
+        return stateTransitionService.recordPayment(id, dto);
     }
 
     // ========================
-    // OPERATIONAL STATE TRANSITIONS
+    // CORE JOURNEY - OPERATIONAL PHASE
     // ========================
 
     /**
-     * Mark safari as ready to commence (FULLY_PAID -> READY)
-     *
-     * POST /api/safaris/{id}/state/mark-ready
-     */
-    @PostMapping("/mark-ready")
-    @PreAuthorize("hasAuthority('PERM_MARK_SAFARI_READY')")
-    public ResponseEntity<ApiResponse<?>> markReady(
-            @PathVariable String id,
-            @RequestBody(required = false) SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.markReady(id, dto);
-    }
-
-    /**
-     * Start safari (READY -> IN_PROGRESS)
+     * Start safari (FULLY_PAID -> IN_PROGRESS)
      *
      * POST /api/safaris/{id}/state/start
      */
@@ -182,25 +166,11 @@ public class SafariStateTransitionController {
     }
 
     // ========================
-    // POST-SAFARI STATE TRANSITIONS
+    // CORE JOURNEY - POST-SAFARI PHASE
     // ========================
 
     /**
-     * Request review (COMPLETED -> PENDING_REVIEW)
-     *
-     * POST /api/safaris/{id}/state/request-review
-     */
-    @PostMapping("/request-review")
-    @PreAuthorize("hasAuthority('PERM_REQUEST_SAFARI_REVIEW')")
-    public ResponseEntity<ApiResponse<?>> requestReview(
-            @PathVariable String id,
-            @RequestBody(required = false) SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.requestReview(id, dto);
-    }
-
-    /**
-     * Close safari (COMPLETED/PENDING_REVIEW -> CLOSED)
+     * Close safari after all post-trip tasks are complete (COMPLETED -> CLOSED)
      *
      * POST /api/safaris/{id}/state/close
      */
@@ -214,13 +184,19 @@ public class SafariStateTransitionController {
     }
 
     // ========================
-    // HOLD/PAUSE STATE TRANSITIONS
+    // EXCEPTION STATES - HOLD MANAGEMENT
     // ========================
 
     /**
      * Put safari on hold (multiple states -> ON_HOLD)
      *
      * POST /api/safaris/{id}/state/hold
+     *
+     * Request body:
+     * - holdReason: (required) Enum value - PENDING_DOCUMENTS, PENDING_AVAILABILITY,
+     *               RESCHEDULING, CLIENT_REQUEST, PAYMENT_ISSUE, OPERATIONAL_ISSUE, OTHER
+     * - reason: (required) Detailed explanation
+     * - notes: (optional) Additional context
      */
     @PostMapping("/hold")
     @PreAuthorize("hasAuthority('PERM_HOLD_SAFARI')")
@@ -232,9 +208,13 @@ public class SafariStateTransitionController {
     }
 
     /**
-     * Release hold (ON_HOLD -> previous state or CONFIRMED)
+     * Release safari from hold (ON_HOLD -> previous state or target state)
      *
      * POST /api/safaris/{id}/state/release-hold
+     *
+     * Request body:
+     * - targetState: (optional) Specific state to transition to (e.g., CONFIRMED)
+     *                If not provided, returns to previous state before hold
      */
     @PostMapping("/release-hold")
     @PreAuthorize("hasAuthority('PERM_RELEASE_SAFARI_HOLD')")
@@ -245,130 +225,20 @@ public class SafariStateTransitionController {
         return stateTransitionService.releaseHold(id, dto);
     }
 
-    /**
-     * Mark pending documents (multiple states -> PENDING_DOCUMENTS)
-     *
-     * POST /api/safaris/{id}/state/pending-documents
-     */
-    @PostMapping("/pending-documents")
-    @PreAuthorize("hasAuthority('PERM_MARK_SAFARI_PENDING_DOCUMENTS')")
-    public ResponseEntity<ApiResponse<?>> markPendingDocuments(
-            @PathVariable String id,
-            @Valid @RequestBody SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.markPendingDocuments(id, dto);
-    }
-
-    /**
-     * Mark documents received (PENDING_DOCUMENTS -> previous state or CONFIRMED)
-     *
-     * POST /api/safaris/{id}/state/documents-received
-     */
-    @PostMapping("/documents-received")
-    @PreAuthorize("hasAuthority('PERM_MARK_SAFARI_DOCUMENTS_RECEIVED')")
-    public ResponseEntity<ApiResponse<?>> markDocumentsReceived(
-            @PathVariable String id,
-            @RequestBody(required = false) SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.markDocumentsReceived(id, dto);
-    }
-
-    /**
-     * Mark pending availability (multiple states -> PENDING_AVAILABILITY)
-     *
-     * POST /api/safaris/{id}/state/pending-availability
-     */
-    @PostMapping("/pending-availability")
-    @PreAuthorize("hasAuthority('PERM_MARK_SAFARI_PENDING_AVAILABILITY')")
-    public ResponseEntity<ApiResponse<?>> markPendingAvailability(
-            @PathVariable String id,
-            @Valid @RequestBody SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.markPendingAvailability(id, dto);
-    }
-
-    /**
-     * Mark availability confirmed (PENDING_AVAILABILITY -> previous state or CONFIRMED)
-     *
-     * POST /api/safaris/{id}/state/availability-confirmed
-     */
-    @PostMapping("/availability-confirmed")
-    @PreAuthorize("hasAuthority('PERM_MARK_SAFARI_AVAILABILITY_CONFIRMED')")
-    public ResponseEntity<ApiResponse<?>> markAvailabilityConfirmed(
-            @PathVariable String id,
-            @RequestBody(required = false) SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.markAvailabilityConfirmed(id, dto);
-    }
-
     // ========================
-    // RESCHEDULE STATE TRANSITIONS
+    // EXCEPTION STATES - CANCELLATION
     // ========================
 
     /**
-     * Postpone safari (multiple states -> POSTPONED)
-     *
-     * POST /api/safaris/{id}/state/postpone
-     */
-    @PostMapping("/postpone")
-    @PreAuthorize("hasAuthority('PERM_POSTPONE_SAFARI')")
-    public ResponseEntity<ApiResponse<?>> postponeSafari(
-            @PathVariable String id,
-            @Valid @RequestBody SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.postponeSafari(id, dto);
-    }
-
-    /**
-     * Initiate reschedule (multiple states -> RESCHEDULING)
-     *
-     * POST /api/safaris/{id}/state/initiate-reschedule
-     */
-    @PostMapping("/initiate-reschedule")
-    @PreAuthorize("hasAuthority('PERM_INITIATE_SAFARI_RESCHEDULE')")
-    public ResponseEntity<ApiResponse<?>> initiateReschedule(
-            @PathVariable String id,
-            @Valid @RequestBody SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.initiateReschedule(id, dto);
-    }
-
-    /**
-     * Complete reschedule with new dates (RESCHEDULING -> CONFIRMED)
-     *
-     * POST /api/safaris/{id}/state/complete-reschedule
-     */
-    @PostMapping("/complete-reschedule")
-    @PreAuthorize("hasAuthority('PERM_COMPLETE_SAFARI_RESCHEDULE')")
-    public ResponseEntity<ApiResponse<?>> completeReschedule(
-            @PathVariable String id,
-            @Valid @RequestBody SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.completeReschedule(id, dto);
-    }
-
-    // ========================
-    // CANCELLATION STATE TRANSITIONS
-    // ========================
-
-    /**
-     * Request cancellation (multiple states -> CANCELLATION_REQUESTED)
-     *
-     * POST /api/safaris/{id}/state/request-cancellation
-     */
-    @PostMapping("/request-cancellation")
-    @PreAuthorize("hasAuthority('PERM_REQUEST_SAFARI_CANCELLATION')")
-    public ResponseEntity<ApiResponse<?>> requestCancellation(
-            @PathVariable String id,
-            @Valid @RequestBody SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.requestCancellation(id, dto);
-    }
-
-    /**
-     * Cancel safari (generic cancellation)
+     * Cancel safari (multiple states -> CANCELLED)
      *
      * POST /api/safaris/{id}/state/cancel
+     *
+     * Request body:
+     * - cancellationReason: (required) Enum value - BY_CLIENT, BY_OPERATOR, FORCE_MAJEURE,
+     *                       PAYMENT_FAILURE, NO_AVAILABILITY, OTHER
+     * - reason: (required) Detailed explanation
+     * - notes: (optional) Additional context
      */
     @PostMapping("/cancel")
     @PreAuthorize("hasAuthority('PERM_CANCEL_SAFARI')")
@@ -379,54 +249,12 @@ public class SafariStateTransitionController {
         return stateTransitionService.cancelSafari(id, dto);
     }
 
-    /**
-     * Cancel safari by client (-> CANCELLED_BY_CLIENT)
-     *
-     * POST /api/safaris/{id}/state/cancel-by-client
-     */
-    @PostMapping("/cancel-by-client")
-    @PreAuthorize("hasAuthority('PERM_CANCEL_SAFARI_BY_CLIENT')")
-    public ResponseEntity<ApiResponse<?>> cancelByClient(
-            @PathVariable String id,
-            @Valid @RequestBody SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.cancelByClient(id, dto);
-    }
-
-    /**
-     * Cancel safari by operator (-> CANCELLED_BY_OPERATOR)
-     *
-     * POST /api/safaris/{id}/state/cancel-by-operator
-     */
-    @PostMapping("/cancel-by-operator")
-    @PreAuthorize("hasAuthority('PERM_CANCEL_SAFARI_BY_OPERATOR')")
-    public ResponseEntity<ApiResponse<?>> cancelByOperator(
-            @PathVariable String id,
-            @Valid @RequestBody SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.cancelByOperator(id, dto);
-    }
-
-    /**
-     * Cancel safari due to force majeure (-> CANCELLED_FORCE_MAJEURE)
-     *
-     * POST /api/safaris/{id}/state/cancel-force-majeure
-     */
-    @PostMapping("/cancel-force-majeure")
-    @PreAuthorize("hasAuthority('PERM_CANCEL_SAFARI_FORCE_MAJEURE')")
-    public ResponseEntity<ApiResponse<?>> cancelForceMajeure(
-            @PathVariable String id,
-            @Valid @RequestBody SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.cancelForceMajeure(id, dto);
-    }
-
     // ========================
-    // REFUND STATE TRANSITIONS
+    // EXCEPTION STATES - REFUND MANAGEMENT
     // ========================
 
     /**
-     * Initiate refund (CANCELLED_* -> REFUND_PENDING)
+     * Initiate refund process (CANCELLED -> REFUND_PENDING)
      *
      * POST /api/safaris/{id}/state/initiate-refund
      */
@@ -440,41 +268,38 @@ public class SafariStateTransitionController {
     }
 
     /**
-     * Record partial refund (REFUND_PENDING -> REFUND_PARTIAL)
+     * Record safari refund (partial or final)
      *
-     * POST /api/safaris/{id}/state/record-partial-refund
+     * POST /api/safaris/{id}/state/record-refund
+     *
+     * State transitions:
+     * - REFUND_PENDING -> REFUND_PENDING (partial refund)
+     * - REFUND_PENDING -> REFUND_COMPLETE (final refund)
+     *
+     * Request body:
+     * - isFinalRefund: (optional) true for final refund, false for partial. Defaults to true.
+     * - notes: (optional) Refund reference, amount, method details
      */
-    @PostMapping("/record-partial-refund")
-    @PreAuthorize("hasAuthority('PERM_RECORD_SAFARI_PARTIAL_REFUND')")
-    public ResponseEntity<ApiResponse<?>> recordPartialRefund(
+    @PostMapping("/record-refund")
+    @PreAuthorize("hasAuthority('PERM_RECORD_SAFARI_REFUND')")
+    public ResponseEntity<ApiResponse<?>> recordRefund(
             @PathVariable String id,
             @RequestBody(required = false) SafariStateTransitionDTO dto
     ) {
-        return stateTransitionService.recordPartialRefund(id, dto);
-    }
-
-    /**
-     * Record full refund (REFUND_PENDING/REFUND_PARTIAL -> REFUND_COMPLETE)
-     *
-     * POST /api/safaris/{id}/state/record-full-refund
-     */
-    @PostMapping("/record-full-refund")
-    @PreAuthorize("hasAuthority('PERM_RECORD_SAFARI_FULL_REFUND')")
-    public ResponseEntity<ApiResponse<?>> recordFullRefund(
-            @PathVariable String id,
-            @RequestBody(required = false) SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.recordFullRefund(id, dto);
+        return stateTransitionService.recordRefund(id, dto);
     }
 
     // ========================
-    // DISPUTE STATE TRANSITIONS
+    // EXCEPTION STATES - DISPUTE RESOLUTION
     // ========================
 
     /**
      * Mark safari as disputed (multiple states -> DISPUTED)
      *
      * POST /api/safaris/{id}/state/mark-disputed
+     *
+     * Request body:
+     * - reason: (required) Description of the dispute
      */
     @PostMapping("/mark-disputed")
     @PreAuthorize("hasAuthority('PERM_MARK_SAFARI_DISPUTED')")
@@ -486,23 +311,13 @@ public class SafariStateTransitionController {
     }
 
     /**
-     * Start investigation (DISPUTED -> UNDER_INVESTIGATION)
-     *
-     * POST /api/safaris/{id}/state/investigate-dispute
-     */
-    @PostMapping("/investigate-dispute")
-    @PreAuthorize("hasAuthority('PERM_INVESTIGATE_SAFARI_DISPUTE')")
-    public ResponseEntity<ApiResponse<?>> investigateDispute(
-            @PathVariable String id,
-            @RequestBody(required = false) SafariStateTransitionDTO dto
-    ) {
-        return stateTransitionService.investigateDispute(id, dto);
-    }
-
-    /**
-     * Resolve dispute (DISPUTED/UNDER_INVESTIGATION -> resolution state)
+     * Resolve dispute (DISPUTED -> resolution state)
      *
      * POST /api/safaris/{id}/state/resolve-dispute
+     *
+     * Request body:
+     * - targetState: (required) Resolution state - CLOSED, REFUND_PENDING, or REFUND_COMPLETE
+     * - reason: (required) Resolution explanation
      */
     @PostMapping("/resolve-dispute")
     @PreAuthorize("hasAuthority('PERM_RESOLVE_SAFARI_DISPUTE')")

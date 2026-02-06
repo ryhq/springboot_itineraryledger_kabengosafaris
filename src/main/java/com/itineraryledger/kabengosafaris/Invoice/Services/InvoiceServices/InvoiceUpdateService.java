@@ -7,10 +7,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.InvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.UpdateInvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
+import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
 import com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceRepository;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -66,52 +70,116 @@ public class InvoiceUpdateService {
                 );
             }
 
-            // Update title
-            if (updateDTO.getTitle() != null) {
-                invoice.setTitle(updateDTO.getTitle());
+            InvoiceStatus currentStatus = invoice.getStatus();
+
+            // ========================
+            // WORKFLOW ENFORCEMENT
+            // ========================
+
+            // 1. Block direct status changes - must use workflow endpoints
+            if (updateDTO.getStatus() != null && updateDTO.getStatus() != currentStatus) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400,
+                        "Cannot change invoice status directly. Use the workflow endpoints at /api/invoices/{id}/state/* " +
+                        "(e.g., /send, /record-payment, /cancel).",
+                        "DIRECT_STATUS_CHANGE_BLOCKED")
+                );
             }
 
-            // Update description
+            // 2. Block ALL edits to payment and final state invoices
+            if (currentStatus == InvoiceStatus.PARTIALLY_PAID ||
+                currentStatus == InvoiceStatus.PAID ||
+                currentStatus == InvoiceStatus.OVERDUE ||
+                currentStatus == InvoiceStatus.CANCELLED ||
+                currentStatus == InvoiceStatus.REFUNDED) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400,
+                        String.format("Cannot edit %s invoice. Payment and final state invoices are read-only.",
+                            currentStatus.getDisplayName()),
+                        "EDIT_BLOCKED")
+                );
+            }
+
+            // 3. SENT/VIEWED invoices can only edit non-critical fields
+            if (currentStatus == InvoiceStatus.SENT || currentStatus == InvoiceStatus.VIEWED) {
+                List<String> blockedFields = new ArrayList<>();
+
+                // Check if critical fields are being changed
+                if (updateDTO.getTitle() != null && !updateDTO.getTitle().equals(invoice.getTitle())) {
+                    blockedFields.add("title");
+                }
+                if (updateDTO.getTaxPercentage() != null && !updateDTO.getTaxPercentage().equals(invoice.getTaxPercentage())) {
+                    blockedFields.add("taxPercentage");
+                }
+                if (updateDTO.getDiscountPercentage() != null && !updateDTO.getDiscountPercentage().equals(invoice.getDiscountPercentage())) {
+                    blockedFields.add("discountPercentage");
+                }
+                if (updateDTO.getIssueDate() != null && !updateDTO.getIssueDate().equals(invoice.getIssueDate())) {
+                    blockedFields.add("issueDate");
+                }
+                if (updateDTO.getDueDate() != null && !updateDTO.getDueDate().equals(invoice.getDueDate())) {
+                    blockedFields.add("dueDate");
+                }
+                if (updateDTO.getSentDate() != null && !updateDTO.getSentDate().equals(invoice.getSentDate())) {
+                    blockedFields.add("sentDate");
+                }
+                if (updateDTO.getPaidDate() != null && !updateDTO.getPaidDate().equals(invoice.getPaidDate())) {
+                    blockedFields.add("paidDate");
+                }
+
+                if (!blockedFields.isEmpty()) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                            String.format("Cannot modify critical fields (%s) on %s invoice. " +
+                                         "Only description, customerNotes, internalNotes, paymentTerms, and isActive can be edited.",
+                                String.join(", ", blockedFields),
+                                currentStatus.getDisplayName()),
+                            "SENT_EDIT_BLOCKED")
+                    );
+                }
+            }
+
+            // ========================
+            // UPDATE ALLOWED FIELDS
+            // ========================
+
+            // DRAFT: Can update all fields
+            // SENT/VIEWED: Can only update non-critical fields (enforced above)
+
+            if (currentStatus == InvoiceStatus.DRAFT) {
+                // Update title (DRAFT only)
+                if (updateDTO.getTitle() != null) {
+                    invoice.setTitle(updateDTO.getTitle());
+                }
+
+                // Update pricing fields (DRAFT only)
+                if (updateDTO.getTaxPercentage() != null) {
+                    invoice.setTaxPercentage(updateDTO.getTaxPercentage());
+                }
+                if (updateDTO.getDiscountPercentage() != null) {
+                    invoice.setDiscountPercentage(updateDTO.getDiscountPercentage());
+                }
+
+                // Update dates (DRAFT only)
+                if (updateDTO.getIssueDate() != null) {
+                    invoice.setIssueDate(updateDTO.getIssueDate());
+                }
+                if (updateDTO.getDueDate() != null) {
+                    invoice.setDueDate(updateDTO.getDueDate());
+                }
+            }
+
+            // Update description (allowed in DRAFT, SENT, VIEWED)
             if (updateDTO.getDescription() != null) {
                 invoice.setDescription(updateDTO.getDescription());
             }
 
-            // Update pricing fields
-            if (updateDTO.getTaxPercentage() != null) {
-                invoice.setTaxPercentage(updateDTO.getTaxPercentage());
-            }
-            if (updateDTO.getDiscountPercentage() != null) {
-                invoice.setDiscountPercentage(updateDTO.getDiscountPercentage());
-            }
-            if (updateDTO.getDiscountReason() != null) {
+            // Update discount reason (allowed in DRAFT)
+            if (updateDTO.getDiscountReason() != null && currentStatus == InvoiceStatus.DRAFT) {
                 invoice.setDiscountReason(updateDTO.getDiscountReason());
             }
 
-            // Update status
-            if (updateDTO.getStatus() != null) {
-                invoice.setStatus(updateDTO.getStatus());
-            }
-
-            // Update payment status
-            if (updateDTO.getPaymentStatus() != null) {
-                invoice.setPaymentStatus(updateDTO.getPaymentStatus());
-            }
-
-            // Update dates
-            if (updateDTO.getIssueDate() != null) {
-                invoice.setIssueDate(updateDTO.getIssueDate());
-            }
-            if (updateDTO.getDueDate() != null) {
-                invoice.setDueDate(updateDTO.getDueDate());
-            }
-            if (updateDTO.getSentDate() != null) {
-                invoice.setSentDate(updateDTO.getSentDate());
-            }
-            if (updateDTO.getPaidDate() != null) {
-                invoice.setPaidDate(updateDTO.getPaidDate());
-            }
-
-            // Update notes
+            // Update notes (allowed in DRAFT, SENT, VIEWED)
             if (updateDTO.getInternalNotes() != null) {
                 invoice.setInternalNotes(updateDTO.getInternalNotes());
             }
@@ -122,7 +190,7 @@ public class InvoiceUpdateService {
                 invoice.setPaymentTerms(updateDTO.getPaymentTerms());
             }
 
-            // Update isActive
+            // Update isActive (allowed in DRAFT, SENT, VIEWED)
             if (updateDTO.getIsActive() != null) {
                 invoice.setIsActive(updateDTO.getIsActive());
             }
@@ -183,8 +251,6 @@ public class InvoiceUpdateService {
             .paidDate(invoice.getPaidDate())
             .status(invoice.getStatus())
             .statusDisplayName(invoice.getStatus().getDisplayName())
-            .paymentStatus(invoice.getPaymentStatus())
-            .paymentStatusDisplayName(invoice.getPaymentStatus().getDisplayName())
             .internalNotes(invoice.getInternalNotes())
             .customerNotes(invoice.getCustomerNotes())
             .paymentTerms(invoice.getPaymentTerms())
