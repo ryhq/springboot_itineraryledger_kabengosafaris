@@ -1,22 +1,52 @@
 {
   "customPermissions": [
     {
+      "name": "READ_ACCOMMODATION_RATE_MATRIX",
+      "action": "READ",
+      "entity": "ACCOMMODATION_RATE",
+      "description": "Allows viewing the accommodation rate matrix including seasons, room types, room standards, and board types"
+    },
+    {
       "name": "READ_ACTIVITY_TARIFF_RATE_MATRIX",
       "action": "READ",
       "entity": "ACTIVITY_TARIFF_RATE",
       "description": "Allows viewing the activity tariff rate matrix including seasons, age categories, and nation categories"
     },
     {
-      "name": "READ_PARK_TARIFF_RATE_MATRIX",
-      "action": "READ",
-      "entity": "PARK_TARIFF_RATE",
-      "description": "Allows viewing the park tariff rate matrix including seasons, age categories, and nation categories"
+      "name": "SEND_INVOICE",
+      "action": "UPDATE",
+      "entity": "INVOICE",
+      "description": "Allows sending an invoice to customer (DRAFT -> SENT)"
     },
     {
-      "name": "READ_ACCOMMODATION_RATE_MATRIX",
-      "action": "READ",
-      "entity": "ACCOMMODATION_RATE",
-      "description": "Allows viewing the accommodation rate matrix including seasons, room types, room standards, and board types"
+      "name": "MARK_INVOICE_VIEWED",
+      "action": "UPDATE",
+      "entity": "INVOICE",
+      "description": "Allows marking an invoice as viewed by customer (SENT -> VIEWED)"
+    },
+    {
+      "name": "RECORD_INVOICE_PAYMENT",
+      "action": "UPDATE",
+      "entity": "INVOICE",
+      "description": "Allows recording invoice payment (partial or full) (-> PARTIALLY_PAID or PAID)"
+    },
+    {
+      "name": "MARK_INVOICE_OVERDUE",
+      "action": "UPDATE",
+      "entity": "INVOICE",
+      "description": "Allows marking an invoice as overdue (-> OVERDUE)"
+    },
+    {
+      "name": "CANCEL_INVOICE",
+      "action": "CANCEL",
+      "entity": "INVOICE",
+      "description": "Allows cancelling an invoice (-> CANCELLED)"
+    },
+    {
+      "name": "INITIATE_INVOICE_REFUND",
+      "action": "UPDATE",
+      "entity": "INVOICE",
+      "description": "Allows initiating refund process (PAID/PARTIALLY_PAID -> REFUNDED)"
     },
     {
       "name": "COMPLETE_ITINERARY",
@@ -65,6 +95,78 @@
       "action": "CREATE",
       "entity": "ITINERARY",
       "description": "Allows duplicating an existing itinerary as a new template"
+    },
+    {
+      "name": "READ_PARK_TARIFF_RATE_MATRIX",
+      "action": "READ",
+      "entity": "PARK_TARIFF_RATE",
+      "description": "Allows viewing the park tariff rate matrix including seasons, age categories, and nation categories"
+    },
+    {
+      "name": "GENERATE_PDF",
+      "action": "CREATE",
+      "entity": "PDF_TEMPLATE",
+      "description": "Allows generating PDF documents from templates"
+    },
+    {
+      "name": "SEND_QUOTATION",
+      "action": "UPDATE",
+      "entity": "QUOTATION",
+      "description": "Allows sending a quotation to the customer (DRAFT -> SENT)"
+    },
+    {
+      "name": "READ_FULL_QUOTATION",
+      "action": "READ",
+      "entity": "QUOTATION",
+      "description": "Allows viewing complete quotation with all nested data (pax list, line items)"
+    },
+    {
+      "name": "READY_QUOTE",
+      "action": "UPDATE",
+      "entity": "QUOTE",
+      "description": "Allows marking a quote as ready to send to customer"
+    },
+    {
+      "name": "SEND_QUOTE",
+      "action": "UPDATE",
+      "entity": "QUOTE",
+      "description": "Allows sending a quote to customer (marks as SENT)"
+    },
+    {
+      "name": "ACCEPT_QUOTE",
+      "action": "UPDATE",
+      "entity": "QUOTE",
+      "description": "Allows marking a quote as accepted by customer"
+    },
+    {
+      "name": "REJECT_QUOTE",
+      "action": "UPDATE",
+      "entity": "QUOTE",
+      "description": "Allows marking a quote as rejected by customer"
+    },
+    {
+      "name": "EXPIRE_QUOTE",
+      "action": "UPDATE",
+      "entity": "QUOTE",
+      "description": "Allows marking a quote as expired"
+    },
+    {
+      "name": "CANCEL_QUOTE",
+      "action": "CANCEL",
+      "entity": "QUOTE",
+      "description": "Allows cancelling a quote"
+    },
+    {
+      "name": "REVERT_QUOTE_TO_DRAFT",
+      "action": "UPDATE",
+      "entity": "QUOTE",
+      "description": "Allows reverting a quote back to draft status from ready or sent"
+    },
+    {
+      "name": "CONVERT_QUOTE",
+      "action": "UPDATE",
+      "entity": "QUOTE",
+      "description": "Allows converting an accepted quote to a booking/safari"
     },
     {
       "name": "SUBMIT_SAFARI_FOR_APPROVAL",
@@ -157,16 +259,16 @@
       "description": "Allows resolving a safari dispute (DISPUTED -> CLOSED or REFUND_PENDING or REFUND_COMPLETE)"
     },
     {
+      "name": "CONVERT_QUOTATION_TO_SAFARI",
+      "action": "CREATE",
+      "entity": "SAFARI",
+      "description": "Allows converting an accepted quotation into a Safari booking"
+    },
+    {
       "name": "READ_FULL_SAFARI",
       "action": "READ",
       "entity": "SAFARI",
       "description": "Allows viewing complete safari with all nested data (days, parks, accommodations, pax)"
-    },
-    {
-      "name": "GENERATE_PDF",
-      "action": "CREATE",
-      "entity": "PDF_TEMPLATE",
-      "description": "Allows generating PDF documents from templates"
     },
     {
       "name": "READ_TRANSLATION_CACHE_STATS",
@@ -185,108 +287,6 @@
       "action": "EXECUTE",
       "entity": "TRANSLATION_SETTING",
       "description": "Allows testing the translation service connection"
-    },
-    {
-      "name": "SEND_QUOTATION",
-      "action": "UPDATE",
-      "entity": "QUOTATION",
-      "description": "Allows sending a quotation to the customer (DRAFT -> SENT)"
-    },
-    {
-      "name": "CONVERT_QUOTATION_TO_SAFARI",
-      "action": "CREATE",
-      "entity": "SAFARI",
-      "description": "Allows converting an accepted quotation into a Safari booking"
-    },
-    {
-      "name": "READ_FULL_QUOTATION",
-      "action": "READ",
-      "entity": "QUOTATION",
-      "description": "Allows viewing complete quotation with all nested data (pax list, line items)"
-    },
-    {
-      "name": "READY_QUOTE",
-      "action": "UPDATE",
-      "entity": "QUOTE",
-      "description": "Allows marking a quote as ready to send to customer"
-    },
-    {
-      "name": "SEND_QUOTE",
-      "action": "UPDATE",
-      "entity": "QUOTE",
-      "description": "Allows sending a quote to customer (marks as SENT)"
-    },
-    {
-      "name": "ACCEPT_QUOTE",
-      "action": "UPDATE",
-      "entity": "QUOTE",
-      "description": "Allows marking a quote as accepted by customer"
-    },
-    {
-      "name": "REJECT_QUOTE",
-      "action": "UPDATE",
-      "entity": "QUOTE",
-      "description": "Allows marking a quote as rejected by customer"
-    },
-    {
-      "name": "EXPIRE_QUOTE",
-      "action": "UPDATE",
-      "entity": "QUOTE",
-      "description": "Allows marking a quote as expired"
-    },
-    {
-      "name": "CANCEL_QUOTE",
-      "action": "CANCEL",
-      "entity": "QUOTE",
-      "description": "Allows cancelling a quote"
-    },
-    {
-      "name": "REVERT_QUOTE_TO_DRAFT",
-      "action": "UPDATE",
-      "entity": "QUOTE",
-      "description": "Allows reverting a quote back to draft status from ready or sent"
-    },
-    {
-      "name": "CONVERT_QUOTE",
-      "action": "UPDATE",
-      "entity": "QUOTE",
-      "description": "Allows converting an accepted quote to a booking/safari"
-    },
-    {
-      "name": "SEND_INVOICE",
-      "action": "UPDATE",
-      "entity": "INVOICE",
-      "description": "Allows sending an invoice to customer (DRAFT -> SENT)"
-    },
-    {
-      "name": "MARK_INVOICE_VIEWED",
-      "action": "UPDATE",
-      "entity": "INVOICE",
-      "description": "Allows marking an invoice as viewed by customer (SENT -> VIEWED)"
-    },
-    {
-      "name": "RECORD_INVOICE_PAYMENT",
-      "action": "UPDATE",
-      "entity": "INVOICE",
-      "description": "Allows recording invoice payment (partial or full) (-> PARTIALLY_PAID or PAID)"
-    },
-    {
-      "name": "MARK_INVOICE_OVERDUE",
-      "action": "UPDATE",
-      "entity": "INVOICE",
-      "description": "Allows marking an invoice as overdue (-> OVERDUE)"
-    },
-    {
-      "name": "CANCEL_INVOICE",
-      "action": "CANCEL",
-      "entity": "INVOICE",
-      "description": "Allows cancelling an invoice (-> CANCELLED)"
-    },
-    {
-      "name": "INITIATE_INVOICE_REFUND",
-      "action": "UPDATE",
-      "entity": "INVOICE",
-      "description": "Allows initiating refund process (PAID/PARTIALLY_PAID -> REFUNDED)"
     }
   ]
 }

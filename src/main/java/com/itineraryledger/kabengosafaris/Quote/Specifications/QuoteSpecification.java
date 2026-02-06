@@ -141,22 +141,38 @@ public class QuoteSpecification {
         return (root, query, cb) -> cb.equal(root.get("status"), QuoteStatus.DRAFT);
     }
 
+    /**
+     * Filter quotes that are ready to send or waiting for customer action
+     * READY: Ready to send to customer
+     * SENT: Sent and awaiting customer response
+     */
     public static Specification<Quote> byPendingStatuses() {
         return (root, query, cb) -> cb.or(
-            cb.equal(root.get("status"), QuoteStatus.PENDING_REVIEW),
-            cb.equal(root.get("status"), QuoteStatus.CUSTOMER_REVIEWING),
-            cb.equal(root.get("status"), QuoteStatus.CUSTOMER_REQUESTED_CHANGES)
+            cb.equal(root.get("status"), QuoteStatus.READY),
+            cb.equal(root.get("status"), QuoteStatus.SENT)
         );
     }
 
+    /**
+     * Filter quotes that are in active circulation (ready to send or sent)
+     * READY: Ready to send to customer
+     * SENT: Sent to customer and active
+     */
     public static Specification<Quote> byActiveStatuses() {
         return (root, query, cb) -> cb.or(
-            cb.equal(root.get("status"), QuoteStatus.SENT),
-            cb.equal(root.get("status"), QuoteStatus.CUSTOMER_REVIEWING),
-            cb.equal(root.get("status"), QuoteStatus.REVISED)
+            cb.equal(root.get("status"), QuoteStatus.READY),
+            cb.equal(root.get("status"), QuoteStatus.SENT)
         );
     }
 
+    /**
+     * Filter quotes that have reached a final state
+     * ACCEPTED: Customer accepted
+     * REJECTED: Customer rejected
+     * EXPIRED: Quote validity period expired
+     * CANCELLED: Quote cancelled
+     * CONVERTED: Converted to booking/safari
+     */
     public static Specification<Quote> byClosedStatuses() {
         return (root, query, cb) -> cb.or(
             cb.equal(root.get("status"), QuoteStatus.ACCEPTED),
