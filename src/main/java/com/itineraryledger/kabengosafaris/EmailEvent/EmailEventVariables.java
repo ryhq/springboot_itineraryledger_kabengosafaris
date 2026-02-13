@@ -1,5 +1,12 @@
 package com.itineraryledger.kabengosafaris.EmailEvent;
 
+import org.springframework.core.io.ClassPathResource;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Defines system-wide variables for each email event.
  * These variables are immutable and cannot be modified via API.
@@ -14,6 +21,11 @@ package com.itineraryledger.kabengosafaris.EmailEvent;
 public class EmailEventVariables {
 
     /**
+     * Cache for loaded schemas to avoid repeated file reads
+     */
+    private static final Map<String, String> SCHEMA_CACHE = new HashMap<>();
+
+    /**
      * Get the system-defined variables for a specific email event
      *
      * @param eventName The name of the email event (e.g., "USER_REGISTRATION")
@@ -21,122 +33,37 @@ public class EmailEventVariables {
      */
     public static String getVariablesForEvent(String eventName) {
         return switch (eventName) {
-            case "USER_REGISTRATION" -> """
-                [
-                    {
-                        "name":"username",
-                        "description":"User's username",
-                        "isRequired":true
-                    },
-                    {
-                        "name":"email",
-                        "description":"User's email address",
-                        "isRequired":false
-                    },
-                    {
-                        "name":"firstName",
-                        "description":"User's first name",
-                        "isRequired":false
-                    },
-                    {
-                        "name":"lastName",
-                        "description":"User's last name",
-                        "isRequired":false
-                    },
-                    {
-                        "name":"phoneNumber",
-                        "description":"User's phone number",
-                        "isRequired":false
-                    },
-                    {
-                        "name":"enabled",
-                        "description":"Whether the user account is enabled",
-                        "isRequired":false
-                    },
-                    {
-                        "name":"accountLocked",
-                        "description":"Whether the user account is locked",
-                        "isRequired":false
-                    },
-                    {
-                        "name":"createdAt",
-                        "description":"Date and time when the user account was created",
-                        "isRequired":false
-                    },
-                    {
-                        "name":"activationToken",
-                        "description":"Account activation token (JWT)",
-                        "isRequired":true
-                    },
-                    {
-                        "name":"activationLink",
-                        "description":"Full account activation URL with token",
-                        "isRequired":true
-                    },
-                    {
-                        "name":"expirationHours",
-                        "description":"Number of hours until activation link expires",
-                        "isRequired":true
-                    },
-                    {
-                        "name":"expirationDateTime",
-                        "description":"Exact date and time when activation link expires (yyyy-MM-dd HH:mm:ss format)",
-                        "isRequired":true
-                    }
-                ]
-                """;
-
-            case "PASSWORD_RESET" -> """
-                [
-                    {
-                        "name":"username",
-                        "description":"User's username",
-                        "isRequired":true
-                    },
-                    {
-                        "name":"email",
-                        "description":"User's email address",
-                        "isRequired":true
-                    },
-                    {
-                        "name":"firstName",
-                        "description":"User's first name",
-                        "isRequired":false
-                    },
-                    {
-                        "name":"lastName",
-                        "description":"User's last name",
-                        "isRequired":false
-                    },
-                    {
-                        "name":"resetToken",
-                        "description":"Password reset token (JWT)",
-                        "isRequired":true
-                    },
-                    {
-                        "name":"resetLink",
-                        "description":"Full password reset URL with token",
-                        "isRequired":true
-                    },
-                    {
-                        "name":"expirationMinutes",
-                        "description":"Number of minutes until reset link expires",
-                        "isRequired":true
-                    },
-                    {
-                        "name":"expirationDateTime",
-                        "description":"Exact date and time when reset link expires (yyyy-MM-dd HH:mm:ss format)",
-                        "isRequired":true
-                    },
-                    {
-                        "name":"requestedAt",
-                        "description":"Date and time when password reset was requested",
-                        "isRequired":false
-                    }
-                ]
-                """;
-
+            case "USER_REGISTRATION" -> loadSchema("user-registration-schema.json");
+            case "PASSWORD_RESET" -> loadSchema("password-reset-schema.json");
+            case "BACKUP_SUCCESS" -> loadSchema("backup-success-schema.json");
+            case "BACKUP_FAILURE" -> loadSchema("backup-failure-schema.json");
             default -> "[]";
+        };
+    }
+
+    /**
+     * Get the display name for an email event
+     */
+    public static String getDisplayName(String eventName) {
+        return switch (eventName) {
+            case "USER_REGISTRATION" -> "User Registration";
+            case "PASSWORD_RESET" -> "Password Reset";
+            case "BACKUP_SUCCESS" -> "Backup Success";
+            case "BACKUP_FAILURE" -> "Backup Failure";
+            default -> eventName;
+        };
+    }
+
+    /**
+     * Get the description for an email event
+     */
+    public static String getDescription(String eventName) {
+        return switch (eventName) {
+            case "USER_REGISTRATION" -> "Email sent when a new user registers an account. Includes account activation link.";
+            case "PASSWORD_RESET" -> "Email sent when a user requests to reset their password. Includes password reset link.";
+            case "BACKUP_SUCCESS" -> "Email notification sent when a backup completes successfully. Includes backup details and download link.";
+            case "BACKUP_FAILURE" -> "Email alert sent when a backup operation fails. Includes error details and last successful backup information.";
+            default -> "";
         };
     }
 
@@ -148,7 +75,35 @@ public class EmailEventVariables {
     public static String[] getSupportedEvents() {
         return new String[]{
             "USER_REGISTRATION",
-            "PASSWORD_RESET"
+            "PASSWORD_RESET",
+            "BACKUP_SUCCESS",
+            "BACKUP_FAILURE"
         };
     }
+
+    /**
+     * Load schema from JSON file in classpath resources
+     *
+     * @param filename The schema filename (e.g., "user-registration-schema.json")
+     * @return JSON string containing the schema
+     */
+    private static String loadSchema(String filename) {
+        // Check cache first
+        if (SCHEMA_CACHE.containsKey(filename)) {
+            return SCHEMA_CACHE.get(filename);
+        }
+
+        try {
+            ClassPathResource resource = new ClassPathResource("schemas/email-events/" + filename);
+            String schema = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+
+            // Cache the schema for future use
+            SCHEMA_CACHE.put(filename, schema);
+
+            return schema;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load email event schema: " + filename, e);
+        }
+    }
+
 }

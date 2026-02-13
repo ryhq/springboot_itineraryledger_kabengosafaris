@@ -1,0 +1,33 @@
+[
+  {
+    "name": "failureTime",
+    "description": "Date and time when backup failed (yyyy-MM-dd HH:mm:ss format)",
+    "isRequired": true
+  },
+  {
+    "name": "backupType",
+    "description": "Type of backup that was attempted (FULL, INCREMENTAL, or DIFFERENTIAL)",
+    "isRequired": true
+  },
+  {
+    "name": "lastSuccessfulBackup",
+    "description": "Date and time of last successful backup, or 'Never' if no previous backup",
+    "isRequired": true
+  },
+  {
+    "name": "attemptNumber",
+    "description": "Number of consecutive failed attempts (defaults to 1 if not tracked)",
+    "isRequired": false,
+    "defaultValue": "1"
+  },
+  {
+    "name": "errorMessage",
+    "description": "Detailed error message describing why the backup failed",
+    "isRequired": true
+  },
+  {
+    "name": "nextBackupTime",
+    "description": "Date and time of next scheduled backup attempt",
+    "isRequired": false
+  }
+]

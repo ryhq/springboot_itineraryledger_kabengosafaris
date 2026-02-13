@@ -287,6 +287,42 @@
       "action": "EXECUTE",
       "entity": "TRANSLATION_SETTING",
       "description": "Allows testing the translation service connection"
+    },
+    {
+      "name": "VIEW_DASHBOARD",
+      "action": "READ",
+      "entity": "DASHBOARD",
+      "description": "Allows viewing comprehensive dashboard statistics including quotes, invoices, customers, safaris, and all metrics"
+    },
+    {
+      "name": "TRIGGER_MANUAL_BACKUP",
+      "action": "CREATE",
+      "entity": "BACKUP",
+      "description": "Allows triggering a manual backup operation (database and files)"
+    },
+    {
+      "name": "VIEW_BACKUP_HISTORY",
+      "action": "READ",
+      "entity": "BACKUP",
+      "description": "Allows viewing backup history and statistics"
+    },
+    {
+      "name": "CLEANUP_OLD_BACKUPS",
+      "action": "DELETE",
+      "entity": "BACKUP",
+      "description": "Allows manual cleanup of old backups based on retention policy"
+    },
+    {
+      "name": "DOWNLOAD_BACKUP",
+      "action": "READ",
+      "entity": "BACKUP",
+      "description": "Allows downloading backup files for off-site storage or recovery"
+    },
+    {
+      "name": "PERM_READ_LOG",
+      "action": "READ",
+      "entity": "LOG",
+      "description": "Allows viewing access logs, analytics, security analysis, and real-time log streams"
     }
   ]
 }

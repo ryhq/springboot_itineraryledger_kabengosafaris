@@ -90,4 +90,13 @@ public interface CustomerRepository extends JpaRepository<Customer, Long>, JpaSp
     List<Customer> findByCountry(String country);
 
     List<Customer> findByCountryIgnoreCase(String country);
+
+    // ========================
+    // TIME-BASED QUERIES
+    // ========================
+
+    /**
+     * Count customers created after a specific date/time
+     */
+    long countByCreatedAtAfter(java.time.LocalDateTime createdAt);
 }

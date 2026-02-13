@@ -1,0 +1,57 @@
+[
+  {
+    "name": "backupTime",
+    "description": "Date and time when backup completed (yyyy-MM-dd HH:mm:ss format)",
+    "isRequired": true
+  },
+  {
+    "name": "backupType",
+    "description": "Type of backup performed (FULL, INCREMENTAL, or DIFFERENTIAL)",
+    "isRequired": true
+  },
+  {
+    "name": "backupSize",
+    "description": "Human-readable size of backup (e.g., '1.24 GB', '456 MB')",
+    "isRequired": true
+  },
+  {
+    "name": "databaseIncluded",
+    "description": "Yes/No indicating if database was backed up",
+    "isRequired": true
+  },
+  {
+    "name": "filesIncluded",
+    "description": "Yes/No indicating if files were backed up",
+    "isRequired": true
+  },
+  {
+    "name": "compressionFormat",
+    "description": "Compression format used (zip, gzip, tar, tar.gz)",
+    "isRequired": true
+  },
+  {
+    "name": "compressionLevel",
+    "description": "Compression level used (0-9)",
+    "isRequired": true
+  },
+  {
+    "name": "backupPath",
+    "description": "Full file system path to the backup file",
+    "isRequired": true
+  },
+  {
+    "name": "backupDownloadLink",
+    "description": "HTTP URL to download the backup file",
+    "isRequired": true
+  },
+  {
+    "name": "retentionDays",
+    "description": "Number of days backups are retained before auto-cleanup",
+    "isRequired": true
+  },
+  {
+    "name": "nextBackupTime",
+    "description": "Date and time of next scheduled backup",
+    "isRequired": false
+  }
+]

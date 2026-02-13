@@ -175,6 +175,12 @@ public class EmailTemplateTestService {
             case "PASSWORD_RESET":
                 return generatePasswordResetTestData(user);
 
+            case "BACKUP_SUCCESS":
+                return generateBackupSuccessTestData(user);
+
+            case "BACKUP_FAILURE":
+                return generateBackupFailureTestData(user);
+
             // Add more cases as email events are implemented
             // case "EMAIL_VERIFICATION":
             //     return generateEmailVerificationTestData(user);
@@ -254,6 +260,66 @@ public class EmailTemplateTestService {
         variables.put("requestedAt", requestedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
         String subject = "[TEST] Password Reset Request - Kabengosafaris";
+
+        return new TestEmailData(variables, subject);
+    }
+
+    /**
+     * Generate test data for BACKUP_SUCCESS email event
+     *
+     * @param user The user to send the test email to
+     * @return TestEmailData with backup success-specific variables and subject
+     */
+    private TestEmailData generateBackupSuccessTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+
+        // Generate realistic test backup data
+        LocalDateTime backupTime = LocalDateTime.now();
+        LocalDateTime nextBackupTime = LocalDateTime.now().plusDays(1);
+        String testBackupFilename = "kabengosafaris_backup_" +
+            backupTime.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".zip";
+
+        // Populate variables
+        variables.put("backupTime", backupTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        variables.put("backupType", "FULL");
+        variables.put("backupSize", "2.8 MB");
+        variables.put("databaseIncluded", "Yes");
+        variables.put("filesIncluded", "Yes");
+        variables.put("compressionFormat", "zip");
+        variables.put("compressionLevel", "6");
+        variables.put("backupPath", "/opt/lampp/htdocs/kabengosafaris/backups/" + testBackupFilename);
+        variables.put("backupDownloadLink", appManagementBaseUrl + "/api/backups/download/" + testBackupFilename);
+        variables.put("retentionDays", "30");
+        variables.put("nextBackupTime", nextBackupTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+
+        String subject = "[TEST] Backup Completed Successfully - Kabengosafaris";
+
+        return new TestEmailData(variables, subject);
+    }
+
+    /**
+     * Generate test data for BACKUP_FAILURE email event
+     *
+     * @param user The user to send the test email to
+     * @return TestEmailData with backup failure-specific variables and subject
+     */
+    private TestEmailData generateBackupFailureTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+
+        // Generate realistic test failure data
+        LocalDateTime failureTime = LocalDateTime.now();
+        LocalDateTime lastSuccessfulBackup = LocalDateTime.now().minusDays(1);
+        LocalDateTime nextBackupTime = LocalDateTime.now().plusHours(6);
+
+        // Populate variables
+        variables.put("failureTime", failureTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        variables.put("backupType", "FULL");
+        variables.put("lastSuccessfulBackup", lastSuccessfulBackup.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        variables.put("attemptNumber", "1");
+        variables.put("errorMessage", "Database backup failed: Connection timeout after 30 seconds. Please check database server connectivity.");
+        variables.put("nextBackupTime", nextBackupTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+
+        String subject = "[TEST] ⚠️ Backup Failed - Kabengosafaris";
 
         return new TestEmailData(variables, subject);
     }

@@ -1,0 +1,62 @@
+[
+  {
+    "name": "username",
+    "description": "User's username",
+    "isRequired": true
+  },
+  {
+    "name": "email",
+    "description": "User's email address",
+    "isRequired": false
+  },
+  {
+    "name": "firstName",
+    "description": "User's first name",
+    "isRequired": false
+  },
+  {
+    "name": "lastName",
+    "description": "User's last name",
+    "isRequired": false
+  },
+  {
+    "name": "phoneNumber",
+    "description": "User's phone number",
+    "isRequired": false
+  },
+  {
+    "name": "enabled",
+    "description": "Whether the user account is enabled",
+    "isRequired": false
+  },
+  {
+    "name": "accountLocked",
+    "description": "Whether the user account is locked",
+    "isRequired": false
+  },
+  {
+    "name": "createdAt",
+    "description": "Date and time when the user account was created",
+    "isRequired": false
+  },
+  {
+    "name": "activationToken",
+    "description": "Account activation token (JWT)",
+    "isRequired": true
+  },
+  {
+    "name": "activationLink",
+    "description": "Full account activation URL with token",
+    "isRequired": true
+  },
+  {
+    "name": "expirationHours",
+    "description": "Number of hours until activation link expires",
+    "isRequired": true
+  },
+  {
+    "name": "expirationDateTime",
+    "description": "Exact date and time when activation link expires (yyyy-MM-dd HH:mm:ss format)",
+    "isRequired": true
+  }
+]

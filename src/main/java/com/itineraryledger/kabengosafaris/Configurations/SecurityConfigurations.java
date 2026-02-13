@@ -104,6 +104,8 @@ public class SecurityConfigurations {
                 .requestMatchers("/api/quote-documents/*/file", "/api/quote-documents/file/*").permitAll() // Allow public access to quote document files
                 .requestMatchers("/api/safari-documents/*/file", "/api/safari-documents/file/*").permitAll() // Allow public access to safari document files
                 .requestMatchers("/api/invoice-documents/*/file", "/api/invoice-documents/file/*").permitAll() // Allow public access to invoice document files
+                .requestMatchers("/api/hero-images/*/file", "/api/hero-images/file/*").permitAll() // Allow public access to hero image files
+                .requestMatchers("/api/heroes/page/*").permitAll() // Allow public access to hero sections by page
 
                 .anyRequest().authenticated() // Require authentication for any other request
         )

@@ -55,4 +55,14 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
      * Count invoices by safari
      */
     long countBySafariId(Long safariId);
+
+    /**
+     * Find all invoices by status
+     */
+    java.util.List<Invoice> findByStatus(InvoiceStatus status);
+
+    /**
+     * Find all invoices by status in list
+     */
+    java.util.List<Invoice> findByStatusIn(java.util.List<InvoiceStatus> statuses);
 }

@@ -28,4 +28,9 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
      */
     List<User> findByFailedAttemptGreaterThan(int failedAttempt);
 
+    /**
+     * Count enabled (active) users
+     */
+    long countByEnabledTrue();
+
 }

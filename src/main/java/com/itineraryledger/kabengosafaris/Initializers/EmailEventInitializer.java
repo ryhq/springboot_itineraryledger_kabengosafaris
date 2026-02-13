@@ -22,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
  * Email Events:
  * - USER_REGISTRATION: Sent when a new user registers
  * - PASSWORD_RESET: Sent when a user requests to reset their password
+ * - BACKUP_SUCCESS: Sent when a backup completes successfully
+ * - BACKUP_FAILURE: Sent when a backup fails
  *
  * Note: Other events (EMAIL_VERIFICATION, ACCOUNT_ACTIVATED, etc.) will be added in future iterations.
  */
@@ -97,19 +99,34 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
 
     /**
      * Initialize predefined email events
-     * Currently only USER_REGISTRATION is implemented
      */
     private void initializeEmailEvents() {
-        // Initialize USER_REGISTRATION event with system-defined variables
+        // ========================================
+        // User Management Events
+        // ========================================
+
         initializeEvent(
             "USER_REGISTRATION",
             "Sent when a new user registers in the system. Contains welcome message and account activation instructions."
         );
 
-        // Initialize PASSWORD_RESET event with system-defined variables
         initializeEvent(
             "PASSWORD_RESET",
             "Sent when a user requests to reset their password. Contains password reset link and instructions."
+        );
+
+        // ========================================
+        // Backup Events
+        // ========================================
+
+        initializeEvent(
+            "BACKUP_SUCCESS",
+            "Sent when a scheduled or manual backup completes successfully. Contains backup details including size, location, and next scheduled backup time."
+        );
+
+        initializeEvent(
+            "BACKUP_FAILURE",
+            "Sent when a scheduled or manual backup fails. Contains error details, troubleshooting steps, and next backup attempt time. Requires immediate attention."
         );
 
         // TODO: Add other events in future iterations:

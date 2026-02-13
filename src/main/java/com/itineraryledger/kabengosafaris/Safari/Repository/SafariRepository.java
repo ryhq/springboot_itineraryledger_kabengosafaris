@@ -49,4 +49,19 @@ public interface SafariRepository extends JpaRepository<Safari, Long>, JpaSpecif
 
     @Query("SELECT s FROM Safari s WHERE s.itinerary.id = :itineraryId AND s.state NOT IN ('CANCELLED', 'COMPLETED')")
     List<Safari> findActiveSafarisByItinerary(@Param("itineraryId") Long itineraryId);
+
+    /**
+     * Count active safaris
+     */
+    long countByIsActiveTrue();
+
+    /**
+     * Count safaris starting within a date range
+     */
+    long countByStartDateBetween(LocalDate startDate, LocalDate endDate);
+
+    /**
+     * Count safaris that are ongoing (started but not ended) on a specific date
+     */
+    long countByStartDateLessThanEqualAndEndDateGreaterThanEqual(LocalDate startDate, LocalDate endDate);
 }
