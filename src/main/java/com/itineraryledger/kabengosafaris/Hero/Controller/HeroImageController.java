@@ -103,6 +103,7 @@ public class HeroImageController {
             @Parameter(description = "Filter by display order") @RequestParam(value = "displayOrder", required = false) Integer displayOrder,
             @Parameter(description = "Page number (0-indexed)") @RequestParam(value = "page", defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(value = "size", defaultValue = "20") int size,
+            @Parameter(description = "Sort field") @RequestParam(value = "sortBy", required = false) String sortBy,
             @Parameter(description = "Sort direction (asc/desc)") @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/hero-images - Fetching hero images with filters");
@@ -115,6 +116,7 @@ public class HeroImageController {
             displayOrder,
             page,
             size,
+            sortBy,
             sortDirection
         );
     }

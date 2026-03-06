@@ -1,6 +1,9 @@
 package com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.Services;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +31,11 @@ public class ItineraryDayParkTariffGetService {
     private final ItineraryDayParkTariffRepository parkTariffRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "isIncludedInPrice", "createdAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
     @Autowired
     public ItineraryDayParkTariffGetService(
         ItineraryDayParkTariffRepository parkTariffRepository,
@@ -41,9 +49,15 @@ public class ItineraryDayParkTariffGetService {
      * Get all tariffs for a park visit
      *
      * @param parkVisitIdObfuscated The obfuscated park visit ID
+     * @param sortBy The field to sort by
+     * @param sortDirection The sort direction (asc/desc)
      * @return ResponseEntity with ApiResponse containing list of tariffs
      */
-    public ResponseEntity<ApiResponse<?>> getParkTariffs(String parkVisitIdObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getParkTariffs(
+            String parkVisitIdObfuscated,
+            String sortBy,
+            String sortDirection
+    ) {
         log.info("Fetching tariffs for park visit: {}", parkVisitIdObfuscated);
 
         try {
@@ -56,13 +70,29 @@ public class ItineraryDayParkTariffGetService {
                 );
             }
 
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             List<ItineraryDayParkTariff> tariffs = parkTariffRepository.findByItineraryDayParkId(parkVisitId);
             List<ItineraryDayParkTariffDTO> dtos = tariffs.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
+            // Response
+            Map<String, Object> response = new HashMap<>();
+            response.put("parkTariffs", dtos);
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Park tariffs retrieved", dtos)
+                ApiResponse.success(200, "Park tariffs retrieved", response)
             );
 
         } catch (Exception e) {
@@ -112,8 +142,23 @@ public class ItineraryDayParkTariffGetService {
                 );
             }
 
+            // Convert to DTO
+            ItineraryDayParkTariffDTO tariffDTO = convertToDTO(tariff);
+
+            // Parent-scoped circular navigation (scoped to park visit)
+            Long parentId = tariff.getItineraryDayPark().getId();
+            Long nextId = parkTariffRepository.findNextIdInParent(parentId, tariffId).orElse(null);
+            Long previousId = parkTariffRepository.findPreviousIdInParent(parentId, tariffId).orElse(null);
+            if (nextId == null) nextId = parkTariffRepository.findFirstIdInParent(parentId).orElse(null);
+            if (previousId == null) previousId = parkTariffRepository.findLastIdInParent(parentId).orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("parkTariff", tariffDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Park tariff retrieved", convertToDTO(tariff))
+                ApiResponse.success(200, "Park tariff retrieved", response)
             );
 
         } catch (Exception e) {
@@ -122,6 +167,14 @@ public class ItineraryDayParkTariffGetService {
                 ApiResponse.error(500, "Failed to fetch park tariff", "FETCH_FAILED")
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     private ItineraryDayParkTariffDTO convertToDTO(ItineraryDayParkTariff entity) {

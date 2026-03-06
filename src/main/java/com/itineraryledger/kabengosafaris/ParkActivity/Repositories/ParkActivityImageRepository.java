@@ -136,4 +136,20 @@ public interface ParkActivityImageRepository extends JpaRepository<ParkActivityI
         @Param("activityId") Long activityId,
         @Param("fileName") String fileName
     );
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT pai.id FROM ParkActivityImage pai WHERE pai.id > :currentId ORDER BY pai.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT pai.id FROM ParkActivityImage pai WHERE pai.id < :currentId ORDER BY pai.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT pai.id FROM ParkActivityImage pai ORDER BY pai.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT pai.id FROM ParkActivityImage pai ORDER BY pai.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

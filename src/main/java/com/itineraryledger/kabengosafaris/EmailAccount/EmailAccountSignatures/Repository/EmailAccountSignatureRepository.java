@@ -121,4 +121,20 @@ public interface EmailAccountSignatureRepository extends JpaRepository<EmailAcco
     @Modifying
     @Query("DELETE FROM EmailAccountSignature es WHERE es.emailAccount.id = :emailAccountId")
     void deleteByEmailAccountId(@Param("emailAccountId") Long emailAccountId);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT es.id FROM EmailAccountSignature es WHERE es.id > :currentId ORDER BY es.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT es.id FROM EmailAccountSignature es WHERE es.id < :currentId ORDER BY es.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT es.id FROM EmailAccountSignature es ORDER BY es.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT es.id FROM EmailAccountSignature es ORDER BY es.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

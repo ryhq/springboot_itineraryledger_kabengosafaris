@@ -17,7 +17,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,6 +32,11 @@ public class AccommodationPhoneGetService {
 
     private final AccommodationPhoneRepository accommodationPhoneRepository;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "phoneNumber", "phoneType", "label", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
     public AccommodationPhoneGetService(
@@ -80,11 +87,22 @@ public class AccommodationPhoneGetService {
             // Convert to DTO
             AccommodationPhoneDTO phoneDTO = convertToDTO(phone);
 
+            // Circular navigation
+            Long nextId = accommodationPhoneRepository.findNextId(id).orElse(null);
+            Long previousId = accommodationPhoneRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = accommodationPhoneRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = accommodationPhoneRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("phone", phoneDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
                 ApiResponse.success(
                     200,
                     "Accommodation phone retrieved successfully",
-                    phoneDTO
+                    response
                 )
             );
 
@@ -126,11 +144,22 @@ public class AccommodationPhoneGetService {
         Boolean isActive,
         String label,
         String keyword,
+        String sortBy,
+        String sortDirection,
         Pageable pageable
     ) {
         log.info("Fetching all accommodation phones with optional filters");
 
         try {
+            // Validate sort field
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Build specification
             Specification<AccommodationPhone> spec = Specification.unrestricted();
 
@@ -190,6 +219,9 @@ public class AccommodationPhoneGetService {
             responseData.put("totalItems", phoneDTOPage.getTotalElements());
             responseData.put("totalPages", phoneDTOPage.getTotalPages());
             responseData.put("pageSize", phoneDTOPage.getSize());
+            responseData.put("validSortFields", VALID_SORT_FIELDS);
+            responseData.put("currentSortBy", validatedSortBy);
+            responseData.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -237,11 +269,22 @@ public class AccommodationPhoneGetService {
         Boolean isActive,
         String label,
         String keyword,
+        String sortBy,
+        String sortDirection,
         Pageable pageable
     ) {
         log.info("Fetching phones for accommodation: {}", accommodationId);
 
         try {
+            // Validate sort field
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Decode accommodation ID (required)
             Long decodedAccommodationId;
             try {
@@ -299,6 +342,9 @@ public class AccommodationPhoneGetService {
             responseData.put("totalItems", phoneDTOPage.getTotalElements());
             responseData.put("totalPages", phoneDTOPage.getTotalPages());
             responseData.put("pageSize", phoneDTOPage.getSize());
+            responseData.put("validSortFields", VALID_SORT_FIELDS);
+            responseData.put("currentSortBy", validatedSortBy);
+            responseData.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -318,6 +364,14 @@ public class AccommodationPhoneGetService {
                 )
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

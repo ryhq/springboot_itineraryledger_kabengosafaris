@@ -36,4 +36,20 @@ public interface AccommodationEmailRepository extends JpaRepository<Accommodatio
     @Modifying
     @Query("UPDATE AccommodationEmail e SET e.isPrimary = false WHERE e.accommodation.id = :accommodationId AND e.id != :excludeEmailId")
     void markAllAsNonPrimaryExcept(@Param("accommodationId") Long accommodationId, @Param("excludeEmailId") Long excludeEmailId);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT e.id FROM AccommodationEmail e WHERE e.id > :currentId ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT e.id FROM AccommodationEmail e WHERE e.id < :currentId ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT e.id FROM AccommodationEmail e ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT e.id FROM AccommodationEmail e ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

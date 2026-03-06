@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Role.Services;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,11 @@ public class RoleGetService {
     private final RoleRepository roleRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "name", "displayName", "active", "isSystemRole", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
     @Autowired
     public RoleGetService(RoleRepository roleRepository, IdObfuscator idObfuscator) {
         this.roleRepository = roleRepository;
@@ -63,12 +69,13 @@ public class RoleGetService {
         String displayName,
         Boolean active,
         Boolean isSystemRole,
+        String sortBy,
         String sortDir
     ) {
 
         log.debug("Fetching roles with filters - page: {}, size: {}, name: {}, displayName: {}, " +
-                "active: {}, isSystemRole: {}, sortDir: {}",
-                page, size, name, displayName, active, isSystemRole, sortDir);
+                "active: {}, isSystemRole: {}, sortBy: {}, sortDir: {}",
+                page, size, name, displayName, active, isSystemRole, sortBy, sortDir);
 
         // Validate pagination parameters
         if (page < 0) {
@@ -80,7 +87,15 @@ public class RoleGetService {
             return ResponseEntity.badRequest().body("Page size must be greater than 0");
         }
 
-        // Setup sorting
+        // Sorting with validation
+        String validatedSortBy = validateSortField(sortBy);
+        if (validatedSortBy == null) {
+            log.warn("Invalid sort field: {}", sortBy);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+            );
+        }
+
         Sort.Direction direction = Sort.Direction.DESC;
         if ("asc".equalsIgnoreCase(sortDir)) {
             direction = Sort.Direction.ASC;
@@ -89,7 +104,7 @@ public class RoleGetService {
         Pageable paging = PageRequest.of(
             page,
             size,
-            Sort.by(direction, "createdAt")
+            Sort.by(direction, validatedSortBy)
         );
 
         // Build dynamic specification
@@ -123,6 +138,9 @@ public class RoleGetService {
         response.put("currentPage", pagedRoles.getNumber());
         response.put("totalItems", pagedRoles.getTotalElements());
         response.put("totalPages", pagedRoles.getTotalPages());
+        response.put("validSortFields", VALID_SORT_FIELDS);
+        response.put("currentSortBy", validatedSortBy);
+        response.put("currentSortDir", sortDir != null ? sortDir : "desc");
 
         log.info("Successfully fetched {} roles on page {}", roleDTOs.size(), page);
         return ResponseEntity.ok(
@@ -155,12 +173,13 @@ public class RoleGetService {
         String displayName,
         Boolean active,
         Boolean isSystemRole,
+        String sortBy,
         String sortDir
     ) {
 
         log.debug("Fetching roles for user {} with filters - page: {}, size: {}, name: {}, displayName: {}, " +
-                "active: {}, isSystemRole: {}, sortDir: {}",
-                userId, page, size, name, displayName, active, isSystemRole, sortDir);
+                "active: {}, isSystemRole: {}, sortBy: {}, sortDir: {}",
+                userId, page, size, name, displayName, active, isSystemRole, sortBy, sortDir);
 
         // Validate pagination parameters
         if (page < 0) {
@@ -172,7 +191,15 @@ public class RoleGetService {
             return ResponseEntity.badRequest().body("Page size must be greater than 0");
         }
 
-        // Setup sorting
+        // Sorting with validation
+        String validatedSortBy = validateSortField(sortBy);
+        if (validatedSortBy == null) {
+            log.warn("Invalid sort field: {}", sortBy);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+            );
+        }
+
         Sort.Direction direction = Sort.Direction.DESC;
         if ("asc".equalsIgnoreCase(sortDir)) {
             direction = Sort.Direction.ASC;
@@ -181,7 +208,7 @@ public class RoleGetService {
         Pageable paging = PageRequest.of(
             page,
             size,
-            Sort.by(direction, "createdAt")
+            Sort.by(direction, validatedSortBy)
         );
 
         // Build dynamic specification - ALWAYS filter by user
@@ -216,6 +243,9 @@ public class RoleGetService {
         response.put("currentPage", pagedRoles.getNumber());
         response.put("totalItems", pagedRoles.getTotalElements());
         response.put("totalPages", pagedRoles.getTotalPages());
+        response.put("validSortFields", VALID_SORT_FIELDS);
+        response.put("currentSortBy", validatedSortBy);
+        response.put("currentSortDir", sortDir != null ? sortDir : "desc");
 
         log.info("Successfully fetched {} roles for user {} on page {}", roleDTOs.size(), userId, page);
         return ResponseEntity.ok(
@@ -248,12 +278,13 @@ public class RoleGetService {
         String displayName,
         Boolean active,
         Boolean isSystemRole,
+        String sortBy,
         String sortDir
     ) {
 
         log.debug("Fetching roles for permission {} with filters - page: {}, size: {}, name: {}, displayName: {}, " +
-                "active: {}, isSystemRole: {}, sortDir: {}",
-                permissionIdObfuscated, page, size, name, displayName, active, isSystemRole, sortDir);
+                "active: {}, isSystemRole: {}, sortBy: {}, sortDir: {}",
+                permissionIdObfuscated, page, size, name, displayName, active, isSystemRole, sortBy, sortDir);
 
         // Decode obfuscated permission ID
         Long permissionId;
@@ -274,7 +305,15 @@ public class RoleGetService {
             return ResponseEntity.badRequest().body("Page size must be greater than 0");
         }
 
-        // Setup sorting
+        // Sorting with validation
+        String validatedSortBy = validateSortField(sortBy);
+        if (validatedSortBy == null) {
+            log.warn("Invalid sort field: {}", sortBy);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+            );
+        }
+
         Sort.Direction direction = Sort.Direction.DESC;
         if ("asc".equalsIgnoreCase(sortDir)) {
             direction = Sort.Direction.ASC;
@@ -283,7 +322,7 @@ public class RoleGetService {
         Pageable paging = PageRequest.of(
             page,
             size,
-            Sort.by(direction, "createdAt")
+            Sort.by(direction, validatedSortBy)
         );
 
         // Build dynamic specification - ALWAYS filter by permission
@@ -318,6 +357,9 @@ public class RoleGetService {
         response.put("currentPage", pagedRoles.getNumber());
         response.put("totalItems", pagedRoles.getTotalElements());
         response.put("totalPages", pagedRoles.getTotalPages());
+        response.put("validSortFields", VALID_SORT_FIELDS);
+        response.put("currentSortBy", validatedSortBy);
+        response.put("currentSortDir", sortDir != null ? sortDir : "desc");
 
         log.info("Successfully fetched {} roles for permission {} on page {}", roleDTOs.size(), permissionIdObfuscated, page);
         return ResponseEntity.ok(
@@ -352,11 +394,24 @@ public class RoleGetService {
                 );
             }
 
+            RoleDTO roleDTO = convertToDTO(role);
+
+            // Circular navigation
+            Long nextId = roleRepository.findNextId(id).orElse(null);
+            Long previousId = roleRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = roleRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = roleRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("role", roleDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok(
                 ApiResponse.success(
                     200,
                     "Successfully retrieved role.",
-                    convertToDTO(role)
+                    response
                 )
             );
 
@@ -369,6 +424,14 @@ public class RoleGetService {
                 )
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

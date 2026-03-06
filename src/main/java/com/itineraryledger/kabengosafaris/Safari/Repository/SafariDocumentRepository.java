@@ -53,4 +53,20 @@ public interface SafariDocumentRepository extends JpaRepository<SafariDocument, 
     long countGeneratedBySafariId(@Param("safariId") Long safariId);
 
     boolean existsBySafariIdAndFileName(Long safariId, String fileName);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT sd.id FROM SafariDocument sd WHERE sd.id > :currentId ORDER BY sd.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT sd.id FROM SafariDocument sd WHERE sd.id < :currentId ORDER BY sd.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT sd.id FROM SafariDocument sd ORDER BY sd.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT sd.id FROM SafariDocument sd ORDER BY sd.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

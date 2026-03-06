@@ -10,14 +10,18 @@ import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,6 +34,11 @@ public class CustomerNoteGetService {
 
     private final CustomerNoteRepository customerNoteRepository;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "subject", "noteType", "priority", "isPinned", "isPrivate", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
     public CustomerNoteGetService(
@@ -80,11 +89,22 @@ public class CustomerNoteGetService {
             // Convert to DTO
             CustomerNoteDTO noteDTO = convertToDTO(note);
 
+            // Circular navigation
+            Long nextId = customerNoteRepository.findNextId(id).orElse(null);
+            Long previousId = customerNoteRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = customerNoteRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = customerNoteRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("note", noteDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
                 ApiResponse.success(
                     200,
                     "Customer note retrieved successfully",
-                    noteDTO
+                    response
                 )
             );
 
@@ -128,7 +148,10 @@ public class CustomerNoteGetService {
         Boolean pendingFollowUpsOnly,
         Boolean overdueFollowUpsOnly,
         String keyword,
-        Pageable pageable
+        Integer page,
+        Integer size,
+        String sortBy,
+        String sortDirection
     ) {
         log.info("Fetching all customer notes with optional filters");
 
@@ -182,6 +205,26 @@ public class CustomerNoteGetService {
                 spec = spec.and(CustomerNoteSpecification.searchKeyword(keyword));
             }
 
+            // Pagination
+            int pageNumber = (page != null && page >= 0) ? page : 0;
+            int pageSize = (size != null && size > 0) ? size : 10;
+
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
+            Sort.Direction direction = Sort.Direction.DESC;
+            if (sortDirection != null && sortDirection.equalsIgnoreCase("asc")) {
+                direction = Sort.Direction.ASC;
+            }
+
+            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
+
             // Fetch paginated results
             Page<CustomerNote> notePage = customerNoteRepository.findAll(spec, pageable);
 
@@ -195,6 +238,9 @@ public class CustomerNoteGetService {
             responseData.put("totalItems", noteDTOPage.getTotalElements());
             responseData.put("totalPages", noteDTOPage.getTotalPages());
             responseData.put("pageSize", noteDTOPage.getSize());
+            responseData.put("validSortFields", VALID_SORT_FIELDS);
+            responseData.put("currentSortBy", validatedSortBy);
+            responseData.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -214,6 +260,14 @@ public class CustomerNoteGetService {
                 )
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

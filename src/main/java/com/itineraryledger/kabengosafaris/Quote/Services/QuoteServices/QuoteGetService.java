@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,11 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class QuoteGetService {
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "quoteCode", "title", "status", "sentDate", "validFrom", "validTo", "isActive", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     private final QuoteRepository quoteRepository;
     private final IdObfuscator idObfuscator;
@@ -71,8 +77,19 @@ public class QuoteGetService {
             // Convert to DTO
             QuoteDTO quoteDTO = convertToDTO(quote);
 
+            // Build navigation
+            Long nextId = quoteRepository.findNextId(id).orElse(null);
+            Long previousId = quoteRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = quoteRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = quoteRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("quote", quoteDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Quote retrieved successfully", quoteDTO)
+                ApiResponse.success(200, "Quote retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -159,11 +176,21 @@ public class QuoteGetService {
         String statusGroup,
         Integer page,
         Integer size,
+        String sortBy,
         String sortDirection
     ) {
         log.info("Fetching all quotes with filters");
 
         try {
+            // Validate sort field
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Build specification for filtering
             Specification<Quote> spec = Specification.unrestricted();
 
@@ -276,7 +303,7 @@ public class QuoteGetService {
             }
 
             // Create pageable
-            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, "createdAt"));
+            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
 
             // Fetch quotes
             Page<Quote> quotePage = quoteRepository.findAll(spec, pageable);
@@ -292,6 +319,9 @@ public class QuoteGetService {
             response.put("currentPage", quotePage.getNumber());
             response.put("totalItems", quotePage.getTotalElements());
             response.put("totalPages", quotePage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", direction.name().toLowerCase());
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Quotes retrieved successfully", response)
@@ -303,6 +333,17 @@ public class QuoteGetService {
                 ApiResponse.error(500, "Failed to fetch quotes", "QUOTES_FETCH_FAILED")
             );
         }
+    }
+
+    /**
+     * Validate and return the sort field, or null if invalid
+     */
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

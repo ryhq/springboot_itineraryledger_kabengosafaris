@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,11 @@ import java.util.stream.Collectors;
 @Slf4j
 @Transactional(readOnly = true)
 public class SafariGetService {
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "name", "code", "slug", "startDate", "endDate", "totalDays", "totalNights", "state", "isActive", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     private final SafariRepository safariRepository;
     private final IdObfuscator idObfuscator;
@@ -72,8 +78,19 @@ public class SafariGetService {
 
             SafariDTO safariDTO = convertToDTO(safari);
 
+            // Build navigation
+            Long nextId = safariRepository.findNextId(id).orElse(null);
+            Long previousId = safariRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = safariRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = safariRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("safari", safariDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
-                    ApiResponse.success(200, "Safari retrieved successfully", safariDTO)
+                    ApiResponse.success(200, "Safari retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -128,11 +145,21 @@ public class SafariGetService {
             String keyword,
             Integer page,
             Integer size,
+            String sortBy,
             String sortDirection
     ) {
         log.info("Fetching all safaris with filters");
 
         try {
+            // Validate sort field
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             Specification<Safari> spec = Specification.unrestricted();
 
             if (name != null && !name.isEmpty()) {
@@ -171,7 +198,7 @@ public class SafariGetService {
                 direction = Sort.Direction.ASC;
             }
 
-            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, "startDate"));
+            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
 
             Page<Safari> safariPage = safariRepository.findAll(spec, pageable);
 
@@ -198,6 +225,9 @@ public class SafariGetService {
             response.put("currentPage", safariPage.getNumber());
             response.put("totalItems", phase != null ? totalFiltered : safariPage.getTotalElements());
             response.put("totalPages", safariPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", direction.name().toLowerCase());
             if (phase != null) {
                 response.put("filteredByPhase", phase.name());
             }
@@ -212,6 +242,17 @@ public class SafariGetService {
                     ApiResponse.error(500, "Failed to fetch safaris", "SAFARIS_FETCH_FAILED")
             );
         }
+    }
+
+    /**
+     * Validate and return the sort field, or null if invalid
+     */
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

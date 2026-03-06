@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Quote.Services.QuoteItemServices;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,11 @@ public class QuoteItemGetService {
     private final QuoteItemRepository quoteItemRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "itemType", "itemName", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
     /**
      * Get a single quote item by obfuscated ID
      *
@@ -70,8 +76,19 @@ public class QuoteItemGetService {
             // Convert to DTO
             QuoteItemDTO quoteItemDTO = convertToDTO(quoteItem);
 
+            // Circular navigation
+            Long nextId = quoteItemRepository.findNextId(id).orElse(null);
+            Long previousId = quoteItemRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = quoteItemRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = quoteItemRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("quoteItem", quoteItemDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Quote item retrieved successfully", quoteItemDTO)
+                ApiResponse.success(200, "Quote item retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -106,6 +123,7 @@ public class QuoteItemGetService {
         String itemTypeGroup,
         Integer page,
         Integer size,
+        String sortBy,
         String sortDirection
     ) {
         log.info("Fetching quote items for quote ID: {}", quoteId);
@@ -146,14 +164,22 @@ public class QuoteItemGetService {
             int pageNumber = (page != null && page >= 0) ? page : 0;
             int pageSize = (size != null && size > 0) ? size : 10;
 
-            // Set sorting (always by displayOrder)
-            Sort.Direction direction = Sort.Direction.ASC; // Default to ASC for displayOrder
-            if (sortDirection != null && sortDirection.equalsIgnoreCase("desc")) {
-                direction = Sort.Direction.DESC;
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
+            Sort.Direction direction = Sort.Direction.DESC;
+            if (sortDirection != null && sortDirection.equalsIgnoreCase("asc")) {
+                direction = Sort.Direction.ASC;
             }
 
             // Create pageable
-            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, "displayOrder"));
+            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
 
             // Fetch quote items
             Page<QuoteItem> quoteItemPage = quoteItemRepository.findAll(spec, pageable);
@@ -169,6 +195,9 @@ public class QuoteItemGetService {
             response.put("currentPage", quoteItemPage.getNumber());
             response.put("totalItems", quoteItemPage.getTotalElements());
             response.put("totalPages", quoteItemPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Quote items retrieved successfully", response)
@@ -184,7 +213,6 @@ public class QuoteItemGetService {
 
     /**
      * Get all quote items with pagination, sorting, and filtering
-     * Sorting is always by displayOrder, only direction can be specified
      *
      * @param quoteId Filter by quote ID (obfuscated)
      * @param itemType Filter by item type
@@ -194,7 +222,8 @@ public class QuoteItemGetService {
      * @param itemTypeGroup Filter by item type group (accommodation, parkfee, activity, transport, guide, meal)
      * @param page Page number (0-indexed)
      * @param size Page size
-     * @param sortDirection Sort direction (asc/desc) - always sorts by displayOrder
+     * @param sortBy Sort field
+     * @param sortDirection Sort direction (asc/desc)
      * @return ResponseEntity with ApiResponse containing paginated quote items
      */
     public ResponseEntity<ApiResponse<?>> getAllQuoteItems(
@@ -206,6 +235,7 @@ public class QuoteItemGetService {
         String itemTypeGroup,
         Integer page,
         Integer size,
+        String sortBy,
         String sortDirection
     ) {
         log.info("Fetching all quote items with filters");
@@ -268,14 +298,22 @@ public class QuoteItemGetService {
             int pageNumber = (page != null && page >= 0) ? page : 0;
             int pageSize = (size != null && size > 0) ? size : 10;
 
-            // Set sorting (always by displayOrder)
-            Sort.Direction direction = Sort.Direction.ASC; // Default to ASC for displayOrder
-            if (sortDirection != null && sortDirection.equalsIgnoreCase("desc")) {
-                direction = Sort.Direction.DESC;
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
+            Sort.Direction direction = Sort.Direction.DESC;
+            if (sortDirection != null && sortDirection.equalsIgnoreCase("asc")) {
+                direction = Sort.Direction.ASC;
             }
 
             // Create pageable
-            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, "displayOrder"));
+            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
 
             // Fetch quote items
             Page<QuoteItem> quoteItemPage = quoteItemRepository.findAll(spec, pageable);
@@ -291,6 +329,9 @@ public class QuoteItemGetService {
             response.put("currentPage", quoteItemPage.getNumber());
             response.put("totalItems", quoteItemPage.getTotalElements());
             response.put("totalPages", quoteItemPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Quote items retrieved successfully", response)
@@ -302,6 +343,14 @@ public class QuoteItemGetService {
                 ApiResponse.error(500, "Failed to fetch quote items", "QUOTE_ITEMS_FETCH_FAILED")
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,11 @@ public class PdfTemplateGetService {
     private final PdfTemplateStorageService storageService;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "name", "version", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
     /**
      * Get all templates with filtering and pagination
      */
@@ -49,6 +55,7 @@ public class PdfTemplateGetService {
         String orientation,
         Integer page,
         Integer size,
+        String sortBy,
         String sortDirection
     ) {
         try {
@@ -86,8 +93,17 @@ public class PdfTemplateGetService {
                 spec = spec.and(PdfTemplateSpecification.orientation(orientation));
             }
 
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Create pageable
-            Sort sort = Sort.by("desc".equalsIgnoreCase(sortDirection) ? Sort.Direction.DESC : Sort.Direction.ASC, "createdAt");
+            Sort sort = Sort.by("desc".equalsIgnoreCase(sortDirection) ? Sort.Direction.DESC : Sort.Direction.ASC, validatedSortBy);
             Pageable pageable = PageRequest.of(page != null ? page : 0, size != null ? size : 10, sort);
 
             // Execute query
@@ -104,6 +120,9 @@ public class PdfTemplateGetService {
             response.put("totalPages", templatePage.getTotalPages());
             response.put("currentPage", templatePage.getNumber());
             response.put("size", templatePage.getSize());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok(ApiResponse.success(200, "Templates retrieved successfully", response));
 
@@ -135,7 +154,19 @@ public class PdfTemplateGetService {
             }
 
             PdfTemplateDTO dto = mapToDTO(template);
-            return ResponseEntity.ok(ApiResponse.success(200, "Template retrieved successfully", dto));
+
+            // Circular navigation
+            Long nextId = pdfTemplateRepository.findNextId(id).orElse(null);
+            Long previousId = pdfTemplateRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = pdfTemplateRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = pdfTemplateRepository.findLastId().orElse(null);
+
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("template", dto);
+            responseData.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            responseData.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
+            return ResponseEntity.ok(ApiResponse.success(200, "Template retrieved successfully", responseData));
 
         } catch (Exception e) {
             log.error("Error retrieving template: {}", idObfuscated, e);
@@ -181,6 +212,14 @@ public class PdfTemplateGetService {
                 ApiResponse.error(500, "Failed to retrieve template content", "TEMPLATE_CONTENT_FETCH_FAILED")
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

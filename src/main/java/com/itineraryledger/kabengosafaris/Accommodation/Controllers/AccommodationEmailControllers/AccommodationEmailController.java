@@ -138,13 +138,15 @@ public class AccommodationEmailController {
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/accommodation-emails - Fetching all emails with filters");
 
+        String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
         Sort sort = sortDirection.equalsIgnoreCase("asc")
-            ? Sort.by("createdAt").ascending()
-            : Sort.by("createdAt").descending();
+            ? Sort.by(sortField).ascending()
+            : Sort.by(sortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return accommodationEmailGetService.getAllAccommodationEmails(
@@ -155,6 +157,8 @@ public class AccommodationEmailController {
             isActive,
             label,
             keyword,
+            sortBy,
+            sortDirection,
             pageable
         );
     }
@@ -186,13 +190,15 @@ public class AccommodationEmailController {
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/accommodation-emails/accommodation/{} - Fetching emails for accommodation", accommodationId);
 
+        String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
         Sort sort = sortDirection.equalsIgnoreCase("asc")
-            ? Sort.by("createdAt").ascending()
-            : Sort.by("createdAt").descending();
+            ? Sort.by(sortField).ascending()
+            : Sort.by(sortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return accommodationEmailGetService.getAllAccommodationsEmails(
@@ -203,6 +209,8 @@ public class AccommodationEmailController {
             isActive,
             label,
             keyword,
+            sortBy,
+            sortDirection,
             pageable
         );
     }

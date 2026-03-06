@@ -51,4 +51,20 @@ public interface AccommodationBoardTypeRepository extends JpaRepository<Accommod
         ORDER BY b.name ASC
         """)
     List<AccommodationBoardType> findUniqueBoardTypesByMealConfiguration();
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT b.id FROM AccommodationBoardType b WHERE b.id > :currentId ORDER BY b.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT b.id FROM AccommodationBoardType b WHERE b.id < :currentId ORDER BY b.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT b.id FROM AccommodationBoardType b ORDER BY b.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT b.id FROM AccommodationBoardType b ORDER BY b.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

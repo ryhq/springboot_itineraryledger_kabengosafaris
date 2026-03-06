@@ -93,4 +93,20 @@ public interface RoleRepository extends JpaRepository<Role, Long>, JpaSpecificat
      * Find multiple roles by IDs
      */
     List<Role> findByIdIn(Set<Long> ids);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT e.id FROM Role e WHERE e.id > :currentId ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT e.id FROM Role e WHERE e.id < :currentId ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT e.id FROM Role e ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT e.id FROM Role e ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

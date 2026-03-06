@@ -19,6 +19,7 @@ import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,19 @@ public class ParkActivityDocumentGetService {
     private final ParkActivityDocumentRepository parkActivityDocumentRepository;
     private final ParkActivityDocumentStorageService storageService;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "title", "documentType", "fileName", "fileSize", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
+    }
 
     @Autowired
     public ParkActivityDocumentGetService(
@@ -148,12 +162,21 @@ public class ParkActivityDocumentGetService {
             spec = spec.and(ParkActivityDocumentSpecification.byActivityHasTariff(hasTariff));
         }
 
-        Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection)
-            ? Sort.Direction.ASC
-            : Sort.Direction.DESC;
+        // Sorting with validation
+        String validatedSortBy = validateSortField(sortBy);
+        if (validatedSortBy == null) {
+            log.warn("Invalid sort field: {}", sortBy);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+            );
+        }
 
-        String sortField = sortBy != null && !sortBy.isBlank() ? sortBy : "createdAt";
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+        Sort.Direction direction = Sort.Direction.DESC;
+        if (sortDirection != null && sortDirection.equalsIgnoreCase("asc")) {
+            direction = Sort.Direction.ASC;
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
         Page<ParkActivityDocument> documentPage = parkActivityDocumentRepository.findAll(spec, pageable);
 
@@ -169,6 +192,9 @@ public class ParkActivityDocumentGetService {
         response.put("pageSize", documentPage.getSize());
         response.put("hasNext", documentPage.hasNext());
         response.put("hasPrevious", documentPage.hasPrevious());
+        response.put("validSortFields", VALID_SORT_FIELDS);
+        response.put("currentSortBy", validatedSortBy);
+        response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
         return ResponseEntity.ok(ApiResponse.success(200, "Park activity documents retrieved successfully", response));
     }
@@ -186,7 +212,20 @@ public class ParkActivityDocumentGetService {
                 );
             }
 
-            return ResponseEntity.ok(ApiResponse.success(200, "Park activity document retrieved successfully", toDTO(document)));
+            ParkActivityDocumentDTO documentDTO = toDTO(document);
+
+            // Circular navigation
+            Long nextId = parkActivityDocumentRepository.findNextId(id).orElse(null);
+            Long previousId = parkActivityDocumentRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = parkActivityDocumentRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = parkActivityDocumentRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("document", documentDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
+            return ResponseEntity.ok(ApiResponse.success(200, "Park activity document retrieved successfully", response));
 
         } catch (Exception e) {
             log.warn("Failed to decode park activity document ID: {}", obfuscatedId, e);

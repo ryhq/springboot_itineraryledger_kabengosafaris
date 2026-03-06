@@ -1,6 +1,9 @@
 package com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayAccommodation.Services;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +33,12 @@ public class SafariDayAccommodationGetService {
     private final SafariDayAccommodationRepository accommodationRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "roomCount", "isAlternative", "bookingStatus", "confirmationNumber",
+        "checkInTime", "checkOutTime", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
     @Autowired
     public SafariDayAccommodationGetService(
         SafariDayRepository safariDayRepository,
@@ -50,7 +59,9 @@ public class SafariDayAccommodationGetService {
      */
     public ResponseEntity<ApiResponse<?>> getSafariDayAccommodations(
         String safariIdObfuscated,
-        String dayIdObfuscated
+        String dayIdObfuscated,
+        String sortBy,
+        String sortDirection
     ) {
         log.info("Fetching accommodations for day: {}", dayIdObfuscated);
 
@@ -80,6 +91,15 @@ public class SafariDayAccommodationGetService {
                 );
             }
 
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Fetch accommodations
             List<SafariDayAccommodation> accommodations = accommodationRepository.findBySafariDayId(dayId);
 
@@ -88,8 +108,15 @@ public class SafariDayAccommodationGetService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
+            // Response
+            Map<String, Object> response = new HashMap<>();
+            response.put("accommodations", dtos);
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Accommodations retrieved successfully", dtos)
+                ApiResponse.success(200, "Accommodations retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -135,5 +162,13 @@ public class SafariDayAccommodationGetService {
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
         return dto;
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 }

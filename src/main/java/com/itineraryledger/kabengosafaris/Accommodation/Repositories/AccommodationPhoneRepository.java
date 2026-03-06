@@ -36,4 +36,20 @@ public interface AccommodationPhoneRepository extends JpaRepository<Accommodatio
     @Modifying
     @Query("UPDATE AccommodationPhone p SET p.isPrimary = false WHERE p.accommodation.id = :accommodationId AND p.id != :excludePhoneId")
     void markAllAsNonPrimaryExcept(@Param("accommodationId") Long accommodationId, @Param("excludePhoneId") Long excludePhoneId);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT p.id FROM AccommodationPhone p WHERE p.id > :currentId ORDER BY p.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT p.id FROM AccommodationPhone p WHERE p.id < :currentId ORDER BY p.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT p.id FROM AccommodationPhone p ORDER BY p.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT p.id FROM AccommodationPhone p ORDER BY p.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

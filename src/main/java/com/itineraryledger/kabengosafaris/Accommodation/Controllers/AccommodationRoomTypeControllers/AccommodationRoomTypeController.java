@@ -135,10 +135,12 @@ public class AccommodationRoomTypeController {
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDir
     ) {
         log.info("GET /api/accommodation-room-types - Fetching all room types with filters");
-        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by("createdAt").ascending() : Sort.by("createdAt").descending();
+        String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return accommodationRoomTypeGetService.getAllAccommodationRoomTypes(
@@ -148,6 +150,8 @@ public class AccommodationRoomTypeController {
             maxOccupancy,
             isActive,
             keyword,
+            sortBy,
+            sortDir,
             pageable
         );
     }
@@ -178,10 +182,12 @@ public class AccommodationRoomTypeController {
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDir
     ) {
         log.info("GET /api/accommodation-room-types/accommodation/{} - Fetching room types for accommodation", accommodationId);
-        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by("createdAt").ascending() : Sort.by("createdAt").descending();
+        String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return accommodationRoomTypeGetService.getAllAccommodationsRoomTypes(
@@ -191,6 +197,8 @@ public class AccommodationRoomTypeController {
             maxOccupancy,
             isActive,
             keyword,
+            sortBy,
+            sortDir,
             pageable
         );
     }

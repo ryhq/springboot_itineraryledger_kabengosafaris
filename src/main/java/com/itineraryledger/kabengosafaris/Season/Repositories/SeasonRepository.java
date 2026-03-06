@@ -100,4 +100,16 @@ public interface SeasonRepository extends JpaRepository<Season, Long>, JpaSpecif
             END ASC
         """)
     List<Season> findActiveByAccommodationIdOrderedByTypePriority(@Param("accommodationId") Long accommodationId);
+
+    @Query("SELECT e.id FROM Season e WHERE e.id > :currentId ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT e.id FROM Season e WHERE e.id < :currentId ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT e.id FROM Season e ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT e.id FROM Season e ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

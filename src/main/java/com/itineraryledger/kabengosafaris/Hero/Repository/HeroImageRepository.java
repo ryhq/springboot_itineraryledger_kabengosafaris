@@ -70,4 +70,20 @@ public interface HeroImageRepository extends JpaRepository<HeroImage, Long>, Jpa
      */
     @Query("SELECT img FROM HeroImage img WHERE img.hero.id = :heroId")
     Page<HeroImage> findByHeroIdPaginated(@Param("heroId") Long heroId, Pageable pageable);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT img.id FROM HeroImage img WHERE img.id > :currentId ORDER BY img.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT img.id FROM HeroImage img WHERE img.id < :currentId ORDER BY img.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT img.id FROM HeroImage img ORDER BY img.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT img.id FROM HeroImage img ORDER BY img.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

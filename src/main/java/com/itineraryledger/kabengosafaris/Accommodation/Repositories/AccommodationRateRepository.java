@@ -183,6 +183,22 @@ public interface AccommodationRateRepository extends JpaRepository<Accommodation
     long countBySeasonId(Long seasonId);
 
     // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT r.id FROM AccommodationRate r WHERE r.id > :currentId ORDER BY r.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT r.id FROM AccommodationRate r WHERE r.id < :currentId ORDER BY r.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT r.id FROM AccommodationRate r ORDER BY r.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT r.id FROM AccommodationRate r ORDER BY r.id DESC LIMIT 1")
+    Optional<Long> findLastId();
+
+    // ========================
     // DELETE METHODS
     // ========================
 

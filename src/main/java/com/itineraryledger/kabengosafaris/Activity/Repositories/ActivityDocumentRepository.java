@@ -48,4 +48,20 @@ public interface ActivityDocumentRepository extends JpaRepository<ActivityDocume
     long countActiveByActivityId(@Param("activityId") Long activityId);
 
     boolean existsByActivityIdAndFileName(Long activityId, String fileName);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT ad.id FROM ActivityDocument ad WHERE ad.id > :currentId ORDER BY ad.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT ad.id FROM ActivityDocument ad WHERE ad.id < :currentId ORDER BY ad.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT ad.id FROM ActivityDocument ad ORDER BY ad.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT ad.id FROM ActivityDocument ad ORDER BY ad.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

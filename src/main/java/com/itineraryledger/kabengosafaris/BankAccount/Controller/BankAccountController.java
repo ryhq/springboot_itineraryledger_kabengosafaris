@@ -87,9 +87,10 @@ public class BankAccountController {
         @RequestParam(required = false) String search,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/bank-accounts - Fetching all bank accounts with filters");
-        return bankAccountGetService.getAllBankAccounts(page, size, currency, isActive, isDefault, search, sortDirection);
+        return bankAccountGetService.getAllBankAccounts(page, size, currency, isActive, isDefault, search, sortBy, sortDirection);
     }
 }

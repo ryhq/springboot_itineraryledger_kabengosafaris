@@ -1,6 +1,9 @@
 package com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayActivity.Services;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +33,12 @@ public class SafariDayActivityGetService {
     private final SafariDayActivityRepository activityRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "sortOrder", "durationHours", "startTime", "endTime", "isIncludedInPrice",
+        "isOptional", "isCompleted", "isSkipped", "createdAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "sortOrder";
+
     @Autowired
     public SafariDayActivityGetService(
         SafariDayRepository safariDayRepository,
@@ -50,7 +59,9 @@ public class SafariDayActivityGetService {
      */
     public ResponseEntity<ApiResponse<?>> getSafariDayActivities(
         String safariIdObfuscated,
-        String dayIdObfuscated
+        String dayIdObfuscated,
+        String sortBy,
+        String sortDirection
     ) {
         log.info("Fetching activities for day: {}", dayIdObfuscated);
 
@@ -81,6 +92,15 @@ public class SafariDayActivityGetService {
                 );
             }
 
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Fetch activities
             List<SafariDayActivity> activities = activityRepository.findBySafariDayIdOrderBySortOrderAsc(dayId);
 
@@ -89,8 +109,15 @@ public class SafariDayActivityGetService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
+            // Response
+            Map<String, Object> response = new HashMap<>();
+            response.put("activities", activityDTOs);
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "asc");
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Safari day activities retrieved successfully", activityDTOs)
+                ApiResponse.success(200, "Safari day activities retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -156,8 +183,20 @@ public class SafariDayActivityGetService {
             // Convert to DTO
             SafariDayActivityDTO activityDTO = convertToDTO(activity);
 
+            // Parent-scoped circular navigation
+            Long parentId = activity.getSafariDay().getId();
+            Long nextId = activityRepository.findNextIdInParent(parentId, activityId).orElse(null);
+            Long previousId = activityRepository.findPreviousIdInParent(parentId, activityId).orElse(null);
+            if (nextId == null) nextId = activityRepository.findFirstIdInParent(parentId).orElse(null);
+            if (previousId == null) previousId = activityRepository.findLastIdInParent(parentId).orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("activity", activityDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Safari day activity retrieved successfully", activityDTO)
+                ApiResponse.success(200, "Safari day activity retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -194,5 +233,13 @@ public class SafariDayActivityGetService {
         dto.setSkipReason(activity.getSkipReason());
         dto.setCreatedAt(activity.getCreatedAt());
         return dto;
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 }

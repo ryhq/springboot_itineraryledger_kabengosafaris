@@ -29,9 +29,12 @@ public class PdfDocumentController {
      */
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_PDF_DOCUMENT')")
-    public ResponseEntity<ApiResponse<?>> getAllDocuments() {
+    public ResponseEntity<ApiResponse<?>> getAllDocuments(
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false, defaultValue = "desc") String sortDirection
+    ) {
         log.info("GET /api/pdf-documents - Fetching all PDF document types");
-        return getService.getAllDocuments();
+        return getService.getAllDocuments(sortBy, sortDirection);
     }
 
     /**

@@ -1,6 +1,9 @@
 package com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Services;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +33,12 @@ public class ItineraryDayGetService {
     private final ItineraryDayRepository itineraryDayRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "dayNumber", "title", "dayTag", "startLocation", "endLocation",
+        "distanceKm", "isOvernight", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "dayNumber";
+
     @Autowired
     public ItineraryDayGetService(
         ItineraryRepository itineraryRepository,
@@ -45,9 +54,15 @@ public class ItineraryDayGetService {
      * Get all days for an itinerary
      *
      * @param itineraryIdObfuscated The obfuscated itinerary ID
+     * @param sortBy The field to sort by
+     * @param sortDirection The sort direction (asc/desc)
      * @return ResponseEntity with ApiResponse containing list of days
      */
-    public ResponseEntity<ApiResponse<?>> getItineraryDays(String itineraryIdObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getItineraryDays(
+            String itineraryIdObfuscated,
+            String sortBy,
+            String sortDirection
+    ) {
         log.info("Fetching days for itinerary: {}", itineraryIdObfuscated);
 
         try {
@@ -68,6 +83,15 @@ public class ItineraryDayGetService {
                 );
             }
 
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Fetch days
             List<ItineraryDay> days = itineraryDayRepository.findByItineraryIdOrderByDayNumberAsc(itineraryId);
 
@@ -76,8 +100,15 @@ public class ItineraryDayGetService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
+            // Response
+            Map<String, Object> response = new HashMap<>();
+            response.put("itineraryDays", dayDTOs);
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "asc");
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Itinerary days retrieved successfully", dayDTOs)
+                ApiResponse.success(200, "Itinerary days retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -129,8 +160,20 @@ public class ItineraryDayGetService {
             // Convert to DTO
             ItineraryDayDTO dayDTO = convertToDTO(day);
 
+            // Parent-scoped circular navigation
+            Long parentId = day.getItinerary().getId();
+            Long nextId = itineraryDayRepository.findNextIdInParent(parentId, dayId).orElse(null);
+            Long previousId = itineraryDayRepository.findPreviousIdInParent(parentId, dayId).orElse(null);
+            if (nextId == null) nextId = itineraryDayRepository.findFirstIdInParent(parentId).orElse(null);
+            if (previousId == null) previousId = itineraryDayRepository.findLastIdInParent(parentId).orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("itineraryDay", dayDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Itinerary day retrieved successfully", dayDTO)
+                ApiResponse.success(200, "Itinerary day retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -139,6 +182,14 @@ public class ItineraryDayGetService {
                 ApiResponse.error(500, "Failed to fetch itinerary day", "ITINERARY_DAY_FETCH_FAILED")
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

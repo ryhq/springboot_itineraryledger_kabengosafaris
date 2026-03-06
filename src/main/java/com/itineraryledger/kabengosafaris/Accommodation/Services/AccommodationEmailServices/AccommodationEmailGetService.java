@@ -17,7 +17,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,6 +32,11 @@ public class AccommodationEmailGetService {
 
     private final AccommodationEmailRepository accommodationEmailRepository;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "email", "emailType", "label", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
     public AccommodationEmailGetService(
@@ -80,11 +87,22 @@ public class AccommodationEmailGetService {
             // Convert to DTO
             AccommodationEmailDTO emailDTO = convertToDTO(email);
 
+            // Circular navigation
+            Long nextId = accommodationEmailRepository.findNextId(id).orElse(null);
+            Long previousId = accommodationEmailRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = accommodationEmailRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = accommodationEmailRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("email", emailDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
                 ApiResponse.success(
                     200,
                     "Accommodation email retrieved successfully",
-                    emailDTO
+                    response
                 )
             );
 
@@ -122,11 +140,22 @@ public class AccommodationEmailGetService {
         Boolean isActive,
         String label,
         String keyword,
+        String sortBy,
+        String sortDirection,
         Pageable pageable
     ) {
         log.info("Fetching all accommodation emails with optional filters");
 
         try {
+            // Validate sort field
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Build specification
             Specification<AccommodationEmail> spec = Specification.unrestricted();
 
@@ -180,6 +209,9 @@ public class AccommodationEmailGetService {
             responseData.put("totalItems", emailDTOPage.getTotalElements());
             responseData.put("totalPages", emailDTOPage.getTotalPages());
             responseData.put("pageSize", emailDTOPage.getSize());
+            responseData.put("validSortFields", VALID_SORT_FIELDS);
+            responseData.put("currentSortBy", validatedSortBy);
+            responseData.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -223,11 +255,22 @@ public class AccommodationEmailGetService {
         Boolean isActive,
         String label,
         String keyword,
+        String sortBy,
+        String sortDirection,
         Pageable pageable
     ) {
         log.info("Fetching emails for accommodation: {}", accommodationId);
 
         try {
+            // Validate sort field
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Decode accommodation ID (required)
             Long decodedAccommodationId;
             try {
@@ -279,6 +322,9 @@ public class AccommodationEmailGetService {
             responseData.put("totalItems", emailDTOPage.getTotalElements());
             responseData.put("totalPages", emailDTOPage.getTotalPages());
             responseData.put("pageSize", emailDTOPage.getSize());
+            responseData.put("validSortFields", VALID_SORT_FIELDS);
+            responseData.put("currentSortBy", validatedSortBy);
+            responseData.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -298,6 +344,14 @@ public class AccommodationEmailGetService {
                 )
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

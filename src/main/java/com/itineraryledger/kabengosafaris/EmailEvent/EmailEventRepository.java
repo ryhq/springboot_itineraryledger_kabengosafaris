@@ -2,6 +2,8 @@ package com.itineraryledger.kabengosafaris.EmailEvent;
 
 import com.itineraryledger.kabengosafaris.EmailEvent.ModalEntity.EmailEvent;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -25,4 +27,16 @@ public interface EmailEventRepository extends JpaRepository<EmailEvent, Long> {
      * @return true if exists, false otherwise
      */
     boolean existsByName(String name);
+
+    @Query("SELECT e.id FROM EmailEvent e WHERE e.id > :currentId ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT e.id FROM EmailEvent e WHERE e.id < :currentId ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT e.id FROM EmailEvent e ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT e.id FROM EmailEvent e ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

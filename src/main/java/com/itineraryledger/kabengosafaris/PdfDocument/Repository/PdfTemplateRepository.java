@@ -61,4 +61,20 @@ public interface PdfTemplateRepository extends JpaRepository<PdfTemplate, Long>,
      * Find system default template for a document type
      */
     Optional<PdfTemplate> findByPdfDocumentIdAndIsSystemDefault(Long pdfDocumentId, Boolean isSystemDefault);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT t.id FROM PdfTemplate t WHERE t.id > :currentId ORDER BY t.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT t.id FROM PdfTemplate t WHERE t.id < :currentId ORDER BY t.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT t.id FROM PdfTemplate t ORDER BY t.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT t.id FROM PdfTemplate t ORDER BY t.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

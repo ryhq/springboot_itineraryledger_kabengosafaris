@@ -45,4 +45,20 @@ public interface AccommodationRoomStandardRepository extends JpaRepository<Accom
         ORDER BY rs.name ASC
         """)
     List<AccommodationRoomStandard> findUniqueRoomStandardsByName();
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT rs.id FROM AccommodationRoomStandard rs WHERE rs.id > :currentId ORDER BY rs.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT rs.id FROM AccommodationRoomStandard rs WHERE rs.id < :currentId ORDER BY rs.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT rs.id FROM AccommodationRoomStandard rs ORDER BY rs.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT rs.id FROM AccommodationRoomStandard rs ORDER BY rs.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

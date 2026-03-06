@@ -45,4 +45,20 @@ public interface AccommodationRoomTypeRepository extends JpaRepository<Accommoda
         ORDER BY rt.name ASC
         """)
     List<AccommodationRoomType> findUniqueRoomTypesByName();
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT r.id FROM AccommodationRoomType r WHERE r.id > :currentId ORDER BY r.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT r.id FROM AccommodationRoomType r WHERE r.id < :currentId ORDER BY r.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT r.id FROM AccommodationRoomType r ORDER BY r.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT r.id FROM AccommodationRoomType r ORDER BY r.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Activity.Services;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,11 @@ public class ActivityGetService {
 
     private final ActivityRepository activityRepository;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "name", "slug", "minimumAge", "maximumParticipants", "isActive", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
     public ActivityGetService(
@@ -86,11 +92,22 @@ public class ActivityGetService {
             // Convert to DTO
             ActivityDTO activityDTO = convertToDTO(activity);
 
+            // Circular navigation
+            Long nextId = activityRepository.findNextId(id).orElse(null);
+            Long previousId = activityRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = activityRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = activityRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("activity", activityDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
                 ApiResponse.success(
                     200,
                     "Activity retrieved successfully",
-                    activityDTO
+                    response
                 )
             );
 
@@ -178,6 +195,7 @@ public class ActivityGetService {
         String keyword,
         Integer page,
         Integer size,
+        String sortBy,
         String sortDirection
     ) {
         log.info("Fetching all activities with filters");
@@ -215,14 +233,22 @@ public class ActivityGetService {
             int pageNumber = (page != null && page >= 0) ? page : 0;
             int pageSize = (size != null && size > 0) ? size : 10;
 
-            // Set default sorting (always by createdAt)
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             Sort.Direction direction = Sort.Direction.DESC;
             if (sortDirection != null && sortDirection.equalsIgnoreCase("asc")) {
                 direction = Sort.Direction.ASC;
             }
 
             // Create pageable
-            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, "createdAt"));
+            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
 
             // Fetch activities
             Page<Activity> activityPage = activityRepository.findAll(spec, pageable);
@@ -238,6 +264,9 @@ public class ActivityGetService {
             response.put("currentPage", activityPage.getNumber());
             response.put("totalItems", activityPage.getTotalElements());
             response.put("totalPages", activityPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -259,10 +288,18 @@ public class ActivityGetService {
         }
     }
 
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
+    }
+
     /**
      * Convert Activity entity to ActivityDTO
      */
-    private ActivityDTO convertToDTO(Activity activity) {
+    public ActivityDTO convertToDTO(Activity activity) {
         ActivityDTO dto = new ActivityDTO();
         dto.setId(idObfuscator.encodeId(activity.getId()));
         dto.setName(activity.getName());

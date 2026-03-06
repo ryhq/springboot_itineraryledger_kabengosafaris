@@ -142,13 +142,15 @@ public class AccommodationPhoneController {
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/accommodation-phones - Fetching all phones with filters");
 
+        String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
         Sort sort = sortDirection.equalsIgnoreCase("asc")
-            ? Sort.by("createdAt").ascending()
-            : Sort.by("createdAt").descending();
+            ? Sort.by(sortField).ascending()
+            : Sort.by(sortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return accommodationPhoneGetService.getAllAccommodationPhones(
@@ -161,6 +163,8 @@ public class AccommodationPhoneController {
             isActive,
             label,
             keyword,
+            sortBy,
+            sortDirection,
             pageable
         );
     }
@@ -196,13 +200,15 @@ public class AccommodationPhoneController {
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/accommodation-phones/accommodation/{} - Fetching phones for accommodation", accommodationId);
 
+        String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
         Sort sort = sortDirection.equalsIgnoreCase("asc")
-            ? Sort.by("createdAt").ascending()
-            : Sort.by("createdAt").descending();
+            ? Sort.by(sortField).ascending()
+            : Sort.by(sortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return accommodationPhoneGetService.getAllAccommodationsPhones(
@@ -215,6 +221,8 @@ public class AccommodationPhoneController {
             isActive,
             label,
             keyword,
+            sortBy,
+            sortDirection,
             pageable
         );
     }

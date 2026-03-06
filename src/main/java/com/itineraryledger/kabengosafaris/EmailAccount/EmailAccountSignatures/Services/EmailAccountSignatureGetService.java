@@ -1,7 +1,9 @@
 package com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountSignatures.Services;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +53,11 @@ public class EmailAccountSignatureGetService {
     @Autowired
     private IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "name", "isDefault", "enabled", "fileSize", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
     /**
      * Get all signatures for an email account with pagination, filtering and sorting
      *
@@ -63,7 +70,7 @@ public class EmailAccountSignatureGetService {
      * @return ResponseEntity with paginated signatures
      */
     public ResponseEntity<ApiResponse<?>> getAllSignatures(String emailAccountIdObfuscated, Boolean enabled,
-            Boolean isDefault, int page, int size, String sortDir) {
+            Boolean isDefault, int page, int size, String sortBy, String sortDir) {
         log.debug("Fetching signatures for email account: {} with filters - enabled: {}, isDefault: {}, page: {}, size: {}, sortDir: {}",
                 emailAccountIdObfuscated, enabled, isDefault, page, size, sortDir);
 
@@ -93,9 +100,17 @@ public class EmailAccountSignatureGetService {
                 );
             }
 
-            // Setup sorting
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
-            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, "createdAt"));
+            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
             // Build dynamic specification
             Specification<EmailAccountSignature> specification = Specification.unrestricted();
@@ -122,6 +137,9 @@ public class EmailAccountSignatureGetService {
             response.put("currentPage", signaturesPage.getNumber());
             response.put("totalItems", signaturesPage.getTotalElements());
             response.put("totalPages", signaturesPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDir != null ? sortDir : "desc");
 
             log.info("Successfully fetched {} signatures on page {}", dtos.size(), page);
             return ResponseEntity.ok(ApiResponse.success(200, "Signatures retrieved successfully", response));
@@ -156,8 +174,21 @@ public class EmailAccountSignatureGetService {
                 );
             }
 
+            EmailAccountSignatureDTO signatureDTO = convertToDTO(signature);
+
+            // Circular navigation
+            Long nextId = emailAccountSignatureRepository.findNextId(signatureId).orElse(null);
+            Long previousId = emailAccountSignatureRepository.findPreviousId(signatureId).orElse(null);
+            if (nextId == null) nextId = emailAccountSignatureRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = emailAccountSignatureRepository.findLastId().orElse(null);
+
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("signature", signatureDTO);
+            responseData.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            responseData.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             log.debug("Signature retrieved successfully: {}", signatureId);
-            return ResponseEntity.ok(ApiResponse.success(200, "Signature retrieved successfully", convertToDTO(signature)));
+            return ResponseEntity.ok(ApiResponse.success(200, "Signature retrieved successfully", responseData));
 
         } catch (Exception e) {
             log.error("Error fetching signature", e);
@@ -406,6 +437,14 @@ public class EmailAccountSignatureGetService {
                     ApiResponse.error(500, "Failed to retrieve signature file", "SIGNATURE_FILE_RETRIEVE_FAILED")
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

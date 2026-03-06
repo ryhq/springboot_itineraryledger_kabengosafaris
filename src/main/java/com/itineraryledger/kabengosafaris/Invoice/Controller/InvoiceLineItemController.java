@@ -59,11 +59,12 @@ public class InvoiceLineItemController {
         @RequestParam(required = false) Boolean isActive,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
-        @RequestParam(required = false, defaultValue = "asc") String sortDirection
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/invoices/{}/line-items - Fetching all invoice line items", invoiceId);
         return invoiceLineItemGetService.getAllInvoiceLineItems(
-            invoiceId, itemName, description, isActive, page, size, sortDirection
+            invoiceId, itemName, description, isActive, page, size, sortBy, sortDirection
         );
     }
 

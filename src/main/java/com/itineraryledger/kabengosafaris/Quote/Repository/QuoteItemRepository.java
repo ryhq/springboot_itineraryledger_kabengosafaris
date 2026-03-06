@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository for QuoteItem entity.
@@ -58,4 +59,20 @@ public interface QuoteItemRepository extends JpaRepository<QuoteItem, Long>, Jpa
      * Delete all items for a quote
      */
     void deleteByQuoteId(Long quoteId);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT q.id FROM QuoteItem q WHERE q.id > :currentId ORDER BY q.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT q.id FROM QuoteItem q WHERE q.id < :currentId ORDER BY q.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT q.id FROM QuoteItem q ORDER BY q.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT q.id FROM QuoteItem q ORDER BY q.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

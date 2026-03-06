@@ -27,4 +27,20 @@ public interface ItineraryDayRepository extends JpaRepository<ItineraryDay, Long
 
     @Query("SELECT MAX(d.dayNumber) FROM ItineraryDay d WHERE d.itinerary.id = :itineraryId")
     Optional<Integer> findMaxDayNumberByItineraryId(@Param("itineraryId") Long itineraryId);
+
+    // ========================
+    // PARENT-SCOPED NAVIGATION QUERIES (circular next/previous within itinerary)
+    // ========================
+
+    @Query("SELECT d.id FROM ItineraryDay d WHERE d.itinerary.id = :parentId AND d.id > :currentId ORDER BY d.id ASC LIMIT 1")
+    Optional<Long> findNextIdInParent(@Param("parentId") Long parentId, @Param("currentId") Long currentId);
+
+    @Query("SELECT d.id FROM ItineraryDay d WHERE d.itinerary.id = :parentId AND d.id < :currentId ORDER BY d.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdInParent(@Param("parentId") Long parentId, @Param("currentId") Long currentId);
+
+    @Query("SELECT d.id FROM ItineraryDay d WHERE d.itinerary.id = :parentId ORDER BY d.id ASC LIMIT 1")
+    Optional<Long> findFirstIdInParent(@Param("parentId") Long parentId);
+
+    @Query("SELECT d.id FROM ItineraryDay d WHERE d.itinerary.id = :parentId ORDER BY d.id DESC LIMIT 1")
+    Optional<Long> findLastIdInParent(@Param("parentId") Long parentId);
 }

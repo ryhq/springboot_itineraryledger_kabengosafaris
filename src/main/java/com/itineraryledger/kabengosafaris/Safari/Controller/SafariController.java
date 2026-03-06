@@ -154,12 +154,13 @@ public class SafariController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "10") Integer size,
+            @RequestParam(required = false) String sortBy,
             @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         return safariGetService.getAllSafaris(
                 name, code, state, phase, startLocation, endLocation,
                 startDateFrom, startDateTo, isActive, keyword,
-                page, size, sortDirection
+                page, size, sortBy, sortDirection
         );
     }
 

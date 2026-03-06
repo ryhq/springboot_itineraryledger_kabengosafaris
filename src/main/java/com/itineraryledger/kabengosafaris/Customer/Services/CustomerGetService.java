@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,13 @@ public class CustomerGetService {
 
     private final CustomerRepository customerRepository;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "code", "firstName", "lastName", "companyName", "customerType", "nationality",
+        "country", "city", "source", "isVip", "isBlacklisted", "isActive",
+        "totalBookings", "totalSpent", "lastBookingDate", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     /**
      * Get a single customer by obfuscated ID
@@ -69,8 +77,19 @@ public class CustomerGetService {
 
             CustomerDTO customerDTO = convertToDTO(customer);
 
+            // Circular navigation
+            Long nextId = customerRepository.findNextId(id).orElse(null);
+            Long previousId = customerRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = customerRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = customerRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("customer", customerDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Customer retrieved successfully", customerDTO)
+                ApiResponse.success(200, "Customer retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -172,14 +191,21 @@ public class CustomerGetService {
             int pageNumber = (page != null && page >= 0) ? page : 0;
             int pageSize = (size != null && size > 0) ? size : 10;
 
-            // Sorting
-            String sortField = (sortBy != null && !sortBy.isEmpty()) ? sortBy : "createdAt";
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             Sort.Direction direction = Sort.Direction.DESC;
             if (sortDirection != null && sortDirection.equalsIgnoreCase("asc")) {
                 direction = Sort.Direction.ASC;
             }
 
-            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, sortField));
+            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
 
             // Fetch customers
             Page<Customer> customerPage = customerRepository.findAll(spec, pageable);
@@ -195,6 +221,9 @@ public class CustomerGetService {
             response.put("currentPage", customerPage.getNumber());
             response.put("totalItems", customerPage.getTotalElements());
             response.put("totalPages", customerPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Customers retrieved successfully", response)
@@ -303,6 +332,14 @@ public class CustomerGetService {
     private Boolean isPassportExpiringSoon(LocalDate passportExpiry) {
         if (passportExpiry == null) return null;
         return passportExpiry.isBefore(LocalDate.now().plusMonths(6));
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     private String buildFullAddress(Customer customer) {

@@ -29,4 +29,20 @@ public interface SafariDayRepository extends JpaRepository<SafariDay, Long>, Jpa
     List<SafariDay> findByActualDate(@Param("date") LocalDate date);
 
     void deleteBySafariId(Long safariId);
+
+    // ========================
+    // NAVIGATION QUERIES (parent-scoped circular next/previous)
+    // ========================
+
+    @Query("SELECT d.id FROM SafariDay d WHERE d.safari.id = :parentId AND d.id > :currentId ORDER BY d.id ASC LIMIT 1")
+    Optional<Long> findNextIdInParent(@Param("parentId") Long parentId, @Param("currentId") Long currentId);
+
+    @Query("SELECT d.id FROM SafariDay d WHERE d.safari.id = :parentId AND d.id < :currentId ORDER BY d.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdInParent(@Param("parentId") Long parentId, @Param("currentId") Long currentId);
+
+    @Query("SELECT d.id FROM SafariDay d WHERE d.safari.id = :parentId ORDER BY d.id ASC LIMIT 1")
+    Optional<Long> findFirstIdInParent(@Param("parentId") Long parentId);
+
+    @Query("SELECT d.id FROM SafariDay d WHERE d.safari.id = :parentId ORDER BY d.id DESC LIMIT 1")
+    Optional<Long> findLastIdInParent(@Param("parentId") Long parentId);
 }

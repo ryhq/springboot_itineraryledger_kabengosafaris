@@ -59,10 +59,12 @@ public class SafariDayAccommodationController {
     @PreAuthorize("hasAuthority('PERM_READ_SAFARI_DAY_ACCOMMODATION')")
     public ResponseEntity<ApiResponse<?>> getAccommodations(
         @PathVariable String safariId,
-        @PathVariable String dayId
+        @PathVariable String dayId,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/safaris/{}/days/{}/accommodations - Fetching accommodations", safariId, dayId);
-        return getService.getSafariDayAccommodations(safariId, dayId);
+        return getService.getSafariDayAccommodations(safariId, dayId, sortBy, sortDirection);
     }
 
     @PutMapping("/{accommodationId}")

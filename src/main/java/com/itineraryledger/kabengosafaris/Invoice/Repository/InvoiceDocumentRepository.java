@@ -103,4 +103,20 @@ public interface InvoiceDocumentRepository extends JpaRepository<InvoiceDocument
      */
     @Query("SELECT doc FROM InvoiceDocument doc WHERE doc.isActive = true AND doc.validTo IS NOT NULL AND doc.validTo BETWEEN :startDate AND :endDate ORDER BY doc.validTo ASC")
     List<InvoiceDocument> findDocumentsExpiringSoon(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT doc.id FROM InvoiceDocument doc WHERE doc.id > :currentId ORDER BY doc.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT doc.id FROM InvoiceDocument doc WHERE doc.id < :currentId ORDER BY doc.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT doc.id FROM InvoiceDocument doc ORDER BY doc.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT doc.id FROM InvoiceDocument doc ORDER BY doc.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

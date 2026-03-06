@@ -12,9 +12,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -140,14 +137,10 @@ public class CustomerPhoneController {
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/customer-phones - Fetching all phones with filters");
-
-        Sort sort = sortDirection.equalsIgnoreCase("asc")
-            ? Sort.by("createdAt").ascending()
-            : Sort.by("createdAt").descending();
-        Pageable pageable = PageRequest.of(page, size, sort);
 
         return customerPhoneGetService.getAllCustomerPhones(
             customerId,
@@ -158,7 +151,10 @@ public class CustomerPhoneController {
             isActive,
             label,
             keyword,
-            pageable
+            page,
+            size,
+            sortBy,
+            sortDirection
         );
     }
 
@@ -191,14 +187,10 @@ public class CustomerPhoneController {
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/customer-phones/customer/{} - Fetching phones for customer", customerId);
-
-        Sort sort = sortDirection.equalsIgnoreCase("asc")
-            ? Sort.by("createdAt").ascending()
-            : Sort.by("createdAt").descending();
-        Pageable pageable = PageRequest.of(page, size, sort);
 
         return customerPhoneGetService.getCustomersPhones(
             customerId,
@@ -209,7 +201,10 @@ public class CustomerPhoneController {
             isActive,
             label,
             keyword,
-            pageable
+            page,
+            size,
+            sortBy,
+            sortDirection
         );
     }
 }

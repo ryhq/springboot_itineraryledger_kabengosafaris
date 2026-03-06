@@ -81,10 +81,11 @@ public class PdfTemplateController {
         @RequestParam(required = false) String orientation,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/pdf-templates - Fetching templates with filters");
-        return getService.getAllTemplates(documentId, documentType, rootVariableName, enabled, isDefault, isSystemDefault, name, paperSize, orientation, page, size, sortDirection);
+        return getService.getAllTemplates(documentId, documentType, rootVariableName, enabled, isDefault, isSystemDefault, name, paperSize, orientation, page, size, sortBy, sortDirection);
     }
 
     /**

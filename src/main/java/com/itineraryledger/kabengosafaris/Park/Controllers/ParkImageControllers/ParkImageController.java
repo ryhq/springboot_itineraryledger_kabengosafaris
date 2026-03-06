@@ -99,6 +99,7 @@ public class ParkImageController {
             @RequestParam(value = "displayOrder", required = false) Integer displayOrder,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size,
+            @RequestParam(value = "sortBy", required = false) String sortBy,
             @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection
     ) {
         return getService.getAllImages(
@@ -112,6 +113,7 @@ public class ParkImageController {
             displayOrder,
             page,
             size,
+            sortBy,
             sortDirection
         );
     }

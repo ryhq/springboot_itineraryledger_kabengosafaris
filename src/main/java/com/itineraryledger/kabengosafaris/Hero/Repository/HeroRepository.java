@@ -1,9 +1,12 @@
 package com.itineraryledger.kabengosafaris.Hero.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.itineraryledger.kabengosafaris.Hero.Entity.Hero;
@@ -36,4 +39,20 @@ public interface HeroRepository extends JpaRepository<Hero, Long>, JpaSpecificat
      * Count active heroes for a specific page
      */
     long countByPageAndIsActiveTrue(HeroPage page);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT e.id FROM Hero e WHERE e.id > :currentId ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT e.id FROM Hero e WHERE e.id < :currentId ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT e.id FROM Hero e ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT e.id FROM Hero e ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

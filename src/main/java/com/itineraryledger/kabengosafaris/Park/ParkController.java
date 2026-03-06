@@ -156,6 +156,7 @@ public class ParkController {
         @Parameter(description = "Search keyword across multiple fields") @RequestParam(required = false) String keyword,
         @Parameter(description = "Page number (0-indexed)") @RequestParam(required = false, defaultValue = "0") Integer page,
         @Parameter(description = "Page size") @RequestParam(required = false, defaultValue = "10") Integer size,
+        @Parameter(description = "Sort by field") @RequestParam(required = false) String sortBy,
         @Parameter(description = "Sort direction (asc/desc)") @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/parks - Fetching all parks with filters");
@@ -171,6 +172,7 @@ public class ParkController {
             keyword,
             page,
             size,
+            sortBy,
             sortDirection
         );
     }

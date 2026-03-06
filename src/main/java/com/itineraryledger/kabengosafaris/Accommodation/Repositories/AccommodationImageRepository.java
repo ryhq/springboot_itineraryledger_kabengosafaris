@@ -98,4 +98,20 @@ public interface AccommodationImageRepository extends JpaRepository<Accommodatio
      */
     @Query("SELECT img FROM AccommodationImage img WHERE img.imageType = :imageType AND img.isActive = true ORDER BY img.createdAt DESC")
     List<AccommodationImage> findAllByImageType(@Param("imageType") ImageType imageType);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT img.id FROM AccommodationImage img WHERE img.id > :currentId ORDER BY img.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT img.id FROM AccommodationImage img WHERE img.id < :currentId ORDER BY img.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT img.id FROM AccommodationImage img ORDER BY img.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT img.id FROM AccommodationImage img ORDER BY img.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

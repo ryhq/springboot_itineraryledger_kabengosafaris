@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Hero.Services.HeroServices;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,11 @@ public class HeroGetService {
     private final HeroRepository heroRepository;
     private final IdObfuscator idObfuscator;
     private final HeroImageStorageService storageService;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "title", "page", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
     public HeroGetService(
@@ -91,11 +97,22 @@ public class HeroGetService {
             // Convert to DTO
             HeroDTO heroDTO = convertToDTO(hero);
 
+            // Circular navigation
+            Long nextId = heroRepository.findNextId(id).orElse(null);
+            Long previousId = heroRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = heroRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = heroRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("hero", heroDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
                 ApiResponse.success(
                     200,
                     "Hero retrieved successfully",
-                    heroDTO
+                    response
                 )
             );
 
@@ -180,13 +197,21 @@ public class HeroGetService {
             // Set defaults
             pageNumber = (pageNumber != null) ? pageNumber : 0;
             pageSize = (pageSize != null) ? pageSize : 20;
-            sortBy = (sortBy != null && !sortBy.isEmpty()) ? sortBy : "displayOrder";
             sortDirection = (sortDirection != null && !sortDirection.isEmpty()) ? sortDirection : "asc";
+
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
 
             // Create sort
             Sort sort = sortDirection.equalsIgnoreCase("desc")
-                ? Sort.by(sortBy).descending()
-                : Sort.by(sortBy).ascending();
+                ? Sort.by(validatedSortBy).descending()
+                : Sort.by(validatedSortBy).ascending();
 
             // Create pageable
             Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
@@ -238,6 +263,9 @@ public class HeroGetService {
             response.put("totalItems", heroPage.getTotalElements());
             response.put("totalPages", heroPage.getTotalPages());
             response.put("pageSize", heroPage.getSize());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection);
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -257,6 +285,14 @@ public class HeroGetService {
                 )
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

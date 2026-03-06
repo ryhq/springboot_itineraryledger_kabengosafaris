@@ -8,11 +8,15 @@ import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Service for retrieving PDF document types
@@ -27,19 +31,52 @@ public class PdfDocumentGetService {
     private final PdfTemplateRepository pdfTemplateRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "name", "displayName", "enabled", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
+    }
+
     /**
      * Get all PDF document types
      */
-    public ResponseEntity<ApiResponse<?>> getAllDocuments() {
+    public ResponseEntity<ApiResponse<?>> getAllDocuments(String sortBy, String sortDirection) {
         try {
-            List<PdfDocument> documents = pdfDocumentRepository.findAll();
+            // Validate sort field
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
+            Sort.Direction direction = Sort.Direction.DESC;
+            if ("asc".equalsIgnoreCase(sortDirection)) {
+                direction = Sort.Direction.ASC;
+            }
+
+            List<PdfDocument> documents = pdfDocumentRepository.findAll(Sort.by(direction, validatedSortBy));
 
             List<PdfDocumentDTO> dtos = documents.stream()
                 .map(this::mapToDTO)
                 .toList();
 
+            Map<String, Object> response = new HashMap<>();
+            response.put("pdfDocuments", dtos);
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+
             log.info("Retrieved {} PDF document types", dtos.size());
-            return ResponseEntity.ok(ApiResponse.success(200, "PDF documents retrieved successfully", dtos));
+            return ResponseEntity.ok(ApiResponse.success(200, "PDF documents retrieved successfully", response));
 
         } catch (Exception e) {
             log.error("Error retrieving PDF documents", e);
@@ -68,7 +105,19 @@ public class PdfDocumentGetService {
                 );
             }
             PdfDocumentDTO dto = mapToDTO(document);
-            return ResponseEntity.ok(ApiResponse.success(200, "PDF document retrieved successfully", dto));
+
+            // Navigation IDs
+            Long nextId = pdfDocumentRepository.findNextId(id).orElse(null);
+            Long previousId = pdfDocumentRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = pdfDocumentRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = pdfDocumentRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("pdfDocument", dto);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
+            return ResponseEntity.ok(ApiResponse.success(200, "PDF document retrieved successfully", response));
 
         } catch (Exception e) {
             log.error("Error retrieving PDF document: {}", idObfuscated, e);

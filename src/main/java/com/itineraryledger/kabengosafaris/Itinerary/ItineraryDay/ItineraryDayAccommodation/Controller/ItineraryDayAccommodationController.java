@@ -59,10 +59,12 @@ public class ItineraryDayAccommodationController {
     @PreAuthorize("hasAuthority('PERM_READ_ITINERARY_DAY_ACCOMMODATION')")
     public ResponseEntity<ApiResponse<?>> getAccommodations(
         @PathVariable String itineraryId,
-        @PathVariable String dayId
+        @PathVariable String dayId,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/itineraries/{}/days/{}/accommodations - Fetching accommodations", itineraryId, dayId);
-        return getService.getItineraryDayAccommodations(itineraryId, dayId);
+        return getService.getItineraryDayAccommodations(itineraryId, dayId, sortBy, sortDirection);
     }
 
     @PutMapping("/{accommodationId}")

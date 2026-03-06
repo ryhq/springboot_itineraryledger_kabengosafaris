@@ -1,6 +1,9 @@
 package com.itineraryledger.kabengosafaris.Itinerary.ItineraryPax.Services;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +33,11 @@ public class ItineraryPaxGetService {
     private final ItineraryPaxRepository itineraryPaxRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "count", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
     @Autowired
     public ItineraryPaxGetService(
         ItineraryRepository itineraryRepository,
@@ -45,9 +53,15 @@ public class ItineraryPaxGetService {
      * Get all pax entries for an itinerary
      *
      * @param itineraryIdObfuscated The obfuscated itinerary ID
+     * @param sortBy The field to sort by
+     * @param sortDirection The sort direction (asc/desc)
      * @return ResponseEntity with ApiResponse containing list of pax entries
      */
-    public ResponseEntity<ApiResponse<?>> getItineraryPax(String itineraryIdObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getItineraryPax(
+            String itineraryIdObfuscated,
+            String sortBy,
+            String sortDirection
+    ) {
         log.info("Fetching pax entries for itinerary: {}", itineraryIdObfuscated);
 
         try {
@@ -68,6 +82,15 @@ public class ItineraryPaxGetService {
                 );
             }
 
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Fetch pax entries
             List<ItineraryPax> paxList = itineraryPaxRepository.findByItineraryId(itineraryId);
 
@@ -81,11 +104,19 @@ public class ItineraryPaxGetService {
                 .mapToInt(p -> p.getCount() != null ? p.getCount() : 0)
                 .sum();
 
+            // Response
+            Map<String, Object> response = new HashMap<>();
+            response.put("paxEntries", paxDTOs);
+            response.put("totalPax", totalPax);
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+
             return ResponseEntity.ok().body(
                 ApiResponse.success(
                     200,
                     "Retrieved " + paxDTOs.size() + " pax categories (total: " + totalPax + " passengers)",
-                    paxDTOs
+                    response
                 )
             );
 
@@ -95,6 +126,14 @@ public class ItineraryPaxGetService {
                 ApiResponse.error(500, "Failed to fetch itinerary pax", "ITINERARY_PAX_FETCH_FAILED")
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

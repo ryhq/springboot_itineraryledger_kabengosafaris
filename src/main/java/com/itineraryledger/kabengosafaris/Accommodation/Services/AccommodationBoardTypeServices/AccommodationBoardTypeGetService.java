@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,11 @@ public class AccommodationBoardTypeGetService {
 
     private final AccommodationBoardTypeRepository boardTypeRepository;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "name", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
     public AccommodationBoardTypeGetService(
@@ -81,11 +87,22 @@ public class AccommodationBoardTypeGetService {
             // Convert to DTO
             AccommodationBoardTypeDTO boardTypeDTO = convertToDTO(boardType);
 
+            // Circular navigation
+            Long nextId = boardTypeRepository.findNextId(boardTypeId).orElse(null);
+            Long previousId = boardTypeRepository.findPreviousId(boardTypeId).orElse(null);
+            if (nextId == null) nextId = boardTypeRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = boardTypeRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("boardType", boardTypeDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
                 ApiResponse.success(
                     200,
                     "Board type retrieved successfully",
-                    boardTypeDTO
+                    response
                 )
             );
 
@@ -129,11 +146,22 @@ public class AccommodationBoardTypeGetService {
         Boolean isActive,
         Boolean hasFullMealPlan,
         String keyword,
+        String sortBy,
+        String sortDirection,
         Pageable pageable
     ) {
         log.info("Fetching all accommodation board types with filters");
 
         try {
+            // Validate sort field
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Build specification
             Specification<AccommodationBoardType> spec = Specification.unrestricted();
 
@@ -197,6 +225,9 @@ public class AccommodationBoardTypeGetService {
             response.put("currentPage", boardTypesPage.getNumber());
             response.put("totalItems", boardTypesPage.getTotalElements());
             response.put("totalPages", boardTypesPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -246,11 +277,22 @@ public class AccommodationBoardTypeGetService {
         Boolean isActive,
         Boolean hasFullMealPlan,
         String keyword,
+        String sortBy,
+        String sortDirection,
         Pageable pageable
     ) {
         log.info("Fetching board types for accommodation: {}", accommodationId);
 
         try {
+            // Validate sort field
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Decode accommodation ID
             Long accId;
             try {
@@ -312,6 +354,9 @@ public class AccommodationBoardTypeGetService {
             response.put("currentPage", boardTypesPage.getNumber());
             response.put("totalItems", boardTypesPage.getTotalElements());
             response.put("totalPages", boardTypesPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -370,6 +415,14 @@ public class AccommodationBoardTypeGetService {
                 )
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

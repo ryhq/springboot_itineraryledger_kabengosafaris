@@ -67,11 +67,13 @@ public class SafariDayParkActivityController {
     public ResponseEntity<ApiResponse<?>> getParkActivities(
         @PathVariable String safariId,
         @PathVariable String dayId,
-        @PathVariable String parkVisitId
+        @PathVariable String parkVisitId,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/safaris/{}/days/{}/parks/{}/activities - Fetching activities",
             safariId, dayId, parkVisitId);
-        return getService.getParkActivities(parkVisitId);
+        return getService.getParkActivities(parkVisitId, sortBy, sortDirection);
     }
 
     @PostMapping("/reorder")

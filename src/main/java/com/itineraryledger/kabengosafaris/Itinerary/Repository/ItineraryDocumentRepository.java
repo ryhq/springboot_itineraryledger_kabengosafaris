@@ -53,4 +53,20 @@ public interface ItineraryDocumentRepository extends JpaRepository<ItineraryDocu
     long countGeneratedByItineraryId(@Param("itineraryId") Long itineraryId);
 
     boolean existsByItineraryIdAndFileName(Long itineraryId, String fileName);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT d.id FROM ItineraryDocument d WHERE d.id > :currentId ORDER BY d.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT d.id FROM ItineraryDocument d WHERE d.id < :currentId ORDER BY d.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT d.id FROM ItineraryDocument d ORDER BY d.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT d.id FROM ItineraryDocument d ORDER BY d.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

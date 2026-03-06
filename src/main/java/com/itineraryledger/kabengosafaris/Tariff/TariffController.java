@@ -152,6 +152,7 @@ public class TariffController {
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/tariffs - Fetching all tariffs with filters");
@@ -164,6 +165,7 @@ public class TariffController {
             keyword,
             page,
             size,
+            sortBy,
             sortDirection
         );
     }

@@ -10,14 +10,18 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,6 +34,11 @@ public class CustomerEmailGetService {
 
     private final CustomerEmailRepository customerEmailRepository;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "email", "emailType", "label", "isPrimary", "isActive", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
     public CustomerEmailGetService(
@@ -80,11 +89,22 @@ public class CustomerEmailGetService {
             // Convert to DTO
             CustomerEmailDTO emailDTO = convertToDTO(email);
 
+            // Circular navigation
+            Long nextId = customerEmailRepository.findNextId(id).orElse(null);
+            Long previousId = customerEmailRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = customerEmailRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = customerEmailRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("email", emailDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
                 ApiResponse.success(
                     200,
                     "Customer email retrieved successfully",
-                    emailDTO
+                    response
                 )
             );
 
@@ -122,7 +142,10 @@ public class CustomerEmailGetService {
         Boolean isActive,
         String label,
         String keyword,
-        Pageable pageable
+        Integer page,
+        Integer size,
+        String sortBy,
+        String sortDirection
     ) {
         log.info("Fetching all customer emails with optional filters");
 
@@ -167,6 +190,26 @@ public class CustomerEmailGetService {
                 spec = spec.and(CustomerEmailSpecification.searchKeyword(keyword));
             }
 
+            // Pagination
+            int pageNumber = (page != null && page >= 0) ? page : 0;
+            int pageSize = (size != null && size > 0) ? size : 10;
+
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
+            Sort.Direction direction = Sort.Direction.DESC;
+            if (sortDirection != null && sortDirection.equalsIgnoreCase("asc")) {
+                direction = Sort.Direction.ASC;
+            }
+
+            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
+
             // Fetch paginated results
             Page<CustomerEmail> emailPage = customerEmailRepository.findAll(spec, pageable);
 
@@ -180,6 +223,9 @@ public class CustomerEmailGetService {
             responseData.put("totalItems", emailDTOPage.getTotalElements());
             responseData.put("totalPages", emailDTOPage.getTotalPages());
             responseData.put("pageSize", emailDTOPage.getSize());
+            responseData.put("validSortFields", VALID_SORT_FIELDS);
+            responseData.put("currentSortBy", validatedSortBy);
+            responseData.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -223,7 +269,10 @@ public class CustomerEmailGetService {
         Boolean isActive,
         String label,
         String keyword,
-        Pageable pageable
+        Integer page,
+        Integer size,
+        String sortBy,
+        String sortDirection
     ) {
         log.info("Fetching emails for customer: {}", customerId);
 
@@ -266,6 +315,26 @@ public class CustomerEmailGetService {
                 spec = spec.and(CustomerEmailSpecification.searchKeyword(keyword));
             }
 
+            // Pagination
+            int pageNumber = (page != null && page >= 0) ? page : 0;
+            int pageSize = (size != null && size > 0) ? size : 10;
+
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
+            Sort.Direction direction = Sort.Direction.DESC;
+            if (sortDirection != null && sortDirection.equalsIgnoreCase("asc")) {
+                direction = Sort.Direction.ASC;
+            }
+
+            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
+
             // Fetch paginated results
             Page<CustomerEmail> emailPage = customerEmailRepository.findAll(spec, pageable);
 
@@ -279,6 +348,9 @@ public class CustomerEmailGetService {
             responseData.put("totalItems", emailDTOPage.getTotalElements());
             responseData.put("totalPages", emailDTOPage.getTotalPages());
             responseData.put("pageSize", emailDTOPage.getSize());
+            responseData.put("validSortFields", VALID_SORT_FIELDS);
+            responseData.put("currentSortBy", validatedSortBy);
+            responseData.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -298,6 +370,14 @@ public class CustomerEmailGetService {
                 )
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

@@ -1,6 +1,9 @@
 package com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayAccommodation.Services;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +33,11 @@ public class ItineraryDayAccommodationGetService {
     private final ItineraryDayAccommodationRepository accommodationRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "roomCount", "isAlternative", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
     @Autowired
     public ItineraryDayAccommodationGetService(
         ItineraryDayRepository itineraryDayRepository,
@@ -46,11 +54,15 @@ public class ItineraryDayAccommodationGetService {
      *
      * @param itineraryIdObfuscated The obfuscated itinerary ID
      * @param dayIdObfuscated The obfuscated day ID
+     * @param sortBy The field to sort by
+     * @param sortDirection The sort direction (asc/desc)
      * @return ResponseEntity with ApiResponse containing list of accommodations
      */
     public ResponseEntity<ApiResponse<?>> getItineraryDayAccommodations(
         String itineraryIdObfuscated,
-        String dayIdObfuscated
+        String dayIdObfuscated,
+        String sortBy,
+        String sortDirection
     ) {
         log.info("Fetching accommodations for day: {}", dayIdObfuscated);
 
@@ -80,6 +92,15 @@ public class ItineraryDayAccommodationGetService {
                 );
             }
 
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Fetch accommodations
             List<ItineraryDayAccommodation> accommodations = accommodationRepository.findByItineraryDayId(dayId);
 
@@ -88,8 +109,15 @@ public class ItineraryDayAccommodationGetService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
+            // Response
+            Map<String, Object> response = new HashMap<>();
+            response.put("accommodations", dtos);
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Accommodations retrieved successfully", dtos)
+                ApiResponse.success(200, "Accommodations retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -98,6 +126,14 @@ public class ItineraryDayAccommodationGetService {
                 ApiResponse.error(500, "Failed to fetch accommodations", "ACCOMMODATIONS_FETCH_FAILED")
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

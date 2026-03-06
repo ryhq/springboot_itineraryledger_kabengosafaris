@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,10 +39,23 @@ public class EmailAccountGetService {
     private final EmailAccountRepository emailAccountRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "email", "name", "providerType", "enabled", "isDefault", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
     @Autowired
     public EmailAccountGetService(EmailAccountRepository emailAccountRepository, IdObfuscator idObfuscator) {
         this.emailAccountRepository = emailAccountRepository;
         this.idObfuscator = idObfuscator;
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**
@@ -82,14 +96,24 @@ public class EmailAccountGetService {
         Boolean useSsl,
         String smtpUsername,
         String errorMessage,
+        String sortBy,
         String sortDir
     ) {
 
         log.debug("Fetching email accounts with filters - page: {}, size: {}, enabled: {}, isDefault: {}, " +
                 "email: {}, name: {}, providerType: {}, smtpHost: {}, smtpPort: {}, hasErrors: {}, description: {}, " +
-                "useTls: {}, useSsl: {}, smtpUsername: {}, errorMessage: {}, sortDir: {}",
+                "useTls: {}, useSsl: {}, smtpUsername: {}, errorMessage: {}, sortBy: {}, sortDir: {}",
                 page, size, enabled, isDefault, email, name, providerTypeLong, smtpHost, smtpPort, hasErrors,
-                description, useTls, useSsl, smtpUsername, errorMessage, sortDir);
+                description, useTls, useSsl, smtpUsername, errorMessage, sortBy, sortDir);
+
+        // Validate sort field
+        String validatedSortBy = validateSortField(sortBy);
+        if (validatedSortBy == null) {
+            log.warn("Invalid sort field: {}", sortBy);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+            );
+        }
 
         // Validate pagination parameters
         if (page < 0) {
@@ -137,7 +161,7 @@ public class EmailAccountGetService {
         Pageable paging = PageRequest.of(
             page,
             size,
-            Sort.by(direction, "createdAt")
+            Sort.by(direction, validatedSortBy)
         );
 
         // Build dynamic specification
@@ -207,6 +231,9 @@ public class EmailAccountGetService {
         response.put("currentPage", pagedEmailAccounts.getNumber());
         response.put("totalItems", pagedEmailAccounts.getTotalElements());
         response.put("totalPages", pagedEmailAccounts.getTotalPages());
+        response.put("validSortFields", VALID_SORT_FIELDS);
+        response.put("currentSortBy", validatedSortBy);
+        response.put("currentSortDir", sortDir != null ? sortDir : "desc");
 
         log.info("Successfully fetched {} email accounts on page {}", emailAccountDTOs.size(), page);
         return ResponseEntity.ok(
@@ -235,11 +262,22 @@ public class EmailAccountGetService {
                 );
             }
 
+            // Navigation IDs
+            Long nextId = emailAccountRepository.findNextId(id).orElse(null);
+            Long previousId = emailAccountRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = emailAccountRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = emailAccountRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("emailAccount", convertToDTO(emailAccount));
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok(
                 ApiResponse.success(
-                    200, 
-                    "Successfully retrieved email accounts.",
-                    convertToDTO(emailAccount)
+                    200,
+                    "Successfully retrieved email account.",
+                    response
                 )
             );
 

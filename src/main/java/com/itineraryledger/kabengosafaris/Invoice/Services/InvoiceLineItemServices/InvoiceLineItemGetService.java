@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceLineItemServices;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,11 @@ public class InvoiceLineItemGetService {
     private final InvoiceLineItemRepository invoiceLineItemRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "itemType", "itemName", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
     public ResponseEntity<ApiResponse<?>> getInvoiceLineItemById(String invoiceId, String itemId) {
         log.info("Fetching invoice line item with ID: {}", itemId);
 
@@ -56,8 +62,20 @@ public class InvoiceLineItemGetService {
             }
 
             InvoiceLineItemDTO lineItemDTO = convertToDTO(lineItem);
+
+            // Circular navigation
+            Long nextId = invoiceLineItemRepository.findNextId(id).orElse(null);
+            Long previousId = invoiceLineItemRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = invoiceLineItemRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = invoiceLineItemRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("lineItem", lineItemDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Invoice line item retrieved successfully", lineItemDTO)
+                ApiResponse.success(200, "Invoice line item retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -75,6 +93,7 @@ public class InvoiceLineItemGetService {
         Boolean isActive,
         Integer page,
         Integer size,
+        String sortBy,
         String sortDirection
     ) {
         log.info("Fetching invoice line items for invoice ID: {}", invoiceId);
@@ -105,12 +124,21 @@ public class InvoiceLineItemGetService {
             int pageNumber = (page != null && page >= 0) ? page : 0;
             int pageSize = (size != null && size > 0) ? size : 10;
 
-            Sort.Direction direction = Sort.Direction.ASC;
-            if (sortDirection != null && sortDirection.equalsIgnoreCase("desc")) {
-                direction = Sort.Direction.DESC;
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
             }
 
-            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, "displayOrder"));
+            Sort.Direction direction = Sort.Direction.DESC;
+            if (sortDirection != null && sortDirection.equalsIgnoreCase("asc")) {
+                direction = Sort.Direction.ASC;
+            }
+
+            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
             Page<InvoiceLineItem> lineItemPage = invoiceLineItemRepository.findAll(spec, pageable);
 
             List<InvoiceLineItemDTO> lineItemDTOs = lineItemPage.getContent().stream()
@@ -122,6 +150,9 @@ public class InvoiceLineItemGetService {
             response.put("currentPage", lineItemPage.getNumber());
             response.put("totalItems", lineItemPage.getTotalElements());
             response.put("totalPages", lineItemPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Invoice line items retrieved successfully", response)
@@ -133,6 +164,14 @@ public class InvoiceLineItemGetService {
                 ApiResponse.error(500, "Failed to fetch invoice line items", "INVOICE_LINE_ITEMS_FETCH_FAILED")
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     private InvoiceLineItemDTO convertToDTO(InvoiceLineItem lineItem) {

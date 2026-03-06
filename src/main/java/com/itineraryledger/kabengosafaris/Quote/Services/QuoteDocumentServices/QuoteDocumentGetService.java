@@ -1,6 +1,8 @@
 package com.itineraryledger.kabengosafaris.Quote.Services.QuoteDocumentServices;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -38,6 +40,19 @@ public class QuoteDocumentGetService {
     private final QuoteDocumentStorageService storageService;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "title", "documentType", "fileName", "fileSize", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
+    }
+
     public ResponseEntity<ApiResponse<?>> getAllDocuments(
             String quoteId,
             DocumentType documentType,
@@ -67,11 +82,21 @@ public class QuoteDocumentGetService {
                 }
             }
 
-            Sort sort = Sort.by(
-                sortDirection.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC,
-                sortBy
-            );
-            Pageable pageable = PageRequest.of(page, size, sort);
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
+            Sort.Direction direction = Sort.Direction.DESC;
+            if (sortDirection != null && sortDirection.equalsIgnoreCase("asc")) {
+                direction = Sort.Direction.ASC;
+            }
+
+            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
             Specification<QuoteDocument> spec = QuoteDocumentSpecification.byQuoteId(decodedQuoteId)
                 .and(QuoteDocumentSpecification.byDocumentType(documentType))
@@ -88,16 +113,20 @@ public class QuoteDocumentGetService {
             Page<QuoteDocument> documentPage = quoteDocumentRepository.findAll(spec, pageable);
             Page<QuoteDocumentDTO> dtoPage = documentPage.map(this::toDTO);
 
+            Map<String, Object> response = new HashMap<>();
+            response.put("documents", dtoPage.getContent());
+            response.put("currentPage", dtoPage.getNumber());
+            response.put("totalPages", dtoPage.getTotalPages());
+            response.put("totalElements", dtoPage.getTotalElements());
+            response.put("pageSize", dtoPage.getSize());
+            response.put("hasNext", dtoPage.hasNext());
+            response.put("hasPrevious", dtoPage.hasPrevious());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Quote documents retrieved successfully", Map.of(
-                    "documents", dtoPage.getContent(),
-                    "currentPage", dtoPage.getNumber(),
-                    "totalPages", dtoPage.getTotalPages(),
-                    "totalElements", dtoPage.getTotalElements(),
-                    "pageSize", dtoPage.getSize(),
-                    "hasNext", dtoPage.hasNext(),
-                    "hasPrevious", dtoPage.hasPrevious()
-                ))
+                ApiResponse.success(200, "Quote documents retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -131,8 +160,19 @@ public class QuoteDocumentGetService {
 
             QuoteDocumentDTO documentDTO = toDTO(document);
 
+            // Circular navigation
+            Long nextId = quoteDocumentRepository.findNextId(id).orElse(null);
+            Long previousId = quoteDocumentRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = quoteDocumentRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = quoteDocumentRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("document", documentDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Quote document retrieved successfully", documentDTO)
+                ApiResponse.success(200, "Quote document retrieved successfully", response)
             );
 
         } catch (Exception e) {

@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SafariDayParkActivityRepository extends JpaRepository<SafariDayParkActivity, Long>, JpaSpecificationExecutor<SafariDayParkActivity> {
@@ -24,4 +25,20 @@ public interface SafariDayParkActivityRepository extends JpaRepository<SafariDay
     List<SafariDayParkActivity> findAllBySafariId(@Param("safariId") Long safariId);
 
     void deleteBySafariDayParkId(Long safariDayParkId);
+
+    // ========================
+    // NAVIGATION QUERIES (parent-scoped circular next/previous)
+    // ========================
+
+    @Query("SELECT a.id FROM SafariDayParkActivity a WHERE a.safariDayPark.id = :parentId AND a.id > :currentId ORDER BY a.id ASC LIMIT 1")
+    Optional<Long> findNextIdInParent(@Param("parentId") Long parentId, @Param("currentId") Long currentId);
+
+    @Query("SELECT a.id FROM SafariDayParkActivity a WHERE a.safariDayPark.id = :parentId AND a.id < :currentId ORDER BY a.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdInParent(@Param("parentId") Long parentId, @Param("currentId") Long currentId);
+
+    @Query("SELECT a.id FROM SafariDayParkActivity a WHERE a.safariDayPark.id = :parentId ORDER BY a.id ASC LIMIT 1")
+    Optional<Long> findFirstIdInParent(@Param("parentId") Long parentId);
+
+    @Query("SELECT a.id FROM SafariDayParkActivity a WHERE a.safariDayPark.id = :parentId ORDER BY a.id DESC LIMIT 1")
+    Optional<Long> findLastIdInParent(@Param("parentId") Long parentId);
 }

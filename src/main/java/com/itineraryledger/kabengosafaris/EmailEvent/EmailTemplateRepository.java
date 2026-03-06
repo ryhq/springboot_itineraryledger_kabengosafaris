@@ -86,4 +86,20 @@ public interface EmailTemplateRepository extends JpaRepository<EmailTemplate, Lo
      */
     @Query("SELECT COUNT(t) > 0 FROM EmailTemplate t WHERE t.emailEvent.id = :emailEventId AND t.isSystemDefault = true")
     boolean hasSystemDefaultTemplate(@Param("emailEventId") Long emailEventId);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT t.id FROM EmailTemplate t WHERE t.id > :currentId ORDER BY t.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT t.id FROM EmailTemplate t WHERE t.id < :currentId ORDER BY t.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT t.id FROM EmailTemplate t ORDER BY t.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT t.id FROM EmailTemplate t ORDER BY t.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

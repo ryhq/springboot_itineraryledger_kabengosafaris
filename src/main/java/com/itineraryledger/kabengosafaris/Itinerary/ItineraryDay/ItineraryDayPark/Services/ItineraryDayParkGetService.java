@@ -1,6 +1,9 @@
 package com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.Services;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +33,11 @@ public class ItineraryDayParkGetService {
     private final ItineraryDayParkRepository itineraryDayParkRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "sortOrder", "entryType", "arrivalTime", "departureTime", "createdAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "sortOrder";
+
     @Autowired
     public ItineraryDayParkGetService(
         ItineraryDayRepository itineraryDayRepository,
@@ -46,9 +54,16 @@ public class ItineraryDayParkGetService {
      *
      * @param itineraryIdObfuscated The obfuscated itinerary ID
      * @param dayIdObfuscated The obfuscated day ID
+     * @param sortBy The field to sort by
+     * @param sortDirection The sort direction (asc/desc)
      * @return ResponseEntity with ApiResponse containing list of park visits
      */
-    public ResponseEntity<ApiResponse<?>> getItineraryDayParks(String itineraryIdObfuscated, String dayIdObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getItineraryDayParks(
+            String itineraryIdObfuscated,
+            String dayIdObfuscated,
+            String sortBy,
+            String sortDirection
+    ) {
         log.info("Fetching parks for day: {}", dayIdObfuscated);
 
         try {
@@ -77,6 +92,15 @@ public class ItineraryDayParkGetService {
                 );
             }
 
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Fetch park visits
             List<ItineraryDayPark> parks = itineraryDayParkRepository.findByItineraryDayIdOrderBySortOrderAsc(dayId);
 
@@ -85,8 +109,15 @@ public class ItineraryDayParkGetService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
+            // Response
+            Map<String, Object> response = new HashMap<>();
+            response.put("parkVisits", parkDTOs);
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "asc");
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Park visits retrieved successfully", parkDTOs)
+                ApiResponse.success(200, "Park visits retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -147,8 +178,23 @@ public class ItineraryDayParkGetService {
                 );
             }
 
+            // Convert to DTO
+            ItineraryDayParkDTO parkVisitDTO = convertToDTO(parkVisit);
+
+            // Parent-scoped circular navigation (scoped to itinerary day)
+            Long parentId = parkVisit.getItineraryDay().getId();
+            Long nextId = itineraryDayParkRepository.findNextIdInParent(parentId, parkVisitId).orElse(null);
+            Long previousId = itineraryDayParkRepository.findPreviousIdInParent(parentId, parkVisitId).orElse(null);
+            if (nextId == null) nextId = itineraryDayParkRepository.findFirstIdInParent(parentId).orElse(null);
+            if (previousId == null) previousId = itineraryDayParkRepository.findLastIdInParent(parentId).orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("parkVisit", parkVisitDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Park visit retrieved successfully", convertToDTO(parkVisit))
+                ApiResponse.success(200, "Park visit retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -157,6 +203,14 @@ public class ItineraryDayParkGetService {
                 ApiResponse.error(500, "Failed to fetch park visit", "PARK_VISIT_FETCH_FAILED")
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

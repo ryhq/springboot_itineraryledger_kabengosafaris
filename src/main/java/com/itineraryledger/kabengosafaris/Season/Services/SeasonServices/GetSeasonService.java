@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,19 @@ public class GetSeasonService {
 
     private final SeasonRepository seasonRepository;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "name", "seasonType", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
+    }
 
     @Autowired
     public GetSeasonService(
@@ -85,11 +99,22 @@ public class GetSeasonService {
             // Convert to DTO
             SeasonDTO seasonDTO = convertToDTO(season);
 
+            // Navigation IDs
+            Long nextId = seasonRepository.findNextId(id).orElse(null);
+            Long previousId = seasonRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = seasonRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = seasonRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("season", seasonDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
                 ApiResponse.success(
                     200,
                     "Season retrieved successfully",
-                    seasonDTO
+                    response
                 )
             );
 
@@ -132,11 +157,20 @@ public class GetSeasonService {
         String keyword,
         Integer page,
         Integer size,
+        String sortBy,
         String sortDirection
     ) {
         log.info("Fetching all seasons with filters");
 
         try {
+            // Validate sort field
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
             // Build specification for filtering
             Specification<Season> spec = Specification.unrestricted();
 
@@ -188,7 +222,7 @@ public class GetSeasonService {
             }
 
             // Create pageable
-            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, "createdAt"));
+            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
 
             // Fetch seasons
             Page<Season> seasonPage = seasonRepository.findAll(spec, pageable);
@@ -204,6 +238,9 @@ public class GetSeasonService {
             response.put("currentPage", seasonPage.getNumber());
             response.put("totalItems", seasonPage.getTotalElements());
             response.put("totalPages", seasonPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(

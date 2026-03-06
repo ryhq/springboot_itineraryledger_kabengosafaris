@@ -132,10 +132,11 @@ public class ItineraryController {
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/itineraries - Fetching all itineraries");
-        return getService.getAllItineraries(name, code, status, tripType, budgetCategory, startLocation, endLocation, totalDays, isActive, isDayTrip, keyword, page, size, sortDirection);
+        return getService.getAllItineraries(name, code, status, tripType, budgetCategory, startLocation, endLocation, totalDays, isActive, isDayTrip, keyword, page, size, sortBy, sortDirection);
     }
 
     // ========================

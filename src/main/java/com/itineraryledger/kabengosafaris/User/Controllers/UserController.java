@@ -81,6 +81,7 @@ public class UserController {
         @RequestParam(required = false) String displayName,
         @RequestParam(required = false) Boolean active,
         @RequestParam(required = false) Boolean isSystemRole,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false) String sortDir
     ) {
         // Get the current user from authentication
@@ -98,6 +99,7 @@ public class UserController {
             displayName,
             active,
             isSystemRole,
+            sortBy,
             sortDir
         );
     }

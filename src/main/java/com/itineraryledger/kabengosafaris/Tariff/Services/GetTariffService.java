@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,19 @@ public class GetTariffService {
 
     private final TariffRepository tariffRepository;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "name", "slug", "chargingBasis", "isActive", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
+    }
 
     @Autowired
     public GetTariffService(
@@ -77,11 +91,22 @@ public class GetTariffService {
             Tariff tariff = tariffOpt.get();
             TariffDTO tariffDTO = convertToDTO(tariff);
 
+            // Navigation IDs
+            Long nextId = tariffRepository.findNextId(decodedId).orElse(null);
+            Long previousId = tariffRepository.findPreviousId(decodedId).orElse(null);
+            if (nextId == null) nextId = tariffRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = tariffRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("tariff", tariffDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok(
                 ApiResponse.success(
                     200,
                     "Tariff retrieved successfully",
-                    tariffDTO
+                    response
                 )
             );
 
@@ -109,11 +134,20 @@ public class GetTariffService {
         String keyword,
         Integer page,
         Integer size,
+        String sortBy,
         String sortDirection
     ) {
         log.info("Fetching all tariffs with filters");
 
         try {
+            // Validate sort field
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
             // Build specification
             Specification<Tariff> spec = Specification.unrestricted();
 
@@ -140,7 +174,7 @@ public class GetTariffService {
             Sort.Direction direction = "desc".equalsIgnoreCase(sortDirection)
                 ? Sort.Direction.DESC
                 : Sort.Direction.ASC;
-            Sort sort = Sort.by(direction, "createdAt");
+            Sort sort = Sort.by(direction, validatedSortBy);
 
             // Build pageable
             Pageable pageable = PageRequest.of(
@@ -163,6 +197,9 @@ public class GetTariffService {
             responseData.put("currentPage", tariffPage.getNumber());
             responseData.put("totalItems", tariffPage.getTotalElements());
             responseData.put("totalPages", tariffPage.getTotalPages());
+            responseData.put("validSortFields", VALID_SORT_FIELDS);
+            responseData.put("currentSortBy", validatedSortBy);
+            responseData.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok(
                 ApiResponse.success(

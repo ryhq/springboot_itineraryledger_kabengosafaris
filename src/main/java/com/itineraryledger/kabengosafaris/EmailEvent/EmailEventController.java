@@ -55,8 +55,11 @@ public class EmailEventController {
      */
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_EMAIL_EVENT')")
-    public ResponseEntity<ApiResponse<?>> getAllEmailEvents() {
-        return emailEventGetService.getAllEmailEvents();
+    public ResponseEntity<ApiResponse<?>> getAllEmailEvents(
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false, defaultValue = "desc") String sortDirection
+    ) {
+        return emailEventGetService.getAllEmailEvents(sortBy, sortDirection);
     }
 
     /**

@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,19 @@ public class GetPaxNationCategoryService {
 
     private final PaxNationCategoryRepository paxNationCategoryRepository;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "name", "categoryType", "priorityFactor", "isActive", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
+    }
 
     @Autowired
     public GetPaxNationCategoryService(
@@ -71,11 +85,22 @@ public class GetPaxNationCategoryService {
 
             PaxNationCategoryDTO categoryDTO = convertToDTO(categoryOpt.get());
 
+            // Navigation IDs
+            Long nextId = paxNationCategoryRepository.findNextId(decodedId).orElse(null);
+            Long previousId = paxNationCategoryRepository.findPreviousId(decodedId).orElse(null);
+            if (nextId == null) nextId = paxNationCategoryRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = paxNationCategoryRepository.findLastId().orElse(null);
+
+            Map<String, Object> responseMap = new HashMap<>();
+            responseMap.put("paxNationCategory", categoryDTO);
+            responseMap.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            responseMap.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok(
                 ApiResponse.success(
                     200,
                     "Pax nation category retrieved successfully",
-                    categoryDTO
+                    responseMap
                 )
             );
 
@@ -115,11 +140,20 @@ public class GetPaxNationCategoryService {
         String keyword,
         Integer page,
         Integer size,
+        String sortBy,
         String sortDirection
     ) {
         log.info("Fetching all pax nation categories with filters");
 
         try {
+            // Validate sort field
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
             // Build specification
             Specification<PaxNationCategory> spec = Specification.unrestricted();
 
@@ -142,10 +176,10 @@ public class GetPaxNationCategoryService {
                 spec = spec.and(PaxNationCategorySpecification.searchKeyword(keyword));
             }
 
-            // Build pageable with sorting by priorityFactor
+            // Build pageable with sorting
             Sort sort = Sort.by(
                 "asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC,
-                "priorityFactor"
+                validatedSortBy
             );
             Pageable pageable = PageRequest.of(page, size, sort);
 
@@ -163,6 +197,9 @@ public class GetPaxNationCategoryService {
             response.put("currentPage", categoryPage.getNumber());
             response.put("totalItems", categoryPage.getTotalElements());
             response.put("totalPages", categoryPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok(
                 ApiResponse.success(

@@ -64,4 +64,17 @@ public interface SafariRepository extends JpaRepository<Safari, Long>, JpaSpecif
      * Count safaris that are ongoing (started but not ended) on a specific date
      */
     long countByStartDateLessThanEqualAndEndDateGreaterThanEqual(LocalDate startDate, LocalDate endDate);
+
+    // Navigation queries for next/previous
+    @Query("SELECT e.id FROM Safari e WHERE e.id > :currentId ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT e.id FROM Safari e WHERE e.id < :currentId ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT e.id FROM Safari e ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT e.id FROM Safari e ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

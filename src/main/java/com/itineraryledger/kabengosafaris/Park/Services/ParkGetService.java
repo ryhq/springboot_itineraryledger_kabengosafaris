@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Park.Services;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,11 @@ public class ParkGetService {
 
     private final ParkRepository parkRepository;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "name", "slug", "parkType", "region", "district", "isActive", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
     public ParkGetService(
@@ -86,11 +92,22 @@ public class ParkGetService {
             // Convert to DTO
             ParkDTO parkDTO = convertToDTO(park);
 
+            // Circular navigation
+            Long nextId = parkRepository.findNextId(id).orElse(null);
+            Long previousId = parkRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = parkRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = parkRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("park", parkDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
                 ApiResponse.success(
                     200,
                     "Park retrieved successfully",
-                    parkDTO
+                    response
                 )
             );
 
@@ -180,6 +197,7 @@ public class ParkGetService {
         String keyword,
         Integer page,
         Integer size,
+        String sortBy,
         String sortDirection
     ) {
         log.info("Fetching all parks with filters");
@@ -220,14 +238,22 @@ public class ParkGetService {
             int pageNumber = (page != null && page >= 0) ? page : 0;
             int pageSize = (size != null && size > 0) ? size : 10;
 
-            // Set default sorting (always by createdAt)
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             Sort.Direction direction = Sort.Direction.DESC;
             if (sortDirection != null && sortDirection.equalsIgnoreCase("asc")) {
                 direction = Sort.Direction.ASC;
             }
 
             // Create pageable
-            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, "createdAt"));
+            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
 
             // Fetch parks
             Page<Park> parkPage = parkRepository.findAll(spec, pageable);
@@ -243,6 +269,9 @@ public class ParkGetService {
             response.put("currentPage", parkPage.getNumber());
             response.put("totalItems", parkPage.getTotalElements());
             response.put("totalPages", parkPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -264,10 +293,18 @@ public class ParkGetService {
         }
     }
 
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
+    }
+
     /**
      * Convert Park entity to ParkDTO
      */
-    private ParkDTO convertToDTO(Park park) {
+    public ParkDTO convertToDTO(Park park) {
         ParkDTO dto = new ParkDTO();
         dto.setId(idObfuscator.encodeId(park.getId()));
         dto.setName(park.getName());

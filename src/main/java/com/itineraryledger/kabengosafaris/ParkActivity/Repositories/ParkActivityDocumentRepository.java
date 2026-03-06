@@ -145,4 +145,20 @@ public interface ParkActivityDocumentRepository extends JpaRepository<ParkActivi
         @Param("activityId") Long activityId,
         @Param("fileName") String fileName
     );
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT pad.id FROM ParkActivityDocument pad WHERE pad.id > :currentId ORDER BY pad.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT pad.id FROM ParkActivityDocument pad WHERE pad.id < :currentId ORDER BY pad.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT pad.id FROM ParkActivityDocument pad ORDER BY pad.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT pad.id FROM ParkActivityDocument pad ORDER BY pad.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

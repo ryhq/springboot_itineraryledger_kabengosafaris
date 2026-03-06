@@ -122,6 +122,7 @@ public class SeasonController {
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/seasons - Fetching all seasons with filters");
@@ -136,6 +137,7 @@ public class SeasonController {
             keyword,
             page,
             size,
+            sortBy,
             sortDirection
         );
     }

@@ -1,6 +1,9 @@
 package com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayPark.SafariDayParkActivity.Services;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +31,12 @@ public class SafariDayParkActivityGetService {
     private final SafariDayParkActivityRepository parkActivityRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "sortOrder", "durationHours", "startTime", "endTime", "isIncludedInPrice",
+        "isCompleted", "isSkipped", "actualDurationHours", "createdAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "sortOrder";
+
     @Autowired
     public SafariDayParkActivityGetService(
         SafariDayParkActivityRepository parkActivityRepository,
@@ -43,7 +52,7 @@ public class SafariDayParkActivityGetService {
      * @param parkVisitIdObfuscated The obfuscated park visit ID
      * @return ResponseEntity with ApiResponse containing list of activities
      */
-    public ResponseEntity<ApiResponse<?>> getParkActivities(String parkVisitIdObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getParkActivities(String parkVisitIdObfuscated, String sortBy, String sortDirection) {
         log.info("Fetching activities for safari park visit: {}", parkVisitIdObfuscated);
 
         try {
@@ -56,13 +65,29 @@ public class SafariDayParkActivityGetService {
                 );
             }
 
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             List<SafariDayParkActivity> activities = parkActivityRepository.findBySafariDayParkIdOrderBySortOrderAsc(parkVisitId);
             List<SafariDayParkActivityDTO> dtos = activities.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
+            // Response
+            Map<String, Object> response = new HashMap<>();
+            response.put("parkActivities", dtos);
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "asc");
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Safari park activities retrieved", dtos)
+                ApiResponse.success(200, "Safari park activities retrieved", response)
             );
 
         } catch (Exception e) {
@@ -112,8 +137,22 @@ public class SafariDayParkActivityGetService {
                 );
             }
 
+            SafariDayParkActivityDTO activityDTO = convertToDTO(activity);
+
+            // Parent-scoped circular navigation
+            Long parentId = activity.getSafariDayPark().getId();
+            Long nextId = parkActivityRepository.findNextIdInParent(parentId, activityId).orElse(null);
+            Long previousId = parkActivityRepository.findPreviousIdInParent(parentId, activityId).orElse(null);
+            if (nextId == null) nextId = parkActivityRepository.findFirstIdInParent(parentId).orElse(null);
+            if (previousId == null) previousId = parkActivityRepository.findLastIdInParent(parentId).orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("parkActivity", activityDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Safari park activity retrieved", convertToDTO(activity))
+                ApiResponse.success(200, "Safari park activity retrieved", response)
             );
 
         } catch (Exception e) {
@@ -150,5 +189,13 @@ public class SafariDayParkActivityGetService {
 
         dto.setCreatedAt(entity.getCreatedAt());
         return dto;
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 }

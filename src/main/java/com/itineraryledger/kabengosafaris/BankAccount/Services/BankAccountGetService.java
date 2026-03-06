@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.BankAccount.Services;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,10 +39,23 @@ public class BankAccountGetService {
     private final BankAccountRepository bankAccountRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "accountCode", "accountName", "bankName", "currency", "isActive", "isDefault", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
     @Autowired
     public BankAccountGetService(BankAccountRepository bankAccountRepository, IdObfuscator idObfuscator) {
         this.bankAccountRepository = bankAccountRepository;
         this.idObfuscator = idObfuscator;
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**
@@ -53,6 +67,7 @@ public class BankAccountGetService {
      * @param isActive Filter by active status
      * @param isDefault Filter by default status
      * @param search Search keyword (account name, bank name, account number, account code)
+     * @param sortBy Sort field
      * @param sortDir Sort direction ("asc" or "desc")
      * @return ResponseEntity with paginated results or validation error
      */
@@ -63,12 +78,22 @@ public class BankAccountGetService {
         Boolean isActive,
         Boolean isDefault,
         String search,
+        String sortBy,
         String sortDir
     ) {
 
         log.debug("Fetching bank accounts with filters - page: {}, size: {}, currency: {}, isActive: {}, " +
-                "isDefault: {}, search: {}, sortDir: {}",
-                page, size, currency, isActive, isDefault, search, sortDir);
+                "isDefault: {}, search: {}, sortBy: {}, sortDir: {}",
+                page, size, currency, isActive, isDefault, search, sortBy, sortDir);
+
+        // Validate sort field
+        String validatedSortBy = validateSortField(sortBy);
+        if (validatedSortBy == null) {
+            log.warn("Invalid sort field: {}", sortBy);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+            );
+        }
 
         // Validate pagination parameters
         if (page < 0) {
@@ -89,7 +114,7 @@ public class BankAccountGetService {
         Pageable paging = PageRequest.of(
             page,
             size,
-            Sort.by(direction, "createdAt")
+            Sort.by(direction, validatedSortBy)
         );
 
         // Build dynamic specification
@@ -123,6 +148,9 @@ public class BankAccountGetService {
         response.put("currentPage", pagedBankAccounts.getNumber());
         response.put("totalItems", pagedBankAccounts.getTotalElements());
         response.put("totalPages", pagedBankAccounts.getTotalPages());
+        response.put("validSortFields", VALID_SORT_FIELDS);
+        response.put("currentSortBy", validatedSortBy);
+        response.put("currentSortDir", sortDir != null ? sortDir : "desc");
 
         log.info("Successfully fetched {} bank accounts on page {}", bankAccountDTOs.size(), page);
         return ResponseEntity.ok(
@@ -157,11 +185,22 @@ public class BankAccountGetService {
                 );
             }
 
+            // Navigation IDs
+            Long nextId = bankAccountRepository.findNextId(id).orElse(null);
+            Long previousId = bankAccountRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = bankAccountRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = bankAccountRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("bankAccount", convertToDTO(bankAccount));
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok(
                 ApiResponse.success(
                     200,
                     "Successfully retrieved bank account.",
-                    convertToDTO(bankAccount)
+                    response
                 )
             );
 

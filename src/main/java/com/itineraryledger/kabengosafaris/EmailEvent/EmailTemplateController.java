@@ -119,8 +119,9 @@ public class EmailTemplateController {
             @RequestParam(required = false) String name,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
-        return emailTemplateGetService.getAllTemplates(eventId, enabled, isDefault, isSystemDefault, name, page, size, sortDir);
+        return emailTemplateGetService.getAllTemplates(eventId, enabled, isDefault, isSystemDefault, name, page, size, sortBy, sortDir);
     }
 
     /**

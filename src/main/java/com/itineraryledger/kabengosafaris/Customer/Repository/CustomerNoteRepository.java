@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * CustomerNoteRepository - Repository for CustomerNote entity
@@ -40,4 +41,20 @@ public interface CustomerNoteRepository extends JpaRepository<CustomerNote, Long
     long countByCustomerId(Long customerId);
 
     void deleteByCustomerId(Long customerId);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT n.id FROM CustomerNote n WHERE n.id > :currentId ORDER BY n.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT n.id FROM CustomerNote n WHERE n.id < :currentId ORDER BY n.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT n.id FROM CustomerNote n ORDER BY n.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT n.id FROM CustomerNote n ORDER BY n.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

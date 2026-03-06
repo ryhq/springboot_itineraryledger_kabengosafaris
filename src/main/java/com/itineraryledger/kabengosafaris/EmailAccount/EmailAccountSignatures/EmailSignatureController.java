@@ -121,8 +121,9 @@ public class EmailSignatureController {
             @RequestParam(required = false) Boolean isDefault,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sortBy,
             @RequestParam(required = false, defaultValue = "desc") String sortDir) {
-        return emailAccountSignatureGetService.getAllSignatures(emailAccountId, enabled, isDefault, page, size, sortDir);
+        return emailAccountSignatureGetService.getAllSignatures(emailAccountId, enabled, isDefault, page, size, sortBy, sortDir);
     }
 
     /**

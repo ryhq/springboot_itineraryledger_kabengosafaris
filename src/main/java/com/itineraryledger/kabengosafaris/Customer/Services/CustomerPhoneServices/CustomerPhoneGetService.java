@@ -10,14 +10,18 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,6 +34,11 @@ public class CustomerPhoneGetService {
 
     private final CustomerPhoneRepository customerPhoneRepository;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "phoneNumber", "phoneType", "label", "isPrimary", "isActive", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
     public CustomerPhoneGetService(
@@ -80,11 +89,22 @@ public class CustomerPhoneGetService {
             // Convert to DTO
             CustomerPhoneDTO phoneDTO = convertToDTO(phone);
 
+            // Circular navigation
+            Long nextId = customerPhoneRepository.findNextId(id).orElse(null);
+            Long previousId = customerPhoneRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = customerPhoneRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = customerPhoneRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("phone", phoneDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
                 ApiResponse.success(
                     200,
                     "Customer phone retrieved successfully",
-                    phoneDTO
+                    response
                 )
             );
 
@@ -124,7 +144,10 @@ public class CustomerPhoneGetService {
         Boolean isActive,
         String label,
         String keyword,
-        Pageable pageable
+        Integer page,
+        Integer size,
+        String sortBy,
+        String sortDirection
     ) {
         log.info("Fetching all customer phones with optional filters");
 
@@ -172,6 +195,26 @@ public class CustomerPhoneGetService {
                 spec = spec.and(CustomerPhoneSpecification.searchKeyword(keyword));
             }
 
+            // Pagination
+            int pageNumber = (page != null && page >= 0) ? page : 0;
+            int pageSize = (size != null && size > 0) ? size : 10;
+
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
+            Sort.Direction direction = Sort.Direction.DESC;
+            if (sortDirection != null && sortDirection.equalsIgnoreCase("asc")) {
+                direction = Sort.Direction.ASC;
+            }
+
+            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
+
             // Fetch paginated results
             Page<CustomerPhone> phonePage = customerPhoneRepository.findAll(spec, pageable);
 
@@ -185,6 +228,9 @@ public class CustomerPhoneGetService {
             responseData.put("totalItems", phoneDTOPage.getTotalElements());
             responseData.put("totalPages", phoneDTOPage.getTotalPages());
             responseData.put("pageSize", phoneDTOPage.getSize());
+            responseData.put("validSortFields", VALID_SORT_FIELDS);
+            responseData.put("currentSortBy", validatedSortBy);
+            responseData.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -230,7 +276,10 @@ public class CustomerPhoneGetService {
         Boolean isActive,
         String label,
         String keyword,
-        Pageable pageable
+        Integer page,
+        Integer size,
+        String sortBy,
+        String sortDirection
     ) {
         log.info("Fetching phones for customer: {}", customerId);
 
@@ -276,6 +325,26 @@ public class CustomerPhoneGetService {
                 spec = spec.and(CustomerPhoneSpecification.searchKeyword(keyword));
             }
 
+            // Pagination
+            int pageNumber = (page != null && page >= 0) ? page : 0;
+            int pageSize = (size != null && size > 0) ? size : 10;
+
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
+            Sort.Direction direction = Sort.Direction.DESC;
+            if (sortDirection != null && sortDirection.equalsIgnoreCase("asc")) {
+                direction = Sort.Direction.ASC;
+            }
+
+            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
+
             // Fetch paginated results
             Page<CustomerPhone> phonePage = customerPhoneRepository.findAll(spec, pageable);
 
@@ -289,6 +358,9 @@ public class CustomerPhoneGetService {
             responseData.put("totalItems", phoneDTOPage.getTotalElements());
             responseData.put("totalPages", phoneDTOPage.getTotalPages());
             responseData.put("pageSize", phoneDTOPage.getSize());
+            responseData.put("validSortFields", VALID_SORT_FIELDS);
+            responseData.put("currentSortBy", validatedSortBy);
+            responseData.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -308,6 +380,14 @@ public class CustomerPhoneGetService {
                 )
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

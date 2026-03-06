@@ -62,11 +62,13 @@ public class SafariDayParkTariffController {
     public ResponseEntity<ApiResponse<?>> getParkTariffs(
         @PathVariable String safariId,
         @PathVariable String dayId,
-        @PathVariable String parkVisitId
+        @PathVariable String parkVisitId,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/safaris/{}/days/{}/parks/{}/tariffs - Fetching tariffs",
             safariId, dayId, parkVisitId);
-        return getService.getParkTariffs(parkVisitId);
+        return getService.getParkTariffs(parkVisitId, sortBy, sortDirection);
     }
 
     @GetMapping("/{tariffId}")

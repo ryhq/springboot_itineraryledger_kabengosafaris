@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Itinerary.Services;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Transactional(readOnly = true)
 public class ItineraryGetService {
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "name", "code", "tripType", "budgetCategory", "totalDays", "totalNights", "status", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     private final ItineraryRepository itineraryRepository;
     private final IdObfuscator idObfuscator;
@@ -88,11 +94,22 @@ public class ItineraryGetService {
             // Convert to DTO
             ItineraryDTO itineraryDTO = convertToDTO(itinerary);
 
+            // Build navigation
+            Long nextId = itineraryRepository.findNextId(id).orElse(null);
+            Long previousId = itineraryRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = itineraryRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = itineraryRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("itinerary", itineraryDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
                 ApiResponse.success(
                     200,
                     "Itinerary retrieved successfully",
-                    itineraryDTO
+                    response
                 )
             );
 
@@ -186,11 +203,21 @@ public class ItineraryGetService {
         String keyword,
         Integer page,
         Integer size,
+        String sortBy,
         String sortDirection
     ) {
         log.info("Fetching all itineraries with filters");
 
         try {
+            // Validate sort field
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Build specification for filtering
             Specification<Itinerary> spec = Specification.unrestricted();
 
@@ -239,7 +266,7 @@ public class ItineraryGetService {
             }
 
             // Create pageable
-            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, "createdAt"));
+            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
 
             // Fetch itineraries
             Page<Itinerary> itineraryPage = itineraryRepository.findAll(spec, pageable);
@@ -255,6 +282,9 @@ public class ItineraryGetService {
             response.put("currentPage", itineraryPage.getNumber());
             response.put("totalItems", itineraryPage.getTotalElements());
             response.put("totalPages", itineraryPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", direction.name().toLowerCase());
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -277,9 +307,20 @@ public class ItineraryGetService {
     }
 
     /**
+     * Validate and return the sort field, or null if invalid
+     */
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
+    }
+
+    /**
      * Convert Itinerary entity to ItineraryDTO
      */
-    private ItineraryDTO convertToDTO(Itinerary itinerary) {
+    public ItineraryDTO convertToDTO(Itinerary itinerary) {
         ItineraryDTO dto = new ItineraryDTO();
         dto.setId(idObfuscator.encodeId(itinerary.getId()));
         dto.setName(itinerary.getName());

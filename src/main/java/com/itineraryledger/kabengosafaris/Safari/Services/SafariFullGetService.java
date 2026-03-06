@@ -1,7 +1,9 @@
 package com.itineraryledger.kabengosafaris.Safari.Services;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,8 +123,19 @@ public class SafariFullGetService {
                 fullDTO.getTotalDaysCount(),
                 fullDTO.getTotalPaxCount());
 
+            // Build navigation
+            Long nextId = safariRepository.findNextId(id).orElse(null);
+            Long previousId = safariRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = safariRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = safariRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("safari", fullDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Full safari retrieved successfully", fullDTO)
+                ApiResponse.success(200, "Full safari retrieved successfully", response)
             );
 
         } catch (Exception e) {

@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,11 @@ public class ActivityTariffRateGetService {
     private final ActivityTariffRateRepository rateRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "rackRate", "stoRate", "currency", "isActive", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
     /**
      * Get rate by ID
      */
@@ -63,7 +69,20 @@ public class ActivityTariffRateGetService {
                 );
             }
 
-            return ResponseEntity.ok(ApiResponse.success(200, "Rate retrieved successfully", convertToDTO(rateOpt.get())));
+            ActivityTariffRateDTO rateDTO = convertToDTO(rateOpt.get());
+
+            // Circular navigation
+            Long nextId = rateRepository.findNextId(id).orElse(null);
+            Long previousId = rateRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = rateRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = rateRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("rate", rateDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
+            return ResponseEntity.ok(ApiResponse.success(200, "Rate retrieved successfully", response));
 
         } catch (Exception e) {
             log.error("Error fetching activity rate", e);
@@ -86,6 +105,7 @@ public class ActivityTariffRateGetService {
         Boolean isActive,
         Integer page,
         Integer size,
+        String sortBy,
         String sortDirection
     ) {
         log.info("Fetching activity rates with filters");
@@ -160,12 +180,20 @@ public class ActivityTariffRateGetService {
                 spec = spec.and(ActivityTariffRateSpecification.isActive(isActive));
             }
 
-            // Build pageable - always sort by createdAt
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC;
             Pageable pageable = PageRequest.of(
                 page != null ? page : 0,
                 size != null ? size : 10,
-                Sort.by(direction, "createdAt")
+                Sort.by(direction, validatedSortBy)
             );
 
             // Execute query
@@ -182,6 +210,9 @@ public class ActivityTariffRateGetService {
             response.put("currentPage", ratePage.getNumber());
             response.put("totalItems", ratePage.getTotalElements());
             response.put("totalPages", ratePage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok(ApiResponse.success(200, "Rates retrieved successfully", response));
 
@@ -248,6 +279,14 @@ public class ActivityTariffRateGetService {
                 ApiResponse.error(500, "Failed to update rate: " + e.getMessage(), "UPDATE_FAILED")
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

@@ -103,4 +103,20 @@ public interface QuoteDocumentRepository extends JpaRepository<QuoteDocument, Lo
      */
     @Query("SELECT doc FROM QuoteDocument doc WHERE doc.isActive = true AND doc.validTo IS NOT NULL AND doc.validTo BETWEEN :startDate AND :endDate ORDER BY doc.validTo ASC")
     List<QuoteDocument> findDocumentsExpiringSoon(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT doc.id FROM QuoteDocument doc WHERE doc.id > :currentId ORDER BY doc.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT doc.id FROM QuoteDocument doc WHERE doc.id < :currentId ORDER BY doc.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT doc.id FROM QuoteDocument doc ORDER BY doc.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT doc.id FROM QuoteDocument doc ORDER BY doc.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

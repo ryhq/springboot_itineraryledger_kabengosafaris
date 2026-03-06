@@ -52,6 +52,7 @@ public class DynamicPermissionFilter extends OncePerRequestFilter {
      */
     private static final String[] PUBLIC_PATHS = {
         "/api/auth/",
+        "/api/public/",
         "/swagger-ui/",
         "/v3/api-docs/",
         "/actuator/",

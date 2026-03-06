@@ -1,6 +1,9 @@
 package com.itineraryledger.kabengosafaris.Safari.SafariPax.Services;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +33,11 @@ public class SafariPaxGetService {
     private final SafariPaxRepository safariPaxRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "count", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
     @Autowired
     public SafariPaxGetService(
         SafariRepository safariRepository,
@@ -47,7 +55,7 @@ public class SafariPaxGetService {
      * @param safariIdObfuscated The obfuscated safari ID
      * @return ResponseEntity with ApiResponse containing list of pax entries
      */
-    public ResponseEntity<ApiResponse<?>> getSafariPax(String safariIdObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getSafariPax(String safariIdObfuscated, String sortBy, String sortDirection) {
         log.info("Fetching pax entries for safari: {}", safariIdObfuscated);
 
         try {
@@ -68,6 +76,15 @@ public class SafariPaxGetService {
                 );
             }
 
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Fetch pax entries
             List<SafariPax> paxList = safariPaxRepository.findBySafariId(safariId);
 
@@ -81,11 +98,19 @@ public class SafariPaxGetService {
                 .mapToInt(p -> p.getCount() != null ? p.getCount() : 0)
                 .sum();
 
+            // Response
+            Map<String, Object> response = new HashMap<>();
+            response.put("paxEntries", paxDTOs);
+            response.put("totalPax", totalPax);
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+
             return ResponseEntity.ok().body(
                 ApiResponse.success(
                     200,
                     "Retrieved " + paxDTOs.size() + " pax categories (total: " + totalPax + " passengers)",
-                    paxDTOs
+                    response
                 )
             );
 
@@ -114,5 +139,13 @@ public class SafariPaxGetService {
         dto.setCreatedAt(pax.getCreatedAt());
         dto.setUpdatedAt(pax.getUpdatedAt());
         return dto;
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 }

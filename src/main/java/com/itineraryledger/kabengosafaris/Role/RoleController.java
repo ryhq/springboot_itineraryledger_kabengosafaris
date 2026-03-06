@@ -134,6 +134,7 @@ public class RoleController {
         @RequestParam(required = false) String displayName,
         @RequestParam(required = false) Boolean active,
         @RequestParam(required = false) Boolean isSystemRole,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false) String sortDir
     ) {
         return roleGetService.getAllRoles(
@@ -143,6 +144,7 @@ public class RoleController {
             displayName,
             active,
             isSystemRole,
+            sortBy,
             sortDir
         );
     }

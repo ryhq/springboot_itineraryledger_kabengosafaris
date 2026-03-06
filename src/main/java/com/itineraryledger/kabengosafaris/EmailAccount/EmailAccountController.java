@@ -185,6 +185,7 @@ public class EmailAccountController {
         @RequestParam(required = false) Boolean useSsl,
         @RequestParam(required = false) String smtpUsername,
         @RequestParam(required = false) String errorMessage,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false) String sortDir
     ) {
         return emailAccountGetService.getAllEmailAccounts(
@@ -203,6 +204,7 @@ public class EmailAccountController {
             useSsl,
             smtpUsername,
             errorMessage,
+            sortBy,
             sortDir
         );
     }

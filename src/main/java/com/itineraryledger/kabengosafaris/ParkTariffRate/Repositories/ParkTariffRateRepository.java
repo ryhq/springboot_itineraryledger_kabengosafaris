@@ -182,6 +182,22 @@ public interface ParkTariffRateRepository extends JpaRepository<ParkTariffRate, 
     long countActiveByParkIdAndTariffId(@Param("parkId") Long parkId, @Param("tariffId") Long tariffId);
 
     // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT r.id FROM ParkTariffRate r WHERE r.id > :currentId ORDER BY r.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT r.id FROM ParkTariffRate r WHERE r.id < :currentId ORDER BY r.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT r.id FROM ParkTariffRate r ORDER BY r.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT r.id FROM ParkTariffRate r ORDER BY r.id DESC LIMIT 1")
+    Optional<Long> findLastId();
+
+    // ========================
     // DELETE METHODS
     // ========================
 

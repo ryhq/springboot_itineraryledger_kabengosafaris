@@ -19,6 +19,7 @@ import com.itineraryledger.kabengosafaris.Park.Repositories.ParkImageRepository;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,11 @@ public class ParkImageGetService {
     private final ParkImageRepository parkImageRepository;
     private final ParkImageStorageService storageService;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "imageType", "isPrimary", "isActive", "displayOrder", "fileSize", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
     public ParkImageGetService(
@@ -86,6 +92,7 @@ public class ParkImageGetService {
             Integer displayOrder,
             int page,
             int size,
+            String sortBy,
             String sortDirection
     ) {
         Specification<ParkImage> spec = Specification.unrestricted();
@@ -121,11 +128,20 @@ public class ParkImageGetService {
             spec = spec.and(ParkImageSpecification.byDisplayOrder(displayOrder));
         }
 
+        // Sorting with validation
+        String validatedSortBy = validateSortField(sortBy);
+        if (validatedSortBy == null) {
+            log.warn("Invalid sort field: {}", sortBy);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+            );
+        }
+
         Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection)
             ? Sort.Direction.ASC
             : Sort.Direction.DESC;
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, "createdAt"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
         Page<ParkImage> imagePage = parkImageRepository.findAll(spec, pageable);
 
@@ -141,6 +157,9 @@ public class ParkImageGetService {
         response.put("pageSize", imagePage.getSize());
         response.put("hasNext", imagePage.hasNext());
         response.put("hasPrevious", imagePage.hasPrevious());
+        response.put("validSortFields", VALID_SORT_FIELDS);
+        response.put("currentSortBy", validatedSortBy);
+        response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
         return ResponseEntity.ok(ApiResponse.success(200, "Park images retrieved successfully", response));
     }
@@ -158,7 +177,20 @@ public class ParkImageGetService {
                 );
             }
 
-            return ResponseEntity.ok(ApiResponse.success(200, "Park image retrieved successfully", toDTO(image)));
+            ParkImageDTO imageDTO = toDTO(image);
+
+            // Circular navigation
+            Long nextId = parkImageRepository.findNextId(id).orElse(null);
+            Long previousId = parkImageRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = parkImageRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = parkImageRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("image", imageDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
+            return ResponseEntity.ok(ApiResponse.success(200, "Park image retrieved successfully", response));
 
         } catch (Exception e) {
             log.warn("Failed to decode park image ID: {}", obfuscatedId, e);
@@ -194,5 +226,13 @@ public class ParkImageGetService {
             return null;
         }
         return parkImageRepository.findByFileName(fileName).orElse(null);
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 }

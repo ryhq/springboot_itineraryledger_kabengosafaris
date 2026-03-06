@@ -57,11 +57,13 @@ public class ItineraryDayParkTariffController {
     public ResponseEntity<ApiResponse<?>> getParkTariffs(
         @PathVariable String itineraryId,
         @PathVariable String dayId,
-        @PathVariable String parkVisitId
+        @PathVariable String parkVisitId,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/itineraries/{}/days/{}/parks/{}/tariffs - Fetching tariffs",
             itineraryId, dayId, parkVisitId);
-        return getService.getParkTariffs(parkVisitId);
+        return getService.getParkTariffs(parkVisitId, sortBy, sortDirection);
     }
 
     @GetMapping("/{tariffId}")

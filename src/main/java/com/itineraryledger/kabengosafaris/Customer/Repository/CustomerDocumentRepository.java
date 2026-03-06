@@ -102,4 +102,20 @@ public interface CustomerDocumentRepository extends JpaRepository<CustomerDocume
      * Delete all documents for a customer
      */
     void deleteByCustomerId(Long customerId);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT doc.id FROM CustomerDocument doc WHERE doc.id > :currentId ORDER BY doc.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT doc.id FROM CustomerDocument doc WHERE doc.id < :currentId ORDER BY doc.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT doc.id FROM CustomerDocument doc ORDER BY doc.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT doc.id FROM CustomerDocument doc ORDER BY doc.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

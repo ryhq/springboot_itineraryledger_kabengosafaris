@@ -99,4 +99,20 @@ public interface CustomerRepository extends JpaRepository<Customer, Long>, JpaSp
      * Count customers created after a specific date/time
      */
     long countByCreatedAtAfter(java.time.LocalDateTime createdAt);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT c.id FROM Customer c WHERE c.id > :currentId ORDER BY c.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT c.id FROM Customer c WHERE c.id < :currentId ORDER BY c.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT c.id FROM Customer c ORDER BY c.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT c.id FROM Customer c ORDER BY c.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

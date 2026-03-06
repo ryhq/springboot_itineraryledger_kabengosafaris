@@ -39,4 +39,20 @@ public interface ActivityImageRepository extends JpaRepository<ActivityImage, Lo
     long countActiveByActivityId(@Param("activityId") Long activityId);
 
     boolean existsByActivityIdAndFileName(Long activityId, String fileName);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT ai.id FROM ActivityImage ai WHERE ai.id > :currentId ORDER BY ai.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT ai.id FROM ActivityImage ai WHERE ai.id < :currentId ORDER BY ai.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT ai.id FROM ActivityImage ai ORDER BY ai.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT ai.id FROM ActivityImage ai ORDER BY ai.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

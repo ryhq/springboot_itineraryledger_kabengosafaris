@@ -37,4 +37,16 @@ public interface EmailAccountRepository extends JpaRepository<EmailAccount, Long
      * Find the first enabled and default email account ordered by creation date descending
      */
     Optional<EmailAccount> findFirstByEnabledTrueAndIsDefaultTrueOrderByCreatedAtDesc();
+
+    @Query("SELECT e.id FROM EmailAccount e WHERE e.id > :currentId ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT e.id FROM EmailAccount e WHERE e.id < :currentId ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT e.id FROM EmailAccount e ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT e.id FROM EmailAccount e ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

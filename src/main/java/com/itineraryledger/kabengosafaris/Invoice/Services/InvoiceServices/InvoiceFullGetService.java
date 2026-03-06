@@ -3,8 +3,10 @@ package com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceServices;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Currency;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,8 +101,19 @@ public class InvoiceFullGetService {
                 invoice.getInvoiceCode(),
                 fullDTO.getTotalLineItemsCount());
 
+            // Build navigation
+            Long nextId = invoiceRepository.findNextId(id).orElse(null);
+            Long previousId = invoiceRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = invoiceRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = invoiceRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("invoice", fullDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Full invoice retrieved successfully", fullDTO)
+                ApiResponse.success(200, "Full invoice retrieved successfully", response)
             );
 
         } catch (Exception e) {

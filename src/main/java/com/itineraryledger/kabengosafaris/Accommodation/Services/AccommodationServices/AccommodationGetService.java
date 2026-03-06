@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,12 @@ public class AccommodationGetService {
 
     private final AccommodationRepository accommodationRepository;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "name", "slug", "accommodationType", "category", "region", "district",
+        "starRating", "totalRooms", "maxGuests", "isActive", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
     public AccommodationGetService(
@@ -85,11 +92,22 @@ public class AccommodationGetService {
             // Convert to DTO
             AccommodationDTO accommodationDTO = convertToDTO(accommodation);
 
+            // Circular navigation
+            Long nextId = accommodationRepository.findNextId(id).orElse(null);
+            Long previousId = accommodationRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = accommodationRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = accommodationRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("accommodation", accommodationDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
                 ApiResponse.success(
                     200,
                     "Accommodation retrieved successfully",
-                    accommodationDTO
+                    response
                 )
             );
 
@@ -213,6 +231,7 @@ public class AccommodationGetService {
         String keyword,
         Integer page,
         Integer size,
+        String sortBy,
         String sortDirection
     ) {
         log.info("Fetching all accommodations with filters");
@@ -316,14 +335,22 @@ public class AccommodationGetService {
             int pageNumber = (page != null && page >= 0) ? page : 0;
             int pageSize = (size != null && size > 0) ? size : 10;
 
-            // Set default sorting (always by createdAt)
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             Sort.Direction direction = Sort.Direction.DESC;
             if (sortDirection != null && sortDirection.equalsIgnoreCase("asc")) {
                 direction = Sort.Direction.ASC;
             }
 
             // Create pageable
-            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, "createdAt"));
+            Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
 
             // Fetch accommodations
             Page<Accommodation> accommodationPage = accommodationRepository.findAll(spec, pageable);
@@ -339,6 +366,9 @@ public class AccommodationGetService {
             response.put("currentPage", accommodationPage.getNumber());
             response.put("totalItems", accommodationPage.getTotalElements());
             response.put("totalPages", accommodationPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -478,6 +508,14 @@ public class AccommodationGetService {
                 )
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

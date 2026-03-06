@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,11 @@ public class AccommodationRoomStandardGetService {
 
     private final AccommodationRoomStandardRepository roomStandardRepository;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "name", "maxOccupancy", "viewType", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
     public AccommodationRoomStandardGetService(
@@ -81,11 +87,22 @@ public class AccommodationRoomStandardGetService {
             // Convert to DTO
             AccommodationRoomStandardDTO roomStandardDTO = convertToDTO(roomStandard);
 
+            // Circular navigation
+            Long nextId = roomStandardRepository.findNextId(roomStandardId).orElse(null);
+            Long previousId = roomStandardRepository.findPreviousId(roomStandardId).orElse(null);
+            if (nextId == null) nextId = roomStandardRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = roomStandardRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("roomStandard", roomStandardDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
                 ApiResponse.success(
                     200,
                     "Room standard retrieved successfully",
-                    roomStandardDTO
+                    response
                 )
             );
 
@@ -125,11 +142,22 @@ public class AccommodationRoomStandardGetService {
         Integer maxOccupancy,
         Boolean isActive,
         String keyword,
+        String sortBy,
+        String sortDirection,
         Pageable pageable
     ) {
         log.info("Fetching all accommodation room standards with filters");
 
         try {
+            // Validate sort field
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Build specification
             Specification<AccommodationRoomStandard> spec = Specification.unrestricted();
 
@@ -187,6 +215,9 @@ public class AccommodationRoomStandardGetService {
             response.put("currentPage", roomStandardsPage.getNumber());
             response.put("totalItems", roomStandardsPage.getTotalElements());
             response.put("totalPages", roomStandardsPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -232,11 +263,22 @@ public class AccommodationRoomStandardGetService {
         Integer maxOccupancy,
         Boolean isActive,
         String keyword,
+        String sortBy,
+        String sortDirection,
         Pageable pageable
     ) {
         log.info("Fetching room standards for accommodation: {}", accommodationId);
 
         try {
+            // Validate sort field
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Decode accommodation ID
             Long accId;
             try {
@@ -292,6 +334,9 @@ public class AccommodationRoomStandardGetService {
             response.put("currentPage", roomStandardsPage.getNumber());
             response.put("totalItems", roomStandardsPage.getTotalElements());
             response.put("totalPages", roomStandardsPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -311,6 +356,14 @@ public class AccommodationRoomStandardGetService {
                 )
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

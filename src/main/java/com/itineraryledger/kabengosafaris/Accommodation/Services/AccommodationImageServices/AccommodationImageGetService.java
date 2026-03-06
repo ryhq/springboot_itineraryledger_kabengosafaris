@@ -19,6 +19,7 @@ import com.itineraryledger.kabengosafaris.Accommodation.Repositories.Accommodati
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,11 @@ public class AccommodationImageGetService {
 
     @Autowired
     private IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "imageType", "isPrimary", "isActive", "displayOrder", "fileSize", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     /**
      * Convert entity to DTO with full image URL
@@ -98,6 +104,7 @@ public class AccommodationImageGetService {
             Integer displayOrder,
             int page,
             int size,
+            String sortBy,
             String sortDirection
     ) {
         // Build specification
@@ -140,13 +147,20 @@ public class AccommodationImageGetService {
             spec = spec.and(AccommodationImageSpecification.byDisplayOrder(displayOrder));
         }
 
-        // Sort direction - default DESC for createdAt
+        // Sorting with validation
+        String validatedSortBy = validateSortField(sortBy);
+        if (validatedSortBy == null) {
+            log.warn("Invalid sort field: {}", sortBy);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+            );
+        }
+
         Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection)
             ? Sort.Direction.ASC
             : Sort.Direction.DESC;
 
-        // Always sort by createdAt
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, "createdAt"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
         // Execute query
         Page<AccommodationImage> imagePage = accommodationImageRepository.findAll(spec, pageable);
@@ -162,6 +176,9 @@ public class AccommodationImageGetService {
         response.put("pageSize", imagePage.getSize());
         response.put("hasNext", imagePage.hasNext());
         response.put("hasPrevious", imagePage.hasPrevious());
+        response.put("validSortFields", VALID_SORT_FIELDS);
+        response.put("currentSortBy", validatedSortBy);
+        response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
         return ResponseEntity.ok(ApiResponse.success(200, "Accommodation images retrieved successfully.", response));
     }
@@ -187,7 +204,20 @@ public class AccommodationImageGetService {
             );
         }
 
-        return ResponseEntity.ok(ApiResponse.success(200, "Image retrieved successfully.", toDTO(image)));
+        AccommodationImageDTO imageDTO = toDTO(image);
+
+        // Circular navigation
+        Long nextId = accommodationImageRepository.findNextId(id).orElse(null);
+        Long previousId = accommodationImageRepository.findPreviousId(id).orElse(null);
+        if (nextId == null) nextId = accommodationImageRepository.findFirstId().orElse(null);
+        if (previousId == null) previousId = accommodationImageRepository.findLastId().orElse(null);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("image", imageDTO);
+        response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+        response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
+        return ResponseEntity.ok(ApiResponse.success(200, "Image retrieved successfully.", response));
     }
 
     /**
@@ -199,5 +229,13 @@ public class AccommodationImageGetService {
             return null;
         }
         return accommodationImageRepository.findByFileName(fileName).orElse(null);
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 }

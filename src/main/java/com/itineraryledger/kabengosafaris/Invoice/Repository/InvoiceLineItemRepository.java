@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository for InvoiceLineItem entity.
@@ -41,4 +42,20 @@ public interface InvoiceLineItemRepository extends JpaRepository<InvoiceLineItem
      * Delete all line items for an invoice
      */
     void deleteByInvoiceId(Long invoiceId);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT i.id FROM InvoiceLineItem i WHERE i.id > :currentId ORDER BY i.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT i.id FROM InvoiceLineItem i WHERE i.id < :currentId ORDER BY i.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT i.id FROM InvoiceLineItem i ORDER BY i.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT i.id FROM InvoiceLineItem i ORDER BY i.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

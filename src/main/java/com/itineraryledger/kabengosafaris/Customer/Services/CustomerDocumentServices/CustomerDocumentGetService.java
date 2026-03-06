@@ -1,6 +1,9 @@
 package com.itineraryledger.kabengosafaris.Customer.Services.CustomerDocumentServices;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.domain.Page;
@@ -37,6 +40,11 @@ public class CustomerDocumentGetService {
     private final CustomerDocumentStorageService storageService;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "title", "documentType", "fileName", "fileSize", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
+
     public ResponseEntity<ApiResponse<?>> getAllDocuments(
             String customerId,
             DocumentType documentType,
@@ -70,9 +78,18 @@ public class CustomerDocumentGetService {
                 }
             }
 
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             Sort sort = Sort.by(
                 sortDirection.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC,
-                sortBy
+                validatedSortBy
             );
             Pageable pageable = PageRequest.of(page, size, sort);
 
@@ -101,16 +118,20 @@ public class CustomerDocumentGetService {
             Page<CustomerDocument> documentPage = customerDocumentRepository.findAll(spec, pageable);
             Page<CustomerDocumentDTO> dtoPage = documentPage.map(this::toDTO);
 
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("documents", dtoPage.getContent());
+            responseData.put("currentPage", dtoPage.getNumber());
+            responseData.put("totalPages", dtoPage.getTotalPages());
+            responseData.put("totalElements", dtoPage.getTotalElements());
+            responseData.put("pageSize", dtoPage.getSize());
+            responseData.put("hasNext", dtoPage.hasNext());
+            responseData.put("hasPrevious", dtoPage.hasPrevious());
+            responseData.put("validSortFields", VALID_SORT_FIELDS);
+            responseData.put("currentSortBy", validatedSortBy);
+            responseData.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Customer documents retrieved successfully", Map.of(
-                    "documents", dtoPage.getContent(),
-                    "currentPage", dtoPage.getNumber(),
-                    "totalPages", dtoPage.getTotalPages(),
-                    "totalElements", dtoPage.getTotalElements(),
-                    "pageSize", dtoPage.getSize(),
-                    "hasNext", dtoPage.hasNext(),
-                    "hasPrevious", dtoPage.hasPrevious()
-                ))
+                ApiResponse.success(200, "Customer documents retrieved successfully", responseData)
             );
 
         } catch (Exception e) {
@@ -144,8 +165,19 @@ public class CustomerDocumentGetService {
 
             CustomerDocumentDTO documentDTO = toDTO(document);
 
+            // Circular navigation
+            Long nextId = customerDocumentRepository.findNextId(id).orElse(null);
+            Long previousId = customerDocumentRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = customerDocumentRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = customerDocumentRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("document", documentDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Customer document retrieved successfully", documentDTO)
+                ApiResponse.success(200, "Customer document retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -192,9 +224,18 @@ public class CustomerDocumentGetService {
                 );
             }
 
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             Sort sort = Sort.by(
                 sortDirection.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC,
-                sortBy
+                validatedSortBy
             );
             Pageable pageable = PageRequest.of(page, size, sort);
 
@@ -221,16 +262,20 @@ public class CustomerDocumentGetService {
             Page<CustomerDocument> documentPage = customerDocumentRepository.findAll(spec, pageable);
             Page<CustomerDocumentDTO> dtoPage = documentPage.map(this::toDTO);
 
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("documents", dtoPage.getContent());
+            responseData.put("currentPage", dtoPage.getNumber());
+            responseData.put("totalPages", dtoPage.getTotalPages());
+            responseData.put("totalElements", dtoPage.getTotalElements());
+            responseData.put("pageSize", dtoPage.getSize());
+            responseData.put("hasNext", dtoPage.hasNext());
+            responseData.put("hasPrevious", dtoPage.hasPrevious());
+            responseData.put("validSortFields", VALID_SORT_FIELDS);
+            responseData.put("currentSortBy", validatedSortBy);
+            responseData.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Customer documents retrieved successfully", Map.of(
-                    "documents", dtoPage.getContent(),
-                    "currentPage", dtoPage.getNumber(),
-                    "totalPages", dtoPage.getTotalPages(),
-                    "totalElements", dtoPage.getTotalElements(),
-                    "pageSize", dtoPage.getSize(),
-                    "hasNext", dtoPage.hasNext(),
-                    "hasPrevious", dtoPage.hasPrevious()
-                ))
+                ApiResponse.success(200, "Customer documents retrieved successfully", responseData)
             );
 
         } catch (Exception e) {
@@ -253,6 +298,14 @@ public class CustomerDocumentGetService {
 
     public CustomerDocument getDocumentEntityByFileName(String fileName) {
         return customerDocumentRepository.findByFileName(fileName).orElse(null);
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     public CustomerDocumentDTO toDTO(CustomerDocument document) {

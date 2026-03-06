@@ -52,10 +52,12 @@ public class SafariPaxController {
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_SAFARI_PAX')")
     public ResponseEntity<ApiResponse<?>> getPax(
-        @PathVariable String safariId
+        @PathVariable String safariId,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/safaris/{}/pax - Fetching pax entries", safariId);
-        return getService.getSafariPax(safariId);
+        return getService.getSafariPax(safariId, sortBy, sortDirection);
     }
 
     @DeleteMapping

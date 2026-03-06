@@ -67,11 +67,13 @@ public class ItineraryDayParkActivityController {
     public ResponseEntity<ApiResponse<?>> getParkActivities(
         @PathVariable String itineraryId,
         @PathVariable String dayId,
-        @PathVariable String parkVisitId
+        @PathVariable String parkVisitId,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/itineraries/{}/days/{}/parks/{}/activities - Fetching activities",
             itineraryId, dayId, parkVisitId);
-        return getService.getParkActivities(parkVisitId);
+        return getService.getParkActivities(parkVisitId, sortBy, sortDirection);
     }
 
     @PostMapping("/reorder")

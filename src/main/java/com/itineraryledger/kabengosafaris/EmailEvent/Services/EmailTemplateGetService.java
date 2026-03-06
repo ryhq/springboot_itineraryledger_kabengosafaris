@@ -17,7 +17,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,6 +33,11 @@ public class EmailTemplateGetService {
     private final EmailTemplateRepository emailTemplateRepository;
     private final EmailTemplateService emailTemplateService;
     private final IdObfuscator idObfuscator;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "name", "isDefault", "enabled", "fileSize", "createdAt", "updatedAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     /**
      * Get all templates for an email event with pagination, filtering and sorting
@@ -53,6 +60,7 @@ public class EmailTemplateGetService {
             String name,
             int page,
             int size,
+            String sortBy,
             String sortDir) {
 
         log.debug("Fetching templates for event: {} with filters - enabled: {}, isDefault: {}, isSystemDefault: {}, name: {}, page: {}, size: {}, sortDir: {}",
@@ -75,9 +83,17 @@ public class EmailTemplateGetService {
                 );
             }
 
-            // Setup sorting
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
-            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, "createdAt"));
+            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
             // Build dynamic specification
             Specification<EmailTemplate> specification = EmailTemplateSpecification.emailEventId(eventId);
@@ -110,6 +126,9 @@ public class EmailTemplateGetService {
             response.put("currentPage", templatesPage.getNumber());
             response.put("totalItems", templatesPage.getTotalElements());
             response.put("totalPages", templatesPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDir != null ? sortDir : "desc");
 
             log.info("Successfully fetched {} templates on page {}", dtos.size(), page);
             return ResponseEntity.ok(ApiResponse.success(200, "Templates retrieved successfully", response));
@@ -148,8 +167,21 @@ public class EmailTemplateGetService {
                 );
             }
 
+            EmailTemplateDTO templateDTO = convertToDTO(template);
+
+            // Circular navigation
+            Long nextId = emailTemplateRepository.findNextId(templateId).orElse(null);
+            Long previousId = emailTemplateRepository.findPreviousId(templateId).orElse(null);
+            if (nextId == null) nextId = emailTemplateRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = emailTemplateRepository.findLastId().orElse(null);
+
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("template", templateDTO);
+            responseData.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            responseData.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             log.debug("Template retrieved successfully: {}", templateId);
-            return ResponseEntity.ok(ApiResponse.success(200, "Template retrieved successfully", convertToDTO(template)));
+            return ResponseEntity.ok(ApiResponse.success(200, "Template retrieved successfully", responseData));
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(
@@ -318,6 +350,14 @@ public class EmailTemplateGetService {
                 ApiResponse.error(500, "Failed to fetch template content file", "TEMPLATE_CONTENT_FILE_FETCH_FAILED")
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

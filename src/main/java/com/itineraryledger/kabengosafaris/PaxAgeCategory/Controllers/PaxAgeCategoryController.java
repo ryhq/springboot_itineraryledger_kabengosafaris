@@ -122,6 +122,7 @@ public class PaxAgeCategoryController {
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "asc") String sortDirection
     ) {
         log.info("GET /api/pax-age-categories - Fetching all pax age categories with filters");
@@ -136,6 +137,7 @@ public class PaxAgeCategoryController {
             keyword,
             page,
             size,
+            sortBy,
             sortDirection
         );
     }

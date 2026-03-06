@@ -143,10 +143,12 @@ public class AccommodationBoardTypeController {
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDir
     ) {
         log.info("GET /api/accommodation-board-types - Fetching all board types with filters");
-        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by("createdAt").ascending() : Sort.by("createdAt").descending();
+        String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return accommodationBoardTypeGetService.getAllAccommodationBoardTypes(
@@ -160,6 +162,8 @@ public class AccommodationBoardTypeController {
             isActive,
             hasFullMealPlan,
             keyword,
+            sortBy,
+            sortDir,
             pageable
         );
     }
@@ -198,10 +202,12 @@ public class AccommodationBoardTypeController {
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDir
     ) {
         log.info("GET /api/accommodation-board-types/accommodation/{} - Fetching board types for accommodation", accommodationId);
-        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by("createdAt").ascending() : Sort.by("createdAt").descending();
+        String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return accommodationBoardTypeGetService.getAllAccommodationsBoardTypes(
@@ -215,6 +221,8 @@ public class AccommodationBoardTypeController {
             isActive,
             hasFullMealPlan,
             keyword,
+            sortBy,
+            sortDir,
             pageable
         );
     }

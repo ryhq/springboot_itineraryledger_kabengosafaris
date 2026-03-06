@@ -67,10 +67,11 @@ public class ParkTariffRateController {
         @RequestParam(required = false) Boolean isActive,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/park-tariff-rates - Fetching all rates with filters");
-        return getService.getAllRates(parkId, tariffId, seasonId, nationCategoryId, ageCategoryId, isActive, page, size, sortDirection);
+        return getService.getAllRates(parkId, tariffId, seasonId, nationCategoryId, ageCategoryId, isActive, page, size, sortBy, sortDirection);
     }
 
     /**

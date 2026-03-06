@@ -106,10 +106,11 @@ public class PermissionController {
         @RequestParam(required = false) String displayName,
         @RequestParam(required = false) Boolean active,
         @RequestParam(required = false) Boolean isSystemRole,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(defaultValue = "desc") String sortDir
     ) {
         log.info("GET /api/permissions/{}/roles - Fetching roles for permission", id);
-        return roleGetService.getRolesForPermission(id, page, size, name, displayName, active, isSystemRole, sortDir);
+        return roleGetService.getRolesForPermission(id, page, size, name, displayName, active, isSystemRole, sortBy, sortDir);
     }
 
     /**

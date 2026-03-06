@@ -98,4 +98,20 @@ public interface ParkImageRepository extends JpaRepository<ParkImage, Long>, Jpa
      */
     @Query("SELECT img FROM ParkImage img WHERE img.imageType = :imageType AND img.isActive = true ORDER BY img.createdAt DESC")
     List<ParkImage> findAllByImageType(@Param("imageType") ImageType imageType);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT img.id FROM ParkImage img WHERE img.id > :currentId ORDER BY img.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT img.id FROM ParkImage img WHERE img.id < :currentId ORDER BY img.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT img.id FROM ParkImage img ORDER BY img.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT img.id FROM ParkImage img ORDER BY img.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

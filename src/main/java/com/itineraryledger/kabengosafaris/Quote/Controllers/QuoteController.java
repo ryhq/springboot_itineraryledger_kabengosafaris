@@ -271,6 +271,7 @@ public class QuoteController {
         @RequestParam(required = false) String statusGroup,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/quotes - Fetching all quotes with filters");
@@ -293,6 +294,7 @@ public class QuoteController {
             statusGroup,
             page,
             size,
+            sortBy,
             sortDirection
         );
     }

@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 /**
@@ -32,6 +33,11 @@ import java.util.stream.Collectors;
 public class BackupGetService {
 
     private final BackupSettingsGetterServices backupSettings;
+
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "name", "size", "createdAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Value("${backup.storage.path:/opt/lampp/htdocs/kabengosafaris/backups/}")
     private String storagePath;
@@ -82,8 +88,25 @@ public class BackupGetService {
 
             BackupDTO backupDTO = convertToDTO(backupFile);
 
+            // Circular navigation
+            List<BackupInfo> allBackups = listAllBackups();
+            String nextFilename = null;
+            String previousFilename = null;
+            for (int i = 0; i < allBackups.size(); i++) {
+                if (allBackups.get(i).getName().equals(filename)) {
+                    nextFilename = (i + 1 < allBackups.size()) ? allBackups.get(i + 1).getName() : allBackups.get(0).getName();
+                    previousFilename = (i - 1 >= 0) ? allBackups.get(i - 1).getName() : allBackups.get(allBackups.size() - 1).getName();
+                    break;
+                }
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("backup", backupDTO);
+            response.put("nextId", nextFilename);
+            response.put("previousId", previousFilename);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Backup retrieved successfully", backupDTO)
+                ApiResponse.success(200, "Backup retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -170,8 +193,16 @@ public class BackupGetService {
                 })
                 .collect(Collectors.toList());
 
-            // Sorting
-            String sortField = (sortBy != null && !sortBy.isEmpty()) ? sortBy : "createdAt";
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
+            String sortField = validatedSortBy;
             boolean ascending = sortDirection != null && sortDirection.equalsIgnoreCase("asc");
 
             Comparator<BackupInfo> comparator;
@@ -220,6 +251,9 @@ public class BackupGetService {
             response.put("currentPage", backupPage.getNumber());
             response.put("totalItems", backupPage.getTotalElements());
             response.put("totalPages", backupPage.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Backups retrieved successfully", response)
@@ -444,6 +478,14 @@ public class BackupGetService {
             return "GZIP";
         }
         return "NONE";
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**

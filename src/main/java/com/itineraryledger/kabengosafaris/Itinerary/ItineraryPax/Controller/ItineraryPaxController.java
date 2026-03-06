@@ -52,10 +52,12 @@ public class ItineraryPaxController {
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_ITINERARY_PAX')")
     public ResponseEntity<ApiResponse<?>> getPax(
-        @PathVariable String itineraryId
+        @PathVariable String itineraryId,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/itineraries/{}/pax - Fetching pax entries", itineraryId);
-        return getService.getItineraryPax(itineraryId);
+        return getService.getItineraryPax(itineraryId, sortBy, sortDirection);
     }
 
     @DeleteMapping

@@ -121,6 +121,7 @@ public class InvoiceController {
         @RequestParam(required = false) String statusGroup,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/invoices - Fetching all invoices with filters");
@@ -128,7 +129,7 @@ public class InvoiceController {
             invoiceCode, title, status, customerId, safariId,
             createdById, updatedById, isActive, issueDateAfter, issueDateBefore,
             dueDateAfter, dueDateBefore, sentAfter, sentBefore, isOverdue,
-            statusGroup, page, size, sortDirection
+            statusGroup, page, size, sortBy, sortDirection
         );
     }
 

@@ -97,4 +97,20 @@ public interface ParkDocumentRepository extends JpaRepository<ParkDocument, Long
      */
     @Query("SELECT doc FROM ParkDocument doc WHERE doc.isActive = true AND doc.validTo IS NOT NULL AND doc.validTo BETWEEN :startDate AND :endDate ORDER BY doc.validTo ASC")
     List<ParkDocument> findDocumentsExpiringSoon(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT doc.id FROM ParkDocument doc WHERE doc.id > :currentId ORDER BY doc.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT doc.id FROM ParkDocument doc WHERE doc.id < :currentId ORDER BY doc.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT doc.id FROM ParkDocument doc ORDER BY doc.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT doc.id FROM ParkDocument doc ORDER BY doc.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }

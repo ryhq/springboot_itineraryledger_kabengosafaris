@@ -87,10 +87,12 @@ public class SafariDayActivityController {
     @PreAuthorize("hasAuthority('PERM_READ_SAFARI_DAY_ACTIVITY')")
     public ResponseEntity<ApiResponse<?>> getActivities(
         @PathVariable String safariId,
-        @PathVariable String dayId
+        @PathVariable String dayId,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/safaris/{}/days/{}/activities - Fetching all activities", safariId, dayId);
-        return getService.getSafariDayActivities(safariId, dayId);
+        return getService.getSafariDayActivities(safariId, dayId, sortBy, sortDirection);
     }
 
     @GetMapping("/{activityId}")

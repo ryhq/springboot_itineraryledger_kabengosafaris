@@ -94,7 +94,8 @@ public class QuoteItemController {
         @RequestParam(required = false) String itemTypeGroup,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
-        @RequestParam(required = false, defaultValue = "asc") String sortDirection
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/quotes/{}/items - Fetching items with filters", quoteId);
         return getService.getQuoteItemsByQuoteId(
@@ -106,6 +107,7 @@ public class QuoteItemController {
             itemTypeGroup,
             page,
             size,
+            sortBy,
             sortDirection
         );
     }

@@ -1,6 +1,9 @@
 package com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayActivity.Services;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +33,12 @@ public class ItineraryDayActivityGetService {
     private final ItineraryDayActivityRepository activityRepository;
     private final IdObfuscator idObfuscator;
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "sortOrder", "durationHours", "startTime", "endTime",
+        "isIncludedInPrice", "isOptional", "createdAt"
+    );
+    private static final String DEFAULT_SORT_FIELD = "sortOrder";
+
     @Autowired
     public ItineraryDayActivityGetService(
         ItineraryDayRepository itineraryDayRepository,
@@ -46,11 +55,15 @@ public class ItineraryDayActivityGetService {
      *
      * @param itineraryIdObfuscated The obfuscated itinerary ID
      * @param dayIdObfuscated The obfuscated day ID
+     * @param sortBy The field to sort by
+     * @param sortDirection The sort direction (asc/desc)
      * @return ResponseEntity with ApiResponse containing list of activities
      */
     public ResponseEntity<ApiResponse<?>> getItineraryDayActivities(
         String itineraryIdObfuscated,
-        String dayIdObfuscated
+        String dayIdObfuscated,
+        String sortBy,
+        String sortDirection
     ) {
         log.info("Fetching activities for day: {}", dayIdObfuscated);
 
@@ -81,6 +94,15 @@ public class ItineraryDayActivityGetService {
                 );
             }
 
+            // Sorting with validation
+            String validatedSortBy = validateSortField(sortBy);
+            if (validatedSortBy == null) {
+                log.warn("Invalid sort field: {}", sortBy);
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+                );
+            }
+
             // Fetch activities
             List<ItineraryDayActivity> activities = activityRepository.findByItineraryDayIdOrderBySortOrderAsc(dayId);
 
@@ -89,8 +111,15 @@ public class ItineraryDayActivityGetService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
+            // Response
+            Map<String, Object> response = new HashMap<>();
+            response.put("activities", activityDTOs);
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDir", sortDirection != null ? sortDirection : "asc");
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Itinerary day activities retrieved successfully", activityDTOs)
+                ApiResponse.success(200, "Itinerary day activities retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -156,8 +185,20 @@ public class ItineraryDayActivityGetService {
             // Convert to DTO
             ItineraryDayActivityDTO activityDTO = convertToDTO(activity);
 
+            // Parent-scoped circular navigation (scoped to itinerary day)
+            Long parentId = activity.getItineraryDay().getId();
+            Long nextId = activityRepository.findNextIdInParent(parentId, activityId).orElse(null);
+            Long previousId = activityRepository.findPreviousIdInParent(parentId, activityId).orElse(null);
+            if (nextId == null) nextId = activityRepository.findFirstIdInParent(parentId).orElse(null);
+            if (previousId == null) previousId = activityRepository.findLastIdInParent(parentId).orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("activity", activityDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Itinerary day activity retrieved successfully", activityDTO)
+                ApiResponse.success(200, "Itinerary day activity retrieved successfully", response)
             );
 
         } catch (Exception e) {
@@ -166,6 +207,14 @@ public class ItineraryDayActivityGetService {
                 ApiResponse.error(500, "Failed to fetch itinerary day activity", "ITINERARY_DAY_ACTIVITY_FETCH_FAILED")
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
     }
 
     /**
