@@ -41,11 +41,11 @@ if (validatedSortBy == null) {
 // 4. Add to response map
 response.put("validSortFields", VALID_SORT_FIELDS);
 response.put("currentSortBy", validatedSortBy);
-response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 ```
 
 ### For unpaginated endpoints
-Same pattern but without pagination metadata — just add `validSortFields`, `currentSortBy`, `currentSortDir` to the response.
+Same pattern but without pagination metadata — just add `validSortFields`, `currentSortBy`, `currentSortDirection` to the response.
 
 ---
 
@@ -239,7 +239,7 @@ These use parent-scoped queries (e.g., `WHERE itinerary.id = :parentId AND id > 
 
 1. **Compile check**: `mvn compile` after each phase to catch errors early
 2. **API test**: Hit a representative endpoint for each pattern:
-   - `GET /api/customers` → verify `validSortFields`, `currentSortBy`, `currentSortDir` in response
+   - `GET /api/customers` → verify `validSortFields`, `currentSortBy`, `currentSortDirection` in response
    - `GET /api/customers?sortBy=invalidField` → verify 400 error with valid fields list
    - `GET /api/customers/{id}` → verify `nextId`, `previousId` in response alongside customer DTO
    - Navigate to last entity → verify `nextId` wraps to first (circular)

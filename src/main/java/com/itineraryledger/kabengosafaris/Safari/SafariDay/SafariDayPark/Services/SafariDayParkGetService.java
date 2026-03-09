@@ -108,7 +108,7 @@ public class SafariDayParkGetService {
             response.put("parkVisits", parkDTOs);
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
-            response.put("currentSortDir", sortDirection != null ? sortDirection : "asc");
+            response.put("currentSortDirection", sortDirection != null ? sortDirection : "asc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Park visits retrieved successfully", response)

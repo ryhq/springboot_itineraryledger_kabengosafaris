@@ -66,13 +66,13 @@ public class EmailAccountSignatureGetService {
      * @param isDefault Filter by default status (optional)
      * @param page Page number (0-based)
      * @param size Page size
-     * @param sortDir Sort direction ("asc" or "desc")
+     * @param sortDirection Sort direction ("asc" or "desc")
      * @return ResponseEntity with paginated signatures
      */
     public ResponseEntity<ApiResponse<?>> getAllSignatures(String emailAccountIdObfuscated, Boolean enabled,
-            Boolean isDefault, int page, int size, String sortBy, String sortDir) {
-        log.debug("Fetching signatures for email account: {} with filters - enabled: {}, isDefault: {}, page: {}, size: {}, sortDir: {}",
-                emailAccountIdObfuscated, enabled, isDefault, page, size, sortDir);
+            Boolean isDefault, int page, int size, String sortBy, String sortDirection) {
+        log.debug("Fetching signatures for email account: {} with filters - enabled: {}, isDefault: {}, page: {}, size: {}, sortDirection: {}",
+                emailAccountIdObfuscated, enabled, isDefault, page, size, sortDirection);
 
         try {
             Long emailAccountId = idObfuscator.decodeId(emailAccountIdObfuscated);
@@ -109,7 +109,7 @@ public class EmailAccountSignatureGetService {
                 );
             }
 
-            Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+            Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
             // Build dynamic specification
@@ -139,7 +139,7 @@ public class EmailAccountSignatureGetService {
             response.put("totalPages", signaturesPage.getTotalPages());
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
-            response.put("currentSortDir", sortDir != null ? sortDir : "desc");
+            response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 
             log.info("Successfully fetched {} signatures on page {}", dtos.size(), page);
             return ResponseEntity.ok(ApiResponse.success(200, "Signatures retrieved successfully", response));

@@ -138,7 +138,7 @@ public class TestimonyImageGetService {
         response.put("hasPrevious", imagePage.hasPrevious());
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("currentSortBy", validatedSortBy);
-        response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+        response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 
         return ResponseEntity.ok(ApiResponse.success(200, "Testimony images retrieved successfully", response));
     }

@@ -199,7 +199,7 @@ public class GetTariffService {
             responseData.put("totalPages", tariffPage.getTotalPages());
             responseData.put("validSortFields", VALID_SORT_FIELDS);
             responseData.put("currentSortBy", validatedSortBy);
-            responseData.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+            responseData.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok(
                 ApiResponse.success(

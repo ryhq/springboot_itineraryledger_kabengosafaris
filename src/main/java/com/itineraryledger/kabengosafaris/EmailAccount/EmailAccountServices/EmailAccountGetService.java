@@ -77,7 +77,7 @@ public class EmailAccountGetService {
      * @param useSsl Filter by SSL enabled status
      * @param smtpUsername Filter by SMTP username (partial match)
      * @param errorMessage Filter by error message (partial match)
-     * @param sortDir Sort direction ("asc" or "desc")
+     * @param sortDirection Sort direction ("asc" or "desc")
      * @return ResponseEntity with paginated results or validation error
      */
     public ResponseEntity<?> getAllEmailAccounts(
@@ -97,14 +97,14 @@ public class EmailAccountGetService {
         String smtpUsername,
         String errorMessage,
         String sortBy,
-        String sortDir
+        String sortDirection
     ) {
 
         log.debug("Fetching email accounts with filters - page: {}, size: {}, enabled: {}, isDefault: {}, " +
                 "email: {}, name: {}, providerType: {}, smtpHost: {}, smtpPort: {}, hasErrors: {}, description: {}, " +
-                "useTls: {}, useSsl: {}, smtpUsername: {}, errorMessage: {}, sortBy: {}, sortDir: {}",
+                "useTls: {}, useSsl: {}, smtpUsername: {}, errorMessage: {}, sortBy: {}, sortDirection: {}",
                 page, size, enabled, isDefault, email, name, providerTypeLong, smtpHost, smtpPort, hasErrors,
-                description, useTls, useSsl, smtpUsername, errorMessage, sortBy, sortDir);
+                description, useTls, useSsl, smtpUsername, errorMessage, sortBy, sortDirection);
 
         // Validate sort field
         String validatedSortBy = validateSortField(sortBy);
@@ -154,7 +154,7 @@ public class EmailAccountGetService {
 
         // Setup sorting
         Sort.Direction direction = Sort.Direction.DESC;
-        if ("asc".equalsIgnoreCase(sortDir)) {
+        if ("asc".equalsIgnoreCase(sortDirection)) {
             direction = Sort.Direction.ASC;
         }
 
@@ -233,7 +233,7 @@ public class EmailAccountGetService {
         response.put("totalPages", pagedEmailAccounts.getTotalPages());
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("currentSortBy", validatedSortBy);
-        response.put("currentSortDir", sortDir != null ? sortDir : "desc");
+        response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 
         log.info("Successfully fetched {} email accounts on page {}", emailAccountDTOs.size(), page);
         return ResponseEntity.ok(

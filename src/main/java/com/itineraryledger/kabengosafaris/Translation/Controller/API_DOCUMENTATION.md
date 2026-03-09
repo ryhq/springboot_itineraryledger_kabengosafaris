@@ -345,7 +345,7 @@ Retrieves translation cache entries with filtering, pagination, and sorting.
 | createdBefore | DateTime | No | - | Filter by created before date (ISO format: yyyy-MM-ddTHH:mm:ss) |
 | expired | Boolean | No | - | Filter by expired status (true = expired, false = valid) |
 | accessed | Boolean | No | - | Filter by accessed status (true = has been accessed, false = never accessed) |
-| sortDir | String | No | "desc" | Sort direction: "asc" or "desc" (always sorted by createdAt) |
+| sortDirection | String | No | "desc" | Sort direction: "asc" or "desc" (always sorted by createdAt) |
 
 **Examples:**
 
@@ -361,7 +361,7 @@ Retrieves translation cache entries with filtering, pagination, and sorting.
 
 3. Get most accessed entries:
    ```
-   GET /api/translation/cache/entries?minHitCount=10&sortDir=desc
+   GET /api/translation/cache/entries?minHitCount=10&sortDirection=desc
    ```
 
 4. Get expired entries:

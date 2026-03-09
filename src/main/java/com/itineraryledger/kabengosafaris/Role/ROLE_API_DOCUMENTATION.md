@@ -151,7 +151,7 @@ GET /api/roles
 | `displayName` | String | No | - | Filter by display name (case-insensitive partial match) |
 | `active` | Boolean | No | - | Filter by active status (true/false) |
 | `isSystemRole` | Boolean | No | - | Filter by system role status (true/false) |
-| `sortDir` | String | No | desc | Sort direction: "asc" or "desc" (sorts by createdAt) |
+| `sortDirection` | String | No | desc | Sort direction: "asc" or "desc" (sorts by createdAt) |
 
 **Note:** The `description` field is included in the response data but is not available as a filter parameter due to database type constraints (CLOB field).
 
@@ -238,14 +238,14 @@ curl -X GET "https://api.example.com/api/roles?isSystemRole=true" \
 #### Search by Name with Sorting
 
 ```bash
-curl -X GET "https://api.example.com/api/roles?name=manager&sortDir=asc" \
+curl -X GET "https://api.example.com/api/roles?name=manager&sortDirection=asc" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 #### Combined Filters
 
 ```bash
-curl -X GET "https://api.example.com/api/roles?active=true&isSystemRole=false&displayName=booking&page=0&size=10&sortDir=desc" \
+curl -X GET "https://api.example.com/api/roles?active=true&isSystemRole=false&displayName=booking&page=0&size=10&sortDirection=desc" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -1281,7 +1281,7 @@ GET /api/roles/{roleId}/users
 | `page` | Integer | No | 0 | Page number (0-based) |
 | `size` | Integer | No | 10 | Number of items per page |
 | `search` | String | No | - | Search keyword (searches username, email, firstName, lastName - case-insensitive) |
-| `sortDir` | String | No | asc | Sort direction: "asc" or "desc" (sorts by firstName, lastName) |
+| `sortDirection` | String | No | asc | Sort direction: "asc" or "desc" (sorts by firstName, lastName) |
 
 ### Success Response
 
@@ -1396,7 +1396,7 @@ curl -X GET "https://api.example.com/api/roles/encoded_role_id/users?page=0&size
 #### With Sorting
 
 ```bash
-curl -X GET "https://api.example.com/api/roles/encoded_role_id/users?sortDir=desc" \
+curl -X GET "https://api.example.com/api/roles/encoded_role_id/users?sortDirection=desc" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 

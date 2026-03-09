@@ -312,7 +312,7 @@ public class InvoiceGetService {
             response.put("totalPages", invoicePage.getTotalPages());
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
-            response.put("currentSortDir", direction.name().toLowerCase());
+            response.put("currentSortDirection", direction.name().toLowerCase());
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Invoices retrieved successfully", response)

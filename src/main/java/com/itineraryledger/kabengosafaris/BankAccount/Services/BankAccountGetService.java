@@ -68,7 +68,7 @@ public class BankAccountGetService {
      * @param isDefault Filter by default status
      * @param search Search keyword (account name, bank name, account number, account code)
      * @param sortBy Sort field
-     * @param sortDir Sort direction ("asc" or "desc")
+     * @param sortDirection Sort direction ("asc" or "desc")
      * @return ResponseEntity with paginated results or validation error
      */
     public ResponseEntity<?> getAllBankAccounts(
@@ -79,12 +79,12 @@ public class BankAccountGetService {
         Boolean isDefault,
         String search,
         String sortBy,
-        String sortDir
+        String sortDirection
     ) {
 
         log.debug("Fetching bank accounts with filters - page: {}, size: {}, currency: {}, isActive: {}, " +
-                "isDefault: {}, search: {}, sortBy: {}, sortDir: {}",
-                page, size, currency, isActive, isDefault, search, sortBy, sortDir);
+                "isDefault: {}, search: {}, sortBy: {}, sortDirection: {}",
+                page, size, currency, isActive, isDefault, search, sortBy, sortDirection);
 
         // Validate sort field
         String validatedSortBy = validateSortField(sortBy);
@@ -107,7 +107,7 @@ public class BankAccountGetService {
 
         // Setup sorting
         Sort.Direction direction = Sort.Direction.DESC;
-        if ("asc".equalsIgnoreCase(sortDir)) {
+        if ("asc".equalsIgnoreCase(sortDirection)) {
             direction = Sort.Direction.ASC;
         }
 
@@ -150,7 +150,7 @@ public class BankAccountGetService {
         response.put("totalPages", pagedBankAccounts.getTotalPages());
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("currentSortBy", validatedSortBy);
-        response.put("currentSortDir", sortDir != null ? sortDir : "desc");
+        response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 
         log.info("Successfully fetched {} bank accounts on page {}", bankAccountDTOs.size(), page);
         return ResponseEntity.ok(

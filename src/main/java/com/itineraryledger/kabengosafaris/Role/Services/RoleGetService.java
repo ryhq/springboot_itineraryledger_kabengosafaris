@@ -59,7 +59,7 @@ public class RoleGetService {
      * @param displayName Filter by display name (partial match)
      * @param active Filter by active status
      * @param isSystemRole Filter by system role status
-     * @param sortDir Sort direction ("asc" or "desc")
+     * @param sortDirection Sort direction ("asc" or "desc")
      * @return ResponseEntity with paginated results or validation error
      */
     public ResponseEntity<?> getAllRoles(
@@ -70,12 +70,12 @@ public class RoleGetService {
         Boolean active,
         Boolean isSystemRole,
         String sortBy,
-        String sortDir
+        String sortDirection
     ) {
 
         log.debug("Fetching roles with filters - page: {}, size: {}, name: {}, displayName: {}, " +
-                "active: {}, isSystemRole: {}, sortBy: {}, sortDir: {}",
-                page, size, name, displayName, active, isSystemRole, sortBy, sortDir);
+                "active: {}, isSystemRole: {}, sortBy: {}, sortDirection: {}",
+                page, size, name, displayName, active, isSystemRole, sortBy, sortDirection);
 
         // Validate pagination parameters
         if (page < 0) {
@@ -97,7 +97,7 @@ public class RoleGetService {
         }
 
         Sort.Direction direction = Sort.Direction.DESC;
-        if ("asc".equalsIgnoreCase(sortDir)) {
+        if ("asc".equalsIgnoreCase(sortDirection)) {
             direction = Sort.Direction.ASC;
         }
 
@@ -140,7 +140,7 @@ public class RoleGetService {
         response.put("totalPages", pagedRoles.getTotalPages());
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("currentSortBy", validatedSortBy);
-        response.put("currentSortDir", sortDir != null ? sortDir : "desc");
+        response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 
         log.info("Successfully fetched {} roles on page {}", roleDTOs.size(), page);
         return ResponseEntity.ok(
@@ -162,7 +162,7 @@ public class RoleGetService {
      * @param displayName Filter by display name (partial match)
      * @param active Filter by active status
      * @param isSystemRole Filter by system role status
-     * @param sortDir Sort direction ("asc" or "desc")
+     * @param sortDirection Sort direction ("asc" or "desc")
      * @return ResponseEntity with paginated results or validation error
      */
     public ResponseEntity<?> getRolesForUser(
@@ -174,12 +174,12 @@ public class RoleGetService {
         Boolean active,
         Boolean isSystemRole,
         String sortBy,
-        String sortDir
+        String sortDirection
     ) {
 
         log.debug("Fetching roles for user {} with filters - page: {}, size: {}, name: {}, displayName: {}, " +
-                "active: {}, isSystemRole: {}, sortBy: {}, sortDir: {}",
-                userId, page, size, name, displayName, active, isSystemRole, sortBy, sortDir);
+                "active: {}, isSystemRole: {}, sortBy: {}, sortDirection: {}",
+                userId, page, size, name, displayName, active, isSystemRole, sortBy, sortDirection);
 
         // Validate pagination parameters
         if (page < 0) {
@@ -201,7 +201,7 @@ public class RoleGetService {
         }
 
         Sort.Direction direction = Sort.Direction.DESC;
-        if ("asc".equalsIgnoreCase(sortDir)) {
+        if ("asc".equalsIgnoreCase(sortDirection)) {
             direction = Sort.Direction.ASC;
         }
 
@@ -245,7 +245,7 @@ public class RoleGetService {
         response.put("totalPages", pagedRoles.getTotalPages());
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("currentSortBy", validatedSortBy);
-        response.put("currentSortDir", sortDir != null ? sortDir : "desc");
+        response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 
         log.info("Successfully fetched {} roles for user {} on page {}", roleDTOs.size(), userId, page);
         return ResponseEntity.ok(
@@ -267,7 +267,7 @@ public class RoleGetService {
      * @param displayName Filter by display name (partial match)
      * @param active Filter by active status
      * @param isSystemRole Filter by system role status
-     * @param sortDir Sort direction ("asc" or "desc")
+     * @param sortDirection Sort direction ("asc" or "desc")
      * @return ResponseEntity with paginated results or validation error
      */
     public ResponseEntity<?> getRolesForPermission(
@@ -279,12 +279,12 @@ public class RoleGetService {
         Boolean active,
         Boolean isSystemRole,
         String sortBy,
-        String sortDir
+        String sortDirection
     ) {
 
         log.debug("Fetching roles for permission {} with filters - page: {}, size: {}, name: {}, displayName: {}, " +
-                "active: {}, isSystemRole: {}, sortBy: {}, sortDir: {}",
-                permissionIdObfuscated, page, size, name, displayName, active, isSystemRole, sortBy, sortDir);
+                "active: {}, isSystemRole: {}, sortBy: {}, sortDirection: {}",
+                permissionIdObfuscated, page, size, name, displayName, active, isSystemRole, sortBy, sortDirection);
 
         // Decode obfuscated permission ID
         Long permissionId;
@@ -315,7 +315,7 @@ public class RoleGetService {
         }
 
         Sort.Direction direction = Sort.Direction.DESC;
-        if ("asc".equalsIgnoreCase(sortDir)) {
+        if ("asc".equalsIgnoreCase(sortDirection)) {
             direction = Sort.Direction.ASC;
         }
 
@@ -359,7 +359,7 @@ public class RoleGetService {
         response.put("totalPages", pagedRoles.getTotalPages());
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("currentSortBy", validatedSortBy);
-        response.put("currentSortDir", sortDir != null ? sortDir : "desc");
+        response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 
         log.info("Successfully fetched {} roles for permission {} on page {}", roleDTOs.size(), permissionIdObfuscated, page);
         return ResponseEntity.ok(

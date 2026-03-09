@@ -368,11 +368,11 @@ Retrieves all templates for an event with pagination, filtering, and sorting.
 - `name` (string, optional): Filter by name (partial match)
 - `page` (number, optional, default: 0): Page number (0-based)
 - `size` (number, optional, default: 10): Page size
-- `sortDir` (string, optional, default: "desc"): Sort direction ("asc" or "desc")
+- `sortDirection` (string, optional, default: "desc"): Sort direction ("asc" or "desc")
 
 **Example Request:**
 ```
-GET /api/email-events/encoded_id/templates?enabled=true&page=0&size=10&sortDir=desc
+GET /api/email-events/encoded_id/templates?enabled=true&page=0&size=10&sortDirection=desc
 ```
 
 **Response (200 OK):**

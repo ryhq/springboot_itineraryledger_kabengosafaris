@@ -120,10 +120,10 @@ public class RoleController {
      * @param displayName Filter by display name partial match (optional)
      * @param active Filter by active status (optional)
      * @param isSystemRole Filter by system role status (optional)
-     * @param sortDir Sort direction: "asc" or "desc", default: "desc"
+     * @param sortDirection Sort direction: "asc" or "desc", default: "desc"
      * @return ResponseEntity with paginated roles or validation error
      *
-     * Example: GET /api/roles?page=0&size=10&active=true&sortDir=desc
+     * Example: GET /api/roles?page=0&size=10&active=true&sortDirection=desc
      */
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_ROLE')")
@@ -135,7 +135,7 @@ public class RoleController {
         @RequestParam(required = false) Boolean active,
         @RequestParam(required = false) Boolean isSystemRole,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false) String sortDir
+        @RequestParam(required = false) String sortDirection
     ) {
         return roleGetService.getAllRoles(
             page,
@@ -145,7 +145,7 @@ public class RoleController {
             active,
             isSystemRole,
             sortBy,
-            sortDir
+            sortDirection
         );
     }
 
@@ -522,7 +522,7 @@ public class RoleController {
      * @param page Page number (0-based), default: 0
      * @param size Page size, default: 10
      * @param search Optional search keyword (searches username, email, firstName, lastName)
-     * @param sortDir Sort direction: "asc" or "desc", default: "asc"
+     * @param sortDirection Sort direction: "asc" or "desc", default: "asc"
      * @return ResponseEntity with paginated users and their assignment status
      *
      * Example request:
@@ -575,9 +575,9 @@ public class RoleController {
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size,
         @RequestParam(required = false) String search,
-        @RequestParam(defaultValue = "asc") String sortDir
+        @RequestParam(defaultValue = "asc") String sortDirection
     ) {
-        return roleUserAssignmentService.getUsersForRole(roleId, page, size, search, sortDir);
+        return roleUserAssignmentService.getUsersForRole(roleId, page, size, search, sortDirection);
     }
 
     /**

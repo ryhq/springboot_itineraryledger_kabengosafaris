@@ -51,7 +51,7 @@ public class PermissionService {
      * @param entity Filter by entity (partial match)
      * @param action Filter by permission action
      * @param active Filter by active status
-     * @param sortDir Sort direction ("asc" or "desc")
+     * @param sortDirection Sort direction ("asc" or "desc")
      * @return ResponseEntity with paginated results or validation error
      */
     public ResponseEntity<?> getAllPermissions(
@@ -61,12 +61,12 @@ public class PermissionService {
         String entity,
         PermissionAction action,
         Boolean active,
-        String sortDir
+        String sortDirection
     ) {
 
         log.debug("Fetching permissions with filters - page: {}, size: {}, name: {}, entity: {}, " +
-                "action: {}, active: {}, sortDir: {}",
-                page, size, name, entity, action, active, sortDir);
+                "action: {}, active: {}, sortDirection: {}",
+                page, size, name, entity, action, active, sortDirection);
 
         // Validate pagination parameters
         if (page < 0) {
@@ -80,7 +80,7 @@ public class PermissionService {
 
         // Setup sorting
         Sort.Direction direction = Sort.Direction.DESC;
-        if ("asc".equalsIgnoreCase(sortDir)) {
+        if ("asc".equalsIgnoreCase(sortDirection)) {
             direction = Sort.Direction.ASC;
         }
 

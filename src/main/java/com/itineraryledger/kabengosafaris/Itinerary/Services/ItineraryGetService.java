@@ -284,7 +284,7 @@ public class ItineraryGetService {
             response.put("totalPages", itineraryPage.getTotalPages());
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
-            response.put("currentSortDir", direction.name().toLowerCase());
+            response.put("currentSortDirection", direction.name().toLowerCase());
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(

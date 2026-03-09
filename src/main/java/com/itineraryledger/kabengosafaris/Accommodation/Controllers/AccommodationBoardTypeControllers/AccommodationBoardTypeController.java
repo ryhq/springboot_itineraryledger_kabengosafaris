@@ -125,7 +125,7 @@ public class AccommodationBoardTypeController {
      * @param keyword Search keyword
      * @param page Page number (0-indexed)
      * @param size Page size
-     * @param sortDir Sort direction (asc/desc)
+     * @param sortDirection Sort direction (asc/desc)
      * @return ResponseEntity with ApiResponse containing paginated board types
      */
     @GetMapping
@@ -144,11 +144,11 @@ public class AccommodationBoardTypeController {
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false, defaultValue = "desc") String sortDir
+        @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/accommodation-board-types - Fetching all board types with filters");
         String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
-        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
+        Sort sort = sortDirection.equalsIgnoreCase("asc") ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return accommodationBoardTypeGetService.getAllAccommodationBoardTypes(
@@ -163,7 +163,7 @@ public class AccommodationBoardTypeController {
             hasFullMealPlan,
             keyword,
             sortBy,
-            sortDir,
+            sortDirection,
             pageable
         );
     }
@@ -184,7 +184,7 @@ public class AccommodationBoardTypeController {
      * @param keyword Search keyword
      * @param page Page number (0-indexed)
      * @param size Page size
-     * @param sortDir Sort direction (asc/desc)
+     * @param sortDirection Sort direction (asc/desc)
      * @return ResponseEntity with ApiResponse containing paginated board types
      */
     @GetMapping("/accommodation/{accommodationId}")
@@ -203,11 +203,11 @@ public class AccommodationBoardTypeController {
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false, defaultValue = "desc") String sortDir
+        @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/accommodation-board-types/accommodation/{} - Fetching board types for accommodation", accommodationId);
         String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
-        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
+        Sort sort = sortDirection.equalsIgnoreCase("asc") ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return accommodationBoardTypeGetService.getAllAccommodationsBoardTypes(
@@ -222,7 +222,7 @@ public class AccommodationBoardTypeController {
             hasFullMealPlan,
             keyword,
             sortBy,
-            sortDir,
+            sortDirection,
             pageable
         );
     }

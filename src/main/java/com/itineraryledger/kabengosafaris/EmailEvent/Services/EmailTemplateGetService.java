@@ -49,7 +49,7 @@ public class EmailTemplateGetService {
      * @param name Filter by name (partial match, optional)
      * @param page Page number (0-based)
      * @param size Page size
-     * @param sortDir Sort direction ("asc" or "desc")
+     * @param sortDirection Sort direction ("asc" or "desc")
      * @return ResponseEntity with paginated templates
      */
     public ResponseEntity<ApiResponse<?>> getAllTemplates(
@@ -61,10 +61,10 @@ public class EmailTemplateGetService {
             int page,
             int size,
             String sortBy,
-            String sortDir) {
+            String sortDirection) {
 
-        log.debug("Fetching templates for event: {} with filters - enabled: {}, isDefault: {}, isSystemDefault: {}, name: {}, page: {}, size: {}, sortDir: {}",
-            eventIdObfuscated, enabled, isDefault, isSystemDefault, name, page, size, sortDir);
+        log.debug("Fetching templates for event: {} with filters - enabled: {}, isDefault: {}, isSystemDefault: {}, name: {}, page: {}, size: {}, sortDirection: {}",
+            eventIdObfuscated, enabled, isDefault, isSystemDefault, name, page, size, sortDirection);
 
         try {
             Long eventId = idObfuscator.decodeId(eventIdObfuscated);
@@ -92,7 +92,7 @@ public class EmailTemplateGetService {
                 );
             }
 
-            Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+            Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
             // Build dynamic specification
@@ -128,7 +128,7 @@ public class EmailTemplateGetService {
             response.put("totalPages", templatesPage.getTotalPages());
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
-            response.put("currentSortDir", sortDir != null ? sortDir : "desc");
+            response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 
             log.info("Successfully fetched {} templates on page {}", dtos.size(), page);
             return ResponseEntity.ok(ApiResponse.success(200, "Templates retrieved successfully", response));

@@ -32,7 +32,7 @@ GET /api/permissions
 | `entity` | String | No | - | Filter by entity name (partial match, case-insensitive) |
 | `action` | Enum | No | - | Filter by permission action (CREATE, READ, UPDATE, DELETE, etc.) |
 | `active` | Boolean | No | - | Filter by active status (true/false) |
-| `sortDir` | String | No | desc | Sort direction: "asc" or "desc" |
+| `sortDirection` | String | No | desc | Sort direction: "asc" or "desc" |
 
 ### Request Headers
 
@@ -136,7 +136,7 @@ curl -X GET "https://api.example.com/api/permissions?entity=USER&active=true&pag
 #### Filter by action "CREATE"
 
 ```bash
-curl -X GET "https://api.example.com/api/permissions?action=CREATE&sortDir=asc" \
+curl -X GET "https://api.example.com/api/permissions?action=CREATE&sortDirection=asc" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 

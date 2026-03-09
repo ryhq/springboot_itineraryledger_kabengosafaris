@@ -161,10 +161,10 @@ public class EmailAccountController {
      * @param useSsl Filter by SSL enabled status (optional)
      * @param smtpUsername Filter by SMTP username partial match (optional)
      * @param errorMessage Filter by error message partial match (optional)
-     * @param sortDir Sort direction: "asc" or "desc", default: "desc"
+     * @param sortDirection Sort direction: "asc" or "desc", default: "desc"
      * @return ResponseEntity with paginated email accounts or validation error
      *
-     * Example: GET /api/email-accounts?page=0&size=10&enabled=true&sortDir=desc
+     * Example: GET /api/email-accounts?page=0&size=10&enabled=true&sortDirection=desc
      */
 
     @GetMapping
@@ -186,7 +186,7 @@ public class EmailAccountController {
         @RequestParam(required = false) String smtpUsername,
         @RequestParam(required = false) String errorMessage,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false) String sortDir
+        @RequestParam(required = false) String sortDirection
     ) {
         return emailAccountGetService.getAllEmailAccounts(
             page,
@@ -205,7 +205,7 @@ public class EmailAccountController {
             smtpUsername,
             errorMessage,
             sortBy,
-            sortDir
+            sortDirection
         );
     }
 

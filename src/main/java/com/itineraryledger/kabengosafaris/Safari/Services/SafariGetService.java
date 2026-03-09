@@ -227,7 +227,7 @@ public class SafariGetService {
             response.put("totalPages", safariPage.getTotalPages());
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
-            response.put("currentSortDir", direction.name().toLowerCase());
+            response.put("currentSortDirection", direction.name().toLowerCase());
             if (phase != null) {
                 response.put("filteredByPhase", phase.name());
             }

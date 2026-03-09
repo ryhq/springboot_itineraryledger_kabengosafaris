@@ -84,7 +84,7 @@ public class SafariDayParkActivityGetService {
             response.put("parkActivities", dtos);
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
-            response.put("currentSortDir", sortDirection != null ? sortDirection : "asc");
+            response.put("currentSortDirection", sortDirection != null ? sortDirection : "asc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Safari park activities retrieved", response)

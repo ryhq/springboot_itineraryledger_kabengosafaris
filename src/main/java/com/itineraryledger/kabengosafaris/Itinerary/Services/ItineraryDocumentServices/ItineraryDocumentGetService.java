@@ -151,7 +151,7 @@ public class ItineraryDocumentGetService {
             response.put("hasPrevious", dtoPage.hasPrevious());
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
-            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+            response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Itinerary documents retrieved successfully", response)

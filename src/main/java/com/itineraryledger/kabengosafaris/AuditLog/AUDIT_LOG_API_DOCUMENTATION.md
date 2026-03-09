@@ -111,7 +111,7 @@ Retrieves audit logs with advanced filtering, pagination, and sorting capabiliti
 | `userAgent` | String | No | - | Filter by user agent (partial match, case-insensitive) |
 | `status` | String | No | - | Filter by status (partial match, case-insensitive) |
 | `errorMessage` | String | No | - | Filter by error message (partial match, case-insensitive) |
-| `sortDir` | String | No | desc | Sort direction: "asc" or "desc" |
+| `sortDirection` | String | No | desc | Sort direction: "asc" or "desc" |
 
 **Request Headers:**
 ```
@@ -227,7 +227,7 @@ curl -X GET "https://api.example.com/api/audit-logs?userId=encoded_user_id&page=
 
 #### Filter by username and action
 ```bash
-curl -X GET "https://api.example.com/api/audit-logs?username=john&action=UPDATE&sortDir=asc" \
+curl -X GET "https://api.example.com/api/audit-logs?username=john&action=UPDATE&sortDirection=asc" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -491,7 +491,7 @@ GET /api/audit-logs?ipAddress=192.168.1.100
 ### By Time Period (using pagination)
 Get recent logs:
 ```
-GET /api/audit-logs?page=0&size=100&sortDir=desc
+GET /api/audit-logs?page=0&size=100&sortDirection=desc
 ```
 
 ### Combined Filters
@@ -564,13 +564,13 @@ GET /api/audit-logs?action=LOGIN_FAILURE&ipAddress=192.168.1.100&size=50
 ### 2. Compliance Auditing
 **Scenario**: Generate report of all user modifications in last 30 days
 ```bash
-GET /api/audit-logs?action=UPDATE_USER&page=0&size=1000&sortDir=desc
+GET /api/audit-logs?action=UPDATE_USER&page=0&size=1000&sortDirection=desc
 ```
 
 ### 3. Change History Tracking
 **Scenario**: View all changes to a specific user account
 ```bash
-GET /api/audit-logs?entityType=USER&entityId=encoded_user_id&sortDir=asc
+GET /api/audit-logs?entityType=USER&entityId=encoded_user_id&sortDirection=asc
 ```
 
 ### 4. User Activity Report
@@ -588,7 +588,7 @@ GET /api/audit-logs?status=ERROR&errorMessage=database&size=50
 ### 6. Permission Changes Audit
 **Scenario**: Track all permission-related changes
 ```bash
-GET /api/audit-logs?entityType=PERMISSION&action=UPDATE&sortDir=desc
+GET /api/audit-logs?entityType=PERMISSION&action=UPDATE&sortDirection=desc
 ```
 
 ### 7. Role Assignment Tracking
@@ -612,7 +612,7 @@ GET /api/audit-logs?entityType=EMAIL&status=FAILURE&size=50
 ```javascript
 // Fetch recent audit logs for dashboard
 async function fetchRecentAuditLogs() {
-  const response = await fetch('/api/audit-logs?page=0&size=10&sortDir=desc', {
+  const response = await fetch('/api/audit-logs?page=0&size=10&sortDirection=desc', {
     headers: {
       'Authorization': `Bearer ${token}`
     }
@@ -626,7 +626,7 @@ async function fetchRecentAuditLogs() {
 ```javascript
 // Get all actions by specific user
 async function getUserActivityTimeline(userId) {
-  const response = await fetch(`/api/audit-logs?userId=${userId}&size=100&sortDir=asc`, {
+  const response = await fetch(`/api/audit-logs?userId=${userId}&size=100&sortDirection=asc`, {
     headers: {
       'Authorization': `Bearer ${token}`
     }
@@ -659,7 +659,7 @@ async function checkFailedLogins(ipAddress) {
 // Get detailed change history for an entity
 async function getEntityChangeHistory(entityType, entityId) {
   const response = await fetch(
-    `/api/audit-logs?entityType=${entityType}&entityId=${entityId}&sortDir=desc`,
+    `/api/audit-logs?entityType=${entityType}&entityId=${entityId}&sortDirection=desc`,
     {
       headers: {
         'Authorization': `Bearer ${token}`

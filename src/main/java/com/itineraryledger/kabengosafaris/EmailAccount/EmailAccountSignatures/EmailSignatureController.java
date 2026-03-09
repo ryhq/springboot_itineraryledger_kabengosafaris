@@ -94,11 +94,11 @@ public class EmailSignatureController {
      * @param isDefault Filter by default status (optional)
      * @param page Page number (0-based), default: 0
      * @param size Page size, default: 10
-     * @param sortDir Sort direction: "asc" or "desc", default: "desc"
+     * @param sortDirection Sort direction: "asc" or "desc", default: "desc"
      * @return ResponseEntity with paginated signatures
      *
      * Example request:
-     * GET /api/email-accounts/{emailAccountId}/signatures?enabled=true&page=0&size=10&sortDir=desc
+     * GET /api/email-accounts/{emailAccountId}/signatures?enabled=true&page=0&size=10&sortDirection=desc
      *
      * Response:
      * {
@@ -122,8 +122,8 @@ public class EmailSignatureController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String sortBy,
-            @RequestParam(required = false, defaultValue = "desc") String sortDir) {
-        return emailAccountSignatureGetService.getAllSignatures(emailAccountId, enabled, isDefault, page, size, sortBy, sortDir);
+            @RequestParam(required = false, defaultValue = "desc") String sortDirection) {
+        return emailAccountSignatureGetService.getAllSignatures(emailAccountId, enabled, isDefault, page, size, sortBy, sortDirection);
     }
 
     /**

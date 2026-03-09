@@ -349,7 +349,7 @@ enabled=true/false (optional - filter by enabled status)
 isDefault=true/false (optional - filter by default status)
 
 Sorting:
-sortDir=asc/desc (optional, default: desc - sort by creation date)
+sortDirection=asc/desc (optional, default: desc - sort by creation date)
 ```
 
 **Example Requests:**
@@ -358,13 +358,13 @@ sortDir=asc/desc (optional, default: desc - sort by creation date)
 GET /api/email-accounts/encoded_id_xyz/signatures?page=0&size=10
 
 # Get only enabled signatures
-GET /api/email-accounts/encoded_id_xyz/signatures?enabled=true&sortDir=desc
+GET /api/email-accounts/encoded_id_xyz/signatures?enabled=true&sortDirection=desc
 
 # Get default signature
 GET /api/email-accounts/encoded_id_xyz/signatures?isDefault=true
 
 # Get enabled default signatures with custom page size
-GET /api/email-accounts/encoded_id_xyz/signatures?enabled=true&isDefault=true&page=0&size=5&sortDir=asc
+GET /api/email-accounts/encoded_id_xyz/signatures?enabled=true&isDefault=true&page=0&size=5&sortDirection=asc
 ```
 
 **Success Response (200):**
@@ -1141,7 +1141,7 @@ Body:
 
 10. **Pagination**: Default page size is 10 items. Use `page` and `size` parameters to control pagination.
 
-11. **Sorting**: Signatures are sorted by `createdAt` timestamp. Use `sortDir=asc` or `sortDir=desc` to control sort direction.
+11. **Sorting**: Signatures are sorted by `createdAt` timestamp. Use `sortDirection=asc` or `sortDirection=desc` to control sort direction.
 
 12. **Partial Updates**: PUT endpoint supports partial updates - only provide fields you want to change. Other fields retain their current values.
 
@@ -1179,7 +1179,7 @@ curl -X POST http://localhost:8080/api/email-accounts/encoded_id_xyz/signatures 
 
 ### 2. Get All Signatures
 ```bash
-curl -X GET "http://localhost:8080/api/email-accounts/encoded_id_xyz/signatures?page=0&size=10&sortDir=desc"
+curl -X GET "http://localhost:8080/api/email-accounts/encoded_id_xyz/signatures?page=0&size=10&sortDirection=desc"
 ```
 
 ### 3. Preview Signature with Variables

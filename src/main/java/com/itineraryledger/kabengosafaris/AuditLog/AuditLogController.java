@@ -40,10 +40,10 @@ public class AuditLogController {
      * @param userAgent Filter by user agent (partial match, case-insensitive)
      * @param status Filter by status (partial match, case-insensitive)
      * @param errorMessage Filter by error message (partial match, case-insensitive)
-     * @param sortDir Sort direction: "asc" or "desc", default: "desc"
+     * @param sortDirection Sort direction: "asc" or "desc", default: "desc"
      * @return ResponseEntity with paginated audit logs
      *
-     * Example: GET /api/audit-logs?page=0&size=10&entityType=USER&status=SUCCESS&sortDir=desc
+     * Example: GET /api/audit-logs?page=0&size=10&entityType=USER&status=SUCCESS&sortDirection=desc
      */
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_AUDIT_LOG')")
@@ -61,12 +61,12 @@ public class AuditLogController {
         @RequestParam(required = false) String userAgent,
         @RequestParam(required = false) String status,
         @RequestParam(required = false) String errorMessage,
-        @RequestParam(defaultValue = "desc") String sortDir
+        @RequestParam(defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/audit-logs - Fetching audit logs with filters");
         return auditLogService.getAllAuditLogs(
             page, size, name, userId, username, action, entityType, entityId,
-            description, ipAddress, userAgent, status, errorMessage, sortDir
+            description, ipAddress, userAgent, status, errorMessage, sortDirection
         );
     }
 

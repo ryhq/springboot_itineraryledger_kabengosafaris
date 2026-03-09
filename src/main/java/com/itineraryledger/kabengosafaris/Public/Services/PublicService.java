@@ -116,15 +116,15 @@ public class PublicService {
     // PARKS
     // ========================
 
-    public ResponseEntity<ApiResponse<?>> getParks(Integer page, Integer size, String sortBy, String sortDir,
+    public ResponseEntity<ApiResponse<?>> getParks(Integer page, Integer size, String sortBy, String sortDirection,
                                                     String region, ParkType parkType, String keyword) {
         try {
             page = page != null ? page : 0;
             size = size != null ? size : 20;
-            sortDir = sortDir != null ? sortDir : "asc";
+            sortDirection = sortDirection != null ? sortDirection : "asc";
             sortBy = sortBy != null && !sortBy.isBlank() ? sortBy : "name";
 
-            Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+            Sort sort = sortDirection.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
             Pageable pageable = PageRequest.of(page, size, sort);
 
             Specification<Park> spec = Specification.where(ParkSpecification.isActive(true));
@@ -190,15 +190,15 @@ public class PublicService {
     // ACTIVITIES
     // ========================
 
-    public ResponseEntity<ApiResponse<?>> getActivities(Integer page, Integer size, String sortBy, String sortDir,
+    public ResponseEntity<ApiResponse<?>> getActivities(Integer page, Integer size, String sortBy, String sortDirection,
                                                          String keyword) {
         try {
             page = page != null ? page : 0;
             size = size != null ? size : 20;
-            sortDir = sortDir != null ? sortDir : "asc";
+            sortDirection = sortDirection != null ? sortDirection : "asc";
             sortBy = sortBy != null && !sortBy.isBlank() ? sortBy : "name";
 
-            Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+            Sort sort = sortDirection.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
             Pageable pageable = PageRequest.of(page, size, sort);
 
             Specification<Activity> spec = Specification.where(ActivitySpecification.isActive(true))
@@ -264,16 +264,16 @@ public class PublicService {
     // ACCOMMODATIONS
     // ========================
 
-    public ResponseEntity<ApiResponse<?>> getAccommodations(Integer page, Integer size, String sortBy, String sortDir,
+    public ResponseEntity<ApiResponse<?>> getAccommodations(Integer page, Integer size, String sortBy, String sortDirection,
                                                              String region, AccommodationType type,
                                                              AccommodationCategory category, String keyword) {
         try {
             page = page != null ? page : 0;
             size = size != null ? size : 20;
-            sortDir = sortDir != null ? sortDir : "asc";
+            sortDirection = sortDirection != null ? sortDirection : "asc";
             sortBy = sortBy != null && !sortBy.isBlank() ? sortBy : "name";
 
-            Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+            Sort sort = sortDirection.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
             Pageable pageable = PageRequest.of(page, size, sort);
 
             Specification<Accommodation> spec = Specification.where(AccommodationSpecification.isActive(true));
@@ -396,15 +396,15 @@ public class PublicService {
     // ITINERARIES
     // ========================
 
-    public ResponseEntity<ApiResponse<?>> getItineraries(Integer page, Integer size, String sortBy, String sortDir,
+    public ResponseEntity<ApiResponse<?>> getItineraries(Integer page, Integer size, String sortBy, String sortDirection,
                                                           TripType tripType, BudgetCategory budgetCategory, String keyword) {
         try {
             page = page != null ? page : 0;
             size = size != null ? size : 20;
-            sortDir = sortDir != null ? sortDir : "desc";
+            sortDirection = sortDirection != null ? sortDirection : "desc";
             sortBy = sortBy != null && !sortBy.isBlank() ? sortBy : "createdAt";
 
-            Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+            Sort sort = sortDirection.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
             Pageable pageable = PageRequest.of(page, size, sort);
 
             Specification<Itinerary> spec = Specification.where(ItinerarySpecification.isActive(true));
@@ -446,15 +446,15 @@ public class PublicService {
     // SAFARIS
     // ========================
 
-    public ResponseEntity<ApiResponse<?>> getSafaris(Integer page, Integer size, String sortBy, String sortDir,
+    public ResponseEntity<ApiResponse<?>> getSafaris(Integer page, Integer size, String sortBy, String sortDirection,
                                                       String keyword) {
         try {
             page = page != null ? page : 0;
             size = size != null ? size : 20;
-            sortDir = sortDir != null ? sortDir : "desc";
+            sortDirection = sortDirection != null ? sortDirection : "desc";
             sortBy = sortBy != null && !sortBy.isBlank() ? sortBy : "startDate";
 
-            Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+            Sort sort = sortDirection.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
             Pageable pageable = PageRequest.of(page, size, sort);
 
             Specification<Safari> spec = Specification.where(SafariSpecification.isActive(true));

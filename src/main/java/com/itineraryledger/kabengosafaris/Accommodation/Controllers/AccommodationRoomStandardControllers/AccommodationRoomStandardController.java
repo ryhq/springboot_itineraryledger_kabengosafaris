@@ -123,7 +123,7 @@ public class AccommodationRoomStandardController {
      * @param keyword Search keyword
      * @param page Page number (0-indexed)
      * @param size Page size
-     * @param sortDir Sort direction (asc/desc)
+     * @param sortDirection Sort direction (asc/desc)
      * @return ResponseEntity with ApiResponse containing paginated room standards
      */
     @GetMapping
@@ -140,11 +140,11 @@ public class AccommodationRoomStandardController {
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false, defaultValue = "desc") String sortDir
+        @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/accommodation-room-standards - Fetching all room standards with filters");
         String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
-        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
+        Sort sort = sortDirection.equalsIgnoreCase("asc") ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return accommodationRoomStandardGetService.getAllAccommodationRoomStandards(
@@ -157,7 +157,7 @@ public class AccommodationRoomStandardController {
             isActive,
             keyword,
             sortBy,
-            sortDir,
+            sortDirection,
             pageable
         );
     }
@@ -176,7 +176,7 @@ public class AccommodationRoomStandardController {
      * @param keyword Search keyword
      * @param page Page number (0-indexed)
      * @param size Page size
-     * @param sortDir Sort direction (asc/desc)
+     * @param sortDirection Sort direction (asc/desc)
      * @return ResponseEntity with ApiResponse containing paginated room standards
      */
     @GetMapping("/accommodation/{accommodationId}")
@@ -193,11 +193,11 @@ public class AccommodationRoomStandardController {
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false, defaultValue = "desc") String sortDir
+        @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/accommodation-room-standards/accommodation/{} - Fetching room standards for accommodation", accommodationId);
         String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
-        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
+        Sort sort = sortDirection.equalsIgnoreCase("asc") ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return accommodationRoomStandardGetService.getAllAccommodationsRoomStandards(
@@ -210,7 +210,7 @@ public class AccommodationRoomStandardController {
             isActive,
             keyword,
             sortBy,
-            sortDir,
+            sortDirection,
             pageable
         );
     }

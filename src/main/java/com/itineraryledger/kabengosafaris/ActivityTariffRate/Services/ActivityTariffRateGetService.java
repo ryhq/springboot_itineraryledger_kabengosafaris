@@ -212,7 +212,7 @@ public class ActivityTariffRateGetService {
             response.put("totalPages", ratePage.getTotalPages());
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
-            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+            response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok(ApiResponse.success(200, "Rates retrieved successfully", response));
 

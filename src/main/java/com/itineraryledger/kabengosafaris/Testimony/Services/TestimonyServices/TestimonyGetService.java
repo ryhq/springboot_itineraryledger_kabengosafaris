@@ -185,7 +185,7 @@ public class TestimonyGetService {
             response.put("pageSize", testimonyPage.getSize());
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
-            response.put("currentSortDir", sortDirection);
+            response.put("currentSortDirection", sortDirection);
 
             return ResponseEntity.ok().body(ApiResponse.success(200, "Testimonies retrieved successfully", response));
         } catch (Exception e) {

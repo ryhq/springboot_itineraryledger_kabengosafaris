@@ -64,12 +64,12 @@ public class UserController {
      * @param displayName Filter by display name partial match (optional)
      * @param active Filter by active status (optional)
      * @param isSystemRole Filter by system role status (optional)
-     * @param sortDir Sort direction: "asc" or "desc", default: "desc"
+     * @param sortDirection Sort direction: "asc" or "desc", default: "desc"
      * @return ResponseEntity with paginated roles assigned to current user
      *
      * Security: Requires authenticated user (users can only view their own roles)
      *
-     * Example: GET /api/user/me/roles?page=0&size=10&active=true&sortDir=desc
+     * Example: GET /api/user/me/roles?page=0&size=10&active=true&sortDirection=desc
      */
     @GetMapping("/roles")
     @PreAuthorize("isAuthenticated()")
@@ -82,7 +82,7 @@ public class UserController {
         @RequestParam(required = false) Boolean active,
         @RequestParam(required = false) Boolean isSystemRole,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false) String sortDir
+        @RequestParam(required = false) String sortDirection
     ) {
         // Get the current user from authentication
         User currentUser = (User) authentication.getPrincipal();
@@ -100,7 +100,7 @@ public class UserController {
             active,
             isSystemRole,
             sortBy,
-            sortDir
+            sortDirection
         );
     }
 

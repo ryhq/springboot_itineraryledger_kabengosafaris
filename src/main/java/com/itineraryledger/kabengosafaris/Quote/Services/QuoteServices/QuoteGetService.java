@@ -321,7 +321,7 @@ public class QuoteGetService {
             response.put("totalPages", quotePage.getTotalPages());
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
-            response.put("currentSortDir", direction.name().toLowerCase());
+            response.put("currentSortDirection", direction.name().toLowerCase());
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Quotes retrieved successfully", response)

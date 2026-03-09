@@ -99,7 +99,7 @@ public class SafariDayGetService {
             response.put("safariDays", dayDTOs);
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
-            response.put("currentSortDir", sortDirection != null ? sortDirection : "asc");
+            response.put("currentSortDirection", sortDirection != null ? sortDirection : "asc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Safari days retrieved successfully", response)

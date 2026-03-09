@@ -230,7 +230,7 @@ public class CustomerPhoneGetService {
             responseData.put("pageSize", phoneDTOPage.getSize());
             responseData.put("validSortFields", VALID_SORT_FIELDS);
             responseData.put("currentSortBy", validatedSortBy);
-            responseData.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+            responseData.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -360,7 +360,7 @@ public class CustomerPhoneGetService {
             responseData.put("pageSize", phoneDTOPage.getSize());
             responseData.put("validSortFields", VALID_SORT_FIELDS);
             responseData.put("currentSortBy", validatedSortBy);
-            responseData.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+            responseData.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(

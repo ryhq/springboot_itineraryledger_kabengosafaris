@@ -91,11 +91,11 @@ public class EmailTemplateController {
      * @param name Filter by name (partial match, optional)
      * @param page Page number (0-based), default: 0
      * @param size Page size, default: 10
-     * @param sortDir Sort direction: "asc" or "desc", default: "desc"
+     * @param sortDirection Sort direction: "asc" or "desc", default: "desc"
      * @return ResponseEntity with paginated templates
      *
      * Example request:
-     * GET /api/email-events/{eventId}/templates?enabled=true&page=0&size=10&sortDir=desc
+     * GET /api/email-events/{eventId}/templates?enabled=true&page=0&size=10&sortDirection=desc
      *
      * Example response:
      * {
@@ -120,8 +120,8 @@ public class EmailTemplateController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir) {
-        return emailTemplateGetService.getAllTemplates(eventId, enabled, isDefault, isSystemDefault, name, page, size, sortBy, sortDir);
+            @RequestParam(defaultValue = "desc") String sortDirection) {
+        return emailTemplateGetService.getAllTemplates(eventId, enabled, isDefault, isSystemDefault, name, page, size, sortBy, sortDirection);
     }
 
     /**

@@ -55,7 +55,7 @@ public class RoleUserAssignmentService {
      * @param page Page number (0-based)
      * @param size Page size
      * @param search Optional search keyword for username, email, or name (case-insensitive)
-     * @param sortDir Sort direction ("asc" or "desc")
+     * @param sortDirection Sort direction ("asc" or "desc")
      * @return ResponseEntity with paginated list of RoleUserDTO
      */
     @Transactional(readOnly = true)
@@ -64,7 +64,7 @@ public class RoleUserAssignmentService {
             int page,
             int size,
             String search,
-            String sortDir
+            String sortDirection
     ) {
         log.info("Getting users for role: {}, page: {}, size: {}, search: {}",
             roleIdObfuscated, page, size, search);
@@ -99,7 +99,7 @@ public class RoleUserAssignmentService {
             }
 
             // Setup sorting
-            Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+            Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC;
             Pageable paging = PageRequest.of(page, size, Sort.by(direction, "firstName", "lastName"));
 
             // Build specification with search filter

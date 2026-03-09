@@ -324,10 +324,10 @@ public class TranslationController {
      * @param createdBefore     Filter by created before date (ISO format: yyyy-MM-ddTHH:mm:ss)
      * @param expired           Filter by expired status (true = expired, false = valid)
      * @param accessed          Filter by accessed status (true = has been accessed, false = never accessed)
-     * @param sortDir           Sort direction: "asc" or "desc", default: "desc"
+     * @param sortDirection           Sort direction: "asc" or "desc", default: "desc"
      * @return ResponseEntity with paginated cache entries
      *
-     * Example: GET /api/translation/cache/entries?page=0&size=10&name=TRN_CACHE&sourceLanguage=en&targetLanguage=fr&sortDir=desc
+     * Example: GET /api/translation/cache/entries?page=0&size=10&name=TRN_CACHE&sourceLanguage=en&targetLanguage=fr&sortDirection=desc
      */
     @GetMapping("/cache/entries")
     @PreAuthorize("hasAuthority('PERM_READ_TRANSLATION_CACHE')")
@@ -348,13 +348,13 @@ public class TranslationController {
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdBefore,
         @RequestParam(required = false) Boolean expired,
         @RequestParam(required = false) Boolean accessed,
-        @RequestParam(defaultValue = "desc") String sortDir
+        @RequestParam(defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/translation/cache/entries - Fetching cache entries with filters");
         return cacheGetterService.getAllCacheEntries(
             page, size, name, sourceLanguage, targetLanguage, contentHash, originalContent, translatedContent,
             minHitCount, maxHitCount, minCharCount, maxCharCount, createdAfter, createdBefore,
-            expired, accessed, sortDir
+            expired, accessed, sortDirection
         );
     }
 

@@ -73,7 +73,7 @@ public class PdfDocumentGetService {
             response.put("pdfDocuments", dtos);
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
-            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+            response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 
             log.info("Retrieved {} PDF document types", dtos.size());
             return ResponseEntity.ok(ApiResponse.success(200, "PDF documents retrieved successfully", response));

@@ -39,12 +39,12 @@ public class PublicController {
         @RequestParam(required = false) Integer page,
         @RequestParam(required = false) Integer size,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false) String sortDir,
+        @RequestParam(required = false) String sortDirection,
         @RequestParam(required = false) String region,
         @RequestParam(required = false) ParkType parkType,
         @RequestParam(required = false) String keyword
     ) {
-        return publicService.getParks(page, size, sortBy, sortDir, region, parkType, keyword);
+        return publicService.getParks(page, size, sortBy, sortDirection, region, parkType, keyword);
     }
 
     @GetMapping("/parks/id/{id}")
@@ -66,10 +66,10 @@ public class PublicController {
         @RequestParam(required = false) Integer page,
         @RequestParam(required = false) Integer size,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false) String sortDir,
+        @RequestParam(required = false) String sortDirection,
         @RequestParam(required = false) String keyword
     ) {
-        return publicService.getActivities(page, size, sortBy, sortDir, keyword);
+        return publicService.getActivities(page, size, sortBy, sortDirection, keyword);
     }
 
     @GetMapping("/activities/id/{id}")
@@ -91,13 +91,13 @@ public class PublicController {
         @RequestParam(required = false) Integer page,
         @RequestParam(required = false) Integer size,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false) String sortDir,
+        @RequestParam(required = false) String sortDirection,
         @RequestParam(required = false) String region,
         @RequestParam(required = false) AccommodationType type,
         @RequestParam(required = false) AccommodationCategory category,
         @RequestParam(required = false) String keyword
     ) {
-        return publicService.getAccommodations(page, size, sortBy, sortDir, region, type, category, keyword);
+        return publicService.getAccommodations(page, size, sortBy, sortDirection, region, type, category, keyword);
     }
 
     @GetMapping("/accommodations/id/{id}")
@@ -119,12 +119,12 @@ public class PublicController {
         @RequestParam(required = false) Integer page,
         @RequestParam(required = false) Integer size,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false) String sortDir,
+        @RequestParam(required = false) String sortDirection,
         @RequestParam(required = false) TripType tripType,
         @RequestParam(required = false) BudgetCategory budgetCategory,
         @RequestParam(required = false) String keyword
     ) {
-        return publicService.getItineraries(page, size, sortBy, sortDir, tripType, budgetCategory, keyword);
+        return publicService.getItineraries(page, size, sortBy, sortDirection, tripType, budgetCategory, keyword);
     }
 
     @GetMapping("/itineraries/id/{id}")
@@ -141,10 +141,10 @@ public class PublicController {
         @RequestParam(required = false) Integer page,
         @RequestParam(required = false) Integer size,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false) String sortDir,
+        @RequestParam(required = false) String sortDirection,
         @RequestParam(required = false) String keyword
     ) {
-        return publicService.getSafaris(page, size, sortBy, sortDir, keyword);
+        return publicService.getSafaris(page, size, sortBy, sortDirection, keyword);
     }
 
     @GetMapping("/safaris/{slug}")

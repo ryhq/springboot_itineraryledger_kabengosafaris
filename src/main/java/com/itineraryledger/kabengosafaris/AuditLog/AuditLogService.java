@@ -261,7 +261,7 @@ public class AuditLogService {
      * @param userAgent Filter by user agent (partial match)
      * @param status Filter by status (partial match)
      * @param errorMessage Filter by error message (partial match)
-     * @param sortDir Sort direction ("asc" or "desc")
+     * @param sortDirection Sort direction ("asc" or "desc")
      * @return ResponseEntity with paginated results or validation error
      */
     public ResponseEntity<?> getAllAuditLogs(
@@ -278,13 +278,13 @@ public class AuditLogService {
         String userAgent,
         String status,
         String errorMessage,
-        String sortDir
+        String sortDirection
     ) {
         log.debug("Fetching audit logs with filters - page: {}, size: {}, name: {}, userId: {}, username: {}, " +
                 "action: {}, entityType: {}, entityId: {}, description: {}, ipAddress: {}, userAgent: {}, " +
-                "status: {}, errorMessage: {}, sortDir: {}",
+                "status: {}, errorMessage: {}, sortDirection: {}",
                 page, size, name, userIdObfuscated, username, action, entityType, entityIdObfuscated, description,
-                ipAddress, userAgent, status, errorMessage, sortDir);
+                ipAddress, userAgent, status, errorMessage, sortDirection);
         
         // Decode obfuscated IDs
         Long userId = null;
@@ -319,7 +319,7 @@ public class AuditLogService {
 
         // Setup sorting
         Sort.Direction direction = Sort.Direction.DESC;
-        if ("asc".equalsIgnoreCase(sortDir)) {
+        if ("asc".equalsIgnoreCase(sortDirection)) {
             direction = Sort.Direction.ASC;
         }
 

@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 
 @RequiredArgsConstructor // Generates a constructor with required arguments (final fields)
@@ -64,6 +65,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.setStatus(401);
         response.setContentType("application/json");
         ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
         String jsonResponse = objectMapper.writeValueAsString(
             ApiResponse.error(401,
                 "Invalid token type. Expected ACCESS token, got " + (actualType != null ? actualType.getType() : "unknown"),

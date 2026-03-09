@@ -121,7 +121,7 @@ public class AccommodationRoomTypeController {
      * @param keyword Search keyword
      * @param page Page number (0-indexed)
      * @param size Page size
-     * @param sortDir Sort direction (asc/desc)
+     * @param sortDirection Sort direction (asc/desc)
      * @return ResponseEntity with ApiResponse containing paginated room types
      */
     @GetMapping
@@ -136,11 +136,11 @@ public class AccommodationRoomTypeController {
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false, defaultValue = "desc") String sortDir
+        @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/accommodation-room-types - Fetching all room types with filters");
         String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
-        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
+        Sort sort = sortDirection.equalsIgnoreCase("asc") ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return accommodationRoomTypeGetService.getAllAccommodationRoomTypes(
@@ -151,7 +151,7 @@ public class AccommodationRoomTypeController {
             isActive,
             keyword,
             sortBy,
-            sortDir,
+            sortDirection,
             pageable
         );
     }
@@ -168,7 +168,7 @@ public class AccommodationRoomTypeController {
      * @param keyword Search keyword
      * @param page Page number (0-indexed)
      * @param size Page size
-     * @param sortDir Sort direction (asc/desc)
+     * @param sortDirection Sort direction (asc/desc)
      * @return ResponseEntity with ApiResponse containing paginated room types
      */
     @GetMapping("/accommodation/{accommodationId}")
@@ -183,11 +183,11 @@ public class AccommodationRoomTypeController {
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false, defaultValue = "desc") String sortDir
+        @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/accommodation-room-types/accommodation/{} - Fetching room types for accommodation", accommodationId);
         String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
-        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
+        Sort sort = sortDirection.equalsIgnoreCase("asc") ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
         return accommodationRoomTypeGetService.getAllAccommodationsRoomTypes(
@@ -198,7 +198,7 @@ public class AccommodationRoomTypeController {
             isActive,
             keyword,
             sortBy,
-            sortDir,
+            sortDirection,
             pageable
         );
     }

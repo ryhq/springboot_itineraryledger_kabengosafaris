@@ -205,11 +205,11 @@ Retrieves all room types with optional filters and pagination. Accommodation ID 
 - `keyword` (optional) - Search keyword across multiple fields
 - `page` (optional, default: 0) - Page number
 - `size` (optional, default: 10) - Page size
-- `sortDir` (optional, default: desc) - Sort direction (asc/desc)
+- `sortDirection` (optional, default: desc) - Sort direction (asc/desc)
 
 **Example Request:**
 ```
-GET /api/accommodation-room-types?minOccupancy=2&isActive=true&page=0&size=10&sortDir=desc
+GET /api/accommodation-room-types?minOccupancy=2&isActive=true&page=0&size=10&sortDirection=desc
 ```
 
 **Success Response (200 OK):**
@@ -265,7 +265,7 @@ Retrieves all room types for a specific accommodation. Accommodation ID is requi
 - `keyword` (optional) - Search keyword
 - `page` (optional, default: 0) - Page number
 - `size` (optional, default: 10) - Page size
-- `sortDir` (optional, default: desc) - Sort direction (asc/desc)
+- `sortDirection` (optional, default: desc) - Sort direction (asc/desc)
 
 **Example Request:**
 ```

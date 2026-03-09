@@ -217,7 +217,7 @@ public class AccommodationRoomStandardGetService {
             response.put("totalPages", roomStandardsPage.getTotalPages());
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
-            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+            response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -336,7 +336,7 @@ public class AccommodationRoomStandardGetService {
             response.put("totalPages", roomStandardsPage.getTotalPages());
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
-            response.put("currentSortDir", sortDirection != null ? sortDirection : "desc");
+            response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(

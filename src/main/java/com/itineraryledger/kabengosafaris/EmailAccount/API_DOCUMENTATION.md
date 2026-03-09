@@ -272,13 +272,13 @@ Error Monitoring Filters:
 errorMessage=string (optional, partial match, case-insensitive)
 
 Sorting:
-sortDir=asc/desc (optional, default: desc)
+sortDirection=asc/desc (optional, default: desc)
 ```
 
 **Example Requests:**
 ```
 # Basic filtering
-GET /api/email-accounts?page=0&size=10&enabled=true&sortDir=desc
+GET /api/email-accounts?page=0&size=10&enabled=true&sortDirection=desc
 
 # SMTP configuration filtering
 GET /api/email-accounts?smtpHost=smtp.gmail.com&smtpPort=587&useTls=true

@@ -45,10 +45,10 @@ public class PermissionController {
      * @param entity Filter by entity (partial match, case-insensitive)
      * @param action Filter by permission action (CREATE, READ, UPDATE, DELETE, etc.)
      * @param active Filter by active status (true/false)
-     * @param sortDir Sort direction: "asc" or "desc", default: "desc"
+     * @param sortDirection Sort direction: "asc" or "desc", default: "desc"
      * @return ResponseEntity with paginated permissions
      *
-     * Example: GET /api/permissions?page=0&size=10&entity=USER&active=true&sortDir=asc
+     * Example: GET /api/permissions?page=0&size=10&entity=USER&active=true&sortDirection=asc
      */
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_PERMISSION')")
@@ -59,10 +59,10 @@ public class PermissionController {
         @RequestParam(required = false) String entity,
         @RequestParam(required = false) PermissionAction action,
         @RequestParam(required = false) Boolean active,
-        @RequestParam(defaultValue = "desc") String sortDir
+        @RequestParam(defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/permissions - Fetching permissions with filters");
-        return permissionService.getAllPermissions(page, size, name, entity, action, active, sortDir);
+        return permissionService.getAllPermissions(page, size, name, entity, action, active, sortDirection);
     }
 
     /**
@@ -90,10 +90,10 @@ public class PermissionController {
      * @param displayName Filter by display name partial match (optional)
      * @param active Filter by active status (optional)
      * @param isSystemRole Filter by system role status (optional)
-     * @param sortDir Sort direction: "asc" or "desc", default: "desc"
+     * @param sortDirection Sort direction: "asc" or "desc", default: "desc"
      * @return ResponseEntity with paginated roles that have this permission
      *
-     * Example: GET /api/permissions/abc123def456/roles?page=0&size=10&active=true&sortDir=desc
+     * Example: GET /api/permissions/abc123def456/roles?page=0&size=10&active=true&sortDirection=desc
      */
     @GetMapping("/{id}/roles")
     // Require both permission read and role read authorities
@@ -107,10 +107,10 @@ public class PermissionController {
         @RequestParam(required = false) Boolean active,
         @RequestParam(required = false) Boolean isSystemRole,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(defaultValue = "desc") String sortDir
+        @RequestParam(defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/permissions/{}/roles - Fetching roles for permission", id);
-        return roleGetService.getRolesForPermission(id, page, size, name, displayName, active, isSystemRole, sortBy, sortDir);
+        return roleGetService.getRolesForPermission(id, page, size, name, displayName, active, isSystemRole, sortBy, sortDirection);
     }
 
     /**

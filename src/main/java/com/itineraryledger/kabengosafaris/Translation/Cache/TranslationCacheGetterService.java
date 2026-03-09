@@ -56,7 +56,7 @@ public class TranslationCacheGetterService {
      * @param createdBefore      Filter by created before date
      * @param expired            Filter by expired status (true = expired, false = valid)
      * @param accessed           Filter by accessed status (true = has been accessed, false = never accessed)
-     * @param sortDir            Sort direction ("asc" or "desc")
+     * @param sortDirection            Sort direction ("asc" or "desc")
      * @return ResponseEntity with paginated results or validation error
      */
     public ResponseEntity<?> getAllCacheEntries(
@@ -76,14 +76,14 @@ public class TranslationCacheGetterService {
             LocalDateTime createdBefore,
             Boolean expired,
             Boolean accessed,
-            String sortDir
+            String sortDirection
     ) {
         log.debug("Fetching translation cache entries with filters - page: {}, size: {}, name: {}, sourceLanguage: {}, " +
                         "targetLanguage: {}, contentHash: {}, minHitCount: {}, maxHitCount: {}, " +
                         "minCharCount: {}, maxCharCount: {}, createdAfter: {}, createdBefore: {}, " +
-                        "expired: {}, accessed: {}, sortDir: {}",
+                        "expired: {}, accessed: {}, sortDirection: {}",
                 page, size, name, sourceLanguage, targetLanguage, contentHash, minHitCount, maxHitCount,
-                minCharCount, maxCharCount, createdAfter, createdBefore, expired, accessed, sortDir);
+                minCharCount, maxCharCount, createdAfter, createdBefore, expired, accessed, sortDirection);
 
         // Validate pagination parameters
         if (page < 0) {
@@ -101,7 +101,7 @@ public class TranslationCacheGetterService {
 
         // Setup sorting (always sort by createdAt)
         Sort.Direction direction = Sort.Direction.DESC;
-        if ("asc".equalsIgnoreCase(sortDir)) {
+        if ("asc".equalsIgnoreCase(sortDirection)) {
             direction = Sort.Direction.ASC;
         }
 
