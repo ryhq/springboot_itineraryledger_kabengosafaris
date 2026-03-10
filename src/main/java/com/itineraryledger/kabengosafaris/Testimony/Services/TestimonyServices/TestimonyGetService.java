@@ -230,7 +230,7 @@ public class TestimonyGetService {
 
         if (testimony.getCustomer() != null) {
             dto.setCustomerId(idObfuscator.encodeId(testimony.getCustomer().getId()));
-            dto.setCustomerName(testimony.getCustomer().getFirstName() + " " + testimony.getCustomer().getLastName());
+            dto.setCustomerName(testimony.getCustomer().getFullName());
         }
         if (testimony.getSafari() != null) {
             dto.setSafariId(idObfuscator.encodeId(testimony.getSafari().getId()));

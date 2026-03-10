@@ -375,4 +375,20 @@ public class Customer {
             .findFirst()
             .orElse(phones.get(0).getPhoneNumber());
     }
+
+    public String getFullName() {
+        if (customerType == CustomerType.INDIVIDUAL) {
+            StringBuilder sb = new StringBuilder();
+            if (firstName != null) {
+                sb.append(firstName);
+            }
+            if (lastName != null) {
+                if (sb.length() > 0) sb.append(" ");
+                sb.append(lastName);
+            }
+            return sb.toString().trim();
+        } else {
+            return companyName != null ? companyName : "";
+        }
+    }
 }

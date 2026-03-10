@@ -18,8 +18,6 @@ import com.itineraryledger.kabengosafaris.Hero.Services.HeroServices.HeroReorder
 import com.itineraryledger.kabengosafaris.Hero.Services.HeroServices.HeroUpdateService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @RestController
 @RequestMapping("/api/heroes")
-@Tag(name = "Hero Management", description = "APIs for managing website hero sections")
 @Slf4j
 public class HeroController {
 
@@ -80,7 +77,7 @@ public class HeroController {
     @PutMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_UPDATE_HERO')")
     public ResponseEntity<ApiResponse<?>> updateHero(
-        @Parameter(description = "Obfuscated hero ID") @PathVariable String idObfuscated,
+        @PathVariable String idObfuscated,
         @Valid @RequestBody UpdateHeroDTO updateHeroDTO
     ) {
         log.info("PUT /api/heroes/{} - Updating hero", idObfuscated);
@@ -96,7 +93,7 @@ public class HeroController {
     @DeleteMapping
     @PreAuthorize("hasAuthority('PERM_DELETE_HERO')")
     public ResponseEntity<ApiResponse<?>> deleteHeroes(
-        @Parameter(description = "List of obfuscated hero IDs") @RequestBody List<String> idObfuscatedList
+        @RequestBody List<String> idObfuscatedList
     ) {
         log.info("DELETE /api/heroes - Deleting {} heroes", idObfuscatedList.size());
         return heroDeleteService.deleteHeroes(idObfuscatedList);
@@ -111,24 +108,10 @@ public class HeroController {
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_HERO')")
     public ResponseEntity<ApiResponse<?>> getHeroById(
-        @Parameter(description = "Obfuscated hero ID") @PathVariable String idObfuscated
+        @PathVariable String idObfuscated
     ) {
         log.info("GET /api/heroes/{} - Fetching hero by ID", idObfuscated);
         return heroGetService.getHeroById(idObfuscated);
-    }
-
-    /**
-     * Get heroes for a specific page (for front-end display)
-     *
-     * @param page The page to get heroes for
-     * @return ResponseEntity with ApiResponse containing the heroes
-     */
-    @GetMapping("/page/{page}")
-    public ResponseEntity<ApiResponse<?>> getHeroesByPage(
-        @Parameter(description = "Page name") @PathVariable HeroPage page
-    ) {
-        log.info("GET /api/heroes/page/{} - Fetching heroes for page", page);
-        return heroGetService.getHeroesByPage(page);
     }
 
     /**
@@ -149,25 +132,25 @@ public class HeroController {
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_HERO')")
     public ResponseEntity<ApiResponse<?>> getAllHeroes(
-        @Parameter(description = "Filter by title (partial match)") @RequestParam(required = false) String title,
-        @Parameter(description = "Filter by page") @RequestParam(required = false) HeroPage page,
-        @Parameter(description = "Filter by active status") @RequestParam(required = false) Boolean isActive,
-        @Parameter(description = "Filter by text alignment") @RequestParam(required = false) String textAlignment,
-        @Parameter(description = "Filter by creator ID") @RequestParam(required = false) String createdById,
-        @Parameter(description = "Filter by updater ID") @RequestParam(required = false) String updatedById,
-        @Parameter(description = "Page number (0-indexed)") @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
-        @Parameter(description = "Page size") @RequestParam(required = false, defaultValue = "20") Integer pageSize,
-        @Parameter(description = "Sort by field") @RequestParam(required = false, defaultValue = "displayOrder") String sortBy,
-        @Parameter(description = "Sort direction (asc/desc)") @RequestParam(required = false, defaultValue = "asc") String sortDirection
+        @RequestParam(required = false) String title,
+        @RequestParam(required = false) HeroPage heroPage,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) String textAlignment,
+        @RequestParam(required = false) String createdById,
+        @RequestParam(required = false) String updatedById,
+        @RequestParam(required = false, defaultValue = "0") Integer page,
+        @RequestParam(required = false, defaultValue = "20") Integer size,
+        @RequestParam(required = false, defaultValue = "displayOrder") String sortBy,
+        @RequestParam(required = false, defaultValue = "asc") String sortDirection
     ) {
         log.info("GET /api/heroes - Fetching all heroes with filters");
         return heroGetService.listHeroes(
-            pageNumber,
-            pageSize,
+            page,
+            size,
             sortBy,
             sortDirection,
             title,
-            page,
+            heroPage,
             isActive,
             textAlignment,
             createdById,

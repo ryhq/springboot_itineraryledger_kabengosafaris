@@ -57,6 +57,9 @@ public class HeroCreateService {
             // Get current user from security context
             User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
+            // Auto-assign next displayOrder for this page
+            int nextDisplayOrder = heroRepository.findMaxDisplayOrderByPage(createHeroDTO.getPage()) + 1;
+
             // Create hero entity
             Hero hero = Hero.builder()
                 .title(createHeroDTO.getTitle())
@@ -65,7 +68,7 @@ public class HeroCreateService {
                 .page(createHeroDTO.getPage())
                 .ctaText(createHeroDTO.getCtaText())
                 .ctaLink(createHeroDTO.getCtaLink())
-                .displayOrder(createHeroDTO.getDisplayOrder() != null ? createHeroDTO.getDisplayOrder() : 0)
+                .displayOrder(nextDisplayOrder)
                 .isActive(createHeroDTO.getIsActive() != null ? createHeroDTO.getIsActive() : true)
                 .overlayColor(createHeroDTO.getOverlayColor())
                 .overlayOpacity(createHeroDTO.getOverlayOpacity())

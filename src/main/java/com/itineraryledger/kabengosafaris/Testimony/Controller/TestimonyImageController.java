@@ -1,7 +1,5 @@
 package com.itineraryledger.kabengosafaris.Testimony.Controller;
 
-import jakarta.validation.Valid;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -23,15 +21,12 @@ import com.itineraryledger.kabengosafaris.Testimony.Services.TestimonyImageServi
 import com.itineraryledger.kabengosafaris.Testimony.Services.TestimonyImageServices.TestimonyImageStorageService;
 import com.itineraryledger.kabengosafaris.Testimony.Services.TestimonyImageServices.TestimonyImageUpdateService;
 
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/testimony-images")
-@Tag(name = "Testimony Image Management", description = "APIs for managing testimony images")
 @Validated
 @Slf4j
 public class TestimonyImageController {
@@ -70,14 +65,14 @@ public class TestimonyImageController {
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_TESTIMONY_IMAGE')")
     public ResponseEntity<?> getAllImages(
-            @Parameter(description = "Filter by testimony ID (obfuscated)") @RequestParam(value = "testimonyId", required = false) String testimonyId,
-            @Parameter(description = "Filter by primary status") @RequestParam(value = "isPrimary", required = false) Boolean isPrimary,
-            @Parameter(description = "Filter by active status") @RequestParam(value = "isActive", required = false) Boolean isActive,
-            @Parameter(description = "Search keyword") @RequestParam(value = "keyword", required = false) String keyword,
-            @Parameter(description = "Page number (0-indexed)") @RequestParam(value = "page", defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(value = "size", defaultValue = "20") int size,
-            @Parameter(description = "Sort field") @RequestParam(value = "sortBy", required = false) String sortBy,
-            @Parameter(description = "Sort direction (asc/desc)") @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection
+            @RequestParam(value = "testimonyId", required = false) String testimonyId,
+            @RequestParam(value = "isPrimary", required = false) Boolean isPrimary,
+            @RequestParam(value = "isActive", required = false) Boolean isActive,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            @RequestParam(value = "sortBy", required = false) String sortBy,
+            @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/testimony-images - Fetching testimony images with filters");
         return getService.getAllImages(testimonyId, isPrimary, isActive, keyword, page, size, sortBy, sortDirection);
@@ -86,7 +81,7 @@ public class TestimonyImageController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_TESTIMONY_IMAGE')")
     public ResponseEntity<?> getImageById(
-        @Parameter(description = "Obfuscated image ID") @PathVariable("id") String id
+        @PathVariable("id") String id
     ) {
         log.info("GET /api/testimony-images/{} - Fetching image by ID", id);
         return getService.getImageById(id);
@@ -95,7 +90,7 @@ public class TestimonyImageController {
     @GetMapping("/testimony/{testimonyId}")
     @PreAuthorize("hasAuthority('PERM_READ_TESTIMONY_IMAGE')")
     public ResponseEntity<ApiResponse<?>> getTestimonyImages(
-        @Parameter(description = "Obfuscated testimony ID") @PathVariable String testimonyId
+        @PathVariable String testimonyId
     ) {
         log.info("GET /api/testimony-images/testimony/{} - Fetching images for testimony", testimonyId);
         return getService.getTestimonyImages(testimonyId);
@@ -103,7 +98,7 @@ public class TestimonyImageController {
 
     @GetMapping("/file/{fileName}")
     public ResponseEntity<byte[]> getImageByFileName(
-        @Parameter(description = "Image filename") @PathVariable String fileName
+        @PathVariable String fileName
     ) {
         log.info("GET /api/testimony-images/file/{} - Serving image by filename", fileName);
 
@@ -131,7 +126,7 @@ public class TestimonyImageController {
 
     @GetMapping("/{id}/file")
     public ResponseEntity<byte[]> getImageFile(
-        @Parameter(description = "Obfuscated image ID") @PathVariable String id
+        @PathVariable String id
     ) {
         log.info("GET /api/testimony-images/{}/file - Serving image by ID", id);
 
@@ -172,7 +167,7 @@ public class TestimonyImageController {
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAuthority('PERM_CREATE_TESTIMONY_IMAGE')")
     public ResponseEntity<ApiResponse<?>> uploadImages(
-        @Parameter(description = "Upload testimony images DTO") @ModelAttribute UploadTestimonyImagesDTO uploadDTO
+        @ModelAttribute UploadTestimonyImagesDTO uploadDTO
     ) {
         log.info("POST /api/testimony-images/upload - Uploading {} images", uploadDTO.getImages().size());
         return createService.uploadImages(uploadDTO.getImages());
@@ -185,8 +180,8 @@ public class TestimonyImageController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_UPDATE_TESTIMONY_IMAGE')")
     public ResponseEntity<ApiResponse<?>> updateImage(
-            @Parameter(description = "Obfuscated image ID") @PathVariable("id") String id,
-            @Parameter(description = "Update DTO") @RequestBody UpdateTestimonyImageDTO updateDTO
+            @PathVariable("id") String id,
+            @RequestBody UpdateTestimonyImageDTO updateDTO
     ) {
         log.info("PUT /api/testimony-images/{} - Updating image metadata", id);
         return updateService.updateImage(id, updateDTO);
@@ -199,7 +194,7 @@ public class TestimonyImageController {
     @DeleteMapping
     @PreAuthorize("hasAuthority('PERM_DELETE_TESTIMONY_IMAGE')")
     public ResponseEntity<ApiResponse<?>> bulkDeleteImages(
-        @Parameter(description = "List of obfuscated image IDs") @RequestParam("ids") List<String> ids
+        @RequestParam("ids") List<String> ids
     ) {
         log.info("DELETE /api/testimony-images - Deleting {} images", ids.size());
         return deleteService.bulkDeleteImages(ids);

@@ -4,6 +4,7 @@ import com.itineraryledger.kabengosafaris.Hero.Enums.HeroPage;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,11 +34,9 @@ public class CreateHeroDTO {
     private String ctaLink;
 
     @Builder.Default
-    private Integer displayOrder = 0;
-
-    @Builder.Default
     private Boolean isActive = true;
 
+    @Pattern(regexp = "^#[0-9a-fA-F]{6}$", message = "Overlay color must be a valid 6-digit hex color (e.g., #000000)")
     private String overlayColor;
 
     private Double overlayOpacity;

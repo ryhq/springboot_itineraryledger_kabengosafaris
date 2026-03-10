@@ -32,12 +32,6 @@ public class HeroImageSpecification {
             : cb.equal(root.get("isActive"), isActive);
     }
 
-    public static Specification<HeroImage> byDisplayOrder(Integer displayOrder) {
-        return (root, query, cb) -> displayOrder == null
-            ? cb.conjunction()
-            : cb.equal(root.get("displayOrder"), displayOrder);
-    }
-
     // ========================
     // HERO SPECIFICATIONS
     // ========================

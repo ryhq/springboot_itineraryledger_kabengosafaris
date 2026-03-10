@@ -24,7 +24,7 @@ import lombok.NoArgsConstructor;
 /**
  * HeroImage Entity - Manages images for hero sections
  *
- * Supports multiple images per hero for carousel/slider functionality.
+ * Each hero typically has one background image.
  *
  * NOTE: Only the filename is stored in the database (e.g., "abc123def456.jpg").
  * The full URL is constructed in the DTO using the configured base URL.
@@ -33,7 +33,6 @@ import lombok.NoArgsConstructor;
 @Table(name = "hero_images", indexes = {
     @Index(name = "idx_hero_image_hero_id", columnList = "hero_id"),
     @Index(name = "idx_hero_image_is_primary", columnList = "is_primary"),
-    @Index(name = "idx_hero_image_display_order", columnList = "display_order"),
 })
 @Data
 @NoArgsConstructor
@@ -81,13 +80,6 @@ public class HeroImage {
     @Builder.Default
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
-
-    /**
-     * Display order for sorting images
-     */
-    @Builder.Default
-    @Column(name = "display_order", nullable = false)
-    private Integer displayOrder = 0;
 
     @Lob
     @Column(name = "description", columnDefinition = "TEXT")

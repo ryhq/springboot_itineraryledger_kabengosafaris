@@ -129,42 +129,6 @@ public class HeroGetService {
     }
 
     /**
-     * Get heroes for a specific page (for front-end display)
-     *
-     * @param page The page to get heroes for
-     * @return ResponseEntity with ApiResponse containing the heroes
-     */
-    public ResponseEntity<ApiResponse<?>> getHeroesByPage(HeroPage page) {
-        log.info("Fetching active heroes for page: {}", page);
-
-        try {
-            List<Hero> heroes = heroRepository.findByPageAndIsActiveTrueOrderByDisplayOrderAsc(page);
-
-            List<HeroDTO> heroDTOs = heroes.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-
-            return ResponseEntity.ok().body(
-                ApiResponse.success(
-                    200,
-                    "Heroes retrieved successfully",
-                    heroDTOs
-                )
-            );
-
-        } catch (Exception e) {
-            log.error("Error fetching heroes by page", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                ApiResponse.error(
-                    500,
-                    "Failed to fetch heroes",
-                    "HEROES_FETCH_FAILED"
-                )
-            );
-        }
-    }
-
-    /**
      * List heroes with filtering, pagination, and sorting
      *
      * @param pageNumber Page number (0-indexed)

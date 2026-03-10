@@ -23,9 +23,9 @@ public interface HeroImageRepository extends JpaRepository<HeroImage, Long>, Jpa
     List<HeroImage> findByHeroId(Long heroId);
 
     /**
-     * Find all active images for a specific hero, ordered by display order
+     * Find all active images for a specific hero
      */
-    List<HeroImage> findByHeroIdAndIsActiveTrueOrderByDisplayOrderAsc(Long heroId);
+    List<HeroImage> findByHeroIdAndIsActiveTrue(Long heroId);
 
     /**
      * Find primary image for a specific hero
@@ -58,12 +58,6 @@ public interface HeroImageRepository extends JpaRepository<HeroImage, Long>, Jpa
     @Modifying
     @Query("UPDATE HeroImage img SET img.isPrimary = false WHERE img.hero.id = :heroId")
     void unsetPrimaryForHero(@Param("heroId") Long heroId);
-
-    /**
-     * Get max display order for a hero
-     */
-    @Query("SELECT COALESCE(MAX(img.displayOrder), 0) FROM HeroImage img WHERE img.hero.id = :heroId")
-    Integer findMaxDisplayOrderByHeroId(@Param("heroId") Long heroId);
 
     /**
      * Find images with pagination

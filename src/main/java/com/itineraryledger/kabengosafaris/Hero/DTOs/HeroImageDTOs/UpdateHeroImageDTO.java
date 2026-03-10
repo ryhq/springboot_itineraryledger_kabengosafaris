@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 /**
  * DTO for updating HeroImage metadata.
  * Note: To replace the actual image file, a new upload is required.
- * Note: displayOrder is managed via the reorder endpoint.
  */
 @Data
 @NoArgsConstructor

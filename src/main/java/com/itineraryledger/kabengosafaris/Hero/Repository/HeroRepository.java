@@ -40,6 +40,12 @@ public interface HeroRepository extends JpaRepository<Hero, Long>, JpaSpecificat
      */
     long countByPageAndIsActiveTrue(HeroPage page);
 
+    /**
+     * Get the maximum displayOrder for a specific page
+     */
+    @Query("SELECT COALESCE(MAX(h.displayOrder), 0) FROM Hero h WHERE h.page = :page")
+    int findMaxDisplayOrderByPage(@Param("page") HeroPage page);
+
     // ========================
     // NAVIGATION QUERIES (circular next/previous)
     // ========================

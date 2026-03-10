@@ -19,9 +19,7 @@ import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Service for creating hero images.
@@ -152,7 +150,6 @@ public class HeroImageCreateService {
             // Process each image
             List<HeroImageDTO> createdImages = new ArrayList<>();
             List<String> savedFileNames = new ArrayList<>();
-            Map<Long, Integer> displayOrderMap = new HashMap<>();
 
             try {
                 for (CreateHeroImageDTO dto : imageDTOs) {
@@ -162,21 +159,6 @@ public class HeroImageCreateService {
                     if (hero == null) {
                         continue; // Already validated, skip if somehow null
                     }
-
-                    // Get or calculate display order for this hero
-                    int displayOrder;
-                    if (displayOrderMap.containsKey(heroId)) {
-                        displayOrder = displayOrderMap.get(heroId) + 1;
-                    } else {
-                        // Get current max display order
-                        List<HeroImage> existingImages = heroImageRepository.findByHeroId(heroId);
-                        displayOrder = existingImages.isEmpty() ? 1 : 
-                            existingImages.stream()
-                                .mapToInt(HeroImage::getDisplayOrder)
-                                .max()
-                                .orElse(0) + 1;
-                    }
-                    displayOrderMap.put(heroId, displayOrder);
 
                     // Save image file to storage (with SHA-256 hashed filename)
                     MultipartFile file = dto.getImage();
@@ -204,7 +186,6 @@ public class HeroImageCreateService {
                         .description(dto.getDescription())
                         .isPrimary(false)
                         .isActive(true)
-                        .displayOrder(displayOrder)
                         .fileSize(file.getSize())
                         .mimeType(storageService.getMimeType(savedFileName))
                         .build();

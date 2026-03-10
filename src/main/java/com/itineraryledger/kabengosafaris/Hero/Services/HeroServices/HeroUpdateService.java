@@ -122,9 +122,6 @@ public class HeroUpdateService {
         if (updateHeroDTO.getCtaLink() != null) {
             hero.setCtaLink(updateHeroDTO.getCtaLink());
         }
-        if (updateHeroDTO.getDisplayOrder() != null) {
-            hero.setDisplayOrder(updateHeroDTO.getDisplayOrder());
-        }
         if (updateHeroDTO.getIsActive() != null) {
             hero.setIsActive(updateHeroDTO.getIsActive());
         }

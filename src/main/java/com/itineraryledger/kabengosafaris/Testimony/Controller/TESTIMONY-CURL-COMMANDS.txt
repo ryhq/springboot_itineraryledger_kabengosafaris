@@ -1,0 +1,573 @@
+# =============================================================================
+# TESTIMONY CURL COMMANDS - Kabengo Safaris
+# =============================================================================
+# Target: http://localhost:4450/api/testimonies
+# Replace YOUR_JWT_TOKEN with a valid JWT token (requires PERM_CREATE_TESTIMONY)
+# Required fields: authorName (non-blank), message (non-blank),
+#                  rating (1-5), source (TestimonySource enum)
+# Valid source values: WEBSITE, GOOGLE, TRIPADVISOR, FACEBOOK, EMAIL, OTHER
+# Total: 25 testimonies across 6 sources
+# =============================================================================
+
+
+# =============================================================================
+# GOOGLE Reviews (5 Testimonies)
+# =============================================================================
+
+# GOOGLE Testimony 1 - American couple, Serengeti migration safari
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "James & Sarah Mitchell",
+    "authorTitle": "Retired Educators",
+    "authorCountry": "United States",
+    "message": "We spent 10 days with Kabengo Safaris witnessing the Great Migration across the Serengeti and it was the single most extraordinary experience of our 40 years of travel. Our guide, Emmanuel, had an almost supernatural ability to find wildlife — we saw three leopards in one afternoon, something he said even surprised him. The lodges were impeccable, the food was outstanding, and every single detail was handled with genuine care. We have already booked our return trip for next year. If you are even thinking about a Tanzanian safari, stop thinking and call Kabengo.",
+    "rating": 5,
+    "source": "GOOGLE",
+    "reviewDate": "2026-01-15",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": true,
+    "isActive": true,
+    "displayOrder": 1,
+    "sentimentTags": "migration,guides,wildlife,lodges,repeat-visitor"
+  }'
+
+# GOOGLE Testimony 2 - British family with children
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Richard Whitmore",
+    "authorTitle": "Software Engineer",
+    "authorCountry": "United Kingdom",
+    "message": "Took our two kids aged 8 and 11 on a 7-day safari through Tarangire, Ngorongoro, and the Serengeti. I was nervous about whether the children would enjoy long game drives, but Kabengo thought of everything — shorter drives with fun stops, a guide who was brilliant with kids, binoculars for each of them, and a wildlife checklist that turned every drive into a treasure hunt. My daughter spotted a cheetah before anyone else in the vehicle and she has not stopped talking about it since. This was a family holiday that genuinely changed us.",
+    "rating": 5,
+    "source": "GOOGLE",
+    "reviewDate": "2025-12-28",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": true,
+    "isActive": true,
+    "displayOrder": 2,
+    "sentimentTags": "family,children,guides,tarangire,ngorongoro,serengeti"
+  }'
+
+# GOOGLE Testimony 3 - German solo traveler
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Lukas Bauer",
+    "authorTitle": "Photojournalist",
+    "authorCountry": "Germany",
+    "message": "As a wildlife photographer, I have been on safaris across Kenya, Botswana, and South Africa, but nothing compares to what Kabengo delivered in Tanzania. They arranged a private vehicle with a pop-up roof perfectly positioned for photography, and my guide knew exactly where to park for the best light at golden hour. I captured images during this trip that have since been published in three magazines. The Ngorongoro Crater at sunrise was a spiritual experience. Professional, knowledgeable, and worth every cent.",
+    "rating": 5,
+    "source": "GOOGLE",
+    "reviewDate": "2026-02-03",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": false,
+    "isActive": true,
+    "displayOrder": 3,
+    "sentimentTags": "photography,professional,ngorongoro,wildlife,solo-traveler"
+  }'
+
+# GOOGLE Testimony 4 - Indian honeymoon couple
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Arjun & Priya Sharma",
+    "authorTitle": "Newlyweds",
+    "authorCountry": "India",
+    "message": "We chose Tanzania for our honeymoon and Kabengo made it absolutely magical. They arranged a surprise bush dinner under the stars on our first night in the Serengeti — candles, white linen, a private chef, and the distant sound of hyenas. The hot air balloon ride the next morning was the highlight of our lives. Every lodge had something special waiting for us, from champagne to rose petals. This was not just a safari, it was the most romantic experience we could have imagined.",
+    "rating": 5,
+    "source": "GOOGLE",
+    "reviewDate": "2026-01-22",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": true,
+    "isActive": true,
+    "displayOrder": 4,
+    "sentimentTags": "honeymoon,romantic,balloon,serengeti,luxury,bush-dinner"
+  }'
+
+# GOOGLE Testimony 5 - Canadian adventure traveler
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Marc-Andre Tremblay",
+    "authorTitle": "Mountain Guide",
+    "authorCountry": "Canada",
+    "message": "I combined a Kilimanjaro climb with a 5-day northern circuit safari through Kabengo. The logistics of transitioning from mountain gear to safari mode were handled seamlessly — they picked me up at the Kili gate, had fresh clothes and a hot meal waiting, and the next morning I was in Tarangire watching elephant herds cross the river. The contrast between summiting Africa highest peak and then driving through the Serengeti plains in the same week was incredible. Highly organized operation.",
+    "rating": 5,
+    "source": "GOOGLE",
+    "reviewDate": "2025-11-18",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": false,
+    "isActive": true,
+    "displayOrder": 5,
+    "sentimentTags": "kilimanjaro,adventure,logistics,tarangire,serengeti"
+  }'
+
+
+# =============================================================================
+# TRIPADVISOR Reviews (5 Testimonies)
+# =============================================================================
+
+# TRIPADVISOR Testimony 6 - Australian couple, luxury safari
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Helen & David Crawford",
+    "authorTitle": "Business Owners",
+    "authorCountry": "Australia",
+    "message": "We have done luxury safaris in Botswana and South Africa, so our expectations were sky high. Kabengo exceeded every single one. The lodges they selected were extraordinary — our room at the crater rim lodge had a freestanding bathtub overlooking the Ngorongoro caldera. Game drives were never rushed, meals were gourmet quality, and our guide Joseph had 22 years of experience that showed in every conversation. The attention to detail from the Kabengo team, from dietary requirements to photography tips, was faultless. Tanzania is now our favourite safari destination.",
+    "rating": 5,
+    "source": "TRIPADVISOR",
+    "reviewDate": "2026-02-10",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": true,
+    "isActive": true,
+    "displayOrder": 6,
+    "sentimentTags": "luxury,lodges,ngorongoro,guides,gourmet,experienced-travelers"
+  }'
+
+# TRIPADVISOR Testimony 7 - Dutch group of friends
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Sophie van der Berg",
+    "authorTitle": "Veterinarian",
+    "authorCountry": "Netherlands",
+    "message": "Six friends, two vehicles, eight days in Tanzania — and not a single complaint from anyone. That says everything about Kabengo. They coordinated our group perfectly, matching vehicle assignments so everyone had window seats, rotating guides so we all benefited from different expertise, and finding lodges that could accommodate us together for evening meals. Watching a pride of 14 lions hunt at dusk in the central Serengeti is something none of us will ever forget. The WhatsApp group we made during the trip is still active three months later sharing photos.",
+    "rating": 5,
+    "source": "TRIPADVISOR",
+    "reviewDate": "2025-12-05",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": false,
+    "isActive": true,
+    "displayOrder": 7,
+    "sentimentTags": "group,friends,serengeti,lions,coordination,fun"
+  }'
+
+# TRIPADVISOR Testimony 8 - Japanese wildlife enthusiast
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Yuki Nakamura",
+    "authorTitle": "Wildlife Biologist",
+    "authorCountry": "Japan",
+    "message": "I study large mammal behaviour for a living and this was my first visit to East Africa. Kabengo paired me with a guide named Daniel who understood that I wanted more than just Big Five sightings — I wanted to observe behaviour patterns, feeding hierarchies, and predator-prey dynamics. He adjusted our entire schedule to spend extended periods at key locations instead of rushing between sightings. We spent two hours watching a leopard mother teaching her cub to hunt. That single observation was worth the entire trip. Exceptional service for a specialist traveler.",
+    "rating": 5,
+    "source": "TRIPADVISOR",
+    "reviewDate": "2026-01-30",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": false,
+    "isActive": true,
+    "displayOrder": 8,
+    "sentimentTags": "wildlife,specialist,guides,leopard,behaviour,customized"
+  }'
+
+# TRIPADVISOR Testimony 9 - Brazilian family, budget safari
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Carlos & Fernanda Silva",
+    "authorTitle": "Teachers",
+    "authorCountry": "Brazil",
+    "message": "We were on a tight budget and worried that an affordable safari would mean a poor experience. Kabengo proved us completely wrong. Their camping safari package gave us incredible game viewing at a fraction of the luxury lodge price. The tents were comfortable, the camp cook prepared amazing meals over a fire, and our guide was just as knowledgeable and passionate as any premium tour guide. We saw the Big Five in four days. You do not need to spend a fortune to have a world-class safari — you just need to book with the right company.",
+    "rating": 5,
+    "source": "TRIPADVISOR",
+    "reviewDate": "2025-11-25",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": true,
+    "isActive": true,
+    "displayOrder": 9,
+    "sentimentTags": "budget,camping,value,big-five,affordable,food"
+  }'
+
+# TRIPADVISOR Testimony 10 - South African repeat visitor
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Naledi Mbeki",
+    "authorTitle": "Marketing Director",
+    "authorCountry": "South Africa",
+    "message": "This was my third safari with Kabengo and they continue to surprise me. As a South African, I grew up around game reserves, so impressing me takes real effort. This time they took me to the southern Serengeti during calving season and I witnessed hundreds of wildebeest giving birth across the plains while predators circled the periphery. It was raw, emotional, and utterly unforgettable. The fact that they remember my preferences from previous trips — window side, early morning starts, extra time for birdwatching — shows a level of client care that is rare in this industry.",
+    "rating": 5,
+    "source": "TRIPADVISOR",
+    "reviewDate": "2026-02-20",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": false,
+    "isActive": true,
+    "displayOrder": 10,
+    "sentimentTags": "repeat-visitor,calving-season,serengeti,personalized,birdwatching"
+  }'
+
+
+# =============================================================================
+# FACEBOOK Reviews (4 Testimonies)
+# =============================================================================
+
+# FACEBOOK Testimony 11 - American solo female traveler
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Ashley Rodriguez",
+    "authorTitle": "Emergency Room Nurse",
+    "authorCountry": "United States",
+    "message": "As a solo female traveler, safety was my number one concern. Kabengo made me feel completely at ease from the moment I landed. They arranged a female guide for my trip, checked in with me every evening, and the lodges they selected all had excellent security. Beyond the safety aspect, the safari itself was life-changing. Watching a herd of elephants walk past our vehicle close enough to hear their breathing, seeing flamingos turn Lake Manyara pink, and falling asleep to the sounds of the bush — I cried happy tears more than once. I traveled solo but never felt alone.",
+    "rating": 5,
+    "source": "FACEBOOK",
+    "reviewDate": "2026-01-08",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": true,
+    "isActive": true,
+    "displayOrder": 11,
+    "sentimentTags": "solo-female,safety,elephants,lake-manyara,emotional"
+  }'
+
+# FACEBOOK Testimony 12 - Irish couple, anniversary trip
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Sean & Aoife O Brien",
+    "authorTitle": "Celebrating 25th Anniversary",
+    "authorCountry": "Ireland",
+    "message": "For our silver wedding anniversary, we wanted something truly special and Kabengo delivered beyond our wildest dreams. The 12-day itinerary covered Arusha, Tarangire, Ngorongoro, the Serengeti, and finished with five days in Zanzibar. The safari-to-beach transition was seamless. Highlights include sundowners on the Serengeti with a pride of lions 50 meters away, the spice tour in Zanzibar, and the most stunning sunset we have ever seen from our beach villa. Worth saving up for. Worth every penny. Worth every single moment.",
+    "rating": 5,
+    "source": "FACEBOOK",
+    "reviewDate": "2025-12-18",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": false,
+    "isActive": true,
+    "displayOrder": 12,
+    "sentimentTags": "anniversary,zanzibar,beach,serengeti,sundowners,romantic"
+  }'
+
+# FACEBOOK Testimony 13 - Kenyan business traveler
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Grace Wanjiku",
+    "authorTitle": "CEO, Nairobi Tech Hub",
+    "authorCountry": "Kenya",
+    "message": "I organized a corporate retreat for 15 staff members and Kabengo handled the entire thing flawlessly. From team-building activities in Arusha to game drives in the Serengeti, every element was tailored to our group dynamics. The guides facilitated wildlife quizzes, the lodges accommodated our dietary needs perfectly, and the post-safari feedback from my team was unanimously positive. Several of them have since booked personal trips with Kabengo. That tells you everything you need to know about the quality of service.",
+    "rating": 5,
+    "source": "FACEBOOK",
+    "reviewDate": "2026-02-14",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": false,
+    "isActive": true,
+    "displayOrder": 13,
+    "sentimentTags": "corporate,group,team-building,serengeti,dietary,professional"
+  }'
+
+# FACEBOOK Testimony 14 - French nature lover
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Camille Dupont",
+    "authorTitle": "Environmental Scientist",
+    "authorCountry": "France",
+    "message": "What sets Kabengo apart from other safari operators is their genuine commitment to conservation. During our trip, our guide explained the anti-poaching efforts funded partly by tourism revenue, we visited a community conservation project near Tarangire, and learned about the corridor protection initiatives connecting national parks. This was not performative — you could see the real impact on the ground. Oh, and the wildlife viewing was spectacular too. We saw a black rhino in Ngorongoro which our guide said is increasingly rare. A company that cares about the future of what they are showing you.",
+    "rating": 5,
+    "source": "FACEBOOK",
+    "reviewDate": "2026-01-05",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": false,
+    "isActive": true,
+    "displayOrder": 14,
+    "sentimentTags": "conservation,community,rhino,ngorongoro,tarangire,education"
+  }'
+
+
+# =============================================================================
+# WEBSITE Reviews (4 Testimonies)
+# =============================================================================
+
+# WEBSITE Testimony 15 - Chinese family, first safari ever
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Wei & Li Chen",
+    "authorTitle": "First-Time Safari Travelers",
+    "authorCountry": "China",
+    "message": "We had never been to Africa before and had many concerns — language barriers, food, safety, malaria, and whether our elderly mother could handle the bumpy roads. Kabengo addressed every worry before we even landed. They arranged a Mandarin-speaking liaison for the first day, ensured all lodges could prepare Asian-friendly meals, provided detailed health advice, and selected vehicles with extra cushioning for my mother. She ended up being the most enthusiastic person in the car, shouting with joy every time she saw a giraffe. This trip brought three generations of our family together in a way nothing else could.",
+    "rating": 5,
+    "source": "WEBSITE",
+    "reviewDate": "2025-12-10",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": true,
+    "isActive": true,
+    "displayOrder": 15,
+    "sentimentTags": "family,multigenerational,first-time,dietary,accessibility,emotional"
+  }'
+
+# WEBSITE Testimony 16 - Norwegian birdwatcher
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Erik Lindqvist",
+    "authorTitle": "Ornithologist",
+    "authorCountry": "Norway",
+    "message": "I came to Tanzania specifically for birdwatching and Kabengo arranged a specialized birding safari that exceeded all expectations. My guide was a certified birding expert who could identify calls from hundreds of meters away. In nine days across Lake Manyara, Tarangire, Ngorongoro, and the Serengeti, I logged 347 species including 12 endemics. The guide carried a professional spotting scope and knew exactly which habitats to target at which times of day. The lilac-breasted roller, Fischer lovebird, and Kori bustard were personal highlights. For any birder considering East Africa, Kabengo is the only call you need to make.",
+    "rating": 5,
+    "source": "WEBSITE",
+    "reviewDate": "2026-02-25",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": false,
+    "isActive": true,
+    "displayOrder": 16,
+    "sentimentTags": "birdwatching,specialist,lake-manyara,endemic,guides,ornithology"
+  }'
+
+# WEBSITE Testimony 17 - Mexican couple, mid-range safari
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Diego & Isabella Morales",
+    "authorTitle": "Architects",
+    "authorCountry": "Mexico",
+    "message": "We chose the mid-range lodge package and it hit the perfect sweet spot between comfort and value. The lodges were charming, clean, and well-located near park gates for early morning drives. Our guide Francis was endlessly patient, stopping whenever we wanted photos, explaining animal behaviour in fascinating detail, and sharing stories about Maasai culture that gave the landscape deeper meaning. The sunrise drive in the Serengeti where we found a cheetah mother with four cubs was the most beautiful thing either of us has ever witnessed. Kabengo strikes the perfect balance.",
+    "rating": 5,
+    "source": "WEBSITE",
+    "reviewDate": "2026-01-18",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": false,
+    "isActive": true,
+    "displayOrder": 17,
+    "sentimentTags": "mid-range,value,cheetah,serengeti,guides,culture,photography"
+  }'
+
+# WEBSITE Testimony 18 - Emirati luxury travelers
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Fatima Al-Rashid",
+    "authorTitle": "Interior Designer",
+    "authorCountry": "United Arab Emirates",
+    "message": "I am quite particular about service standards and accommodation quality, and I must say Kabengo exceeded expectations I did not even know I had. The private fly-in safari they arranged was extraordinary — bush flights between parks, exclusive-use luxury tents, a private chef who prepared meals tailored to our halal dietary requirements, and a guide dedicated solely to our family. The Serengeti under canvas with nobody else for kilometers was the definition of exclusive. The team was responsive on WhatsApp at all hours and nothing was too much trouble. This is how safari should be done.",
+    "rating": 5,
+    "source": "WEBSITE",
+    "reviewDate": "2026-03-01",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": true,
+    "isActive": true,
+    "displayOrder": 18,
+    "sentimentTags": "luxury,fly-in,private,halal,exclusive,serengeti,service"
+  }'
+
+
+# =============================================================================
+# EMAIL Reviews (4 Testimonies)
+# =============================================================================
+
+# EMAIL Testimony 19 - American retiree, walking safari
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Robert Stevenson",
+    "authorTitle": "Retired Military Officer",
+    "authorCountry": "United States",
+    "message": "I have always preferred being on foot rather than in a vehicle, so when Kabengo offered a walking safari option in the Serengeti, I jumped at it. Walking through the bush with an armed ranger and an experienced guide, tracking lion prints in the dust, identifying dung to determine which animals passed recently, and learning to read the wind — this was safari in its purest form. The adrenaline of encountering a buffalo herd on foot at 30 meters is something no game drive can replicate. For anyone with reasonable fitness who wants a deeper connection to the African bush, the walking safari is transformative.",
+    "rating": 5,
+    "source": "EMAIL",
+    "reviewDate": "2025-11-30",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": false,
+    "isActive": true,
+    "displayOrder": 19,
+    "sentimentTags": "walking-safari,adventure,serengeti,tracking,buffalo,adrenaline"
+  }'
+
+# EMAIL Testimony 20 - Swiss couple, Zanzibar extension
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Thomas & Anna Keller",
+    "authorTitle": "Doctors",
+    "authorCountry": "Switzerland",
+    "message": "The 6-day safari followed by 4 days in Zanzibar was the perfect combination. After the exhilaration of game drives in the Serengeti and Ngorongoro, transitioning to the turquoise waters of Zanzibar felt like entering another world. The Stone Town walking tour was culturally rich, the snorkeling at Mnemba Atoll revealed an underwater paradise, and our beachfront villa was pure bliss. Kabengo coordinated both halves of the trip as one seamless package — domestic flights, transfers, and accommodations all connected without a single hiccup. The ultimate Tanzanian experience.",
+    "rating": 5,
+    "source": "EMAIL",
+    "reviewDate": "2026-02-08",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": false,
+    "isActive": true,
+    "displayOrder": 20,
+    "sentimentTags": "zanzibar,beach,snorkeling,stone-town,serengeti,ngorongoro,seamless"
+  }'
+
+# EMAIL Testimony 21 - Nigerian solo adventure traveler
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Chinedu Okafor",
+    "authorTitle": "Investment Banker",
+    "authorCountry": "Nigeria",
+    "message": "I booked a last-minute 5-day safari with only two weeks notice and Kabengo pulled together an incredible itinerary in record time. Tarangire, Lake Manyara, and the Serengeti — all with premium lodges and a dedicated guide. What impressed me most was the communication throughout the planning process. Every question answered within hours, a detailed day-by-day itinerary delivered three days before departure, and a welcome pack waiting at my Arusha hotel with maps, tips, and a personal note from the team. This level of professionalism is rare anywhere in the world, let alone in safari tourism.",
+    "rating": 5,
+    "source": "EMAIL",
+    "reviewDate": "2026-01-28",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": false,
+    "isActive": true,
+    "displayOrder": 21,
+    "sentimentTags": "last-minute,communication,professionalism,solo,tarangire,serengeti"
+  }'
+
+# EMAIL Testimony 22 - Italian couple, green season safari
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Marco & Giulia Rossi",
+    "authorTitle": "University Professors",
+    "authorCountry": "Italy",
+    "message": "Kabengo recommended we travel during the green season for lower rates and fewer crowds, and it was brilliant advice. The landscape was lush and vibrant, the birdlife was extraordinary with migratory species everywhere, and we often had entire sightings completely to ourselves — no other vehicles in sight. Our guide explained that many tourists avoid this season unnecessarily, and after experiencing it firsthand, we could not agree more. We saw all of the Big Five, watched a river crossing with only two other vehicles present, and saved nearly 30 percent compared to peak season rates. The smart choice for experienced travelers.",
+    "rating": 5,
+    "source": "EMAIL",
+    "reviewDate": "2025-12-22",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": false,
+    "isActive": true,
+    "displayOrder": 22,
+    "sentimentTags": "green-season,value,birdwatching,big-five,uncrowded,smart-travel"
+  }'
+
+
+# =============================================================================
+# OTHER Source Reviews (3 Testimonies)
+# =============================================================================
+
+# OTHER Testimony 23 - Travel magazine feature quote
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Rebecca Thornton",
+    "authorTitle": "Travel Editor, Wanderlust Magazine",
+    "authorCountry": "United Kingdom",
+    "message": "In 15 years of reviewing safari operators across sub-Saharan Africa for Wanderlust Magazine, Kabengo Safaris ranks among the very best I have encountered. Their combination of deeply experienced local guides, thoughtfully curated accommodation partnerships, and genuine conservation commitment puts them in a class that few operators achieve. What truly distinguishes them is adaptability — whether the client is a budget backpacker or a luxury connoisseur, the core quality of guiding, wildlife access, and personal attention remains consistently excellent. A Gold Standard operator.",
+    "rating": 5,
+    "source": "OTHER",
+    "reviewDate": "2026-02-15",
+    "isVerifiedBooking": false,
+    "isApproved": true,
+    "isFeatured": true,
+    "isActive": true,
+    "displayOrder": 23,
+    "sentimentTags": "press,magazine,industry-recognition,guides,conservation,gold-standard"
+  }'
+
+# OTHER Testimony 24 - Tour operator partner recommendation
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Henrik Johansson",
+    "authorTitle": "Director, Nordic Safari Connections",
+    "authorCountry": "Sweden",
+    "message": "We have been partnering with Kabengo Safaris as our ground operator in Tanzania for three years and they have handled over 200 of our clients without a single serious complaint. Their operations team is responsive, their vehicles are well-maintained, their guides are among the best-trained in northern Tanzania, and their crisis management during unexpected situations like flight cancellations and medical emergencies has been exemplary. We trust them completely with our most demanding Scandinavian clients, and that trust has been earned through consistent, reliable performance year after year.",
+    "rating": 5,
+    "source": "OTHER",
+    "reviewDate": "2026-03-05",
+    "isVerifiedBooking": false,
+    "isApproved": true,
+    "isFeatured": false,
+    "isActive": true,
+    "displayOrder": 24,
+    "sentimentTags": "b2b,partner,reliability,operations,trust,crisis-management"
+  }'
+
+# OTHER Testimony 25 - Returning guest, fourth safari
+curl -X POST http://localhost:4450/api/testimonies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "authorName": "Patricia & George Ainsworth",
+    "authorTitle": "Retired, Four-Time Kabengo Guests",
+    "authorCountry": "New Zealand",
+    "message": "Safari number four with Kabengo is in the books and somehow they keep finding new ways to amaze us. This time they took us to the Selous Game Reserve in southern Tanzania — completely different from the northern circuit we had done three times before. Boat safaris on the Rufiji River watching hippos and crocodiles, walking safaris through pristine wilderness with almost no other tourists, and a fly camp experience sleeping under mosquito nets with nothing but stars above us. After four trips, we now consider the Kabengo team extended family. Emmanuel, Joseph, Daniel — you are all legends. See you next year for number five.",
+    "rating": 5,
+    "source": "OTHER",
+    "reviewDate": "2026-02-28",
+    "isVerifiedBooking": true,
+    "isApproved": true,
+    "isFeatured": true,
+    "isActive": true,
+    "displayOrder": 25,
+    "sentimentTags": "repeat-visitor,selous,boat-safari,walking-safari,fly-camp,loyalty,family"
+  }'
+
+
+# =============================================================================
+# SUMMARY
+# =============================================================================
+# Total: 25 testimonies
+#
+# By Source:
+#   GOOGLE       - 5 testimonies (#1-#5)
+#   TRIPADVISOR  - 5 testimonies (#6-#10)
+#   FACEBOOK     - 4 testimonies (#11-#14)
+#   WEBSITE      - 4 testimonies (#15-#18)
+#   EMAIL        - 4 testimonies (#19-#22)
+#   OTHER        - 3 testimonies (#23-#25)
+#
+# By Rating:
+#   5 stars - 25 testimonies (all positive)
+#
+# Featured: 10 testimonies (#1, #2, #4, #6, #9, #11, #15, #18, #23, #25)
+# Verified Bookings: 22 testimonies (all except #23, #24)
+#
+# Countries Represented (17):
+#   United States (3), United Kingdom (2), Germany, India, Canada,
+#   Australia, Netherlands, Japan, Brazil, South Africa, Ireland,
+#   Kenya, France, China, Norway, Mexico, United Arab Emirates,
+#   Switzerland, Nigeria, Italy, Sweden, New Zealand
+#
+# Safari Types Covered:
+#   Migration, Family, Photography, Honeymoon, Kilimanjaro+Safari,
+#   Luxury, Group, Birding, Budget/Camping, Walking Safari,
+#   Corporate Retreat, Green Season, Zanzibar Extension, Fly-in,
+#   Solo Female, Specialist Wildlife, Selous/Southern Circuit
+# =============================================================================

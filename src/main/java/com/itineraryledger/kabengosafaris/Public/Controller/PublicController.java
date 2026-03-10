@@ -2,7 +2,6 @@ package com.itineraryledger.kabengosafaris.Public.Controller;
 
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationCategory;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationType;
-import com.itineraryledger.kabengosafaris.Hero.Enums.HeroPage;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.BudgetCategory;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
 import com.itineraryledger.kabengosafaris.Park.ParkType;
@@ -164,14 +163,5 @@ public class PublicController {
     @GetMapping("/testimonies/featured")
     public ResponseEntity<ApiResponse<?>> getFeaturedTestimonies() {
         return publicService.getFeaturedTestimonies();
-    }
-
-    // ========================
-    // HEROES
-    // ========================
-
-    @GetMapping("/heroes/{page}")
-    public ResponseEntity<ApiResponse<?>> getHeroesByPage(@PathVariable HeroPage page) {
-        return publicService.getHeroesByPage(page);
     }
 }

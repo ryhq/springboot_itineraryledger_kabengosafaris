@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Hero.DTOs.HeroImageDTOs;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,6 +31,16 @@ public class HeroImageDTO {
      * Obfuscated ID of the hero this image belongs to
      */
     private String heroId;
+
+    /**
+     * Title of the hero this image belongs to
+     */
+    private String heroTitle;
+
+    /**
+     * Page enum of the hero (e.g., HOME, ABOUT, SAFARIS)
+     */
+    private String heroPage;
 
     /**
      * Full URL to the image using obfuscated ID
@@ -79,11 +90,6 @@ public class HeroImageDTO {
     private Boolean isActive;
 
     /**
-     * Order in which this image should be displayed
-     */
-    private Integer displayOrder;
-
-    /**
      * File size in bytes
      */
     private Long fileSize;
@@ -102,7 +108,6 @@ public class HeroImageDTO {
      * Image width in pixels
      */
     private Integer width;
-
     /**
      * Image height in pixels
      */

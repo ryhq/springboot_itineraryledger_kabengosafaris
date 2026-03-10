@@ -40,7 +40,7 @@ public class HeroImageGetService {
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
-        "isPrimary", "isActive", "displayOrder", "fileSize", "createdAt", "updatedAt"
+        "isPrimary", "isActive", "fileSize", "createdAt", "updatedAt"
     );
     private static final String DEFAULT_SORT_FIELD = "createdAt";
 
@@ -77,7 +77,7 @@ public class HeroImageGetService {
             }
 
             // Fetch images
-            List<HeroImage> images = heroImageRepository.findByHeroIdAndIsActiveTrueOrderByDisplayOrderAsc(decodedHeroId);
+            List<HeroImage> images = heroImageRepository.findByHeroIdAndIsActiveTrue(decodedHeroId);
 
             // Convert to DTOs
             List<HeroImageDTO> imageDTOs = images.stream()
@@ -112,7 +112,6 @@ public class HeroImageGetService {
      * @param heroPage Filter by hero page
      * @param isPrimary Filter by primary status
      * @param isActive Filter by active status
-     * @param displayOrder Filter by display order
      * @param page Page number (0-indexed)
      * @param size Page size
      * @param sortDirection Sort direction (asc/desc)
@@ -124,7 +123,6 @@ public class HeroImageGetService {
             HeroPage heroPage,
             Boolean isPrimary,
             Boolean isActive,
-            Integer displayOrder,
             int page,
             int size,
             String sortBy,
@@ -152,9 +150,6 @@ public class HeroImageGetService {
         }
         if (isActive != null) {
             spec = spec.and(HeroImageSpecification.byIsActive(isActive));
-        }
-        if (displayOrder != null) {
-            spec = spec.and(HeroImageSpecification.byDisplayOrder(displayOrder));
         }
 
         // Sorting with validation
@@ -265,6 +260,8 @@ public class HeroImageGetService {
         return HeroImageDTO.builder()
             .id(obfuscatedId)
             .heroId(idObfuscator.encodeId(image.getHero().getId()))
+            .heroTitle(image.getHero().getTitle())
+            .heroPage(image.getHero().getPage() != null ? image.getHero().getPage().name() : null)
             .imageUrl(storageService.constructImageUrl(obfuscatedId))
             .fileImageUrl(storageService.constructFileImageUrl(image.getFileName()))
             .fileName(image.getFileName())
@@ -274,7 +271,6 @@ public class HeroImageGetService {
             .description(image.getDescription())
             .isPrimary(image.getIsPrimary())
             .isActive(image.getIsActive())
-            .displayOrder(image.getDisplayOrder())
             .fileSize(image.getFileSize())
             .fileSizeFormatted(storageService.formatFileSize(image.getFileSize() != null ? image.getFileSize() : 0L))
             .mimeType(image.getMimeType())

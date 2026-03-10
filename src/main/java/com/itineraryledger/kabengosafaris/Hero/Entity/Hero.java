@@ -10,6 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import com.itineraryledger.kabengosafaris.Hero.Enums.HeroPage;
 import com.itineraryledger.kabengosafaris.User.User;
 
+import jakarta.validation.constraints.Pattern;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -118,7 +119,8 @@ public class Hero {
     /**
      * Text overlay color (hex code, e.g., "#000000")
      */
-    @Column(name = "overlay_color", length = 20)
+    @Pattern(regexp = "^#[0-9a-fA-F]{6}$", message = "Overlay color must be a valid 6-digit hex color (e.g., #000000)")
+    @Column(name = "overlay_color", length = 7)
     private String overlayColor;
 
     /**
@@ -179,12 +181,11 @@ public class Hero {
     }
 
     /**
-     * Helper method to get active images sorted by display order
+     * Helper method to get active images
      */
     public List<HeroImage> getActiveImages() {
         return images.stream()
             .filter(HeroImage::getIsActive)
-            .sorted((a, b) -> Integer.compare(a.getDisplayOrder(), b.getDisplayOrder()))
             .toList();
     }
 }

@@ -1,0 +1,855 @@
+# =============================================================================
+# HERO CURL COMMANDS - Kabengo Safaris
+# =============================================================================
+# Target: http://localhost:4450/api/heroes
+# Replace eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY with a valid JWT token (requires PERM_CREATE_HERO)
+# Required fields: title (non-blank), page (HeroPage enum)
+# Valid page values: HOME, ABOUT, SERVICES, SAFARIS, DESTINATIONS,
+#                    ACCOMMODATIONS, GALLERY, CONTACT, BLOG, FAQ,
+#                    TESTIMONIALS, BOOKING, OTHER
+# Total: 41 heroes across 13 pages
+# =============================================================================
+
+
+# =============================================================================
+# HOME Page (3 Heroes)
+# =============================================================================
+
+# HOME Hero 1 - Main welcome banner with centered text and dark overlay
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Welcome to Kabengo Safaris",
+    "subtitle": "Your Gateway to the Wild Heart of Tanzania",
+    "description": "Experience the untamed beauty of East Africa with our expertly guided safari adventures. From the vast plains of the Serengeti to the majestic Ngorongoro Crater, we craft unforgettable journeys through Tanzania most iconic landscapes.",
+    "page": "HOME",
+    "ctaText": "Explore Our Safaris",
+    "ctaLink": "/safaris",
+    "displayOrder": 1,
+    "isActive": true,
+    "overlayColor": "#1a1a2e",
+    "overlayOpacity": 0.45,
+    "textAlignment": "center",
+    "cssClasses": "hero-home-main animate-fade-in"
+  }'
+
+# HOME Hero 2 - Seasonal migration highlight with left-aligned text
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Witness the Great Migration",
+    "subtitle": "Over 2 Million Wildebeest Crossing the Serengeti",
+    "description": "Join us during the annual Great Migration, one of nature most spectacular events. Watch millions of wildebeest, zebras, and gazelles traverse the Serengeti ecosystem in search of fresh grazing lands. Our expert guides position you at the best vantage points for this once-in-a-lifetime experience.",
+    "page": "HOME",
+    "ctaText": "Book Migration Safari",
+    "ctaLink": "/safaris?type=migration",
+    "displayOrder": 2,
+    "isActive": true,
+    "overlayColor": "#2d3436",
+    "overlayOpacity": 0.4,
+    "textAlignment": "left",
+    "cssClasses": "hero-home-migration"
+  }'
+
+# HOME Hero 3 - Luxury accommodation teaser with right-aligned text
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Luxury Meets Wilderness",
+    "subtitle": "Handpicked Lodges and Tented Camps",
+    "description": "After a thrilling day of game drives, retreat to the finest lodges and luxury tented camps nestled in the heart of Tanzania national parks. Every stay is carefully selected to combine comfort, sustainability, and an authentic bush experience.",
+    "page": "HOME",
+    "ctaText": "View Accommodations",
+    "ctaLink": "/accommodations",
+    "displayOrder": 3,
+    "isActive": true,
+    "overlayColor": "#0c0c0c",
+    "overlayOpacity": 0.35,
+    "textAlignment": "right",
+    "cssClasses": "hero-home-luxury"
+  }'
+
+
+# =============================================================================
+# ABOUT Page (3 Heroes)
+# =============================================================================
+
+# ABOUT Hero 1 - Company story and mission with centered text
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Our Story",
+    "subtitle": "Born from a Passion for African Wildlife and Conservation",
+    "description": "Kabengo Safaris was founded with a simple belief: that travel should leave the world better than we found it. For over a decade, we have been connecting travelers with the raw beauty of Tanzania while supporting local communities and conservation initiatives across East Africa.",
+    "page": "ABOUT",
+    "ctaText": "Meet Our Team",
+    "ctaLink": "/about#team",
+    "displayOrder": 1,
+    "isActive": true,
+    "overlayColor": "#1e3a2b",
+    "overlayOpacity": 0.5,
+    "textAlignment": "center",
+    "cssClasses": "hero-about-story"
+  }'
+
+# ABOUT Hero 2 - Conservation commitment with left-aligned text
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Committed to Conservation",
+    "subtitle": "Protecting Tanzania Wildlife for Future Generations",
+    "description": "We partner with local conservation organizations, anti-poaching units, and community-based wildlife management programs. A portion of every safari booking directly funds habitat protection, wildlife monitoring, and education programs for communities living alongside national parks.",
+    "page": "ABOUT",
+    "ctaText": "Our Conservation Work",
+    "ctaLink": "/about#conservation",
+    "displayOrder": 2,
+    "isActive": true,
+    "overlayColor": "#2c3e50",
+    "overlayOpacity": 0.45,
+    "textAlignment": "left",
+    "cssClasses": "hero-about-conservation"
+  }'
+
+# ABOUT Hero 3 - Local expertise and guides
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Expert Local Guides",
+    "subtitle": "Knowledge Passed Down Through Generations",
+    "description": "Our guides are born and raised in Tanzania, many from communities bordering the national parks. They bring decades of wildlife tracking experience, deep ecological knowledge, and a personal connection to the land that no textbook can teach. Every guide is certified, multilingual, and passionate about sharing their homeland.",
+    "page": "ABOUT",
+    "ctaText": "Learn More",
+    "ctaLink": "/about#guides",
+    "displayOrder": 3,
+    "isActive": true,
+    "overlayColor": "#3d2c1e",
+    "overlayOpacity": 0.4,
+    "textAlignment": "center",
+    "cssClasses": "hero-about-guides"
+  }'
+
+
+# =============================================================================
+# SERVICES Page (3 Heroes)
+# =============================================================================
+
+# SERVICES Hero 1 - Overview of safari services with centered text
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "What We Offer",
+    "subtitle": "Tailored Safari Experiences for Every Type of Traveler",
+    "description": "From intimate private game drives to group expeditions, walking safaris to hot air balloon rides over the Serengeti, we design every trip to match your dream African adventure. Our services cover transportation, accommodation, park fees, meals, and expert guiding throughout your journey.",
+    "page": "SERVICES",
+    "ctaText": "Browse Services",
+    "ctaLink": "/services#list",
+    "displayOrder": 1,
+    "isActive": true,
+    "overlayColor": "#1a1a1a",
+    "overlayOpacity": 0.5,
+    "textAlignment": "center",
+    "cssClasses": "hero-services-main"
+  }'
+
+# SERVICES Hero 2 - Custom itinerary planning with left-aligned text
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Custom Itinerary Planning",
+    "subtitle": "Your Safari, Your Way — Designed from Scratch",
+    "description": "No two travelers are alike, and neither are our safaris. Share your interests, budget, travel dates, and bucket-list sightings, and our safari specialists will build a personalized itinerary that maximizes your time in the bush. Whether you have 3 days or 3 weeks, we make every moment count.",
+    "page": "SERVICES",
+    "ctaText": "Request Custom Itinerary",
+    "ctaLink": "/contact?type=custom-itinerary",
+    "displayOrder": 2,
+    "isActive": true,
+    "overlayColor": "#2c1810",
+    "overlayOpacity": 0.45,
+    "textAlignment": "left",
+    "cssClasses": "hero-services-custom"
+  }'
+
+# SERVICES Hero 3 - Airport transfers and logistics
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Seamless Travel Logistics",
+    "subtitle": "Airport Transfers, Domestic Flights, and Ground Transport",
+    "description": "From the moment you land at Kilimanjaro International Airport or Julius Nyerere Airport, we handle every detail. Our fleet of custom 4x4 safari vehicles, chartered bush flights, and reliable airport transfers ensure smooth transitions between destinations so you can focus on the experience.",
+    "page": "SERVICES",
+    "ctaText": "View Transport Options",
+    "ctaLink": "/services#transport",
+    "displayOrder": 3,
+    "isActive": true,
+    "overlayColor": "#1c2331",
+    "overlayOpacity": 0.4,
+    "textAlignment": "right",
+    "cssClasses": "hero-services-logistics"
+  }'
+
+
+# =============================================================================
+# SAFARIS Page (4 Heroes)
+# =============================================================================
+
+# SAFARIS Hero 1 - Main safari overview banner
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Safari Packages",
+    "subtitle": "Curated Adventures Across Tanzania Most Iconic Parks",
+    "description": "Explore our range of carefully designed safari packages spanning the Serengeti, Ngorongoro Crater, Tarangire, Lake Manyara, Selous Game Reserve, and Ruaha National Park. Each package includes expert guiding, premium accommodations, all park fees, and full-board meals.",
+    "page": "SAFARIS",
+    "ctaText": "View All Packages",
+    "ctaLink": "/safaris#packages",
+    "displayOrder": 1,
+    "isActive": true,
+    "overlayColor": "#0d1117",
+    "overlayOpacity": 0.5,
+    "textAlignment": "center",
+    "cssClasses": "hero-safaris-main"
+  }'
+
+# SAFARIS Hero 2 - Budget-friendly safari options
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Budget-Friendly Safaris",
+    "subtitle": "Incredible Wildlife Encounters Without Breaking the Bank",
+    "description": "Tanzania wildlife does not require a luxury budget. Our camping safaris and mid-range lodge packages bring you face-to-face with the Big Five at accessible price points. Enjoy authentic bush camping under the stars, hearty campfire meals, and the same spectacular game viewing as our premium packages.",
+    "page": "SAFARIS",
+    "ctaText": "Budget Packages",
+    "ctaLink": "/safaris?budget=economy",
+    "displayOrder": 2,
+    "isActive": true,
+    "overlayColor": "#1a3320",
+    "overlayOpacity": 0.45,
+    "textAlignment": "left",
+    "cssClasses": "hero-safaris-budget"
+  }'
+
+# SAFARIS Hero 3 - Luxury safari experience
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Luxury Safari Collection",
+    "subtitle": "Five-Star Wilderness Experiences in Tanzania Finest Lodges",
+    "description": "Indulge in the ultimate safari experience with our luxury collection. Stay in award-winning lodges with infinity pools overlooking the savannah, enjoy private game drives in open-top Land Cruisers, dine under the African stars, and be pampered with spa treatments after exhilarating days in the bush.",
+    "page": "SAFARIS",
+    "ctaText": "Luxury Collection",
+    "ctaLink": "/safaris?budget=luxury",
+    "displayOrder": 3,
+    "isActive": true,
+    "overlayColor": "#1a0f00",
+    "overlayOpacity": 0.4,
+    "textAlignment": "right",
+    "cssClasses": "hero-safaris-luxury"
+  }'
+
+# SAFARIS Hero 4 - Family safari adventures
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Family Safari Adventures",
+    "subtitle": "Create Lifelong Memories with Your Loved Ones",
+    "description": "Our family-friendly safaris are designed for travelers of all ages. Child-safe vehicles, shorter game drives with fun educational stops, family suites in kid-friendly lodges, and guides who specialize in making wildlife exciting for young explorers. It is the family holiday they will never forget.",
+    "page": "SAFARIS",
+    "ctaText": "Family Packages",
+    "ctaLink": "/safaris?type=family",
+    "displayOrder": 4,
+    "isActive": true,
+    "overlayColor": "#2d2416",
+    "overlayOpacity": 0.4,
+    "textAlignment": "center",
+    "cssClasses": "hero-safaris-family"
+  }'
+
+
+# =============================================================================
+# DESTINATIONS Page (4 Heroes)
+# =============================================================================
+
+# DESTINATIONS Hero 1 - Serengeti National Park highlight
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Serengeti National Park",
+    "subtitle": "Endless Plains, Endless Possibilities",
+    "description": "Spanning 14,750 square kilometers of pristine savannah, the Serengeti is home to the largest terrestrial mammal migration on Earth. Lions, leopards, cheetahs, elephants, and over 500 bird species call this UNESCO World Heritage Site home. The Serengeti is not just a destination — it is the soul of African safari.",
+    "page": "DESTINATIONS",
+    "ctaText": "Explore Serengeti",
+    "ctaLink": "/destinations/serengeti",
+    "displayOrder": 1,
+    "isActive": true,
+    "overlayColor": "#1a1a0a",
+    "overlayOpacity": 0.4,
+    "textAlignment": "center",
+    "cssClasses": "hero-dest-serengeti"
+  }'
+
+# DESTINATIONS Hero 2 - Ngorongoro Crater
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Ngorongoro Crater",
+    "subtitle": "The Eighth Wonder of the World",
+    "description": "Descend into the world largest intact volcanic caldera, a natural amphitheater teeming with over 25,000 large animals including the critically endangered black rhino. The crater floor covers 260 square kilometers and offers unparalleled game density — you can spot the Big Five in a single game drive.",
+    "page": "DESTINATIONS",
+    "ctaText": "Explore Ngorongoro",
+    "ctaLink": "/destinations/ngorongoro",
+    "displayOrder": 2,
+    "isActive": true,
+    "overlayColor": "#0f1a0d",
+    "overlayOpacity": 0.45,
+    "textAlignment": "left",
+    "cssClasses": "hero-dest-ngorongoro"
+  }'
+
+# DESTINATIONS Hero 3 - Zanzibar beaches
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Zanzibar — The Spice Island",
+    "subtitle": "Turquoise Waters, White Sand, and Rich Swahili Culture",
+    "description": "Complete your Tanzanian adventure with a stay on the legendary Zanzibar archipelago. Relax on pristine beaches, explore the UNESCO-listed Stone Town with its winding alleys and ornate doors, snorkel coral reefs bursting with marine life, and savour the aromatic spice tours that gave this island its name.",
+    "page": "DESTINATIONS",
+    "ctaText": "Discover Zanzibar",
+    "ctaLink": "/destinations/zanzibar",
+    "displayOrder": 3,
+    "isActive": true,
+    "overlayColor": "#003344",
+    "overlayOpacity": 0.35,
+    "textAlignment": "right",
+    "cssClasses": "hero-dest-zanzibar"
+  }'
+
+# DESTINATIONS Hero 4 - Tarangire National Park
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Tarangire National Park",
+    "subtitle": "Ancient Baobabs and the Largest Elephant Herds in Tanzania",
+    "description": "Often overlooked by first-time visitors, Tarangire is a hidden gem with the highest concentration of elephants in northern Tanzania. The park iconic landscape of towering baobab trees, seasonal swamps, and the Tarangire River draws enormous herds of elephants, buffalo, and migratory wildebeest during the dry season.",
+    "page": "DESTINATIONS",
+    "ctaText": "Explore Tarangire",
+    "ctaLink": "/destinations/tarangire",
+    "displayOrder": 4,
+    "isActive": true,
+    "overlayColor": "#2a1f0e",
+    "overlayOpacity": 0.4,
+    "textAlignment": "center",
+    "cssClasses": "hero-dest-tarangire"
+  }'
+
+
+# =============================================================================
+# ACCOMMODATIONS Page (3 Heroes)
+# =============================================================================
+
+# ACCOMMODATIONS Hero 1 - Luxury lodges overview
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Where You Stay Matters",
+    "subtitle": "Handpicked Lodges, Camps, and Hotels Across Tanzania",
+    "description": "We have personally inspected and partnered with the finest accommodations in every major safari destination. From lavish five-star lodges perched on crater rims to intimate tented camps in the heart of the bush, every property is selected for its location, service quality, sustainability practices, and guest reviews.",
+    "page": "ACCOMMODATIONS",
+    "ctaText": "Browse All Properties",
+    "ctaLink": "/accommodations#list",
+    "displayOrder": 1,
+    "isActive": true,
+    "overlayColor": "#1a1410",
+    "overlayOpacity": 0.45,
+    "textAlignment": "center",
+    "cssClasses": "hero-accom-main"
+  }'
+
+# ACCOMMODATIONS Hero 2 - Tented camps
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Luxury Tented Camps",
+    "subtitle": "Fall Asleep to the Sounds of the African Bush",
+    "description": "There is nothing quite like sleeping in a canvas tent with the sounds of lions roaring in the distance and hyenas calling under a canopy of stars. Our luxury tented camps combine the romance of classic safari camping with modern comforts — en-suite bathrooms, plush bedding, gourmet dining, and personal butler service.",
+    "page": "ACCOMMODATIONS",
+    "ctaText": "View Tented Camps",
+    "ctaLink": "/accommodations?type=tented-camp",
+    "displayOrder": 2,
+    "isActive": true,
+    "overlayColor": "#0d1a0d",
+    "overlayOpacity": 0.4,
+    "textAlignment": "left",
+    "cssClasses": "hero-accom-tented"
+  }'
+
+# ACCOMMODATIONS Hero 3 - Beach resorts and Zanzibar stays
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Beachfront Retreats",
+    "subtitle": "Unwind on Zanzibar Pristine Shores After Your Safari",
+    "description": "Extend your Tanzanian adventure with a beach getaway on the Indian Ocean coast. Our partner resorts in Zanzibar, Mafia Island, and the mainland coast offer overwater bungalows, private beach villas, world-class diving, spa retreats, and Swahili culinary experiences that perfectly complement your bush adventure.",
+    "page": "ACCOMMODATIONS",
+    "ctaText": "Beach Properties",
+    "ctaLink": "/accommodations?type=beach-resort",
+    "displayOrder": 3,
+    "isActive": true,
+    "overlayColor": "#001a33",
+    "overlayOpacity": 0.4,
+    "textAlignment": "right",
+    "cssClasses": "hero-accom-beach"
+  }'
+
+
+# =============================================================================
+# GALLERY Page (3 Heroes)
+# =============================================================================
+
+# GALLERY Hero 1 - Photo gallery showcase
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Through Our Lens",
+    "subtitle": "Stunning Moments Captured on Safari with Kabengo",
+    "description": "Browse thousands of photographs taken by our guides, guests, and professional wildlife photographers during real Kabengo safaris. From dramatic predator-prey encounters to breathtaking sunsets over the Serengeti, these images capture the magic that awaits you in Tanzania.",
+    "page": "GALLERY",
+    "ctaText": "View Full Gallery",
+    "ctaLink": "/gallery#photos",
+    "displayOrder": 1,
+    "isActive": true,
+    "overlayColor": "#0a0a0a",
+    "overlayOpacity": 0.5,
+    "textAlignment": "center",
+    "cssClasses": "hero-gallery-main"
+  }'
+
+# GALLERY Hero 2 - Guest photography highlights
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Guest Photo Wall",
+    "subtitle": "The Best Shots from Our Travelers Around the World",
+    "description": "Our guests are incredibly talented photographers, and we love showcasing their work. This curated collection features the most stunning wildlife, landscape, and cultural photos submitted by travelers who have joined Kabengo safaris. Every image tells a story of adventure, wonder, and the thrill of the African wild.",
+    "page": "GALLERY",
+    "ctaText": "Submit Your Photos",
+    "ctaLink": "/contact?type=photo-submission",
+    "displayOrder": 2,
+    "isActive": true,
+    "overlayColor": "#1a0f1a",
+    "overlayOpacity": 0.4,
+    "textAlignment": "left",
+    "cssClasses": "hero-gallery-guests"
+  }'
+
+# GALLERY Hero 3 - Video safari experiences
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Safari in Motion",
+    "subtitle": "Watch Real Safari Footage from the Tanzanian Bush",
+    "description": "Photos capture a moment, but video brings the safari to life. Watch lions stalking their prey across the Serengeti plains, elephants crossing rivers in Tarangire, flamingos painting Lake Manyara pink, and wildebeest leaping into the Mara River. Our video gallery gives you a taste of what your safari will feel like.",
+    "page": "GALLERY",
+    "ctaText": "Watch Videos",
+    "ctaLink": "/gallery#videos",
+    "displayOrder": 3,
+    "isActive": true,
+    "overlayColor": "#0d0d1a",
+    "overlayOpacity": 0.45,
+    "textAlignment": "center",
+    "cssClasses": "hero-gallery-video"
+  }'
+
+
+# =============================================================================
+# CONTACT Page (3 Heroes)
+# =============================================================================
+
+# CONTACT Hero 1 - Get in touch main banner
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Get in Touch",
+    "subtitle": "We Are Here to Help Plan Your Dream Safari",
+    "description": "Whether you have a question about our safari packages, need help customizing an itinerary, or want to discuss group bookings and special occasions, our friendly team is ready to assist. Reach out by phone, email, or through the form below, and we will respond within 24 hours.",
+    "page": "CONTACT",
+    "ctaText": "Send Us a Message",
+    "ctaLink": "/contact#form",
+    "displayOrder": 1,
+    "isActive": true,
+    "overlayColor": "#1a2634",
+    "overlayOpacity": 0.5,
+    "textAlignment": "center",
+    "cssClasses": "hero-contact-main"
+  }'
+
+# CONTACT Hero 2 - Office and location info
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Visit Our Office in Arusha",
+    "subtitle": "The Safari Capital of Tanzania",
+    "description": "Our head office is located in Arusha, the gateway city to northern Tanzania safari circuit. Drop by for a face-to-face consultation with our safari specialists, pick up printed itineraries and maps, or simply enjoy a cup of Tanzanian coffee while we plan your adventure together. Walk-ins are welcome during business hours.",
+    "page": "CONTACT",
+    "ctaText": "Get Directions",
+    "ctaLink": "/contact#map",
+    "displayOrder": 2,
+    "isActive": true,
+    "overlayColor": "#1a1a0f",
+    "overlayOpacity": 0.4,
+    "textAlignment": "left",
+    "cssClasses": "hero-contact-office"
+  }'
+
+# CONTACT Hero 3 - Emergency and on-safari support
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "24/7 Safari Support",
+    "subtitle": "Always Reachable — Before, During, and After Your Trip",
+    "description": "Our operations center operates around the clock during active safari seasons. If you are already on safari with us and need assistance, our emergency hotline connects you directly to our operations manager. For pre-trip questions, our booking team is available Monday through Saturday via phone, WhatsApp, and email.",
+    "page": "CONTACT",
+    "ctaText": "Emergency Contact",
+    "ctaLink": "/contact#emergency",
+    "displayOrder": 3,
+    "isActive": true,
+    "overlayColor": "#330d0d",
+    "overlayOpacity": 0.45,
+    "textAlignment": "center",
+    "cssClasses": "hero-contact-support"
+  }'
+
+
+# =============================================================================
+# BLOG Page (3 Heroes)
+# =============================================================================
+
+# BLOG Hero 1 - Safari stories and travel tips
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Safari Stories & Travel Tips",
+    "subtitle": "Insights, Guides, and Tales from the Tanzanian Bush",
+    "description": "Dive into our collection of safari stories, travel planning guides, wildlife spotting tips, packing lists, and behind-the-scenes glimpses of life as a safari guide. Whether you are a first-time traveler or a seasoned bush veteran, our blog is packed with useful information and inspiring reads.",
+    "page": "BLOG",
+    "ctaText": "Read Latest Posts",
+    "ctaLink": "/blog#latest",
+    "displayOrder": 1,
+    "isActive": true,
+    "overlayColor": "#1a1a1a",
+    "overlayOpacity": 0.5,
+    "textAlignment": "center",
+    "cssClasses": "hero-blog-main"
+  }'
+
+# BLOG Hero 2 - Wildlife education and conservation news
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Wildlife & Conservation News",
+    "subtitle": "Stay Updated on Tanzania Ecosystem and Wildlife Efforts",
+    "description": "Follow the latest news from Tanzania conservation frontlines. Learn about new protected areas, anti-poaching victories, wildlife census results, community-based conservation projects, and how responsible tourism is making a measurable difference for endangered species across East Africa.",
+    "page": "BLOG",
+    "ctaText": "Conservation Articles",
+    "ctaLink": "/blog?category=conservation",
+    "displayOrder": 2,
+    "isActive": true,
+    "overlayColor": "#0d1a0d",
+    "overlayOpacity": 0.45,
+    "textAlignment": "left",
+    "cssClasses": "hero-blog-conservation"
+  }'
+
+# BLOG Hero 3 - Seasonal safari planning guides
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "When to Visit Tanzania",
+    "subtitle": "Seasonal Guides to Help You Choose the Perfect Time",
+    "description": "Tanzania offers year-round safari opportunities, but each season brings something unique. Our seasonal guides break down the best months for the Great Migration, calving season, birding, dry-season game viewing, green season discounts, and Zanzibar beach weather. Plan smarter with expert local knowledge.",
+    "page": "BLOG",
+    "ctaText": "Seasonal Guides",
+    "ctaLink": "/blog?category=seasonal-guides",
+    "displayOrder": 3,
+    "isActive": true,
+    "overlayColor": "#1a1408",
+    "overlayOpacity": 0.4,
+    "textAlignment": "right",
+    "cssClasses": "hero-blog-seasonal"
+  }'
+
+
+# =============================================================================
+# FAQ Page (3 Heroes)
+# =============================================================================
+
+# FAQ Hero 1 - Frequently asked questions main banner
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Frequently Asked Questions",
+    "subtitle": "Everything You Need to Know Before Your Safari",
+    "description": "Planning a safari raises many questions — from visa requirements and vaccinations to what to pack and how close you can get to the animals. We have compiled answers to the most common questions from our guests to help you prepare for the adventure of a lifetime.",
+    "page": "FAQ",
+    "ctaText": "Browse All FAQs",
+    "ctaLink": "/faq#questions",
+    "displayOrder": 1,
+    "isActive": true,
+    "overlayColor": "#1a2030",
+    "overlayOpacity": 0.5,
+    "textAlignment": "center",
+    "cssClasses": "hero-faq-main"
+  }'
+
+# FAQ Hero 2 - Booking and payment questions
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Booking & Payment FAQs",
+    "subtitle": "Deposits, Cancellations, Payment Methods, and More",
+    "description": "Understand our booking process, deposit requirements, cancellation policies, accepted payment methods, and travel insurance recommendations. We believe in transparent pricing with no hidden fees — every cost is detailed upfront so you can budget with confidence.",
+    "page": "FAQ",
+    "ctaText": "Payment Questions",
+    "ctaLink": "/faq#booking",
+    "displayOrder": 2,
+    "isActive": true,
+    "overlayColor": "#1a1a0a",
+    "overlayOpacity": 0.4,
+    "textAlignment": "left",
+    "cssClasses": "hero-faq-booking"
+  }'
+
+# FAQ Hero 3 - Safety and health questions
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Safety & Health on Safari",
+    "subtitle": "Vaccinations, Malaria Prevention, and On-Ground Safety",
+    "description": "Your safety is our top priority. Get answers about recommended vaccinations, malaria prophylaxis, safe drinking water, wildlife safety protocols, vehicle safety standards, and our emergency evacuation procedures. We also cover dietary accommodations, altitude considerations for Ngorongoro, and first-aid provisions on all our vehicles.",
+    "page": "FAQ",
+    "ctaText": "Health & Safety FAQs",
+    "ctaLink": "/faq#safety",
+    "displayOrder": 3,
+    "isActive": true,
+    "overlayColor": "#1a0d0d",
+    "overlayOpacity": 0.45,
+    "textAlignment": "center",
+    "cssClasses": "hero-faq-safety"
+  }'
+
+
+# =============================================================================
+# TESTIMONIALS Page (3 Heroes)
+# =============================================================================
+
+# TESTIMONIALS Hero 1 - Guest reviews showcase
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "What Our Guests Say",
+    "subtitle": "Real Reviews from Real Travelers Who Explored Tanzania with Us",
+    "description": "Nothing speaks louder than the words of our guests. Read hundreds of verified reviews from travelers around the world who trusted Kabengo Safaris with their Tanzanian adventure. From honeymooners to families, solo travelers to large groups — discover why 98% of our guests rate their experience 5 stars.",
+    "page": "TESTIMONIALS",
+    "ctaText": "Read All Reviews",
+    "ctaLink": "/testimonials#reviews",
+    "displayOrder": 1,
+    "isActive": true,
+    "overlayColor": "#1a1a1a",
+    "overlayOpacity": 0.5,
+    "textAlignment": "center",
+    "cssClasses": "hero-testimonials-main"
+  }'
+
+# TESTIMONIALS Hero 2 - Featured guest stories
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Featured Guest Stories",
+    "subtitle": "In-Depth Accounts of Life-Changing Safari Experiences",
+    "description": "Some safari experiences are so transformative that a short review does not do them justice. Our featured stories are longer-form accounts from guests who share detailed narratives of their Kabengo journey — the wildlife encounters that took their breath away, the guides who became friends, and the moments that changed their perspective.",
+    "page": "TESTIMONIALS",
+    "ctaText": "Read Featured Stories",
+    "ctaLink": "/testimonials#featured",
+    "displayOrder": 2,
+    "isActive": true,
+    "overlayColor": "#2c1a0a",
+    "overlayOpacity": 0.45,
+    "textAlignment": "left",
+    "cssClasses": "hero-testimonials-featured"
+  }'
+
+# TESTIMONIALS Hero 3 - Share your experience CTA
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Share Your Safari Story",
+    "subtitle": "Been on Safari with Us? We Would Love to Hear from You",
+    "description": "Your feedback helps us improve and inspires future travelers to take the leap. If you have traveled with Kabengo Safaris, we invite you to share your experience. Write a review, upload your favourite photos, and tell the world about the moments that made your Tanzanian safari unforgettable.",
+    "page": "TESTIMONIALS",
+    "ctaText": "Write a Review",
+    "ctaLink": "/contact?type=review",
+    "displayOrder": 3,
+    "isActive": true,
+    "overlayColor": "#0d1a1a",
+    "overlayOpacity": 0.4,
+    "textAlignment": "center",
+    "cssClasses": "hero-testimonials-submit"
+  }'
+
+
+# =============================================================================
+# BOOKING Page (3 Heroes)
+# =============================================================================
+
+# BOOKING Hero 1 - Main booking banner
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Book Your Safari Today",
+    "subtitle": "Secure Your Spot in Tanzania Most Sought-After Destinations",
+    "description": "Ready to make it happen? Use our booking system to select your preferred safari package, choose your travel dates, specify group size, and secure your reservation with a deposit. Our team will confirm availability within 24 hours and send you a detailed itinerary, packing list, and pre-departure guide.",
+    "page": "BOOKING",
+    "ctaText": "Start Booking",
+    "ctaLink": "/booking#form",
+    "displayOrder": 1,
+    "isActive": true,
+    "overlayColor": "#1a2618",
+    "overlayOpacity": 0.5,
+    "textAlignment": "center",
+    "cssClasses": "hero-booking-main"
+  }'
+
+# BOOKING Hero 2 - Group and corporate bookings
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Group & Corporate Bookings",
+    "subtitle": "Special Rates for Large Groups, Events, and Team Retreats",
+    "description": "Planning a safari for a wedding party, corporate retreat, school trip, or large family reunion? We offer discounted group rates, dedicated vehicles, private camp arrangements, and customized itineraries for groups of 8 or more. Our events team will coordinate every detail from arrival to departure.",
+    "page": "BOOKING",
+    "ctaText": "Group Enquiry",
+    "ctaLink": "/contact?type=group-booking",
+    "displayOrder": 2,
+    "isActive": true,
+    "overlayColor": "#1a1a2e",
+    "overlayOpacity": 0.45,
+    "textAlignment": "left",
+    "cssClasses": "hero-booking-group"
+  }'
+
+# BOOKING Hero 3 - Gift a safari experience
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Gift a Safari Experience",
+    "subtitle": "The Perfect Present for Someone Who Deserves an Adventure",
+    "description": "Looking for a truly extraordinary gift? Our safari gift vouchers allow you to give the experience of a lifetime. Available in custom amounts or as full package vouchers, they can be redeemed for any safari package, Zanzibar beach extension, or even a hot air balloon ride over the Serengeti. Valid for 12 months from purchase.",
+    "page": "BOOKING",
+    "ctaText": "Buy Gift Voucher",
+    "ctaLink": "/booking#gift-voucher",
+    "displayOrder": 3,
+    "isActive": true,
+    "overlayColor": "#2e1a1a",
+    "overlayOpacity": 0.4,
+    "textAlignment": "right",
+    "cssClasses": "hero-booking-gift"
+  }'
+
+
+# =============================================================================
+# OTHER Page (3 Heroes)
+# =============================================================================
+
+# OTHER Hero 1 - Catch-all for miscellaneous pages
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Explore More with Kabengo",
+    "subtitle": "Discover Everything Tanzania Has to Offer",
+    "description": "Beyond our core safari packages, Tanzania offers a wealth of experiences. From Mount Kilimanjaro climbing expeditions and cultural village visits to coffee plantation tours, hot air balloon safaris, and deep-sea fishing off the coast of Zanzibar. Explore the full range of adventures we can arrange for you.",
+    "page": "OTHER",
+    "ctaText": "See All Activities",
+    "ctaLink": "/activities",
+    "displayOrder": 1,
+    "isActive": true,
+    "overlayColor": "#1a1a1a",
+    "overlayOpacity": 0.45,
+    "textAlignment": "center",
+    "cssClasses": "hero-other-explore"
+  }'
+
+# OTHER Hero 2 - Travel partnerships and affiliations
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Our Partners & Affiliations",
+    "subtitle": "Trusted by Leading Travel Organizations Worldwide",
+    "description": "Kabengo Safaris is a licensed member of the Tanzania Association of Tour Operators (TATO), a partner of the Tanzania National Parks Authority (TANAPA), and an affiliate of multiple international travel associations. Our partnerships ensure compliance with the highest industry standards and access to exclusive permits and locations.",
+    "page": "OTHER",
+    "ctaText": "View Partners",
+    "ctaLink": "/partners",
+    "displayOrder": 2,
+    "isActive": true,
+    "overlayColor": "#0d1a2e",
+    "overlayOpacity": 0.4,
+    "textAlignment": "left",
+    "cssClasses": "hero-other-partners"
+  }'
+
+# OTHER Hero 3 - Careers and join our team
+curl -X POST http://localhost:4450/api/heroes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyaWNrc3lfZmFieSIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzMwNjcwODcsImV4cCI6MTc3MzA3Nzg4N30.n_14zRGEUa9riP4VbL5AIcWWtk6ZHC8KevmjE31U_lY" \
+  -d '{
+    "title": "Join the Kabengo Family",
+    "subtitle": "Career Opportunities in Safari Tourism",
+    "description": "We are always looking for passionate individuals to join our growing team. Whether you are an experienced safari guide, a hospitality professional, a digital marketing specialist, or a wildlife conservationist, we would love to hear from you. Work in one of the most beautiful offices on Earth — the Tanzanian wilderness.",
+    "page": "OTHER",
+    "ctaText": "View Open Positions",
+    "ctaLink": "/careers",
+    "displayOrder": 3,
+    "isActive": true,
+    "overlayColor": "#1a2e1a",
+    "overlayOpacity": 0.4,
+    "textAlignment": "center",
+    "cssClasses": "hero-other-careers"
+  }'

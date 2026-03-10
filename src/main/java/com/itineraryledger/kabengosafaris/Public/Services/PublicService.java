@@ -546,15 +546,7 @@ public class PublicService {
     public ResponseEntity<ApiResponse<?>> getFeaturedTestimonies() {
         return testimonyGetService.getFeaturedTestimonies();
     }
-
-    // ========================
-    // HEROES (delegate)
-    // ========================
-
-    public ResponseEntity<ApiResponse<?>> getHeroesByPage(HeroPage page) {
-        return heroGetService.getHeroesByPage(page);
-    }
-
+    
     // ========================
     // UTILITY
     // ========================
