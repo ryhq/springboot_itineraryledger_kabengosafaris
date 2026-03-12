@@ -40,7 +40,10 @@ public class SafariSpecification {
     }
 
     public static Specification<Safari> isActive(Boolean isActive) {
-        return (root, query, cb) -> cb.equal(root.get("isActive"), isActive);
+        return (root, query, cb) -> {
+            query.distinct(true);
+            return cb.equal(root.get("isActive"), isActive);
+        };
     }
 
     public static Specification<Safari> searchKeyword(String keyword) {

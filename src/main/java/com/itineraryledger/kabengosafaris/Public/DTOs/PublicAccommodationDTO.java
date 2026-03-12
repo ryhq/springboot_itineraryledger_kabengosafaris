@@ -3,13 +3,13 @@ package com.itineraryledger.kabengosafaris.Public.DTOs;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationCategory;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationType;
+import com.itineraryledger.kabengosafaris.Public.Annotations.Translatable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 /**
  * Public-safe Accommodation DTO - excludes sensitive business fields (tin, vrn)
@@ -22,14 +22,14 @@ import java.time.LocalDateTime;
 public class PublicAccommodationDTO {
 
     private String id;
-    private String name;
+    @Translatable private String name;
     private String slug;
     private AccommodationType accommodationType;
-    private String accommodationTypeDisplayName;
-    private String accommodationTypeDescription;
+    @Translatable private String accommodationTypeDisplayName;
+    @Translatable private String accommodationTypeDescription;
     private AccommodationCategory category;
-    private String categoryDisplayName;
-    private String categoryDescription;
+    @Translatable private String categoryDisplayName;
+    @Translatable private String categoryDescription;
     private Integer categoryApproximateStars;
 
     private String logoUrl;
@@ -57,33 +57,32 @@ public class PublicAccommodationDTO {
     private Integer starRating;
 
     // Descriptions
-    private String shortDescription;
-    private String details;
-    private String amenities;
-    private String services;
-    private String nearbyAttractions;
+    @Translatable private String shortDescription;
+    @Translatable private String details;
+    @Translatable private String amenities;
+    @Translatable private String services;
+    @Translatable private String nearbyAttractions;
 
     // Policies
-    private String termsAndConditions;
-    private String cancellationPolicy;
-    private String checkInPolicy;
-    private String checkOutPolicy;
-    private String childPolicy;
-    private String petPolicy;
+    @Translatable private String termsAndConditions;
+    @Translatable private String cancellationPolicy;
+    @Translatable private String checkInPolicy;
+    @Translatable private String checkOutPolicy;
+    @Translatable private String childPolicy;
+    @Translatable private String petPolicy;
 
     // Pricing
     private String priceRange;
     private String currency;
 
     // Seasonal
-    private String bestSeason;
+    @Translatable private String bestSeason;
     private String operatingSeason;
 
-    private String tags;
-    private Boolean isActive;
+    @Translatable private String tags;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    // Image
+    private String primaryImageUrl;
 
     // Counts
     private Integer imageCount;

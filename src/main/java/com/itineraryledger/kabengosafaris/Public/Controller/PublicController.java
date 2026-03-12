@@ -2,31 +2,86 @@ package com.itineraryledger.kabengosafaris.Public.Controller;
 
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationCategory;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationType;
+import com.itineraryledger.kabengosafaris.Hero.Enums.HeroPage;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.BudgetCategory;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
 import com.itineraryledger.kabengosafaris.Park.ParkType;
-import com.itineraryledger.kabengosafaris.Public.Services.PublicService;
+import com.itineraryledger.kabengosafaris.Public.Services.PublicAccommodationService;
+import com.itineraryledger.kabengosafaris.Public.Services.PublicActivityService;
+import com.itineraryledger.kabengosafaris.Public.Services.PublicHeroService;
+import com.itineraryledger.kabengosafaris.Public.Services.PublicHomepageService;
+import com.itineraryledger.kabengosafaris.Public.Services.PublicItineraryService;
+import com.itineraryledger.kabengosafaris.Public.Services.PublicNavigationService;
+import com.itineraryledger.kabengosafaris.Public.Services.PublicParkService;
+import com.itineraryledger.kabengosafaris.Public.Services.PublicSearchService;
+import com.itineraryledger.kabengosafaris.Public.Services.PublicTestimonyService;
+import com.itineraryledger.kabengosafaris.Public.Services.PublicTranslationService;
+import com.itineraryledger.kabengosafaris.Newsletter.Services.NewsletterService;
+import com.itineraryledger.kabengosafaris.Newsletter.DTOs.NewsletterSubscribeRequest;
+import com.itineraryledger.kabengosafaris.BookingInquiry.Services.BookingInquiryService;
+import com.itineraryledger.kabengosafaris.BookingInquiry.DTOs.BookingInquiryRequest;
+import com.itineraryledger.kabengosafaris.ContactMessage.Services.ContactMessageService;
+import com.itineraryledger.kabengosafaris.ContactMessage.DTOs.ContactMessageRequest;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/public")
 @RequiredArgsConstructor
-@Tag(name = "Public Website API", description = "Unauthenticated APIs for the public website frontend")
 public class PublicController {
 
-    private final PublicService publicService;
+    private final PublicHomepageService publicHomepageService;
+    private final PublicNavigationService publicNavigationService;
+    private final PublicHeroService publicHeroService;
+    private final PublicParkService publicParkService;
+    private final PublicActivityService publicActivityService;
+    private final PublicAccommodationService publicAccommodationService;
+    private final PublicItineraryService publicItineraryService;
+    private final PublicTestimonyService publicTestimonyService;
+    private final PublicSearchService publicSearchService;
+    private final PublicTranslationService publicTranslationService;
+    private final NewsletterService newsletterService;
+    private final BookingInquiryService bookingInquiryService;
+    private final ContactMessageService contactMessageService;
+
+    // ========================
+    // SEARCH
+    // ========================
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<?>> search(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
+        @RequestParam String keyword,
+        @RequestParam(defaultValue = "3") int limit
+    ) {
+        return publicSearchService.search(keyword, publicTranslationService.parseLanguage(lang), Math.min(limit, 20));
+    }
+
+    // ========================
+    // HOMEPAGE (aggregated)
+    // ========================
+
+    @GetMapping("/homepage")
+    public ResponseEntity<ApiResponse<?>> getHomepageData(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang
+    ) {
+        return publicHomepageService.getHomepageData(publicTranslationService.parseLanguage(lang));
+    }
 
     // ========================
     // NAVIGATION
     // ========================
 
     @GetMapping("/navigation")
-    public ResponseEntity<ApiResponse<?>> getNavigation() {
-        return publicService.getNavigation();
+    public ResponseEntity<ApiResponse<?>> getNavigation(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang
+    ) {
+        return publicNavigationService.getNavigation(publicTranslationService.parseLanguage(lang));
     }
 
     // ========================
@@ -35,6 +90,7 @@ public class PublicController {
 
     @GetMapping("/parks")
     public ResponseEntity<ApiResponse<?>> getParks(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
         @RequestParam(required = false) Integer page,
         @RequestParam(required = false) Integer size,
         @RequestParam(required = false) String sortBy,
@@ -43,17 +99,34 @@ public class PublicController {
         @RequestParam(required = false) ParkType parkType,
         @RequestParam(required = false) String keyword
     ) {
-        return publicService.getParks(page, size, sortBy, sortDirection, region, parkType, keyword);
+        return publicParkService.getParks(page, size, sortBy, sortDirection, region, parkType, keyword, publicTranslationService.parseLanguage(lang));
     }
 
-    @GetMapping("/parks/id/{id}")
-    public ResponseEntity<ApiResponse<?>> getParkById(@PathVariable String id) {
-        return publicService.getParkById(id);
+    @GetMapping("/parks/{identifier}")
+    public ResponseEntity<ApiResponse<?>> getPark(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
+        @PathVariable String identifier
+    ) {
+        return publicParkService.getParkByIdentifier(identifier, publicTranslationService.parseLanguage(lang));
     }
 
-    @GetMapping("/parks/{slug}")
-    public ResponseEntity<ApiResponse<?>> getParkBySlug(@PathVariable String slug) {
-        return publicService.getParkBySlug(slug);
+    @GetMapping("/parks/{identifier}/images")
+    public ResponseEntity<ApiResponse<?>> getParkImages(
+        @PathVariable String identifier,
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size
+    ) {
+        return publicParkService.getParkImages(identifier, page, size);
+    }
+
+    @GetMapping("/parks/{identifier}/activities")
+    public ResponseEntity<ApiResponse<?>> getParkActivities(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
+        @PathVariable String identifier,
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size
+    ) {
+        return publicParkService.getParkActivities(identifier, page, size, publicTranslationService.parseLanguage(lang));
     }
 
     // ========================
@@ -62,23 +135,41 @@ public class PublicController {
 
     @GetMapping("/activities")
     public ResponseEntity<ApiResponse<?>> getActivities(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
         @RequestParam(required = false) Integer page,
         @RequestParam(required = false) Integer size,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false) String sortDirection,
         @RequestParam(required = false) String keyword
     ) {
-        return publicService.getActivities(page, size, sortBy, sortDirection, keyword);
+        return publicActivityService.getActivities(page, size, sortBy, sortDirection, keyword, publicTranslationService.parseLanguage(lang));
     }
 
-    @GetMapping("/activities/id/{id}")
-    public ResponseEntity<ApiResponse<?>> getActivityById(@PathVariable String id) {
-        return publicService.getActivityById(id);
+    @GetMapping("/activities/{identifier}")
+    public ResponseEntity<ApiResponse<?>> getActivity(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
+        @PathVariable String identifier
+    ) {
+        return publicActivityService.getActivityByIdentifier(identifier, publicTranslationService.parseLanguage(lang));
     }
 
-    @GetMapping("/activities/{slug}")
-    public ResponseEntity<ApiResponse<?>> getActivityBySlug(@PathVariable String slug) {
-        return publicService.getActivityBySlug(slug);
+    @GetMapping("/activities/{identifier}/images")
+    public ResponseEntity<ApiResponse<?>> getActivityImages(
+        @PathVariable String identifier,
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size
+    ) {
+        return publicActivityService.getActivityImages(identifier, page, size);
+    }
+
+    @GetMapping("/activities/{identifier}/parks")
+    public ResponseEntity<ApiResponse<?>> getActivityParks(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
+        @PathVariable String identifier,
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size
+    ) {
+        return publicActivityService.getActivityParks(identifier, page, size, publicTranslationService.parseLanguage(lang));
     }
 
     // ========================
@@ -87,6 +178,7 @@ public class PublicController {
 
     @GetMapping("/accommodations")
     public ResponseEntity<ApiResponse<?>> getAccommodations(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
         @RequestParam(required = false) Integer page,
         @RequestParam(required = false) Integer size,
         @RequestParam(required = false) String sortBy,
@@ -96,25 +188,33 @@ public class PublicController {
         @RequestParam(required = false) AccommodationCategory category,
         @RequestParam(required = false) String keyword
     ) {
-        return publicService.getAccommodations(page, size, sortBy, sortDirection, region, type, category, keyword);
+        return publicAccommodationService.getAccommodations(page, size, sortBy, sortDirection, region, type, category, keyword, publicTranslationService.parseLanguage(lang));
     }
 
-    @GetMapping("/accommodations/id/{id}")
-    public ResponseEntity<ApiResponse<?>> getAccommodationById(@PathVariable String id) {
-        return publicService.getAccommodationById(id);
+    @GetMapping("/accommodations/{identifier}")
+    public ResponseEntity<ApiResponse<?>> getAccommodation(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
+        @PathVariable String identifier
+    ) {
+        return publicAccommodationService.getAccommodationByIdentifier(identifier, publicTranslationService.parseLanguage(lang));
     }
 
-    @GetMapping("/accommodations/{slug}")
-    public ResponseEntity<ApiResponse<?>> getAccommodationBySlug(@PathVariable String slug) {
-        return publicService.getAccommodationBySlug(slug);
+    @GetMapping("/accommodations/{identifier}/images")
+    public ResponseEntity<ApiResponse<?>> getAccommodationImages(
+        @PathVariable String identifier,
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size
+    ) {
+        return publicAccommodationService.getAccommodationImages(identifier, page, size);
     }
 
     // ========================
-    // ITINERARIES
+    // SAFARIS (Itineraries exposed as Safaris)
     // ========================
 
-    @GetMapping("/itineraries")
-    public ResponseEntity<ApiResponse<?>> getItineraries(
+    @GetMapping("/safaris")
+    public ResponseEntity<ApiResponse<?>> getSafaris(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
         @RequestParam(required = false) Integer page,
         @RequestParam(required = false) Integer size,
         @RequestParam(required = false) String sortBy,
@@ -123,32 +223,27 @@ public class PublicController {
         @RequestParam(required = false) BudgetCategory budgetCategory,
         @RequestParam(required = false) String keyword
     ) {
-        return publicService.getItineraries(page, size, sortBy, sortDirection, tripType, budgetCategory, keyword);
+        return publicItineraryService.getItineraries(page, size, sortBy, sortDirection, tripType, budgetCategory, keyword, publicTranslationService.parseLanguage(lang));
     }
 
-    @GetMapping("/itineraries/id/{id}")
-    public ResponseEntity<ApiResponse<?>> getItineraryById(@PathVariable String id) {
-        return publicService.getItineraryById(id);
-    }
-
-    // ========================
-    // SAFARIS
-    // ========================
-
-    @GetMapping("/safaris")
-    public ResponseEntity<ApiResponse<?>> getSafaris(
-        @RequestParam(required = false) Integer page,
-        @RequestParam(required = false) Integer size,
-        @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false) String sortDirection,
-        @RequestParam(required = false) String keyword
+    @GetMapping("/safaris/{identifier}")
+    public ResponseEntity<ApiResponse<?>> getSafari(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
+        @PathVariable String identifier
     ) {
-        return publicService.getSafaris(page, size, sortBy, sortDirection, keyword);
+        return publicItineraryService.getItineraryByIdentifier(identifier, publicTranslationService.parseLanguage(lang));
     }
 
-    @GetMapping("/safaris/{slug}")
-    public ResponseEntity<ApiResponse<?>> getSafariBySlug(@PathVariable String slug) {
-        return publicService.getSafariBySlug(slug);
+    // ========================
+    // HEROES
+    // ========================
+
+    @GetMapping("/heroes")
+    public ResponseEntity<ApiResponse<?>> getHeroesByPage(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
+        @RequestParam HeroPage heroPage
+    ) {
+        return publicHeroService.getHeroesByPage(heroPage, publicTranslationService.parseLanguage(lang));
     }
 
     // ========================
@@ -156,12 +251,77 @@ public class PublicController {
     // ========================
 
     @GetMapping("/testimonies")
-    public ResponseEntity<ApiResponse<?>> getTestimonies() {
-        return publicService.getTestimonies();
+    public ResponseEntity<ApiResponse<?>> getTestimonies(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size
+    ) {
+        String parsedLang = publicTranslationService.parseLanguage(lang);
+        if (page != null || size != null) {
+            return publicTestimonyService.getPublicTestimoniesPaginated(page, size, parsedLang);
+        }
+        return publicTestimonyService.getPublicTestimonies(parsedLang);
     }
 
     @GetMapping("/testimonies/featured")
-    public ResponseEntity<ApiResponse<?>> getFeaturedTestimonies() {
-        return publicService.getFeaturedTestimonies();
+    public ResponseEntity<ApiResponse<?>> getFeaturedTestimonies(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang
+    ) {
+        return publicTestimonyService.getFeaturedTestimonies(publicTranslationService.parseLanguage(lang));
+    }
+
+    @PostMapping("/testimonies")
+    public ResponseEntity<ApiResponse<?>> submitPublicTestimony(
+        @RequestBody PublicTestimonyService.PublicTestimonyRequest request
+    ) {
+        return publicTestimonyService.submitPublicTestimony(request);
+    }
+
+    // ========================
+    // NEWSLETTER
+    // ========================
+
+    @PostMapping("/newsletter/subscribe")
+    public ResponseEntity<Map<String, Object>> subscribeToNewsletter(
+            @Valid @RequestBody NewsletterSubscribeRequest request,
+            @RequestHeader(value = "Accept-Language", defaultValue = "en") String langHeader) {
+        String lang = publicTranslationService.parseLanguage(langHeader);
+        if (request.getLocale() == null || request.getLocale().isBlank()) {
+            request.setLocale(lang);
+        }
+        Map<String, Object> result = newsletterService.subscribe(request);
+        return ResponseEntity.ok(result);
+    }
+
+    // ========================
+    // BOOKING INQUIRIES
+    // ========================
+
+    @PostMapping("/booking-inquiries")
+    public ResponseEntity<Map<String, Object>> submitBookingInquiry(
+            @Valid @RequestBody BookingInquiryRequest request,
+            @RequestHeader(value = "Accept-Language", defaultValue = "en") String langHeader) {
+        String lang = publicTranslationService.parseLanguage(langHeader);
+        if (request.getLocale() == null || request.getLocale().isBlank()) {
+            request.setLocale(lang);
+        }
+        Map<String, Object> result = bookingInquiryService.submitInquiry(request);
+        return ResponseEntity.ok(result);
+    }
+
+    // ========================
+    // CONTACT US
+    // ========================
+
+    @PostMapping("/contact")
+    public ResponseEntity<Map<String, Object>> submitContactMessage(
+            @Valid @RequestBody ContactMessageRequest request,
+            @RequestHeader(value = "Accept-Language", defaultValue = "en") String langHeader) {
+        String lang = publicTranslationService.parseLanguage(langHeader);
+        if (request.getLocale() == null || request.getLocale().isBlank()) {
+            request.setLocale(lang);
+        }
+        Map<String, Object> result = contactMessageService.submitContactMessage(request);
+        return ResponseEntity.ok(result);
     }
 }

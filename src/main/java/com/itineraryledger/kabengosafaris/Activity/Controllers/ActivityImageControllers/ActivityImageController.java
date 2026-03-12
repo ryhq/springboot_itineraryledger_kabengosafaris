@@ -121,8 +121,11 @@ public class ActivityImageController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_ACTIVITY_IMAGE')")
-    public ResponseEntity<?> getImageById(@PathVariable("id") String id) {
-        return getService.getImageById(id);
+    public ResponseEntity<?> getImageById(
+            @PathVariable("id") String id,
+            @RequestParam(required = false) String scopeParentId
+    ) {
+        return getService.getImageById(id, scopeParentId);
     }
 
     /**

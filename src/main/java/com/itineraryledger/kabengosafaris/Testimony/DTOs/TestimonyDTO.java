@@ -3,6 +3,7 @@ package com.itineraryledger.kabengosafaris.Testimony.DTOs;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.itineraryledger.kabengosafaris.Public.Annotations.Translatable;
 import com.itineraryledger.kabengosafaris.Testimony.Enums.TestimonySource;
 
 import lombok.AllArgsConstructor;
@@ -20,7 +21,7 @@ public class TestimonyDTO {
     private String authorName;
     private String authorTitle;
     private String authorCountry;
-    private String message;
+    @Translatable private String message;
     private Integer rating;
     private String adminResponse;
     private LocalDateTime adminResponseDate;

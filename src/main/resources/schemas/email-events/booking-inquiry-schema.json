@@ -1,0 +1,129 @@
+[
+  {
+    "name": "inquiryCode",
+    "description": "Auto-generated inquiry reference code (e.g., INQ-0001-03-26)",
+    "isRequired": true
+  },
+  {
+    "name": "firstName",
+    "description": "Inquirer's first name",
+    "isRequired": true
+  },
+  {
+    "name": "lastName",
+    "description": "Inquirer's last name",
+    "isRequired": true
+  },
+  {
+    "name": "email",
+    "description": "Inquirer's email address",
+    "isRequired": true
+  },
+  {
+    "name": "phone",
+    "description": "Inquirer's phone number",
+    "isRequired": false
+  },
+  {
+    "name": "country",
+    "description": "Inquirer's country of origin",
+    "isRequired": false
+  },
+  {
+    "name": "adults",
+    "description": "Number of adult travelers",
+    "isRequired": true
+  },
+  {
+    "name": "children",
+    "description": "Number of child travelers",
+    "isRequired": true
+  },
+  {
+    "name": "totalTravelers",
+    "description": "Total number of travelers (adults + children)",
+    "isRequired": true
+  },
+  {
+    "name": "preferredStartDate",
+    "description": "Preferred travel start date (yyyy-MM-dd format)",
+    "isRequired": false
+  },
+  {
+    "name": "preferredEndDate",
+    "description": "Preferred travel end date (yyyy-MM-dd format)",
+    "isRequired": false
+  },
+  {
+    "name": "budgetCategory",
+    "description": "Budget category (e.g., BUDGET, MID_RANGE, LUXURY)",
+    "isRequired": false
+  },
+  {
+    "name": "tripType",
+    "description": "Type of trip (e.g., WILDLIFE_SAFARI, CULTURAL, ADVENTURE)",
+    "isRequired": false
+  },
+  {
+    "name": "itineraryName",
+    "description": "Name of the itinerary the inquiry is about (if applicable)",
+    "isRequired": false
+  },
+  {
+    "name": "itineraryCode",
+    "description": "Code of the itinerary (e.g., SAF-001)",
+    "isRequired": false
+  },
+  {
+    "name": "itineraryTotalDays",
+    "description": "Total number of days for the itinerary",
+    "isRequired": false
+  },
+  {
+    "name": "itineraryTotalNights",
+    "description": "Total number of nights for the itinerary",
+    "isRequired": false
+  },
+  {
+    "name": "itineraryStartLocation",
+    "description": "Start location of the itinerary",
+    "isRequired": false
+  },
+  {
+    "name": "itineraryEndLocation",
+    "description": "End location of the itinerary",
+    "isRequired": false
+  },
+  {
+    "name": "itineraryDescription",
+    "description": "Short description of the itinerary",
+    "isRequired": false
+  },
+  {
+    "name": "specialRequests",
+    "description": "Any special requests from the inquirer",
+    "isRequired": false
+  },
+  {
+    "name": "message",
+    "description": "Additional message from the inquirer",
+    "isRequired": false
+  },
+  {
+    "name": "source",
+    "description": "Where the inquiry originated (e.g., WEBSITE)",
+    "isRequired": false,
+    "defaultValue": "WEBSITE"
+  },
+  {
+    "name": "preferredLocale",
+    "description": "Inquirer's preferred language",
+    "isRequired": false,
+    "defaultValue": "en"
+  },
+  {
+    "name": "inquiryDate",
+    "description": "Date and time the inquiry was submitted (yyyy-MM-dd HH:mm:ss format)",
+    "isRequired": true
+  }
+]

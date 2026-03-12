@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Park.DTOs;
 
 import com.itineraryledger.kabengosafaris.Park.ParkType;
+import com.itineraryledger.kabengosafaris.Public.Annotations.Translatable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ParkDTO {
     private String id;
-    private String name;
+    @Translatable private String name;
     private String slug;
     private ParkType parkType;
     private String region;
@@ -27,17 +28,17 @@ public class ParkDTO {
     private BigDecimal longitude;
     private String elevation;
     private String size;
-    private String shortDescription;
-    private String fullDescription;
-    private String history;
-    private String ecosystem;
-    private String wildlife;
-    private String vegetation;
+    @Translatable private String shortDescription;
+    @Translatable private String fullDescription;
+    @Translatable private String history;
+    @Translatable private String ecosystem;
+    @Translatable private String wildlife;
+    @Translatable private String vegetation;
     private String primaryImage;
-    private String bestTimeToVisit;
+    @Translatable private String bestTimeToVisit;
     private String openingHours;
-    private String accessInformation;
-    private String tags;
+    @Translatable private String accessInformation;
+    @Translatable private String tags;
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

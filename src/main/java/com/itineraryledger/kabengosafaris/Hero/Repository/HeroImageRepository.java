@@ -80,4 +80,20 @@ public interface HeroImageRepository extends JpaRepository<HeroImage, Long>, Jpa
 
     @Query("SELECT img.id FROM HeroImage img ORDER BY img.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    // ========================
+    // SCOPED NAVIGATION QUERIES (parent-scoped next/previous)
+    // ========================
+
+    @Query("SELECT img.id FROM HeroImage img WHERE img.id > :currentId AND img.hero.id = :parentId ORDER BY img.id ASC LIMIT 1")
+    Optional<Long> findNextIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT img.id FROM HeroImage img WHERE img.id < :currentId AND img.hero.id = :parentId ORDER BY img.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT img.id FROM HeroImage img WHERE img.hero.id = :parentId ORDER BY img.id ASC LIMIT 1")
+    Optional<Long> findFirstIdByParent(@Param("parentId") Long parentId);
+
+    @Query("SELECT img.id FROM HeroImage img WHERE img.hero.id = :parentId ORDER BY img.id DESC LIMIT 1")
+    Optional<Long> findLastIdByParent(@Param("parentId") Long parentId);
 }

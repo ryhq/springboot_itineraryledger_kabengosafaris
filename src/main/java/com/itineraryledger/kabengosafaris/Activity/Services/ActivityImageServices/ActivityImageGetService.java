@@ -163,7 +163,7 @@ public class ActivityImageGetService {
         return ResponseEntity.ok(ApiResponse.success(200, "Activity images retrieved successfully", response));
     }
 
-    public ResponseEntity<?> getImageById(String obfuscatedId) {
+    public ResponseEntity<?> getImageById(String obfuscatedId, String scopeParentId) {
         log.info("Getting activity image with ID: {}", obfuscatedId);
 
         try {
@@ -178,16 +178,35 @@ public class ActivityImageGetService {
 
             ActivityImageDTO imageDTO = toDTO(image);
 
-            // Circular navigation
-            Long nextId = activityImageRepository.findNextId(id).orElse(null);
-            Long previousId = activityImageRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = activityImageRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = activityImageRepository.findLastId().orElse(null);
+            // Decode optional scope parent ID for scoped navigation
+            Long decodedParentId = null;
+            if (scopeParentId != null && !scopeParentId.isEmpty()) {
+                try {
+                    decodedParentId = idObfuscator.decodeId(scopeParentId);
+                } catch (Exception ex) {
+                    log.warn("Invalid scopeParentId: {}, falling back to global navigation", scopeParentId);
+                }
+            }
+
+            // Circular navigation (scoped if parent provided, global otherwise)
+            Long nextId, previousId;
+            if (decodedParentId != null) {
+                nextId = activityImageRepository.findNextIdByParent(id, decodedParentId).orElse(null);
+                previousId = activityImageRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
+                if (nextId == null) nextId = activityImageRepository.findFirstIdByParent(decodedParentId).orElse(null);
+                if (previousId == null) previousId = activityImageRepository.findLastIdByParent(decodedParentId).orElse(null);
+            } else {
+                nextId = activityImageRepository.findNextId(id).orElse(null);
+                previousId = activityImageRepository.findPreviousId(id).orElse(null);
+                if (nextId == null) nextId = activityImageRepository.findFirstId().orElse(null);
+                if (previousId == null) previousId = activityImageRepository.findLastId().orElse(null);
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("image", imageDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok(ApiResponse.success(200, "Activity image retrieved successfully", response));
 

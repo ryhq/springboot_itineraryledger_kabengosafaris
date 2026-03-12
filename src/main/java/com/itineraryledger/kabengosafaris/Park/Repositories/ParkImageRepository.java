@@ -88,6 +88,12 @@ public interface ParkImageRepository extends JpaRepository<ParkImage, Long>, Jpa
     Page<ParkImage> findByParkIdPaginated(@Param("parkId") Long parkId, Pageable pageable);
 
     /**
+     * Find active images with pagination
+     */
+    @Query("SELECT img FROM ParkImage img WHERE img.park.id = :parkId AND img.isActive = true ORDER BY img.displayOrder ASC, img.createdAt DESC")
+    Page<ParkImage> findActiveByParkIdPaginated(@Param("parkId") Long parkId, Pageable pageable);
+
+    /**
      * Check if park has a primary image
      */
     @Query("SELECT COUNT(img) > 0 FROM ParkImage img WHERE img.park.id = :parkId AND img.isPrimary = true AND img.isActive = true")
@@ -114,4 +120,20 @@ public interface ParkImageRepository extends JpaRepository<ParkImage, Long>, Jpa
 
     @Query("SELECT img.id FROM ParkImage img ORDER BY img.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    // ========================
+    // SCOPED NAVIGATION QUERIES (parent-scoped next/previous)
+    // ========================
+
+    @Query("SELECT img.id FROM ParkImage img WHERE img.id > :currentId AND img.park.id = :parentId ORDER BY img.id ASC LIMIT 1")
+    Optional<Long> findNextIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT img.id FROM ParkImage img WHERE img.id < :currentId AND img.park.id = :parentId ORDER BY img.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT img.id FROM ParkImage img WHERE img.park.id = :parentId ORDER BY img.id ASC LIMIT 1")
+    Optional<Long> findFirstIdByParent(@Param("parentId") Long parentId);
+
+    @Query("SELECT img.id FROM ParkImage img WHERE img.park.id = :parentId ORDER BY img.id DESC LIMIT 1")
+    Optional<Long> findLastIdByParent(@Param("parentId") Long parentId);
 }

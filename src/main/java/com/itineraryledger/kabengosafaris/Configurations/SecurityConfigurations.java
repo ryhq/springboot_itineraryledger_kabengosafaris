@@ -66,7 +66,7 @@ public class SecurityConfigurations {
         // Configure CORS inline using a custom configuration source
         .cors(cors -> {
             CorsConfiguration corsConfiguration = new CorsConfiguration();
-            corsConfiguration.setAllowedOrigins(List.of("*")); // Allow all origins
+            corsConfiguration.setAllowedOriginPatterns(List.of("*")); // Allow all origins with credentials support
             corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH")); // Allow specific methods
             corsConfiguration.setAllowedHeaders(List.of("*")); // Allow all headers
             corsConfiguration.setExposedHeaders(List.of(

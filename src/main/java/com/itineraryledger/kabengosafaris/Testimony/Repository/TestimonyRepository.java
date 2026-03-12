@@ -25,6 +25,8 @@ public interface TestimonyRepository extends JpaRepository<Testimony, Long>, Jpa
 
     long countByIsApprovedTrue();
 
+    long countByIsApprovedTrueAndIsActiveTrue();
+
     long countByIsFeaturedTrue();
 
     long countByIsActiveTrue();

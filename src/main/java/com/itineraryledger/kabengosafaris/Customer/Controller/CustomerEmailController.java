@@ -102,10 +102,11 @@ public class CustomerEmailController {
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_CUSTOMER_EMAIL')")
     public ResponseEntity<ApiResponse<?>> getCustomerEmailById(
-        @PathVariable String idObfuscated
+        @PathVariable String idObfuscated,
+        @RequestParam(required = false) String scopeParentId
     ) {
         log.info("GET /api/customer-emails/{} - Fetching email by ID", idObfuscated);
-        return customerEmailGetService.getCustomerEmailById(idObfuscated);
+        return customerEmailGetService.getCustomerEmailById(idObfuscated, scopeParentId);
     }
 
     /**

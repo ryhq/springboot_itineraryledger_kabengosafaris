@@ -124,8 +124,11 @@ public class ParkImageController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_PARK_IMAGE')")
-    public ResponseEntity<?> getImageById(@PathVariable("id") String id) {
-        return getService.getImageById(id);
+    public ResponseEntity<?> getImageById(
+            @PathVariable("id") String id,
+            @RequestParam(required = false) String scopeParentId
+    ) {
+        return getService.getImageById(id, scopeParentId);
     }
 
     /**

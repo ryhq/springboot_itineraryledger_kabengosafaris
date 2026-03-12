@@ -55,7 +55,7 @@ public class CustomerPhoneGetService {
      * @param idObfuscated The obfuscated phone ID
      * @return ResponseEntity with ApiResponse containing the phone
      */
-    public ResponseEntity<ApiResponse<?>> getCustomerPhoneById(String idObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getCustomerPhoneById(String idObfuscated, String scopeParentId) {
         log.info("Fetching customer phone with ID: {}", idObfuscated);
 
         try {
@@ -89,16 +89,35 @@ public class CustomerPhoneGetService {
             // Convert to DTO
             CustomerPhoneDTO phoneDTO = convertToDTO(phone);
 
-            // Circular navigation
-            Long nextId = customerPhoneRepository.findNextId(id).orElse(null);
-            Long previousId = customerPhoneRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = customerPhoneRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = customerPhoneRepository.findLastId().orElse(null);
+            // Decode optional scope parent ID for scoped navigation
+            Long decodedParentId = null;
+            if (scopeParentId != null && !scopeParentId.isEmpty()) {
+                try {
+                    decodedParentId = idObfuscator.decodeId(scopeParentId);
+                } catch (Exception ex) {
+                    log.warn("Invalid scopeParentId: {}, falling back to global navigation", scopeParentId);
+                }
+            }
+
+            // Circular navigation (scoped if parent provided, global otherwise)
+            Long nextId, previousId;
+            if (decodedParentId != null) {
+                nextId = customerPhoneRepository.findNextIdByParent(id, decodedParentId).orElse(null);
+                previousId = customerPhoneRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
+                if (nextId == null) nextId = customerPhoneRepository.findFirstIdByParent(decodedParentId).orElse(null);
+                if (previousId == null) previousId = customerPhoneRepository.findLastIdByParent(decodedParentId).orElse(null);
+            } else {
+                nextId = customerPhoneRepository.findNextId(id).orElse(null);
+                previousId = customerPhoneRepository.findPreviousId(id).orElse(null);
+                if (nextId == null) nextId = customerPhoneRepository.findFirstId().orElse(null);
+                if (previousId == null) previousId = customerPhoneRepository.findLastId().orElse(null);
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("phone", phoneDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(

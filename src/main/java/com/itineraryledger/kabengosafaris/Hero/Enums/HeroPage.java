@@ -14,6 +14,7 @@ public enum HeroPage {
     SERVICES("Services", "Services overview page"),
     SAFARIS("Safaris", "Safari packages page"),
     DESTINATIONS("Destinations", "Destinations overview page"),
+    ACTIVITIES("Activities", "Activities and experiences page"),
     ACCOMMODATIONS("Accommodations", "Accommodations listing page"),
     GALLERY("Gallery", "Photo gallery page"),
     CONTACT("Contact", "Contact us page"),

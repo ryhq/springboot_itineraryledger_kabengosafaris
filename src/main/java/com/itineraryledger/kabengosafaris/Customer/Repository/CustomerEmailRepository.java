@@ -63,4 +63,20 @@ public interface CustomerEmailRepository extends JpaRepository<CustomerEmail, Lo
 
     @Query("SELECT e.id FROM CustomerEmail e ORDER BY e.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    // ========================
+    // SCOPED NAVIGATION QUERIES (parent-scoped next/previous)
+    // ========================
+
+    @Query("SELECT e.id FROM CustomerEmail e WHERE e.id > :currentId AND e.customer.id = :parentId ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findNextIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT e.id FROM CustomerEmail e WHERE e.id < :currentId AND e.customer.id = :parentId ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT e.id FROM CustomerEmail e WHERE e.customer.id = :parentId ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findFirstIdByParent(@Param("parentId") Long parentId);
+
+    @Query("SELECT e.id FROM CustomerEmail e WHERE e.customer.id = :parentId ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findLastIdByParent(@Param("parentId") Long parentId);
 }

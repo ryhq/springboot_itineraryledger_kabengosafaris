@@ -55,7 +55,7 @@ public class CustomerEmailGetService {
      * @param idObfuscated The obfuscated email ID
      * @return ResponseEntity with ApiResponse containing the email
      */
-    public ResponseEntity<ApiResponse<?>> getCustomerEmailById(String idObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getCustomerEmailById(String idObfuscated, String scopeParentId) {
         log.info("Fetching customer email with ID: {}", idObfuscated);
 
         try {
@@ -89,16 +89,35 @@ public class CustomerEmailGetService {
             // Convert to DTO
             CustomerEmailDTO emailDTO = convertToDTO(email);
 
-            // Circular navigation
-            Long nextId = customerEmailRepository.findNextId(id).orElse(null);
-            Long previousId = customerEmailRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = customerEmailRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = customerEmailRepository.findLastId().orElse(null);
+            // Decode optional scope parent ID for scoped navigation
+            Long decodedParentId = null;
+            if (scopeParentId != null && !scopeParentId.isEmpty()) {
+                try {
+                    decodedParentId = idObfuscator.decodeId(scopeParentId);
+                } catch (Exception ex) {
+                    log.warn("Invalid scopeParentId: {}, falling back to global navigation", scopeParentId);
+                }
+            }
+
+            // Circular navigation (scoped if parent provided, global otherwise)
+            Long nextId, previousId;
+            if (decodedParentId != null) {
+                nextId = customerEmailRepository.findNextIdByParent(id, decodedParentId).orElse(null);
+                previousId = customerEmailRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
+                if (nextId == null) nextId = customerEmailRepository.findFirstIdByParent(decodedParentId).orElse(null);
+                if (previousId == null) previousId = customerEmailRepository.findLastIdByParent(decodedParentId).orElse(null);
+            } else {
+                nextId = customerEmailRepository.findNextId(id).orElse(null);
+                previousId = customerEmailRepository.findPreviousId(id).orElse(null);
+                if (nextId == null) nextId = customerEmailRepository.findFirstId().orElse(null);
+                if (previousId == null) previousId = customerEmailRepository.findLastId().orElse(null);
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("email", emailDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(

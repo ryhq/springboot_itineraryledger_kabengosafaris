@@ -113,4 +113,20 @@ public interface AccommodationDocumentRepository extends JpaRepository<Accommoda
 
     @Query("SELECT doc.id FROM AccommodationDocument doc ORDER BY doc.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    // ========================
+    // SCOPED NAVIGATION QUERIES (parent-scoped next/previous)
+    // ========================
+
+    @Query("SELECT doc.id FROM AccommodationDocument doc WHERE doc.id > :currentId AND doc.accommodation.id = :parentId ORDER BY doc.id ASC LIMIT 1")
+    Optional<Long> findNextIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT doc.id FROM AccommodationDocument doc WHERE doc.id < :currentId AND doc.accommodation.id = :parentId ORDER BY doc.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT doc.id FROM AccommodationDocument doc WHERE doc.accommodation.id = :parentId ORDER BY doc.id ASC LIMIT 1")
+    Optional<Long> findFirstIdByParent(@Param("parentId") Long parentId);
+
+    @Query("SELECT doc.id FROM AccommodationDocument doc WHERE doc.accommodation.id = :parentId ORDER BY doc.id DESC LIMIT 1")
+    Optional<Long> findLastIdByParent(@Param("parentId") Long parentId);
 }

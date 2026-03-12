@@ -143,7 +143,7 @@ public class ActivityDocumentGetService {
         }
     }
 
-    public ResponseEntity<ApiResponse<?>> getDocumentById(String obfuscatedId) {
+    public ResponseEntity<ApiResponse<?>> getDocumentById(String obfuscatedId, String scopeParentId) {
         log.info("Fetching activity document with ID: {}", obfuscatedId);
 
         try {
@@ -166,16 +166,35 @@ public class ActivityDocumentGetService {
 
             ActivityDocumentDTO documentDTO = toDTO(document);
 
-            // Circular navigation
-            Long nextId = activityDocumentRepository.findNextId(id).orElse(null);
-            Long previousId = activityDocumentRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = activityDocumentRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = activityDocumentRepository.findLastId().orElse(null);
+            // Decode optional scope parent ID for scoped navigation
+            Long decodedParentId = null;
+            if (scopeParentId != null && !scopeParentId.isEmpty()) {
+                try {
+                    decodedParentId = idObfuscator.decodeId(scopeParentId);
+                } catch (Exception ex) {
+                    log.warn("Invalid scopeParentId: {}, falling back to global navigation", scopeParentId);
+                }
+            }
+
+            // Circular navigation (scoped if parent provided, global otherwise)
+            Long nextId, previousId;
+            if (decodedParentId != null) {
+                nextId = activityDocumentRepository.findNextIdByParent(id, decodedParentId).orElse(null);
+                previousId = activityDocumentRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
+                if (nextId == null) nextId = activityDocumentRepository.findFirstIdByParent(decodedParentId).orElse(null);
+                if (previousId == null) previousId = activityDocumentRepository.findLastIdByParent(decodedParentId).orElse(null);
+            } else {
+                nextId = activityDocumentRepository.findNextId(id).orElse(null);
+                previousId = activityDocumentRepository.findPreviousId(id).orElse(null);
+                if (nextId == null) nextId = activityDocumentRepository.findFirstId().orElse(null);
+                if (previousId == null) previousId = activityDocumentRepository.findLastId().orElse(null);
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("document", documentDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Activity document retrieved successfully", response)

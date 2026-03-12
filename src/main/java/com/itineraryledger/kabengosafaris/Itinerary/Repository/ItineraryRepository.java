@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -41,4 +42,6 @@ public interface ItineraryRepository extends JpaRepository<Itinerary, Long>, Jpa
 
     @Query("SELECT e.id FROM Itinerary e ORDER BY e.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    List<Itinerary> findByStatusAndIsActiveTrue(ItineraryStatus status);
 }

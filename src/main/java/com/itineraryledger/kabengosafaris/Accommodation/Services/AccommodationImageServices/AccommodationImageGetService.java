@@ -186,7 +186,7 @@ public class AccommodationImageGetService {
     /**
      * Get image by ID
      */
-    public ResponseEntity<?> getImageById(String obfuscatedId) {
+    public ResponseEntity<?> getImageById(String obfuscatedId, String scopeParentId) {
         Long id;
         try {
             id = idObfuscator.decodeId(obfuscatedId);
@@ -206,16 +206,35 @@ public class AccommodationImageGetService {
 
         AccommodationImageDTO imageDTO = toDTO(image);
 
-        // Circular navigation
-        Long nextId = accommodationImageRepository.findNextId(id).orElse(null);
-        Long previousId = accommodationImageRepository.findPreviousId(id).orElse(null);
-        if (nextId == null) nextId = accommodationImageRepository.findFirstId().orElse(null);
-        if (previousId == null) previousId = accommodationImageRepository.findLastId().orElse(null);
+        // Decode optional scope parent ID for scoped navigation
+        Long decodedParentId = null;
+        if (scopeParentId != null && !scopeParentId.isEmpty()) {
+            try {
+                decodedParentId = idObfuscator.decodeId(scopeParentId);
+            } catch (Exception ex) {
+                log.warn("Invalid scopeParentId: {}, falling back to global navigation", scopeParentId);
+            }
+        }
+
+        // Circular navigation (scoped if parent provided, global otherwise)
+        Long nextId, previousId;
+        if (decodedParentId != null) {
+            nextId = accommodationImageRepository.findNextIdByParent(id, decodedParentId).orElse(null);
+            previousId = accommodationImageRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
+            if (nextId == null) nextId = accommodationImageRepository.findFirstIdByParent(decodedParentId).orElse(null);
+            if (previousId == null) previousId = accommodationImageRepository.findLastIdByParent(decodedParentId).orElse(null);
+        } else {
+            nextId = accommodationImageRepository.findNextId(id).orElse(null);
+            previousId = accommodationImageRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = accommodationImageRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = accommodationImageRepository.findLastId().orElse(null);
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("image", imageDTO);
         response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
         response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+        response.put("scopeParentId", scopeParentId);
 
         return ResponseEntity.ok(ApiResponse.success(200, "Image retrieved successfully.", response));
     }

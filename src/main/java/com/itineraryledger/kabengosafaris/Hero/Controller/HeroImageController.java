@@ -115,10 +115,11 @@ public class HeroImageController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_HERO_IMAGE')")
     public ResponseEntity<?> getImageById(
-        @PathVariable("id") String id
+        @PathVariable("id") String id,
+        @RequestParam(required = false) String scopeParentId
     ) {
         log.info("GET /api/hero-images/{} - Fetching image by ID", id);
-        return getService.getImageById(id);
+        return getService.getImageById(id, scopeParentId);
     }
 
     /**

@@ -63,4 +63,20 @@ public interface CustomerPhoneRepository extends JpaRepository<CustomerPhone, Lo
 
     @Query("SELECT p.id FROM CustomerPhone p ORDER BY p.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    // ========================
+    // SCOPED NAVIGATION QUERIES (parent-scoped next/previous)
+    // ========================
+
+    @Query("SELECT p.id FROM CustomerPhone p WHERE p.id > :currentId AND p.customer.id = :parentId ORDER BY p.id ASC LIMIT 1")
+    Optional<Long> findNextIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT p.id FROM CustomerPhone p WHERE p.id < :currentId AND p.customer.id = :parentId ORDER BY p.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT p.id FROM CustomerPhone p WHERE p.customer.id = :parentId ORDER BY p.id ASC LIMIT 1")
+    Optional<Long> findFirstIdByParent(@Param("parentId") Long parentId);
+
+    @Query("SELECT p.id FROM CustomerPhone p WHERE p.customer.id = :parentId ORDER BY p.id DESC LIMIT 1")
+    Optional<Long> findLastIdByParent(@Param("parentId") Long parentId);
 }

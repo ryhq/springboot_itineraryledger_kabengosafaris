@@ -119,8 +119,11 @@ public class AccommodationDocumentController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_ACCOMMODATION_DOCUMENT')")
-    public ResponseEntity<?> getDocumentById(@PathVariable("id") String id) {
-        return getService.getDocumentById(id);
+    public ResponseEntity<?> getDocumentById(
+            @PathVariable("id") String id,
+            @RequestParam(value = "scopeParentId", required = false) String scopeParentId
+    ) {
+        return getService.getDocumentById(id, scopeParentId);
     }
 
     /**

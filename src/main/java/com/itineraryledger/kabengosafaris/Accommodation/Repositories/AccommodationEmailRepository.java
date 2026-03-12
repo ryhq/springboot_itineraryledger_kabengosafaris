@@ -52,4 +52,20 @@ public interface AccommodationEmailRepository extends JpaRepository<Accommodatio
 
     @Query("SELECT e.id FROM AccommodationEmail e ORDER BY e.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    // ========================
+    // SCOPED NAVIGATION QUERIES (parent-scoped next/previous)
+    // ========================
+
+    @Query("SELECT e.id FROM AccommodationEmail e WHERE e.id > :currentId AND e.accommodation.id = :parentId ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findNextIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT e.id FROM AccommodationEmail e WHERE e.id < :currentId AND e.accommodation.id = :parentId ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT e.id FROM AccommodationEmail e WHERE e.accommodation.id = :parentId ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findFirstIdByParent(@Param("parentId") Long parentId);
+
+    @Query("SELECT e.id FROM AccommodationEmail e WHERE e.accommodation.id = :parentId ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findLastIdByParent(@Param("parentId") Long parentId);
 }

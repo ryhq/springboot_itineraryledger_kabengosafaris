@@ -125,8 +125,11 @@ public class AccommodationImageController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_ACCOMMODATION_IMAGE')")
-    public ResponseEntity<?> getImageById(@PathVariable("id") String id) {
-        return getService.getImageById(id);
+    public ResponseEntity<?> getImageById(
+            @PathVariable("id") String id,
+            @RequestParam(value = "scopeParentId", required = false) String scopeParentId
+    ) {
+        return getService.getImageById(id, scopeParentId);
     }
 
     /**

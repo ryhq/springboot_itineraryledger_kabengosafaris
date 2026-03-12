@@ -118,8 +118,11 @@ public class ParkDocumentController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_PARK_DOCUMENT')")
-    public ResponseEntity<?> getDocumentById(@PathVariable("id") String id) {
-        return getService.getDocumentById(id);
+    public ResponseEntity<?> getDocumentById(
+            @PathVariable("id") String id,
+            @RequestParam(required = false) String scopeParentId
+    ) {
+        return getService.getDocumentById(id, scopeParentId);
     }
 
     /**

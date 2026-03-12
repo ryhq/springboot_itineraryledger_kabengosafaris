@@ -102,10 +102,11 @@ public class CustomerPhoneController {
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_CUSTOMER_PHONE')")
     public ResponseEntity<ApiResponse<?>> getCustomerPhoneById(
-        @PathVariable String idObfuscated
+        @PathVariable String idObfuscated,
+        @RequestParam(required = false) String scopeParentId
     ) {
         log.info("GET /api/customer-phones/{} - Fetching phone by ID", idObfuscated);
-        return customerPhoneGetService.getCustomerPhoneById(idObfuscated);
+        return customerPhoneGetService.getCustomerPhoneById(idObfuscated, scopeParentId);
     }
 
     /**

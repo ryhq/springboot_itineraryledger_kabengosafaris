@@ -64,4 +64,20 @@ public interface ActivityDocumentRepository extends JpaRepository<ActivityDocume
 
     @Query("SELECT ad.id FROM ActivityDocument ad ORDER BY ad.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    // ========================
+    // SCOPED NAVIGATION QUERIES (parent-scoped next/previous)
+    // ========================
+
+    @Query("SELECT ad.id FROM ActivityDocument ad WHERE ad.id > :currentId AND ad.activity.id = :parentId ORDER BY ad.id ASC LIMIT 1")
+    Optional<Long> findNextIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT ad.id FROM ActivityDocument ad WHERE ad.id < :currentId AND ad.activity.id = :parentId ORDER BY ad.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT ad.id FROM ActivityDocument ad WHERE ad.activity.id = :parentId ORDER BY ad.id ASC LIMIT 1")
+    Optional<Long> findFirstIdByParent(@Param("parentId") Long parentId);
+
+    @Query("SELECT ad.id FROM ActivityDocument ad WHERE ad.activity.id = :parentId ORDER BY ad.id DESC LIMIT 1")
+    Optional<Long> findLastIdByParent(@Param("parentId") Long parentId);
 }

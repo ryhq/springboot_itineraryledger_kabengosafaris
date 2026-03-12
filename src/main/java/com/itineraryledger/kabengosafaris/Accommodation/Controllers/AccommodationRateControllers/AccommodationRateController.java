@@ -48,10 +48,11 @@ public class AccommodationRateController {
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_ACCOMMODATION_RATE')")
     public ResponseEntity<ApiResponse<?>> getRateById(
-        @PathVariable String idObfuscated
+        @PathVariable String idObfuscated,
+        @RequestParam(required = false) String scopeParentId
     ) {
         log.info("GET /api/accommodation-rates/{} - Fetching rate", idObfuscated);
-        return getService.getRateById(idObfuscated);
+        return getService.getRateById(idObfuscated, scopeParentId);
     }
 
     /**

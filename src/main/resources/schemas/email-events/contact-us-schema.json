@@ -1,0 +1,49 @@
+[
+  {
+    "name": "contactCode",
+    "description": "Auto-generated contact message reference code (e.g., MSG-0001-03-26)",
+    "isRequired": true
+  },
+  {
+    "name": "name",
+    "description": "Full name of the person who submitted the contact form",
+    "isRequired": true
+  },
+  {
+    "name": "email",
+    "description": "Email address of the person who submitted the contact form",
+    "isRequired": true
+  },
+  {
+    "name": "phone",
+    "description": "Phone number of the person (if provided)",
+    "isRequired": false
+  },
+  {
+    "name": "subject",
+    "description": "Subject line of the contact message (if provided)",
+    "isRequired": false
+  },
+  {
+    "name": "message",
+    "description": "The full message content submitted through the contact form",
+    "isRequired": true
+  },
+  {
+    "name": "source",
+    "description": "Where the message originated (e.g., WEBSITE)",
+    "isRequired": false,
+    "defaultValue": "WEBSITE"
+  },
+  {
+    "name": "preferredLocale",
+    "description": "Sender's preferred language (e.g., 'en', 'fr', 'de')",
+    "isRequired": false,
+    "defaultValue": "en"
+  },
+  {
+    "name": "contactDate",
+    "description": "Date and time the contact form was submitted (MMMM dd, yyyy at hh:mm a format)",
+    "isRequired": true
+  }
+]

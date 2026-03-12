@@ -93,6 +93,9 @@ public class Itinerary {
     @Column(name = "created_by")
     private Long createdBy; // User ID who created this itinerary
 
+    @Column(name = "primary_image_url", length = 500)
+    private String primaryImageUrl; // Admin-set primary image URL for public views
+
     @Lob
     @Column(name = "internal_notes", columnDefinition = "TEXT")
     private String internalNotes; // Staff notes, not visible to customers

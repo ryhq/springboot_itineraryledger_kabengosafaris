@@ -211,7 +211,7 @@ public class AccommodationDocumentGetService {
      * @param obfuscatedId The obfuscated document ID
      * @return ResponseEntity with ApiResponse containing document or error
      */
-    public ResponseEntity<?> getDocumentById(String obfuscatedId) {
+    public ResponseEntity<?> getDocumentById(String obfuscatedId, String scopeParentId) {
         log.info("Getting accommodation document with ID: {}", obfuscatedId);
 
         try {
@@ -226,16 +226,35 @@ public class AccommodationDocumentGetService {
 
             AccommodationDocumentDTO documentDTO = toDTO(document);
 
-            // Circular navigation
-            Long nextId = accommodationDocumentRepository.findNextId(id).orElse(null);
-            Long previousId = accommodationDocumentRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = accommodationDocumentRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = accommodationDocumentRepository.findLastId().orElse(null);
+            // Decode optional scope parent ID for scoped navigation
+            Long decodedParentId = null;
+            if (scopeParentId != null && !scopeParentId.isEmpty()) {
+                try {
+                    decodedParentId = idObfuscator.decodeId(scopeParentId);
+                } catch (Exception ex) {
+                    log.warn("Invalid scopeParentId: {}, falling back to global navigation", scopeParentId);
+                }
+            }
+
+            // Circular navigation (scoped if parent provided, global otherwise)
+            Long nextId, previousId;
+            if (decodedParentId != null) {
+                nextId = accommodationDocumentRepository.findNextIdByParent(id, decodedParentId).orElse(null);
+                previousId = accommodationDocumentRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
+                if (nextId == null) nextId = accommodationDocumentRepository.findFirstIdByParent(decodedParentId).orElse(null);
+                if (previousId == null) previousId = accommodationDocumentRepository.findLastIdByParent(decodedParentId).orElse(null);
+            } else {
+                nextId = accommodationDocumentRepository.findNextId(id).orElse(null);
+                previousId = accommodationDocumentRepository.findPreviousId(id).orElse(null);
+                if (nextId == null) nextId = accommodationDocumentRepository.findFirstId().orElse(null);
+                if (previousId == null) previousId = accommodationDocumentRepository.findLastId().orElse(null);
+            }
 
             Map<String, Object> responseMap = new HashMap<>();
             responseMap.put("document", documentDTO);
             responseMap.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             responseMap.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            responseMap.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok(ApiResponse.success(200, "Document retrieved successfully", responseMap));
 

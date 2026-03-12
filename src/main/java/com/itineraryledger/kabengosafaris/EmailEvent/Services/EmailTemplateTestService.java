@@ -181,9 +181,14 @@ public class EmailTemplateTestService {
             case "BACKUP_FAILURE":
                 return generateBackupFailureTestData(user);
 
-            // Add more cases as email events are implemented
-            // case "EMAIL_VERIFICATION":
-            //     return generateEmailVerificationTestData(user);
+            case "NEWSLETTER_SUBSCRIPTION":
+                return generateNewsletterSubscriptionTestData(user);
+
+            case "BOOKING_INQUIRY":
+                return generateBookingInquiryTestData(user);
+
+            case "CONTACT_US":
+                return generateContactUsTestData(user);
 
             default:
                 throw new UnsupportedOperationException(
@@ -324,7 +329,80 @@ public class EmailTemplateTestService {
         return new TestEmailData(variables, subject);
     }
 
-    // Add more test data generators for other email event types as needed
+    private TestEmailData generateNewsletterSubscriptionTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+
+        variables.put("subscriberEmail", user.getEmail());
+        variables.put("subscriberName", user.getFirstName() + " " + user.getLastName());
+        variables.put("subscriptionDate", LocalDateTime.now().format(
+                DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm a")));
+        variables.put("preferredLocale", "en");
+        variables.put("source", "WEBSITE");
+        variables.put("isResubscription", "false");
+        variables.put("linkedCustomerName", user.getFirstName() + " " + user.getLastName());
+        variables.put("totalActiveSubscribers", "142");
+
+        String subject = "[TEST] New Newsletter Subscription: " + user.getEmail();
+
+        return new TestEmailData(variables, subject);
+    }
+
+    private TestEmailData generateBookingInquiryTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
+
+        variables.put("inquiryCode", "INQ-0001-" + String.format("%02d-%02d", now.getMonthValue(), now.getYear() % 100));
+        variables.put("firstName", user.getFirstName() != null ? user.getFirstName() : "John");
+        variables.put("lastName", user.getLastName() != null ? user.getLastName() : "Doe");
+        variables.put("email", user.getEmail());
+        variables.put("phone", "+255 700 123 456");
+        variables.put("country", "United States");
+        variables.put("adults", "2");
+        variables.put("children", "1");
+        variables.put("totalTravelers", "3");
+        variables.put("preferredStartDate", now.plusMonths(2).format(dateFormatter));
+        variables.put("preferredEndDate", now.plusMonths(2).plusDays(7).format(dateFormatter));
+        variables.put("budgetCategory", "MID_RANGE");
+        variables.put("tripType", "WILDLIFE_SAFARI");
+        variables.put("specialRequests", "We would love to see the Great Migration if possible. Vegetarian meals preferred.");
+        variables.put("message", "Hi, we're planning a family safari trip to Tanzania and would love to get more details about your packages.");
+        variables.put("source", "WEBSITE");
+        variables.put("preferredLocale", "en");
+        variables.put("inquiryDate", now.format(DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm a")));
+        variables.put("itineraryName", "7-Day Serengeti & Ngorongoro Safari");
+        variables.put("itineraryCode", "SAF-001");
+        variables.put("itineraryTotalDays", "7");
+        variables.put("itineraryTotalNights", "6");
+        variables.put("itineraryStartLocation", "Arusha");
+        variables.put("itineraryEndLocation", "Arusha");
+        variables.put("itineraryDescription", "Experience the best of Northern Tanzania with visits to Serengeti, Ngorongoro Crater, and Lake Manyara.");
+
+        String subject = "[TEST] New Booking Inquiry: " + variables.get("inquiryCode") + " - " + variables.get("firstName") + " " + variables.get("lastName");
+
+        return new TestEmailData(variables, subject);
+    }
+
+    private TestEmailData generateContactUsTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+
+        LocalDateTime now = LocalDateTime.now();
+
+        variables.put("contactCode", "MSG-0001-" + String.format("%02d-%02d", now.getMonthValue(), now.getYear() % 100));
+        variables.put("name", user.getFirstName() + " " + user.getLastName());
+        variables.put("email", user.getEmail());
+        variables.put("phone", "+255 700 987 654");
+        variables.put("subject", "Safari Package Inquiry");
+        variables.put("message", "Hello, I would like to know more about your 5-day Serengeti safari package. Could you please send me the detailed itinerary and pricing? We are a group of 4 adults planning to visit in August.");
+        variables.put("source", "WEBSITE");
+        variables.put("preferredLocale", "en");
+        variables.put("contactDate", now.format(DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm a")));
+
+        String subject = "[TEST] New Contact Message: " + variables.get("contactCode") + " - " + variables.get("subject");
+
+        return new TestEmailData(variables, subject);
+    }
 
     /**
      * Replace {{variableName}} placeholders with actual values

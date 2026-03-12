@@ -26,6 +26,7 @@ import com.itineraryledger.kabengosafaris.Testimony.Repository.TestimonyReposito
 import com.itineraryledger.kabengosafaris.Testimony.Specifications.TestimonySpecification;
 import com.itineraryledger.kabengosafaris.Testimony.DTOs.TestimonyDTO;
 import com.itineraryledger.kabengosafaris.Testimony.DTOs.TestimonyListItemDTO;
+import com.itineraryledger.kabengosafaris.Public.Services.PublicTranslationService;
 import com.itineraryledger.kabengosafaris.Testimony.Services.TestimonyImageServices.TestimonyImageStorageService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,7 @@ public class TestimonyGetService {
     private final TestimonyRepository testimonyRepository;
     private final IdObfuscator idObfuscator;
     private final TestimonyImageStorageService storageService;
+    private final PublicTranslationService publicTranslationService;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "authorName", "rating", "source", "reviewDate", "isApproved", "isFeatured",
@@ -49,11 +51,13 @@ public class TestimonyGetService {
     public TestimonyGetService(
         TestimonyRepository testimonyRepository,
         IdObfuscator idObfuscator,
-        TestimonyImageStorageService storageService
+        TestimonyImageStorageService storageService,
+        PublicTranslationService publicTranslationService
     ) {
         this.testimonyRepository = testimonyRepository;
         this.idObfuscator = idObfuscator;
         this.storageService = storageService;
+        this.publicTranslationService = publicTranslationService;
     }
 
     public ResponseEntity<ApiResponse<?>> getTestimonyById(String idObfuscated) {
@@ -97,11 +101,30 @@ public class TestimonyGetService {
         }
     }
 
+    public long getApprovedActiveCount() {
+        return testimonyRepository.countByIsApprovedTrueAndIsActiveTrue();
+    }
+
     public ResponseEntity<ApiResponse<?>> getPublicTestimonies() {
         log.info("Fetching public approved testimonies");
         try {
             List<Testimony> testimonies = testimonyRepository.findByIsApprovedTrueAndIsActiveTrueOrderByDisplayOrderAsc();
             List<TestimonyDTO> dtos = testimonies.stream().map(this::convertToDTO).collect(Collectors.toList());
+            return ResponseEntity.ok().body(ApiResponse.success(200, "Testimonies retrieved successfully", dtos));
+        } catch (Exception e) {
+            log.error("Error fetching public testimonies", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to fetch testimonies", "TESTIMONIES_FETCH_FAILED")
+            );
+        }
+    }
+
+    public ResponseEntity<ApiResponse<?>> getPublicTestimonies(String lang) {
+        log.info("Fetching public approved testimonies with lang: {}", lang);
+        try {
+            List<Testimony> testimonies = testimonyRepository.findByIsApprovedTrueAndIsActiveTrueOrderByDisplayOrderAsc();
+            List<TestimonyDTO> dtos = testimonies.stream().map(this::convertToDTO).collect(Collectors.toList());
+            publicTranslationService.translateDtoList(dtos, lang);
             return ResponseEntity.ok().body(ApiResponse.success(200, "Testimonies retrieved successfully", dtos));
         } catch (Exception e) {
             log.error("Error fetching public testimonies", e);
@@ -121,6 +144,87 @@ public class TestimonyGetService {
             log.error("Error fetching featured testimonies", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 ApiResponse.error(500, "Failed to fetch featured testimonies", "FEATURED_TESTIMONIES_FETCH_FAILED")
+            );
+        }
+    }
+
+    public ResponseEntity<ApiResponse<?>> getFeaturedTestimonies(String lang) {
+        log.info("Fetching featured testimonies with lang: {}", lang);
+        try {
+            List<Testimony> testimonies = testimonyRepository.findByIsFeaturedTrueAndIsApprovedTrueAndIsActiveTrueOrderByDisplayOrderAsc();
+            List<TestimonyDTO> dtos = testimonies.stream().map(this::convertToDTO).collect(Collectors.toList());
+            publicTranslationService.translateDtoList(dtos, lang);
+            return ResponseEntity.ok().body(ApiResponse.success(200, "Featured testimonies retrieved successfully", dtos));
+        } catch (Exception e) {
+            log.error("Error fetching featured testimonies", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to fetch featured testimonies", "FEATURED_TESTIMONIES_FETCH_FAILED")
+            );
+        }
+    }
+
+    public ResponseEntity<ApiResponse<?>> getPublicTestimoniesPaginated(Integer page, Integer size) {
+        log.info("Fetching public testimonies paginated - page: {}, size: {}", page, size);
+        try {
+            page = page != null ? page : 0;
+            size = size != null ? size : 3;
+
+            Specification<Testimony> spec = TestimonySpecification.isApproved(true)
+                .and(TestimonySpecification.isActive(true));
+
+            Pageable pageable = PageRequest.of(page, size, Sort.by("displayOrder").ascending());
+            Page<Testimony> testimonyPage = testimonyRepository.findAll(spec, pageable);
+
+            List<TestimonyDTO> dtos = testimonyPage.getContent().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("testimonies", dtos);
+            response.put("currentPage", testimonyPage.getNumber());
+            response.put("totalItems", testimonyPage.getTotalElements());
+            response.put("totalPages", testimonyPage.getTotalPages());
+            response.put("pageSize", testimonyPage.getSize());
+
+            return ResponseEntity.ok().body(ApiResponse.success(200, "Testimonies retrieved successfully", response));
+        } catch (Exception e) {
+            log.error("Error fetching paginated public testimonies", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to fetch testimonies", "TESTIMONIES_FETCH_FAILED")
+            );
+        }
+    }
+
+    public ResponseEntity<ApiResponse<?>> getPublicTestimoniesPaginated(Integer page, Integer size, String lang) {
+        log.info("Fetching public testimonies paginated with lang: {} - page: {}, size: {}", lang, page, size);
+        try {
+            page = page != null ? page : 0;
+            size = size != null ? size : 3;
+
+            Specification<Testimony> spec = TestimonySpecification.isApproved(true)
+                .and(TestimonySpecification.isActive(true));
+
+            Pageable pageable = PageRequest.of(page, size, Sort.by("displayOrder").ascending());
+            Page<Testimony> testimonyPage = testimonyRepository.findAll(spec, pageable);
+
+            List<TestimonyDTO> dtos = testimonyPage.getContent().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+            publicTranslationService.translateDtoList(dtos, lang);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("testimonies", dtos);
+            response.put("currentPage", testimonyPage.getNumber());
+            response.put("totalItems", testimonyPage.getTotalElements());
+            response.put("totalPages", testimonyPage.getTotalPages());
+            response.put("pageSize", testimonyPage.getSize());
+
+            return ResponseEntity.ok().body(ApiResponse.success(200, "Testimonies retrieved successfully", response));
+        } catch (Exception e) {
+            log.error("Error fetching paginated public testimonies", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to fetch testimonies", "TESTIMONIES_FETCH_FAILED")
             );
         }
     }

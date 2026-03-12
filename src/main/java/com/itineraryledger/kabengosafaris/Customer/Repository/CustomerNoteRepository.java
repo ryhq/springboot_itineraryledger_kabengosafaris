@@ -57,4 +57,20 @@ public interface CustomerNoteRepository extends JpaRepository<CustomerNote, Long
 
     @Query("SELECT n.id FROM CustomerNote n ORDER BY n.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    // ========================
+    // SCOPED NAVIGATION QUERIES (parent-scoped next/previous)
+    // ========================
+
+    @Query("SELECT n.id FROM CustomerNote n WHERE n.id > :currentId AND n.customer.id = :parentId ORDER BY n.id ASC LIMIT 1")
+    Optional<Long> findNextIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT n.id FROM CustomerNote n WHERE n.id < :currentId AND n.customer.id = :parentId ORDER BY n.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT n.id FROM CustomerNote n WHERE n.customer.id = :parentId ORDER BY n.id ASC LIMIT 1")
+    Optional<Long> findFirstIdByParent(@Param("parentId") Long parentId);
+
+    @Query("SELECT n.id FROM CustomerNote n WHERE n.customer.id = :parentId ORDER BY n.id DESC LIMIT 1")
+    Optional<Long> findLastIdByParent(@Param("parentId") Long parentId);
 }

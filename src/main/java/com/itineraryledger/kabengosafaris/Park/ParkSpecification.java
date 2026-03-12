@@ -165,6 +165,7 @@ public class ParkSpecification {
             if (isActive == null) {
                 return cb.conjunction();
             }
+            query.distinct(true);
             return cb.equal(root.get("isActive"), isActive);
         };
     }

@@ -45,4 +45,20 @@ public interface TestimonyImageRepository extends JpaRepository<TestimonyImage, 
 
     @Query("SELECT i.id FROM TestimonyImage i ORDER BY i.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    // ========================
+    // SCOPED NAVIGATION QUERIES (parent-scoped next/previous)
+    // ========================
+
+    @Query("SELECT i.id FROM TestimonyImage i WHERE i.id > :currentId AND i.testimony.id = :parentId ORDER BY i.id ASC LIMIT 1")
+    Optional<Long> findNextIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT i.id FROM TestimonyImage i WHERE i.id < :currentId AND i.testimony.id = :parentId ORDER BY i.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT i.id FROM TestimonyImage i WHERE i.testimony.id = :parentId ORDER BY i.id ASC LIMIT 1")
+    Optional<Long> findFirstIdByParent(@Param("parentId") Long parentId);
+
+    @Query("SELECT i.id FROM TestimonyImage i WHERE i.testimony.id = :parentId ORDER BY i.id DESC LIMIT 1")
+    Optional<Long> findLastIdByParent(@Param("parentId") Long parentId);
 }

@@ -398,7 +398,7 @@ public class TranslationService {
      * Translate plain text content (no HTML).
      * @throws LibreTranslateService.TranslationException if translation fails
      */
-    private String translatePlainText(String content, String sourceLanguage, String targetLanguage)
+    public String translatePlainText(String content, String sourceLanguage, String targetLanguage)
             throws LibreTranslateService.TranslationException {
         // Check if content needs chunking
         int maxChars = settingsService.getMaxCharacters();

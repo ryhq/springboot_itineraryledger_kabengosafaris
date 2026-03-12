@@ -105,10 +105,11 @@ public class AccommodationEmailController {
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_ACCOMMODATION_EMAIL')")
     public ResponseEntity<ApiResponse<?>> getAccommodationEmailById(
-        @PathVariable String idObfuscated
+        @PathVariable String idObfuscated,
+        @RequestParam(required = false) String scopeParentId
     ) {
         log.info("GET /api/accommodation-emails/{} - Fetching email by ID", idObfuscated);
-        return accommodationEmailGetService.getAccommodationEmailById(idObfuscated);
+        return accommodationEmailGetService.getAccommodationEmailById(idObfuscated, scopeParentId);
     }
 
     /**

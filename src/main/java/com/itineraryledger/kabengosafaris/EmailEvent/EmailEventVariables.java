@@ -37,6 +37,9 @@ public class EmailEventVariables {
             case "PASSWORD_RESET" -> loadSchema("password-reset-schema.json");
             case "BACKUP_SUCCESS" -> loadSchema("backup-success-schema.json");
             case "BACKUP_FAILURE" -> loadSchema("backup-failure-schema.json");
+            case "NEWSLETTER_SUBSCRIPTION" -> loadSchema("newsletter-subscription-schema.json");
+            case "BOOKING_INQUIRY" -> loadSchema("booking-inquiry-schema.json");
+            case "CONTACT_US" -> loadSchema("contact-us-schema.json");
             default -> "[]";
         };
     }
@@ -50,6 +53,9 @@ public class EmailEventVariables {
             case "PASSWORD_RESET" -> "Password Reset";
             case "BACKUP_SUCCESS" -> "Backup Success";
             case "BACKUP_FAILURE" -> "Backup Failure";
+            case "NEWSLETTER_SUBSCRIPTION" -> "Newsletter Subscription";
+            case "BOOKING_INQUIRY" -> "Booking Inquiry";
+            case "CONTACT_US" -> "Contact Us";
             default -> eventName;
         };
     }
@@ -63,6 +69,9 @@ public class EmailEventVariables {
             case "PASSWORD_RESET" -> "Email sent when a user requests to reset their password. Includes password reset link.";
             case "BACKUP_SUCCESS" -> "Email notification sent when a backup completes successfully. Includes backup details and download link.";
             case "BACKUP_FAILURE" -> "Email alert sent when a backup operation fails. Includes error details and last successful backup information.";
+            case "NEWSLETTER_SUBSCRIPTION" -> "Admin notification sent when someone subscribes to the newsletter. Includes subscriber details.";
+            case "BOOKING_INQUIRY" -> "Admin notification sent when a new booking inquiry is submitted. Includes full inquiry details and traveler information.";
+            case "CONTACT_US" -> "Admin notification sent when someone submits a message through the Contact Us form. Includes sender details and message content.";
             default -> "";
         };
     }
@@ -77,7 +86,10 @@ public class EmailEventVariables {
             "USER_REGISTRATION",
             "PASSWORD_RESET",
             "BACKUP_SUCCESS",
-            "BACKUP_FAILURE"
+            "BACKUP_FAILURE",
+            "NEWSLETTER_SUBSCRIPTION",
+            "BOOKING_INQUIRY",
+            "CONTACT_US"
         };
     }
 

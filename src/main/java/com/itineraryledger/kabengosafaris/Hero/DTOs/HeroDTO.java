@@ -3,6 +3,7 @@ package com.itineraryledger.kabengosafaris.Hero.DTOs;
 import java.time.LocalDateTime;
 
 import com.itineraryledger.kabengosafaris.Hero.Enums.HeroPage;
+import com.itineraryledger.kabengosafaris.Public.Annotations.Translatable;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,17 +21,17 @@ public class HeroDTO {
 
     private String id; // Obfuscated ID
 
-    private String title;
+    @Translatable private String title;
 
-    private String subtitle;
+    @Translatable private String subtitle;
 
-    private String description;
+    @Translatable private String description;
 
     private HeroPage page;
 
-    private String pageDisplayName;
+    @Translatable private String pageDisplayName;
 
-    private String ctaText;
+    @Translatable private String ctaText;
 
     private String ctaLink;
 

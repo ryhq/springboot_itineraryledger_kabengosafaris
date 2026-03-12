@@ -164,7 +164,7 @@ public class ParkImageGetService {
         return ResponseEntity.ok(ApiResponse.success(200, "Park images retrieved successfully", response));
     }
 
-    public ResponseEntity<?> getImageById(String obfuscatedId) {
+    public ResponseEntity<?> getImageById(String obfuscatedId, String scopeParentId) {
         log.info("Getting park image with ID: {}", obfuscatedId);
 
         try {
@@ -179,16 +179,35 @@ public class ParkImageGetService {
 
             ParkImageDTO imageDTO = toDTO(image);
 
-            // Circular navigation
-            Long nextId = parkImageRepository.findNextId(id).orElse(null);
-            Long previousId = parkImageRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = parkImageRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = parkImageRepository.findLastId().orElse(null);
+            // Decode optional scope parent ID for scoped navigation
+            Long decodedParentId = null;
+            if (scopeParentId != null && !scopeParentId.isEmpty()) {
+                try {
+                    decodedParentId = idObfuscator.decodeId(scopeParentId);
+                } catch (Exception ex) {
+                    log.warn("Invalid scopeParentId: {}, falling back to global navigation", scopeParentId);
+                }
+            }
+
+            // Circular navigation (scoped if parent provided, global otherwise)
+            Long nextId, previousId;
+            if (decodedParentId != null) {
+                nextId = parkImageRepository.findNextIdByParent(id, decodedParentId).orElse(null);
+                previousId = parkImageRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
+                if (nextId == null) nextId = parkImageRepository.findFirstIdByParent(decodedParentId).orElse(null);
+                if (previousId == null) previousId = parkImageRepository.findLastIdByParent(decodedParentId).orElse(null);
+            } else {
+                nextId = parkImageRepository.findNextId(id).orElse(null);
+                previousId = parkImageRepository.findPreviousId(id).orElse(null);
+                if (nextId == null) nextId = parkImageRepository.findFirstId().orElse(null);
+                if (previousId == null) previousId = parkImageRepository.findLastId().orElse(null);
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("image", imageDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok(ApiResponse.success(200, "Park image retrieved successfully", response));
 

@@ -61,4 +61,20 @@ public interface AccommodationRoomTypeRepository extends JpaRepository<Accommoda
 
     @Query("SELECT r.id FROM AccommodationRoomType r ORDER BY r.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    // ========================
+    // SCOPED NAVIGATION QUERIES (parent-scoped next/previous)
+    // ========================
+
+    @Query("SELECT r.id FROM AccommodationRoomType r WHERE r.id > :currentId AND r.accommodation.id = :parentId ORDER BY r.id ASC LIMIT 1")
+    Optional<Long> findNextIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT r.id FROM AccommodationRoomType r WHERE r.id < :currentId AND r.accommodation.id = :parentId ORDER BY r.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdByParent(@Param("currentId") Long currentId, @Param("parentId") Long parentId);
+
+    @Query("SELECT r.id FROM AccommodationRoomType r WHERE r.accommodation.id = :parentId ORDER BY r.id ASC LIMIT 1")
+    Optional<Long> findFirstIdByParent(@Param("parentId") Long parentId);
+
+    @Query("SELECT r.id FROM AccommodationRoomType r WHERE r.accommodation.id = :parentId ORDER BY r.id DESC LIMIT 1")
+    Optional<Long> findLastIdByParent(@Param("parentId") Long parentId);
 }

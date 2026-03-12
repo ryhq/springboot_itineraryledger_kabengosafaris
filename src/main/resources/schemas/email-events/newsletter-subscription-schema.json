@@ -1,0 +1,45 @@
+[
+  {
+    "name": "subscriberEmail",
+    "description": "Email address of the new subscriber",
+    "isRequired": true
+  },
+  {
+    "name": "subscriberName",
+    "description": "Name of the subscriber (if provided)",
+    "isRequired": false
+  },
+  {
+    "name": "subscriptionDate",
+    "description": "Date and time of subscription (yyyy-MM-dd HH:mm:ss format)",
+    "isRequired": true
+  },
+  {
+    "name": "preferredLocale",
+    "description": "Subscriber's preferred language (e.g., 'en', 'fr', 'de')",
+    "isRequired": false,
+    "defaultValue": "en"
+  },
+  {
+    "name": "source",
+    "description": "Where the subscription originated (e.g., WEBSITE, API)",
+    "isRequired": false,
+    "defaultValue": "WEBSITE"
+  },
+  {
+    "name": "isResubscription",
+    "description": "Whether this is a re-subscription (true/false)",
+    "isRequired": false,
+    "defaultValue": "false"
+  },
+  {
+    "name": "linkedCustomerName",
+    "description": "Name of the linked customer if subscription was matched to an existing customer",
+    "isRequired": false
+  },
+  {
+    "name": "totalActiveSubscribers",
+    "description": "Current total number of active newsletter subscribers",
+    "isRequired": false
+  }
+]

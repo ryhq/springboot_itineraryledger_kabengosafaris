@@ -129,6 +129,25 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
             "Sent when a scheduled or manual backup fails. Contains error details, troubleshooting steps, and next backup attempt time. Requires immediate attention."
         );
 
+        // ========================================
+        // Public Website Events
+        // ========================================
+
+        initializeEvent(
+            "NEWSLETTER_SUBSCRIPTION",
+            "Sent when someone subscribes to the newsletter. Contains subscriber details and subscription source."
+        );
+
+        initializeEvent(
+            "BOOKING_INQUIRY",
+            "Sent when a new booking inquiry is submitted from the website. Contains full traveler details, travel preferences, and itinerary information."
+        );
+
+        initializeEvent(
+            "CONTACT_US",
+            "Sent when someone submits a message through the website Contact Us form. Contains sender details, subject, and message content."
+        );
+
         // TODO: Add other events in future iterations:
         // - EMAIL_VERIFICATION
         // - ACCOUNT_ACTIVATED

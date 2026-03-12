@@ -103,10 +103,11 @@ public class AccommodationRoomTypeController {
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_ACCOMMODATION_ROOM_TYPE')")
     public ResponseEntity<ApiResponse<?>> getAccommodationRoomTypeById(
-        @PathVariable String idObfuscated
+        @PathVariable String idObfuscated,
+        @RequestParam(required = false) String scopeParentId
     ) {
         log.info("GET /api/accommodation-room-types/{} - Fetching room type by ID", idObfuscated);
-        return accommodationRoomTypeGetService.getAccommodationRoomTypeById(idObfuscated);
+        return accommodationRoomTypeGetService.getAccommodationRoomTypeById(idObfuscated, scopeParentId);
     }
 
     /**

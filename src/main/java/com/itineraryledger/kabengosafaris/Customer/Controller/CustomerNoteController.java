@@ -117,10 +117,11 @@ public class CustomerNoteController {
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_CUSTOMER_NOTE')")
     public ResponseEntity<ApiResponse<?>> getCustomerNoteById(
-        @PathVariable String idObfuscated
+        @PathVariable String idObfuscated,
+        @RequestParam(required = false) String scopeParentId
     ) {
         log.info("GET /api/customer-notes/{} - Fetching note by ID", idObfuscated);
-        return customerNoteGetService.getCustomerNoteById(idObfuscated);
+        return customerNoteGetService.getCustomerNoteById(idObfuscated, scopeParentId);
     }
 
     /**

@@ -53,7 +53,7 @@ public class AccommodationRoomTypeGetService {
      * @param idObfuscated The obfuscated room type ID
      * @return ResponseEntity with ApiResponse containing the room type
      */
-    public ResponseEntity<ApiResponse<?>> getAccommodationRoomTypeById(String idObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getAccommodationRoomTypeById(String idObfuscated, String scopeParentId) {
         log.info("Fetching accommodation room type by ID: {}", idObfuscated);
 
         try {
@@ -87,16 +87,35 @@ public class AccommodationRoomTypeGetService {
             // Convert to DTO
             AccommodationRoomTypeDTO roomTypeDTO = convertToDTO(roomType);
 
-            // Circular navigation
-            Long nextId = roomTypeRepository.findNextId(roomTypeId).orElse(null);
-            Long previousId = roomTypeRepository.findPreviousId(roomTypeId).orElse(null);
-            if (nextId == null) nextId = roomTypeRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = roomTypeRepository.findLastId().orElse(null);
+            // Decode optional scope parent ID for scoped navigation
+            Long decodedParentId = null;
+            if (scopeParentId != null && !scopeParentId.isEmpty()) {
+                try {
+                    decodedParentId = idObfuscator.decodeId(scopeParentId);
+                } catch (Exception ex) {
+                    log.warn("Invalid scopeParentId: {}, falling back to global navigation", scopeParentId);
+                }
+            }
+
+            // Circular navigation (scoped if parent provided, global otherwise)
+            Long nextId, previousId;
+            if (decodedParentId != null) {
+                nextId = roomTypeRepository.findNextIdByParent(roomTypeId, decodedParentId).orElse(null);
+                previousId = roomTypeRepository.findPreviousIdByParent(roomTypeId, decodedParentId).orElse(null);
+                if (nextId == null) nextId = roomTypeRepository.findFirstIdByParent(decodedParentId).orElse(null);
+                if (previousId == null) previousId = roomTypeRepository.findLastIdByParent(decodedParentId).orElse(null);
+            } else {
+                nextId = roomTypeRepository.findNextId(roomTypeId).orElse(null);
+                previousId = roomTypeRepository.findPreviousId(roomTypeId).orElse(null);
+                if (nextId == null) nextId = roomTypeRepository.findFirstId().orElse(null);
+                if (previousId == null) previousId = roomTypeRepository.findLastId().orElse(null);
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("roomType", roomTypeDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(

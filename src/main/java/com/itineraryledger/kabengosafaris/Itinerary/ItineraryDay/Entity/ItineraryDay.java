@@ -115,6 +115,9 @@ public class ItineraryDay {
     @Column(name = "meals_included", length = 100)
     private String mealsIncluded; // e.g., "B,L,D" or "Breakfast, Lunch, Dinner"
 
+    @Column(name = "primary_image_url", length = 500)
+    private String primaryImageUrl; // Admin-set primary image URL for public views
+
     @Lob
     @Column(name = "internal_notes", columnDefinition = "TEXT")
     private String internalNotes;
