@@ -60,6 +60,16 @@ public class SafariPaxController {
         return getService.getSafariPax(safariId, sortBy, sortDirection);
     }
 
+    @GetMapping("/{paxId}")
+    @PreAuthorize("hasAuthority('PERM_READ_SAFARI_PAX')")
+    public ResponseEntity<ApiResponse<?>> getPaxById(
+        @PathVariable String safariId,
+        @PathVariable String paxId
+    ) {
+        log.info("GET /api/safaris/{}/pax/{} - Fetching pax entry", safariId, paxId);
+        return getService.getSafariPaxById(safariId, paxId);
+    }
+
     @DeleteMapping
     @PreAuthorize("hasAuthority('PERM_DELETE_SAFARI_PAX')")
     public ResponseEntity<ApiResponse<?>> deletePax(

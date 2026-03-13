@@ -128,6 +128,80 @@ public class SafariDayAccommodationGetService {
     }
 
     /**
+     * Get a single accommodation by ID with circular navigation scoped to parent day
+     */
+    public ResponseEntity<ApiResponse<?>> getSafariDayAccommodation(
+        String safariIdObfuscated,
+        String dayIdObfuscated,
+        String accommodationIdObfuscated
+    ) {
+        log.info("Fetching accommodation: {} for day: {}", accommodationIdObfuscated, dayIdObfuscated);
+
+        try {
+            Long safariId;
+            Long dayId;
+            Long accommodationId;
+            try {
+                safariId = idObfuscator.decodeId(safariIdObfuscated);
+                dayId = idObfuscator.decodeId(dayIdObfuscated);
+                accommodationId = idObfuscator.decodeId(accommodationIdObfuscated);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid ID", "INVALID_ID")
+                );
+            }
+
+            var day = safariDayRepository.findById(dayId).orElse(null);
+            if (day == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Safari day not found", "SAFARI_DAY_NOT_FOUND")
+                );
+            }
+            if (!day.getSafari().getId().equals(safariId)) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Day does not belong to this safari", "DAY_SAFARI_MISMATCH")
+                );
+            }
+
+            var accommodation = accommodationRepository.findById(accommodationId).orElse(null);
+            if (accommodation == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Accommodation not found", "ACCOMMODATION_NOT_FOUND")
+                );
+            }
+            if (!accommodation.getSafariDay().getId().equals(dayId)) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Accommodation does not belong to this day", "ACCOMMODATION_DAY_MISMATCH")
+                );
+            }
+
+            var dto = convertToDTO(accommodation);
+
+            // Parent-scoped circular navigation
+            Long parentId = accommodation.getSafariDay().getId();
+            Long nextId = accommodationRepository.findNextIdInParent(parentId, accommodationId).orElse(null);
+            Long previousId = accommodationRepository.findPreviousIdInParent(parentId, accommodationId).orElse(null);
+            if (nextId == null) nextId = accommodationRepository.findFirstIdInParent(parentId).orElse(null);
+            if (previousId == null) previousId = accommodationRepository.findLastIdInParent(parentId).orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("accommodation", dto);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, "Accommodation retrieved successfully", response)
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching accommodation by ID", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to fetch accommodation", "ACCOMMODATION_FETCH_FAILED")
+            );
+        }
+    }
+
+    /**
      * Convert entity to DTO
      */
     private SafariDayAccommodationDTO convertToDTO(SafariDayAccommodation entity) {

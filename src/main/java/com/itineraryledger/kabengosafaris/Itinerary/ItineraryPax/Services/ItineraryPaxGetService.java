@@ -128,6 +128,79 @@ public class ItineraryPaxGetService {
         }
     }
 
+    /**
+     * Get a single pax entry by ID with circular navigation scoped to parent itinerary
+     *
+     * @param itineraryIdObfuscated The obfuscated itinerary ID
+     * @param paxIdObfuscated The obfuscated pax ID
+     * @return ResponseEntity with ApiResponse containing the pax entry with nextId/previousId
+     */
+    public ResponseEntity<ApiResponse<?>> getItineraryPaxById(
+            String itineraryIdObfuscated,
+            String paxIdObfuscated
+    ) {
+        log.info("Fetching pax entry: {} for itinerary: {}", paxIdObfuscated, itineraryIdObfuscated);
+
+        try {
+            // Decode IDs
+            Long itineraryId;
+            Long paxId;
+            try {
+                itineraryId = idObfuscator.decodeId(itineraryIdObfuscated);
+                paxId = idObfuscator.decodeId(paxIdObfuscated);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid ID", "INVALID_ID")
+                );
+            }
+
+            // Verify itinerary exists
+            if (!itineraryRepository.existsById(itineraryId)) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Itinerary not found", "ITINERARY_NOT_FOUND")
+                );
+            }
+
+            // Fetch pax entry
+            var pax = itineraryPaxRepository.findById(paxId).orElse(null);
+            if (pax == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Pax entry not found", "PAX_NOT_FOUND")
+                );
+            }
+            if (!pax.getItinerary().getId().equals(itineraryId)) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Pax entry does not belong to this itinerary", "PAX_ITINERARY_MISMATCH")
+                );
+            }
+
+            // Convert to DTO
+            ItineraryPaxDTO dto = convertToDTO(pax);
+
+            // Parent-scoped circular navigation
+            Long parentId = pax.getItinerary().getId();
+            Long nextId = itineraryPaxRepository.findNextIdInParent(parentId, paxId).orElse(null);
+            Long previousId = itineraryPaxRepository.findPreviousIdInParent(parentId, paxId).orElse(null);
+            if (nextId == null) nextId = itineraryPaxRepository.findFirstIdInParent(parentId).orElse(null);
+            if (previousId == null) previousId = itineraryPaxRepository.findLastIdInParent(parentId).orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("paxEntry", dto);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, "Pax entry retrieved successfully", response)
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching itinerary pax by ID", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to fetch itinerary pax", "ITINERARY_PAX_FETCH_FAILED")
+            );
+        }
+    }
+
     private String validateSortField(String sortBy) {
         if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
         for (String field : VALID_SORT_FIELDS) {

@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 /**
  * SafariPdfGenerationService - Handles PDF generation for safaris
@@ -246,8 +247,16 @@ public class SafariPdfGenerationService extends PdfGenerationBaseService {
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 ApiResponse<?> apiResponse = response.getBody();
-                if (apiResponse != null && apiResponse.getData() instanceof FullSafariDTO) {
-                    return (FullSafariDTO) apiResponse.getData();
+                if (apiResponse != null && apiResponse.getData() != null) {
+                    Object responseData = apiResponse.getData();
+                    if (responseData instanceof FullSafariDTO) {
+                        return (FullSafariDTO) responseData;
+                    } else if (responseData instanceof Map) {
+                        Object safariObj = ((Map<?, ?>) responseData).get("safari");
+                        if (safariObj instanceof FullSafariDTO) {
+                            return (FullSafariDTO) safariObj;
+                        }
+                    }
                 }
             }
             return null;

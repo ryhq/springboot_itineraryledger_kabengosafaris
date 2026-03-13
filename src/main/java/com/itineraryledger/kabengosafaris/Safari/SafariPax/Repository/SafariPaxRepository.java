@@ -25,4 +25,20 @@ public interface SafariPaxRepository extends JpaRepository<SafariPax, Long>, Jpa
     Integer getTotalPaxCountBySafariId(@Param("safariId") Long safariId);
 
     void deleteBySafariId(Long safariId);
+
+    // ========================
+    // PARENT-SCOPED NAVIGATION QUERIES (circular next/previous within safari)
+    // ========================
+
+    @Query("SELECT p.id FROM SafariPax p WHERE p.safari.id = :parentId AND p.id > :currentId ORDER BY p.id ASC LIMIT 1")
+    Optional<Long> findNextIdInParent(@Param("parentId") Long parentId, @Param("currentId") Long currentId);
+
+    @Query("SELECT p.id FROM SafariPax p WHERE p.safari.id = :parentId AND p.id < :currentId ORDER BY p.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdInParent(@Param("parentId") Long parentId, @Param("currentId") Long currentId);
+
+    @Query("SELECT p.id FROM SafariPax p WHERE p.safari.id = :parentId ORDER BY p.id ASC LIMIT 1")
+    Optional<Long> findFirstIdInParent(@Param("parentId") Long parentId);
+
+    @Query("SELECT p.id FROM SafariPax p WHERE p.safari.id = :parentId ORDER BY p.id DESC LIMIT 1")
+    Optional<Long> findLastIdInParent(@Param("parentId") Long parentId);
 }

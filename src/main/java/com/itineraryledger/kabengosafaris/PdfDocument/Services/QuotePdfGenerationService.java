@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 /**
  * QuotePdfGenerationService - Handles PDF generation for quotes
@@ -246,8 +247,16 @@ public class QuotePdfGenerationService extends PdfGenerationBaseService {
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 ApiResponse<?> apiResponse = response.getBody();
-                if (apiResponse != null && apiResponse.getData() instanceof FullQuoteDTO) {
-                    return (FullQuoteDTO) apiResponse.getData();
+                if (apiResponse != null) {
+                    Object data = apiResponse.getData();
+                    if (data instanceof FullQuoteDTO) {
+                        return (FullQuoteDTO) data;
+                    } else if (data instanceof Map) {
+                        Object quoteObj = ((Map<?, ?>) data).get("quote");
+                        if (quoteObj instanceof FullQuoteDTO) {
+                            return (FullQuoteDTO) quoteObj;
+                        }
+                    }
                 }
             }
             return null;

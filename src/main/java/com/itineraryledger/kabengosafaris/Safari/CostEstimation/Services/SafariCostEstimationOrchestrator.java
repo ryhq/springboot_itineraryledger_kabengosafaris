@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Orchestrator for safari cost estimation.
@@ -66,13 +67,31 @@ public class SafariCostEstimationOrchestrator {
             }
 
             ApiResponse<?> apiResponse = safariResponse.getBody();
-            if (apiResponse == null || !(apiResponse.getData() instanceof FullSafariDTO)) {
+            if (apiResponse == null || apiResponse.getData() == null) {
                 return ResponseEntity.status(404).body(
                     ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
                 );
             }
 
-            FullSafariDTO safari = (FullSafariDTO) apiResponse.getData();
+            // Extract safari from wrapped response (getFullSafari now returns {safari: ..., nextId: ..., previousId: ...})
+            FullSafariDTO safari;
+            Object responseData = apiResponse.getData();
+            if (responseData instanceof FullSafariDTO) {
+                safari = (FullSafariDTO) responseData;
+            } else if (responseData instanceof Map) {
+                Object safariObj = ((Map<?, ?>) responseData).get("safari");
+                if (safariObj instanceof FullSafariDTO) {
+                    safari = (FullSafariDTO) safariObj;
+                } else {
+                    return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
+                    );
+                }
+            } else {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
+                );
+            }
 
             // Validate safari has start and end dates
             if (safari.getStartDate() == null || safari.getEndDate() == null) {

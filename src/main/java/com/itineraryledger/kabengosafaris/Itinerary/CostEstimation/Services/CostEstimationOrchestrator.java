@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -78,13 +79,30 @@ public class CostEstimationOrchestrator {
             }
 
             ApiResponse<?> apiResponse = itineraryResponse.getBody();
-            if (apiResponse == null || !(apiResponse.getData() instanceof FullItineraryDTO)) {
+            if (apiResponse == null) {
                 return ResponseEntity.status(404).body(
                     ApiResponse.error(404, "Itinerary not found", "ITINERARY_NOT_FOUND")
                 );
             }
 
-            FullItineraryDTO itinerary = (FullItineraryDTO) apiResponse.getData();
+            FullItineraryDTO itinerary;
+            Object responseData = apiResponse.getData();
+            if (responseData instanceof FullItineraryDTO) {
+                itinerary = (FullItineraryDTO) responseData;
+            } else if (responseData instanceof Map) {
+                Object itineraryObj = ((Map<?, ?>) responseData).get("itinerary");
+                if (itineraryObj instanceof FullItineraryDTO) {
+                    itinerary = (FullItineraryDTO) itineraryObj;
+                } else {
+                    return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Itinerary not found", "ITINERARY_NOT_FOUND")
+                    );
+                }
+            } else {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Itinerary not found", "ITINERARY_NOT_FOUND")
+                );
+            }
 
             // 2. Clear rate issue logger for this estimation
             rateIssueLoggerService.clear();

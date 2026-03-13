@@ -93,13 +93,31 @@ public class SafariCostEstimationService {
             }
 
             ApiResponse<?> apiResponse = safariResponse.getBody();
-            if (apiResponse == null || !(apiResponse.getData() instanceof FullSafariDTO)) {
+            if (apiResponse == null || apiResponse.getData() == null) {
                 return ResponseEntity.status(404).body(
                     ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
                 );
             }
 
-            FullSafariDTO safari = (FullSafariDTO) apiResponse.getData();
+            // Extract safari from wrapped response (getFullSafari returns {safari: ..., nextId: ..., previousId: ...})
+            FullSafariDTO safari;
+            Object responseData = apiResponse.getData();
+            if (responseData instanceof FullSafariDTO) {
+                safari = (FullSafariDTO) responseData;
+            } else if (responseData instanceof Map) {
+                Object safariObj = ((Map<?, ?>) responseData).get("safari");
+                if (safariObj instanceof FullSafariDTO) {
+                    safari = (FullSafariDTO) safariObj;
+                } else {
+                    return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
+                    );
+                }
+            } else {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
+                );
+            }
 
             // 2. Use safari's startDate and endDate directly
             LocalDate startDate = safari.getStartDate();

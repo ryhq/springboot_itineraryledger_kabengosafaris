@@ -24,4 +24,20 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long>, JpaSp
     long countByYearAndMonth(@Param("year") int year, @Param("month") int month);
 
     boolean existsByName(String name);
+
+    // ========================
+    // CIRCULAR NAVIGATION QUERIES (global scope, ordered by id)
+    // ========================
+
+    @Query("SELECT a.id FROM AuditLog a WHERE a.id > :currentId ORDER BY a.id ASC LIMIT 1")
+    java.util.Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT a.id FROM AuditLog a WHERE a.id < :currentId ORDER BY a.id DESC LIMIT 1")
+    java.util.Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT a.id FROM AuditLog a ORDER BY a.id ASC LIMIT 1")
+    java.util.Optional<Long> findFirstId();
+
+    @Query("SELECT a.id FROM AuditLog a ORDER BY a.id DESC LIMIT 1")
+    java.util.Optional<Long> findLastId();
 }

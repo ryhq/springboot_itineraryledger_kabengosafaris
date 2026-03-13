@@ -123,6 +123,79 @@ public class SafariPaxGetService {
     }
 
     /**
+     * Get a single pax entry by ID with circular navigation scoped to parent safari
+     *
+     * @param safariIdObfuscated The obfuscated safari ID
+     * @param paxIdObfuscated The obfuscated pax ID
+     * @return ResponseEntity with ApiResponse containing the pax entry with nextId/previousId
+     */
+    public ResponseEntity<ApiResponse<?>> getSafariPaxById(
+            String safariIdObfuscated,
+            String paxIdObfuscated
+    ) {
+        log.info("Fetching pax entry: {} for safari: {}", paxIdObfuscated, safariIdObfuscated);
+
+        try {
+            // Decode IDs
+            Long safariId;
+            Long paxId;
+            try {
+                safariId = idObfuscator.decodeId(safariIdObfuscated);
+                paxId = idObfuscator.decodeId(paxIdObfuscated);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid ID", "INVALID_ID")
+                );
+            }
+
+            // Verify safari exists
+            if (!safariRepository.existsById(safariId)) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
+                );
+            }
+
+            // Fetch pax entry
+            var pax = safariPaxRepository.findById(paxId).orElse(null);
+            if (pax == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Pax entry not found", "PAX_NOT_FOUND")
+                );
+            }
+            if (!pax.getSafari().getId().equals(safariId)) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Pax entry does not belong to this safari", "PAX_SAFARI_MISMATCH")
+                );
+            }
+
+            // Convert to DTO
+            SafariPaxDTO dto = convertToDTO(pax);
+
+            // Parent-scoped circular navigation
+            Long parentId = pax.getSafari().getId();
+            Long nextId = safariPaxRepository.findNextIdInParent(parentId, paxId).orElse(null);
+            Long previousId = safariPaxRepository.findPreviousIdInParent(parentId, paxId).orElse(null);
+            if (nextId == null) nextId = safariPaxRepository.findFirstIdInParent(parentId).orElse(null);
+            if (previousId == null) previousId = safariPaxRepository.findLastIdInParent(parentId).orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("paxEntry", dto);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, "Pax entry retrieved successfully", response)
+            );
+
+        } catch (Exception e) {
+            log.error("Error fetching safari pax by ID", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to fetch safari pax", "SAFARI_PAX_FETCH_FAILED")
+            );
+        }
+    }
+
+    /**
      * Convert SafariPax entity to SafariPaxDTO
      */
     private SafariPaxDTO convertToDTO(SafariPax pax) {

@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 /**
  * InvoicePdfGenerationService - Handles PDF generation for invoices
@@ -245,8 +246,16 @@ public class InvoicePdfGenerationService extends PdfGenerationBaseService {
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 ApiResponse<?> apiResponse = response.getBody();
-                if (apiResponse != null && apiResponse.getData() instanceof FullInvoiceDTO) {
-                    return (FullInvoiceDTO) apiResponse.getData();
+                if (apiResponse != null) {
+                    Object data = apiResponse.getData();
+                    if (data instanceof FullInvoiceDTO) {
+                        return (FullInvoiceDTO) data;
+                    } else if (data instanceof Map) {
+                        Object invoiceObj = ((Map<?, ?>) data).get("invoice");
+                        if (invoiceObj instanceof FullInvoiceDTO) {
+                            return (FullInvoiceDTO) invoiceObj;
+                        }
+                    }
                 }
             }
             return null;

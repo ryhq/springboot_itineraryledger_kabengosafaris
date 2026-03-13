@@ -67,6 +67,17 @@ public class SafariDayAccommodationController {
         return getService.getSafariDayAccommodations(safariId, dayId, sortBy, sortDirection);
     }
 
+    @GetMapping("/{accommodationId}")
+    @PreAuthorize("hasAuthority('PERM_READ_SAFARI_DAY_ACCOMMODATION')")
+    public ResponseEntity<ApiResponse<?>> getAccommodation(
+        @PathVariable String safariId,
+        @PathVariable String dayId,
+        @PathVariable String accommodationId
+    ) {
+        log.info("GET /api/safaris/{}/days/{}/accommodations/{} - Fetching accommodation", safariId, dayId, accommodationId);
+        return getService.getSafariDayAccommodation(safariId, dayId, accommodationId);
+    }
+
     @PutMapping("/{accommodationId}")
     @PreAuthorize("hasAuthority('PERM_UPDATE_SAFARI_DAY_ACCOMMODATION')")
     public ResponseEntity<ApiResponse<?>> updateAccommodation(

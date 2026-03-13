@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 /**
  * ItineraryPdfGenerationService - Handles PDF generation for itineraries
@@ -246,8 +247,16 @@ public class ItineraryPdfGenerationService extends PdfGenerationBaseService {
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 ApiResponse<?> apiResponse = response.getBody();
-                if (apiResponse != null && apiResponse.getData() instanceof FullItineraryDTO) {
-                    return (FullItineraryDTO) apiResponse.getData();
+                if (apiResponse != null) {
+                    Object data = apiResponse.getData();
+                    if (data instanceof FullItineraryDTO) {
+                        return (FullItineraryDTO) data;
+                    } else if (data instanceof Map) {
+                        Object itineraryObj = ((Map<?, ?>) data).get("itinerary");
+                        if (itineraryObj instanceof FullItineraryDTO) {
+                            return (FullItineraryDTO) itineraryObj;
+                        }
+                    }
                 }
             }
             return null;

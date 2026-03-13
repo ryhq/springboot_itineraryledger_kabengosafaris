@@ -415,12 +415,23 @@ public class AuditLogService {
                 );
             }
 
+            // Circular navigation
+            Long nextId = auditLogRepository.findNextId(id).orElse(null);
+            Long previousId = auditLogRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = auditLogRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = auditLogRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("auditLog", convertToDTO(auditLog));
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             log.info("Successfully retrieved audit log {}", id);
             return ResponseEntity.ok(
                 ApiResponse.success(
                     200,
                     "Successfully retrieved audit log.",
-                    convertToDTO(auditLog)
+                    response
                 )
             );
         } catch (Exception e) {

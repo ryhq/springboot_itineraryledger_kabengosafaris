@@ -67,6 +67,17 @@ public class ItineraryDayAccommodationController {
         return getService.getItineraryDayAccommodations(itineraryId, dayId, sortBy, sortDirection);
     }
 
+    @GetMapping("/{accommodationId}")
+    @PreAuthorize("hasAuthority('PERM_READ_ITINERARY_DAY_ACCOMMODATION')")
+    public ResponseEntity<ApiResponse<?>> getAccommodation(
+        @PathVariable String itineraryId,
+        @PathVariable String dayId,
+        @PathVariable String accommodationId
+    ) {
+        log.info("GET /api/itineraries/{}/days/{}/accommodations/{} - Fetching accommodation", itineraryId, dayId, accommodationId);
+        return getService.getItineraryDayAccommodation(itineraryId, dayId, accommodationId);
+    }
+
     @PutMapping("/{accommodationId}")
     @PreAuthorize("hasAuthority('PERM_UPDATE_ITINERARY_DAY_ACCOMMODATION')")
     public ResponseEntity<ApiResponse<?>> updateAccommodation(

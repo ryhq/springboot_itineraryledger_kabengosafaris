@@ -60,6 +60,16 @@ public class ItineraryPaxController {
         return getService.getItineraryPax(itineraryId, sortBy, sortDirection);
     }
 
+    @GetMapping("/{paxId}")
+    @PreAuthorize("hasAuthority('PERM_READ_ITINERARY_PAX')")
+    public ResponseEntity<ApiResponse<?>> getPaxById(
+        @PathVariable String itineraryId,
+        @PathVariable String paxId
+    ) {
+        log.info("GET /api/itineraries/{}/pax/{} - Fetching pax entry", itineraryId, paxId);
+        return getService.getItineraryPaxById(itineraryId, paxId);
+    }
+
     @DeleteMapping
     @PreAuthorize("hasAuthority('PERM_DELETE_ITINERARY_PAX')")
     public ResponseEntity<ApiResponse<?>> deletePax(

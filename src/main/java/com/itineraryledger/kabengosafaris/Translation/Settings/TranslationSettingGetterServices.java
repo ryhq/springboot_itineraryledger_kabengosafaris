@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Translation.Settings;
 
+import com.itineraryledger.kabengosafaris.Translation.Account.TranslationAccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -66,6 +67,27 @@ public class TranslationSettingGetterServices {
 
     @Autowired
     private TranslationSettingRepository translationSettingRepository;
+
+    @Autowired
+    private TranslationAccountRepository translationAccountRepository;
+
+    // =====================================================================
+    // GENERAL Settings
+    // =====================================================================
+
+    /**
+     * Check if translation is enabled.
+     * Returns true if a default TranslationAccount exists and is enabled,
+     * or falls back to legacy LibreTranslate enabled check.
+     */
+    public boolean isTranslationEnabled() {
+        // Check if a default enabled TranslationAccount exists
+        if (translationAccountRepository.findFirstByEnabledTrueAndIsDefaultTrueOrderByCreatedAtDesc().isPresent()) {
+            return true;
+        }
+        // Fallback to legacy LibreTranslate setting
+        return isLibreTranslateEnabled();
+    }
 
     // =====================================================================
     // CONNECTION Settings Getters

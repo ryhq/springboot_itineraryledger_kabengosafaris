@@ -1,7 +1,11 @@
 package com.itineraryledger.kabengosafaris.Translation.Services;
 
+import com.itineraryledger.kabengosafaris.Translation.Account.Services.TranslationAccountStatsService;
 import com.itineraryledger.kabengosafaris.Translation.Cache.TranslationCache;
 import com.itineraryledger.kabengosafaris.Translation.Cache.TranslationCacheRepository;
+import com.itineraryledger.kabengosafaris.Translation.Providers.TranslationProvider;
+import com.itineraryledger.kabengosafaris.Translation.Providers.TranslationProviderException;
+import com.itineraryledger.kabengosafaris.Translation.Providers.TranslationProviderFactory;
 import com.itineraryledger.kabengosafaris.Translation.Settings.TranslationSettingGetterServices;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +34,8 @@ import java.util.regex.Pattern;
 @Slf4j
 public class TranslationService {
 
-    private final LibreTranslateService libreTranslateService;
+    private final TranslationProviderFactory providerFactory;
+    private final TranslationAccountStatsService statsService;
     private final TranslationCacheRepository cacheRepository;
     private final TranslationSettingGetterServices settingsService;
     private final TranslationCacheAsyncService cacheAsyncService;
@@ -75,9 +80,16 @@ public class TranslationService {
             return htmlContent;
         }
 
-        // Also verify LibreTranslate actually supports this language
-        if (!libreTranslateService.isLanguageSupportedByLibreTranslate(targetLanguage)) {
-            log.warn("Target language '{}' is not supported by LibreTranslate instance. Returning original content.", targetLanguage);
+        // Verify the active provider supports this language
+        try {
+            TranslationProvider provider = providerFactory.getActiveProvider();
+            if (!provider.isLanguageSupported(targetLanguage)) {
+                log.warn("Target language '{}' is not supported by {} provider. Returning original content.",
+                    targetLanguage, provider.getProviderType());
+                return htmlContent;
+            }
+        } catch (TranslationProviderException e) {
+            log.warn("No active translation provider available: {}. Returning original content.", e.getMessage());
             return htmlContent;
         }
 
@@ -93,9 +105,9 @@ public class TranslationService {
         }
 
         try {
-            // Check if LibreTranslate is enabled
-            if (!settingsService.isLibreTranslateEnabled()) {
-                log.info("LibreTranslate is disabled. Returning original content.");
+            // Check if any translation provider is available
+            if (!providerFactory.hasActiveProvider()) {
+                log.info("No translation provider available. Returning original content.");
                 return htmlContent;
             }
 
@@ -108,7 +120,7 @@ public class TranslationService {
             // For HTML fragments, translate the entire content
             return translateContent(htmlContent, sourceLanguage, targetLanguage);
 
-        } catch (LibreTranslateService.TranslationException e) {
+        } catch (TranslationProviderException e) {
             log.error("Translation failed: {}. Returning original content.", e.getMessage());
             return htmlContent; // Fallback to original
         } catch (Exception e) {
@@ -128,10 +140,10 @@ public class TranslationService {
     /**
      * Translate a full HTML document by extracting and translating only safe text content.
      * Preserves DOCTYPE, head, SVG elements, scripts, styles, and HTML structure.
-     * @throws LibreTranslateService.TranslationException if translation fails
+     * @throws TranslationProviderException if translation fails
      */
     private String translateFullHtmlDocument(String htmlContent, String sourceLanguage, String targetLanguage)
-            throws LibreTranslateService.TranslationException {
+            throws TranslationProviderException {
         // Pattern to match body content (case-insensitive)
         Pattern bodyPattern = Pattern.compile(
             "(<body[^>]*>)(.*?)(</body>)",
@@ -170,7 +182,7 @@ public class TranslationService {
      * 2. Batch translate only uncached segments, then cache them individually
      */
     private String translateBodyContentSafely(String bodyContent, String sourceLanguage, String targetLanguage)
-            throws LibreTranslateService.TranslationException {
+            throws TranslationProviderException {
 
         // Extract text segments and their positions
         List<TextSegment> textSegments = extractTextSegments(bodyContent);
@@ -219,7 +231,7 @@ public class TranslationService {
                     if (settingsService.isCacheEnabled()) {
                         cacheAsyncService.saveToCacheAsync(originalText, translatedText, sourceLanguage, targetLanguage);
                     }
-                } catch (LibreTranslateService.TranslationException e) {
+                } catch (TranslationProviderException e) {
                     log.warn("Failed to translate segment: {}. Using original.", e.getMessage());
                     translatedSegments[idx] = originalText;
                 }
@@ -253,15 +265,18 @@ public class TranslationService {
      * Used for individual segment translations where caching is handled separately.
      */
     private String translateSegmentDirectly(String content, String sourceLanguage, String targetLanguage)
-            throws LibreTranslateService.TranslationException {
+            throws TranslationProviderException {
         // Check if content needs chunking (for very large segments)
         int maxChars = settingsService.getMaxCharacters();
         if (content.length() > maxChars) {
             return translateLargeSegmentDirectly(content, sourceLanguage, targetLanguage);
         }
 
-        // Translate via LibreTranslate (no caching here - handled by caller)
-        return libreTranslateService.translate(content, sourceLanguage, targetLanguage);
+        // Translate via active provider (no caching here - handled by caller)
+        TranslationProvider provider = providerFactory.getActiveProvider();
+        String result = provider.translate(content, sourceLanguage, targetLanguage);
+        statsService.recordTranslation(providerFactory.getActiveAccountId(), content.length());
+        return result;
     }
 
     /**
@@ -280,12 +295,15 @@ public class TranslationService {
             String chunk = chunks.get(i);
 
             try {
-                String translatedChunk = libreTranslateService.translate(chunk, sourceLanguage, targetLanguage);
+                TranslationProvider chunkProvider = providerFactory.getActiveProvider();
+                String translatedChunk = chunkProvider.translate(chunk, sourceLanguage, targetLanguage);
+                statsService.recordTranslation(providerFactory.getActiveAccountId(), chunk.length());
                 translatedContent.append(translatedChunk);
                 log.debug("Segment chunk {}/{} translated successfully", i + 1, chunks.size());
 
-            } catch (LibreTranslateService.TranslationException e) {
+            } catch (TranslationProviderException e) {
                 log.warn("Failed to translate segment chunk {}/{}: {}. Using original.", i + 1, chunks.size(), e.getMessage());
+                statsService.recordFailure(providerFactory.getActiveAccountId());
                 translatedContent.append(chunk); // Use original chunk on error
             }
         }
@@ -380,10 +398,10 @@ public class TranslationService {
     /**
      * Translate content (either full document or fragment).
      * For HTML content, uses segment-based translation to preserve structure.
-     * @throws LibreTranslateService.TranslationException if translation fails
+     * @throws TranslationProviderException if translation fails
      */
     private String translateContent(String content, String sourceLanguage, String targetLanguage)
-            throws LibreTranslateService.TranslationException {
+            throws TranslationProviderException {
         // Check if this looks like HTML content (contains tags)
         if (content.contains("<") && content.contains(">")) {
             // Use segment-based translation to preserve HTML structure
@@ -396,10 +414,10 @@ public class TranslationService {
 
     /**
      * Translate plain text content (no HTML).
-     * @throws LibreTranslateService.TranslationException if translation fails
+     * @throws TranslationProviderException if translation fails
      */
     public String translatePlainText(String content, String sourceLanguage, String targetLanguage)
-            throws LibreTranslateService.TranslationException {
+            throws TranslationProviderException {
         // Check if content needs chunking
         int maxChars = settingsService.getMaxCharacters();
         if (content.length() > maxChars) {
@@ -415,8 +433,10 @@ public class TranslationService {
             }
         }
 
-        // Translate via LibreTranslate
-        String translatedContent = libreTranslateService.translate(content, sourceLanguage, targetLanguage);
+        // Translate via active provider
+        TranslationProvider provider = providerFactory.getActiveProvider();
+        String translatedContent = provider.translate(content, sourceLanguage, targetLanguage);
+        statsService.recordTranslation(providerFactory.getActiveAccountId(), content.length());
 
         // Store in cache asynchronously (non-blocking)
         if (settingsService.isCacheEnabled()) {
@@ -452,7 +472,9 @@ public class TranslationService {
                     translatedChunk = cachedChunk.get();
                     log.debug("Chunk {}/{} retrieved from cache", i + 1, chunks.size());
                 } else {
-                    translatedChunk = libreTranslateService.translate(chunk, sourceLanguage, targetLanguage);
+                    TranslationProvider chunkProvider = providerFactory.getActiveProvider();
+                    translatedChunk = chunkProvider.translate(chunk, sourceLanguage, targetLanguage);
+                    statsService.recordTranslation(providerFactory.getActiveAccountId(), chunk.length());
 
                     if (settingsService.isCacheEnabled()) {
                         cacheAsyncService.saveToCacheAsync(chunk, translatedChunk, sourceLanguage, targetLanguage);
@@ -462,7 +484,7 @@ public class TranslationService {
 
                 translatedContent.append(translatedChunk);
 
-            } catch (LibreTranslateService.TranslationException e) {
+            } catch (TranslationProviderException e) {
                 log.warn("Failed to translate chunk {}/{}: {}. Using original.", i + 1, chunks.size(), e.getMessage());
                 translatedContent.append(chunk); // Use original chunk on error
             }
@@ -589,7 +611,11 @@ public class TranslationService {
      * Check if translation service is available and configured.
      */
     public boolean isAvailable() {
-        return settingsService.isLibreTranslateEnabled() && libreTranslateService.isServiceAvailable();
+        try {
+            return providerFactory.hasActiveProvider() && providerFactory.getActiveProvider().isServiceAvailable();
+        } catch (TranslationProviderException e) {
+            return false;
+        }
     }
 
     /**

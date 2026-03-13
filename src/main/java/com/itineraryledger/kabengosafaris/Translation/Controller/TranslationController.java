@@ -3,7 +3,9 @@ package com.itineraryledger.kabengosafaris.Translation.Controller;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Translation.Cache.TranslationCacheGetterService;
 import com.itineraryledger.kabengosafaris.Translation.Cache.TranslationCacheRepository;
-import com.itineraryledger.kabengosafaris.Translation.Services.LibreTranslateService;
+import com.itineraryledger.kabengosafaris.Translation.Providers.TranslationProvider;
+import com.itineraryledger.kabengosafaris.Translation.Providers.TranslationProviderException;
+import com.itineraryledger.kabengosafaris.Translation.Providers.TranslationProviderFactory;
 import com.itineraryledger.kabengosafaris.Translation.Services.TranslationService;
 import com.itineraryledger.kabengosafaris.Translation.Settings.TranslationSettingGetterServices;
 import jakarta.validation.constraints.NotBlank;
@@ -36,14 +38,13 @@ import java.util.Map;
 public class TranslationController {
 
     private final TranslationService translationService;
-    private final LibreTranslateService libreTranslateService;
+    private final TranslationProviderFactory providerFactory;
     private final TranslationCacheRepository cacheRepository;
     private final TranslationCacheGetterService cacheGetterService;
     private final TranslationSettingGetterServices settingsService;
 
     /**
-     * Get available languages from LibreTranslate.
-     * Returns languages configured in LibreTranslate instance.
+     * Get available languages from the active translation provider.
      */
     @GetMapping("/languages")
     @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
@@ -51,33 +52,34 @@ public class TranslationController {
         log.info("GET /api/translation/languages - Fetching available languages");
 
         try {
-            List<Map<String, String>> languages = libreTranslateService.getAvailableLanguages();
+            TranslationProvider provider = providerFactory.getActiveProvider();
+            List<Map<String, String>> languages = provider.getAvailableLanguages();
 
             Map<String, Object> response = new HashMap<>();
             response.put("languages", languages);
+            response.put("provider", provider.getProviderType().getDisplayName());
             response.put("supportedLanguages", settingsService.getSupportedLanguages());
             response.put("defaultSourceLanguage", settingsService.getDefaultSourceLanguage());
             response.put("defaultTargetLanguage", settingsService.getDefaultTargetLanguage());
 
             return ResponseEntity.ok(ApiResponse.success(200, "Available languages retrieved", response));
-        } catch (LibreTranslateService.TranslationException e) {
-            log.warn("Failed to fetch languages from LibreTranslate: {}", e.getMessage());
+        } catch (TranslationProviderException e) {
+            log.warn("Failed to fetch languages from translation provider: {}", e.getMessage());
 
-            // Return configured languages as fallback
             Map<String, Object> response = new HashMap<>();
             response.put("languages", List.of());
             response.put("supportedLanguages", settingsService.getSupportedLanguages());
             response.put("defaultSourceLanguage", settingsService.getDefaultSourceLanguage());
             response.put("defaultTargetLanguage", settingsService.getDefaultTargetLanguage());
-            response.put("warning", "LibreTranslate unavailable, showing configured languages only");
+            response.put("warning", "Translation provider unavailable, showing configured languages only");
 
-            return ResponseEntity.ok(ApiResponse.success(200, "Configured languages retrieved (LibreTranslate unavailable)", response));
+            return ResponseEntity.ok(ApiResponse.success(200, "Configured languages retrieved (provider unavailable)", response));
         }
     }
 
     /**
      * Check translation service health.
-     * Returns detailed status of the LibreTranslate service.
+     * Returns detailed status of the active translation provider.
      */
     @GetMapping("/health")
     @PreAuthorize("hasAuthority('PERM_TEST_TRANSLATION_SERVICE')")
@@ -86,46 +88,52 @@ public class TranslationController {
 
         Map<String, Object> health = new HashMap<>();
 
-        // Check if translation is enabled
-        boolean enabled = settingsService.isLibreTranslateEnabled();
-        health.put("enabled", enabled);
+        // Check if any provider is available
+        boolean hasProvider = providerFactory.hasActiveProvider();
+        health.put("enabled", hasProvider);
 
-        if (!enabled) {
+        if (!hasProvider) {
             health.put("status", "DISABLED");
-            health.put("message", "LibreTranslate is disabled in settings");
+            health.put("message", "No translation provider configured");
             return ResponseEntity.ok(ApiResponse.success(200, "Translation service is disabled", health));
         }
 
-        // Check if service is available
-        boolean available = translationService.isAvailable();
-        health.put("available", available);
+        try {
+            TranslationProvider provider = providerFactory.getActiveProvider();
+            health.put("providerType", provider.getProviderType().name());
+            health.put("providerName", provider.getProviderType().getDisplayName());
 
-        if (available) {
-            health.put("status", "HEALTHY");
-            health.put("message", "LibreTranslate is running and responding");
+            boolean available = provider.isServiceAvailable();
+            health.put("available", available);
 
-            // Try to get languages to confirm full functionality
-            try {
-                List<Map<String, String>> languages = libreTranslateService.getAvailableLanguages();
-                health.put("languageCount", languages.size());
-                health.put("languages", languages.stream()
-                    .map(lang -> lang.get("code"))
-                    .toList());
-            } catch (LibreTranslateService.TranslationException e) {
-                health.put("languageWarning", "Could not fetch language list");
+            if (available) {
+                health.put("status", "HEALTHY");
+                health.put("message", provider.getProviderType().getDisplayName() + " is running and responding");
+
+                try {
+                    List<Map<String, String>> languages = provider.getAvailableLanguages();
+                    health.put("languageCount", languages.size());
+                    health.put("languages", languages.stream()
+                        .map(lang -> lang.get("code"))
+                        .toList());
+                } catch (TranslationProviderException e) {
+                    health.put("languageWarning", "Could not fetch language list");
+                }
+            } else {
+                health.put("status", "UNHEALTHY");
+                health.put("message", provider.getProviderType().getDisplayName() + " is not responding");
             }
-        } else {
-            health.put("status", "UNHEALTHY");
-            health.put("message", "LibreTranslate is not responding");
+
+            health.put("cacheEnabled", settingsService.isCacheEnabled());
+
+            String statusMessage = available ? "Translation service is healthy" : "Translation service is not available";
+            return ResponseEntity.ok(ApiResponse.success(200, statusMessage, health));
+
+        } catch (TranslationProviderException e) {
+            health.put("status", "ERROR");
+            health.put("message", e.getMessage());
+            return ResponseEntity.ok(ApiResponse.success(200, "Translation service error", health));
         }
-
-        // Add configuration info
-        health.put("baseUrl", settingsService.getLibreTranslateBaseUrl());
-        health.put("timeoutSeconds", settingsService.getLibreTranslateTimeoutSeconds());
-        health.put("cacheEnabled", settingsService.isCacheEnabled());
-
-        String statusMessage = available ? "Translation service is healthy" : "Translation service is not available";
-        return ResponseEntity.ok(ApiResponse.success(200, statusMessage, health));
     }
 
     /**
@@ -221,18 +229,11 @@ public class TranslationController {
         response.put("sourceLanguage", sourceLanguage);
         response.put("targetLanguage", targetLanguage);
 
-        // Check if enabled
-        if (!settingsService.isLibreTranslateEnabled()) {
+        // Check if provider is available
+        if (!providerFactory.hasActiveProvider()) {
             response.put("success", false);
-            response.put("error", "LibreTranslate is disabled");
-            return ResponseEntity.ok(ApiResponse.success(200, "Translation test failed - service disabled", response));
-        }
-
-        // Check if service is available
-        if (!libreTranslateService.isServiceAvailable()) {
-            response.put("success", false);
-            response.put("error", "LibreTranslate service is not reachable");
-            return ResponseEntity.ok(ApiResponse.success(200, "Translation test failed - service unavailable", response));
+            response.put("error", "No translation provider configured");
+            return ResponseEntity.ok(ApiResponse.success(200, "Translation test failed - no provider", response));
         }
 
         // Check if languages are supported
@@ -249,8 +250,11 @@ public class TranslationController {
         }
 
         try {
+            TranslationProvider provider = providerFactory.getActiveProvider();
+            response.put("provider", provider.getProviderType().getDisplayName());
+
             long startTime = System.currentTimeMillis();
-            String translatedText = libreTranslateService.translate(text, sourceLanguage, targetLanguage);
+            String translatedText = provider.translate(text, sourceLanguage, targetLanguage);
             long duration = System.currentTimeMillis() - startTime;
 
             response.put("success", true);
@@ -260,7 +264,7 @@ public class TranslationController {
             log.info("Translation test successful: '{}' -> '{}' in {}ms", text, translatedText, duration);
             return ResponseEntity.ok(ApiResponse.success(200, "Translation test successful", response));
 
-        } catch (LibreTranslateService.TranslationException e) {
+        } catch (TranslationProviderException e) {
             response.put("success", false);
             response.put("error", e.getMessage());
             response.put("errorType", e.getErrorType().name());
@@ -283,21 +287,23 @@ public class TranslationController {
         Map<String, Object> response = new HashMap<>();
         response.put("text", text.length() > 100 ? text.substring(0, 100) + "..." : text);
 
-        // Check if enabled
-        if (!settingsService.isLibreTranslateEnabled()) {
+        // Check if provider is available
+        if (!providerFactory.hasActiveProvider()) {
             response.put("detected", false);
-            response.put("error", "LibreTranslate is disabled");
-            return ResponseEntity.ok(ApiResponse.success(200, "Language detection failed - service disabled", response));
+            response.put("error", "No translation provider configured");
+            return ResponseEntity.ok(ApiResponse.success(200, "Language detection failed - no provider", response));
         }
 
         try {
-            String detectedLanguage = libreTranslateService.detectLanguage(text);
+            TranslationProvider provider = providerFactory.getActiveProvider();
+            String detectedLanguage = provider.detectLanguage(text);
             response.put("detected", true);
             response.put("language", detectedLanguage);
+            response.put("provider", provider.getProviderType().getDisplayName());
 
             return ResponseEntity.ok(ApiResponse.success(200, "Language detected", response));
 
-        } catch (LibreTranslateService.TranslationException e) {
+        } catch (TranslationProviderException e) {
             response.put("detected", false);
             response.put("error", e.getMessage());
 
