@@ -204,7 +204,20 @@ public class PdfTemplateGetService {
 
             PdfTemplateDTO dto = mapToDTO(template);
             dto.setContent(content);
-            return ResponseEntity.ok(ApiResponse.success(200, "Template content retrieved successfully", dto));
+
+            // Circular navigation scoped to the same PDF document
+            Long docId = template.getPdfDocument().getId();
+            Long nextId = pdfTemplateRepository.findNextIdByDocumentId(docId, id).orElse(null);
+            Long previousId = pdfTemplateRepository.findPreviousIdByDocumentId(docId, id).orElse(null);
+            if (nextId == null) nextId = pdfTemplateRepository.findFirstIdByDocumentId(docId).orElse(null);
+            if (previousId == null) previousId = pdfTemplateRepository.findLastIdByDocumentId(docId).orElse(null);
+
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("template", dto);
+            responseData.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            responseData.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
+            return ResponseEntity.ok(ApiResponse.success(200, "Template content retrieved successfully", responseData));
 
         } catch (Exception e) {
             log.error("Error retrieving template content: {}", idObfuscated, e);

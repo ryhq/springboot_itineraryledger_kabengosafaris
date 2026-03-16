@@ -63,7 +63,7 @@ public interface PdfTemplateRepository extends JpaRepository<PdfTemplate, Long>,
     Optional<PdfTemplate> findByPdfDocumentIdAndIsSystemDefault(Long pdfDocumentId, Boolean isSystemDefault);
 
     // ========================
-    // NAVIGATION QUERIES (circular next/previous)
+    // NAVIGATION QUERIES - Global (circular next/previous)
     // ========================
 
     @Query("SELECT t.id FROM PdfTemplate t WHERE t.id > :currentId ORDER BY t.id ASC LIMIT 1")
@@ -77,4 +77,20 @@ public interface PdfTemplateRepository extends JpaRepository<PdfTemplate, Long>,
 
     @Query("SELECT t.id FROM PdfTemplate t ORDER BY t.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    // ========================
+    // NAVIGATION QUERIES - Scoped by PDF Document (circular next/previous within same document)
+    // ========================
+
+    @Query("SELECT t.id FROM PdfTemplate t WHERE t.pdfDocument.id = :docId AND t.id > :currentId ORDER BY t.id ASC LIMIT 1")
+    Optional<Long> findNextIdByDocumentId(@Param("docId") Long docId, @Param("currentId") Long currentId);
+
+    @Query("SELECT t.id FROM PdfTemplate t WHERE t.pdfDocument.id = :docId AND t.id < :currentId ORDER BY t.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdByDocumentId(@Param("docId") Long docId, @Param("currentId") Long currentId);
+
+    @Query("SELECT t.id FROM PdfTemplate t WHERE t.pdfDocument.id = :docId ORDER BY t.id ASC LIMIT 1")
+    Optional<Long> findFirstIdByDocumentId(@Param("docId") Long docId);
+
+    @Query("SELECT t.id FROM PdfTemplate t WHERE t.pdfDocument.id = :docId ORDER BY t.id DESC LIMIT 1")
+    Optional<Long> findLastIdByDocumentId(@Param("docId") Long docId);
 }

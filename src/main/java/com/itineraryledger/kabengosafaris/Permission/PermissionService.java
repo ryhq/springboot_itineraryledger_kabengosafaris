@@ -155,11 +155,24 @@ public class PermissionService {
                 );
             }
 
+            PermissionDTO permissionDTO = convertToDTO(permission);
+
+            // Circular navigation
+            Long nextId = permissionRepository.findNextId(id).orElse(null);
+            Long previousId = permissionRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = permissionRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = permissionRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("permission", permissionDTO);
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             return ResponseEntity.ok(
                 ApiResponse.success(
                     200,
                     "Successfully retrieved permission.",
-                    convertToDTO(permission)
+                    response
                 )
             );
 
@@ -206,11 +219,14 @@ public class PermissionService {
 
             log.info("Toggled permission {} active status to {}", permission.getName(), newStatus);
 
+            Map<String, Object> response = new HashMap<>();
+            response.put("permission", convertToDTO(permission));
+
             return ResponseEntity.ok(
                 ApiResponse.success(
                     200,
                     "Successfully toggled permission active status to " + newStatus,
-                    convertToDTO(permission)
+                    response
                 )
             );
 

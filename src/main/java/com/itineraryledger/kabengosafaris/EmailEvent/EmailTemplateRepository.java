@@ -88,7 +88,7 @@ public interface EmailTemplateRepository extends JpaRepository<EmailTemplate, Lo
     boolean hasSystemDefaultTemplate(@Param("emailEventId") Long emailEventId);
 
     // ========================
-    // NAVIGATION QUERIES (circular next/previous)
+    // NAVIGATION QUERIES - Global (circular next/previous)
     // ========================
 
     @Query("SELECT t.id FROM EmailTemplate t WHERE t.id > :currentId ORDER BY t.id ASC LIMIT 1")
@@ -102,4 +102,20 @@ public interface EmailTemplateRepository extends JpaRepository<EmailTemplate, Lo
 
     @Query("SELECT t.id FROM EmailTemplate t ORDER BY t.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    // ========================
+    // NAVIGATION QUERIES - Scoped by Email Event (circular next/previous within same event)
+    // ========================
+
+    @Query("SELECT t.id FROM EmailTemplate t WHERE t.emailEvent.id = :eventId AND t.id > :currentId ORDER BY t.id ASC LIMIT 1")
+    Optional<Long> findNextIdByEventId(@Param("eventId") Long eventId, @Param("currentId") Long currentId);
+
+    @Query("SELECT t.id FROM EmailTemplate t WHERE t.emailEvent.id = :eventId AND t.id < :currentId ORDER BY t.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdByEventId(@Param("eventId") Long eventId, @Param("currentId") Long currentId);
+
+    @Query("SELECT t.id FROM EmailTemplate t WHERE t.emailEvent.id = :eventId ORDER BY t.id ASC LIMIT 1")
+    Optional<Long> findFirstIdByEventId(@Param("eventId") Long eventId);
+
+    @Query("SELECT t.id FROM EmailTemplate t WHERE t.emailEvent.id = :eventId ORDER BY t.id DESC LIMIT 1")
+    Optional<Long> findLastIdByEventId(@Param("eventId") Long eventId);
 }

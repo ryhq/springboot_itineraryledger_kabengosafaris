@@ -169,11 +169,11 @@ public class EmailTemplateGetService {
 
             EmailTemplateDTO templateDTO = convertToDTO(template);
 
-            // Circular navigation
-            Long nextId = emailTemplateRepository.findNextId(templateId).orElse(null);
-            Long previousId = emailTemplateRepository.findPreviousId(templateId).orElse(null);
-            if (nextId == null) nextId = emailTemplateRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = emailTemplateRepository.findLastId().orElse(null);
+            // Circular navigation scoped to the same email event
+            Long nextId = emailTemplateRepository.findNextIdByEventId(eventId, templateId).orElse(null);
+            Long previousId = emailTemplateRepository.findPreviousIdByEventId(eventId, templateId).orElse(null);
+            if (nextId == null) nextId = emailTemplateRepository.findFirstIdByEventId(eventId).orElse(null);
+            if (previousId == null) previousId = emailTemplateRepository.findLastIdByEventId(eventId).orElse(null);
 
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("template", templateDTO);
@@ -227,7 +227,18 @@ public class EmailTemplateGetService {
 
             EmailTemplateDTO templateDTO = convertToDTOWithContent(template, content);
 
-            return ResponseEntity.ok(ApiResponse.success(200, "Template content retrieved successfully", templateDTO));
+            // Circular navigation scoped to the same email event
+            Long nextId = emailTemplateRepository.findNextIdByEventId(eventId, templateId).orElse(null);
+            Long previousId = emailTemplateRepository.findPreviousIdByEventId(eventId, templateId).orElse(null);
+            if (nextId == null) nextId = emailTemplateRepository.findFirstIdByEventId(eventId).orElse(null);
+            if (previousId == null) previousId = emailTemplateRepository.findLastIdByEventId(eventId).orElse(null);
+
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("template", templateDTO);
+            responseData.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            responseData.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
+            return ResponseEntity.ok(ApiResponse.success(200, "Template content retrieved successfully", responseData));
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(

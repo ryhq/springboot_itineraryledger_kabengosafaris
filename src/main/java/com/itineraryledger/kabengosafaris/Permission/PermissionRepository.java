@@ -98,4 +98,20 @@ public interface PermissionRepository extends JpaRepository<Permission, Long>, J
      */
     @Query("SELECT DISTINCT p.entity FROM Permission p ORDER BY p.entity")
     List<String> findAllDistinctEntities();
+
+    // ========================
+    // NAVIGATION QUERIES (circular next/previous)
+    // ========================
+
+    @Query("SELECT e.id FROM Permission e WHERE e.id > :currentId ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    @Query("SELECT e.id FROM Permission e WHERE e.id < :currentId ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    @Query("SELECT e.id FROM Permission e ORDER BY e.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    @Query("SELECT e.id FROM Permission e ORDER BY e.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }
