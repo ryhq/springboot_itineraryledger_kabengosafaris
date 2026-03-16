@@ -79,4 +79,10 @@ public interface ActivityImageRepository extends JpaRepository<ActivityImage, Lo
 
     @Query("SELECT ai.id FROM ActivityImage ai WHERE ai.activity.id = :parentId ORDER BY ai.id DESC LIMIT 1")
     Optional<Long> findLastIdByParent(@Param("parentId") Long parentId);
+
+    /**
+     * Find all active images across all active/web-active activities (for gallery)
+     */
+    @Query("SELECT ai FROM ActivityImage ai JOIN ai.activity a WHERE ai.isActive = true AND a.isActive = true AND a.isWebActive = true ORDER BY ai.createdAt DESC")
+    Page<ActivityImage> findAllActiveForGallery(Pageable pageable);
 }

@@ -136,4 +136,10 @@ public interface ParkImageRepository extends JpaRepository<ParkImage, Long>, Jpa
 
     @Query("SELECT img.id FROM ParkImage img WHERE img.park.id = :parentId ORDER BY img.id DESC LIMIT 1")
     Optional<Long> findLastIdByParent(@Param("parentId") Long parentId);
+
+    /**
+     * Find all active images across all active parks (for gallery)
+     */
+    @Query("SELECT img FROM ParkImage img JOIN img.park p WHERE img.isActive = true AND p.isActive = true ORDER BY img.createdAt DESC")
+    Page<ParkImage> findAllActiveForGallery(Pageable pageable);
 }

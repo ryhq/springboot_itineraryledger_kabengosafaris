@@ -130,4 +130,10 @@ public interface AccommodationImageRepository extends JpaRepository<Accommodatio
 
     @Query("SELECT img.id FROM AccommodationImage img WHERE img.accommodation.id = :parentId ORDER BY img.id DESC LIMIT 1")
     Optional<Long> findLastIdByParent(@Param("parentId") Long parentId);
+
+    /**
+     * Find all active images across all active accommodations (for gallery)
+     */
+    @Query("SELECT img FROM AccommodationImage img JOIN img.accommodation a WHERE img.isActive = true AND a.isActive = true ORDER BY img.createdAt DESC")
+    Page<AccommodationImage> findAllActiveForGallery(Pageable pageable);
 }

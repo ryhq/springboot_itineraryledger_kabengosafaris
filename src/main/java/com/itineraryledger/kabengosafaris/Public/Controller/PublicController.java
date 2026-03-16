@@ -8,6 +8,7 @@ import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
 import com.itineraryledger.kabengosafaris.Park.ParkType;
 import com.itineraryledger.kabengosafaris.Public.Services.PublicAccommodationService;
 import com.itineraryledger.kabengosafaris.Public.Services.PublicActivityService;
+import com.itineraryledger.kabengosafaris.Public.Services.PublicGalleryService;
 import com.itineraryledger.kabengosafaris.Public.Services.PublicHeroService;
 import com.itineraryledger.kabengosafaris.Public.Services.PublicHomepageService;
 import com.itineraryledger.kabengosafaris.Public.Services.PublicItineraryService;
@@ -38,6 +39,7 @@ public class PublicController {
     private final PublicHomepageService publicHomepageService;
     private final PublicNavigationService publicNavigationService;
     private final PublicHeroService publicHeroService;
+    private final PublicGalleryService publicGalleryService;
     private final PublicParkService publicParkService;
     private final PublicActivityService publicActivityService;
     private final PublicAccommodationService publicAccommodationService;
@@ -244,6 +246,20 @@ public class PublicController {
         @RequestParam HeroPage heroPage
     ) {
         return publicHeroService.getHeroesByPage(heroPage, publicTranslationService.parseLanguage(lang));
+    }
+
+    // ========================
+    // GALLERY (unified images)
+    // ========================
+
+    @GetMapping("/gallery")
+    public ResponseEntity<ApiResponse<?>> getGalleryImages(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
+        @RequestParam(required = false) String entityType,
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size
+    ) {
+        return publicGalleryService.getGalleryImages(entityType, page, size, publicTranslationService.parseLanguage(lang));
     }
 
     // ========================
