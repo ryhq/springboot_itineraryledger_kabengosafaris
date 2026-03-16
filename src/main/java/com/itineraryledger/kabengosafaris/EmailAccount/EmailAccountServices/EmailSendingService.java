@@ -1,6 +1,10 @@
 package com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices;
 
+import java.io.ByteArrayOutputStream;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -10,9 +14,17 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountRepository;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccount;
 import com.itineraryledger.kabengosafaris.EmailAccount.Components.EncryptionUtil;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.EmailFolderRepository;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.EmailMessageRepository;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailFolder;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailFolderType;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailMessage;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.Services.EmailSettingGetterServices;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.Services.EmailStorageService;
 
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
@@ -31,10 +43,26 @@ import lombok.extern.slf4j.Slf4j;
 public class EmailSendingService {
 
     private final EmailAccountRepository emailAccountRepository;
+    private final EmailStorageService emailStorageService;
+    private final EmailSettingGetterServices emailSettingGetterServices;
+    private final EmailFolderRepository emailFolderRepository;
+    private final EmailMessageRepository emailMessageRepository;
+    private final ObjectMapper objectMapper;
 
     @Autowired
-    public EmailSendingService(EmailAccountRepository emailAccountRepository) {
+    public EmailSendingService(
+            EmailAccountRepository emailAccountRepository,
+            EmailStorageService emailStorageService,
+            EmailSettingGetterServices emailSettingGetterServices,
+            EmailFolderRepository emailFolderRepository,
+            EmailMessageRepository emailMessageRepository,
+            ObjectMapper objectMapper) {
         this.emailAccountRepository = emailAccountRepository;
+        this.emailStorageService = emailStorageService;
+        this.emailSettingGetterServices = emailSettingGetterServices;
+        this.emailFolderRepository = emailFolderRepository;
+        this.emailMessageRepository = emailMessageRepository;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -84,6 +112,11 @@ public class EmailSendingService {
             // Update sent counter on success
             incrementSentCount(emailAccount);
 
+            // Capture sent email asynchronously (non-blocking)
+            final EmailAccount captureAccount = emailAccount;
+            final MimeMessage captureMessage = mimeMessage;
+            CompletableFuture.runAsync(() -> captureSentEmail(captureAccount, captureMessage, toEmail, subject));
+
             log.info("HTML email sent successfully to: {} using account: {}", toEmail, emailAccount.getName());
 
         } catch (Exception e) {
@@ -121,6 +154,70 @@ public class EmailSendingService {
         emailAccountRepository.save(emailAccount);
         log.debug("Incremented failed count for account {}: {} -> {}",
             emailAccount.getName(), currentCount, currentCount + 1);
+    }
+
+    /**
+     * Capture a sent email as .eml file and store metadata in DB.
+     * Runs asynchronously via CompletableFuture so it never blocks or fails the send.
+     */
+    private void captureSentEmail(EmailAccount account, MimeMessage mimeMessage, String toEmail, String subject) {
+        try {
+            if (!Boolean.TRUE.equals(emailSettingGetterServices.isSentCaptureEnabled())) {
+                return;
+            }
+
+            Long accountId = account.getId();
+            String messageId = mimeMessage.getMessageID();
+            String fileName = emailStorageService.generateEmlFileName(messageId);
+
+            // Save .eml to disk
+            emailStorageService.saveEmlFromMimeMessage(accountId, "sent", fileName, mimeMessage);
+
+            // Get sent folder
+            EmailFolder sentFolder = emailFolderRepository
+                .findByEmailAccountIdAndType(accountId, EmailFolderType.SENT)
+                .orElse(null);
+
+            if (sentFolder == null) {
+                log.debug("No SENT folder found for account {} — skipping capture", account.getEmail());
+                return;
+            }
+
+            // Calculate file size
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            mimeMessage.writeTo(baos);
+
+            // Extract snippet from subject (system emails don't need full body parse)
+            String snippet = subject != null && subject.length() > 200 ? subject.substring(0, 200) : subject;
+
+            // Create metadata record
+            EmailMessage emailMessage = EmailMessage.builder()
+                .emailAccount(account)
+                .folder(sentFolder)
+                .messageId(messageId)
+                .fromAddress(account.getEmail())
+                .fromName(account.getName())
+                .toAddresses(objectMapper.writeValueAsString(List.of(toEmail)))
+                .subject(subject)
+                .snippet(snippet)
+                .isRead(true)
+                .isDraft(false)
+                .hasAttachments(false)
+                .attachmentCount(0)
+                .fileName(fileName)
+                .fileSize((long) baos.size())
+                .storagePath("sent")
+                .sentAt(LocalDateTime.now())
+                .receivedAt(LocalDateTime.now())
+                .build();
+
+            emailMessageRepository.save(emailMessage);
+            emailFolderRepository.incrementMessageCount(sentFolder.getId(), 1);
+
+            log.debug("Captured sent email to {} in SENT folder for account {}", toEmail, account.getEmail());
+        } catch (Exception e) {
+            log.warn("Failed to capture sent email for account {}: {}", account.getEmail(), e.getMessage());
+        }
     }
 
     /**

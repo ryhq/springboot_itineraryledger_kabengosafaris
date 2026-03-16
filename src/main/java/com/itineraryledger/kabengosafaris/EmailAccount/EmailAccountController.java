@@ -142,6 +142,12 @@ public class EmailAccountController {
         return emailAccountTestService.testEmailAccount(id);
     }
 
+    @PostMapping("/{id}/test-imap")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_ACCOUNT')")
+    public ResponseEntity<ApiResponse<?>> testImapConnection(@PathVariable String id) {
+        return emailAccountTestService.testImapConnection(id);
+    }
+
     /**
      * Get all email accounts with optional filtering and pagination
      *

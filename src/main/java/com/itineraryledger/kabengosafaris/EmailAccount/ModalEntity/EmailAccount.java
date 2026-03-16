@@ -97,6 +97,73 @@ public class EmailAccount {
     @Column(nullable = false)
     private Boolean useSsl;
 
+    // ---- Receiving Configuration ----
+
+    /**
+     * Protocol for receiving emails (IMAP, POP3, or NONE)
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private ReceivingProtocol receivingProtocol = ReceivingProtocol.NONE;
+
+    /**
+     * IMAP/POP3 host address (e.g., mail.kabengosafaris.com)
+     */
+    private String imapHost;
+
+    /**
+     * IMAP/POP3 port (e.g., 993 for IMAPS, 995 for POP3S)
+     */
+    private Integer imapPort;
+
+    /**
+     * Whether to use SSL for IMAP/POP3 connection
+     */
+    private Boolean imapUseSsl;
+
+    /**
+     * Whether to use STARTTLS for IMAP/POP3 connection
+     */
+    private Boolean imapUseTls;
+
+    /**
+     * Whether email receiving is enabled for this account
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean receivingEnabled = false;
+
+    /**
+     * How often to fetch emails in minutes
+     */
+    @Builder.Default
+    private Integer fetchIntervalMinutes = 5;
+
+    /**
+     * Maximum number of emails to fetch per cycle
+     */
+    @Builder.Default
+    private Integer maxFetchCount = 50;
+
+    /**
+     * Last time emails were successfully fetched
+     */
+    private LocalDateTime lastFetchedAt;
+
+    /**
+     * Last fetch error message
+     */
+    @Column(length = 1000)
+    private String lastFetchErrorMessage;
+
+    /**
+     * Total number of emails received
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private Long emailsReceivedCount = 0L;
+
     /**
      * Whether this Email Account is enabled/active
      */
@@ -213,6 +280,11 @@ public class EmailAccount {
         if (this.emailsSentCount == null) this.emailsSentCount = 0L;
         if (this.emailsFailedCount == null) this.emailsFailedCount = 0L;
         if (this.includeSignatureByDefault == null) this.includeSignatureByDefault = true;
+        if (this.receivingProtocol == null) this.receivingProtocol = ReceivingProtocol.NONE;
+        if (this.receivingEnabled == null) this.receivingEnabled = false;
+        if (this.fetchIntervalMinutes == null) this.fetchIntervalMinutes = 5;
+        if (this.maxFetchCount == null) this.maxFetchCount = 50;
+        if (this.emailsReceivedCount == null) this.emailsReceivedCount = 0L;
     }
 
     @Override

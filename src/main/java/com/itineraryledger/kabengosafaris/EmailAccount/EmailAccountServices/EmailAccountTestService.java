@@ -10,6 +10,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 
+import jakarta.mail.Session;
+import jakarta.mail.Store;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ import com.itineraryledger.kabengosafaris.EmailAccount.DTOs.EmailAccountDTO;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountRepository;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccount;
+import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.ReceivingProtocol;
 import com.itineraryledger.kabengosafaris.EmailAccount.Components.EncryptionUtil;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -295,4 +298,85 @@ public class EmailAccountTestService {
         return sender;
     }
 
+    /**
+     * Test IMAP/POP3 connection for an email account
+     */
+    @AuditLogAnnotation(action = "TEST_IMAP_CONNECTION", description = "Testing email account IMAP/POP3 connection", entityType = "EmailAccount", entityIdParamName = "idObfuscated")
+    public ResponseEntity<ApiResponse<?>> testImapConnection(String idObfuscated) {
+        log.info("Testing IMAP connection for account ID: {}", idObfuscated);
+        try {
+            Long id = idObfuscator.decodeId(idObfuscated);
+            EmailAccount account = emailAccountRepository.findById(id).orElse(null);
+
+            if (account == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(404, "Email account not found", "EMAIL_ACCOUNT_NOT_FOUND"));
+            }
+
+            if (account.getReceivingProtocol() == null || account.getReceivingProtocol() == ReceivingProtocol.NONE) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "No receiving protocol configured for this account", "NO_RECEIVING_PROTOCOL"));
+            }
+
+            if (account.getImapHost() == null || account.getImapPort() == null) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "IMAP/POP3 host and port must be configured", "MISSING_IMAP_CONFIG"));
+            }
+
+            Store store = null;
+            try {
+                Properties props = new Properties();
+                String protocol;
+
+                if (account.getReceivingProtocol() == ReceivingProtocol.IMAP) {
+                    protocol = Boolean.TRUE.equals(account.getImapUseSsl()) ? "imaps" : "imap";
+                } else {
+                    protocol = Boolean.TRUE.equals(account.getImapUseSsl()) ? "pop3s" : "pop3";
+                }
+
+                props.put("mail.store.protocol", protocol);
+                props.put("mail." + protocol + ".host", account.getImapHost());
+                props.put("mail." + protocol + ".port", String.valueOf(account.getImapPort()));
+                if (Boolean.TRUE.equals(account.getImapUseTls())) {
+                    props.put("mail." + protocol + ".starttls.enable", "true");
+                }
+                props.put("mail." + protocol + ".connectiontimeout", "10000");
+                props.put("mail." + protocol + ".timeout", "10000");
+
+                Session session = Session.getInstance(props);
+                store = session.getStore(protocol);
+                String decryptedPassword = EncryptionUtil.decrypt(account.getSmtpPassword());
+                store.connect(account.getImapHost(), account.getSmtpUsername(), decryptedPassword);
+
+                // Update account
+                account.setLastFetchErrorMessage(null);
+                emailAccountRepository.save(account);
+
+                log.info("IMAP/POP3 test passed for account: {}", account.getEmail());
+
+                EmailAccountDTO dto = emailAccountGetService.convertToDTO(account);
+                return ResponseEntity.ok(ApiResponse.success(200,
+                    account.getReceivingProtocol().getDisplayName() + " connection test passed successfully", dto));
+
+            } catch (Exception e) {
+                account.setLastFetchErrorMessage(e.getMessage());
+                emailAccountRepository.save(account);
+
+                log.error("IMAP/POP3 test failed for account {}: {}", account.getEmail(), e.getMessage());
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400,
+                        account.getReceivingProtocol().getDisplayName() + " connection test failed: " + e.getMessage(),
+                        "IMAP_TEST_FAILED"));
+            } finally {
+                if (store != null && store.isConnected()) {
+                    try { store.close(); } catch (Exception ignored) {}
+                }
+            }
+
+        } catch (Exception e) {
+            log.error("Error testing IMAP connection", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to test IMAP connection", "IMAP_TEST_ERROR"));
+        }
+    }
 }

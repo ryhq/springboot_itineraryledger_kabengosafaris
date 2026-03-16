@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccountProvider;
+import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.ReceivingProtocol;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -154,4 +155,18 @@ public class EmailAccountDTO {
      * User who last updated this email account (for audit trail)
      */
     private String updatedBy;
+
+    // ---- Receiving Configuration ----
+
+    private ReceivingProtocol receivingProtocol;
+    private String imapHost;
+    private Integer imapPort;
+    private Boolean imapUseSsl;
+    private Boolean imapUseTls;
+    private Boolean receivingEnabled;
+    private Integer fetchIntervalMinutes;
+    private Integer maxFetchCount;
+    private LocalDateTime lastFetchedAt;
+    private String lastFetchErrorMessage;
+    private Long emailsReceivedCount;
 }

@@ -127,6 +127,22 @@ public class EmailSignatureController {
     }
 
     /**
+     * Get the default enabled signature for compose auto-append.
+     * Returns substituted HTML content ready to insert into the email body.
+     * Returns null data if no default signature exists or it is disabled.
+     *
+     * Example request:
+     * GET /api/email-accounts/{emailAccountId}/signatures/default?senderName=John
+     */
+    @GetMapping("/default")
+    @PreAuthorize("hasAuthority('PERM_READ_EMAIL_ACCOUNT_SIGNATURE')")
+    public ResponseEntity<ApiResponse<?>> getDefaultSignature(
+            @PathVariable String emailAccountId,
+            @RequestParam(required = false) Map<String, String> variables) {
+        return emailAccountSignatureGetService.getDefaultSignature(emailAccountId, variables);
+    }
+
+    /**
      * Get a single signature by ID
      *
      * @param emailAccountId The obfuscated email account ID

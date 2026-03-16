@@ -111,4 +111,49 @@ public class UpdateEmailAccountDTO {
      * Whether to include signature in all emails sent from this account (optional)
      */
     private Boolean includeSignatureByDefault;
+
+    // ---- Receiving Configuration (optional) ----
+
+    /**
+     * Receiving protocol: 1=IMAP, 2=POP3, 3=NONE
+     */
+    private Integer receivingProtocol;
+
+    /**
+     * IMAP/POP3 host address
+     */
+    private String imapHost;
+
+    /**
+     * IMAP/POP3 port
+     */
+    @Min(value = 1, message = "IMAP port must be greater than 0")
+    private Integer imapPort;
+
+    /**
+     * Whether to use SSL for IMAP/POP3
+     */
+    private Boolean imapUseSsl;
+
+    /**
+     * Whether to use STARTTLS for IMAP/POP3
+     */
+    private Boolean imapUseTls;
+
+    /**
+     * Whether email receiving is enabled
+     */
+    private Boolean receivingEnabled;
+
+    /**
+     * How often to fetch emails in minutes
+     */
+    @Min(value = 1, message = "Fetch interval must be at least 1 minute")
+    private Integer fetchIntervalMinutes;
+
+    /**
+     * Maximum emails to fetch per cycle
+     */
+    @Min(value = 1, message = "Max fetch count must be at least 1")
+    private Integer maxFetchCount;
 }

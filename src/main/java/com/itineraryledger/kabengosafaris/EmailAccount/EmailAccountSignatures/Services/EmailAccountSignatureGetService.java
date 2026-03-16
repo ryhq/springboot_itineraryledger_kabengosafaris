@@ -439,6 +439,52 @@ public class EmailAccountSignatureGetService {
         }
     }
 
+    /**
+     * Get the default enabled signature for an email account (for compose auto-append).
+     * Returns the signature content with variables substituted, ready to insert into the email body.
+     */
+    public ResponseEntity<ApiResponse<?>> getDefaultSignature(String emailAccountIdObfuscated, Map<String, String> variables) {
+        try {
+            Long emailAccountId = idObfuscator.decodeId(emailAccountIdObfuscated);
+
+            // Validate email account exists
+            EmailAccount emailAccount = emailAccountRepository.findById(emailAccountId).orElse(null);
+            if (emailAccount == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                        ApiResponse.error(404, "Email account not found", "EMAIL_ACCOUNT_NOT_FOUND"));
+            }
+
+            // Find default signature
+            var defaultSignature = emailAccountSignatureRepository
+                    .findByEmailAccountIdAndIsDefaultTrue(emailAccountId).orElse(null);
+
+            if (defaultSignature == null) {
+                return ResponseEntity.ok(ApiResponse.success(200, "No default signature configured", null));
+            }
+
+            if (!defaultSignature.getEnabled()) {
+                return ResponseEntity.ok(ApiResponse.success(200, "Default signature is disabled", null));
+            }
+
+            // Get content with variables substituted
+            String content = emailAccountSignatureService.getSignatureWithVariables(
+                    defaultSignature, variables != null ? variables : Map.of());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", idObfuscator.encodeId(defaultSignature.getId()));
+            response.put("name", defaultSignature.getName());
+            response.put("signature", content);
+            response.put("variables", emailAccountSignatureService.parseVariablesJson(defaultSignature.getVariablesJson()));
+
+            return ResponseEntity.ok(ApiResponse.success(200, "Default signature retrieved successfully", response));
+
+        } catch (Exception e) {
+            log.error("Error fetching default signature", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.error(500, "Failed to fetch default signature", "DEFAULT_SIGNATURE_FETCH_FAILED"));
+        }
+    }
+
     private String validateSortField(String sortBy) {
         if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
         for (String field : VALID_SORT_FIELDS) {

@@ -112,5 +112,44 @@ public class CreateEmailAccountDTO {
     @NotNull(message = "Retry delay seconds is required")
     @Min(value = 1, message = "Retry delay must be at least 1 second")
     private Integer retryDelaySeconds;
-    
+
+    // ---- Receiving Configuration (optional) ----
+
+    /**
+     * Receiving protocol: 1=IMAP, 2=POP3, 3=NONE (default NONE)
+     */
+    private Integer receivingProtocol;
+
+    /**
+     * IMAP/POP3 host address (e.g., mail.kabengosafaris.com)
+     */
+    private String imapHost;
+
+    /**
+     * IMAP/POP3 port (e.g., 993 for IMAPS, 995 for POP3S)
+     */
+    @Min(value = 1, message = "IMAP port must be greater than 0")
+    private Integer imapPort;
+
+    /**
+     * Whether to use SSL for IMAP/POP3
+     */
+    private Boolean imapUseSsl;
+
+    /**
+     * Whether to use STARTTLS for IMAP/POP3
+     */
+    private Boolean imapUseTls;
+
+    /**
+     * How often to fetch emails in minutes
+     */
+    @Min(value = 1, message = "Fetch interval must be at least 1 minute")
+    private Integer fetchIntervalMinutes;
+
+    /**
+     * Maximum emails to fetch per cycle
+     */
+    @Min(value = 1, message = "Max fetch count must be at least 1")
+    private Integer maxFetchCount;
 }

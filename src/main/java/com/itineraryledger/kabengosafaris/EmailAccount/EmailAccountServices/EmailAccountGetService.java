@@ -335,6 +335,17 @@ public class EmailAccountGetService {
                 .updatedAt(emailAccount.getUpdatedAt())
                 .createdBy(emailAccount.getCreatedBy())
                 .updatedBy(emailAccount.getUpdatedBy())
+                .receivingProtocol(emailAccount.getReceivingProtocol())
+                .imapHost(emailAccount.getImapHost())
+                .imapPort(emailAccount.getImapPort())
+                .imapUseSsl(emailAccount.getImapUseSsl())
+                .imapUseTls(emailAccount.getImapUseTls())
+                .receivingEnabled(emailAccount.getReceivingEnabled())
+                .fetchIntervalMinutes(emailAccount.getFetchIntervalMinutes())
+                .maxFetchCount(emailAccount.getMaxFetchCount())
+                .lastFetchedAt(emailAccount.getLastFetchedAt())
+                .lastFetchErrorMessage(emailAccount.getLastFetchErrorMessage())
+                .emailsReceivedCount(emailAccount.getEmailsReceivedCount())
                 .build();
     }
 }

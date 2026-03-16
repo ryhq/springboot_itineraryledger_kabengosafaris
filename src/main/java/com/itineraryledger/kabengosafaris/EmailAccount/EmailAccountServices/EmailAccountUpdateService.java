@@ -14,6 +14,7 @@ import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountRepository;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccount;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccountProvider;
+import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.ReceivingProtocol;
 import com.itineraryledger.kabengosafaris.EmailAccount.Components.EncryptionUtil;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -286,6 +287,37 @@ public class EmailAccountUpdateService {
         // Update includeSignatureByDefault if provided
         if (updateDTO.getIncludeSignatureByDefault() != null) {
             existing.setIncludeSignatureByDefault(updateDTO.getIncludeSignatureByDefault());
+        }
+
+        // ---- Update Receiving Configuration ----
+        if (updateDTO.getReceivingProtocol() != null) {
+            ReceivingProtocol protocol = switch (updateDTO.getReceivingProtocol()) {
+                case 1 -> ReceivingProtocol.IMAP;
+                case 2 -> ReceivingProtocol.POP3;
+                default -> ReceivingProtocol.NONE;
+            };
+            existing.setReceivingProtocol(protocol);
+        }
+        if (updateDTO.getImapHost() != null) {
+            existing.setImapHost(updateDTO.getImapHost());
+        }
+        if (updateDTO.getImapPort() != null) {
+            existing.setImapPort(updateDTO.getImapPort());
+        }
+        if (updateDTO.getImapUseSsl() != null) {
+            existing.setImapUseSsl(updateDTO.getImapUseSsl());
+        }
+        if (updateDTO.getImapUseTls() != null) {
+            existing.setImapUseTls(updateDTO.getImapUseTls());
+        }
+        if (updateDTO.getReceivingEnabled() != null) {
+            existing.setReceivingEnabled(updateDTO.getReceivingEnabled());
+        }
+        if (updateDTO.getFetchIntervalMinutes() != null) {
+            existing.setFetchIntervalMinutes(updateDTO.getFetchIntervalMinutes());
+        }
+        if (updateDTO.getMaxFetchCount() != null) {
+            existing.setMaxFetchCount(updateDTO.getMaxFetchCount());
         }
 
         // Save updated account

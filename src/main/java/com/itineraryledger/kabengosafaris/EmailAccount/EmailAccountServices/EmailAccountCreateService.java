@@ -13,6 +13,7 @@ import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountRepository;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccount;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccountProvider;
+import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.ReceivingProtocol;
 import com.itineraryledger.kabengosafaris.EmailAccount.Components.EncryptionUtil;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -153,6 +154,15 @@ public class EmailAccountCreateService {
                 .retryDelaySeconds(createDTO.getRetryDelaySeconds())
                 .emailsSentCount(0L)
                 .emailsFailedCount(0L)
+                .receivingProtocol(validateAndGetReceivingProtocol(createDTO.getReceivingProtocol()))
+                .imapHost(createDTO.getImapHost())
+                .imapPort(createDTO.getImapPort())
+                .imapUseSsl(createDTO.getImapUseSsl())
+                .imapUseTls(createDTO.getImapUseTls())
+                .receivingEnabled(false)
+                .fetchIntervalMinutes(createDTO.getFetchIntervalMinutes() != null ? createDTO.getFetchIntervalMinutes() : 5)
+                .maxFetchCount(createDTO.getMaxFetchCount() != null ? createDTO.getMaxFetchCount() : 50)
+                .emailsReceivedCount(0L)
                 .build();
 
             // Save to database
@@ -197,6 +207,15 @@ public class EmailAccountCreateService {
      * @param providerTypeInt The provider type as integer
      * @return EmailAccountProvider enum or null if invalid
      */
+    private ReceivingProtocol validateAndGetReceivingProtocol(Integer protocolInt) {
+        if (protocolInt == null) return ReceivingProtocol.NONE;
+        return switch (protocolInt) {
+            case 1 -> ReceivingProtocol.IMAP;
+            case 2 -> ReceivingProtocol.POP3;
+            default -> ReceivingProtocol.NONE;
+        };
+    }
+
     private EmailAccountProvider validateAndGetProviderType(Integer providerTypeInt) {
         if (providerTypeInt == null) {
             return null;
