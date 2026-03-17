@@ -58,7 +58,8 @@ public class PublicItineraryService {
     }
 
     public ResponseEntity<ApiResponse<?>> getItineraries(Integer page, Integer size, String sortBy, String sortDirection,
-                                                          TripType tripType, BudgetCategory budgetCategory, String keyword, String lang) {
+                                                          TripType tripType, BudgetCategory budgetCategory, String keyword,
+                                                          Integer minDays, Integer maxDays, String lang) {
         try {
             page = page != null ? page : 0;
             size = size != null ? size : 20;
@@ -72,6 +73,8 @@ public class PublicItineraryService {
             if (tripType != null) spec = spec.and(ItinerarySpecification.hasTripType(tripType));
             if (budgetCategory != null) spec = spec.and(ItinerarySpecification.hasBudgetCategory(budgetCategory));
             if (keyword != null && !keyword.isEmpty()) spec = spec.and(ItinerarySpecification.searchKeyword(keyword));
+            if (minDays != null) spec = spec.and(ItinerarySpecification.minTotalDays(minDays));
+            if (maxDays != null) spec = spec.and(ItinerarySpecification.maxTotalDays(maxDays));
 
             Page<Itinerary> itineraryPage = itineraryRepository.findAll(spec, pageable);
 

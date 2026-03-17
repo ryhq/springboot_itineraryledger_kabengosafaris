@@ -223,9 +223,11 @@ public class PublicController {
         @RequestParam(required = false) String sortDirection,
         @RequestParam(required = false) TripType tripType,
         @RequestParam(required = false) BudgetCategory budgetCategory,
-        @RequestParam(required = false) String keyword
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) Integer minDays,
+        @RequestParam(required = false) Integer maxDays
     ) {
-        return publicItineraryService.getItineraries(page, size, sortBy, sortDirection, tripType, budgetCategory, keyword, publicTranslationService.parseLanguage(lang));
+        return publicItineraryService.getItineraries(page, size, sortBy, sortDirection, tripType, budgetCategory, keyword, minDays, maxDays, publicTranslationService.parseLanguage(lang));
     }
 
     @GetMapping("/safaris/{identifier}")
