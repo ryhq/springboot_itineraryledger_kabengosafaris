@@ -67,6 +67,9 @@ public class PublicItineraryDTO {
     // Cost summary (rack prices only - no agent/net prices)
     private List<ItineraryCostSummaryDTO> costSummary;
 
+    // Pax breakdown (nationality + age category + count) — tells users "price is for X adults, Y nationality"
+    private List<PublicPaxDTO> paxBreakdown;
+
     // Day-by-day itinerary (for detail view only)
     private List<PublicItineraryDayDTO> days;
 
@@ -136,5 +139,16 @@ public class PublicItineraryDTO {
         private String accommodationId;
         @Translatable private String accommodationName;
         private String primaryImageUrl;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class PublicPaxDTO {
+        @Translatable private String nationCategoryName;
+        @Translatable private String ageCategoryName;
+        private Integer count;
     }
 }

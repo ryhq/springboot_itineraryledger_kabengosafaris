@@ -7,6 +7,7 @@ import com.itineraryledger.kabengosafaris.Itinerary.Entity.BudgetCategory;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Entity.ItineraryDay;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryPax.Entity.ItineraryPax;
 import com.itineraryledger.kabengosafaris.Itinerary.Repository.ItineraryRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.Specifications.ItinerarySpecification;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicItineraryDTO;
@@ -159,6 +160,7 @@ public class PublicItineraryService {
             .totalPaxCount(itinerary.getTotalPaxCount())
             .totalDaysCount(itinerary.getDays() != null ? itinerary.getDays().size() : 0)
             .primaryImageUrl(primaryImage)
+            .paxBreakdown(mapToPaxBreakdown(itinerary))
             .build();
     }
 
@@ -189,7 +191,8 @@ public class PublicItineraryService {
             .endLocation(itinerary.getEndLocation())
             .carCount(itinerary.getCarCount())
             .totalPaxCount(itinerary.getTotalPaxCount())
-            .totalDaysCount(itinerary.getDays() != null ? itinerary.getDays().size() : 0);
+            .totalDaysCount(itinerary.getDays() != null ? itinerary.getDays().size() : 0)
+            .paxBreakdown(mapToPaxBreakdown(itinerary));
 
         // Build day-by-day
         if (itinerary.getDays() != null && !itinerary.getDays().isEmpty()) {
@@ -343,6 +346,17 @@ public class PublicItineraryService {
         // Fallback: collect all and pick random
         List<String> pool = imageResolver.collectDayImages(allParkIds, allActivityIds, allAccIds, allParkImages, allActivityImages);
         return imageResolver.pickRandom(pool);
+    }
+
+    private List<PublicItineraryDTO.PublicPaxDTO> mapToPaxBreakdown(Itinerary itinerary) {
+        if (itinerary.getPaxList() == null || itinerary.getPaxList().isEmpty()) return null;
+        return itinerary.getPaxList().stream()
+            .map(pax -> PublicItineraryDTO.PublicPaxDTO.builder()
+                .nationCategoryName(pax.getNationCategory() != null ? pax.getNationCategory().getName() : null)
+                .ageCategoryName(pax.getAgeCategory() != null ? pax.getAgeCategory().getName() : null)
+                .count(pax.getCount())
+                .build())
+            .collect(Collectors.toList());
     }
 
     private List<ItineraryCostSummaryDTO> mapToPublicCostSummary(List<ItineraryCostSummary> costs) {
