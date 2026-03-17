@@ -77,6 +77,7 @@ public class TestimonyUpdateService {
             if (updateDTO.getAuthorName() != null) testimony.setAuthorName(updateDTO.getAuthorName());
             if (updateDTO.getAuthorTitle() != null) testimony.setAuthorTitle(updateDTO.getAuthorTitle());
             if (updateDTO.getAuthorCountry() != null) testimony.setAuthorCountry(updateDTO.getAuthorCountry());
+            if (updateDTO.getAuthorEmail() != null) testimony.setAuthorEmail(updateDTO.getAuthorEmail());
             if (updateDTO.getMessage() != null) testimony.setMessage(updateDTO.getMessage());
             if (updateDTO.getRating() != null) testimony.setRating(updateDTO.getRating());
             if (updateDTO.getSource() != null) testimony.setSource(updateDTO.getSource());

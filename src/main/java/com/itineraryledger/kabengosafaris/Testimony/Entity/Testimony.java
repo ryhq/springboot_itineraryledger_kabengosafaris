@@ -65,6 +65,9 @@ public class Testimony {
     @Column(name = "author_country", length = 100)
     private String authorCountry;
 
+    @Column(name = "author_email", length = 255)
+    private String authorEmail;
+
     @Lob
     @Column(name = "message", columnDefinition = "TEXT", nullable = false)
     private String message;

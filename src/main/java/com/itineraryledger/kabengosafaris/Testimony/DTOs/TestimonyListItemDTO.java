@@ -20,6 +20,7 @@ public class TestimonyListItemDTO {
     private String authorName;
     private String authorTitle;
     private String authorCountry;
+    private String authorEmail;
     private String message;
     private Integer rating;
     private TestimonySource source;

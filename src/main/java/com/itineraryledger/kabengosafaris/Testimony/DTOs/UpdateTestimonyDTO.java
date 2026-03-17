@@ -20,6 +20,7 @@ public class UpdateTestimonyDTO {
     private String authorName;
     private String authorTitle;
     private String authorCountry;
+    private String authorEmail;
     private String message;
 
     @Min(value = 1, message = "Rating must be at least 1")

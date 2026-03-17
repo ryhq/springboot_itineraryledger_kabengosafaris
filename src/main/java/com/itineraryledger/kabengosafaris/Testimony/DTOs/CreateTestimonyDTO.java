@@ -26,6 +26,8 @@ public class CreateTestimonyDTO {
 
     private String authorCountry;
 
+    private String authorEmail;
+
     @NotBlank(message = "Message is required")
     private String message;
 

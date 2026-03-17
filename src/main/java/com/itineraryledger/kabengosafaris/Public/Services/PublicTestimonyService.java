@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.Public.Services;
 
+import com.itineraryledger.kabengosafaris.Customer.Entity.CustomerEmail;
+import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerEmailRepository;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicTestimonyDTO;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
@@ -36,6 +38,7 @@ public class PublicTestimonyService {
 
     private final TestimonyRepository testimonyRepository;
     private final SafariRepository safariRepository;
+    private final CustomerEmailRepository customerEmailRepository;
     private final IdObfuscator idObfuscator;
     private final TestimonyImageStorageService storageService;
     private final PublicTranslationService publicTranslationService;
@@ -122,6 +125,7 @@ public class PublicTestimonyService {
                 .authorName(request.authorName())
                 .authorTitle(request.authorTitle())
                 .authorCountry(request.authorCountry())
+                .authorEmail(request.authorEmail())
                 .message(request.message())
                 .rating(request.rating())
                 .source(TestimonySource.WEBSITE)
@@ -132,6 +136,21 @@ public class PublicTestimonyService {
                 .isActive(false)
                 .displayOrder(0)
                 .build();
+
+            // Lookup customer by email and link if found
+            if (request.authorEmail() != null && !request.authorEmail().isBlank()) {
+                try {
+                    customerEmailRepository.findByEmail(request.authorEmail().trim())
+                        .map(CustomerEmail::getCustomer)
+                        .ifPresent(customer -> {
+                            testimony.setCustomer(customer);
+                            testimony.setIsVerifiedBooking(true);
+                            log.info("Linked public testimony to customer via email: {}", request.authorEmail());
+                        });
+                } catch (Exception e) {
+                    log.warn("Error looking up customer by email: {}", request.authorEmail(), e);
+                }
+            }
 
             if (request.safariId() != null && !request.safariId().isBlank()) {
                 try {
@@ -201,6 +220,7 @@ public class PublicTestimonyService {
         String authorName,
         String authorTitle,
         String authorCountry,
+        String authorEmail,
         String message,
         Integer rating,
         String safariId

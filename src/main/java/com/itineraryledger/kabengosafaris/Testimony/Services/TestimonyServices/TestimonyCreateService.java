@@ -59,6 +59,7 @@ public class TestimonyCreateService {
                 .authorName(createDTO.getAuthorName())
                 .authorTitle(createDTO.getAuthorTitle())
                 .authorCountry(createDTO.getAuthorCountry())
+                .authorEmail(createDTO.getAuthorEmail())
                 .message(createDTO.getMessage())
                 .rating(createDTO.getRating())
                 .source(createDTO.getSource())

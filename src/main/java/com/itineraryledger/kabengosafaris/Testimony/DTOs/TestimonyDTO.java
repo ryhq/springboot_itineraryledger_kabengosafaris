@@ -21,6 +21,7 @@ public class TestimonyDTO {
     private String authorName;
     private String authorTitle;
     private String authorCountry;
+    private String authorEmail;
     @Translatable private String message;
     private Integer rating;
     private String adminResponse;
