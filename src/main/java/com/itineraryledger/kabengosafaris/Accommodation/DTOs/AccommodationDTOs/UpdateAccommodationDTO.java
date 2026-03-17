@@ -79,6 +79,7 @@ public class UpdateAccommodationDTO {
 
     // Status
     private Boolean isActive;
+    private Boolean isWebActive;
 
     // Internal Notes
     private String internalNotes;

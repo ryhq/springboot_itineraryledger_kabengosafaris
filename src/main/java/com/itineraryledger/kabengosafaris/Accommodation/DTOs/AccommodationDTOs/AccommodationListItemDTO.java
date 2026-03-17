@@ -22,4 +22,5 @@ public class AccommodationListItemDTO {
     private String location;
     private String region;
     private Boolean isActive;
+    private Boolean isWebActive;
 }

@@ -24,4 +24,5 @@ public class UpdateParkImageDTO {
     private String description;
     private Boolean isPrimary;
     private Boolean isActive;
+    private Boolean isWebActive;
 }

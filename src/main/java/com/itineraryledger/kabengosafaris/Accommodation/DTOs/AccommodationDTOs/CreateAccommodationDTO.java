@@ -147,6 +147,7 @@ public class CreateAccommodationDTO {
     // Status
     @Builder.Default
     private Boolean isActive = true;
+    private Boolean isWebActive;
 
     // Internal Notes
     private String internalNotes; // Staff notes, not visible to public

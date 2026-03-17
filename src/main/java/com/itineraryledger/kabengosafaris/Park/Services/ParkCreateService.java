@@ -99,6 +99,7 @@ public class ParkCreateService {
                 .accessInformation(createParkDTO.getAccessInformation())
                 .tags(createParkDTO.getTags())
                 .isActive(createParkDTO.getIsActive() != null ? createParkDTO.getIsActive() : true)
+                .isWebActive(createParkDTO.getIsWebActive() != null ? createParkDTO.getIsWebActive() : true)
                 .build();
 
             // Save park
@@ -168,6 +169,7 @@ public class ParkCreateService {
         dto.setAccessInformation(park.getAccessInformation());
         dto.setTags(park.getTags());
         dto.setIsActive(park.getIsActive());
+        dto.setIsWebActive(park.getIsWebActive());
         dto.setCreatedAt(park.getCreatedAt());
         dto.setUpdatedAt(park.getUpdatedAt());
         return dto;

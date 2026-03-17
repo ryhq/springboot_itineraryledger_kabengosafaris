@@ -22,6 +22,7 @@ import java.util.List;
     @Index(name = "idx_park_type", columnList = "park_type"),
     @Index(name = "idx_region", columnList = "region"),
     @Index(name = "idx_is_active", columnList = "is_active"),
+    @Index(name = "idx_park_web_active", columnList = "is_web_active"),
     @Index(name = "idx_name", columnList = "name")
 })
 @Data
@@ -115,6 +116,10 @@ public class Park {
     @Builder.Default
     @Column(nullable = false)
     private Boolean isActive = true;
+
+    @Builder.Default
+    @Column(name = "is_web_active", nullable = false)
+    private Boolean isWebActive = true;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

@@ -55,6 +55,7 @@ public class ParkImageDTO {
 
     private Boolean isPrimary;
     private Boolean isActive;
+    private Boolean isWebActive;
     private Integer displayOrder;
 
     private Long fileSize;

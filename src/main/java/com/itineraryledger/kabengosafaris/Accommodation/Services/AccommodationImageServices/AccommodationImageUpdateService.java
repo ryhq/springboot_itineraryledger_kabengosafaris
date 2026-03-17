@@ -88,6 +88,9 @@ public class AccommodationImageUpdateService {
             if (updateDTO.getIsActive() != null) {
                 image.setIsActive(updateDTO.getIsActive());
             }
+            if (updateDTO.getIsWebActive() != null) {
+                image.setIsWebActive(updateDTO.getIsWebActive());
+            }
 
             // Save image
             image = accommodationImageRepository.save(image);

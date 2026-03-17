@@ -71,6 +71,7 @@ public class AccommodationImageGetService {
             .description(image.getDescription())
             .isPrimary(image.getIsPrimary())
             .isActive(image.getIsActive())
+            .isWebActive(image.getIsWebActive())
             .displayOrder(image.getDisplayOrder())
             .fileSize(image.getFileSize())
             .fileSizeFormatted(image.getFileSize() != null ? storageService.formatFileSize(image.getFileSize()) : null)
@@ -101,6 +102,7 @@ public class AccommodationImageGetService {
             ImageType imageType,
             Boolean isPrimary,
             Boolean isActive,
+            Boolean isWebActive,
             Integer displayOrder,
             int page,
             int size,
@@ -142,6 +144,9 @@ public class AccommodationImageGetService {
         }
         if (isActive != null) {
             spec = spec.and(AccommodationImageSpecification.byIsActive(isActive));
+        }
+        if (isWebActive != null) {
+            spec = spec.and(AccommodationImageSpecification.isWebActive(isWebActive));
         }
         if (displayOrder != null) {
             spec = spec.and(AccommodationImageSpecification.byDisplayOrder(displayOrder));

@@ -40,6 +40,7 @@ public class ParkDTO {
     @Translatable private String accessInformation;
     @Translatable private String tags;
     private Boolean isActive;
+    private Boolean isWebActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -24,4 +24,5 @@ public class UpdateAccommodationImageDTO {
     private String description;
     private Boolean isPrimary;
     private Boolean isActive;
+    private Boolean isWebActive;
 }

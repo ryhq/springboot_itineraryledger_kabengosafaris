@@ -200,6 +200,7 @@ public class AccommodationImageCreateService {
                         .description(dto.getDescription())
                         .isPrimary(false)
                         .isActive(true)
+                        .isWebActive(true)
                         .displayOrder(displayOrder)
                         .fileSize(file.getSize())
                         .mimeType(storageService.getMimeType(savedFileName))

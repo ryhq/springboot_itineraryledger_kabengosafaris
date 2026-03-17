@@ -134,6 +134,6 @@ public interface AccommodationImageRepository extends JpaRepository<Accommodatio
     /**
      * Find all active images across all active accommodations (for gallery)
      */
-    @Query("SELECT img FROM AccommodationImage img JOIN img.accommodation a WHERE img.isActive = true AND a.isActive = true ORDER BY img.createdAt DESC")
+    @Query("SELECT img FROM AccommodationImage img JOIN img.accommodation a WHERE img.isActive = true AND img.isWebActive = true AND a.isActive = true AND a.isWebActive = true ORDER BY img.createdAt DESC")
     Page<AccommodationImage> findAllActiveForGallery(Pageable pageable);
 }

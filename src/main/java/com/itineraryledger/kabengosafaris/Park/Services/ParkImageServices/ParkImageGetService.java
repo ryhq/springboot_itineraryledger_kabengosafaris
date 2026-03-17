@@ -70,6 +70,7 @@ public class ParkImageGetService {
             .description(image.getDescription())
             .isPrimary(image.getIsPrimary())
             .isActive(image.getIsActive())
+            .isWebActive(image.getIsWebActive())
             .displayOrder(image.getDisplayOrder())
             .fileSize(image.getFileSize())
             .fileSizeFormatted(image.getFileSize() != null ? storageService.formatFileSize(image.getFileSize()) : null)
@@ -89,6 +90,7 @@ public class ParkImageGetService {
             ImageType imageType,
             Boolean isPrimary,
             Boolean isActive,
+            Boolean isWebActive,
             Integer displayOrder,
             int page,
             int size,
@@ -123,6 +125,9 @@ public class ParkImageGetService {
         }
         if (isActive != null) {
             spec = spec.and(ParkImageSpecification.byIsActive(isActive));
+        }
+        if (isWebActive != null) {
+            spec = spec.and(ParkImageSpecification.isWebActive(isWebActive));
         }
         if (displayOrder != null) {
             spec = spec.and(ParkImageSpecification.byDisplayOrder(displayOrder));

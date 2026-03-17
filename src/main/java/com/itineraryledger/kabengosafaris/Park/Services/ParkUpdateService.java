@@ -182,6 +182,9 @@ public class ParkUpdateService {
         if (updateParkDTO.getIsActive() != null) {
             park.setIsActive(updateParkDTO.getIsActive());
         }
+        if (updateParkDTO.getIsWebActive() != null) {
+            park.setIsWebActive(updateParkDTO.getIsWebActive());
+        }
 
         // Save updated park
         park = parkRepository.save(park);
@@ -228,6 +231,7 @@ public class ParkUpdateService {
         dto.setAccessInformation(park.getAccessInformation());
         dto.setTags(park.getTags());
         dto.setIsActive(park.getIsActive());
+        dto.setIsWebActive(park.getIsWebActive());
         dto.setCreatedAt(park.getCreatedAt());
         dto.setUpdatedAt(park.getUpdatedAt());
         return dto;

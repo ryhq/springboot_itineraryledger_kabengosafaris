@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
     @Index(name = "idx_accommodation_image_type", columnList = "image_type"),
     @Index(name = "idx_accommodation_image_is_primary", columnList = "is_primary"),
     @Index(name = "idx_accommodation_image_display_order", columnList = "display_order"),
+    @Index(name = "idx_accommodation_image_web_active", columnList = "is_web_active"),
 })
 @Data
 @NoArgsConstructor
@@ -75,6 +76,10 @@ public class AccommodationImage {
     @Builder.Default
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
+
+    @Builder.Default
+    @Column(name = "is_web_active", nullable = false)
+    private Boolean isWebActive = true;
 
     /**
      * Display order for sorting images

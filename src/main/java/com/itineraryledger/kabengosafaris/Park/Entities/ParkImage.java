@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
     @Index(name = "idx_park_image_park_id", columnList = "park_id"),
     @Index(name = "idx_park_image_type", columnList = "image_type"),
     @Index(name = "idx_park_image_is_active", columnList = "is_active"),
+    @Index(name = "idx_park_image_web_active", columnList = "is_web_active"),
     @Index(name = "idx_park_image_is_primary", columnList = "is_primary"),
     @Index(name = "idx_park_image_display_order", columnList = "display_order")
 })
@@ -66,6 +67,10 @@ public class ParkImage {
     @Builder.Default
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
+
+    @Builder.Default
+    @Column(name = "is_web_active", nullable = false)
+    private Boolean isWebActive = true;
 
     @Builder.Default
     @Column(name = "display_order", nullable = false)

@@ -322,6 +322,9 @@ public class UpdateAccommodationService {
         if (updateAccommodationDTO.getIsActive() != null) {
             accommodation.setIsActive(updateAccommodationDTO.getIsActive());
         }
+        if (updateAccommodationDTO.getIsWebActive() != null) {
+            accommodation.setIsWebActive(updateAccommodationDTO.getIsWebActive());
+        }
 
         // Update internal notes
         if (updateAccommodationDTO.getInternalNotes() != null) {
@@ -444,6 +447,7 @@ public class UpdateAccommodationService {
             .operatingSeason(accommodation.getOperatingSeason())
             .tags(accommodation.getTags())
             .isActive(accommodation.getIsActive())
+            .isWebActive(accommodation.getIsWebActive())
             .createdAt(accommodation.getCreatedAt())
             .updatedAt(accommodation.getUpdatedAt())
             .emailCount(accommodation.getEmails() != null ? accommodation.getEmails().size() : 0)

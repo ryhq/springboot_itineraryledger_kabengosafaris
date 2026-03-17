@@ -171,6 +171,18 @@ public class ParkSpecification {
     }
 
     /**
+     * Filter by web active status
+     */
+    public static Specification<Park> isWebActive(Boolean isWebActive) {
+        return (root, query, cb) -> {
+            if (isWebActive == null) {
+                return cb.conjunction();
+            }
+            return cb.equal(root.get("isWebActive"), isWebActive);
+        };
+    }
+
+    /**
      * Search across multiple text fields (name, short description, region, district, location)
      * Useful for general search functionality
      */

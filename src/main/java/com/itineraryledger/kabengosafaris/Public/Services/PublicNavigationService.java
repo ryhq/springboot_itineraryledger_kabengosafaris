@@ -50,7 +50,7 @@ public class PublicNavigationService {
 
             // Parks - return id and name for active parks
             List<Park> activeParksList = parkRepository.findAll(
-                ParkSpecification.isActive(true),
+                ParkSpecification.isActive(true).and(ParkSpecification.isWebActive(true)),
                 Sort.by(Sort.Direction.ASC, "name")
             );
             List<Map<String, String>> parkNavItems = activeParksList.stream().map(p -> {
@@ -80,7 +80,7 @@ public class PublicNavigationService {
 
             // Accommodations - return id, name, and region for active accommodations
             List<Accommodation> activeAccommodationsList = accommodationRepository.findAll(
-                AccommodationSpecification.isActive(true),
+                AccommodationSpecification.isActive(true).and(AccommodationSpecification.isWebActive(true)),
                 Sort.by(Sort.Direction.ASC, "name")
             );
             List<Map<String, String>> accommodationNavItems = activeAccommodationsList.stream().map(a -> {

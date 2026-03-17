@@ -161,6 +161,18 @@ public class AccommodationSpecification {
     }
 
     /**
+     * Filter by web active status
+     */
+    public static Specification<Accommodation> isWebActive(Boolean isWebActive) {
+        return (root, query, cb) -> {
+            if (isWebActive == null) {
+                return cb.conjunction();
+            }
+            return cb.equal(root.get("isWebActive"), isWebActive);
+        };
+    }
+
+    /**
      * Filter by headquarters status
      */
     public static Specification<Accommodation> isHeadquarters(Boolean isHeadquarters) {

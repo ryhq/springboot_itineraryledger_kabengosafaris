@@ -39,7 +39,7 @@ public class ParkGetService {
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
-        "name", "slug", "parkType", "region", "district", "isActive", "createdAt", "updatedAt"
+        "name", "slug", "parkType", "region", "district", "isActive", "isWebActive", "createdAt", "updatedAt"
     );
     private static final String DEFAULT_SORT_FIELD = "createdAt";
 
@@ -194,6 +194,7 @@ public class ParkGetService {
         String location,
         String parkSize,
         Boolean isActive,
+        Boolean isWebActive,
         String keyword,
         Integer page,
         Integer size,
@@ -226,6 +227,9 @@ public class ParkGetService {
             }
             if (isActive != null) {
                 spec = spec.and(ParkSpecification.isActive(isActive));
+            }
+            if (isWebActive != null) {
+                spec = spec.and(ParkSpecification.isWebActive(isWebActive));
             }
             if (keyword != null && !keyword.isEmpty()) {
                 spec = spec.and(ParkSpecification.searchKeyword(keyword));
@@ -329,6 +333,7 @@ public class ParkGetService {
         dto.setAccessInformation(park.getAccessInformation());
         dto.setTags(park.getTags());
         dto.setIsActive(park.getIsActive());
+        dto.setIsWebActive(park.getIsWebActive());
         dto.setCreatedAt(park.getCreatedAt());
         dto.setUpdatedAt(park.getUpdatedAt());
         return dto;

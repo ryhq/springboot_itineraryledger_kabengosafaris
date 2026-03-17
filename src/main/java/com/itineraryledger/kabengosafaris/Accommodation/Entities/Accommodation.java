@@ -32,6 +32,7 @@ import java.util.List;
     @Index(name = "idx_accommodation_region", columnList = "region"),
     @Index(name = "idx_accommodation_district", columnList = "district"),
     @Index(name = "idx_accommodation_is_active", columnList = "is_active"),
+    @Index(name = "idx_accommodation_web_active", columnList = "is_web_active"),
     @Index(name = "idx_accommodation_has_branch", columnList = "has_branch"),
     @Index(name = "idx_accommodation_star_rating", columnList = "star_rating")
 })
@@ -190,6 +191,10 @@ public class Accommodation {
     @Builder.Default
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
+
+    @Builder.Default
+    @Column(name = "is_web_active", nullable = false)
+    private Boolean isWebActive = true;
 
     // Timestamps
     @CreationTimestamp

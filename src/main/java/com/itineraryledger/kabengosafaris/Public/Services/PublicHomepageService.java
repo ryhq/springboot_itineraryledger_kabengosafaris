@@ -89,7 +89,7 @@ public class PublicHomepageService {
 
             // Parks (first page, limited)
             Page<Park> parkPage = parkRepository.findAll(
-                ParkSpecification.isActive(true),
+                ParkSpecification.isActive(true).and(ParkSpecification.isWebActive(true)),
                 PageRequest.of(0, DEFAULT_PARKS_LIMIT, Sort.by("name").ascending())
             );
             List<PublicParkListDTO> parkDtos = parkPage.getContent().stream()

@@ -39,7 +39,7 @@ public class AccommodationGetService {
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "name", "slug", "accommodationType", "category", "region", "district",
-        "starRating", "totalRooms", "maxGuests", "isActive", "createdAt", "updatedAt"
+        "starRating", "totalRooms", "maxGuests", "isActive", "isWebActive", "createdAt", "updatedAt"
     );
     private static final String DEFAULT_SORT_FIELD = "createdAt";
 
@@ -215,6 +215,7 @@ public class AccommodationGetService {
         Integer minStarRating,
         Integer maxStarRating,
         Boolean isActive,
+        Boolean isWebActive,
         Boolean isHeadquarters,
         Boolean hasBranch,
         String parentId,
@@ -275,6 +276,9 @@ public class AccommodationGetService {
             }
             if (isActive != null) {
                 spec = spec.and(AccommodationSpecification.isActive(isActive));
+            }
+            if (isWebActive != null) {
+                spec = spec.and(AccommodationSpecification.isWebActive(isWebActive));
             }
             if (isHeadquarters != null) {
                 spec = spec.and(AccommodationSpecification.isHeadquarters(isHeadquarters));
@@ -448,6 +452,7 @@ public class AccommodationGetService {
             .operatingSeason(accommodation.getOperatingSeason())
             .tags(accommodation.getTags())
             .isActive(accommodation.getIsActive())
+            .isWebActive(accommodation.getIsWebActive())
             .createdAt(accommodation.getCreatedAt())
             .updatedAt(accommodation.getUpdatedAt())
             .emailCount(accommodation.getEmails() != null ? accommodation.getEmails().size() : 0)
@@ -528,6 +533,7 @@ public class AccommodationGetService {
             .location(accommodation.getLocation())
             .region(accommodation.getRegion())
             .isActive(accommodation.getIsActive())
+            .isWebActive(accommodation.getIsWebActive())
             .build();
     }
 }

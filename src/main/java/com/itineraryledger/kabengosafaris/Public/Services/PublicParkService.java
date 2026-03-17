@@ -56,7 +56,7 @@ public class PublicParkService {
             Sort sort = sortDirection.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
             Pageable pageable = PageRequest.of(page, size, sort);
 
-            Specification<Park> spec = ParkSpecification.isActive(true);
+            Specification<Park> spec = ParkSpecification.isActive(true).and(ParkSpecification.isWebActive(true));
             if (region != null && !region.isEmpty()) spec = spec.and(ParkSpecification.regionLike(region));
             if (parkType != null) spec = spec.and(ParkSpecification.hasParkType(parkType));
             if (keyword != null && !keyword.isEmpty()) spec = spec.and(ParkSpecification.searchKeyword(keyword));
@@ -82,7 +82,7 @@ public class PublicParkService {
     public ResponseEntity<ApiResponse<?>> getParkByIdentifier(String identifier, String lang) {
         try {
             Park park = entityResolver.resolvePark(identifier).orElse(null);
-            if (park == null || !Boolean.TRUE.equals(park.getIsActive())) {
+            if (park == null || !Boolean.TRUE.equals(park.getIsActive()) || !Boolean.TRUE.equals(park.getIsWebActive())) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Park not found", "PARK_NOT_FOUND"));
             }
             return buildParkDetailResponse(park, lang);
@@ -99,7 +99,7 @@ public class PublicParkService {
     public ResponseEntity<ApiResponse<?>> getParkImages(String identifier, Integer page, Integer size) {
         try {
             Park park = entityResolver.resolvePark(identifier).orElse(null);
-            if (park == null || !Boolean.TRUE.equals(park.getIsActive())) {
+            if (park == null || !Boolean.TRUE.equals(park.getIsActive()) || !Boolean.TRUE.equals(park.getIsWebActive())) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Park not found", "PARK_NOT_FOUND"));
             }
 
@@ -126,7 +126,7 @@ public class PublicParkService {
     public ResponseEntity<ApiResponse<?>> getParkActivities(String identifier, Integer page, Integer size, String lang) {
         try {
             Park park = entityResolver.resolvePark(identifier).orElse(null);
-            if (park == null || !Boolean.TRUE.equals(park.getIsActive())) {
+            if (park == null || !Boolean.TRUE.equals(park.getIsActive()) || !Boolean.TRUE.equals(park.getIsWebActive())) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Park not found", "PARK_NOT_FOUND"));
             }
 

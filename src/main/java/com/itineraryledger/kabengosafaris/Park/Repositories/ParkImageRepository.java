@@ -140,6 +140,6 @@ public interface ParkImageRepository extends JpaRepository<ParkImage, Long>, Jpa
     /**
      * Find all active images across all active parks (for gallery)
      */
-    @Query("SELECT img FROM ParkImage img JOIN img.park p WHERE img.isActive = true AND p.isActive = true ORDER BY img.createdAt DESC")
+    @Query("SELECT img FROM ParkImage img JOIN img.park p WHERE img.isActive = true AND img.isWebActive = true AND p.isActive = true AND p.isWebActive = true ORDER BY img.createdAt DESC")
     Page<ParkImage> findAllActiveForGallery(Pageable pageable);
 }

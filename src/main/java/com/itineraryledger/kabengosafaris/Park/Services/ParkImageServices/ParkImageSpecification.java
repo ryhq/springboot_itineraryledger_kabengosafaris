@@ -39,6 +39,12 @@ public class ParkImageSpecification {
             : cb.equal(root.get("isActive"), isActive);
     }
 
+    public static Specification<ParkImage> isWebActive(Boolean isWebActive) {
+        return (root, query, cb) -> isWebActive == null
+            ? cb.conjunction()
+            : cb.equal(root.get("isWebActive"), isWebActive);
+    }
+
     public static Specification<ParkImage> byDisplayOrder(Integer displayOrder) {
         return (root, query, cb) -> displayOrder == null
             ? cb.conjunction()

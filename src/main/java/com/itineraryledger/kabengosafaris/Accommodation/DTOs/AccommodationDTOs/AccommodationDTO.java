@@ -92,6 +92,7 @@ public class AccommodationDTO {
 
     // Status
     private Boolean isActive;
+    private Boolean isWebActive;
 
     // Timestamps
     private LocalDateTime createdAt;

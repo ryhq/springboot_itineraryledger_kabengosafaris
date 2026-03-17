@@ -182,6 +182,7 @@ public class CreateAccommodationService {
                 .operatingSeason(createDTO.getOperatingSeason())
                 .tags(createDTO.getTags())
                 .isActive(createDTO.getIsActive() != null ? createDTO.getIsActive() : true)
+                .isWebActive(createDTO.getIsWebActive() != null ? createDTO.getIsWebActive() : true)
                 .internalNotes(createDTO.getInternalNotes())
                 .build();
 
@@ -345,6 +346,7 @@ public class CreateAccommodationService {
             .operatingSeason(accommodation.getOperatingSeason())
             .tags(accommodation.getTags())
             .isActive(accommodation.getIsActive())
+            .isWebActive(accommodation.getIsWebActive())
             .createdAt(accommodation.getCreatedAt())
             .updatedAt(accommodation.getUpdatedAt())
             .emailCount(accommodation.getEmails() != null ? accommodation.getEmails().size() : 0)

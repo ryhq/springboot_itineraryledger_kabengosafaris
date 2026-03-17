@@ -54,7 +54,7 @@ public class PublicAccommodationService {
             Sort sort = sortDirection.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
             Pageable pageable = PageRequest.of(page, size, sort);
 
-            Specification<Accommodation> spec = AccommodationSpecification.isActive(true);
+            Specification<Accommodation> spec = AccommodationSpecification.isActive(true).and(AccommodationSpecification.isWebActive(true));
             if (region != null && !region.isEmpty()) spec = spec.and(AccommodationSpecification.regionLike(region));
             if (type != null) spec = spec.and(AccommodationSpecification.hasAccommodationType(type));
             if (category != null) spec = spec.and(AccommodationSpecification.hasCategory(category));
@@ -81,7 +81,7 @@ public class PublicAccommodationService {
     public ResponseEntity<ApiResponse<?>> getAccommodationByIdentifier(String identifier, String lang) {
         try {
             Accommodation accommodation = entityResolver.resolveAccommodation(identifier).orElse(null);
-            if (accommodation == null || !Boolean.TRUE.equals(accommodation.getIsActive())) {
+            if (accommodation == null || !Boolean.TRUE.equals(accommodation.getIsActive()) || !Boolean.TRUE.equals(accommodation.getIsWebActive())) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Accommodation not found", "ACCOMMODATION_NOT_FOUND"));
             }
             return buildAccommodationDetailResponse(accommodation, lang);
@@ -98,7 +98,7 @@ public class PublicAccommodationService {
     public ResponseEntity<ApiResponse<?>> getAccommodationImages(String identifier, Integer page, Integer size) {
         try {
             Accommodation accommodation = entityResolver.resolveAccommodation(identifier).orElse(null);
-            if (accommodation == null || !Boolean.TRUE.equals(accommodation.getIsActive())) {
+            if (accommodation == null || !Boolean.TRUE.equals(accommodation.getIsActive()) || !Boolean.TRUE.equals(accommodation.getIsWebActive())) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Accommodation not found", "ACCOMMODATION_NOT_FOUND"));
             }
 

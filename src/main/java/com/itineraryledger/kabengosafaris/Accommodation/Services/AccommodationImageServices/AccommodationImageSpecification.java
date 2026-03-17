@@ -42,6 +42,12 @@ public class AccommodationImageSpecification {
             : cb.equal(root.get("isActive"), isActive);
     }
 
+    public static Specification<AccommodationImage> isWebActive(Boolean isWebActive) {
+        return (root, query, cb) -> isWebActive == null
+            ? cb.conjunction()
+            : cb.equal(root.get("isWebActive"), isWebActive);
+    }
+
     public static Specification<AccommodationImage> byDisplayOrder(Integer displayOrder) {
         return (root, query, cb) -> displayOrder == null
             ? cb.conjunction()

@@ -36,4 +36,5 @@ public class UpdateParkDTO {
     private String accessInformation;
     private String tags;
     private Boolean isActive;
+    private Boolean isWebActive;
 }

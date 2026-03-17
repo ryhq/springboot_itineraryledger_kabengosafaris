@@ -103,6 +103,7 @@ public class PublicSearchService {
 
             // Parks — safe VARCHAR fields only (location, shortDescription, fullDescription are TEXT)
             Specification<Park> parkSpec = ParkSpecification.isActive(true)
+                .and(ParkSpecification.isWebActive(true))
                 .and(safeSearch(searchKeyword, "name", "region", "district"));
             Page<Park> parkPage = parkRepository.findAll(parkSpec,
                 PageRequest.of(0, limit, Sort.by("name").ascending()));
@@ -143,6 +144,7 @@ public class PublicSearchService {
 
             // Accommodations — already safe (excludes @Lob fields)
             Specification<Accommodation> accSpec = AccommodationSpecification.isActive(true)
+                .and(AccommodationSpecification.isWebActive(true))
                 .and(AccommodationSpecification.searchKeyword(searchKeyword));
             Page<Accommodation> accPage = accommodationRepository.findAll(accSpec,
                 PageRequest.of(0, limit, Sort.by("name").ascending()));
