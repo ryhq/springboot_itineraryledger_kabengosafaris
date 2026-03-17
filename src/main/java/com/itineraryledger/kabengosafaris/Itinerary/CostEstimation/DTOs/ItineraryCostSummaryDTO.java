@@ -20,4 +20,11 @@ public class ItineraryCostSummaryDTO {
     private BigDecimal parkFeesRack;
     private BigDecimal activitiesRack;
     private BigDecimal grandTotalRack;
+    private BigDecimal accommodationSto;
+    private BigDecimal parkFeesSto;
+    private BigDecimal activitiesSto;
+    private BigDecimal grandTotalSto;
+    private Boolean hasIncompleteRates;
+    private String calculatedAt;
+    private String startDateUsed;
 }

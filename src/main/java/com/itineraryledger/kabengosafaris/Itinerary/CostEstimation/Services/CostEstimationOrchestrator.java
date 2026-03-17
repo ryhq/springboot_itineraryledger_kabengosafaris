@@ -10,8 +10,6 @@ import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryFullGetSer
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +20,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Orchestrator for cost estimation.
@@ -45,10 +42,6 @@ public class CostEstimationOrchestrator {
     private final PerDayCostAggregator perDayCostAggregator;
     private final PerPaxCostAggregator perPaxCostAggregator;
     private final RateIssueLoggerService rateIssueLoggerService;
-
-    @Lazy
-    @Autowired
-    private ItineraryCostPersistenceService costPersistenceService;
 
     /**
      * Estimate costs for an itinerary.
@@ -149,17 +142,6 @@ public class CostEstimationOrchestrator {
                 .hasIncompleteRates(!rateIssues.isEmpty())
                 .estimatedAt(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
                 .build();
-
-            // Async persist cost summary for current date
-            final String idForPersistence = itineraryIdObfuscated;
-            CompletableFuture.runAsync(() -> {
-                try {
-                    costPersistenceService.persistByObfuscatedId(idForPersistence);
-                } catch (Exception ex) {
-                    log.warn("Async cost persistence failed for itinerary {}: {}",
-                            idForPersistence, ex.getMessage());
-                }
-            });
 
             return ResponseEntity.ok(
                 ApiResponse.success(200, "Cost estimation calculated successfully", response)

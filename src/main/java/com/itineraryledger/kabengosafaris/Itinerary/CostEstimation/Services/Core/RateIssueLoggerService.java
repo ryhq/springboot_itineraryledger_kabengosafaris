@@ -5,7 +5,6 @@ import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.CostIte
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.RateIssueType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.annotation.RequestScope;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +17,6 @@ import java.util.List;
  * Issues are accumulated during a cost estimation and can be retrieved at the end.
  */
 @Service
-@RequestScope
 @Slf4j
 public class RateIssueLoggerService {
 

@@ -2,6 +2,7 @@ package com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services;
 
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CostEstimationResponseDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CurrencyGroupedCostDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.ItineraryCostSummaryDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Entity.ItineraryCostSummary;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.CalculationMode;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Repository.ItineraryCostSummaryRepository;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,7 +34,7 @@ public class ItineraryCostPersistenceService {
     private final IdObfuscator idObfuscator;
 
     @Transactional
-    public void persistCostSummary(Itinerary itinerary) {
+    public List<ItineraryCostSummaryDTO> persistCostSummary(Itinerary itinerary) {
         try {
             String obfuscatedId = idObfuscator.encodeId(itinerary.getId());
             LocalDate today = LocalDate.now();
@@ -43,29 +45,30 @@ public class ItineraryCostPersistenceService {
 
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
                 log.warn("Cost estimation failed for itinerary {} ({})", itinerary.getId(), itinerary.getName());
-                return;
+                return List.of();
             }
 
             ApiResponse<?> body = response.getBody();
             if (body == null) {
                 log.warn("Null response body for itinerary {}", itinerary.getId());
-                return;
+                return List.of();
             }
             Object data = body.getData();
             if (!(data instanceof CostEstimationResponseDTO estimationResponse)) {
                 log.warn("Unexpected response type for itinerary {}", itinerary.getId());
-                return;
+                return List.of();
             }
 
             List<CurrencyGroupedCostDTO> grandTotals = estimationResponse.getGrandTotalsByCurrency();
             if (grandTotals == null || grandTotals.isEmpty()) {
                 log.debug("No cost data for itinerary {} ({})", itinerary.getId(), itinerary.getName());
                 costSummaryRepository.deleteByItineraryId(itinerary.getId());
-                return;
+                return List.of();
             }
 
-            // Delete old summaries and save new ones
+            // Delete old summaries, flush to DB, then save new ones
             costSummaryRepository.deleteByItineraryId(itinerary.getId());
+            costSummaryRepository.flush();
 
             List<ItineraryCostSummary> summaries = new ArrayList<>();
             boolean hasIncompleteRates = Boolean.TRUE.equals(estimationResponse.getHasIncompleteRates());
@@ -89,20 +92,33 @@ public class ItineraryCostPersistenceService {
                 summaries.add(summary);
             }
 
-            costSummaryRepository.saveAll(summaries);
+            List<ItineraryCostSummary> saved = costSummaryRepository.saveAll(summaries);
             log.debug("Persisted {} cost summary rows for itinerary {} ({})",
-                summaries.size(), itinerary.getId(), itinerary.getName());
+                saved.size(), itinerary.getId(), itinerary.getName());
+
+            return saved.stream().map(this::toDTO).toList();
 
         } catch (Exception e) {
             log.error("Failed to persist cost summary for itinerary {} ({})",
                 itinerary.getId(), itinerary.getName(), e);
+            return List.of();
         }
     }
 
     @Transactional
-    public void persistByObfuscatedId(String obfuscatedId) {
+    public List<ItineraryCostSummaryDTO> persistByObfuscatedId(String obfuscatedId) {
         Long id = idObfuscator.decodeId(obfuscatedId);
-        itineraryRepository.findById(id).ifPresent(this::persistCostSummary);
+        return itineraryRepository.findById(id)
+            .map(this::persistCostSummary)
+            .orElse(List.of());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ItineraryCostSummaryDTO> getSavedCostSummary(String obfuscatedId) {
+        Long id = idObfuscator.decodeId(obfuscatedId);
+        return costSummaryRepository.findByItineraryId(id).stream()
+            .map(this::toDTO)
+            .toList();
     }
 
     @Transactional
@@ -126,5 +142,24 @@ public class ItineraryCostPersistenceService {
 
         log.info("Cost recalculation complete: {} succeeded, {} failed out of {} total",
             success, failed, publishedItineraries.size());
+    }
+
+    private ItineraryCostSummaryDTO toDTO(ItineraryCostSummary entity) {
+        return ItineraryCostSummaryDTO.builder()
+            .currency(entity.getCurrency())
+            .accommodationRack(entity.getAccommodationRack())
+            .parkFeesRack(entity.getParkFeesRack())
+            .activitiesRack(entity.getActivitiesRack())
+            .grandTotalRack(entity.getGrandTotalRack())
+            .accommodationSto(entity.getAccommodationSto())
+            .parkFeesSto(entity.getParkFeesSto())
+            .activitiesSto(entity.getActivitiesSto())
+            .grandTotalSto(entity.getGrandTotalSto())
+            .hasIncompleteRates(entity.getHasIncompleteRates())
+            .calculatedAt(entity.getCalculatedAt() != null
+                ? entity.getCalculatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null)
+            .startDateUsed(entity.getStartDateUsed() != null
+                ? entity.getStartDateUsed().toString() : null)
+            .build();
     }
 }
