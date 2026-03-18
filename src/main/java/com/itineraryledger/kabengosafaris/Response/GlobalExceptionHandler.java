@@ -319,9 +319,14 @@ public class GlobalExceptionHandler {
 
         log.warn("Authorization denied: {}", ex.getMessage());
 
+        String permission = extractPermissionName(ex.getMessage());
+        String message = permission != null
+                ? String.format("You do not have the required permission: %s", permission)
+                : "You do not have permission to perform this action";
+
         ApiResponse<Void> response = ApiResponse.error(
                 HttpStatus.FORBIDDEN.value(),
-                "You do not have permission to perform this action",
+                message,
                 ErrorCode.INSUFFICIENT_PERMISSIONS.getCode()
         );
 
@@ -339,9 +344,14 @@ public class GlobalExceptionHandler {
 
         log.warn("Access denied: {}", ex.getMessage());
 
+        String permission = extractPermissionName(ex.getMessage());
+        String message = permission != null
+                ? String.format("You do not have the required permission: %s", permission)
+                : "You do not have permission to access this resource";
+
         ApiResponse<Void> response = ApiResponse.error(
                 HttpStatus.FORBIDDEN.value(),
-                "You do not have permission to access this resource",
+                message,
                 ErrorCode.FORBIDDEN.getCode()
         );
 
@@ -760,5 +770,62 @@ public class GlobalExceptionHandler {
             }
         }
         return null;
+    }
+
+    /**
+     * Extract permission name from exception messages.
+     * Handles patterns like:
+     * - "Access Denied" with hasAuthority('PERM_READ_BOOKING_INQUIRY') in the cause
+     * - "User does not have permission: PERM_READ_BOOKING_INQUIRY"
+     * - "User cannot READ on BOOKING_INQUIRY"
+     */
+    private String extractPermissionName(String message) {
+        if (message == null || message.isEmpty()) {
+            return null;
+        }
+
+        // Pattern 1: hasAuthority('PERM_XXX') from @PreAuthorize
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("hasAuthority\\('(PERM_[A-Z_]+)'\\)")
+                .matcher(message);
+        if (matcher.find()) {
+            return formatPermissionName(matcher.group(1));
+        }
+
+        // Pattern 2: "permission: PERM_XXX" from PermissionCheckAspect
+        matcher = java.util.regex.Pattern
+                .compile("permission:\\s*(PERM_[A-Z_]+)")
+                .matcher(message);
+        if (matcher.find()) {
+            return formatPermissionName(matcher.group(1));
+        }
+
+        // Pattern 3: "cannot ACTION on ENTITY" from PermissionCheckAspect
+        matcher = java.util.regex.Pattern
+                .compile("cannot\\s+(\\w+)\\s+on\\s+(\\w+)")
+                .matcher(message);
+        if (matcher.find()) {
+            return formatPermissionName("PERM_" + matcher.group(1).toUpperCase() + "_" + matcher.group(2).toUpperCase());
+        }
+
+        return null;
+    }
+
+    /**
+     * Format a permission name like PERM_READ_BOOKING_INQUIRY into "Read Booking Inquiry"
+     */
+    private String formatPermissionName(String permName) {
+        if (permName == null) return null;
+        // Remove PERM_ prefix
+        String clean = permName.startsWith("PERM_") ? permName.substring(5) : permName;
+        // Split by underscore and title-case each word
+        String[] parts = clean.split("_");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < parts.length; i++) {
+            if (i > 0) sb.append(" ");
+            sb.append(parts[i].charAt(0));
+            sb.append(parts[i].substring(1).toLowerCase());
+        }
+        return sb.toString();
     }
 }
