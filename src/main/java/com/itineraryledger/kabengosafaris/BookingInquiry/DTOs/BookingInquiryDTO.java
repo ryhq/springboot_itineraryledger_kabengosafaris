@@ -1,0 +1,53 @@
+package com.itineraryledger.kabengosafaris.BookingInquiry.DTOs;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import com.itineraryledger.kabengosafaris.BookingInquiry.Entity.InquiryStatus;
+import com.itineraryledger.kabengosafaris.Itinerary.Entity.BudgetCategory;
+import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class BookingInquiryDTO {
+
+    private String id;
+    private String code;
+    private String firstName;
+    private String lastName;
+    private String displayName;
+    private String email;
+    private String phone;
+    private String country;
+    private Integer adults;
+    private Integer children;
+    private Integer totalTravelers;
+    private LocalDate preferredStartDate;
+    private LocalDate preferredEndDate;
+    private BudgetCategory budgetCategory;
+    private String budgetCategoryDisplayName;
+    private TripType tripType;
+    private String tripTypeDisplayName;
+    private String specialRequests;
+    private String message;
+    private InquiryStatus status;
+    private String statusDisplayName;
+    private String source;
+    private String preferredLocale;
+    private String itineraryId;
+    private String itineraryName;
+    private String customerId;
+    private String customerName;
+    private String adminNotes;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private LocalDateTime contactedAt;
+    private LocalDateTime convertedAt;
+}
