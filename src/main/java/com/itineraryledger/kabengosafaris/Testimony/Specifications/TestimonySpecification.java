@@ -71,9 +71,9 @@ public class TestimonySpecification {
         return (root, query, cb) -> {
             if (keyword == null || keyword.trim().isEmpty()) return cb.conjunction();
             String pattern = "%" + keyword.toLowerCase().trim() + "%";
+            // Note: message is @Lob — LOWER() on CLOB types causes errors in Hibernate 6
             return cb.or(
                 cb.like(cb.lower(root.get("authorName")), pattern),
-                cb.like(cb.lower(root.get("message")), pattern),
                 cb.like(cb.lower(root.get("sentimentTags")), pattern)
             );
         };

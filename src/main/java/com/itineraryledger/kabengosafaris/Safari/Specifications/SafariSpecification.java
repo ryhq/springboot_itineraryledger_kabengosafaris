@@ -48,10 +48,10 @@ public class SafariSpecification {
 
     public static Specification<Safari> searchKeyword(String keyword) {
         String lowerKeyword = "%" + keyword.toLowerCase() + "%";
+        // Note: description is @Lob — LOWER() on CLOB types causes errors in Hibernate 6
         return (root, query, cb) -> cb.or(
                 cb.like(cb.lower(root.get("name")), lowerKeyword),
                 cb.like(cb.lower(root.get("code")), lowerKeyword),
-                cb.like(cb.lower(root.get("description")), lowerKeyword),
                 cb.like(cb.lower(root.get("startLocation")), lowerKeyword),
                 cb.like(cb.lower(root.get("endLocation")), lowerKeyword)
         );

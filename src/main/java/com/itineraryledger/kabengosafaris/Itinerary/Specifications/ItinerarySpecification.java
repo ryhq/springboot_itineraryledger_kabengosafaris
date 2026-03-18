@@ -98,11 +98,11 @@ public class ItinerarySpecification {
     public static Specification<Itinerary> searchKeyword(String keyword) {
         return (root, query, cb) -> {
             String pattern = "%" + keyword.toLowerCase() + "%";
+            // Note: description and highlights are @Lob fields — LOWER() on CLOB types
+            // causes errors in Hibernate 6, so they are excluded from keyword search
             return cb.or(
                 cb.like(cb.lower(root.get("name")), pattern),
                 cb.like(cb.lower(root.get("code")), pattern),
-                cb.like(cb.lower(root.get("description")), pattern),
-                cb.like(cb.lower(root.get("highlights")), pattern),
                 cb.like(cb.lower(root.get("startLocation")), pattern),
                 cb.like(cb.lower(root.get("endLocation")), pattern)
             );
