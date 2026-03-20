@@ -25,9 +25,15 @@ import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailFolderType;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailMessage;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccount;
+import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccountProvider;
+import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.SendingMethod;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailContact.ContactSource;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+import com.resend.Resend;
+import com.resend.core.exception.ResendException;
+import com.resend.services.emails.model.CreateEmailOptions;
+import com.resend.services.emails.model.CreateEmailResponse;
 
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
@@ -242,19 +248,59 @@ public class EmailComposeService {
                     ApiResponse.error(404, "Draft not found", "DRAFT_NOT_FOUND"));
             }
 
-            // Read the .eml file and parse it
-            byte[] emlBytes = emailStorageService.readEmlFile(accountId, draft.getStoragePath(), draft.getFileName());
-            if (emlBytes == null) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.error(500, "Draft .eml file not found", "DRAFT_FILE_MISSING"));
+            boolean isResendApi = account.getProviderType() == EmailAccountProvider.RESEND
+                    && account.getSendingMethod() == SendingMethod.API;
+
+            if (isResendApi) {
+                // For Resend API: reconstruct email from draft fields and send via API
+                String apiKey = EncryptionUtil.decrypt(account.getApiKey());
+                Resend resend = new Resend(apiKey);
+
+                // Parse stored addresses
+                List<String> toAddresses = draft.getToAddresses() != null
+                        ? objectMapper.readValue(draft.getToAddresses(), objectMapper.getTypeFactory().constructCollectionType(List.class, String.class))
+                        : List.of();
+
+                CreateEmailOptions.Builder builder = CreateEmailOptions.builder()
+                        .from(account.getName() + " <" + account.getEmail() + ">")
+                        .to(toAddresses)
+                        .subject(draft.getSubject());
+
+                // Read HTML body from .eml file
+                byte[] emlBytes = emailStorageService.readEmlFile(accountId, draft.getStoragePath(), draft.getFileName());
+                if (emlBytes != null) {
+                    JavaMailSenderImpl tempSender = new JavaMailSenderImpl();
+                    jakarta.mail.Session session = tempSender.getSession();
+                    MimeMessage parsedMessage = new MimeMessage(session, new java.io.ByteArrayInputStream(emlBytes));
+                    String htmlBody = extractHtmlFromMimeMessage(parsedMessage);
+                    if (htmlBody != null) {
+                        builder.html(htmlBody);
+                    }
+                }
+
+                if (draft.getCcAddresses() != null) {
+                    List<String> ccAddresses = objectMapper.readValue(draft.getCcAddresses(), objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+                    if (!ccAddresses.isEmpty()) builder.cc(ccAddresses);
+                }
+                if (draft.getBccAddresses() != null) {
+                    List<String> bccAddresses = objectMapper.readValue(draft.getBccAddresses(), objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+                    if (!bccAddresses.isEmpty()) builder.bcc(bccAddresses);
+                }
+
+                resend.emails().send(builder.build());
+            } else {
+                // Send via SMTP
+                byte[] emlBytes = emailStorageService.readEmlFile(accountId, draft.getStoragePath(), draft.getFileName());
+                if (emlBytes == null) {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                        ApiResponse.error(500, "Draft .eml file not found", "DRAFT_FILE_MISSING"));
+                }
+
+                JavaMailSender mailSender = createMailSender(account);
+                jakarta.mail.Session session = ((JavaMailSenderImpl) mailSender).getSession();
+                MimeMessage mimeMessage = new MimeMessage(session, new java.io.ByteArrayInputStream(emlBytes));
+                mailSender.send(mimeMessage);
             }
-
-            JavaMailSender mailSender = createMailSender(account);
-            jakarta.mail.Session session = ((JavaMailSenderImpl) mailSender).getSession();
-            MimeMessage mimeMessage = new MimeMessage(session, new java.io.ByteArrayInputStream(emlBytes));
-
-            // Send
-            mailSender.send(mimeMessage);
 
             // Move from drafts to sent
             EmailFolder sentFolder = emailFolderRepository
@@ -291,14 +337,21 @@ public class EmailComposeService {
 
     private ResponseEntity<ApiResponse<?>> sendEmail(EmailAccount account, ComposeEmailDTO dto, List<MultipartFile> attachments, EmailMessage replyTo) {
         try {
-            JavaMailSender mailSender = createMailSender(account);
-            MimeMessage mimeMessage = buildMimeMessage(mailSender, account, dto, attachments, replyTo);
+            boolean isResendApi = account.getProviderType() == EmailAccountProvider.RESEND
+                    && account.getSendingMethod() == SendingMethod.API;
 
-            // Send
-            mailSender.send(mimeMessage);
+            if (isResendApi) {
+                // Send via Resend HTTP API
+                sendViaResendApi(account, dto, attachments, replyTo);
+            } else {
+                // Send via SMTP (including Resend SMTP)
+                JavaMailSender mailSender = createMailSender(account);
+                MimeMessage mimeMessage = buildMimeMessage(mailSender, account, dto, attachments, replyTo);
+                mailSender.send(mimeMessage);
 
-            // Save to SENT folder
-            saveSentCopy(account, mimeMessage, dto, replyTo);
+                // Save .eml copy to SENT folder
+                saveSentCopy(account, mimeMessage, dto, replyTo);
+            }
 
             // Auto-harvest contacts from recipients
             emailContactService.harvestContacts(account, dto.getToAddresses(), ContactSource.SENT);
@@ -318,6 +371,33 @@ public class EmailComposeService {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 ApiResponse.error(500, "Failed to send email: " + e.getMessage(), "SEND_FAILED"));
         }
+    }
+
+    /**
+     * Send email via Resend HTTP API with support for CC, BCC, and attachments
+     */
+    private void sendViaResendApi(EmailAccount account, ComposeEmailDTO dto, List<MultipartFile> attachments, EmailMessage replyTo) throws ResendException {
+        String apiKey = EncryptionUtil.decrypt(account.getApiKey());
+        Resend resend = new Resend(apiKey);
+
+        CreateEmailOptions.Builder builder = CreateEmailOptions.builder()
+                .from(account.getName() + " <" + account.getEmail() + ">")
+                .to(dto.getToAddresses())
+                .subject(dto.getSubject())
+                .html(dto.getHtmlBody());
+
+        if (dto.getCcAddresses() != null && !dto.getCcAddresses().isEmpty()) {
+            builder.cc(dto.getCcAddresses());
+        }
+        if (dto.getBccAddresses() != null && !dto.getBccAddresses().isEmpty()) {
+            builder.bcc(dto.getBccAddresses());
+        }
+
+        CreateEmailResponse response = resend.emails().send(builder.build());
+        log.info("Email sent via Resend API from compose. Email ID: {}", response.getId());
+
+        // Save a sent copy record in the database (without .eml file for API sends)
+        saveSentCopyFromResend(account, dto, replyTo);
     }
 
     private ResponseEntity<ApiResponse<?>> saveDraft(EmailAccount account, ComposeEmailDTO dto, List<MultipartFile> attachments) {
@@ -455,7 +535,8 @@ public class EmailComposeService {
         helper.setText(dto.getHtmlBody(), true);
 
         // Set Message-ID
-        String messageId = "<" + UUID.randomUUID() + "@" + account.getSmtpHost() + ">";
+        String hostPart = account.getSmtpHost() != null ? account.getSmtpHost() : "resend.dev";
+        String messageId = "<" + UUID.randomUUID() + "@" + hostPart + ">";
         mimeMessage.setHeader("Message-ID", messageId);
 
         // Set threading headers if reply
@@ -482,10 +563,22 @@ public class EmailComposeService {
 
     private JavaMailSender createMailSender(EmailAccount account) {
         JavaMailSenderImpl sender = new JavaMailSenderImpl();
-        sender.setHost(account.getSmtpHost());
-        sender.setPort(account.getSmtpPort());
-        sender.setUsername(account.getSmtpUsername());
-        sender.setPassword(EncryptionUtil.decrypt(account.getSmtpPassword()));
+
+        // Handle Resend SMTP: use API key as password, fixed host/username
+        boolean isResendSmtp = account.getProviderType() == EmailAccountProvider.RESEND
+                && account.getSendingMethod() == SendingMethod.SMTP;
+
+        if (isResendSmtp) {
+            sender.setHost(account.getSmtpHost() != null ? account.getSmtpHost() : "smtp.resend.com");
+            sender.setPort(account.getSmtpPort() != null ? account.getSmtpPort() : 465);
+            sender.setUsername("resend");
+            sender.setPassword(EncryptionUtil.decrypt(account.getApiKey()));
+        } else {
+            sender.setHost(account.getSmtpHost());
+            sender.setPort(account.getSmtpPort());
+            sender.setUsername(account.getSmtpUsername());
+            sender.setPassword(EncryptionUtil.decrypt(account.getSmtpPassword()));
+        }
 
         Properties props = sender.getJavaMailProperties();
         props.put("mail.smtp.auth", "true");
@@ -505,10 +598,97 @@ public class EmailComposeService {
         return sender;
     }
 
+    /**
+     * Save a sent copy record for Resend API sends (no .eml file, just DB record)
+     */
+    private void saveSentCopyFromResend(EmailAccount account, ComposeEmailDTO dto, EmailMessage replyTo) {
+        try {
+            Long accountId = account.getId();
+            EmailFolder sentFolder = emailFolderRepository
+                    .findByEmailAccountIdAndType(accountId, EmailFolderType.SENT).orElse(null);
+
+            if (sentFolder == null) {
+                log.warn("No SENT folder found for account {}", account.getEmail());
+                return;
+            }
+
+            // Determine threading
+            String inReplyTo = null;
+            String references = null;
+            String threadId = "<" + UUID.randomUUID() + "@resend.dev>";
+
+            if (replyTo != null) {
+                inReplyTo = replyTo.getMessageId();
+                references = replyTo.getReferences() != null
+                        ? replyTo.getReferences() + " " + replyTo.getMessageId()
+                        : replyTo.getMessageId();
+                threadId = replyTo.getThreadId();
+            }
+
+            EmailMessage emailMessage = EmailMessage.builder()
+                    .emailAccount(account)
+                    .folder(sentFolder)
+                    .messageId(threadId)
+                    .inReplyTo(inReplyTo)
+                    .references(references)
+                    .threadId(threadId)
+                    .fromAddress(account.getEmail())
+                    .fromName(account.getName())
+                    .toAddresses(dto.getToAddresses() != null ? objectMapper.writeValueAsString(dto.getToAddresses()) : null)
+                    .ccAddresses(dto.getCcAddresses() != null ? objectMapper.writeValueAsString(dto.getCcAddresses()) : null)
+                    .bccAddresses(dto.getBccAddresses() != null ? objectMapper.writeValueAsString(dto.getBccAddresses()) : null)
+                    .subject(dto.getSubject())
+                    .snippet(extractSnippet(dto.getHtmlBody(), 200))
+                    .isRead(true)
+                    .isDraft(false)
+                    .hasAttachments(false)
+                    .attachmentCount(0)
+                    .storagePath("sent")
+                    .sentAt(LocalDateTime.now())
+                    .receivedAt(LocalDateTime.now())
+                    .build();
+
+            emailMessageRepository.save(emailMessage);
+            emailFolderRepository.incrementMessageCount(sentFolder.getId(), 1);
+        } catch (Exception e) {
+            log.warn("Failed to save sent copy for Resend API send from account {}: {}", account.getEmail(), e.getMessage());
+        }
+    }
+
     private String extractSnippet(String html, int maxLength) {
         if (html == null) return null;
         // Strip HTML tags for snippet
         String text = html.replaceAll("<[^>]+>", "").replaceAll("\\s+", " ").trim();
         return text.length() > maxLength ? text.substring(0, maxLength) : text;
+    }
+
+    /**
+     * Extract HTML content from a MimeMessage (for sending drafts via Resend API)
+     */
+    private String extractHtmlFromMimeMessage(MimeMessage message) {
+        try {
+            Object content = message.getContent();
+            if (content instanceof String) {
+                return (String) content;
+            }
+            if (content instanceof jakarta.mail.Multipart multipart) {
+                for (int i = 0; i < multipart.getCount(); i++) {
+                    jakarta.mail.BodyPart part = multipart.getBodyPart(i);
+                    if (part.isMimeType("text/html")) {
+                        return (String) part.getContent();
+                    }
+                }
+                // Fallback to text/plain
+                for (int i = 0; i < multipart.getCount(); i++) {
+                    jakarta.mail.BodyPart part = multipart.getBodyPart(i);
+                    if (part.isMimeType("text/plain")) {
+                        return (String) part.getContent();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to extract HTML from MimeMessage: {}", e.getMessage());
+        }
+        return null;
     }
 }
