@@ -84,9 +84,27 @@ public class UpdateEmailAccountDTO {
 
     /**
      * Email provider type as integer (optional)
-     * 1=GMAIL, 2=OUTLOOK, 3=SENDGRID, 4=MAILGUN, 5=AWS_SES, 6=CUSTOM
+     * 1=GMAIL, 2=OUTLOOK, 3=SENDGRID, 4=MAILGUN, 5=AWS_SES, 6=CUSTOM, 7=RESEND
      */
     private Integer providerType;
+
+    /**
+     * API key for HTTP-based email providers (Resend, SendGrid, etc.) (optional)
+     * Only updated if provided
+     */
+    private String apiKey;
+
+    /**
+     * Webhook signing secret for verifying webhook callbacks (optional)
+     * Only updated if provided
+     */
+    private String webhookSecret;
+
+    /**
+     * Sending method as integer (optional)
+     * 1=API, 2=SMTP
+     */
+    private Integer sendingMethod;
 
     /**
      * Maximum number of emails to send per minute (optional)

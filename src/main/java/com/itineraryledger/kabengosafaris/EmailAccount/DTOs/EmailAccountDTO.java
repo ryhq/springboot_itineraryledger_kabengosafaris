@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccountProvider;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.ReceivingProtocol;
+import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.SendingMethod;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -82,9 +83,24 @@ public class EmailAccountDTO {
     private Boolean isDefault;
 
     /**
-     * Email provider type (GMAIL, OUTLOOK, CUSTOM, SENDGRID, etc.)
+     * Email provider type (GMAIL, OUTLOOK, CUSTOM, SENDGRID, RESEND, etc.)
      */
     private EmailAccountProvider providerType;
+
+    /**
+     * Whether an API key is configured (never expose actual key)
+     */
+    private Boolean apiKeyConfigured;
+
+    /**
+     * Whether a webhook secret is configured (never expose actual value)
+     */
+    private Boolean webhookSecretConfigured;
+
+    /**
+     * Sending method (API or SMTP)
+     */
+    private SendingMethod sendingMethod;
 
     /**
      * Maximum emails to send per minute (0 = unlimited)

@@ -47,49 +47,67 @@ public class CreateEmailAccountDTO {
 
     /**
      * SMTP host address (e.g., smtp.gmail.com, smtp.outlook.com)
+     * Required for SMTP-based providers, optional for API-based providers (Resend, SendGrid)
      */
-    @NotBlank(message = "SMTP host is required")
     private String smtpHost;
 
     /**
      * SMTP port (typically 25, 465, 587, 2525)
+     * Required for SMTP-based providers, optional for API-based providers
      */
-    @NotNull(message = "SMTP port is required")
     @Min(value = 1, message = "SMTP port must be greater than 0")
     private Integer smtpPort;
 
     /**
      * SMTP username for authentication
+     * Required for SMTP-based providers, optional for API-based providers
      */
-    @NotBlank(message = "SMTP username is required")
     private String smtpUsername;
 
     /**
      * SMTP password - will be encrypted before storing
+     * Required for SMTP-based providers, optional for API-based providers
      */
-    @NotBlank(message = "SMTP password is required")
     private String smtpPassword;
 
     /**
      * Whether to use TLS (Transport Layer Security)
      * Usually true for secure connections on ports 25, 587
      */
-    @NotNull(message = "useTls is required")
     private Boolean useTls;
 
     /**
      * Whether to use SSL (Secure Sockets Layer)
      * Usually true for secure connections on port 465
      */
-    @NotNull(message = "useSsl is required")
     private Boolean useSsl;
 
     /**
      * Email provider type as integer
-     * 1=GMAIL, 2=OUTLOOK, 3=SENDGRID, 4=MAILGUN, 5=AWS_SES, 6=CUSTOM
+     * 1=GMAIL, 2=OUTLOOK, 3=SENDGRID, 4=MAILGUN, 5=AWS_SES, 6=CUSTOM, 7=RESEND
      */
     @NotNull(message = "Provider type is required")
     private Integer providerType;
+
+    /**
+     * API key for HTTP-based email providers (Resend, SendGrid, etc.)
+     * Required for API-based providers (providerType=7), optional otherwise
+     */
+    private String apiKey;
+
+    /**
+     * Webhook signing secret for verifying webhook callbacks
+     * Optional - used by providers that support webhooks (Resend, SendGrid)
+     */
+    private String webhookSecret;
+
+    /**
+     * Sending method as integer
+     * 1=API, 2=SMTP
+     * For API-based providers (Resend), defaults to API (1)
+     * For SMTP-based providers, always SMTP (2)
+     */
+    private Integer sendingMethod;
 
     /**
      * Maximum number of emails to send per minute (rate limiting)

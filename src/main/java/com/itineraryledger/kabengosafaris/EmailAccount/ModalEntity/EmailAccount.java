@@ -60,41 +60,39 @@ public class EmailAccount {
 
     /**
      * SMTP host address (e.g., smtp.gmail.com, smtp.outlook.com)
+     * Nullable for API-based providers (Resend, SendGrid)
      */
-    @Column(nullable = false)
     private String smtpHost;
 
     /**
      * SMTP port (typically 25, 465, 587, 2525)
+     * Nullable for API-based providers (Resend, SendGrid)
      */
-    @Column(nullable = false)
     private Integer smtpPort;
 
     /**
      * Email account username for SMTP authentication
+     * Nullable for API-based providers (Resend, SendGrid)
      */
-    @Column(nullable = false)
     private String smtpUsername;
 
     /**
      * Email account password - ENCRYPTED in database
      * Password is encrypted using standard encryption before storing
+     * Nullable for API-based providers (Resend, SendGrid)
      */
-    @Column(nullable = false)
     private String smtpPassword;
 
     /**
      * Whether to use TLS (Transport Layer Security)
      * Usually true for secure connections on ports 25, 587
      */
-    @Column(nullable = false)
     private Boolean useTls;
 
     /**
      * Whether to use SSL (Secure Sockets Layer)
      * Usually true for secure connections on port 465
      */
-    @Column(nullable = false)
     private Boolean useSsl;
 
     // ---- Receiving Configuration ----
@@ -178,11 +176,35 @@ public class EmailAccount {
     private Boolean isDefault;
 
     /**
-     * Email provider type for reference (GMAIL, OUTLOOK, CUSTOM, SENDGRID, etc.)
+     * Email provider type for reference (GMAIL, OUTLOOK, CUSTOM, SENDGRID, RESEND, etc.)
      */
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private EmailAccountProvider providerType;
+
+    /**
+     * API key for HTTP-based email providers (Resend, SendGrid, etc.)
+     * Encrypted using EncryptionUtil before storing
+     */
+    @Column(name = "api_key")
+    private String apiKey;
+
+    /**
+     * Webhook signing secret for verifying webhook callbacks (per-account)
+     * Encrypted using EncryptionUtil before storing
+     */
+    @Column(name = "webhook_secret")
+    private String webhookSecret;
+
+    /**
+     * Sending method for this email account (API or SMTP)
+     * API-based providers (Resend) default to API but can use SMTP gateway
+     * SMTP-based providers always use SMTP
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sending_method", nullable = false)
+    @Builder.Default
+    private SendingMethod sendingMethod = SendingMethod.SMTP;
 
     /**
      * Maximum number of emails to send per minute (rate limiting)
@@ -285,6 +307,7 @@ public class EmailAccount {
         if (this.fetchIntervalMinutes == null) this.fetchIntervalMinutes = 5;
         if (this.maxFetchCount == null) this.maxFetchCount = 50;
         if (this.emailsReceivedCount == null) this.emailsReceivedCount = 0L;
+        if (this.sendingMethod == null) this.sendingMethod = SendingMethod.SMTP;
     }
 
     @Override

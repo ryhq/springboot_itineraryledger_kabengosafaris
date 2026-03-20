@@ -147,6 +147,9 @@ public class EmailAccountGetService {
             case 6:
                 providerType = EmailAccountProvider.CUSTOM;
                 break;
+            case 7:
+                providerType = EmailAccountProvider.RESEND;
+                break;
             default:
                 providerType = null;
                 break;
@@ -323,6 +326,9 @@ public class EmailAccountGetService {
                 .enabled(emailAccount.getEnabled())
                 .isDefault(emailAccount.getIsDefault())
                 .providerType(emailAccount.getProviderType())
+                .apiKeyConfigured(emailAccount.getApiKey() != null && !emailAccount.getApiKey().isBlank())
+                .webhookSecretConfigured(emailAccount.getWebhookSecret() != null && !emailAccount.getWebhookSecret().isBlank())
+                .sendingMethod(emailAccount.getSendingMethod())
                 .rateLimitPerMinute(emailAccount.getRateLimitPerMinute())
                 .maxRetryAttempts(emailAccount.getMaxRetryAttempts())
                 .retryDelaySeconds(emailAccount.getRetryDelaySeconds())

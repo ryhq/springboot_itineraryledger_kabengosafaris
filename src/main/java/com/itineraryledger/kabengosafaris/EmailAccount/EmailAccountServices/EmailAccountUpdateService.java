@@ -15,6 +15,7 @@ import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountRepository;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccount;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccountProvider;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.ReceivingProtocol;
+import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.SendingMethod;
 import com.itineraryledger.kabengosafaris.EmailAccount.Components.EncryptionUtil;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -264,13 +265,63 @@ public class EmailAccountUpdateService {
                 log.warn("Invalid provider type: {}", updateDTO.getProviderType());
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(
-                        400, 
-                        "Invalid provider type", 
+                        400,
+                        "Invalid provider type",
                         "INVALID_PROVIDER_TYPE"
                     )
                 );
             }
+            if (existing.getProviderType() != providerType) {
+                sensitiveAttributeChanged = true;
+            }
             existing.setProviderType(providerType);
+        }
+
+        // Update API key (if provided) — for API-based providers (Resend, SendGrid)
+        if (updateDTO.getApiKey() != null && !updateDTO.getApiKey().isBlank()) {
+            String encryptedApiKey = EncryptionUtil.encrypt(updateDTO.getApiKey());
+            existing.setApiKey(encryptedApiKey);
+            sensitiveAttributeChanged = true;
+            log.debug("API key updated for account: {}", id);
+        }
+
+        // Update webhook secret (if provided)
+        if (updateDTO.getWebhookSecret() != null && !updateDTO.getWebhookSecret().isBlank()) {
+            String encryptedWebhookSecret = EncryptionUtil.encrypt(updateDTO.getWebhookSecret());
+            existing.setWebhookSecret(encryptedWebhookSecret);
+            log.debug("Webhook secret updated for account: {}", id);
+        }
+
+        // Update sending method (if provided)
+        if (updateDTO.getSendingMethod() != null) {
+            SendingMethod newSendingMethod = validateAndGetSendingMethod(updateDTO.getSendingMethod());
+            if (newSendingMethod != null && existing.getSendingMethod() != newSendingMethod) {
+                existing.setSendingMethod(newSendingMethod);
+                sensitiveAttributeChanged = true;
+                log.debug("Sending method changed to {} for account: {}", newSendingMethod, id);
+
+                // If switching to SMTP for an API-based provider, auto-fill SMTP fields
+                boolean isApiBasedProvider = existing.getProviderType() == EmailAccountProvider.RESEND;
+                if (isApiBasedProvider && newSendingMethod == SendingMethod.SMTP) {
+                    if (existing.getSmtpHost() == null || existing.getSmtpHost().isBlank()) {
+                        existing.setSmtpHost("smtp.resend.com");
+                    }
+                    existing.setSmtpUsername("resend");
+                    // Use API key as SMTP password
+                    if (existing.getApiKey() != null && !existing.getApiKey().isBlank()) {
+                        existing.setSmtpPassword(existing.getApiKey());
+                    }
+                    if (existing.getUseSsl() == null) existing.setUseSsl(true);
+                    if (existing.getUseTls() == null) existing.setUseTls(false);
+                }
+            }
+        }
+
+        // If sensitive attributes changed, disable and clear default status
+        if (sensitiveAttributeChanged) {
+            existing.setEnabled(false);
+            existing.setIsDefault(false);
+            log.info("Sensitive attributes changed for account {}. Account disabled and default status cleared. Requires re-testing.", id);
         }
 
         // Update retry and rate limiting settings
@@ -360,8 +411,19 @@ public class EmailAccountUpdateService {
                 return EmailAccountProvider.AWS_SES;
             case 6:
                 return EmailAccountProvider.CUSTOM;
+            case 7:
+                return EmailAccountProvider.RESEND;
             default:
                 return null;
         }
+    }
+
+    private SendingMethod validateAndGetSendingMethod(Integer sendingMethodInt) {
+        if (sendingMethodInt == null) return null;
+        return switch (sendingMethodInt) {
+            case 1 -> SendingMethod.API;
+            case 2 -> SendingMethod.SMTP;
+            default -> null;
+        };
     }
 }

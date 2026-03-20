@@ -10,6 +10,7 @@ package com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity;
  * - MAILGUN: Mailgun email service
  * - AWS_SES: Amazon SES (Simple Email Service)
  * - CUSTOM: Custom SMTP server
+ * - RESEND: Resend HTTP email API
  */
 public enum EmailAccountProvider {
     GMAIL("Gmail"),
@@ -17,7 +18,8 @@ public enum EmailAccountProvider {
     SENDGRID("SendGrid"),
     MAILGUN("Mailgun"),
     AWS_SES("Amazon SES"),
-    CUSTOM("Custom SMTP");
+    CUSTOM("Custom SMTP"),
+    RESEND("Resend");
 
     private final String displayName;
 

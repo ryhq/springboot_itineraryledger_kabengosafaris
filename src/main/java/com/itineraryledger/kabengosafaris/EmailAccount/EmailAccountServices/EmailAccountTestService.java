@@ -20,10 +20,15 @@ import com.itineraryledger.kabengosafaris.EmailAccount.DTOs.EmailAccountDTO;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountRepository;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccount;
+import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccountProvider;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.ReceivingProtocol;
+import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.SendingMethod;
 import com.itineraryledger.kabengosafaris.EmailAccount.Components.EncryptionUtil;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+import com.resend.Resend;
+import com.resend.services.emails.model.CreateEmailOptions;
+import com.resend.services.emails.model.CreateEmailResponse;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -108,10 +113,19 @@ public class EmailAccountTestService {
             );
         }
 
-        log.info("Starting SMTP connection test for account: {} ({})", emailAccount.getName(), id);
+        log.info("Starting connection test for account: {} ({}) [{}]", emailAccount.getName(), id, emailAccount.getProviderType());
 
-        // Perform test with retry logic
-        boolean testPassed = testConnectionWithRetry(emailAccount);
+        // Perform test with retry logic — route based on provider and sending method
+        boolean testPassed;
+        if (emailAccount.getProviderType() == EmailAccountProvider.RESEND
+                && emailAccount.getSendingMethod() == SendingMethod.API) {
+            testPassed = testResendConnection(emailAccount);
+        } else if (emailAccount.getProviderType() == EmailAccountProvider.RESEND
+                && emailAccount.getSendingMethod() == SendingMethod.SMTP) {
+            testPassed = testResendSmtpConnection(emailAccount);
+        } else {
+            testPassed = testConnectionWithRetry(emailAccount);
+        }
 
         if (testPassed) {
             // Update account on successful test
@@ -154,6 +168,169 @@ public class EmailAccountTestService {
                 )
             );
         }
+    }
+
+    /**
+     * Test Resend API connection by sending a test email
+     */
+    private boolean testResendConnection(EmailAccount emailAccount) {
+        int maxRetries = emailAccount.getMaxRetryAttempts() != null ? emailAccount.getMaxRetryAttempts() : 3;
+        int retryDelaySeconds = emailAccount.getRetryDelaySeconds() != null ? emailAccount.getRetryDelaySeconds() : 5;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                log.debug("Resend test attempt {}/{} for account: {}", attempt, maxRetries, emailAccount.getName());
+
+                if (emailAccount.getApiKey() == null || emailAccount.getApiKey().isBlank()) {
+                    emailAccount.setLastErrorMessage("Resend test failed: API key is not configured");
+                    emailAccount.setLastTestedAt(LocalDateTime.now());
+                    emailAccountRepository.save(emailAccount);
+                    return false;
+                }
+
+                String apiKey = EncryptionUtil.decrypt(emailAccount.getApiKey());
+                Resend resend = new Resend(apiKey);
+
+                CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from(emailAccount.getName() + " <" + emailAccount.getEmail() + ">")
+                    .to(emailAccount.getEmail()) // Send to self for testing
+                    .subject("Test Email - Do Not Reply")
+                    .html("<p>This is a test email to verify Resend API configuration for: " + emailAccount.getName() + "</p><p>Timestamp: " + LocalDateTime.now() + "</p>")
+                    .build();
+
+                CreateEmailResponse response = resend.emails().send(params);
+                log.info("Resend test succeeded on attempt {}/{} for account: {}. Email ID: {}", attempt, maxRetries, emailAccount.getName(), response.getId());
+                return true;
+
+            } catch (RuntimeException e) {
+                if (e.getMessage() != null && e.getMessage().contains("Decryption failed")) {
+                    emailAccount.setLastErrorMessage("Decryption failed: Unable to decrypt API key. Account configuration may be corrupted.");
+                    emailAccount.setLastTestedAt(LocalDateTime.now());
+                    emailAccountRepository.save(emailAccount);
+                    return false;
+                }
+
+                log.warn("Resend test attempt {}/{} failed for account: {} - {}", attempt, maxRetries, emailAccount.getName(), e.getMessage());
+                if (attempt == maxRetries) {
+                    emailAccount.setLastErrorMessage("Resend test failed after " + maxRetries + " attempts: " + e.getMessage());
+                    emailAccount.setLastTestedAt(LocalDateTime.now());
+                    emailAccountRepository.save(emailAccount);
+                } else {
+                    try {
+                        Thread.sleep(retryDelaySeconds * 1000L);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        emailAccount.setLastErrorMessage("Resend test interrupted: " + ie.getMessage());
+                        emailAccount.setLastTestedAt(LocalDateTime.now());
+                        emailAccountRepository.save(emailAccount);
+                        return false;
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Resend test attempt {}/{} failed for account: {} - {}", attempt, maxRetries, emailAccount.getName(), e.getMessage());
+                if (attempt == maxRetries) {
+                    emailAccount.setLastErrorMessage("Resend test failed after " + maxRetries + " attempts: " + e.getMessage());
+                    emailAccount.setLastTestedAt(LocalDateTime.now());
+                    emailAccountRepository.save(emailAccount);
+                } else {
+                    try {
+                        Thread.sleep(retryDelaySeconds * 1000L);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        emailAccount.setLastErrorMessage("Resend test interrupted: " + ie.getMessage());
+                        emailAccount.setLastTestedAt(LocalDateTime.now());
+                        emailAccountRepository.save(emailAccount);
+                        return false;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Test Resend SMTP gateway connection by sending a test email via smtp.resend.com
+     */
+    private boolean testResendSmtpConnection(EmailAccount emailAccount) {
+        int maxRetries = emailAccount.getMaxRetryAttempts() != null ? emailAccount.getMaxRetryAttempts() : 3;
+        int retryDelaySeconds = emailAccount.getRetryDelaySeconds() != null ? emailAccount.getRetryDelaySeconds() : 5;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                log.debug("Resend SMTP test attempt {}/{} for account: {}", attempt, maxRetries, emailAccount.getName());
+
+                if (emailAccount.getApiKey() == null || emailAccount.getApiKey().isBlank()) {
+                    emailAccount.setLastErrorMessage("Resend SMTP test failed: API key is not configured (used as SMTP password)");
+                    emailAccount.setLastTestedAt(LocalDateTime.now());
+                    emailAccountRepository.save(emailAccount);
+                    return false;
+                }
+
+                // Build JavaMailSender for Resend SMTP
+                JavaMailSenderImpl sender = new JavaMailSenderImpl();
+                sender.setHost(emailAccount.getSmtpHost() != null ? emailAccount.getSmtpHost() : "smtp.resend.com");
+                sender.setPort(emailAccount.getSmtpPort() != null ? emailAccount.getSmtpPort() : 465);
+                sender.setUsername("resend");
+
+                String apiKey = EncryptionUtil.decrypt(emailAccount.getApiKey());
+                sender.setPassword(apiKey);
+
+                Properties props = sender.getJavaMailProperties();
+                props.put("mail.smtp.auth", "true");
+                Boolean useTls = emailAccount.getUseTls() != null ? emailAccount.getUseTls() : false;
+                Boolean useSsl = emailAccount.getUseSsl() != null ? emailAccount.getUseSsl() : true;
+                props.put("mail.smtp.starttls.enabled", useTls);
+                props.put("mail.smtp.starttls.required", useTls);
+                props.put("mail.smtp.ssl.enable", useSsl);
+                if (useSsl) {
+                    props.put("mail.smtp.socketFactory.protocol", "SSLv23");
+                    props.put("mail.smtp.socketFactory.port", sender.getPort());
+                }
+                props.put("mail.smtp.connectiontimeout", 10000);
+                props.put("mail.smtp.timeout", 10000);
+                props.put("mail.smtp.writetimeout", 10000);
+
+                MimeMessage mimeMessage = sender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+                helper.setFrom(emailAccount.getEmail(), emailAccount.getName());
+                helper.setTo(emailAccount.getEmail());
+                helper.setSubject("Test Email - Do Not Reply");
+                helper.setText("<p>This is a test email to verify Resend SMTP configuration for: " + emailAccount.getName() + "</p><p>Timestamp: " + LocalDateTime.now() + "</p>", true);
+
+                sender.send(mimeMessage);
+                log.info("Resend SMTP test succeeded on attempt {}/{} for account: {}", attempt, maxRetries, emailAccount.getName());
+                return true;
+
+            } catch (RuntimeException e) {
+                if (e.getMessage() != null && e.getMessage().contains("Decryption failed")) {
+                    emailAccount.setLastErrorMessage("Decryption failed: Unable to decrypt API key for SMTP password.");
+                    emailAccount.setLastTestedAt(LocalDateTime.now());
+                    emailAccountRepository.save(emailAccount);
+                    return false;
+                }
+
+                log.warn("Resend SMTP test attempt {}/{} failed: {}", attempt, maxRetries, e.getMessage());
+                if (attempt == maxRetries) {
+                    emailAccount.setLastErrorMessage("Resend SMTP test failed after " + maxRetries + " attempts: " + e.getMessage());
+                    emailAccount.setLastTestedAt(LocalDateTime.now());
+                    emailAccountRepository.save(emailAccount);
+                } else {
+                    try { Thread.sleep(retryDelaySeconds * 1000L); }
+                    catch (InterruptedException ie) { Thread.currentThread().interrupt(); return false; }
+                }
+            } catch (Exception e) {
+                log.warn("Resend SMTP test attempt {}/{} failed: {}", attempt, maxRetries, e.getMessage());
+                if (attempt == maxRetries) {
+                    emailAccount.setLastErrorMessage("Resend SMTP test failed after " + maxRetries + " attempts: " + e.getMessage());
+                    emailAccount.setLastTestedAt(LocalDateTime.now());
+                    emailAccountRepository.save(emailAccount);
+                } else {
+                    try { Thread.sleep(retryDelaySeconds * 1000L); }
+                    catch (InterruptedException ie) { Thread.currentThread().interrupt(); return false; }
+                }
+            }
+        }
+        return false;
     }
 
     /**
