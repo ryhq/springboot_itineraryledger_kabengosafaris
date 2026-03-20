@@ -7,7 +7,7 @@ import com.itineraryledger.kabengosafaris.Hero.Repository.HeroRepository;
 import com.itineraryledger.kabengosafaris.Hero.Services.HeroImageServices.HeroImageStorageService;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicHeroDTO;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
-import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -26,7 +26,7 @@ public class PublicHeroService {
 
     private final HeroRepository heroRepository;
     private final HeroImageStorageService heroImageStorageService;
-    private final IdObfuscator idObfuscator;
+
     private final PublicTranslationService publicTranslationService;
 
     /**
@@ -63,7 +63,6 @@ public class PublicHeroService {
         }
 
         return PublicHeroDTO.builder()
-            .id(idObfuscator.encodeId(hero.getId()))
             .title(hero.getTitle())
             .subtitle(hero.getSubtitle())
             .description(hero.getDescription())

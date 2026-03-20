@@ -8,7 +8,7 @@ import com.itineraryledger.kabengosafaris.Park.Entities.ParkImage;
 import com.itineraryledger.kabengosafaris.Park.Repositories.ParkImageRepository;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicGalleryImageDTO;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
-import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,7 +36,7 @@ public class PublicGalleryService {
     private final ParkImageRepository parkImageRepository;
     private final ActivityImageRepository activityImageRepository;
     private final AccommodationImageRepository accommodationImageRepository;
-    private final IdObfuscator idObfuscator;
+
     private final PublicTranslationService publicTranslationService;
 
     @Value("${app.base.url}")
@@ -157,7 +157,6 @@ public class PublicGalleryService {
 
     private PublicGalleryImageDTO toParkGalleryDTO(ParkImage image) {
         return PublicGalleryImageDTO.builder()
-                .id(idObfuscator.encodeId(image.getId()))
                 .imageUrl(toFullImageUrl("/api/park-images/file/" + image.getFileName()))
                 .altText(image.getAltText())
                 .caption(image.getCaption())
@@ -165,13 +164,11 @@ public class PublicGalleryService {
                 .entityType("PARK")
                 .entityName(image.getPark().getName())
                 .entitySlug(image.getPark().getSlug())
-                .entityId(idObfuscator.encodeId(image.getPark().getId()))
                 .build();
     }
 
     private PublicGalleryImageDTO toActivityGalleryDTO(ActivityImage image) {
         return PublicGalleryImageDTO.builder()
-                .id(idObfuscator.encodeId(image.getId()))
                 .imageUrl(toFullImageUrl("/api/activity-images/file/" + image.getFileName()))
                 .altText(image.getAltText())
                 .caption(image.getCaption())
@@ -179,13 +176,11 @@ public class PublicGalleryService {
                 .entityType("ACTIVITY")
                 .entityName(image.getActivity().getName())
                 .entitySlug(image.getActivity().getSlug())
-                .entityId(idObfuscator.encodeId(image.getActivity().getId()))
                 .build();
     }
 
     private PublicGalleryImageDTO toAccommodationGalleryDTO(AccommodationImage image) {
         return PublicGalleryImageDTO.builder()
-                .id(idObfuscator.encodeId(image.getId()))
                 .imageUrl(toFullImageUrl("/api/accommodation-images/file/" + image.getFileName()))
                 .altText(image.getAltText())
                 .caption(image.getCaption())
@@ -193,7 +188,6 @@ public class PublicGalleryService {
                 .entityType("ACCOMMODATION")
                 .entityName(image.getAccommodation().getName())
                 .entitySlug(image.getAccommodation().getSlug())
-                .entityId(idObfuscator.encodeId(image.getAccommodation().getId()))
                 .build();
     }
 

@@ -18,7 +18,7 @@ import com.itineraryledger.kabengosafaris.Public.DTOs.PublicItineraryDTO;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicParkListDTO;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicTestimonyDTO;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
-import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+
 import com.itineraryledger.kabengosafaris.Testimony.Entity.Testimony;
 import com.itineraryledger.kabengosafaris.Testimony.Repository.TestimonyRepository;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +46,7 @@ public class PublicHomepageService {
     private final HeroRepository heroRepository;
     private final PublicHeroService publicHeroService;
     private final ItineraryRepository itineraryRepository;
-    private final IdObfuscator idObfuscator;
+
     private final PublicImageResolver imageResolver;
     private final ParkRepository parkRepository;
     private final TestimonyRepository testimonyRepository;
@@ -138,7 +138,6 @@ public class PublicHomepageService {
         }
 
         return PublicItineraryDTO.builder()
-            .id(idObfuscator.encodeId(itinerary.getId()))
             .name(itinerary.getName())
             .code(itinerary.getCode())
             .tripType(itinerary.getTripType())
@@ -198,7 +197,6 @@ public class PublicHomepageService {
 
     private PublicParkListDTO convertToParkListDTO(Park p) {
         return PublicParkListDTO.builder()
-            .id(idObfuscator.encodeId(p.getId()))
             .slug(p.getSlug())
             .name(p.getName())
             .parkType(p.getParkType())
@@ -210,7 +208,6 @@ public class PublicHomepageService {
 
     private PublicActivityListDTO convertToActivityListDTO(Activity a) {
         return PublicActivityListDTO.builder()
-            .id(idObfuscator.encodeId(a.getId()))
             .slug(a.getSlug())
             .name(a.getName())
             .description(a.getDescription())

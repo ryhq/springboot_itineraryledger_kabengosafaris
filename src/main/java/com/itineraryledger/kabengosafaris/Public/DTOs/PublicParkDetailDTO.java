@@ -21,7 +21,6 @@ import java.math.BigDecimal;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PublicParkDetailDTO {
 
-    private String id;
     private String slug;
     @Translatable private String name;
     private ParkType parkType;

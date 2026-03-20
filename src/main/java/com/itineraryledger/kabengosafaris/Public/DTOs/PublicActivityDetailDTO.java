@@ -18,7 +18,6 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PublicActivityDetailDTO {
 
-    private String id;
     private String slug;
     @Translatable private String name;
 

@@ -22,7 +22,6 @@ import java.time.LocalDate;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PublicTestimonyDTO {
 
-    private String id;
     private String authorName;
     private String authorTitle;
     private String authorCountry;

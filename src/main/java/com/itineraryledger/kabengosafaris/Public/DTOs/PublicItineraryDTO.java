@@ -27,7 +27,6 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PublicItineraryDTO {
 
-    private String id;
     @Translatable private String name;
     private String code;
 
@@ -113,7 +112,7 @@ public class PublicItineraryDTO {
     @Builder
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class DayParkDTO {
-        private String parkId;
+        private String parkSlug;
         @Translatable private String parkName;
         private String primaryImageUrl;
     }
@@ -124,7 +123,7 @@ public class PublicItineraryDTO {
     @Builder
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class DayActivityDTO {
-        private String activityId;
+        private String activitySlug;
         @Translatable private String activityName;
         private BigDecimal durationHours;
         private Boolean isOptional;
@@ -136,7 +135,7 @@ public class PublicItineraryDTO {
     @Builder
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class DayAccommodationDTO {
-        private String accommodationId;
+        private String accommodationSlug;
         @Translatable private String accommodationName;
         private String primaryImageUrl;
     }

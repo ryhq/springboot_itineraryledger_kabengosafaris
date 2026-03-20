@@ -21,7 +21,6 @@ import java.math.BigDecimal;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PublicAccommodationDTO {
 
-    private String id;
     @Translatable private String name;
     private String slug;
     private AccommodationType accommodationType;
@@ -38,7 +37,7 @@ public class PublicAccommodationDTO {
     // Multi-Branch Support
     private Boolean hasBranch;
     private Boolean isHeadquarters;
-    private String parentAccommodationId;
+    private String parentAccommodationSlug;
     private String parentAccommodationName;
 
     // Location

@@ -12,7 +12,7 @@ import com.itineraryledger.kabengosafaris.Public.DTOs.PublicActivityListDTO;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicImageDTO;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicParkListDTO;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
-import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -41,7 +41,7 @@ public class PublicActivityService {
     private final ParkActivityRepository parkActivityRepository;
     private final PublicEntityResolver entityResolver;
     private final PublicImageResolver imageResolver;
-    private final IdObfuscator idObfuscator;
+
     private final PublicTranslationService publicTranslationService;
 
     public ResponseEntity<ApiResponse<?>> getActivities(Integer page, Integer size, String sortBy, String sortDirection,
@@ -137,7 +137,6 @@ public class PublicActivityService {
                 .map(ParkActivity::getPark)
                 .filter(p -> Boolean.TRUE.equals(p.getIsActive()))
                 .map(p -> PublicParkListDTO.builder()
-                    .id(idObfuscator.encodeId(p.getId()))
                     .slug(p.getSlug())
                     .name(p.getName())
                     .parkType(p.getParkType())
@@ -191,7 +190,6 @@ public class PublicActivityService {
 
     private PublicActivityListDTO convertToListDTO(Activity a) {
         return PublicActivityListDTO.builder()
-            .id(idObfuscator.encodeId(a.getId()))
             .slug(a.getSlug())
             .name(a.getName())
             .description(a.getDescription())
@@ -202,7 +200,6 @@ public class PublicActivityService {
 
     private PublicActivityDetailDTO convertToDetailDTO(Activity a) {
         return PublicActivityDetailDTO.builder()
-            .id(idObfuscator.encodeId(a.getId()))
             .slug(a.getSlug())
             .name(a.getName())
             .description(a.getDescription())

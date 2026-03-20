@@ -14,7 +14,7 @@ import com.itineraryledger.kabengosafaris.Park.ParkRepository;
 import com.itineraryledger.kabengosafaris.Park.ParkSpecification;
 import com.itineraryledger.kabengosafaris.Public.DTOs.*;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
-import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+
 import com.itineraryledger.kabengosafaris.Testimony.Entity.Testimony;
 import com.itineraryledger.kabengosafaris.Testimony.Repository.TestimonyRepository;
 import com.itineraryledger.kabengosafaris.Testimony.Specifications.TestimonySpecification;
@@ -47,7 +47,7 @@ public class PublicSearchService {
     private final AccommodationRepository accommodationRepository;
     private final ItineraryRepository itineraryRepository;
     private final TestimonyRepository testimonyRepository;
-    private final IdObfuscator idObfuscator;
+
     private final PublicImageResolver imageResolver;
     private final PublicTestimonyService publicTestimonyService;
     private final PublicTranslationService publicTranslationService;
@@ -109,7 +109,6 @@ public class PublicSearchService {
                 PageRequest.of(0, limit, Sort.by("name").ascending()));
             List<PublicParkListDTO> parkDtos = parkPage.getContent().stream()
                 .<PublicParkListDTO>map(p -> PublicParkListDTO.builder()
-                    .id(idObfuscator.encodeId(p.getId()))
                     .slug(p.getSlug())
                     .name(p.getName())
                     .parkType(p.getParkType())
@@ -130,7 +129,6 @@ public class PublicSearchService {
                 PageRequest.of(0, limit, Sort.by("name").ascending()));
             List<PublicActivityListDTO> activityDtos = activityPage.getContent().stream()
                 .<PublicActivityListDTO>map(a -> PublicActivityListDTO.builder()
-                    .id(idObfuscator.encodeId(a.getId()))
                     .slug(a.getSlug())
                     .name(a.getName())
                     .description(a.getDescription())
@@ -150,7 +148,6 @@ public class PublicSearchService {
                 PageRequest.of(0, limit, Sort.by("name").ascending()));
             List<PublicAccommodationListDTO> accDtos = accPage.getContent().stream()
                 .<PublicAccommodationListDTO>map(a -> PublicAccommodationListDTO.builder()
-                    .id(idObfuscator.encodeId(a.getId()))
                     .slug(a.getSlug())
                     .name(a.getName())
                     .accommodationType(a.getAccommodationType())
@@ -174,7 +171,6 @@ public class PublicSearchService {
                 PageRequest.of(0, limit, Sort.by("name").ascending()));
             List<PublicItineraryDTO> safariDtos = itinPage.getContent().stream()
                 .<PublicItineraryDTO>map(i -> PublicItineraryDTO.builder()
-                    .id(idObfuscator.encodeId(i.getId()))
                     .name(i.getName())
                     .code(i.getCode())
                     .tripType(i.getTripType())

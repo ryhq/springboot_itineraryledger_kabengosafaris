@@ -12,7 +12,7 @@ import com.itineraryledger.kabengosafaris.Itinerary.Repository.ItineraryReposito
 import com.itineraryledger.kabengosafaris.Itinerary.Specifications.ItinerarySpecification;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicItineraryDTO;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
-import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -40,7 +40,6 @@ public class PublicItineraryService {
     private final ItineraryCostSummaryRepository costSummaryRepository;
     private final PublicEntityResolver entityResolver;
     private final PublicImageResolver imageResolver;
-    private final IdObfuscator idObfuscator;
     private final PublicTranslationService publicTranslationService;
 
     public PublicItineraryService(
@@ -48,13 +47,11 @@ public class PublicItineraryService {
             ItineraryCostSummaryRepository costSummaryRepository,
             PublicEntityResolver entityResolver,
             PublicImageResolver imageResolver,
-            IdObfuscator idObfuscator,
             PublicTranslationService publicTranslationService) {
         this.itineraryRepository = itineraryRepository;
         this.costSummaryRepository = costSummaryRepository;
         this.entityResolver = entityResolver;
         this.imageResolver = imageResolver;
-        this.idObfuscator = idObfuscator;
         this.publicTranslationService = publicTranslationService;
     }
 
@@ -141,7 +138,6 @@ public class PublicItineraryService {
         }
 
         return PublicItineraryDTO.builder()
-            .id(idObfuscator.encodeId(itinerary.getId()))
             .name(itinerary.getName())
             .code(itinerary.getCode())
             .tripType(itinerary.getTripType())
@@ -169,7 +165,6 @@ public class PublicItineraryService {
      */
     private PublicItineraryDTO convertToDetailDTO(Itinerary itinerary) {
         PublicItineraryDTO.PublicItineraryDTOBuilder builder = PublicItineraryDTO.builder()
-            .id(idObfuscator.encodeId(itinerary.getId()))
             .name(itinerary.getName())
             .code(itinerary.getCode())
             .status(itinerary.getStatus())
@@ -235,7 +230,7 @@ public class PublicItineraryService {
                             dayParkIds.add(dp.getPark().getId());
                             dayParkEntityImages.add(dp.getPark().getPrimaryImage());
                             return PublicItineraryDTO.DayParkDTO.builder()
-                                .parkId(idObfuscator.encodeId(dp.getPark().getId()))
+                                .parkSlug(dp.getPark().getSlug())
                                 .parkName(dp.getPark().getName())
                                 .primaryImageUrl(imageResolver.resolveParkImage(dp.getPark().getId(), dp.getPark().getPrimaryImage()))
                                 .build();
@@ -251,7 +246,7 @@ public class PublicItineraryService {
                             dayActivityIds.add(da.getActivity().getId());
                             dayActivityEntityImages.add(da.getActivity().getPrimaryImage());
                             return PublicItineraryDTO.DayActivityDTO.builder()
-                                .activityId(idObfuscator.encodeId(da.getActivity().getId()))
+                                .activitySlug(da.getActivity().getSlug())
                                 .activityName(da.getActivity().getName())
                                 .durationHours(da.getDurationHours())
                                 .isOptional(da.getIsOptional())
@@ -268,7 +263,7 @@ public class PublicItineraryService {
                         .map(da -> {
                             dayAccommodationIds.add(da.getAccommodation().getId());
                             return PublicItineraryDTO.DayAccommodationDTO.builder()
-                                .accommodationId(idObfuscator.encodeId(da.getAccommodation().getId()))
+                                .accommodationSlug(da.getAccommodation().getSlug())
                                 .accommodationName(da.getAccommodation().getName())
                                 .primaryImageUrl(imageResolver.resolveAccommodationImage(da.getAccommodation().getId()))
                                 .build();

@@ -7,7 +7,7 @@ import com.itineraryledger.kabengosafaris.Activity.Repositories.ActivityImageRep
 import com.itineraryledger.kabengosafaris.Park.Entities.ParkImage;
 import com.itineraryledger.kabengosafaris.Park.Repositories.ParkImageRepository;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicImageDTO;
-import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -29,19 +29,16 @@ public class PublicImageResolver {
     private final ParkImageRepository parkImageRepository;
     private final ActivityImageRepository activityImageRepository;
     private final AccommodationImageRepository accommodationImageRepository;
-    private final IdObfuscator idObfuscator;
     private final String appBaseUrl;
 
     public PublicImageResolver(
             ParkImageRepository parkImageRepository,
             ActivityImageRepository activityImageRepository,
             AccommodationImageRepository accommodationImageRepository,
-            IdObfuscator idObfuscator,
             @Value("${app.base.url}") String appBaseUrl) {
         this.parkImageRepository = parkImageRepository;
         this.activityImageRepository = activityImageRepository;
         this.accommodationImageRepository = accommodationImageRepository;
-        this.idObfuscator = idObfuscator;
         this.appBaseUrl = appBaseUrl;
     }
 
@@ -259,7 +256,6 @@ public class PublicImageResolver {
 
     public PublicImageDTO toPublicDTO(ParkImage image) {
         return PublicImageDTO.builder()
-            .id(idObfuscator.encodeId(image.getId()))
             .imageUrl(toFullImageUrl("/api/park-images/file/" + image.getFileName()))
             .altText(image.getAltText())
             .caption(image.getCaption())
@@ -269,7 +265,6 @@ public class PublicImageResolver {
 
     public PublicImageDTO toPublicDTO(ActivityImage image) {
         return PublicImageDTO.builder()
-            .id(idObfuscator.encodeId(image.getId()))
             .imageUrl(toFullImageUrl("/api/activity-images/file/" + image.getFileName()))
             .altText(image.getAltText())
             .caption(image.getCaption())
@@ -279,7 +274,6 @@ public class PublicImageResolver {
 
     public PublicImageDTO toPublicDTO(AccommodationImage image) {
         return PublicImageDTO.builder()
-            .id(idObfuscator.encodeId(image.getId()))
             .imageUrl(toFullImageUrl("/api/accommodation-images/file/" + image.getFileName()))
             .altText(image.getAltText())
             .caption(image.getCaption())

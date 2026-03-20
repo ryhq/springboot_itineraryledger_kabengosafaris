@@ -19,7 +19,6 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PublicImageDTO {
 
-    private String id;
     private String imageUrl;
     @Translatable private String altText;
     @Translatable private String caption;

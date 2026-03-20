@@ -13,7 +13,7 @@ import com.itineraryledger.kabengosafaris.Public.DTOs.PublicImageDTO;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicParkDetailDTO;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicParkListDTO;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
-import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -42,7 +42,7 @@ public class PublicParkService {
     private final ParkActivityRepository parkActivityRepository;
     private final PublicEntityResolver entityResolver;
     private final PublicImageResolver imageResolver;
-    private final IdObfuscator idObfuscator;
+
     private final PublicTranslationService publicTranslationService;
 
     public ResponseEntity<ApiResponse<?>> getParks(Integer page, Integer size, String sortBy, String sortDirection,
@@ -139,7 +139,6 @@ public class PublicParkService {
                 .map(ParkActivity::getActivity)
                 .filter(a -> Boolean.TRUE.equals(a.getIsActive()) && Boolean.TRUE.equals(a.getIsWebActive()))
                 .map(a -> PublicActivityListDTO.builder()
-                    .id(idObfuscator.encodeId(a.getId()))
                     .slug(a.getSlug())
                     .name(a.getName())
                     .description(a.getDescription())
@@ -192,7 +191,6 @@ public class PublicParkService {
 
     private PublicParkListDTO convertToListDTO(Park p) {
         return PublicParkListDTO.builder()
-            .id(idObfuscator.encodeId(p.getId()))
             .slug(p.getSlug())
             .name(p.getName())
             .parkType(p.getParkType())
@@ -204,7 +202,6 @@ public class PublicParkService {
 
     private PublicParkDetailDTO convertToDetailDTO(Park p) {
         return PublicParkDetailDTO.builder()
-            .id(idObfuscator.encodeId(p.getId()))
             .slug(p.getSlug())
             .name(p.getName())
             .parkType(p.getParkType())

@@ -196,7 +196,6 @@ public class PublicTestimonyService {
         }
 
         PublicTestimonyDTO dto = PublicTestimonyDTO.builder()
-            .id(idObfuscator.encodeId(testimony.getId()))
             .authorName(testimony.getAuthorName())
             .authorTitle(testimony.getAuthorTitle())
             .authorCountry(testimony.getAuthorCountry())

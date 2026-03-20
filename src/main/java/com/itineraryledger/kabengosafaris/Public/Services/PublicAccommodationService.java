@@ -11,7 +11,7 @@ import com.itineraryledger.kabengosafaris.Public.DTOs.PublicAccommodationDTO;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicAccommodationListDTO;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicImageDTO;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
-import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -39,7 +39,7 @@ public class PublicAccommodationService {
     private final AccommodationImageRepository accommodationImageRepository;
     private final PublicEntityResolver entityResolver;
     private final PublicImageResolver imageResolver;
-    private final IdObfuscator idObfuscator;
+
     private final PublicTranslationService publicTranslationService;
 
     public ResponseEntity<ApiResponse<?>> getAccommodations(Integer page, Integer size, String sortBy, String sortDirection,
@@ -141,7 +141,6 @@ public class PublicAccommodationService {
 
     private PublicAccommodationListDTO convertToListDTO(Accommodation a) {
         return PublicAccommodationListDTO.builder()
-            .id(idObfuscator.encodeId(a.getId()))
             .slug(a.getSlug())
             .name(a.getName())
             .accommodationType(a.getAccommodationType())
@@ -157,7 +156,6 @@ public class PublicAccommodationService {
 
     private PublicAccommodationDTO convertToDetailDTO(Accommodation a) {
         return PublicAccommodationDTO.builder()
-            .id(idObfuscator.encodeId(a.getId()))
             .name(a.getName())
             .slug(a.getSlug())
             .accommodationType(a.getAccommodationType())
@@ -171,7 +169,7 @@ public class PublicAccommodationService {
             .website(a.getWebsite())
             .hasBranch(a.getHasBranch())
             .isHeadquarters(a.getIsHeadquarters())
-            .parentAccommodationId(a.getParentAccommodation() != null ? idObfuscator.encodeId(a.getParentAccommodation().getId()) : null)
+            .parentAccommodationSlug(a.getParentAccommodation() != null ? a.getParentAccommodation().getSlug() : null)
             .parentAccommodationName(a.getParentAccommodation() != null ? a.getParentAccommodation().getName() : null)
             .region(a.getRegion())
             .district(a.getDistrict())

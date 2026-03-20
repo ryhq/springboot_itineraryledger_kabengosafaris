@@ -13,7 +13,7 @@ import com.itineraryledger.kabengosafaris.Park.Park;
 import com.itineraryledger.kabengosafaris.Park.ParkRepository;
 import com.itineraryledger.kabengosafaris.Park.ParkSpecification;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
-import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+
 import com.itineraryledger.kabengosafaris.Testimony.Services.TestimonyServices.TestimonyGetService;
 import com.itineraryledger.kabengosafaris.Translation.Settings.TranslationSettingGetterServices;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +40,7 @@ public class PublicNavigationService {
     private final AccommodationRepository accommodationRepository;
     private final ItineraryRepository itineraryRepository;
     private final TestimonyGetService testimonyGetService;
-    private final IdObfuscator idObfuscator;
+
     private final PublicTranslationService publicTranslationService;
     private final TranslationSettingGetterServices translationSettingGetterServices;
 
@@ -55,7 +55,7 @@ public class PublicNavigationService {
             );
             List<Map<String, String>> parkNavItems = activeParksList.stream().map(p -> {
                 Map<String, String> item = new HashMap<>();
-                item.put("id", p.getSlug() != null ? p.getSlug() : idObfuscator.encodeId(p.getId()));
+                item.put("id", p.getSlug() != null ? p.getSlug() : "");
                 item.put("name", p.getName());
                 item.put("region", p.getRegion());
                 return item;
@@ -71,7 +71,7 @@ public class PublicNavigationService {
             );
             List<Map<String, String>> activityNavItems = activeActivitiesList.stream().map(a -> {
                 Map<String, String> item = new HashMap<>();
-                item.put("id", a.getSlug() != null ? a.getSlug() : idObfuscator.encodeId(a.getId()));
+                item.put("id", a.getSlug() != null ? a.getSlug() : "");
                 item.put("name", a.getName());
                 return item;
             }).collect(Collectors.toList());
@@ -85,7 +85,7 @@ public class PublicNavigationService {
             );
             List<Map<String, String>> accommodationNavItems = activeAccommodationsList.stream().map(a -> {
                 Map<String, String> item = new HashMap<>();
-                item.put("id", a.getSlug() != null ? a.getSlug() : idObfuscator.encodeId(a.getId()));
+                item.put("id", a.getSlug() != null ? a.getSlug() : "");
                 item.put("name", a.getName());
                 item.put("region", a.getRegion());
                 return item;
@@ -100,7 +100,7 @@ public class PublicNavigationService {
             );
             List<Map<String, String>> itineraryNavItems = activeItinerariesList.stream().map(i -> {
                 Map<String, String> item = new HashMap<>();
-                item.put("id", i.getCode() != null ? i.getCode() : idObfuscator.encodeId(i.getId()));
+                item.put("id", i.getCode() != null ? i.getCode() : "");
                 item.put("name", i.getName());
                 return item;
             }).collect(Collectors.toList());

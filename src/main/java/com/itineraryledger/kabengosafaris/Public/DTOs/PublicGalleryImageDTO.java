@@ -18,7 +18,6 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PublicGalleryImageDTO {
 
-    private String id;
     private String imageUrl;
     @Translatable private String altText;
     @Translatable private String caption;
@@ -28,5 +27,4 @@ public class PublicGalleryImageDTO {
     private String entityType;   // PARK, ACTIVITY, ACCOMMODATION
     private String entityName;
     private String entitySlug;
-    private String entityId;
 }
