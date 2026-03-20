@@ -20,4 +20,7 @@ public interface ResendWebhookEventRepository extends JpaRepository<ResendWebhoo
 
     // Circular navigation: find the event received just after this one (older in desc order)
     Optional<ResendWebhookEvent> findFirstByReceivedAtLessThanOrderByReceivedAtDesc(LocalDateTime receivedAt);
+
+    // Retention cleanup: delete events older than cutoff date
+    long deleteByReceivedAtBefore(LocalDateTime cutoff);
 }
