@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.EmailAccount;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -49,4 +50,10 @@ public interface EmailAccountRepository extends JpaRepository<EmailAccount, Long
 
     @Query("SELECT e.id FROM EmailAccount e ORDER BY e.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    /**
+     * Find accounts eligible for email fetching (enabled, receiving on, protocol set)
+     */
+    @Query("SELECT e FROM EmailAccount e WHERE e.enabled = true AND e.receivingEnabled = true AND e.receivingProtocol != 'NONE'")
+    List<EmailAccount> findFetchEligibleAccounts();
 }

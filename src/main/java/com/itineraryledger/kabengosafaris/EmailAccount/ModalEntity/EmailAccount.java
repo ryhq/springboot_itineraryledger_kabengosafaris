@@ -156,6 +156,13 @@ public class EmailAccount {
     private String lastFetchErrorMessage;
 
     /**
+     * Consecutive fetch failure count (resets on success, used for backoff)
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer consecutiveFetchFailures = 0;
+
+    /**
      * Total number of emails received
      */
     @Column(nullable = false)

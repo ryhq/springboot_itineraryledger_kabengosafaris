@@ -184,5 +184,6 @@ public class EmailAccountDTO {
     private Integer maxFetchCount;
     private LocalDateTime lastFetchedAt;
     private String lastFetchErrorMessage;
+    private Integer consecutiveFetchFailures;
     private Long emailsReceivedCount;
 }

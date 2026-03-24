@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -145,9 +144,8 @@ public class EmailSendingService {
         String resendEmailId = response.getId();
         log.info("Email sent via Resend API. Email ID: {}", resendEmailId);
 
-        // Capture sent email metadata asynchronously
-        final EmailAccount captureAccount = emailAccount;
-        CompletableFuture.runAsync(() -> captureResendSentEmail(captureAccount, resendEmailId, toEmail, subject));
+        // Capture sent email inline (runs within the @Async @Transactional context)
+        captureResendSentEmail(emailAccount, resendEmailId, toEmail, subject);
     }
 
     /**
@@ -196,10 +194,8 @@ public class EmailSendingService {
         sender.send(mimeMessage);
         log.info("Email sent via Resend SMTP gateway to: {}", toEmail);
 
-        // Capture sent email asynchronously
-        final EmailAccount captureAccount = emailAccount;
-        final MimeMessage captureMessage = mimeMessage;
-        CompletableFuture.runAsync(() -> captureSentEmail(captureAccount, captureMessage, toEmail, subject));
+        // Capture sent email inline (runs within the @Async @Transactional context)
+        captureSentEmail(emailAccount, mimeMessage, toEmail, subject);
     }
 
     /**
@@ -221,10 +217,8 @@ public class EmailSendingService {
 
         mailSender.send(mimeMessage);
 
-        // Capture sent email asynchronously (non-blocking)
-        final EmailAccount captureAccount = emailAccount;
-        final MimeMessage captureMessage = mimeMessage;
-        CompletableFuture.runAsync(() -> captureSentEmail(captureAccount, captureMessage, toEmail, subject));
+        // Capture sent email inline (runs within the @Async @Transactional context)
+        captureSentEmail(emailAccount, mimeMessage, toEmail, subject);
     }
 
     /**

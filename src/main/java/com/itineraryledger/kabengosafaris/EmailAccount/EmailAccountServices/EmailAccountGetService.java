@@ -351,6 +351,7 @@ public class EmailAccountGetService {
                 .maxFetchCount(emailAccount.getMaxFetchCount())
                 .lastFetchedAt(emailAccount.getLastFetchedAt())
                 .lastFetchErrorMessage(emailAccount.getLastFetchErrorMessage())
+                .consecutiveFetchFailures(emailAccount.getConsecutiveFetchFailures())
                 .emailsReceivedCount(emailAccount.getEmailsReceivedCount())
                 .build();
     }

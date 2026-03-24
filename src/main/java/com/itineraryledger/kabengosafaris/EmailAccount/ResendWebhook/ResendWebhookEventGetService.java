@@ -54,7 +54,7 @@ public class ResendWebhookEventGetService {
                     : Sort.by(validatedSortBy).ascending();
             Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
 
-            Specification<ResendWebhookEvent> spec = Specification.where(null);
+            Specification<ResendWebhookEvent> spec = Specification.unrestricted();
             if (eventType != null && !eventType.isEmpty()) {
                 spec = spec.and((root, query, cb) -> cb.equal(root.get("eventType"), eventType));
             }

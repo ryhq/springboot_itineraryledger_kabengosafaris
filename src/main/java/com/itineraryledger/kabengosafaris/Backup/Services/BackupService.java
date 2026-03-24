@@ -12,8 +12,13 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.zip.Deflater;
+import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 
 /**
  * Core Backup Service
@@ -334,19 +339,44 @@ public class BackupService {
     }
 
     /**
-     * Compress backup directory to ZIP file
+     * Compress backup directory using the configured format (zip, tar.gz, tar).
      *
      * @param sourceDir source directory to compress
-     * @param targetDir target directory for ZIP file
+     * @param targetDir target directory for compressed file
      * @param backupName backup name (without extension)
      * @return path to compressed file
      */
     private String compressBackup(String sourceDir, String targetDir, String backupName)
             throws IOException {
+        String format = backupSettings.getCompressionFormat().toLowerCase().trim();
+        int level = backupSettings.getCompressionLevel();
+
+        String outputPath = switch (format) {
+            case "tar.gz", "tgz" -> compressAsTarGz(sourceDir, targetDir, backupName, level);
+            case "tar" -> compressAsTar(sourceDir, targetDir, backupName);
+            default -> compressAsZip(sourceDir, targetDir, backupName, level);
+        };
+
+        // Delete temporary directory after compression
+        deleteDirectory(new File(sourceDir));
+
+        return outputPath;
+    }
+
+    /**
+     * Compress as ZIP with configurable compression level (0-9)
+     */
+    private String compressAsZip(String sourceDir, String targetDir, String backupName, int level)
+            throws IOException {
         String zipFilePath = targetDir + backupName + ".zip";
         Path sourcePath = Paths.get(sourceDir);
 
+        // Clamp level to valid range
+        int zipLevel = Math.max(Deflater.NO_COMPRESSION, Math.min(level, Deflater.BEST_COMPRESSION));
+
         try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(zipFilePath))) {
+            zipOut.setLevel(zipLevel);
+
             Files.walkFileTree(sourcePath, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
@@ -371,10 +401,103 @@ public class BackupService {
             });
         }
 
-        // Delete temporary directory after compression
-        deleteDirectory(new File(sourceDir));
-
+        log.info("ZIP backup created (level {}): {}", zipLevel, zipFilePath);
         return zipFilePath;
+    }
+
+    /**
+     * Compress as TAR.GZ (gzipped tarball) with configurable GZIP compression level
+     */
+    private String compressAsTarGz(String sourceDir, String targetDir, String backupName, int level)
+            throws IOException {
+        String tarGzFilePath = targetDir + backupName + ".tar.gz";
+        Path sourcePath = Paths.get(sourceDir);
+
+        int gzipLevel = Math.max(Deflater.NO_COMPRESSION, Math.min(level, Deflater.BEST_COMPRESSION));
+
+        try (FileOutputStream fos = new FileOutputStream(tarGzFilePath);
+             GZIPOutputStream gzos = new GZIPOutputStream(fos) {{
+                 def.setLevel(gzipLevel);
+             }};
+             TarArchiveOutputStream tarOut = new TarArchiveOutputStream(gzos)) {
+
+            tarOut.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
+            tarOut.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);
+
+            Files.walkFileTree(sourcePath, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                        throws IOException {
+                    Path relativePath = sourcePath.relativize(file);
+                    TarArchiveEntry entry = new TarArchiveEntry(file.toFile(), relativePath.toString());
+                    entry.setSize(Files.size(file));
+                    tarOut.putArchiveEntry(entry);
+                    Files.copy(file, tarOut);
+                    tarOut.closeArchiveEntry();
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                        throws IOException {
+                    if (!dir.equals(sourcePath)) {
+                        Path relativePath = sourcePath.relativize(dir);
+                        TarArchiveEntry entry = new TarArchiveEntry(dir.toFile(), relativePath.toString() + "/");
+                        tarOut.putArchiveEntry(entry);
+                        tarOut.closeArchiveEntry();
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
+
+        log.info("TAR.GZ backup created (level {}): {}", gzipLevel, tarGzFilePath);
+        return tarGzFilePath;
+    }
+
+    /**
+     * Create uncompressed TAR archive
+     */
+    private String compressAsTar(String sourceDir, String targetDir, String backupName)
+            throws IOException {
+        String tarFilePath = targetDir + backupName + ".tar";
+        Path sourcePath = Paths.get(sourceDir);
+
+        try (FileOutputStream fos = new FileOutputStream(tarFilePath);
+             TarArchiveOutputStream tarOut = new TarArchiveOutputStream(fos)) {
+
+            tarOut.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
+            tarOut.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);
+
+            Files.walkFileTree(sourcePath, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                        throws IOException {
+                    Path relativePath = sourcePath.relativize(file);
+                    TarArchiveEntry entry = new TarArchiveEntry(file.toFile(), relativePath.toString());
+                    entry.setSize(Files.size(file));
+                    tarOut.putArchiveEntry(entry);
+                    Files.copy(file, tarOut);
+                    tarOut.closeArchiveEntry();
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                        throws IOException {
+                    if (!dir.equals(sourcePath)) {
+                        Path relativePath = sourcePath.relativize(dir);
+                        TarArchiveEntry entry = new TarArchiveEntry(dir.toFile(), relativePath.toString() + "/");
+                        tarOut.putArchiveEntry(entry);
+                        tarOut.closeArchiveEntry();
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
+
+        log.info("TAR backup created: {}", tarFilePath);
+        return tarFilePath;
     }
 
     /**
