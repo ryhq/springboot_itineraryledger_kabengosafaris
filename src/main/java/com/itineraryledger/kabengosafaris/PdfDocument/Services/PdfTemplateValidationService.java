@@ -122,6 +122,10 @@ public class PdfTemplateValidationService {
         HTML_ENTITIES.put("&frac12;", "&#189;");
         HTML_ENTITIES.put("&frac14;", "&#188;");
         HTML_ENTITIES.put("&frac34;", "&#190;");
+        HTML_ENTITIES.put("&rarr;", "&#8594;");
+        HTML_ENTITIES.put("&larr;", "&#8592;");
+        HTML_ENTITIES.put("&uarr;", "&#8593;");
+        HTML_ENTITIES.put("&darr;", "&#8595;");
     }
 
     /**
