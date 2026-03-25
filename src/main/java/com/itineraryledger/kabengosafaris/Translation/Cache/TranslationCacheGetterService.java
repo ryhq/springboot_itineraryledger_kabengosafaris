@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,14 @@ public class TranslationCacheGetterService {
     private static final int MAX_CONTENT_LENGTH = 500;
 
     /**
+     * Valid sort fields that map to TranslationCache entity fields.
+     */
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+            "createdAt", "expiresAt", "sourceLanguage", "targetLanguage",
+            "characterCount", "hitCount", "lastAccessedAt", "name"
+    );
+
+    /**
      * Get all translation cache entries with optional filtering, pagination, and sorting.
      *
      * @param page               Page number (0-based)
@@ -56,7 +65,8 @@ public class TranslationCacheGetterService {
      * @param createdBefore      Filter by created before date
      * @param expired            Filter by expired status (true = expired, false = valid)
      * @param accessed           Filter by accessed status (true = has been accessed, false = never accessed)
-     * @param sortDirection            Sort direction ("asc" or "desc")
+     * @param sortBy               Sort field (e.g., "createdAt", "hitCount", "characterCount")
+     * @param sortDirection        Sort direction ("asc" or "desc")
      * @return ResponseEntity with paginated results or validation error
      */
     public ResponseEntity<?> getAllCacheEntries(
@@ -76,14 +86,15 @@ public class TranslationCacheGetterService {
             LocalDateTime createdBefore,
             Boolean expired,
             Boolean accessed,
+            String sortBy,
             String sortDirection
     ) {
         log.debug("Fetching translation cache entries with filters - page: {}, size: {}, name: {}, sourceLanguage: {}, " +
                         "targetLanguage: {}, contentHash: {}, minHitCount: {}, maxHitCount: {}, " +
                         "minCharCount: {}, maxCharCount: {}, createdAfter: {}, createdBefore: {}, " +
-                        "expired: {}, accessed: {}, sortDirection: {}",
+                        "expired: {}, accessed: {}, sortBy: {}, sortDirection: {}",
                 page, size, name, sourceLanguage, targetLanguage, contentHash, minHitCount, maxHitCount,
-                minCharCount, maxCharCount, createdAfter, createdBefore, expired, accessed, sortDirection);
+                minCharCount, maxCharCount, createdAfter, createdBefore, expired, accessed, sortBy, sortDirection);
 
         // Validate pagination parameters
         if (page < 0) {
@@ -99,13 +110,22 @@ public class TranslationCacheGetterService {
             );
         }
 
-        // Setup sorting (always sort by createdAt)
+        // Validate sort field
+        String effectiveSortBy = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
+        if (!VALID_SORT_FIELDS.contains(effectiveSortBy)) {
+            log.warn("Invalid sort field: {}", sortBy);
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+            );
+        }
+
+        // Setup sorting
         Sort.Direction direction = Sort.Direction.DESC;
         if ("asc".equalsIgnoreCase(sortDirection)) {
             direction = Sort.Direction.ASC;
         }
 
-        Pageable paging = PageRequest.of(page, size, Sort.by(direction, "createdAt"));
+        Pageable paging = PageRequest.of(page, size, Sort.by(direction, effectiveSortBy));
 
         // Build dynamic specification
         Specification<TranslationCache> specification = Specification.unrestricted();
@@ -178,6 +198,11 @@ public class TranslationCacheGetterService {
         response.put("currentPage", pagedCacheEntries.getNumber());
         response.put("totalItems", pagedCacheEntries.getTotalElements());
         response.put("totalPages", pagedCacheEntries.getTotalPages());
+        response.put("sortBy", effectiveSortBy);
+        response.put("sortDirection", direction.name().toLowerCase());
+        response.put("validSortFields", VALID_SORT_FIELDS);
+        response.put("hasNext", pagedCacheEntries.hasNext());
+        response.put("hasPrevious", pagedCacheEntries.hasPrevious());
 
         log.info("Successfully fetched {} translation cache entries on page {}", cacheDTOs.size(), page);
         return ResponseEntity.ok(
@@ -209,12 +234,23 @@ public class TranslationCacheGetterService {
                 );
             }
 
+            // Circular navigation — wrap around at boundaries
+            Long nextId = cacheRepository.findNextId(id).orElse(null);
+            Long previousId = cacheRepository.findPreviousId(id).orElse(null);
+            if (nextId == null) nextId = cacheRepository.findFirstId().orElse(null);
+            if (previousId == null) previousId = cacheRepository.findLastId().orElse(null);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("cacheEntry", convertToDTO(cacheEntry, false));
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+
             log.info("Successfully retrieved translation cache entry {}", id);
             return ResponseEntity.ok(
                     ApiResponse.success(
                             200,
                             "Successfully retrieved translation cache entry.",
-                            convertToDTO(cacheEntry, false) // Don't truncate for single entry view
+                            response
                     )
             );
         } catch (Exception e) {

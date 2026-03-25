@@ -29,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -325,6 +326,23 @@ public class PublicController {
         }
         Map<String, Object> result = bookingInquiryService.submitInquiry(request);
         return ResponseEntity.ok(result);
+    }
+
+    // ========================
+    // TRANSLATION LANGUAGES
+    // ========================
+
+    @GetMapping("/translation/languages")
+    public ResponseEntity<ApiResponse<?>> getSupportedLanguages() {
+        return publicTranslationService.getSupportedLanguages();
+    }
+
+    @PostMapping("/translation/translate-messages")
+    public ResponseEntity<ApiResponse<?>> translateMessages(@RequestBody Map<String, Object> request) {
+        @SuppressWarnings("unchecked")
+        List<String> texts = (List<String>) request.get("texts");
+        String targetLanguage = (String) request.get("targetLanguage");
+        return publicTranslationService.translateMessages(texts, targetLanguage);
     }
 
     // ========================

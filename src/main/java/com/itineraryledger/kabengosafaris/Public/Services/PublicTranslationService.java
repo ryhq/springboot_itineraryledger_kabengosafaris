@@ -1,16 +1,18 @@
 package com.itineraryledger.kabengosafaris.Public.Services;
 
 import com.itineraryledger.kabengosafaris.Public.Annotations.Translatable;
+import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Translation.Providers.TranslationProvider;
+import com.itineraryledger.kabengosafaris.Translation.Providers.TranslationProviderFactory;
 import com.itineraryledger.kabengosafaris.Translation.Services.TranslationService;
 import com.itineraryledger.kabengosafaris.Translation.Settings.TranslationSettingGetterServices;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -25,6 +27,7 @@ public class PublicTranslationService {
 
     private final TranslationService translationService;
     private final TranslationSettingGetterServices settingsService;
+    private final TranslationProviderFactory providerFactory;
 
     /** Cache reflected translatable fields per class to avoid repeated reflection. */
     private final Map<Class<?>, List<Field>> translatableFieldsCache = new ConcurrentHashMap<>();
@@ -106,6 +109,116 @@ public class PublicTranslationService {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Translate a batch of texts from English to a supported target language.
+     * Used by the website build-time sync script.
+     * Validates that targetLanguage is in the supported languages list.
+     * Max 500 texts per request.
+     */
+    public ResponseEntity<ApiResponse<?>> translateMessages(List<String> texts, String targetLanguage) {
+        if (targetLanguage == null || targetLanguage.isBlank()) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "targetLanguage is required"));
+        }
+        if (!settingsService.isLanguageSupported(targetLanguage)) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Language '" + targetLanguage + "' is not in the supported languages list"));
+        }
+        if ("en".equalsIgnoreCase(targetLanguage)) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Cannot translate to the source language (en)"));
+        }
+        if (texts == null || texts.isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "texts list is required and cannot be empty"));
+        }
+        if (texts.size() > 500) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Maximum 500 texts per request, received " + texts.size()));
+        }
+        if (!translationService.isAvailable()) {
+            return ResponseEntity.status(503).body(
+                    ApiResponse.error(503, "Translation service is currently unavailable"));
+        }
+
+        List<String> translations = new ArrayList<>();
+        int failed = 0;
+        for (String text : texts) {
+            if (text == null || text.isBlank()) {
+                translations.add(text);
+                continue;
+            }
+            try {
+                String translated = translationService.translatePlainText(text, "en", targetLanguage);
+                translations.add(translated != null ? translated : text);
+            } catch (Exception e) {
+                log.debug("Translation failed for text '{}', keeping original", text.length() > 50 ? text.substring(0, 50) + "..." : text);
+                translations.add(text);
+                failed++;
+            }
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("translations", translations);
+        response.put("targetLanguage", targetLanguage);
+        response.put("total", texts.size());
+        response.put("failed", failed);
+
+        return ResponseEntity.ok(ApiResponse.success(200, "Texts translated", response));
+    }
+
+    /**
+     * Get supported languages with names from the translation provider.
+     * Public endpoint — no authentication required.
+     */
+    public ResponseEntity<ApiResponse<?>> getSupportedLanguages() {
+        try {
+            List<String> supportedCodes = settingsService.getSupportedLanguages();
+
+            // Get language names from the active provider
+            TranslationProvider provider = providerFactory.getActiveProvider();
+            List<Map<String, String>> providerLanguages = provider.getAvailableLanguages();
+
+            // Build a code → name lookup
+            Map<String, String> nameMap = new HashMap<>();
+            for (Map<String, String> lang : providerLanguages) {
+                nameMap.put(lang.get("code"), lang.get("name"));
+            }
+
+            // Build supported languages list with names
+            List<Map<String, String>> supported = new ArrayList<>();
+            for (String code : supportedCodes) {
+                Map<String, String> entry = new HashMap<>();
+                entry.put("code", code);
+                entry.put("name", nameMap.getOrDefault(code, code.toUpperCase()));
+                supported.add(entry);
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("supportedLanguages", supportedCodes);
+            response.put("languages", supported);
+            response.put("defaultSourceLanguage", settingsService.getDefaultSourceLanguage());
+            response.put("defaultTargetLanguage", settingsService.getDefaultTargetLanguage());
+
+            return ResponseEntity.ok(ApiResponse.success(200, "Supported languages retrieved", response));
+        } catch (Exception e) {
+            log.error("Error fetching supported languages", e);
+            // Fallback — return just the codes from settings
+            List<String> supportedCodes = settingsService.getSupportedLanguages();
+            Map<String, Object> response = new HashMap<>();
+            response.put("supportedLanguages", supportedCodes);
+            response.put("languages", supportedCodes.stream().map(code -> {
+                Map<String, String> entry = new HashMap<>();
+                entry.put("code", code);
+                entry.put("name", code.toUpperCase());
+                return entry;
+            }).toList());
+            response.put("defaultSourceLanguage", settingsService.getDefaultSourceLanguage());
+            response.put("defaultTargetLanguage", settingsService.getDefaultTargetLanguage());
+            return ResponseEntity.ok(ApiResponse.success(200, "Supported languages retrieved (without provider names)", response));
         }
     }
 

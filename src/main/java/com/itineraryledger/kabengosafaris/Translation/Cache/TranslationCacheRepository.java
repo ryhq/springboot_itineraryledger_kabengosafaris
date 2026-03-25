@@ -138,4 +138,28 @@ public interface TranslationCacheRepository extends JpaRepository<TranslationCac
      * @return Optional containing the cache entry if found
      */
     Optional<TranslationCache> findByName(String name);
+
+    /**
+     * Find the next cache entry ID (circular navigation)
+     */
+    @Query("SELECT tc.id FROM TranslationCache tc WHERE tc.id > :currentId ORDER BY tc.id ASC LIMIT 1")
+    Optional<Long> findNextId(@Param("currentId") Long currentId);
+
+    /**
+     * Find the previous cache entry ID (circular navigation)
+     */
+    @Query("SELECT tc.id FROM TranslationCache tc WHERE tc.id < :currentId ORDER BY tc.id DESC LIMIT 1")
+    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+
+    /**
+     * Find the first cache entry ID (for wrapping from last to first)
+     */
+    @Query("SELECT tc.id FROM TranslationCache tc ORDER BY tc.id ASC LIMIT 1")
+    Optional<Long> findFirstId();
+
+    /**
+     * Find the last cache entry ID (for wrapping from first to last)
+     */
+    @Query("SELECT tc.id FROM TranslationCache tc ORDER BY tc.id DESC LIMIT 1")
+    Optional<Long> findLastId();
 }
