@@ -7,7 +7,6 @@ import com.itineraryledger.kabengosafaris.Itinerary.Entity.BudgetCategory;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Entity.ItineraryDay;
-import com.itineraryledger.kabengosafaris.Itinerary.ItineraryPax.Entity.ItineraryPax;
 import com.itineraryledger.kabengosafaris.Itinerary.Repository.ItineraryRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.Specifications.ItinerarySpecification;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicItineraryDTO;

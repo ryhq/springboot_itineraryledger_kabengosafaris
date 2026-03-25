@@ -133,9 +133,6 @@ public class EmailAccountCreateService {
                 sendingMethod = SendingMethod.SMTP;
             }
 
-            // Determine if this account needs SMTP fields
-            boolean needsSmtpFields = !isApiBasedProvider || sendingMethod == SendingMethod.SMTP;
-
             // Validate based on provider type and sending method
             if (isApiBasedProvider) {
                 // API-based providers always require an API key (used as SMTP password too)
