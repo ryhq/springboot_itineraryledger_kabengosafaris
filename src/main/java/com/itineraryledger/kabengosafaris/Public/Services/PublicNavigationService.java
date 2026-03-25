@@ -15,6 +15,8 @@ import com.itineraryledger.kabengosafaris.Park.ParkSpecification;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 
 import com.itineraryledger.kabengosafaris.Testimony.Services.TestimonyServices.TestimonyGetService;
+import com.itineraryledger.kabengosafaris.Translation.Providers.TranslationProvider;
+import com.itineraryledger.kabengosafaris.Translation.Providers.TranslationProviderFactory;
 import com.itineraryledger.kabengosafaris.Translation.Settings.TranslationSettingGetterServices;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +45,7 @@ public class PublicNavigationService {
 
     private final PublicTranslationService publicTranslationService;
     private final TranslationSettingGetterServices translationSettingGetterServices;
+    private final TranslationProviderFactory providerFactory;
 
     public ResponseEntity<ApiResponse<?>> getNavigation(String lang) {
         try {
@@ -110,9 +113,28 @@ public class PublicNavigationService {
             // Testimonies count (don't list individually in nav)
             nav.put("testimoniesCount", testimonyGetService.getApprovedActiveCount());
 
-            // Translation service status
+            // Translation service status + supported languages with names
             nav.put("translationEnabled", translationSettingGetterServices.isLibreTranslateEnabled());
-            nav.put("supportedLanguages", translationSettingGetterServices.getSupportedLanguages());
+            List<String> supportedCodes = translationSettingGetterServices.getSupportedLanguages();
+            nav.put("supportedLanguages", supportedCodes);
+
+            // Build language names from provider (fallback to uppercase code)
+            Map<String, String> langNameMap = new HashMap<>();
+            try {
+                TranslationProvider provider = providerFactory.getActiveProvider();
+                for (Map<String, String> pl : provider.getAvailableLanguages()) {
+                    langNameMap.put(pl.get("code"), pl.get("name"));
+                }
+            } catch (Exception e) {
+                log.debug("Could not fetch language names from provider");
+            }
+            List<Map<String, String>> languages = supportedCodes.stream().map(code -> {
+                Map<String, String> entry = new HashMap<>();
+                entry.put("code", code);
+                entry.put("name", langNameMap.getOrDefault(code, code.toUpperCase()));
+                return entry;
+            }).collect(Collectors.toList());
+            nav.put("languages", languages);
 
             return ResponseEntity.ok(ApiResponse.success(200, "Navigation data retrieved", nav));
         } catch (Exception e) {
