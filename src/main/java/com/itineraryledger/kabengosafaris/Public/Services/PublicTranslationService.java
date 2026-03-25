@@ -139,10 +139,9 @@ public class PublicTranslationService {
             return ResponseEntity.badRequest().body(
                     ApiResponse.error(400, "Maximum 500 texts per request, received " + texts.size(), "TOO_MANY_TEXTS"));
         }
-        if (!translationService.isAvailable()) {
-            return ResponseEntity.status(503).body(
-                    ApiResponse.error(503, "Translation service is currently unavailable", "SERVICE_UNAVAILABLE"));
-        }
+        // Skip isAvailable() check — it pings the provider API each time, which
+        // can fail under rapid batch requests. Instead, just try to translate and
+        // let individual failures fall back to original text gracefully.
 
         List<String> translations = new ArrayList<>();
         int failed = 0;
