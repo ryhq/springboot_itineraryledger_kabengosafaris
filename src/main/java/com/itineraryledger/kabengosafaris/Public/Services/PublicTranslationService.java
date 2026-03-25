@@ -121,27 +121,27 @@ public class PublicTranslationService {
     public ResponseEntity<ApiResponse<?>> translateMessages(List<String> texts, String targetLanguage) {
         if (targetLanguage == null || targetLanguage.isBlank()) {
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "targetLanguage is required"));
+                    ApiResponse.error(400, "targetLanguage is required", "MISSING_TARGET_LANGUAGE"));
         }
         if (!settingsService.isLanguageSupported(targetLanguage)) {
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Language '" + targetLanguage + "' is not in the supported languages list"));
+                    ApiResponse.error(400, "Language '" + targetLanguage + "' is not in the supported languages list", "UNSUPPORTED_LANGUAGE"));
         }
         if ("en".equalsIgnoreCase(targetLanguage)) {
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Cannot translate to the source language (en)"));
+                    ApiResponse.error(400, "Cannot translate to the source language (en)", "SAME_LANGUAGE"));
         }
         if (texts == null || texts.isEmpty()) {
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "texts list is required and cannot be empty"));
+                    ApiResponse.error(400, "texts list is required and cannot be empty", "MISSING_TEXTS"));
         }
         if (texts.size() > 500) {
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Maximum 500 texts per request, received " + texts.size()));
+                    ApiResponse.error(400, "Maximum 500 texts per request, received " + texts.size(), "TOO_MANY_TEXTS"));
         }
         if (!translationService.isAvailable()) {
             return ResponseEntity.status(503).body(
-                    ApiResponse.error(503, "Translation service is currently unavailable"));
+                    ApiResponse.error(503, "Translation service is currently unavailable", "SERVICE_UNAVAILABLE"));
         }
 
         List<String> translations = new ArrayList<>();
