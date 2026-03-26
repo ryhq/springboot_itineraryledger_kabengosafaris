@@ -46,6 +46,13 @@ public class AccessLogService {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+    private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
+        "timestamp", "status", "requestMethod", "requestUri", "remoteAddress",
+        "responseSizeBytes", "timeTakenMillis", "threatScore", "performanceGrade",
+        "userAgent", "host", "deviceType", "browserName", "operatingSystem"
+    );
+    private static final String DEFAULT_SORT_FIELD = "timestamp";
+
     /**
      * Get access logs with filtering and pagination
      */
@@ -78,7 +85,9 @@ public class AccessLogService {
         String performanceGrade,
         String browserName,
         String operatingSystem,
-        String deviceType
+        String deviceType,
+        String sortBy,
+        String sortDirection
     ) {
         // Validate date
         if (date != null && date.isAfter(LocalDate.now())) {
@@ -140,6 +149,14 @@ public class AccessLogService {
             }
         }
 
+        // Validate sort field
+        String validatedSortBy = validateSortField(sortBy);
+        if (validatedSortBy == null) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
+            );
+        }
+
         // Resolve log file path
         Path logFilePath = resolveLogFilePath(date);
 
@@ -188,8 +205,12 @@ public class AccessLogService {
                 .filter(dto -> deviceType == null || deviceType.equals(dto.getDeviceType()))
                 .collect(Collectors.toList());
 
-            // Reverse for latest first
-            Collections.reverse(filteredLogs);
+            // Sort
+            Comparator<AccessLogDTO> comparator = buildComparator(validatedSortBy);
+            if ("desc".equalsIgnoreCase(sortDirection)) {
+                comparator = comparator.reversed();
+            }
+            filteredLogs.sort(comparator);
 
             // Paginate
             PageRequest pageRequest = PageRequest.of(page, size);
@@ -214,6 +235,9 @@ public class AccessLogService {
             response.put("currentPage", pageLogs.getNumber());
             response.put("totalItems", pageLogs.getTotalElements());
             response.put("totalPages", pageLogs.getTotalPages());
+            response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDirection", sortDirection.toLowerCase());
             response.put("summary", generateSummary(pageLogs.getContent()));
 
             return ResponseEntity.ok(
@@ -226,6 +250,52 @@ public class AccessLogService {
                 ApiResponse.error(500, "Error reading log file: " + ex.getMessage(), "INTERNAL_ERROR")
             );
         }
+    }
+
+    private String validateSortField(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
+        for (String field : VALID_SORT_FIELDS) {
+            if (field.equalsIgnoreCase(sortBy)) return field;
+        }
+        return null;
+    }
+
+    /**
+     * Build a comparator for sorting AccessLogDTOs by the given field
+     */
+    private Comparator<AccessLogDTO> buildComparator(String sortBy) {
+        return switch (sortBy) {
+            case "timestamp" -> Comparator.comparing(
+                AccessLogDTO::getTimestampEpoch, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "status" -> Comparator.comparing(
+                AccessLogDTO::getStatus, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "responseSizeBytes" -> Comparator.comparing(
+                AccessLogDTO::getResponseSizeBytes, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "timeTakenMillis" -> Comparator.comparing(
+                AccessLogDTO::getTimeTakenMillis, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "threatScore" -> Comparator.comparing(
+                AccessLogDTO::getThreatScore, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "requestMethod" -> Comparator.comparing(
+                AccessLogDTO::getRequestMethod, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "requestUri" -> Comparator.comparing(
+                AccessLogDTO::getRequestUri, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "remoteAddress" -> Comparator.comparing(
+                AccessLogDTO::getRemoteAddress, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "performanceGrade" -> Comparator.comparing(
+                AccessLogDTO::getPerformanceGrade, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "userAgent" -> Comparator.comparing(
+                AccessLogDTO::getUserAgent, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "host" -> Comparator.comparing(
+                AccessLogDTO::getHost, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "deviceType" -> Comparator.comparing(
+                AccessLogDTO::getDeviceType, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "browserName" -> Comparator.comparing(
+                AccessLogDTO::getBrowserName, Comparator.nullsLast(Comparator.naturalOrder()));
+            case "operatingSystem" -> Comparator.comparing(
+                AccessLogDTO::getOperatingSystem, Comparator.nullsLast(Comparator.naturalOrder()));
+            default -> Comparator.comparing(
+                AccessLogDTO::getTimestampEpoch, Comparator.nullsLast(Comparator.naturalOrder()));
+        };
     }
 
     /**

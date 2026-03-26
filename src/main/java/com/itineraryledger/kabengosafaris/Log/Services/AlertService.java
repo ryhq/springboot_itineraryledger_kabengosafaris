@@ -56,6 +56,15 @@ public class AlertService {
     public AlertDTO checkErrorRateAlert(LocalDate date) {
         try {
             List<AccessLogDTO> logs = getLogsForDate(date);
+            return checkErrorRateAlertFromLogs(logs);
+        } catch (Exception e) {
+            log.error("Error checking error rate alert for date: {}", date, e);
+            return null;
+        }
+    }
+
+    private AlertDTO checkErrorRateAlertFromLogs(List<AccessLogDTO> logs) {
+        try {
             if (logs.isEmpty()) {
                 return null;
             }
@@ -115,7 +124,7 @@ public class AlertService {
             return null;
 
         } catch (Exception e) {
-            log.error("Error checking error rate alert for date: {}", date, e);
+            log.error("Error checking error rate alert", e);
             return null;
         }
     }
@@ -129,6 +138,15 @@ public class AlertService {
     public AlertDTO checkSlowResponseAlert(LocalDate date) {
         try {
             List<AccessLogDTO> logs = getLogsForDate(date);
+            return checkSlowResponseAlertFromLogs(logs);
+        } catch (Exception e) {
+            log.error("Error checking slow response alert for date: {}", date, e);
+            return null;
+        }
+    }
+
+    private AlertDTO checkSlowResponseAlertFromLogs(List<AccessLogDTO> logs) {
+        try {
             if (logs.isEmpty()) {
                 return null;
             }
@@ -190,7 +208,7 @@ public class AlertService {
             return null;
 
         } catch (Exception e) {
-            log.error("Error checking slow response alert for date: {}", date, e);
+            log.error("Error checking slow response alert", e);
             return null;
         }
     }
@@ -202,10 +220,19 @@ public class AlertService {
      * @return List of AlertDTOs for each critical threat
      */
     public List<AlertDTO> checkSecurityThreatAlert(LocalDate date) {
+        try {
+            List<AccessLogDTO> logs = getLogsForDate(date);
+            return checkSecurityThreatAlertFromLogs(logs);
+        } catch (Exception e) {
+            log.error("Error checking security threat alerts for date: {}", date, e);
+            return new ArrayList<>();
+        }
+    }
+
+    private List<AlertDTO> checkSecurityThreatAlertFromLogs(List<AccessLogDTO> logs) {
         List<AlertDTO> alerts = new ArrayList<>();
 
         try {
-            List<AccessLogDTO> logs = getLogsForDate(date);
             if (logs.isEmpty()) {
                 return alerts;
             }
@@ -263,7 +290,7 @@ public class AlertService {
             }
 
         } catch (Exception e) {
-            log.error("Error checking security threat alerts for date: {}", date, e);
+            log.error("Error checking security threat alerts", e);
         }
 
         return alerts;
@@ -278,6 +305,15 @@ public class AlertService {
     public AlertDTO checkUnusualTrafficSpike(LocalDate date) {
         try {
             List<AccessLogDTO> logs = getLogsForDate(date);
+            return checkUnusualTrafficSpikeFromLogs(logs);
+        } catch (Exception e) {
+            log.error("Error checking traffic spike alert for date: {}", date, e);
+            return null;
+        }
+    }
+
+    private AlertDTO checkUnusualTrafficSpikeFromLogs(List<AccessLogDTO> logs) {
+        try {
             if (logs.isEmpty()) {
                 return null;
             }
@@ -351,7 +387,7 @@ public class AlertService {
             return null;
 
         } catch (Exception e) {
-            log.error("Error checking traffic spike alert for date: {}", date, e);
+            log.error("Error checking traffic spike alert for date: {}", e);
             return null;
         }
     }
@@ -366,24 +402,30 @@ public class AlertService {
         List<AlertDTO> allAlerts = new ArrayList<>();
 
         try {
+            // Read logs once and pass to all check methods
+            List<AccessLogDTO> logs = getLogsForDate(date);
+            if (logs.isEmpty()) {
+                return allAlerts;
+            }
+
             // Check error rate alert
-            AlertDTO errorRateAlert = checkErrorRateAlert(date);
+            AlertDTO errorRateAlert = checkErrorRateAlertFromLogs(logs);
             if (errorRateAlert != null) {
                 allAlerts.add(errorRateAlert);
             }
 
             // Check slow response alert
-            AlertDTO slowResponseAlert = checkSlowResponseAlert(date);
+            AlertDTO slowResponseAlert = checkSlowResponseAlertFromLogs(logs);
             if (slowResponseAlert != null) {
                 allAlerts.add(slowResponseAlert);
             }
 
             // Check security threat alerts
-            List<AlertDTO> securityAlerts = checkSecurityThreatAlert(date);
+            List<AlertDTO> securityAlerts = checkSecurityThreatAlertFromLogs(logs);
             allAlerts.addAll(securityAlerts);
 
             // Check traffic spike alert
-            AlertDTO trafficSpikeAlert = checkUnusualTrafficSpike(date);
+            AlertDTO trafficSpikeAlert = checkUnusualTrafficSpikeFromLogs(logs);
             if (trafficSpikeAlert != null) {
                 allAlerts.add(trafficSpikeAlert);
             }

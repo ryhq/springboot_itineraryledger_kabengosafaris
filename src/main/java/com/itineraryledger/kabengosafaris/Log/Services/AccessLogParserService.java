@@ -108,6 +108,9 @@ public class AccessLogParserService {
             // Extract request method, URI, protocol from requestLine
             parseRequestLine(dto);
 
+            // Resolve effective client IP from X-Forwarded-For (behind reverse proxy)
+            resolveClientIp(dto);
+
             // Calculate derived time fields
             if (dto.getTimeTakenMicros() != null) {
                 dto.setTimeTakenMillis(dto.getTimeTakenMicros() / 1000);
@@ -166,6 +169,23 @@ public class AccessLogParserService {
             }
             if (parts.length >= 3) {
                 dto.setRequestProtocol(parts[2]);
+            }
+        }
+    }
+
+    /**
+     * Resolve the effective client IP from X-Forwarded-For header.
+     * Behind Nginx, remoteAddress is always 127.0.0.1 or ::1.
+     * The real client IP is in X-Forwarded-For (first IP in the chain).
+     */
+    private void resolveClientIp(AccessLogDTO dto) {
+        String xff = dto.getXForwardedFor();
+        if (xff != null && !xff.isEmpty()) {
+            // X-Forwarded-For can be comma-separated: "client, proxy1, proxy2"
+            String clientIp = xff.split(",")[0].trim();
+            if (!clientIp.isEmpty()) {
+                dto.setRemoteAddress(clientIp);
+                dto.setRemoteHost(clientIp);
             }
         }
     }

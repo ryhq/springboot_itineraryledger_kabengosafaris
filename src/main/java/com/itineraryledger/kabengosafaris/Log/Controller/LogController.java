@@ -106,9 +106,11 @@ public class LogController {
         @RequestParam(required = false) String performanceGrade,
         @RequestParam(required = false) String browserName,
         @RequestParam(required = false) String operatingSystem,
-        @RequestParam(required = false) String deviceType
+        @RequestParam(required = false) String deviceType,
+        @RequestParam(defaultValue = "timestamp") String sortBy,
+        @RequestParam(defaultValue = "desc") String sortDirection
     ) {
-        log.info("Retrieving access logs - page: {}, size: {}, date: {}", page, size, date);
+        log.info("Retrieving access logs - page: {}, size: {}, date: {}, sortBy: {}, sortDirection: {}", page, size, date, sortBy, sortDirection);
 
         return accessLogService.getLogs(
             page, size, date,
@@ -120,7 +122,8 @@ public class LogController {
             isSuspicious, threatType, minThreatScore,
             isBot, botType,
             isSlowRequest, performanceGrade,
-            browserName, operatingSystem, deviceType
+            browserName, operatingSystem, deviceType,
+            sortBy, sortDirection
         );
     }
 

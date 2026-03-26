@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 public class PublicAccommodationListDTO {
 
     private String slug;
-    @Translatable private String name;
+    private String name;
     private AccommodationType accommodationType;
     @Translatable private String accommodationTypeDisplayName;
     private AccommodationCategory category;

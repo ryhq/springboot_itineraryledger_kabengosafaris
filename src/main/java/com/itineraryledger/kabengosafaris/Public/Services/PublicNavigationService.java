@@ -93,7 +93,7 @@ public class PublicNavigationService {
                 item.put("region", a.getRegion());
                 return item;
             }).collect(Collectors.toList());
-            publicTranslationService.translateMapList(accommodationNavItems, lang, "name", "region");
+            publicTranslationService.translateMapList(accommodationNavItems, lang, "region");
             nav.put("accommodations", accommodationNavItems);
 
             // Itineraries (as safaris for public) - return id and name for active itineraries

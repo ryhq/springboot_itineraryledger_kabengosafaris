@@ -7,9 +7,7 @@ import com.itineraryledger.kabengosafaris.Log.DTOs.AccessLogDTO;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -31,22 +29,20 @@ public class SecurityAnalysisService {
     private AccessLogSettingGetterServices settings;
 
     // ==========================================
-    // SQL INJECTION PATTERNS
+    // SQL INJECTION PATTERNS (applied to decoded URI path + param values, not raw query string)
     // ==========================================
     private static final List<Pattern> SQL_PATTERNS = Arrays.asList(
-        // SQL keywords
+        // SQL keywords in URI path or param values (not in normal param names)
         Pattern.compile("\\b(SELECT|UNION|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE|DECLARE)\\b", Pattern.CASE_INSENSITIVE),
         // SQL comments
-        Pattern.compile("(--|#|/\\*|\\*/)", Pattern.CASE_INSENSITIVE),
-        // SQL operators and functions
-        Pattern.compile("\\b(OR|AND)\\s+[\\w\\d]+\\s*=", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("'\\s*(OR|AND)\\s*'", Pattern.CASE_INSENSITIVE),
-        // SQL injection attempts
+        Pattern.compile("(--|/\\*|\\*/)", Pattern.CASE_INSENSITIVE),
+        // Classic SQL injection: ' OR '1'='1, ' OR 1=1 --
         Pattern.compile("'\\s*OR\\s*'?1'?\\s*=\\s*'?1", Pattern.CASE_INSENSITIVE),
         Pattern.compile("\\bUNION\\b.*\\bSELECT\\b", Pattern.CASE_INSENSITIVE),
-        // SQL encoding attempts
-        Pattern.compile("(%27)|(')", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("(\\%3D)|(=)[^\\n]*(\\%27)|(')[^\\n]*(\\%3D)|(=)", Pattern.CASE_INSENSITIVE)
+        // Tautology: OR 1=1, AND 1=1
+        Pattern.compile("\\b(OR|AND)\\s+\\d+\\s*=\\s*\\d+", Pattern.CASE_INSENSITIVE),
+        // URL-encoded single quote injection
+        Pattern.compile("%27.*(%3D|=|%4F%52|OR|%41%4E%44|AND)", Pattern.CASE_INSENSITIVE)
     );
 
     // ==========================================
@@ -59,14 +55,14 @@ public class SecurityAnalysisService {
         // JavaScript protocols
         Pattern.compile("javascript:", Pattern.CASE_INSENSITIVE),
         Pattern.compile("vbscript:", Pattern.CASE_INSENSITIVE),
-        // Event handlers
-        Pattern.compile("on(load|error|click|mouse|key|focus|blur|change|submit)", Pattern.CASE_INSENSITIVE),
+        // Event handlers in HTML attributes
+        Pattern.compile("\\bon(load|error|click|mouseover|keyup|focus|blur|change|submit)\\s*=", Pattern.CASE_INSENSITIVE),
         // Iframe and embed tags
         Pattern.compile("<(iframe|embed|object|frame)", Pattern.CASE_INSENSITIVE),
         // Data URIs
         Pattern.compile("data:text/html", Pattern.CASE_INSENSITIVE),
-        // Encoded XSS
-        Pattern.compile("(%3C)|(<)[^\\n]+((%3E)|(>))", Pattern.CASE_INSENSITIVE)
+        // Encoded script tags
+        Pattern.compile("%3Cscript", Pattern.CASE_INSENSITIVE)
     );
 
     // ==========================================
@@ -88,17 +84,17 @@ public class SecurityAnalysisService {
     );
 
     // ==========================================
-    // COMMAND INJECTION PATTERNS
+    // COMMAND INJECTION PATTERNS (applied to URI path only, NOT query string)
     // ==========================================
     private static final List<Pattern> COMMAND_INJECTION_PATTERNS = Arrays.asList(
-        // Shell operators
-        Pattern.compile("[;|&`$()]"),
-        // Command chaining
-        Pattern.compile("(&&|\\|\\||;)"),
-        // Backticks
-        Pattern.compile("`.*`"),
-        // URL encoded
-        Pattern.compile("(%3B|%7C|%26|%60)", Pattern.CASE_INSENSITIVE)
+        // Shell command chaining in URI path
+        Pattern.compile("(;|\\|\\||&&)\\s*\\w+", Pattern.CASE_INSENSITIVE),
+        // Backtick command substitution
+        Pattern.compile("`[^`]+`"),
+        // $() command substitution
+        Pattern.compile("\\$\\([^)]+\\)"),
+        // URL-encoded shell operators
+        Pattern.compile("(%3B|%7C%7C|%26%26)\\s*\\w+", Pattern.CASE_INSENSITIVE)
     );
 
     // ==========================================
@@ -121,7 +117,7 @@ public class SecurityAnalysisService {
             return;
         }
 
-        List<String> threats = new ArrayList<>();
+        Set<String> threats = new LinkedHashSet<>();
         int score = 0;
         List<String> matchedPatternDetails = new ArrayList<>();
 
@@ -130,36 +126,39 @@ public class SecurityAnalysisService {
 
         // Check URI for threats
         if (uri != null && !uri.isEmpty()) {
-            // SQL Injection
-            if (detectPattern(uri, SQL_PATTERNS)) {
+            // Split URI into path and query string
+            String uriPath = uri.contains("?") ? uri.substring(0, uri.indexOf('?')) : uri;
+            String queryString = uri.contains("?") ? uri.substring(uri.indexOf('?') + 1) : "";
+
+            // Analyze path for all threat types
+            // SQL Injection (check path + decoded query param values, not keys like sortBy=)
+            String paramValues = extractQueryParamValues(queryString);
+            String analysisTarget = uriPath + " " + paramValues;
+            if (detectPattern(analysisTarget, SQL_PATTERNS)) {
                 threats.add("SQL_INJECTION");
                 score += 40;
                 matchedPatternDetails.add("SQL injection pattern in URI");
-                // log.warn("SQL injection attempt detected from {}: {}", dto.getRemoteAddress(), uri);
             }
 
-            // XSS
-            if (detectPattern(uri, XSS_PATTERNS)) {
+            // XSS (check path + param values)
+            if (detectPattern(analysisTarget, XSS_PATTERNS)) {
                 threats.add("XSS");
                 score += 35;
                 matchedPatternDetails.add("XSS pattern in URI");
-                // log.warn("XSS attempt detected from {}: {}", dto.getRemoteAddress(), uri);
             }
 
-            // Path Traversal
+            // Path Traversal (check full URI — path traversal can appear anywhere)
             if (detectPattern(uri, PATH_TRAVERSAL_PATTERNS)) {
                 threats.add("PATH_TRAVERSAL");
                 score += 30;
                 matchedPatternDetails.add("Path traversal pattern in URI");
-                // log.warn("Path traversal attempt detected from {}: {}", dto.getRemoteAddress(), uri);
             }
 
-            // Command Injection
-            if (detectPattern(uri, COMMAND_INJECTION_PATTERNS)) {
+            // Command Injection (check path only — & in query strings is normal)
+            if (detectPattern(uriPath, COMMAND_INJECTION_PATTERNS)) {
                 threats.add("COMMAND_INJECTION");
                 score += 35;
-                matchedPatternDetails.add("Command injection pattern in URI");
-                // log.warn("Command injection attempt detected from {}: {}", dto.getRemoteAddress(), uri);
+                matchedPatternDetails.add("Command injection pattern in URI path");
             }
         }
 
@@ -169,11 +168,7 @@ public class SecurityAnalysisService {
                 threats.add("SUSPICIOUS_USER_AGENT");
                 score += 25;
                 matchedPatternDetails.add("Known attack tool user agent");
-                // log.warn("Suspicious user agent detected from {}: {}", dto.getRemoteAddress(), userAgent);
-            }
-
-            // Empty or very short user agent (suspicious)
-            if (userAgent.length() < 10 && !userAgent.equals("-")) {
+            } else if (userAgent.length() < 10 && !isKnownShortUserAgent(userAgent)) {
                 threats.add("SUSPICIOUS_USER_AGENT");
                 score += 15;
                 matchedPatternDetails.add("Unusually short user agent");
@@ -203,15 +198,41 @@ public class SecurityAnalysisService {
 
         // Set results if threats detected
         if (!threats.isEmpty()) {
+            List<String> threatList = new ArrayList<>(threats);
             dto.setIsSuspicious(true);
-            dto.setThreatType(String.join(", ", threats));
+            dto.setThreatType(String.join(", ", threatList));
             dto.setThreatScore(Math.min(score, 100)); // Cap at 100
             dto.setMatchedPatterns(String.join("; ", matchedPatternDetails));
-            dto.setSecurityAnalysis(generateAnalysisDescription(threats, score));
+            dto.setSecurityAnalysis(generateAnalysisDescription(threatList, score));
         } else {
             dto.setIsSuspicious(false);
             dto.setThreatScore(0);
         }
+    }
+
+    /**
+     * Extract only the values from query parameters (not keys) for analysis.
+     * e.g., "page=0&sortBy=timestamp&q=SELECT+*+FROM" → "0 timestamp SELECT * FROM"
+     */
+    private String extractQueryParamValues(String queryString) {
+        if (queryString == null || queryString.isEmpty()) return "";
+        StringBuilder values = new StringBuilder();
+        for (String param : queryString.split("&")) {
+            int eq = param.indexOf('=');
+            if (eq >= 0 && eq < param.length() - 1) {
+                values.append(param.substring(eq + 1).replace('+', ' ')).append(' ');
+            }
+        }
+        return values.toString().trim();
+    }
+
+    /**
+     * Check if a short user agent is a known legitimate agent (e.g., Next.js SSR)
+     */
+    private boolean isKnownShortUserAgent(String userAgent) {
+        String lower = userAgent.toLowerCase().trim();
+        return lower.equals("node") || lower.equals("node.js") || lower.equals("dart")
+            || lower.equals("python") || lower.equals("ruby") || lower.equals("go");
     }
 
     /**

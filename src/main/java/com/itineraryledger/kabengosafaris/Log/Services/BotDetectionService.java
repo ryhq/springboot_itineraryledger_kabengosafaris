@@ -76,6 +76,10 @@ public class BotDetectionService {
         Map.entry("WebZIP", new BotInfo("SCRAPER", "WebZIP")),
         Map.entry("WebReaper", new BotInfo("SCRAPER", "WebReaper")),
 
+        // Server-Side Rendering / Internal
+        Map.entry("node", new BotInfo("SSR", "Next.js SSR")),
+        Map.entry("undici", new BotInfo("SSR", "Node.js Undici")),
+
         // Automated Scripts
         Map.entry("curl", new BotInfo("SCRIPT", "cURL")),
         Map.entry("wget", new BotInfo("SCRIPT", "Wget")),
@@ -122,25 +126,30 @@ public class BotDetectionService {
             return;
         }
 
-        // Check against known bots
+        // Check against known bots (prefer longest key match to avoid "node" matching "node-fetch")
+        BotInfo bestMatch = null;
+        String bestKey = null;
         for (Map.Entry<String, BotInfo> entry : KNOWN_BOTS.entrySet()) {
             if (containsIgnoreCase(userAgent, entry.getKey())) {
-                BotInfo botInfo = entry.getValue();
-                dto.setIsBot(true);
-                dto.setBotType(botInfo.type);
-                dto.setBotName(botInfo.name);
-
-                // Log malicious bots
-                if ("MALICIOUS".equals(botInfo.type)) {
-                    log.warn("Malicious bot detected from {}: {} - {}",
-                        dto.getRemoteAddress(), botInfo.name, userAgent);
-                } else {
-                    log.debug("Bot detected from {}: {} ({})",
-                        dto.getRemoteAddress(), botInfo.name, botInfo.type);
+                if (bestKey == null || entry.getKey().length() > bestKey.length()) {
+                    bestMatch = entry.getValue();
+                    bestKey = entry.getKey();
                 }
-
-                return;
             }
+        }
+        if (bestMatch != null) {
+            dto.setIsBot(true);
+            dto.setBotType(bestMatch.type);
+            dto.setBotName(bestMatch.name);
+
+            if ("MALICIOUS".equals(bestMatch.type)) {
+                log.warn("Malicious bot detected from {}: {} - {}",
+                    dto.getRemoteAddress(), bestMatch.name, userAgent);
+            } else {
+                log.debug("Bot detected from {}: {} ({})",
+                    dto.getRemoteAddress(), bestMatch.name, bestMatch.type);
+            }
+            return;
         }
 
         // Heuristic detection for unknown bots
