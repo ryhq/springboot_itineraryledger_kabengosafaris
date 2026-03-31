@@ -1,0 +1,116 @@
+package com.itineraryledger.kabengosafaris.Safari.SafariVehicle.Services;
+
+import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
+import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
+import com.itineraryledger.kabengosafaris.Safari.Repository.SafariRepository;
+import com.itineraryledger.kabengosafaris.Safari.SafariVehicle.DTOs.CreateSafariVehicleDTO;
+import com.itineraryledger.kabengosafaris.Safari.SafariVehicle.Entity.SafariVehicle;
+import com.itineraryledger.kabengosafaris.Safari.SafariVehicle.Repository.SafariVehicleRepository;
+import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+import com.itineraryledger.kabengosafaris.Vehicle.Entity.Vehicle;
+import com.itineraryledger.kabengosafaris.Vehicle.Repository.VehicleRepository;
+import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices.VehicleAvailabilityService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class SafariVehicleCreateService {
+
+    private final SafariVehicleRepository safariVehicleRepository;
+    private final SafariRepository safariRepository;
+    private final VehicleRepository vehicleRepository;
+    private final VehicleAvailabilityService vehicleAvailabilityService;
+    private final SafariVehicleGetService safariVehicleGetService;
+    private final IdObfuscator idObfuscator;
+
+    @Transactional
+    @AuditLogAnnotation(action = "CREATE_SAFARI_VEHICLE", description = "Assigning vehicle to safari", entityType = "SafariVehicle")
+    public ResponseEntity<ApiResponse<?>> createSafariVehicle(String safariIdObfuscated, CreateSafariVehicleDTO createDTO) {
+        log.info("Assigning vehicle to safari: {}", safariIdObfuscated);
+
+        try {
+            Long safariId = idObfuscator.decodeId(safariIdObfuscated);
+            Safari safari = safariRepository.findById(safariId).orElse(null);
+            if (safari == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
+                );
+            }
+
+            if (!safari.isEditable()) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Safari is not in an editable state", "SAFARI_NOT_EDITABLE")
+                );
+            }
+
+            Long vehicleId = idObfuscator.decodeId(createDTO.getVehicleId());
+            Vehicle vehicle = vehicleRepository.findById(vehicleId).orElse(null);
+            if (vehicle == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(404, "Vehicle not found", "VEHICLE_NOT_FOUND")
+                );
+            }
+
+            // Auto-populate dates from safari if not specified
+            LocalDate startDate = createDTO.getStartDate() != null ? createDTO.getStartDate() : safari.getStartDate();
+            LocalDate endDate = createDTO.getEndDate() != null ? createDTO.getEndDate() : safari.getEndDate();
+
+            // Validate dates
+            if (startDate.isAfter(endDate)) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Start date must be before or equal to end date", "INVALID_DATES")
+                );
+            }
+
+            if (startDate.isBefore(safari.getStartDate()) || endDate.isAfter(safari.getEndDate())) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Assignment dates must be within safari dates (" + safari.getStartDate() + " to " + safari.getEndDate() + ")", "DATES_OUTSIDE_SAFARI_RANGE")
+                );
+            }
+
+            // Check availability
+            List<String> conflicts = vehicleAvailabilityService.getConflictDescriptions(
+                vehicleId, startDate, endDate, null, null);
+            if (!conflicts.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                    ApiResponse.error(409,
+                        "Vehicle is not available for the requested dates. " + conflicts.size() + " conflicting assignment(s) found: " + String.join("; ", conflicts),
+                        "VEHICLE_DOUBLE_BOOKING")
+                );
+            }
+
+            SafariVehicle safariVehicle = SafariVehicle.builder()
+                .safari(safari)
+                .vehicle(vehicle)
+                .startDate(startDate)
+                .endDate(endDate)
+                .driverName(createDTO.getDriverName())
+                .driverPhone(createDTO.getDriverPhone())
+                .assignmentNotes(createDTO.getAssignmentNotes())
+                .build();
+
+            safariVehicle = safariVehicleRepository.save(safariVehicle);
+            log.info("Vehicle {} assigned to safari {} ({} to {})", vehicle.getName(), safari.getName(), startDate, endDate);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(
+                ApiResponse.success(201, "Vehicle assigned to safari successfully", safariVehicleGetService.convertToDTO(safariVehicle))
+            );
+
+        } catch (Exception e) {
+            log.error("Error assigning vehicle to safari", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to assign vehicle to safari", "SAFARI_VEHICLE_CREATE_FAILED")
+            );
+        }
+    }
+}

@@ -250,9 +250,23 @@ public class Safari {
     @OrderBy("dayNumber ASC")
     private List<SafariDay> days = new ArrayList<>();
 
+    @OneToMany(mappedBy = "safari", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<com.itineraryledger.kabengosafaris.Safari.SafariVehicle.Entity.SafariVehicle> safariVehicles = new ArrayList<>();
+
     // ========================
     // HELPER METHODS
     // ========================
+
+    public void addSafariVehicle(com.itineraryledger.kabengosafaris.Safari.SafariVehicle.Entity.SafariVehicle safariVehicle) {
+        safariVehicles.add(safariVehicle);
+        safariVehicle.setSafari(this);
+    }
+
+    public void removeSafariVehicle(com.itineraryledger.kabengosafaris.Safari.SafariVehicle.Entity.SafariVehicle safariVehicle) {
+        safariVehicles.remove(safariVehicle);
+        safariVehicle.setSafari(null);
+    }
 
     public void addPax(SafariPax pax) {
         paxList.add(pax);

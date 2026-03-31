@@ -85,6 +85,8 @@
     "TRANSLATION_ACCOUNT",
     "TRANSLATION_CACHE",
     "TRANSLATION_SETTING",
-    "USER"
+    "USER",
+    "VEHICLE",
+    "VEHICLE_HIRE"
   ]
 }
