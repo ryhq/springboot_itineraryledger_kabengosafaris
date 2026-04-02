@@ -164,8 +164,12 @@ public class VehicleScheduleService {
                 .status(sv.getStatus().getDisplayName())
                 .referenceId(idObfuscator.encodeId(sv.getSafari().getId()))
                 .referenceName(sv.getSafari().getCode())
+                .driverId(sv.getDriver() != null ? idObfuscator.encodeId(sv.getDriver().getId()) : null)
                 .driverName(sv.getDriver() != null ? sv.getDriver().getFullName() : null)
                 .driverPhone(sv.getDriver() != null ? sv.getDriver().getPhone() : null)
+                .safariId(idObfuscator.encodeId(sv.getSafari().getId()))
+                .safariCode(sv.getSafari().getCode())
+                .safariName(sv.getSafari().getName())
                 .build());
         }
     }
@@ -181,6 +185,20 @@ public class VehicleScheduleService {
                 .status(vh.getStatus().getDisplayName())
                 .referenceId(idObfuscator.encodeId(vh.getId()))
                 .referenceName(vh.getRentalClient() != null ? vh.getRentalClient().getDisplayName() : null)
+                .driverId(vh.getDriver() != null ? idObfuscator.encodeId(vh.getDriver().getId()) : null)
+                .driverName(vh.getDriver() != null ? vh.getDriver().getFullName() : null)
+                .driverPhone(vh.getDriver() != null ? vh.getDriver().getPhone() : null)
+                .rentalClientId(vh.getRentalClient() != null ? idObfuscator.encodeId(vh.getRentalClient().getId()) : null)
+                .rentalClientName(vh.getRentalClient() != null ? vh.getRentalClient().getDisplayName() : null)
+                .rentalClientPhone(vh.getRentalClient() != null ? vh.getRentalClient().getPhone() : null)
+                .rentalClientEmail(vh.getRentalClient() != null ? vh.getRentalClient().getEmail() : null)
+                .rentalClientType(vh.getRentalClient() != null ? vh.getRentalClient().getClientType().getDisplayName() : null)
+                .dailyRate(vh.getDailyRate())
+                .totalAmount(vh.getTotalAmount())
+                .currency(vh.getCurrency())
+                .paymentStatus(vh.getPaymentStatus() != null ? vh.getPaymentStatus().getDisplayName() : null)
+                .pickupLocation(vh.getPickupLocation())
+                .dropoffLocation(vh.getDropoffLocation())
                 .build());
         }
     }
