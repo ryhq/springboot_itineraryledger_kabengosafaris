@@ -8,9 +8,12 @@ import com.itineraryledger.kabengosafaris.Safari.SafariVehicle.DTOs.CreateSafari
 import com.itineraryledger.kabengosafaris.Safari.SafariVehicle.Entity.SafariVehicle;
 import com.itineraryledger.kabengosafaris.Safari.SafariVehicle.Repository.SafariVehicleRepository;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+import com.itineraryledger.kabengosafaris.Driver.Entity.Driver;
+import com.itineraryledger.kabengosafaris.Driver.Repository.DriverRepository;
 import com.itineraryledger.kabengosafaris.Vehicle.Entity.Vehicle;
 import com.itineraryledger.kabengosafaris.Vehicle.Repository.VehicleRepository;
 import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices.VehicleAvailabilityService;
+import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices.VehicleAvailabilityService.AvailabilityResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -29,6 +32,7 @@ public class SafariVehicleCreateService {
     private final SafariVehicleRepository safariVehicleRepository;
     private final SafariRepository safariRepository;
     private final VehicleRepository vehicleRepository;
+    private final DriverRepository driverRepository;
     private final VehicleAvailabilityService vehicleAvailabilityService;
     private final SafariVehicleGetService safariVehicleGetService;
     private final IdObfuscator idObfuscator;
@@ -78,15 +82,33 @@ public class SafariVehicleCreateService {
                 );
             }
 
-            // Check availability
-            List<String> conflicts = vehicleAvailabilityService.getConflictDescriptions(
+            // Check availability — hard conflicts block, soft (same-day boundary) conflicts warn
+            AvailabilityResult availability = vehicleAvailabilityService.checkAvailability(
                 vehicleId, startDate, endDate, null, null);
-            if (!conflicts.isEmpty()) {
+            if (availability.hasHardConflicts()) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(
                     ApiResponse.error(409,
-                        "Vehicle is not available for the requested dates. " + conflicts.size() + " conflicting assignment(s) found: " + String.join("; ", conflicts),
+                        "Vehicle is not available for the requested dates. " + availability.hardConflicts().size() + " conflicting assignment(s) found: " + String.join("; ", availability.hardConflicts()),
                         "VEHICLE_DOUBLE_BOOKING")
                 );
+            }
+
+            List<String> warnings = availability.hasSoftConflicts()
+                ? availability.softConflicts().stream()
+                    .map(c -> "Same-day overlap: " + c + ". Ensure the vehicle is available for handover.")
+                    .toList()
+                : null;
+
+            // Look up driver if provided
+            Driver driver = null;
+            if (createDTO.getDriverId() != null && !createDTO.getDriverId().isBlank()) {
+                Long driverId = idObfuscator.decodeId(createDTO.getDriverId());
+                driver = driverRepository.findById(driverId).orElse(null);
+                if (driver == null) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                        ApiResponse.error(404, "Driver not found", "DRIVER_NOT_FOUND")
+                    );
+                }
             }
 
             SafariVehicle safariVehicle = SafariVehicle.builder()
@@ -94,16 +116,21 @@ public class SafariVehicleCreateService {
                 .vehicle(vehicle)
                 .startDate(startDate)
                 .endDate(endDate)
-                .driverName(createDTO.getDriverName())
-                .driverPhone(createDTO.getDriverPhone())
+                .driver(driver)
                 .assignmentNotes(createDTO.getAssignmentNotes())
                 .build();
 
             safariVehicle = safariVehicleRepository.save(safariVehicle);
             log.info("Vehicle {} assigned to safari {} ({} to {})", vehicle.getName(), safari.getName(), startDate, endDate);
 
+            Object dto = safariVehicleGetService.convertToDTO(safariVehicle);
+            if (warnings != null) {
+                return ResponseEntity.status(HttpStatus.CREATED).body(
+                    ApiResponse.successWithWarnings(201, "Vehicle assigned to safari successfully", dto, warnings)
+                );
+            }
             return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.success(201, "Vehicle assigned to safari successfully", safariVehicleGetService.convertToDTO(safariVehicle))
+                ApiResponse.success(201, "Vehicle assigned to safari successfully", dto)
             );
 
         } catch (Exception e) {

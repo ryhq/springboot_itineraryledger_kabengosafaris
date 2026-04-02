@@ -74,6 +74,11 @@ public class ApiResponse<T> {
     private java.util.List<FieldError> errors;
 
     /**
+     * Warning messages (e.g. same-day vehicle overlap that was allowed)
+     */
+    private java.util.List<String> warnings;
+
+    /**
      * Timestamp when response was generated
      */
     @Builder.Default
@@ -113,6 +118,20 @@ public class ApiResponse<T> {
                 .success(true)
                 .statusCode(statusCode)
                 .message(message)
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * Create a successful response with warnings
+     */
+    public static <T> ApiResponse<T> successWithWarnings(int statusCode, String message, T data, java.util.List<String> warnings) {
+        return ApiResponse.<T>builder()
+                .success(true)
+                .statusCode(statusCode)
+                .message(message)
+                .data(data)
+                .warnings(warnings)
                 .timestamp(LocalDateTime.now())
                 .build();
     }

@@ -30,7 +30,8 @@ public class SafariVehicleDTO {
     private Integer vehicleCapacity;
     private LocalDate startDate;
     private LocalDate endDate;
-    private String driverName;
+    private String driverId;
+    private String driverFullName;
     private String driverPhone;
     private String assignmentNotes;
     private SafariVehicleStatus status;

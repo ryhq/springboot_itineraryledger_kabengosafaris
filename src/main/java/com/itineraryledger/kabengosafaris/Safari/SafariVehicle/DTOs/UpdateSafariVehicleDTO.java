@@ -17,8 +17,7 @@ public class UpdateSafariVehicleDTO {
     private String vehicleId;
     private LocalDate startDate;
     private LocalDate endDate;
-    private String driverName;
-    private String driverPhone;
+    private String driverId;
     private String assignmentNotes;
     private SafariVehicleStatus status;
 }

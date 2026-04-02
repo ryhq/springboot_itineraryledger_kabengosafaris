@@ -164,8 +164,8 @@ public class VehicleScheduleService {
                 .status(sv.getStatus().getDisplayName())
                 .referenceId(idObfuscator.encodeId(sv.getSafari().getId()))
                 .referenceName(sv.getSafari().getCode())
-                .driverName(sv.getDriverName())
-                .driverPhone(sv.getDriverPhone())
+                .driverName(sv.getDriver() != null ? sv.getDriver().getFullName() : null)
+                .driverPhone(sv.getDriver() != null ? sv.getDriver().getPhone() : null)
                 .build());
         }
     }
@@ -177,10 +177,10 @@ public class VehicleScheduleService {
                 .type("HIRE")
                 .startDate(vh.getStartDate())
                 .endDate(vh.getEndDate())
-                .description("Hire: " + vh.getClientName())
+                .description("Hire: " + (vh.getRentalClient() != null ? vh.getRentalClient().getDisplayName() : "Unknown"))
                 .status(vh.getStatus().getDisplayName())
                 .referenceId(idObfuscator.encodeId(vh.getId()))
-                .referenceName(vh.getClientName())
+                .referenceName(vh.getRentalClient() != null ? vh.getRentalClient().getDisplayName() : null)
                 .build());
         }
     }

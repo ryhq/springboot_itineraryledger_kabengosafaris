@@ -17,9 +17,12 @@ public class VehicleHireDTO {
     private String vehicleName;
     private String vehicleRegistrationNumber;
     private String vehicleTypeDisplayName;
-    private String clientName;
-    private String clientPhone;
-    private String clientEmail;
+    private String rentalClientId;
+    private String rentalClientName;
+    private String rentalClientPhone;
+    private String rentalClientEmail;
+    private String rentalClientType;
+    private String rentalClientTypeDisplayName;
     private LocalDate startDate;
     private LocalDate endDate;
     private String pickupLocation;

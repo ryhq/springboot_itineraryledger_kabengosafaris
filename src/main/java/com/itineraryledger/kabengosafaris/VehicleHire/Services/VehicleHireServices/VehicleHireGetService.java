@@ -30,7 +30,7 @@ public class VehicleHireGetService {
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
-        "clientName", "startDate", "endDate", "dailyRate", "totalAmount",
+        "startDate", "endDate", "dailyRate", "totalAmount",
         "status", "paymentStatus", "createdAt", "updatedAt"
     );
     private static final String DEFAULT_SORT_FIELD = "createdAt";
@@ -65,7 +65,7 @@ public class VehicleHireGetService {
     }
 
     public ResponseEntity<ApiResponse<?>> getAllVehicleHires(
-        String vehicleIdObfuscated, String clientName, HireStatus status, PaymentStatus paymentStatus,
+        String vehicleIdObfuscated, String rentalClientIdObfuscated, HireStatus status, PaymentStatus paymentStatus,
         LocalDate startDateAfter, LocalDate startDateBefore, LocalDate endDateAfter, LocalDate endDateBefore,
         String keyword, Integer page, Integer size, String sortBy, String sortDirection
     ) {
@@ -81,13 +81,17 @@ public class VehicleHireGetService {
             if (vehicleIdObfuscated != null && !vehicleIdObfuscated.isEmpty()) {
                 vehicleId = idObfuscator.decodeId(vehicleIdObfuscated);
             }
+            Long rentalClientId = null;
+            if (rentalClientIdObfuscated != null && !rentalClientIdObfuscated.isEmpty()) {
+                rentalClientId = idObfuscator.decodeId(rentalClientIdObfuscated);
+            }
 
             Sort sort = "desc".equalsIgnoreCase(sortDirection)
                 ? Sort.by(validatedSortBy).descending() : Sort.by(validatedSortBy).ascending();
             PageRequest pageRequest = PageRequest.of(page != null ? page : 0, size != null ? size : 10, sort);
 
             Specification<VehicleHire> spec = Specification.where(VehicleHireSpecification.hasVehicleId(vehicleId))
-                .and(VehicleHireSpecification.clientNameLike(clientName))
+                .and(VehicleHireSpecification.hasRentalClientId(rentalClientId))
                 .and(VehicleHireSpecification.hasStatus(status))
                 .and(VehicleHireSpecification.hasPaymentStatus(paymentStatus))
                 .and(VehicleHireSpecification.startDateAfter(startDateAfter))
@@ -123,9 +127,12 @@ public class VehicleHireGetService {
             .vehicleName(hire.getVehicle().getName())
             .vehicleRegistrationNumber(hire.getVehicle().getRegistrationNumber())
             .vehicleTypeDisplayName(hire.getVehicle().getType() != null ? hire.getVehicle().getType().getDisplayName() : null)
-            .clientName(hire.getClientName())
-            .clientPhone(hire.getClientPhone())
-            .clientEmail(hire.getClientEmail())
+            .rentalClientId(hire.getRentalClient() != null ? idObfuscator.encodeId(hire.getRentalClient().getId()) : null)
+            .rentalClientName(hire.getRentalClient() != null ? hire.getRentalClient().getDisplayName() : null)
+            .rentalClientPhone(hire.getRentalClient() != null ? hire.getRentalClient().getPhone() : null)
+            .rentalClientEmail(hire.getRentalClient() != null ? hire.getRentalClient().getEmail() : null)
+            .rentalClientType(hire.getRentalClient() != null ? hire.getRentalClient().getClientType().name() : null)
+            .rentalClientTypeDisplayName(hire.getRentalClient() != null ? hire.getRentalClient().getClientType().getDisplayName() : null)
             .startDate(hire.getStartDate())
             .endDate(hire.getEndDate())
             .pickupLocation(hire.getPickupLocation())

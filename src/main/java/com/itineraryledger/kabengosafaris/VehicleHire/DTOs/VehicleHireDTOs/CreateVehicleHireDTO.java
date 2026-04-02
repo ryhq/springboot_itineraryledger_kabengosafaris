@@ -11,10 +11,8 @@ import java.time.LocalDate;
 public class CreateVehicleHireDTO {
     @NotBlank(message = "Vehicle ID is required")
     private String vehicleId;
-    @NotBlank(message = "Client name is required")
-    private String clientName;
-    private String clientPhone;
-    private String clientEmail;
+    @NotBlank(message = "Rental client ID is required")
+    private String rentalClientId;
     @NotNull(message = "Start date is required")
     private LocalDate startDate;
     @NotNull(message = "End date is required")

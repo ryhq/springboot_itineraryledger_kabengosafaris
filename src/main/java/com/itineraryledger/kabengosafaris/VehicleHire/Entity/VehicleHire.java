@@ -1,10 +1,10 @@
 package com.itineraryledger.kabengosafaris.VehicleHire.Entity;
 
+import com.itineraryledger.kabengosafaris.RentalClient.Entity.RentalClient;
 import com.itineraryledger.kabengosafaris.Vehicle.Entity.Vehicle;
 import com.itineraryledger.kabengosafaris.VehicleHire.Enums.HireStatus;
 import com.itineraryledger.kabengosafaris.VehicleHire.Enums.PaymentStatus;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -21,7 +21,8 @@ import java.time.LocalDateTime;
         @Index(name = "idx_vh_start_date", columnList = "start_date"),
         @Index(name = "idx_vh_end_date", columnList = "end_date"),
         @Index(name = "idx_vh_status", columnList = "status"),
-        @Index(name = "idx_vh_payment_status", columnList = "payment_status")
+        @Index(name = "idx_vh_payment_status", columnList = "payment_status"),
+        @Index(name = "idx_vh_rental_client_id", columnList = "rental_client_id")
     }
 )
 @Data
@@ -38,15 +39,9 @@ public class VehicleHire {
     @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;
 
-    @NotBlank(message = "Client name is required")
-    @Column(name = "client_name", nullable = false, length = 200)
-    private String clientName;
-
-    @Column(name = "client_phone", length = 50)
-    private String clientPhone;
-
-    @Column(name = "client_email", length = 200)
-    private String clientEmail;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rental_client_id")
+    private RentalClient rentalClient;
 
     @NotNull(message = "Start date is required")
     @Column(name = "start_date", nullable = false)

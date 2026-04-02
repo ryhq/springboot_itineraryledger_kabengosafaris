@@ -2,6 +2,7 @@ package com.itineraryledger.kabengosafaris.Safari.SafariVehicle.Entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
+import com.itineraryledger.kabengosafaris.Driver.Entity.Driver;
 import com.itineraryledger.kabengosafaris.Safari.SafariVehicle.Enums.SafariVehicleStatus;
 import com.itineraryledger.kabengosafaris.Vehicle.Entity.Vehicle;
 import jakarta.persistence.*;
@@ -20,7 +21,8 @@ import java.time.LocalDateTime;
         @Index(name = "idx_sv_vehicle_id", columnList = "vehicle_id"),
         @Index(name = "idx_sv_status", columnList = "status"),
         @Index(name = "idx_sv_start_date", columnList = "start_date"),
-        @Index(name = "idx_sv_end_date", columnList = "end_date")
+        @Index(name = "idx_sv_end_date", columnList = "end_date"),
+        @Index(name = "idx_sv_driver_id", columnList = "driver_id")
     }
 )
 @Data
@@ -50,11 +52,9 @@ public class SafariVehicle {
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
-    @Column(name = "driver_name", length = 200)
-    private String driverName;
-
-    @Column(name = "driver_phone", length = 50)
-    private String driverPhone;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "driver_id")
+    private Driver driver;
 
     @Lob
     @Column(name = "assignment_notes", columnDefinition = "TEXT")

@@ -3,9 +3,12 @@ package com.itineraryledger.kabengosafaris.VehicleHire.Services.VehicleHireServi
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+import com.itineraryledger.kabengosafaris.RentalClient.Entity.RentalClient;
+import com.itineraryledger.kabengosafaris.RentalClient.Repository.RentalClientRepository;
 import com.itineraryledger.kabengosafaris.Vehicle.Entity.Vehicle;
 import com.itineraryledger.kabengosafaris.Vehicle.Repository.VehicleRepository;
 import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices.VehicleAvailabilityService;
+import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices.VehicleAvailabilityService.AvailabilityResult;
 import com.itineraryledger.kabengosafaris.VehicleHire.DTOs.VehicleHireDTOs.UpdateVehicleHireDTO;
 import com.itineraryledger.kabengosafaris.VehicleHire.Entity.VehicleHire;
 import com.itineraryledger.kabengosafaris.VehicleHire.Repository.VehicleHireRepository;
@@ -26,6 +29,7 @@ public class UpdateVehicleHireService {
 
     private final VehicleHireRepository vehicleHireRepository;
     private final VehicleRepository vehicleRepository;
+    private final RentalClientRepository rentalClientRepository;
     private final VehicleAvailabilityService vehicleAvailabilityService;
     private final VehicleHireGetService vehicleHireGetService;
     private final IdObfuscator idObfuscator;
@@ -69,20 +73,32 @@ public class UpdateVehicleHireService {
                     ApiResponse.error(400, "Start date must be before or equal to end date", "INVALID_DATES"));
             }
 
+            List<String> warnings = null;
             if (needsAvailabilityCheck) {
-                List<String> conflicts = vehicleAvailabilityService.getConflictDescriptions(
+                AvailabilityResult availability = vehicleAvailabilityService.checkAvailability(
                     vehicleIdForCheck, startDate, endDate, null, hire.getId());
-                if (!conflicts.isEmpty()) {
+                if (availability.hasHardConflicts()) {
                     return ResponseEntity.status(HttpStatus.CONFLICT).body(
                         ApiResponse.error(409,
-                            "Vehicle is not available for the requested dates. " + conflicts.size() + " conflicting assignment(s) found: " + String.join("; ", conflicts),
+                            "Vehicle is not available for the requested dates. " + availability.hardConflicts().size() + " conflicting assignment(s) found: " + String.join("; ", availability.hardConflicts()),
                             "VEHICLE_DOUBLE_BOOKING"));
+                }
+                if (availability.hasSoftConflicts()) {
+                    warnings = availability.softConflicts().stream()
+                        .map(c -> "Same-day overlap: " + c + ". Ensure the vehicle is available for handover.")
+                        .toList();
                 }
             }
 
-            if (updateDTO.getClientName() != null) hire.setClientName(updateDTO.getClientName());
-            if (updateDTO.getClientPhone() != null) hire.setClientPhone(updateDTO.getClientPhone());
-            if (updateDTO.getClientEmail() != null) hire.setClientEmail(updateDTO.getClientEmail());
+            if (updateDTO.getRentalClientId() != null) {
+                Long newRentalClientId = idObfuscator.decodeId(updateDTO.getRentalClientId());
+                RentalClient newClient = rentalClientRepository.findById(newRentalClientId).orElse(null);
+                if (newClient == null) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                        ApiResponse.error(404, "Rental client not found", "RENTAL_CLIENT_NOT_FOUND"));
+                }
+                hire.setRentalClient(newClient);
+            }
             if (updateDTO.getPickupLocation() != null) hire.setPickupLocation(updateDTO.getPickupLocation());
             if (updateDTO.getDropoffLocation() != null) hire.setDropoffLocation(updateDTO.getDropoffLocation());
             if (updateDTO.getDailyRate() != null) hire.setDailyRate(updateDTO.getDailyRate());
@@ -95,7 +111,11 @@ public class UpdateVehicleHireService {
             hire = vehicleHireRepository.save(hire);
             log.info("Vehicle hire updated: {}", id);
 
-            return ResponseEntity.ok(ApiResponse.success(200, "Vehicle hire updated successfully", vehicleHireGetService.convertToDTO(hire)));
+            Object dto = vehicleHireGetService.convertToDTO(hire);
+            if (warnings != null) {
+                return ResponseEntity.ok(ApiResponse.successWithWarnings(200, "Vehicle hire updated successfully", dto, warnings));
+            }
+            return ResponseEntity.ok(ApiResponse.success(200, "Vehicle hire updated successfully", dto));
         } catch (Exception e) {
             log.error("Error updating vehicle hire: {}", idObfuscated, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(

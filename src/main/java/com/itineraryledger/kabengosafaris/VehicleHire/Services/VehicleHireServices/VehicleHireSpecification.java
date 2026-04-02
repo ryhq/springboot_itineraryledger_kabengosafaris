@@ -16,10 +16,10 @@ public class VehicleHireSpecification {
         };
     }
 
-    public static Specification<VehicleHire> clientNameLike(String clientName) {
+    public static Specification<VehicleHire> hasRentalClientId(Long rentalClientId) {
         return (root, query, cb) -> {
-            if (clientName == null || clientName.isEmpty()) return cb.conjunction();
-            return cb.like(cb.lower(root.get("clientName")), "%" + clientName.toLowerCase() + "%");
+            if (rentalClientId == null) return cb.conjunction();
+            return cb.equal(root.get("rentalClient").get("id"), rentalClientId);
         };
     }
 
@@ -70,9 +70,11 @@ public class VehicleHireSpecification {
             if (keyword == null || keyword.isEmpty()) return cb.conjunction();
             String pattern = "%" + keyword.toLowerCase() + "%";
             return cb.or(
-                cb.like(cb.lower(root.get("clientName")), pattern),
-                cb.like(cb.lower(root.get("clientEmail")), pattern),
-                cb.like(cb.lower(root.get("clientPhone")), pattern),
+                cb.like(cb.lower(root.get("rentalClient").get("firstName")), pattern),
+                cb.like(cb.lower(root.get("rentalClient").get("lastName")), pattern),
+                cb.like(cb.lower(root.get("rentalClient").get("companyName")), pattern),
+                cb.like(cb.lower(root.get("rentalClient").get("phone")), pattern),
+                cb.like(cb.lower(root.get("rentalClient").get("email")), pattern),
                 cb.like(cb.lower(root.get("pickupLocation")), pattern),
                 cb.like(cb.lower(root.get("dropoffLocation")), pattern)
             );

@@ -20,34 +20,80 @@ public class VehicleAvailabilityService {
     private final SafariVehicleRepository safariVehicleRepository;
     private final VehicleHireRepository vehicleHireRepository;
 
-    public boolean isVehicleAvailable(Long vehicleId, LocalDate startDate, LocalDate endDate,
-                                       Long excludeSafariVehicleId, Long excludeVehicleHireId) {
-        List<SafariVehicle> safariConflicts = safariVehicleRepository
-            .findOverlappingAssignments(vehicleId, startDate, endDate, excludeSafariVehicleId);
-        List<VehicleHire> hireConflicts = vehicleHireRepository
-            .findOverlappingHires(vehicleId, startDate, endDate, excludeVehicleHireId);
-
-        return safariConflicts.isEmpty() && hireConflicts.isEmpty();
+    /**
+     * Result of an availability check, separating hard conflicts (multi-day overlap)
+     * from soft conflicts (same-day boundary only, e.g. one ends and another starts on the same date).
+     */
+    public record AvailabilityResult(List<String> hardConflicts, List<String> softConflicts) {
+        public boolean hasHardConflicts() { return !hardConflicts.isEmpty(); }
+        public boolean hasSoftConflicts() { return !softConflicts.isEmpty(); }
+        public boolean hasAnyConflicts() { return hasHardConflicts() || hasSoftConflicts(); }
     }
 
+    public boolean isVehicleAvailable(Long vehicleId, LocalDate startDate, LocalDate endDate,
+                                       Long excludeSafariVehicleId, Long excludeVehicleHireId) {
+        AvailabilityResult result = checkAvailability(vehicleId, startDate, endDate, excludeSafariVehicleId, excludeVehicleHireId);
+        return !result.hasHardConflicts();
+    }
+
+    public AvailabilityResult checkAvailability(Long vehicleId, LocalDate startDate, LocalDate endDate,
+                                                 Long excludeSafariVehicleId, Long excludeVehicleHireId) {
+        List<String> hardConflicts = new ArrayList<>();
+        List<String> softConflicts = new ArrayList<>();
+
+        List<SafariVehicle> safariOverlaps = safariVehicleRepository
+            .findOverlappingAssignments(vehicleId, startDate, endDate, excludeSafariVehicleId);
+
+        for (SafariVehicle sv : safariOverlaps) {
+            String description = String.format("Safari '%s' (%s to %s) - Status: %s",
+                sv.getSafari().getName(), sv.getStartDate(), sv.getEndDate(), sv.getStatus().getDisplayName());
+
+            if (isBoundaryOnlyOverlap(startDate, endDate, sv.getStartDate(), sv.getEndDate())) {
+                softConflicts.add(description);
+            } else {
+                hardConflicts.add(description);
+            }
+        }
+
+        List<VehicleHire> hireOverlaps = vehicleHireRepository
+            .findOverlappingHires(vehicleId, startDate, endDate, excludeVehicleHireId);
+
+        for (VehicleHire vh : hireOverlaps) {
+            String clientName = vh.getRentalClient() != null ? vh.getRentalClient().getDisplayName() : "Unknown";
+            String description = String.format("Hire to '%s' (%s to %s) - Status: %s",
+                clientName, vh.getStartDate(), vh.getEndDate(), vh.getStatus().getDisplayName());
+
+            if (isBoundaryOnlyOverlap(startDate, endDate, vh.getStartDate(), vh.getEndDate())) {
+                softConflicts.add(description);
+            } else {
+                hardConflicts.add(description);
+            }
+        }
+
+        return new AvailabilityResult(hardConflicts, softConflicts);
+    }
+
+    /**
+     * @deprecated Use {@link #checkAvailability} instead for categorized conflict handling.
+     */
+    @Deprecated
     public List<String> getConflictDescriptions(Long vehicleId, LocalDate startDate, LocalDate endDate,
                                                  Long excludeSafariVehicleId, Long excludeVehicleHireId) {
-        List<String> conflicts = new ArrayList<>();
+        AvailabilityResult result = checkAvailability(vehicleId, startDate, endDate, excludeSafariVehicleId, excludeVehicleHireId);
+        List<String> all = new ArrayList<>(result.hardConflicts());
+        all.addAll(result.softConflicts());
+        return all;
+    }
 
-        safariVehicleRepository.findOverlappingAssignments(vehicleId, startDate, endDate, excludeSafariVehicleId)
-            .forEach(sv -> conflicts.add(String.format(
-                "Safari '%s' (%s to %s) - Status: %s",
-                sv.getSafari().getName(), sv.getStartDate(),
-                sv.getEndDate(), sv.getStatus().getDisplayName()
-            )));
-
-        vehicleHireRepository.findOverlappingHires(vehicleId, startDate, endDate, excludeVehicleHireId)
-            .forEach(vh -> conflicts.add(String.format(
-                "Hire to '%s' (%s to %s) - Status: %s",
-                vh.getClientName(), vh.getStartDate(),
-                vh.getEndDate(), vh.getStatus().getDisplayName()
-            )));
-
-        return conflicts;
+    /**
+     * A boundary-only overlap occurs when the only shared date is a handoff day:
+     * - existing assignment ends on the same day the new one starts, OR
+     * - existing assignment starts on the same day the new one ends.
+     *
+     * This allows same-day vehicle turnover (e.g. morning drop-off, afternoon pickup).
+     */
+    private boolean isBoundaryOnlyOverlap(LocalDate newStart, LocalDate newEnd,
+                                           LocalDate existingStart, LocalDate existingEnd) {
+        return newStart.isEqual(existingEnd) || newEnd.isEqual(existingStart);
     }
 }

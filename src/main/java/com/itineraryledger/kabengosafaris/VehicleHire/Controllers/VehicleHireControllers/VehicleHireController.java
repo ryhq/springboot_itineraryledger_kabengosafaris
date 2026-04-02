@@ -46,7 +46,7 @@ public class VehicleHireController {
     @PreAuthorize("hasAuthority('PERM_READ_VEHICLE_HIRE')")
     public ResponseEntity<?> getAllVehicleHires(
         @RequestParam(required = false) String vehicleId,
-        @RequestParam(required = false) String clientName,
+        @RequestParam(required = false) String rentalClientId,
         @RequestParam(required = false) HireStatus status,
         @RequestParam(required = false) PaymentStatus paymentStatus,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDateAfter,
@@ -60,7 +60,7 @@ public class VehicleHireController {
         @RequestParam(defaultValue = "desc") String sortDirection
     ) {
         return vehicleHireGetService.getAllVehicleHires(
-            vehicleId, clientName, status, paymentStatus,
+            vehicleId, rentalClientId, status, paymentStatus,
             startDateAfter, startDateBefore, endDateAfter, endDateBefore,
             keyword, page, size, sortBy, sortDirection);
     }

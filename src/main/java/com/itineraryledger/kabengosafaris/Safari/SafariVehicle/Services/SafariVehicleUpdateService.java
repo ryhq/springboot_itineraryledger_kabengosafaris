@@ -7,9 +7,12 @@ import com.itineraryledger.kabengosafaris.Safari.SafariVehicle.DTOs.UpdateSafari
 import com.itineraryledger.kabengosafaris.Safari.SafariVehicle.Entity.SafariVehicle;
 import com.itineraryledger.kabengosafaris.Safari.SafariVehicle.Repository.SafariVehicleRepository;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+import com.itineraryledger.kabengosafaris.Driver.Entity.Driver;
+import com.itineraryledger.kabengosafaris.Driver.Repository.DriverRepository;
 import com.itineraryledger.kabengosafaris.Vehicle.Entity.Vehicle;
 import com.itineraryledger.kabengosafaris.Vehicle.Repository.VehicleRepository;
 import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices.VehicleAvailabilityService;
+import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices.VehicleAvailabilityService.AvailabilityResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -27,6 +30,7 @@ public class SafariVehicleUpdateService {
 
     private final SafariVehicleRepository safariVehicleRepository;
     private final VehicleRepository vehicleRepository;
+    private final DriverRepository driverRepository;
     private final VehicleAvailabilityService vehicleAvailabilityService;
     private final SafariVehicleGetService safariVehicleGetService;
     private final IdObfuscator idObfuscator;
@@ -92,29 +96,54 @@ public class SafariVehicleUpdateService {
                 );
             }
 
-            // Re-check availability if vehicle or dates changed
+            // Re-check availability if vehicle or dates changed — hard conflicts block, soft warn
+            List<String> warnings = null;
             if (needsAvailabilityCheck) {
-                List<String> conflicts = vehicleAvailabilityService.getConflictDescriptions(
+                AvailabilityResult availability = vehicleAvailabilityService.checkAvailability(
                     vehicleIdForCheck, startDate, endDate, safariVehicle.getId(), null);
-                if (!conflicts.isEmpty()) {
+                if (availability.hasHardConflicts()) {
                     return ResponseEntity.status(HttpStatus.CONFLICT).body(
                         ApiResponse.error(409,
-                            "Vehicle is not available for the requested dates. " + conflicts.size() + " conflicting assignment(s) found: " + String.join("; ", conflicts),
+                            "Vehicle is not available for the requested dates. " + availability.hardConflicts().size() + " conflicting assignment(s) found: " + String.join("; ", availability.hardConflicts()),
                             "VEHICLE_DOUBLE_BOOKING")
                     );
                 }
+                if (availability.hasSoftConflicts()) {
+                    warnings = availability.softConflicts().stream()
+                        .map(c -> "Same-day overlap: " + c + ". Ensure the vehicle is available for handover.")
+                        .toList();
+                }
             }
 
-            if (updateDTO.getDriverName() != null) safariVehicle.setDriverName(updateDTO.getDriverName());
-            if (updateDTO.getDriverPhone() != null) safariVehicle.setDriverPhone(updateDTO.getDriverPhone());
+            // Update driver if provided (empty string clears driver)
+            if (updateDTO.getDriverId() != null) {
+                if (updateDTO.getDriverId().isBlank()) {
+                    safariVehicle.setDriver(null);
+                } else {
+                    Long driverId = idObfuscator.decodeId(updateDTO.getDriverId());
+                    Driver driver = driverRepository.findById(driverId).orElse(null);
+                    if (driver == null) {
+                        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                            ApiResponse.error(404, "Driver not found", "DRIVER_NOT_FOUND")
+                        );
+                    }
+                    safariVehicle.setDriver(driver);
+                }
+            }
             if (updateDTO.getAssignmentNotes() != null) safariVehicle.setAssignmentNotes(updateDTO.getAssignmentNotes());
             if (updateDTO.getStatus() != null) safariVehicle.setStatus(updateDTO.getStatus());
 
             safariVehicle = safariVehicleRepository.save(safariVehicle);
             log.info("Safari vehicle updated: {}", id);
 
+            Object dto = safariVehicleGetService.convertToDTO(safariVehicle);
+            if (warnings != null) {
+                return ResponseEntity.ok(
+                    ApiResponse.successWithWarnings(200, "Safari vehicle updated successfully", dto, warnings)
+                );
+            }
             return ResponseEntity.ok(
-                ApiResponse.success(200, "Safari vehicle updated successfully", safariVehicleGetService.convertToDTO(safariVehicle))
+                ApiResponse.success(200, "Safari vehicle updated successfully", dto)
             );
 
         } catch (Exception e) {

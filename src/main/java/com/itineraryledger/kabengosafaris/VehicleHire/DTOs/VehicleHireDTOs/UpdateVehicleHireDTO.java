@@ -10,9 +10,7 @@ import java.time.LocalDate;
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class UpdateVehicleHireDTO {
     private String vehicleId;
-    private String clientName;
-    private String clientPhone;
-    private String clientEmail;
+    private String rentalClientId;
     private LocalDate startDate;
     private LocalDate endDate;
     private String pickupLocation;
