@@ -1,4 +1,4 @@
-package com.itineraryledger.kabengosafaris.VehicleHire.Services.VehicleHireServices;
+package com.itineraryledger.kabengosafaris.VehicleHire.Services;
 
 import com.itineraryledger.kabengosafaris.VehicleHire.Entity.VehicleHire;
 import com.itineraryledger.kabengosafaris.VehicleHire.Enums.HireStatus;

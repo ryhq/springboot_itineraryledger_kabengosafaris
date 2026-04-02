@@ -1,4 +1,4 @@
-package com.itineraryledger.kabengosafaris.VehicleHire.DTOs.VehicleHireDTOs;
+package com.itineraryledger.kabengosafaris.VehicleHire.DTOs;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.itineraryledger.kabengosafaris.VehicleHire.Enums.HireStatus;
@@ -23,6 +23,10 @@ public class VehicleHireDTO {
     private String rentalClientEmail;
     private String rentalClientType;
     private String rentalClientTypeDisplayName;
+    private String driverId;
+    private String driverName;
+    private String driverPhone;
+    private String driverLicenseNumber;
     private LocalDate startDate;
     private LocalDate endDate;
     private String pickupLocation;

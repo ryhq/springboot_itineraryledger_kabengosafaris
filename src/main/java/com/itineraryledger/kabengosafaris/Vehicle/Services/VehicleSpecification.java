@@ -1,4 +1,4 @@
-package com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices;
+package com.itineraryledger.kabengosafaris.Vehicle.Services;
 
 import com.itineraryledger.kabengosafaris.Vehicle.Entity.Vehicle;
 import com.itineraryledger.kabengosafaris.Vehicle.Enums.FuelType;

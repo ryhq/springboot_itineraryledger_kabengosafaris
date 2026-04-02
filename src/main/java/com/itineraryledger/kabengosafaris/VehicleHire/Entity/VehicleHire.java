@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.VehicleHire.Entity;
 
+import com.itineraryledger.kabengosafaris.Driver.Entity.Driver;
 import com.itineraryledger.kabengosafaris.RentalClient.Entity.RentalClient;
 import com.itineraryledger.kabengosafaris.Vehicle.Entity.Vehicle;
 import com.itineraryledger.kabengosafaris.VehicleHire.Enums.HireStatus;
@@ -22,7 +23,8 @@ import java.time.LocalDateTime;
         @Index(name = "idx_vh_end_date", columnList = "end_date"),
         @Index(name = "idx_vh_status", columnList = "status"),
         @Index(name = "idx_vh_payment_status", columnList = "payment_status"),
-        @Index(name = "idx_vh_rental_client_id", columnList = "rental_client_id")
+        @Index(name = "idx_vh_rental_client_id", columnList = "rental_client_id"),
+        @Index(name = "idx_vh_driver_id", columnList = "driver_id")
     }
 )
 @Data
@@ -42,6 +44,10 @@ public class VehicleHire {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rental_client_id")
     private RentalClient rentalClient;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "driver_id")
+    private Driver driver;
 
     @NotNull(message = "Start date is required")
     @Column(name = "start_date", nullable = false)

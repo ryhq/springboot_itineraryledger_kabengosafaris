@@ -1,8 +1,8 @@
-package com.itineraryledger.kabengosafaris.VehicleHire.Services.VehicleHireServices;
+package com.itineraryledger.kabengosafaris.VehicleHire.Services;
 
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
-import com.itineraryledger.kabengosafaris.VehicleHire.DTOs.VehicleHireDTOs.VehicleHireDTO;
+import com.itineraryledger.kabengosafaris.VehicleHire.DTOs.VehicleHireDTO;
 import com.itineraryledger.kabengosafaris.VehicleHire.Entity.VehicleHire;
 import com.itineraryledger.kabengosafaris.VehicleHire.Enums.HireStatus;
 import com.itineraryledger.kabengosafaris.VehicleHire.Enums.PaymentStatus;
@@ -90,7 +90,8 @@ public class VehicleHireGetService {
                 ? Sort.by(validatedSortBy).descending() : Sort.by(validatedSortBy).ascending();
             PageRequest pageRequest = PageRequest.of(page != null ? page : 0, size != null ? size : 10, sort);
 
-            Specification<VehicleHire> spec = Specification.where(VehicleHireSpecification.hasVehicleId(vehicleId))
+            Specification<VehicleHire> spec = Specification.<VehicleHire>unrestricted()
+                .and(VehicleHireSpecification.hasVehicleId(vehicleId))
                 .and(VehicleHireSpecification.hasRentalClientId(rentalClientId))
                 .and(VehicleHireSpecification.hasStatus(status))
                 .and(VehicleHireSpecification.hasPaymentStatus(paymentStatus))
@@ -133,6 +134,10 @@ public class VehicleHireGetService {
             .rentalClientEmail(hire.getRentalClient() != null ? hire.getRentalClient().getEmail() : null)
             .rentalClientType(hire.getRentalClient() != null ? hire.getRentalClient().getClientType().name() : null)
             .rentalClientTypeDisplayName(hire.getRentalClient() != null ? hire.getRentalClient().getClientType().getDisplayName() : null)
+            .driverId(hire.getDriver() != null ? idObfuscator.encodeId(hire.getDriver().getId()) : null)
+            .driverName(hire.getDriver() != null ? hire.getDriver().getFullName() : null)
+            .driverPhone(hire.getDriver() != null ? hire.getDriver().getPhone() : null)
+            .driverLicenseNumber(hire.getDriver() != null ? hire.getDriver().getLicenseNumber() : null)
             .startDate(hire.getStartDate())
             .endDate(hire.getEndDate())
             .pickupLocation(hire.getPickupLocation())

@@ -1,13 +1,14 @@
-package com.itineraryledger.kabengosafaris.VehicleHire.Controllers.VehicleHireControllers;
+package com.itineraryledger.kabengosafaris.VehicleHire.Controllers;
 
-import com.itineraryledger.kabengosafaris.VehicleHire.DTOs.VehicleHireDTOs.CreateVehicleHireDTO;
-import com.itineraryledger.kabengosafaris.VehicleHire.DTOs.VehicleHireDTOs.UpdateVehicleHireDTO;
+import com.itineraryledger.kabengosafaris.VehicleHire.DTOs.CreateVehicleHireDTO;
+import com.itineraryledger.kabengosafaris.VehicleHire.DTOs.UpdateVehicleHireDTO;
 import com.itineraryledger.kabengosafaris.VehicleHire.Enums.HireStatus;
 import com.itineraryledger.kabengosafaris.VehicleHire.Enums.PaymentStatus;
-import com.itineraryledger.kabengosafaris.VehicleHire.Services.VehicleHireServices.CreateVehicleHireService;
-import com.itineraryledger.kabengosafaris.VehicleHire.Services.VehicleHireServices.DeleteVehicleHireService;
-import com.itineraryledger.kabengosafaris.VehicleHire.Services.VehicleHireServices.UpdateVehicleHireService;
-import com.itineraryledger.kabengosafaris.VehicleHire.Services.VehicleHireServices.VehicleHireGetService;
+import com.itineraryledger.kabengosafaris.VehicleHire.Services.CreateVehicleHireService;
+import com.itineraryledger.kabengosafaris.VehicleHire.Services.DeleteVehicleHireService;
+import com.itineraryledger.kabengosafaris.VehicleHire.Services.UpdateVehicleHireService;
+import com.itineraryledger.kabengosafaris.VehicleHire.Services.VehicleHireGetService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

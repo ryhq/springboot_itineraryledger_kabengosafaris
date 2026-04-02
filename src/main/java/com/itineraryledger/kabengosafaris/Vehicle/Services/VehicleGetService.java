@@ -1,4 +1,4 @@
-package com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices;
+package com.itineraryledger.kabengosafaris.Vehicle.Services;
 
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -96,7 +96,8 @@ public class VehicleGetService {
                 sort
             );
 
-            Specification<Vehicle> spec = Specification.where(VehicleSpecification.nameLike(name))
+            Specification<Vehicle> spec = Specification.<Vehicle>unrestricted()
+                .and(VehicleSpecification.nameLike(name))
                 .and(VehicleSpecification.registrationNumberLike(registrationNumber))
                 .and(VehicleSpecification.hasType(type))
                 .and(VehicleSpecification.makeLike(make))

@@ -1,14 +1,14 @@
-package com.itineraryledger.kabengosafaris.Vehicle.Controllers.VehicleControllers;
+package com.itineraryledger.kabengosafaris.Vehicle.Controllers;
 
 import com.itineraryledger.kabengosafaris.Vehicle.DTOs.VehicleDTOs.CreateVehicleDTO;
 import com.itineraryledger.kabengosafaris.Vehicle.DTOs.VehicleDTOs.UpdateVehicleDTO;
 import com.itineraryledger.kabengosafaris.Vehicle.Enums.FuelType;
 import com.itineraryledger.kabengosafaris.Vehicle.Enums.VehicleType;
-import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices.CreateVehicleService;
-import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices.DeleteVehicleService;
-import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices.UpdateVehicleService;
-import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices.VehicleGetService;
-import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices.VehicleScheduleService;
+import com.itineraryledger.kabengosafaris.Vehicle.Services.CreateVehicleService;
+import com.itineraryledger.kabengosafaris.Vehicle.Services.DeleteVehicleService;
+import com.itineraryledger.kabengosafaris.Vehicle.Services.UpdateVehicleService;
+import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleGetService;
+import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleScheduleService;
 import com.itineraryledger.kabengosafaris.Safari.SafariVehicle.Enums.SafariVehicleStatus;
 import com.itineraryledger.kabengosafaris.VehicleHire.Enums.HireStatus;
 import jakarta.validation.Valid;

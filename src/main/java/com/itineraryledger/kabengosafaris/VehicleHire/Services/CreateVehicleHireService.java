@@ -1,15 +1,17 @@
-package com.itineraryledger.kabengosafaris.VehicleHire.Services.VehicleHireServices;
+package com.itineraryledger.kabengosafaris.VehicleHire.Services;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
+import com.itineraryledger.kabengosafaris.Driver.Entity.Driver;
+import com.itineraryledger.kabengosafaris.Driver.Repository.DriverRepository;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import com.itineraryledger.kabengosafaris.RentalClient.Entity.RentalClient;
 import com.itineraryledger.kabengosafaris.RentalClient.Repository.RentalClientRepository;
 import com.itineraryledger.kabengosafaris.Vehicle.Entity.Vehicle;
 import com.itineraryledger.kabengosafaris.Vehicle.Repository.VehicleRepository;
-import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices.VehicleAvailabilityService;
-import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices.VehicleAvailabilityService.AvailabilityResult;
-import com.itineraryledger.kabengosafaris.VehicleHire.DTOs.VehicleHireDTOs.CreateVehicleHireDTO;
+import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleAvailabilityService;
+import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleAvailabilityService.AvailabilityResult;
+import com.itineraryledger.kabengosafaris.VehicleHire.DTOs.CreateVehicleHireDTO;
 import com.itineraryledger.kabengosafaris.VehicleHire.Entity.VehicleHire;
 import com.itineraryledger.kabengosafaris.VehicleHire.Repository.VehicleHireRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ public class CreateVehicleHireService {
     private final VehicleHireRepository vehicleHireRepository;
     private final VehicleRepository vehicleRepository;
     private final RentalClientRepository rentalClientRepository;
+    private final DriverRepository driverRepository;
     private final VehicleAvailabilityService vehicleAvailabilityService;
     private final VehicleHireGetService vehicleHireGetService;
     private final IdObfuscator idObfuscator;
@@ -74,6 +77,17 @@ public class CreateVehicleHireService {
                     .toList()
                 : null;
 
+            // Optional driver
+            Driver driver = null;
+            if (createDTO.getDriverId() != null && !createDTO.getDriverId().isEmpty()) {
+                Long driverId = idObfuscator.decodeId(createDTO.getDriverId());
+                driver = driverRepository.findById(driverId).orElse(null);
+                if (driver == null) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                        ApiResponse.error(404, "Driver not found", "DRIVER_NOT_FOUND"));
+                }
+            }
+
             // Auto-calculate total if dailyRate provided and totalAmount not set
             BigDecimal totalAmount = createDTO.getTotalAmount();
             if (totalAmount == null && createDTO.getDailyRate() != null) {
@@ -84,6 +98,7 @@ public class CreateVehicleHireService {
             VehicleHire hire = VehicleHire.builder()
                 .vehicle(vehicle)
                 .rentalClient(rentalClient)
+                .driver(driver)
                 .startDate(createDTO.getStartDate())
                 .endDate(createDTO.getEndDate())
                 .pickupLocation(createDTO.getPickupLocation())

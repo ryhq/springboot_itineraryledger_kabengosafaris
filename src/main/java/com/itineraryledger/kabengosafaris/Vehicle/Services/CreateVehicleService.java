@@ -1,8 +1,7 @@
-package com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices;
+package com.itineraryledger.kabengosafaris.Vehicle.Services;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
-import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import com.itineraryledger.kabengosafaris.Vehicle.DTOs.VehicleDTOs.CreateVehicleDTO;
 import com.itineraryledger.kabengosafaris.Vehicle.Entity.Vehicle;
 import com.itineraryledger.kabengosafaris.Vehicle.Repository.VehicleRepository;
@@ -20,7 +19,6 @@ public class CreateVehicleService {
 
     private final VehicleRepository vehicleRepository;
     private final VehicleGetService vehicleGetService;
-    private final IdObfuscator idObfuscator;
 
     @Transactional
     @AuditLogAnnotation(action = "CREATE_VEHICLE", description = "Creating a new vehicle", entityType = "Vehicle")

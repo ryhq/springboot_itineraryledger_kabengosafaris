@@ -12,8 +12,9 @@ import com.itineraryledger.kabengosafaris.Driver.Entity.Driver;
 import com.itineraryledger.kabengosafaris.Driver.Repository.DriverRepository;
 import com.itineraryledger.kabengosafaris.Vehicle.Entity.Vehicle;
 import com.itineraryledger.kabengosafaris.Vehicle.Repository.VehicleRepository;
-import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices.VehicleAvailabilityService;
-import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleServices.VehicleAvailabilityService.AvailabilityResult;
+import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleAvailabilityService;
+import com.itineraryledger.kabengosafaris.Vehicle.Services.VehicleAvailabilityService.AvailabilityResult;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
