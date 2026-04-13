@@ -1,0 +1,90 @@
+[
+  {
+    "name": "customerName",
+    "description": "Customer's display name",
+    "isRequired": true
+  },
+  {
+    "name": "safariCode",
+    "description": "Safari reference code (e.g., SAF-7D6N-1007)",
+    "isRequired": true
+  },
+  {
+    "name": "safariName",
+    "description": "Safari name/title",
+    "isRequired": true
+  },
+  {
+    "name": "startDate",
+    "description": "Safari start date (e.g., June 15, 2026)",
+    "isRequired": true
+  },
+  {
+    "name": "endDate",
+    "description": "Safari end date",
+    "isRequired": true
+  },
+  {
+    "name": "totalDays",
+    "description": "Total safari days",
+    "isRequired": false
+  },
+  {
+    "name": "totalNights",
+    "description": "Total safari nights",
+    "isRequired": false
+  },
+  {
+    "name": "startLocation",
+    "description": "Safari start location (e.g., Arusha)",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "endLocation",
+    "description": "Safari end location",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "itineraryName",
+    "description": "Name of the source itinerary",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "state",
+    "description": "Current safari state (e.g., Confirmed, Fully Paid)",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "daySummary",
+    "description": "HTML summary of safari days (day-by-day overview)",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "specialRequests",
+    "description": "Special requests noted for this safari",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "emergencyContact",
+    "description": "Emergency contact information",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "sentDate",
+    "description": "Date the email was sent",
+    "isRequired": true
+  },
+  {
+    "name": "companyEmail",
+    "description": "Company email for customer to reply to",
+    "isRequired": false,
+    "defaultValue": "info@kabengosafaris.com"
+  }
+]

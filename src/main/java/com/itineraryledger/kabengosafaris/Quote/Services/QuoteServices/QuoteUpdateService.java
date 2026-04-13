@@ -92,6 +92,9 @@ public class QuoteUpdateService {
                 if (updateDTO.getTitle() != null && !updateDTO.getTitle().equals(quote.getTitle())) {
                     blockedFields.add("title");
                 }
+                if (updateDTO.getSafariStartDate() != null && !updateDTO.getSafariStartDate().equals(quote.getSafariStartDate())) {
+                    blockedFields.add("safariStartDate");
+                }
                 if (updateDTO.getIsStoRate() != null && !updateDTO.getIsStoRate().equals(quote.getIsStoRate())) {
                     blockedFields.add("isStoRate");
                 }
@@ -130,6 +133,9 @@ public class QuoteUpdateService {
                 List<String> blockedFields = new ArrayList<>();
 
                 // Check if any critical fields are being changed
+                if (updateDTO.getSafariStartDate() != null && !updateDTO.getSafariStartDate().equals(quote.getSafariStartDate())) {
+                    blockedFields.add("safariStartDate");
+                }
                 if (updateDTO.getIsStoRate() != null && !updateDTO.getIsStoRate().equals(quote.getIsStoRate())) {
                     blockedFields.add("isStoRate");
                 }
@@ -173,6 +179,11 @@ public class QuoteUpdateService {
             // Update description
             if (updateDTO.getDescription() != null) {
                 quote.setDescription(updateDTO.getDescription());
+            }
+
+            // Update safari start date
+            if (updateDTO.getSafariStartDate() != null) {
+                quote.setSafariStartDate(updateDTO.getSafariStartDate());
             }
 
             // Update pricing fields
@@ -294,6 +305,7 @@ public class QuoteUpdateService {
             .discountReason(quote.getDiscountReason())
             .version(quote.getVersion())
             .status(quote.getStatus())
+            .safariStartDate(quote.getSafariStartDate())
             .sentDate(quote.getSentDate())
             .validFrom(quote.getValidFrom())
             .validTo(quote.getValidTo())

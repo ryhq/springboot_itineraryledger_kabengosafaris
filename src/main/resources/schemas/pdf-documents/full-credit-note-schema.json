@@ -1,0 +1,206 @@
+[
+    {
+        "path": "id",
+        "type": "String",
+        "description": "Obfuscated credit note ID",
+        "isRequired": true
+    },
+    {
+        "path": "creditNoteCode",
+        "type": "String",
+        "description": "Unique credit note code (e.g., 'CN-2026-001')",
+        "isRequired": true
+    },
+    {
+        "path": "title",
+        "type": "String",
+        "description": "Credit note title/name",
+        "isRequired": true
+    },
+    {
+        "path": "description",
+        "type": "String",
+        "description": "Optional credit note description or summary",
+        "isRequired": false
+    },
+    {
+        "path": "status",
+        "type": "Enum",
+        "description": "Credit note status (DRAFT, ISSUED, VOID, CANCELLED)",
+        "isRequired": true
+    },
+    {
+        "path": "statusDisplayName",
+        "type": "String",
+        "description": "Human-readable credit note status name",
+        "isRequired": false
+    },
+    {
+        "path": "taxPercentage",
+        "type": "BigDecimal",
+        "description": "Tax percentage applied (e.g., 18.00 for 18% VAT)",
+        "isRequired": false
+    },
+    {
+        "path": "issueDate",
+        "type": "LocalDate",
+        "description": "Credit note issue date",
+        "isRequired": true
+    },
+    {
+        "path": "reason",
+        "type": "String",
+        "description": "Reason for the credit note",
+        "isRequired": false
+    },
+    {
+        "path": "customerNotes",
+        "type": "String",
+        "description": "Customer-facing notes/remarks",
+        "isRequired": false
+    },
+    {
+        "path": "internalNotes",
+        "type": "String",
+        "description": "Internal notes (not visible to customer on PDF)",
+        "isRequired": false
+    },
+    {
+        "path": "isActive",
+        "type": "Boolean",
+        "description": "Whether credit note is active",
+        "isRequired": false
+    },
+    {
+        "path": "createdByName",
+        "type": "String",
+        "description": "Name of user who created credit note",
+        "isRequired": false
+    },
+    {
+        "path": "updatedByName",
+        "type": "String",
+        "description": "Name of user who last updated credit note",
+        "isRequired": false
+    },
+    {
+        "path": "createdAt",
+        "type": "LocalDateTime",
+        "description": "Creation timestamp",
+        "isRequired": false
+    },
+    {
+        "path": "updatedAt",
+        "type": "LocalDateTime",
+        "description": "Last update timestamp",
+        "isRequired": false
+    },
+    {
+        "path": "totalLineItemsCount",
+        "type": "Integer",
+        "description": "Total number of credit note line items",
+        "isRequired": false
+    },
+    {
+        "path": "totalCurrenciesCount",
+        "type": "Integer",
+        "description": "Total number of currencies used",
+        "isRequired": false
+    },
+    {
+        "path": "currencies",
+        "type": "List<String>",
+        "description": "List of unique currency codes used in the credit note (e.g., ['USD', 'TZS', 'EUR']). Access with: th:each='currency : ${creditNote.currencies}'",
+        "isRequired": false
+    },
+    {
+        "path": "customer",
+        "type": "CustomerDTO",
+        "description": "Customer information",
+        "isRequired": false,
+        "children": [
+            {"path": "id", "type": "String", "description": "Obfuscated customer ID"},
+            {"path": "customerCode", "type": "String", "description": "Customer code (e.g., CUST-2023-042)"},
+            {"path": "customerName", "type": "String", "description": "Customer full name or company name"},
+            {"path": "email", "type": "String", "description": "Customer email address"},
+            {"path": "phone", "type": "String", "description": "Customer phone number"},
+            {"path": "nationality", "type": "String", "description": "Customer nationality"},
+            {"path": "address", "type": "String", "description": "Customer street address"},
+            {"path": "city", "type": "String", "description": "Customer city"},
+            {"path": "country", "type": "String", "description": "Customer country"}
+        ]
+    },
+    {
+        "path": "invoice",
+        "type": "InvoiceDTO",
+        "description": "Original invoice information",
+        "isRequired": false,
+        "children": [
+            {"path": "id", "type": "String", "description": "Obfuscated invoice ID"},
+            {"path": "invoiceCode", "type": "String", "description": "Original invoice code (e.g., INV-2026-001)"},
+            {"path": "title", "type": "String", "description": "Original invoice title"}
+        ]
+    },
+    {
+        "path": "lineItems",
+        "type": "List<LineItemDTO>",
+        "description": "Credit note line items. Access with: th:each='lineItem : ${creditNote.lineItems}'",
+        "isRequired": false,
+        "children": [
+            {"path": "id", "type": "String", "description": "Obfuscated line item ID"},
+            {"path": "itemType", "type": "String", "description": "Item type (ACCOMMODATION, PARK_FEE, ACTIVITY, TRANSPORT, GUIDE, MEAL, EQUIPMENT, INSURANCE, OTHER)"},
+            {"path": "itemTypeDisplayName", "type": "String", "description": "Human-readable item type"},
+            {"path": "itemName", "type": "String", "description": "Line item display name"},
+            {"path": "description", "type": "String", "description": "Line item description"},
+            {"path": "displayOrder", "type": "Integer", "description": "Display sequence number"},
+            {"path": "isActive", "type": "Boolean", "description": "Whether line item is active"},
+            {
+                "path": "prices",
+                "type": "List<PriceDTO>",
+                "description": "Prices in different currencies. Access: th:each='price : ${lineItem.prices}'",
+                "children": [
+                    {"path": "currency", "type": "String", "description": "Currency code (USD, TZS, EUR, etc.)"},
+                    {"path": "quantity", "type": "Integer", "description": "Quantity"},
+                    {"path": "unitPrice", "type": "BigDecimal", "description": "Unit price"},
+                    {"path": "totalPrice", "type": "BigDecimal", "description": "Total price (quantity x unitPrice)"},
+                    {"path": "breakdown", "type": "String", "description": "Optional pricing breakdown details"},
+                    {"path": "formattedUnitPrice", "type": "String", "description": "Formatted unit price with currency symbol"},
+                    {"path": "formattedTotalPrice", "type": "String", "description": "Formatted total price with currency symbol"}
+                ]
+            }
+        ]
+    },
+    {
+        "path": "subtotals",
+        "type": "List<PriceDTO>",
+        "description": "Subtotals by currency. Access with: th:each='subtotal : ${creditNote.subtotals}'",
+        "isRequired": false,
+        "children": [
+            {"path": "currency", "type": "String", "description": "Currency code"},
+            {"path": "totalPrice", "type": "BigDecimal", "description": "Subtotal amount"},
+            {"path": "formattedTotalPrice", "type": "String", "description": "Formatted subtotal"}
+        ]
+    },
+    {
+        "path": "taxes",
+        "type": "List<PriceDTO>",
+        "description": "Tax amounts by currency. Access with: th:each='tax : ${creditNote.taxes}'",
+        "isRequired": false,
+        "children": [
+            {"path": "currency", "type": "String", "description": "Currency code"},
+            {"path": "totalPrice", "type": "BigDecimal", "description": "Tax amount"},
+            {"path": "formattedTotalPrice", "type": "String", "description": "Formatted tax amount"}
+        ]
+    },
+    {
+        "path": "totals",
+        "type": "List<PriceDTO>",
+        "description": "Total credit amounts by currency. Access with: th:each='total : ${creditNote.totals}'",
+        "isRequired": false,
+        "children": [
+            {"path": "currency", "type": "String", "description": "Currency code"},
+            {"path": "totalPrice", "type": "BigDecimal", "description": "Total credit amount"},
+            {"path": "formattedTotalPrice", "type": "String", "description": "Formatted total credit amount"}
+        ]
+    }
+]

@@ -1,0 +1,119 @@
+[
+  {
+    "path": "paymentId",
+    "type": "String",
+    "description": "Obfuscated payment ID",
+    "isRequired": true
+  },
+  {
+    "path": "amount",
+    "type": "BigDecimal",
+    "description": "Payment amount",
+    "isRequired": true
+  },
+  {
+    "path": "currency",
+    "type": "String",
+    "description": "Currency code (ISO 4217)",
+    "isRequired": true
+  },
+  {
+    "path": "formattedAmount",
+    "type": "String",
+    "description": "Formatted payment amount with currency (e.g., USD 1,500.00)",
+    "isRequired": true
+  },
+  {
+    "path": "paymentDate",
+    "type": "LocalDate",
+    "description": "Date payment was made",
+    "isRequired": true
+  },
+  {
+    "path": "paymentMethod",
+    "type": "String",
+    "description": "Payment method display name",
+    "isRequired": true
+  },
+  {
+    "path": "reference",
+    "type": "String",
+    "description": "Payment reference or transaction ID",
+    "isRequired": false
+  },
+  {
+    "path": "notes",
+    "type": "String",
+    "description": "Payment notes",
+    "isRequired": false
+  },
+  {
+    "path": "recordedByName",
+    "type": "String",
+    "description": "Name of user who recorded the payment",
+    "isRequired": false
+  },
+  {
+    "path": "receiptDate",
+    "type": "LocalDate",
+    "description": "Date receipt was generated",
+    "isRequired": true
+  },
+  {
+    "path": "invoiceCode",
+    "type": "String",
+    "description": "Invoice code",
+    "isRequired": true
+  },
+  {
+    "path": "invoiceTitle",
+    "type": "String",
+    "description": "Invoice title",
+    "isRequired": true
+  },
+  {
+    "path": "invoiceStatus",
+    "type": "String",
+    "description": "Current invoice status display name",
+    "isRequired": true
+  },
+  {
+    "path": "grandTotal",
+    "type": "String",
+    "description": "Invoice grand total formatted",
+    "isRequired": true
+  },
+  {
+    "path": "totalPaid",
+    "type": "String",
+    "description": "Total paid so far formatted",
+    "isRequired": true
+  },
+  {
+    "path": "balanceRemaining",
+    "type": "String",
+    "description": "Remaining balance formatted",
+    "isRequired": true
+  },
+  {
+    "path": "customer",
+    "type": "Object",
+    "description": "Customer information",
+    "isRequired": false,
+    "children": [
+      { "path": "customerName", "type": "String", "description": "Customer name" },
+      { "path": "email", "type": "String", "description": "Customer email" },
+      { "path": "phone", "type": "String", "description": "Customer phone" }
+    ]
+  },
+  {
+    "path": "safari",
+    "type": "Object",
+    "description": "Safari information",
+    "isRequired": false,
+    "children": [
+      { "path": "name", "type": "String", "description": "Safari name" },
+      { "path": "code", "type": "String", "description": "Safari code" }
+    ]
+  }
+]

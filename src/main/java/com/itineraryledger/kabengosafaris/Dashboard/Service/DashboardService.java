@@ -10,6 +10,7 @@ import com.itineraryledger.kabengosafaris.Dashboard.DTOs.DashboardStatsDTO.Reven
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
 import com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceRepository;
+import com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceServices.InvoicePaymentAggregationService;
 import com.itineraryledger.kabengosafaris.Park.ParkRepository;
 import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
@@ -53,6 +54,7 @@ public class DashboardService {
     private final AccommodationRepository accommodationRepository;
     private final ParkRepository parkRepository;
     private final IdObfuscator idObfuscator;
+    private final InvoicePaymentAggregationService paymentAggregationService;
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -269,14 +271,14 @@ public class DashboardService {
 
     private List<RevenueByCurrency> calculatePendingRevenue() {
         List<Invoice> pendingInvoices = invoiceRepository.findByStatusIn(
-                Arrays.asList(InvoiceStatus.SENT, InvoiceStatus.VIEWED, InvoiceStatus.PARTIALLY_PAID)
+                Arrays.asList(InvoiceStatus.SENT, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.OVERDUE)
         );
-        return aggregateRevenueByCurrency(pendingInvoices, Invoice::getBalances);
+        return aggregateRevenueByCurrency(pendingInvoices, paymentAggregationService::computeBalances);
     }
 
     private List<RevenueByCurrency> calculateOverdueRevenue() {
         List<Invoice> overdueInvoices = invoiceRepository.findByStatus(InvoiceStatus.OVERDUE);
-        return aggregateRevenueByCurrency(overdueInvoices, Invoice::getBalances);
+        return aggregateRevenueByCurrency(overdueInvoices, paymentAggregationService::computeBalances);
     }
 
     private List<RevenueByCurrency> aggregateRevenueByCurrency(

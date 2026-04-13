@@ -24,7 +24,7 @@ import java.security.NoSuchAlgorithmException;
 @Slf4j
 public class QuoteDocumentStorageService {
 
-    @Value("${quote.document.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/quote-documents/}")
+    @Value("${quote.document.storage.path:./data/quote-documents/}")
     private String storagePath;
 
     @Value("${app.base.url:http://localhost:4450}")

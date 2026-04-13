@@ -714,7 +714,7 @@ All API responses follow a consistent format:
 | **Archives** | .zip, .rar, .7z | application/zip, application/x-rar-compressed, application/x-7z-compressed |
 
 ### File Storage
-- Files are stored on the server filesystem at: `/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/quote-documents/` (configurable)
+- Files are stored on the server filesystem at: `./data/quote-documents/` (configurable)
 - Original filenames are hashed using SHA-256 for security
 - System-generated filenames format: `[hash].extension` (e.g., `a1b2c3d4e5f6g7h8.pdf`)
 - Files are cached with `max-age=86400` (24 hours)

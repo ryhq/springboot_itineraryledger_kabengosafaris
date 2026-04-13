@@ -39,3 +39,8 @@ data/
 RESEND_API_KABENGO_SAFARIS.txt
 RESEND_SIGNING_SECRET_KABENGO_SAFARIS.txt
 DEEPL_API_KEY_KABENGO_SAFARIS.txt
+
+### Local / environment-specific scripts (not for shared repo) ###
+push-prod.sh
+run-local.sh
+sync-prod.sh

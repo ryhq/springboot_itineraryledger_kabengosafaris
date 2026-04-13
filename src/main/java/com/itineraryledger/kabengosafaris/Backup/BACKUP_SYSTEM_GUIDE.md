@@ -148,7 +148,7 @@ backup.database.username=root
 backup.files.enabled=true
 
 # NOTE: These paths are STATIC (not in database settings - require restart to change)
-backup.files.base.path=/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/
+backup.files.base.path=./data/
 
 # Storage Settings
 # NOTE: This path is STATIC (not in database settings - requires restart to change)
@@ -359,7 +359,7 @@ mysql -h localhost -P 3306 -u root -p springboot_itineraryledger_kabengosafaris 
 unzip kabengosafaris_backup_20260209_143000.zip
 
 # Copy files
-cp -r backup_folder/files/* /opt/lampp/htdocs/kabengosafaris/ItineraryLedger/
+cp -r backup_folder/files/* ./data/
 ```
 
 ---
@@ -572,13 +572,13 @@ rsync -avz --delete \
 **Solution:**
 1. Check file paths exist:
    ```bash
-   ls -la /opt/lampp/htdocs/kabengosafaris/ItineraryLedger/
+   ls -la ./data/
    ```
 
 2. Check permissions:
    ```bash
    # Application user must have read access
-   sudo chown -R www-data:www-data /opt/lampp/htdocs/kabengosafaris/ItineraryLedger/
+   sudo chown -R www-data:www-data ./data/
    ```
 
 3. Check disk space:

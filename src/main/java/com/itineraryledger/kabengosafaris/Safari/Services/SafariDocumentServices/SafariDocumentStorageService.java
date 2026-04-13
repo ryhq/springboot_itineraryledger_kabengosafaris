@@ -24,7 +24,7 @@ import java.security.NoSuchAlgorithmException;
 @Slf4j
 public class SafariDocumentStorageService {
 
-    @Value("${safari.document.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/safari-documents/}")
+    @Value("${safari.document.storage.path:./data/safari-documents/}")
     private String storagePath;
 
     @Value("${app.base.url:http://localhost:4450}")

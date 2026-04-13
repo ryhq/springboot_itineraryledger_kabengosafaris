@@ -1,0 +1,37 @@
+[
+  {
+    "name": "safariCode",
+    "description": "Safari reference code",
+    "isRequired": true
+  },
+  {
+    "name": "safariName",
+    "description": "Safari name/title",
+    "isRequired": true
+  },
+  {
+    "name": "customerName",
+    "description": "Customer display name",
+    "isRequired": true
+  },
+  {
+    "name": "endDate",
+    "description": "Safari end date",
+    "isRequired": true
+  },
+  {
+    "name": "daysSinceEnd",
+    "description": "Number of days since safari ended",
+    "isRequired": true
+  },
+  {
+    "name": "pendingTasks",
+    "description": "HTML list of pending post-trip tasks",
+    "isRequired": true
+  },
+  {
+    "name": "alertDate",
+    "description": "Date the reminder was sent",
+    "isRequired": true
+  }
+]

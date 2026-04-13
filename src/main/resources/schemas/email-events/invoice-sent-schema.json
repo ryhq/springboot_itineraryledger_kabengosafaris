@@ -1,0 +1,73 @@
+[
+  {
+    "name": "customerName",
+    "description": "Customer display name",
+    "isRequired": true
+  },
+  {
+    "name": "invoiceCode",
+    "description": "Invoice reference code (e.g., INV-2026-001)",
+    "isRequired": true
+  },
+  {
+    "name": "invoiceTitle",
+    "description": "Invoice title",
+    "isRequired": true
+  },
+  {
+    "name": "issueDate",
+    "description": "Issue date (e.g., April 09, 2026)",
+    "isRequired": true
+  },
+  {
+    "name": "dueDate",
+    "description": "Payment due date (e.g., May 09, 2026)",
+    "isRequired": true
+  },
+  {
+    "name": "grandTotal",
+    "description": "Grand total amount with currency (e.g., USD 3,500.00)",
+    "isRequired": true
+  },
+  {
+    "name": "safariName",
+    "description": "Safari name",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "safariCode",
+    "description": "Safari code",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "itemsSummary",
+    "description": "HTML table of line items (rendered as a table)",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "paymentTerms",
+    "description": "Payment terms text",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "customerNotes",
+    "description": "Customer-facing notes",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "sentDate",
+    "description": "Date the email was sent (e.g., April 09, 2026)",
+    "isRequired": true
+  },
+  {
+    "name": "companyEmail",
+    "description": "Company contact email address",
+    "isRequired": false,
+    "defaultValue": "info@kabengosafaris.com"
+  }
+]

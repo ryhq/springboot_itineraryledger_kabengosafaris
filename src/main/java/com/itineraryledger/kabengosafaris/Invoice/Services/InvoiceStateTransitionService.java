@@ -19,15 +19,13 @@ import java.time.LocalDate;
 /**
  * Invoice State Transition Service - Manages invoice workflow state transitions
  *
- * Implements the simplified 8-state Invoice workflow:
+ * Simplified 6-state workflow:
+ *   DRAFT → SENT → PARTIALLY_PAID → PAID
+ *                        ↕
+ *                     OVERDUE
  *
- * Core Journey (6 states):
- *   DRAFT → SENT → VIEWED → PARTIALLY_PAID → PAID
- *                                ↓
- *                            OVERDUE
- *
- * Exception States (2 states):
- *   CANCELLED, REFUNDED
+ * Exception State:
+ *   CANCELLED (from any non-PAID state)
  */
 @Service
 @Slf4j
@@ -37,17 +35,27 @@ public class InvoiceStateTransitionService {
 
     private final InvoiceRepository invoiceRepository;
     private final IdObfuscator idObfuscator;
-    private final InvoiceCreateService invoiceCreateService; // For DTO conversion
+    private final InvoiceCreateService invoiceCreateService;
+    private final InvoiceCustomerEmailService invoiceCustomerEmailService;
 
     // ========================
-    // CORE JOURNEY - SENDING PHASE
+    // CORE JOURNEY - SENDING
     // ========================
 
     /**
      * Send invoice to customer (DRAFT → SENT)
+     * Transitions status, then sends email with optional PDF attachment asynchronously.
+     *
+     * @param idObfuscated           Obfuscated invoice ID
+     * @param language               Optional language code for translation
+     * @param emailTemplateId        Optional email template ID (must belong to SEND_INVOICE event)
+     * @param pdfTemplateIdObfuscated Optional PDF template ID for FULL_INVOICE
+     * @param attachPdf              Whether to attach the invoice PDF
      */
-    public ResponseEntity<ApiResponse<?>> sendInvoice(String idObfuscated, InvoiceStateTransitionDTO dto) {
-        log.info("Sending invoice: {}", idObfuscated);
+    public ResponseEntity<ApiResponse<?>> sendInvoice(
+            String idObfuscated, String language,
+            Long emailTemplateId, String pdfTemplateIdObfuscated, boolean attachPdf) {
+        log.info("Sending invoice: {} (language: {}, attachPdf: {})", idObfuscated, language, attachPdf);
 
         try {
             Invoice invoice = findInvoice(idObfuscated);
@@ -57,7 +65,6 @@ public class InvoiceStateTransitionService {
                 );
             }
 
-            // Validate current state
             if (invoice.getStatus() != InvoiceStatus.DRAFT) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400,
@@ -67,17 +74,27 @@ public class InvoiceStateTransitionService {
                 );
             }
 
-            // Update state and sent date
             invoice.setStatus(InvoiceStatus.SENT);
             invoice.setSentDate(LocalDate.now());
 
             invoice = invoiceRepository.save(invoice);
             InvoiceDTO invoiceDTO = invoiceCreateService.convertToDTO(invoice);
 
+            // Send email with PDF attachment asynchronously
+            invoiceCustomerEmailService.sendInvoiceEmail(
+                invoice, idObfuscated, language,
+                emailTemplateId, pdfTemplateIdObfuscated, attachPdf
+            );
+
+            String customerEmail = invoice.getCustomer() != null ? invoice.getCustomer().getPrimaryEmail() : null;
+            String message = customerEmail != null && !customerEmail.isBlank()
+                ? "Invoice sent successfully. Email sent to " + customerEmail
+                : "Invoice sent successfully";
+
             log.info("Invoice {} sent successfully", invoice.getInvoiceCode());
 
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Invoice sent successfully", invoiceDTO)
+                ApiResponse.success(200, message, invoiceDTO)
             );
 
         } catch (Exception e) {
@@ -88,11 +105,18 @@ public class InvoiceStateTransitionService {
         }
     }
 
+    // ========================
+    // RESEND EMAIL (no status change)
+    // ========================
+
     /**
-     * Mark invoice as viewed by customer (SENT → VIEWED)
+     * Resend invoice email to customer without changing status.
+     * Allowed for any non-DRAFT, non-CANCELLED invoice (i.e., already sent at least once).
      */
-    public ResponseEntity<ApiResponse<?>> markAsViewed(String idObfuscated, InvoiceStateTransitionDTO dto) {
-        log.info("Marking invoice as viewed: {}", idObfuscated);
+    public ResponseEntity<ApiResponse<?>> resendInvoice(
+            String idObfuscated, String language,
+            Long emailTemplateId, String pdfTemplateIdObfuscated, boolean attachPdf) {
+        log.info("Resending invoice email: {} (language: {}, attachPdf: {})", idObfuscated, language, attachPdf);
 
         try {
             Invoice invoice = findInvoice(idObfuscated);
@@ -102,42 +126,55 @@ public class InvoiceStateTransitionService {
                 );
             }
 
-            // Validate current state
-            if (invoice.getStatus() != InvoiceStatus.SENT) {
+            InvoiceStatus status = invoice.getStatus();
+            if (status == InvoiceStatus.DRAFT || status == InvoiceStatus.CANCELLED) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400,
-                        String.format("Cannot mark as viewed from state %s. Invoice must be SENT.",
-                            invoice.getStatus().getDisplayName()),
-                        "INVALID_STATE_TRANSITION")
+                        String.format("Cannot resend invoice in state %s. Invoice must have been sent at least once.",
+                            status.getDisplayName()),
+                        "INVALID_STATE_FOR_RESEND")
                 );
             }
 
-            // Update state
-            invoice.setStatus(InvoiceStatus.VIEWED);
+            if (invoice.getCustomer() == null) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invoice has no customer linked", "NO_CUSTOMER")
+                );
+            }
 
-            invoice = invoiceRepository.save(invoice);
-            InvoiceDTO invoiceDTO = invoiceCreateService.convertToDTO(invoice);
+            String customerEmail = invoice.getCustomer().getPrimaryEmail();
+            if (customerEmail == null || customerEmail.isBlank()) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Customer has no email address", "NO_CUSTOMER_EMAIL")
+                );
+            }
 
-            log.info("Invoice {} marked as viewed", invoice.getInvoiceCode());
+            // Send email asynchronously (no status change)
+            invoiceCustomerEmailService.sendInvoiceEmail(
+                invoice, idObfuscated, language,
+                emailTemplateId, pdfTemplateIdObfuscated, attachPdf
+            );
+
+            log.info("Invoice {} email resent to {}", invoice.getInvoiceCode(), customerEmail);
 
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Invoice marked as viewed", invoiceDTO)
+                ApiResponse.success(200, "Invoice email resent to " + customerEmail)
             );
 
         } catch (Exception e) {
-            log.error("Error marking invoice as viewed", e);
+            log.error("Error resending invoice email", e);
             return ResponseEntity.internalServerError().body(
-                ApiResponse.error(500, "Failed to mark invoice as viewed", "MARK_VIEWED_FAILED")
+                ApiResponse.error(500, "Failed to resend invoice email", "RESEND_INVOICE_FAILED")
             );
         }
     }
 
     // ========================
-    // CORE JOURNEY - PAYMENT PHASE
+    // CORE JOURNEY - PAYMENT
     // ========================
 
     /**
-     * Record invoice payment (SENT/VIEWED/OVERDUE → PARTIALLY_PAID or PAID)
+     * Record invoice payment (SENT/PARTIALLY_PAID/OVERDUE → PARTIALLY_PAID or PAID)
      */
     public ResponseEntity<ApiResponse<?>> recordPayment(String idObfuscated, InvoiceStateTransitionDTO dto) {
         log.info("Recording payment for invoice: {}", idObfuscated);
@@ -156,21 +193,18 @@ public class InvoiceStateTransitionService {
                 );
             }
 
-            // Validate current state - can record payment from SENT, VIEWED, PARTIALLY_PAID, or OVERDUE
             InvoiceStatus currentStatus = invoice.getStatus();
             if (currentStatus != InvoiceStatus.SENT &&
-                currentStatus != InvoiceStatus.VIEWED &&
                 currentStatus != InvoiceStatus.PARTIALLY_PAID &&
                 currentStatus != InvoiceStatus.OVERDUE) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400,
-                        String.format("Cannot record payment from state %s. Invoice must be SENT, VIEWED, PARTIALLY_PAID, or OVERDUE.",
+                        String.format("Cannot record payment from state %s. Invoice must be SENT, PARTIALLY_PAID, or OVERDUE.",
                             currentStatus.getDisplayName()),
                         "INVALID_STATE_TRANSITION")
                 );
             }
 
-            // Update state based on payment type
             if (dto.getIsFullPayment()) {
                 invoice.setStatus(InvoiceStatus.PAID);
                 invoice.setPaidDate(LocalDate.now());
@@ -196,7 +230,7 @@ public class InvoiceStateTransitionService {
     }
 
     /**
-     * Mark invoice as overdue (any unpaid state → OVERDUE)
+     * Mark invoice as overdue (SENT/PARTIALLY_PAID → OVERDUE)
      */
     public ResponseEntity<ApiResponse<?>> markOverdue(String idObfuscated, InvoiceStateTransitionDTO dto) {
         log.info("Marking invoice as overdue: {}", idObfuscated);
@@ -209,20 +243,17 @@ public class InvoiceStateTransitionService {
                 );
             }
 
-            // Can mark as overdue from SENT, VIEWED, or PARTIALLY_PAID
             InvoiceStatus currentStatus = invoice.getStatus();
             if (currentStatus != InvoiceStatus.SENT &&
-                currentStatus != InvoiceStatus.VIEWED &&
                 currentStatus != InvoiceStatus.PARTIALLY_PAID) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400,
-                        String.format("Cannot mark as overdue from state %s. Invoice must be SENT, VIEWED, or PARTIALLY_PAID.",
+                        String.format("Cannot mark as overdue from state %s. Invoice must be SENT or PARTIALLY_PAID.",
                             currentStatus.getDisplayName()),
                         "INVALID_STATE_TRANSITION")
                 );
             }
 
-            // Verify due date has passed
             if (!invoice.getDueDate().isBefore(LocalDate.now())) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400,
@@ -231,7 +262,6 @@ public class InvoiceStateTransitionService {
                 );
             }
 
-            // Update state
             invoice.setStatus(InvoiceStatus.OVERDUE);
 
             invoice = invoiceRepository.save(invoice);
@@ -252,11 +282,11 @@ public class InvoiceStateTransitionService {
     }
 
     // ========================
-    // EXCEPTION STATES - CANCELLATION
+    // EXCEPTION STATE - CANCELLATION
     // ========================
 
     /**
-     * Cancel invoice (multiple states → CANCELLED)
+     * Cancel invoice (any non-PAID/non-CANCELLED state → CANCELLED)
      */
     public ResponseEntity<ApiResponse<?>> cancelInvoice(String idObfuscated, InvoiceStateTransitionDTO dto) {
         log.info("Cancelling invoice: {}", idObfuscated);
@@ -275,20 +305,16 @@ public class InvoiceStateTransitionService {
                 );
             }
 
-            // Cannot cancel PAID, REFUNDED, or already CANCELLED invoices
             InvoiceStatus currentStatus = invoice.getStatus();
-            if (currentStatus == InvoiceStatus.PAID ||
-                currentStatus == InvoiceStatus.REFUNDED ||
-                currentStatus == InvoiceStatus.CANCELLED) {
+            if (currentStatus == InvoiceStatus.PAID || currentStatus == InvoiceStatus.CANCELLED) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400,
-                        String.format("Cannot cancel invoice in state %s. Use refund workflow for paid invoices.",
+                        String.format("Cannot cancel invoice in state %s.",
                             currentStatus.getDisplayName()),
                         "INVALID_STATE_TRANSITION")
                 );
             }
 
-            // Update state
             invoice.setStatus(InvoiceStatus.CANCELLED);
 
             invoice = invoiceRepository.save(invoice);
@@ -309,67 +335,9 @@ public class InvoiceStateTransitionService {
     }
 
     // ========================
-    // EXCEPTION STATES - REFUND
-    // ========================
-
-    /**
-     * Initiate refund (PAID/PARTIALLY_PAID → REFUNDED)
-     */
-    public ResponseEntity<ApiResponse<?>> initiateRefund(String idObfuscated, InvoiceStateTransitionDTO dto) {
-        log.info("Initiating refund for invoice: {}", idObfuscated);
-
-        try {
-            if (dto == null || dto.getReason() == null || dto.getReason().isBlank()) {
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Refund reason is required", "REASON_REQUIRED")
-                );
-            }
-
-            Invoice invoice = findInvoice(idObfuscated);
-            if (invoice == null) {
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(404, "Invoice not found", "INVOICE_NOT_FOUND")
-                );
-            }
-
-            // Can only refund PAID or PARTIALLY_PAID invoices
-            InvoiceStatus currentStatus = invoice.getStatus();
-            if (currentStatus != InvoiceStatus.PAID && currentStatus != InvoiceStatus.PARTIALLY_PAID) {
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400,
-                        String.format("Cannot initiate refund from state %s. Only PAID or PARTIALLY_PAID invoices can be refunded.",
-                            currentStatus.getDisplayName()),
-                        "INVALID_STATE_TRANSITION")
-                );
-            }
-
-            // Update state
-            invoice.setStatus(InvoiceStatus.REFUNDED);
-
-            invoice = invoiceRepository.save(invoice);
-            InvoiceDTO invoiceDTO = invoiceCreateService.convertToDTO(invoice);
-
-            log.info("Refund initiated for invoice {}: {}", invoice.getInvoiceCode(), dto.getReason());
-
-            return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Refund initiated successfully", invoiceDTO)
-            );
-
-        } catch (Exception e) {
-            log.error("Error initiating refund", e);
-            return ResponseEntity.internalServerError().body(
-                ApiResponse.error(500, "Failed to initiate refund", "INITIATE_REFUND_FAILED")
-            );
-        }
-    }
-
-    // ========================
     // HELPER METHODS
     // ========================
 
-    /**
-     * Find invoice by obfuscated ID
-     */
     private Invoice findInvoice(String idObfuscated) {
         try {
             Long id = idObfuscator.decodeId(idObfuscated);

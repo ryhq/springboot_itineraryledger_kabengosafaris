@@ -1,0 +1,47 @@
+[
+  {
+    "name": "safariCode",
+    "description": "Safari reference code",
+    "isRequired": true
+  },
+  {
+    "name": "safariName",
+    "description": "Safari name/title",
+    "isRequired": true
+  },
+  {
+    "name": "customerName",
+    "description": "Customer display name",
+    "isRequired": true
+  },
+  {
+    "name": "startDate",
+    "description": "Safari start date",
+    "isRequired": true
+  },
+  {
+    "name": "daysUntilStart",
+    "description": "Number of days until safari starts",
+    "isRequired": true
+  },
+  {
+    "name": "phase",
+    "description": "Current phase (Starting Soon, Imminent)",
+    "isRequired": true
+  },
+  {
+    "name": "issuesList",
+    "description": "HTML list of readiness issues found",
+    "isRequired": true
+  },
+  {
+    "name": "issueCount",
+    "description": "Total number of issues",
+    "isRequired": true
+  },
+  {
+    "name": "alertDate",
+    "description": "Date the alert was generated",
+    "isRequired": true
+  }
+]

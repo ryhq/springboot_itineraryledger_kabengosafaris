@@ -566,7 +566,7 @@ curl -X DELETE "http://localhost:4450/api/accommodation-images?ids=obfuscated_id
 
 ```properties
 # Storage path for accommodation images on the filesystem
-accommodation.image.storage.path=/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/accommodation-images/
+accommodation.image.storage.path=./data/accommodation-images/
 
 # Base URL (used for constructing full URLs)
 app.base.url=http://localhost:4450

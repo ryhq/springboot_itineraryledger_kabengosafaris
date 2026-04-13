@@ -38,6 +38,8 @@ public class PdfDocumentVariables {
             case "FULL_QUOTE" -> loadSchema("full-quote-schema.json");
             case "FULL_SAFARI" -> loadSchema("full-safari-schema.json");
             case "FULL_INVOICE" -> loadSchema("full-invoice-schema.json");
+            case "FULL_CREDIT_NOTE" -> loadSchema("full-credit-note-schema.json");
+            case "PAYMENT_RECEIPT" -> loadSchema("payment-receipt-schema.json");
             default -> "[]";
         };
     }
@@ -51,6 +53,8 @@ public class PdfDocumentVariables {
             case "FULL_QUOTE" -> "Full Safari Quote";
             case "FULL_SAFARI" -> "Full Safari Document";
             case "FULL_INVOICE" -> "Full Safari Invoice";
+            case "FULL_CREDIT_NOTE" -> "Full Credit Note";
+            case "PAYMENT_RECEIPT" -> "Payment Receipt";
             default -> documentName;
         };
     }
@@ -64,6 +68,8 @@ public class PdfDocumentVariables {
             case "FULL_QUOTE" -> "Complete quote/quotation document with itemized pricing in multiple currencies, customer information, payment terms, and validity period. Ideal for price quotations and proposals.";
             case "FULL_SAFARI" -> "Complete safari booking document with actual dates, customer information, real-time tracking (current phase, day number), operational fields (payment tracking, waiver management), and all nested data. Ideal for confirmed safari bookings and operational management.";
             case "FULL_INVOICE" -> "Complete invoice document with line items, multi-currency support, payment tracking (amounts paid, balances), tax and discount calculations, bank account details, and due dates. Ideal for billing and payment collection.";
+            case "FULL_CREDIT_NOTE" -> "Complete credit note document with credited line items, multi-currency support, original invoice reference, credit reason, and customer details. Ideal for refund and credit documentation.";
+            case "PAYMENT_RECEIPT" -> "Payment receipt document with payment amount, method, reference, invoice details, customer information, and remaining balance. Ideal for payment confirmation and record-keeping.";
             default -> "";
         };
     }
@@ -77,6 +83,8 @@ public class PdfDocumentVariables {
             case "FULL_QUOTE" -> "com.itineraryledger.kabengosafaris.Quote.DTOs.FullQuoteDTO";
             case "FULL_SAFARI" -> "com.itineraryledger.kabengosafaris.Safari.DTOs.FullSafariDTO";
             case "FULL_INVOICE" -> "com.itineraryledger.kabengosafaris.Invoice.DTOs.FullInvoiceDTO";
+            case "FULL_CREDIT_NOTE" -> "com.itineraryledger.kabengosafaris.CreditNote.DTOs.CreditNoteDTO";
+            case "PAYMENT_RECEIPT" -> "com.itineraryledger.kabengosafaris.Invoice.DTOs.PaymentReceiptDTO";
             default -> "";
         };
     }
@@ -94,6 +102,8 @@ public class PdfDocumentVariables {
             case "FULL_SAFARI" -> "safari";
             // From FullInvoiceDTO
             case "FULL_INVOICE" -> "invoice";
+            case "FULL_CREDIT_NOTE" -> "creditNote";
+            case "PAYMENT_RECEIPT" -> "receipt";
             default -> "data";
         };
     }
@@ -108,9 +118,9 @@ public class PdfDocumentVariables {
             "FULL_ITINERARY",
             "FULL_QUOTE",
             "FULL_SAFARI",
-            "FULL_INVOICE"
-            // Future document types:
-            // "BOOKING_CONFIRMATION"
+            "FULL_INVOICE",
+            "FULL_CREDIT_NOTE",
+            "PAYMENT_RECEIPT"
         };
     }
 

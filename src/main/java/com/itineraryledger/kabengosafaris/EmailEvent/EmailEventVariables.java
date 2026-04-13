@@ -40,6 +40,17 @@ public class EmailEventVariables {
             case "NEWSLETTER_SUBSCRIPTION" -> loadSchema("newsletter-subscription-schema.json");
             case "BOOKING_INQUIRY" -> loadSchema("booking-inquiry-schema.json");
             case "CONTACT_US" -> loadSchema("contact-us-schema.json");
+            case "SEND_QUOTE" -> loadSchema("quote-sent-schema.json");
+            case "SAFARI_PAYMENT_GAP" -> loadSchema("safari-payment-gap-schema.json");
+            case "SAFARI_READINESS_ALERT" -> loadSchema("safari-readiness-alert-schema.json");
+            case "SAFARI_STARTED" -> loadSchema("safari-started-schema.json");
+            case "SAFARI_COMPLETED" -> loadSchema("safari-completed-schema.json");
+            case "SAFARI_POST_TRIP_REMINDER" -> loadSchema("safari-post-trip-reminder-schema.json");
+            case "SEND_SAFARI_DETAILS" -> loadSchema("safari-details-schema.json");
+            case "SEND_SAFARI_MESSAGE" -> loadSchema("safari-customer-message-schema.json");
+            case "SEND_INVOICE" -> loadSchema("invoice-sent-schema.json");
+            case "SEND_CREDIT_NOTE" -> loadSchema("credit-note-sent-schema.json");
+            case "SEND_PAYMENT_RECEIPT" -> loadSchema("payment-receipt-sent-schema.json");
             default -> "[]";
         };
     }
@@ -56,6 +67,17 @@ public class EmailEventVariables {
             case "NEWSLETTER_SUBSCRIPTION" -> "Newsletter Subscription";
             case "BOOKING_INQUIRY" -> "Booking Inquiry";
             case "CONTACT_US" -> "Contact Us";
+            case "SEND_QUOTE" -> "Quote Sent to Customer";
+            case "SAFARI_PAYMENT_GAP" -> "Safari Payment Gap Alert";
+            case "SAFARI_READINESS_ALERT" -> "Safari Readiness Alert";
+            case "SAFARI_STARTED" -> "Safari Auto-Started";
+            case "SAFARI_COMPLETED" -> "Safari Auto-Completed";
+            case "SAFARI_POST_TRIP_REMINDER" -> "Safari Post-Trip Reminder";
+            case "SEND_SAFARI_DETAILS" -> "Safari Details to Customer";
+            case "SEND_SAFARI_MESSAGE" -> "Safari Custom Message to Customer";
+            case "SEND_INVOICE" -> "Invoice Sent to Customer";
+            case "SEND_CREDIT_NOTE" -> "Credit Note Sent to Customer";
+            case "SEND_PAYMENT_RECEIPT" -> "Payment Receipt Sent to Customer";
             default -> eventName;
         };
     }
@@ -72,6 +94,17 @@ public class EmailEventVariables {
             case "NEWSLETTER_SUBSCRIPTION" -> "Admin notification sent when someone subscribes to the newsletter. Includes subscriber details.";
             case "BOOKING_INQUIRY" -> "Admin notification sent when a new booking inquiry is submitted. Includes full inquiry details and traveler information.";
             case "CONTACT_US" -> "Admin notification sent when someone submits a message through the Contact Us form. Includes sender details and message content.";
+            case "SEND_QUOTE" -> "Email sent to a customer when a safari quote is delivered. Includes quote details, itinerary summary, pricing, validity period, and payment terms.";
+            case "SAFARI_PAYMENT_GAP" -> "Critical alert sent to operations when a safari has reached its start date but payment is not complete. Requires immediate action.";
+            case "SAFARI_READINESS_ALERT" -> "Warning sent to operations when an upcoming safari has unresolved readiness issues (missing vehicles, accommodations, pax data).";
+            case "SAFARI_STARTED" -> "Notification sent when a safari is automatically started by the system on its start date.";
+            case "SAFARI_COMPLETED" -> "Notification sent when a safari is automatically completed after its end date. Post-trip tasks may be pending.";
+            case "SAFARI_POST_TRIP_REMINDER" -> "Reminder sent for recently completed safaris with pending post-trip tasks (feedback collection, expense reconciliation).";
+            case "SEND_SAFARI_DETAILS" -> "Structured email sent to customer with full safari details: dates, itinerary summary, day-by-day overview, and special requests. Optional PDF attachment.";
+            case "SEND_SAFARI_MESSAGE" -> "Flexible freeform email sent to customer about their safari. Operator provides the subject and message body for any safari-related communication.";
+            case "SEND_INVOICE" -> "Email sent to customer when an invoice is delivered. Includes invoice details, line items summary, total amount, payment terms, and due date.";
+            case "SEND_CREDIT_NOTE" -> "Email sent to customer when a credit note is issued against an invoice. Includes credit details, credited items, total credit amount, and original invoice reference.";
+            case "SEND_PAYMENT_RECEIPT" -> "Email sent to customer when a payment is recorded against an invoice. Includes payment amount, method, reference, invoice details, and remaining balance.";
             default -> "";
         };
     }
@@ -89,7 +122,18 @@ public class EmailEventVariables {
             "BACKUP_FAILURE",
             "NEWSLETTER_SUBSCRIPTION",
             "BOOKING_INQUIRY",
-            "CONTACT_US"
+            "CONTACT_US",
+            "SEND_QUOTE",
+            "SAFARI_PAYMENT_GAP",
+            "SAFARI_READINESS_ALERT",
+            "SAFARI_STARTED",
+            "SAFARI_COMPLETED",
+            "SAFARI_POST_TRIP_REMINDER",
+            "SEND_SAFARI_DETAILS",
+            "SEND_SAFARI_MESSAGE",
+            "SEND_INVOICE",
+            "SEND_CREDIT_NOTE",
+            "SEND_PAYMENT_RECEIPT"
         };
     }
 

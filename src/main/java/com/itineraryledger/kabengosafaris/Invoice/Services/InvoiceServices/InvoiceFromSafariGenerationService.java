@@ -7,6 +7,8 @@ import com.itineraryledger.kabengosafaris.Invoice.DTOs.CreateInvoiceLineItemDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.InvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceItemType;
 import com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceLineItemServices.InvoiceLineItemCreateService;
+import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
+import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
 import com.itineraryledger.kabengosafaris.Safari.Repository.SafariRepository;
@@ -44,6 +46,7 @@ public class InvoiceFromSafariGenerationService {
     private final InvoiceCreateService invoiceCreateService;
     private final InvoiceLineItemCreateService invoiceLineItemCreateService;
     private final SafariRepository safariRepository;
+    private final QuoteRepository quoteRepository;
     private final IdObfuscator idObfuscator;
 
     @Autowired
@@ -52,12 +55,14 @@ public class InvoiceFromSafariGenerationService {
             InvoiceCreateService invoiceCreateService,
             InvoiceLineItemCreateService invoiceLineItemCreateService,
             SafariRepository safariRepository,
+            QuoteRepository quoteRepository,
             IdObfuscator idObfuscator
     ) {
         this.costEstimationService = costEstimationService;
         this.invoiceCreateService = invoiceCreateService;
         this.invoiceLineItemCreateService = invoiceLineItemCreateService;
         this.safariRepository = safariRepository;
+        this.quoteRepository = quoteRepository;
         this.idObfuscator = idObfuscator;
     }
 
@@ -122,6 +127,19 @@ public class InvoiceFromSafariGenerationService {
             // 3. Verify safari has customer and log it
             log.info("Customer derived from safari: {}", safari.getCustomer().getDisplayName());
 
+            // 3b. Find the latest quote for this safari's itinerary + customer
+            // to use as defaults for accounting fields (tax, discount, payment terms, notes)
+            Quote latestQuote = null;
+            if (safari.getItinerary() != null) {
+                List<Quote> quotes = quoteRepository.findByItineraryAndCustomerOrdered(
+                    safari.getItinerary().getId(), safari.getCustomer().getId());
+                if (!quotes.isEmpty()) {
+                    latestQuote = quotes.get(0);
+                    log.info("Found latest quote {} (v{}, status={}) for accounting defaults",
+                        latestQuote.getQuoteCode(), latestQuote.getVersion(), latestQuote.getStatus());
+                }
+            }
+
             // 4. Get cost estimation from safari
             ResponseEntity<ApiResponse<?>> costResponse =
                     costEstimationService.estimateCosts(dto.getSafariId(), useStoRates, currency);
@@ -140,11 +158,12 @@ public class InvoiceFromSafariGenerationService {
                 );
             }
 
-            // 5. Create the Invoice entity
+            // 5. Create the Invoice entity (quote accounting fields used as defaults when not explicitly provided)
             CreateInvoiceDTO createInvoiceDTO = buildCreateInvoiceDTO(
                     dto.getSafariId(),
                     safari,
                     costEstimation,
+                    latestQuote,
                     dto.getTitle(),
                     dto.getDescription(),
                     dto.getIssueDate(),
@@ -192,12 +211,17 @@ public class InvoiceFromSafariGenerationService {
     }
 
     /**
-     * Build CreateInvoiceDTO from safari and cost estimation
+     * Build CreateInvoiceDTO from safari and cost estimation.
+     * When accounting fields (tax, discount, notes, payment terms) are not explicitly provided,
+     * falls back to values from the latest quote for this safari's itinerary + customer.
+     *
+     * @param latestQuote The latest quote (nullable) — used as fallback for accounting defaults
      */
     private CreateInvoiceDTO buildCreateInvoiceDTO(
             String safariIdObfuscated,
             Safari safari,
             ItineraryCostEstimationDTO costEstimation,
+            Quote latestQuote,
             String titleOverride,
             String descriptionOverride,
             LocalDate issueDate,
@@ -224,22 +248,52 @@ public class InvoiceFromSafariGenerationService {
 
         dto.setSafariId(safariIdObfuscated);
 
-        // Invoice dates
+        // Invoice dates — use quote's fullPaymentDueDate as dueDate fallback
         dto.setIssueDate(issueDate);
-        dto.setDueDate(dueDate);
+        if (dueDate != null) {
+            dto.setDueDate(dueDate);
+        } else if (latestQuote != null && latestQuote.getFullPaymentDueDate() != null) {
+            dto.setDueDate(latestQuote.getFullPaymentDueDate());
+        }
 
-        // Pricing details
-        dto.setTaxPercentage(taxPercentage); // Can be null
+        // Pricing details — fall back to quote values when not explicitly provided
+        if (taxPercentage != null) {
+            dto.setTaxPercentage(taxPercentage);
+        } else if (latestQuote != null && latestQuote.getTaxPercentage() != null) {
+            dto.setTaxPercentage(latestQuote.getTaxPercentage());
+            log.debug("Using tax percentage {}% from quote {}", latestQuote.getTaxPercentage(), latestQuote.getQuoteCode());
+        }
 
         if (discountPercentage != null) {
             dto.setDiscountPercentage(discountPercentage);
             dto.setDiscountReason(discountReason);
+        } else if (latestQuote != null && latestQuote.getDiscountPercentage() != null) {
+            dto.setDiscountPercentage(latestQuote.getDiscountPercentage());
+            dto.setDiscountReason(latestQuote.getDiscountReason());
+            log.debug("Using discount {}% from quote {}", latestQuote.getDiscountPercentage(), latestQuote.getQuoteCode());
         }
 
-        // Notes
-        dto.setInternalNotes(internalNotes);
-        dto.setCustomerNotes(customerNotes);
-        dto.setPaymentTerms(paymentTerms);
+        // Notes — fall back to quote values
+        dto.setInternalNotes(internalNotes != null ? internalNotes
+                : (latestQuote != null ? latestQuote.getInternalNotes() : null));
+        dto.setCustomerNotes(customerNotes != null ? customerNotes
+                : (latestQuote != null ? latestQuote.getCustomerNotes() : null));
+
+        // Payment terms — build from quote deposit/payment info if not provided
+        if (paymentTerms != null && !paymentTerms.isBlank()) {
+            dto.setPaymentTerms(paymentTerms);
+        } else if (latestQuote != null && latestQuote.getDepositPercentage() != null) {
+            StringBuilder terms = new StringBuilder();
+            terms.append(latestQuote.getDepositPercentage()).append("% deposit required");
+            if (latestQuote.getDepositDueDate() != null) {
+                terms.append(" by ").append(latestQuote.getDepositDueDate());
+            }
+            if (latestQuote.getFullPaymentDueDate() != null) {
+                terms.append(". Full payment due by ").append(latestQuote.getFullPaymentDueDate());
+            }
+            dto.setPaymentTerms(terms.toString());
+            log.debug("Built payment terms from quote {}: {}", latestQuote.getQuoteCode(), terms);
+        }
 
         // Default: active
         dto.setIsActive(true);

@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Service for rendering email templates by replacing variable placeholders with actual values.
@@ -73,6 +75,53 @@ public class EmailTemplateRenderer {
     }
 
     /**
+     * Render a specific template (by ID) with actual variable values.
+     * The template must belong to the specified event and be enabled.
+     *
+     * @param eventName The email event name (e.g., "SEND_QUOTE")
+     * @param templateId The specific template database ID
+     * @param variables Map of variable names to their values
+     * @return Rendered HTML with all placeholders replaced
+     */
+    public String renderTemplate(String eventName, Long templateId, Map<String, String> variables) {
+        log.debug("Rendering specific template ID {} for event: {}", templateId, eventName);
+
+        // 1. Get the email event
+        EmailEvent event = emailEventRepository.findByName(eventName)
+            .orElseThrow(() -> new IllegalArgumentException("Email event not found: " + eventName));
+
+        if (!event.getEnabled()) {
+            throw new IllegalStateException("Email event is disabled: " + eventName);
+        }
+
+        // 2. Get the specific template and validate it belongs to this event
+        EmailTemplate template = emailTemplateRepository.findById(templateId)
+            .orElseThrow(() -> new IllegalArgumentException("Email template not found with ID: " + templateId));
+
+        if (!template.getEmailEvent().getId().equals(event.getId())) {
+            throw new IllegalArgumentException(
+                "Template does not belong to event '" + eventName + "'. It belongs to '" + template.getEmailEvent().getName() + "'"
+            );
+        }
+
+        if (!template.getEnabled()) {
+            throw new IllegalStateException("Email template is disabled: " + template.getName());
+        }
+
+        // 3. Load template content from file
+        String htmlContent = emailTemplateService.readTemplateFile(template.getFileName());
+
+        // 4. Validate required variables
+        validateRequiredVariables(event.getVariablesJson(), variables);
+
+        // 5. Replace placeholders
+        String renderedHtml = replacePlaceholders(htmlContent, variables, event.getVariablesJson());
+
+        log.info("Successfully rendered specific template '{}' for event: {}", template.getName(), eventName);
+        return renderedHtml;
+    }
+
+    /**
      * Get the default enabled template for an event
      */
     private EmailTemplate getDefaultEnabledTemplate(Long eventId) {
@@ -105,18 +154,42 @@ public class EmailTemplateRenderer {
                 new TypeReference<List<Map<String, Object>>>() {}
             );
 
-            // Replace each variable placeholder
+            // First pass: process conditional sections {{#varName}}...{{/varName}}
+            // If the variable has a non-blank value, keep the inner content; otherwise remove the entire block.
             for (Map<String, Object> varDef : varDefs) {
                 String varName = (String) varDef.get("name");
-                String placeholder = "{{" + varName + "}}";
 
-                // Get actual value from provided variables, or use default value
                 String value = providedVariables.get(varName);
                 if (value == null && varDef.containsKey("defaultValue")) {
                     value = (String) varDef.get("defaultValue");
                 }
 
-                // Replace placeholder (if value is still null, replace with empty string)
+                // Match {{#varName}} ... {{/varName}} (dotall so it spans newlines)
+                Pattern sectionPattern = Pattern.compile(
+                    "\\{\\{#" + Pattern.quote(varName) + "\\}\\}(.*?)\\{\\{/" + Pattern.quote(varName) + "\\}\\}",
+                    Pattern.DOTALL
+                );
+                Matcher matcher = sectionPattern.matcher(result);
+
+                if (value != null && !value.isBlank()) {
+                    // Keep the inner content, remove the section tags
+                    result = matcher.replaceAll("$1");
+                } else {
+                    // Remove the entire block
+                    result = matcher.replaceAll("");
+                }
+            }
+
+            // Second pass: replace simple {{variableName}} placeholders
+            for (Map<String, Object> varDef : varDefs) {
+                String varName = (String) varDef.get("name");
+                String placeholder = "{{" + varName + "}}";
+
+                String value = providedVariables.get(varName);
+                if (value == null && varDef.containsKey("defaultValue")) {
+                    value = (String) varDef.get("defaultValue");
+                }
+
                 if (value != null) {
                     result = result.replace(placeholder, value);
                 } else {

@@ -22,7 +22,7 @@ import java.security.NoSuchAlgorithmException;
 @Slf4j
 public class TestimonyImageStorageService {
 
-    @Value("${testimony.image.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/testimony-images/}")
+    @Value("${testimony.image.storage.path:./data/testimony-images/}")
     private String storagePath;
 
     @Value("${app.base.url:http://localhost:4450}")

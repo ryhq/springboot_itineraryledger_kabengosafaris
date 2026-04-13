@@ -41,6 +41,7 @@ public class CustomerDTO {
     // ========================
 
     private String title;
+    private String salutation;
     private String firstName;
     private String lastName;
     private String companyName;

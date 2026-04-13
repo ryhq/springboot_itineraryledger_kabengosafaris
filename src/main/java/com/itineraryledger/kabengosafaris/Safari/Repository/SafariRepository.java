@@ -65,6 +65,36 @@ public interface SafariRepository extends JpaRepository<Safari, Long>, JpaSpecif
      */
     long countByStartDateLessThanEqualAndEndDateGreaterThanEqual(LocalDate startDate, LocalDate endDate);
 
+    /**
+     * Find safaris that should auto-start: FULLY_PAID with startDate <= today
+     */
+    @Query("SELECT s FROM Safari s WHERE s.state = 'FULLY_PAID' AND s.startDate <= :today")
+    List<Safari> findReadyToStart(@Param("today") LocalDate today);
+
+    /**
+     * Find safaris that should auto-complete: IN_PROGRESS with endDate < today
+     */
+    @Query("SELECT s FROM Safari s WHERE s.state = 'IN_PROGRESS' AND s.endDate < :today")
+    List<Safari> findReadyToComplete(@Param("today") LocalDate today);
+
+    /**
+     * Find safaris that should auto-close: COMPLETED with stateChangedAt older than given date
+     */
+    @Query("SELECT s FROM Safari s WHERE s.state = 'COMPLETED' AND s.stateChangedAt < :cutoff")
+    List<Safari> findReadyToClose(@Param("cutoff") java.time.LocalDateTime cutoff);
+
+    /**
+     * Find safaris with payment gap: NOT FULLY_PAID but startDate <= today (should have been paid)
+     */
+    @Query("SELECT s FROM Safari s WHERE s.startDate <= :today AND s.state IN :unpaidStates AND s.isActive = true")
+    List<Safari> findPaymentGapSafaris(@Param("today") LocalDate today, @Param("unpaidStates") List<SafariState> unpaidStates);
+
+    /**
+     * Find upcoming safaris in a specific phase window for alerts
+     */
+    @Query("SELECT s FROM Safari s WHERE s.startDate BETWEEN :fromDate AND :toDate AND s.state IN :states AND s.isActive = true")
+    List<Safari> findUpcomingInWindow(@Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate, @Param("states") List<SafariState> states);
+
     // Navigation queries for next/previous
     @Query("SELECT e.id FROM Safari e WHERE e.id > :currentId ORDER BY e.id ASC LIMIT 1")
     Optional<Long> findNextId(@Param("currentId") Long currentId);

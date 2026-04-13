@@ -11,6 +11,8 @@ import com.itineraryledger.kabengosafaris.Safari.Services.SafariFullGetService;
 import com.itineraryledger.kabengosafaris.Safari.Services.SafariUpdateService;
 import com.itineraryledger.kabengosafaris.Safari.Services.SafariDeleteService;
 import com.itineraryledger.kabengosafaris.Safari.Services.SafariCostEstimationService;
+import com.itineraryledger.kabengosafaris.Safari.Services.SafariCustomerEmailService;
+import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -41,6 +43,8 @@ public class SafariController {
     private final SafariUpdateService safariUpdateService;
     private final SafariDeleteService safariDeleteService;
     private final SafariCostEstimationService costEstimationService;
+    private final SafariCustomerEmailService customerEmailService;
+    private final IdObfuscator idObfuscator;
 
     @Autowired
     public SafariController(
@@ -49,7 +53,9 @@ public class SafariController {
             SafariFullGetService safariFullGetService,
             SafariUpdateService safariUpdateService,
             SafariDeleteService safariDeleteService,
-            SafariCostEstimationService costEstimationService
+            SafariCostEstimationService costEstimationService,
+            SafariCustomerEmailService customerEmailService,
+            IdObfuscator idObfuscator
     ) {
         this.safariCreateService = safariCreateService;
         this.safariGetService = safariGetService;
@@ -57,6 +63,8 @@ public class SafariController {
         this.safariUpdateService = safariUpdateService;
         this.safariDeleteService = safariDeleteService;
         this.costEstimationService = costEstimationService;
+        this.customerEmailService = customerEmailService;
+        this.idObfuscator = idObfuscator;
     }
 
     // ========================
@@ -232,5 +240,59 @@ public class SafariController {
         log.info("GET /api/safaris/{}/estimate-cost - Estimating costs (useStoRate: {}, currency: {})",
             id, useStoRate, currency);
         return costEstimationService.estimateCosts(id, useStoRate, currency);
+    }
+
+    // ========================
+    // CUSTOMER EMAIL ENDPOINTS
+    // ========================
+
+    /**
+     * Send safari details email to the customer.
+     * Auto-populates from safari data. Optional PDF attachment and translation.
+     *
+     * POST /api/safaris/{id}/send-details
+     */
+    @PostMapping("/{id}/send-details")
+    @PreAuthorize("hasAuthority('PERM_READ_SAFARI')")
+    public ResponseEntity<ApiResponse<?>> sendSafariDetails(
+        @PathVariable String id,
+        @RequestParam(required = false) String language,
+        @RequestParam(required = false) String emailTemplateId,
+        @RequestParam(required = false) String pdfTemplateId,
+        @RequestParam(defaultValue = "true") boolean attachPdf
+    ) {
+        log.info("POST /api/safaris/{}/send-details (language: {}, attachPdf: {})", id, language, attachPdf);
+
+        Long decodedEmailTemplateId = null;
+        if (emailTemplateId != null && !emailTemplateId.isBlank()) {
+            decodedEmailTemplateId = idObfuscator.decodeId(emailTemplateId);
+        }
+
+        return customerEmailService.sendSafariDetails(id, language, decodedEmailTemplateId, pdfTemplateId, attachPdf);
+    }
+
+    /**
+     * Send a freeform message to the customer about their safari.
+     * Operator provides subject and message body.
+     *
+     * POST /api/safaris/{id}/send-message
+     */
+    @PostMapping("/{id}/send-message")
+    @PreAuthorize("hasAuthority('PERM_READ_SAFARI')")
+    public ResponseEntity<ApiResponse<?>> sendCustomerMessage(
+        @PathVariable String id,
+        @RequestParam String messageSubject,
+        @RequestParam String messageBody,
+        @RequestParam(required = false) String language,
+        @RequestParam(required = false) String emailTemplateId
+    ) {
+        log.info("POST /api/safaris/{}/send-message (subject: {})", id, messageSubject);
+
+        Long decodedEmailTemplateId = null;
+        if (emailTemplateId != null && !emailTemplateId.isBlank()) {
+            decodedEmailTemplateId = idObfuscator.decodeId(emailTemplateId);
+        }
+
+        return customerEmailService.sendCustomerMessage(id, messageSubject, messageBody, language, decodedEmailTemplateId);
     }
 }

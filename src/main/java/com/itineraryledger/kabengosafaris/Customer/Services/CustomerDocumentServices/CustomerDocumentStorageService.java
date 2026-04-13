@@ -24,7 +24,7 @@ import java.security.NoSuchAlgorithmException;
 @Slf4j
 public class CustomerDocumentStorageService {
 
-    @Value("${customer.document.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/customer-documents/}")
+    @Value("${customer.document.storage.path:./data/customer-documents/}")
     private String storagePath;
 
     @Value("${app.base.url:http://localhost:4450}")
@@ -155,6 +155,38 @@ public class CustomerDocumentStorageService {
 
     public String getBaseUrl() {
         return appBaseUrl;
+    }
+
+    /**
+     * Save raw byte content (e.g., system-generated PDF) to the storage directory.
+     *
+     * @param content The file bytes
+     * @param originalFileName The original filename (used for hashing and extension)
+     * @return The generated filename on disk, or null on failure
+     */
+    public String saveDocumentBytes(byte[] content, String originalFileName) {
+        try {
+            initializeStorageDirectory();
+
+            if (content == null || content.length == 0) {
+                log.warn("Empty content provided for customer document save");
+                return null;
+            }
+
+            String extension = getExtension(originalFileName != null ? originalFileName : "document.pdf");
+            String generatedFilename = generateHashedFilename(
+                originalFileName != null ? originalFileName : "generated", extension);
+
+            Path targetPath = Paths.get(storagePath, generatedFilename);
+            Files.write(targetPath, content);
+
+            log.info("Customer document bytes saved successfully: {} ({} bytes)", generatedFilename, content.length);
+            return generatedFilename;
+
+        } catch (IOException e) {
+            log.error("Failed to save customer document bytes: {}", originalFileName, e);
+            return null;
+        }
     }
 
     public byte[] readDocumentBytes(String fileName) {

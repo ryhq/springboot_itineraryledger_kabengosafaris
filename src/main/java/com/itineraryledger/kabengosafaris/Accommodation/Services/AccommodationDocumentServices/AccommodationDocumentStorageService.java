@@ -31,7 +31,7 @@ import java.security.NoSuchAlgorithmException;
 @Slf4j
 public class AccommodationDocumentStorageService {
 
-    @Value("${accommodation.document.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/accommodation-documents/}")
+    @Value("${accommodation.document.storage.path:./data/accommodation-documents/}")
     private String storagePath;
 
     @Value("${app.base.url:http://localhost:4450}")

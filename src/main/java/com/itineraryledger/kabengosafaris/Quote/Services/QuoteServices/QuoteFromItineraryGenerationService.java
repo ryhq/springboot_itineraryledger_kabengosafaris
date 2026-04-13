@@ -141,6 +141,7 @@ public class QuoteFromItineraryGenerationService {
                     customerIdObfuscated,
                     itinerary,
                     costEstimation,
+                    startDate,
                     validityDays != null ? validityDays : 30,
                     useRackRates,
                     taxPercentage,
@@ -190,6 +191,7 @@ public class QuoteFromItineraryGenerationService {
             String customerIdObfuscated,
             Itinerary itinerary,
             ItineraryCostEstimationDTO costEstimation,
+            LocalDate safariStartDate,
             int validityDays,
             boolean useStoRate,
             BigDecimal taxPercentage,
@@ -203,6 +205,9 @@ public class QuoteFromItineraryGenerationService {
         dto.setDescription(itinerary.getDescription());
         dto.setItineraryId(itineraryIdObfuscated);
         dto.setCustomerId(customerIdObfuscated);
+
+        // Safari start date (the date used for cost estimation / season determination)
+        dto.setSafariStartDate(safariStartDate != null ? safariStartDate : LocalDate.now());
 
         // Validity dates
         LocalDate today = LocalDate.now();

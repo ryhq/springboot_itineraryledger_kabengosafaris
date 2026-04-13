@@ -288,5 +288,5 @@ curl -X POST "http://localhost:4450/api/park-activity-images/upload" \
 
 Images are stored at the configured path:
 ```
-${park-activity.image.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/park-activity-images/}
+${park-activity.image.storage.path:./data/park-activity-images/}
 ```

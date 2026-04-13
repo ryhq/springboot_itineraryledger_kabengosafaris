@@ -1,0 +1,118 @@
+[
+  {
+    "name": "customerName",
+    "description": "Customer's display name",
+    "isRequired": true
+  },
+  {
+    "name": "quoteCode",
+    "description": "Auto-generated quote reference code (e.g., QT-1042-0426-1)",
+    "isRequired": true
+  },
+  {
+    "name": "quoteTitle",
+    "description": "Title of the quote",
+    "isRequired": true
+  },
+  {
+    "name": "safariStartDate",
+    "description": "Safari start date used for pricing/season (e.g., June 15, 2026)",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "itineraryName",
+    "description": "Name of the linked itinerary",
+    "isRequired": false
+  },
+  {
+    "name": "itineraryCode",
+    "description": "Code of the linked itinerary (e.g., ITI-7D6N-1007)",
+    "isRequired": false
+  },
+  {
+    "name": "tripType",
+    "description": "Type of trip (e.g., Private, Group, Honeymoon)",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "totalDays",
+    "description": "Total days of the itinerary",
+    "isRequired": false
+  },
+  {
+    "name": "totalNights",
+    "description": "Total nights of the itinerary",
+    "isRequired": false
+  },
+  {
+    "name": "startLocation",
+    "description": "Safari start location (e.g., Arusha)",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "endLocation",
+    "description": "Safari end location (e.g., Arusha)",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "grandTotal",
+    "description": "Grand total amount with currency (e.g., USD 3,500.00)",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "itemsSummary",
+    "description": "HTML summary of quote line items (rendered as a table)",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "validFrom",
+    "description": "Quote validity start date (e.g., April 08, 2026)",
+    "isRequired": false
+  },
+  {
+    "name": "validTo",
+    "description": "Quote validity end date (e.g., May 08, 2026)",
+    "isRequired": false
+  },
+  {
+    "name": "depositPercentage",
+    "description": "Deposit percentage required (e.g., 30%)",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "depositDueDate",
+    "description": "Deposit payment due date",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "fullPaymentDueDate",
+    "description": "Full payment due date",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "customerNotes",
+    "description": "Notes visible to the customer",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "sentDate",
+    "description": "Date the quote was sent (e.g., April 08, 2026)",
+    "isRequired": true
+  },
+  {
+    "name": "companyEmail",
+    "description": "Company email address for customer to reply to",
+    "isRequired": false,
+    "defaultValue": "info@kabengosafaris.com"
+  }
+]

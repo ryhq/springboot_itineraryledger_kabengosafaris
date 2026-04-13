@@ -24,7 +24,7 @@ import java.security.NoSuchAlgorithmException;
 @Slf4j
 public class ParkDocumentStorageService {
 
-    @Value("${park.document.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/park-documents/}")
+    @Value("${park.document.storage.path:./data/park-documents/}")
     private String storagePath;
 
     @Value("${app.base.url:http://localhost:4450}")

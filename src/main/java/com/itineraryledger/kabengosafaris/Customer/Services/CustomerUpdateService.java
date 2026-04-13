@@ -66,6 +66,9 @@ public class CustomerUpdateService {
             if (updateDTO.getTitle() != null) {
                 customer.setTitle(updateDTO.getTitle());
             }
+            if (updateDTO.getSalutation() != null) {
+                customer.setSalutation(updateDTO.getSalutation());
+            }
             if (updateDTO.getFirstName() != null) {
                 customer.setFirstName(updateDTO.getFirstName());
             }
@@ -207,6 +210,7 @@ public class CustomerUpdateService {
             .customerTypeDisplayName(customer.getCustomerType().getDisplayName())
             .customerTypeDescription(customer.getCustomerType().getDescription())
             .title(customer.getTitle())
+            .salutation(customer.getSalutation())
             .firstName(customer.getFirstName())
             .lastName(customer.getLastName())
             .companyName(customer.getCompanyName())

@@ -252,6 +252,7 @@ public class CustomerGetService {
             .customerTypeDisplayName(customer.getCustomerType().getDisplayName())
             .customerTypeDescription(customer.getCustomerType().getDescription())
             .title(customer.getTitle())
+            .salutation(customer.getSalutation())
             .firstName(customer.getFirstName())
             .lastName(customer.getLastName())
             .companyName(customer.getCompanyName())

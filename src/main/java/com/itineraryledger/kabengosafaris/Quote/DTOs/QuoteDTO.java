@@ -59,6 +59,7 @@ public class QuoteDTO {
     // Workflow
     private QuoteStatus status;
     private String statusDisplayName;
+    private LocalDate safariStartDate;
     private LocalDate sentDate;
     private LocalDate validFrom;
     private LocalDate validTo;

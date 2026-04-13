@@ -44,6 +44,7 @@ public class InvoiceGetService {
 
     private final InvoiceRepository invoiceRepository;
     private final IdObfuscator idObfuscator;
+    private final InvoicePaymentAggregationService paymentAggregationService;
 
     /**
      * Get a single invoice by obfuscated ID
@@ -350,8 +351,8 @@ public class InvoiceGetService {
             .taxes(invoice.getTaxes())
             .discounts(invoice.getDiscounts())
             .grandTotals(invoice.getGrandTotals())
-            .amountsPaid(invoice.getAmountsPaid())
-            .balances(invoice.getBalances())
+            .amountsPaid(paymentAggregationService.computeAmountsPaid(invoice))
+            .balances(paymentAggregationService.computeBalances(invoice))
             .taxPercentage(invoice.getTaxPercentage())
             .discountPercentage(invoice.getDiscountPercentage())
             .discountReason(invoice.getDiscountReason())

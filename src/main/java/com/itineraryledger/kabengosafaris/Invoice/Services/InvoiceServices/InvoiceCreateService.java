@@ -40,6 +40,7 @@ public class InvoiceCreateService {
     private final UserRepository userRepository;
     private final IdObfuscator idObfuscator;
     private final InvoiceTotalsCalculationService totalsCalculationService;
+    private final InvoicePaymentAggregationService paymentAggregationService;
 
     @AuditLogAnnotation(
         action = "CREATE_INVOICE",
@@ -71,6 +72,15 @@ public class InvoiceCreateService {
                 log.warn("Failed to decode safari ID: {}", createDTO.getSafariId(), e);
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400, "Invalid safari ID", "INVALID_SAFARI_ID")
+                );
+            }
+
+            // One invoice per safari — reject if one already exists
+            if (invoiceRepository.existsBySafariId(safari.getId())) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400,
+                        "An invoice already exists for this safari. Each safari can only have one invoice.",
+                        "INVOICE_ALREADY_EXISTS")
                 );
             }
 
@@ -108,8 +118,6 @@ public class InvoiceCreateService {
                 .taxes(new ArrayList<>())
                 .discounts(new ArrayList<>())
                 .grandTotals(new ArrayList<>())
-                .amountsPaid(new ArrayList<>())
-                .balances(new ArrayList<>())
                 .taxPercentage(createDTO.getTaxPercentage())
                 .discountPercentage(createDTO.getDiscountPercentage())
                 .discountReason(createDTO.getDiscountReason())
@@ -169,8 +177,8 @@ public class InvoiceCreateService {
             .taxes(invoice.getTaxes())
             .discounts(invoice.getDiscounts())
             .grandTotals(invoice.getGrandTotals())
-            .amountsPaid(invoice.getAmountsPaid())
-            .balances(invoice.getBalances())
+            .amountsPaid(paymentAggregationService.computeAmountsPaid(invoice))
+            .balances(paymentAggregationService.computeBalances(invoice))
             .taxPercentage(invoice.getTaxPercentage())
             .discountPercentage(invoice.getDiscountPercentage())
             .discountReason(invoice.getDiscountReason())

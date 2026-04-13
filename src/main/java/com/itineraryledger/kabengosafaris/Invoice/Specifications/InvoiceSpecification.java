@@ -96,7 +96,7 @@ public class InvoiceSpecification {
             return cb.and(
                 cb.lessThan(root.get("dueDate"), today),
                 cb.notEqual(root.get("status"), InvoiceStatus.PAID),
-                cb.notEqual(root.get("status"), InvoiceStatus.REFUNDED)
+                cb.notEqual(root.get("status"), InvoiceStatus.CANCELLED)
             );
         };
     }
@@ -140,7 +140,7 @@ public class InvoiceSpecification {
     public static Specification<Invoice> byUnpaidStatuses() {
         return (root, query, cb) -> cb.in(root.get("status"))
             .value(InvoiceStatus.SENT)
-            .value(InvoiceStatus.VIEWED)
+            .value(InvoiceStatus.PARTIALLY_PAID)
             .value(InvoiceStatus.OVERDUE);
     }
 
@@ -151,8 +151,6 @@ public class InvoiceSpecification {
     }
 
     public static Specification<Invoice> byClosedStatuses() {
-        return (root, query, cb) -> cb.in(root.get("status"))
-            .value(InvoiceStatus.CANCELLED)
-            .value(InvoiceStatus.REFUNDED);
+        return (root, query, cb) -> cb.equal(root.get("status"), InvoiceStatus.CANCELLED);
     }
 }

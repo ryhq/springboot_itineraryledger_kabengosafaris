@@ -1,0 +1,87 @@
+[
+  {
+    "name": "customerName",
+    "description": "Customer display name",
+    "isRequired": true
+  },
+  {
+    "name": "invoiceCode",
+    "description": "Invoice reference code (e.g., INV-000101)",
+    "isRequired": true
+  },
+  {
+    "name": "invoiceTitle",
+    "description": "Invoice title",
+    "isRequired": true
+  },
+  {
+    "name": "paymentAmount",
+    "description": "Payment amount with currency (e.g., USD 1,500.00)",
+    "isRequired": true
+  },
+  {
+    "name": "paymentDate",
+    "description": "Date payment was made (e.g., April 10, 2026)",
+    "isRequired": true
+  },
+  {
+    "name": "paymentMethod",
+    "description": "Payment method used (e.g., Bank Transfer, Credit Card)",
+    "isRequired": true
+  },
+  {
+    "name": "paymentReference",
+    "description": "Payment reference or transaction ID",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "grandTotal",
+    "description": "Invoice grand total with currency (e.g., USD 3,500.00)",
+    "isRequired": true
+  },
+  {
+    "name": "totalPaid",
+    "description": "Total amount paid so far (e.g., USD 2,000.00)",
+    "isRequired": true
+  },
+  {
+    "name": "balanceRemaining",
+    "description": "Remaining balance (e.g., USD 1,500.00)",
+    "isRequired": true
+  },
+  {
+    "name": "paymentStatus",
+    "description": "Current invoice payment status (e.g., Partially Paid, Paid)",
+    "isRequired": true
+  },
+  {
+    "name": "safariName",
+    "description": "Safari name",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "safariCode",
+    "description": "Safari code",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "paymentNotes",
+    "description": "Notes about this payment",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "sentDate",
+    "description": "Date the receipt email was sent (e.g., April 10, 2026)",
+    "isRequired": true
+  },
+  {
+    "name": "companyEmail",
+    "description": "Company contact email address",
+    "isRequired": false,
+    "defaultValue": "info@kabengosafaris.com"
+  }
+]

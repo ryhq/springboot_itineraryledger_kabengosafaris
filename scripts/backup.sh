@@ -35,7 +35,7 @@ DB_NAME="${DB_NAME:-springboot_itineraryledger_kabengosafaris}"
 DB_USER="${DB_USER:-root}"
 DB_PASSWORD="${DB_PASSWORD:-}"
 
-FILES_BASE_PATH="${FILES_BASE_PATH:-/opt/lampp/htdocs/kabengosafaris/ItineraryLedger}"
+FILES_BASE_PATH="${FILES_BASE_PATH:-./data/}"
 BACKUP_BASE_PATH="${BACKUP_BASE_PATH:-/opt/lampp/htdocs/kabengosafaris/backups}"
 
 RETENTION_DAYS="${RETENTION_DAYS:-7}"

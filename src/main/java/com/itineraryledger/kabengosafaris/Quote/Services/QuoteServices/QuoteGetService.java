@@ -371,6 +371,7 @@ public class QuoteGetService {
             .discountReason(quote.getDiscountReason())
             .version(quote.getVersion())
             .status(quote.getStatus())
+            .safariStartDate(quote.getSafariStartDate())
             .sentDate(quote.getSentDate())
             .validFrom(quote.getValidFrom())
             .validTo(quote.getValidTo())

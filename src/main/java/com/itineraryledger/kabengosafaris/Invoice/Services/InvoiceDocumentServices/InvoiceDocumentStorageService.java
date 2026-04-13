@@ -24,7 +24,7 @@ import java.security.NoSuchAlgorithmException;
 @Slf4j
 public class InvoiceDocumentStorageService {
 
-    @Value("${invoice.document.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/invoice-documents/}")
+    @Value("${invoice.document.storage.path:./data/invoice-documents/}")
     private String storagePath;
 
     @Value("${app.base.url:http://localhost:4450}")

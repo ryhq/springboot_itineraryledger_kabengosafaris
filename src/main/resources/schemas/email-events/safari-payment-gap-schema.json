@@ -1,0 +1,47 @@
+[
+  {
+    "name": "safariCode",
+    "description": "Safari reference code (e.g., SAF-7D6N-1007)",
+    "isRequired": true
+  },
+  {
+    "name": "safariName",
+    "description": "Safari name/title",
+    "isRequired": true
+  },
+  {
+    "name": "customerName",
+    "description": "Customer display name",
+    "isRequired": true
+  },
+  {
+    "name": "startDate",
+    "description": "Safari start date (e.g., April 09, 2026)",
+    "isRequired": true
+  },
+  {
+    "name": "endDate",
+    "description": "Safari end date",
+    "isRequired": true
+  },
+  {
+    "name": "currentState",
+    "description": "Current safari state (e.g., Pending Payment)",
+    "isRequired": true
+  },
+  {
+    "name": "daysOverdue",
+    "description": "Number of days past start date without full payment",
+    "isRequired": true
+  },
+  {
+    "name": "totalDays",
+    "description": "Total safari days",
+    "isRequired": false
+  },
+  {
+    "name": "alertDate",
+    "description": "Date the alert was generated",
+    "isRequired": true
+  }
+]

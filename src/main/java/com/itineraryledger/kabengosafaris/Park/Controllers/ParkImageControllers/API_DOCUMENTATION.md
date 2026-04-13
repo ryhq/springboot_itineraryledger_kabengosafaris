@@ -464,7 +464,7 @@ Images are validated against the following criteria (configurable via FileSettin
 
 Images are stored at the configured path:
 ```
-${park.image.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/park-images/}
+${park.image.storage.path:./data/park-images/}
 ```
 
 Filenames are generated using SHA-256 hash + timestamp to ensure uniqueness and prevent conflicts.

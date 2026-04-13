@@ -2,6 +2,9 @@ package com.itineraryledger.kabengosafaris.Safari.Services;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLog;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogService;
+import com.itineraryledger.kabengosafaris.Invoice.DTOs.CreateInvoiceFromSafariDTO;
+import com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceRepository;
+import com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceServices.InvoiceFromSafariGenerationService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Safari.DTOs.SafariDTO;
 import com.itineraryledger.kabengosafaris.Safari.DTOs.SafariStateTransitionDTO;
@@ -41,16 +44,22 @@ public class SafariStateTransitionService {
     private final SafariRepository safariRepository;
     private final IdObfuscator idObfuscator;
     private final AuditLogService auditLogService;
+    private final InvoiceFromSafariGenerationService invoiceFromSafariGenerationService;
+    private final InvoiceRepository invoiceRepository;
 
     @Autowired
     public SafariStateTransitionService(
             SafariRepository safariRepository,
             IdObfuscator idObfuscator,
-            AuditLogService auditLogService
+            AuditLogService auditLogService,
+            InvoiceFromSafariGenerationService invoiceFromSafariGenerationService,
+            InvoiceRepository invoiceRepository
     ) {
         this.safariRepository = safariRepository;
         this.idObfuscator = idObfuscator;
         this.auditLogService = auditLogService;
+        this.invoiceFromSafariGenerationService = invoiceFromSafariGenerationService;
+        this.invoiceRepository = invoiceRepository;
     }
 
     // ========================
@@ -184,8 +193,118 @@ public class SafariStateTransitionService {
     }
 
     /**
-     * Record payment received (PENDING_PAYMENT -> FULLY_PAID if complete, or stays in PENDING_PAYMENT)
-     * Replaces separate recordDeposit and recordFullPayment methods
+     * Request payment with auto Invoice creation (CONFIRMED -> PENDING_PAYMENT)
+     * Creates an Invoice from safari cost estimation, then transitions to PENDING_PAYMENT.
+     *
+     * @param idObfuscated Safari ID
+     * @param dto Optional transition DTO with reason/notes
+     * @param useStoRate Whether to use STO rates for invoice
+     * @param currency Invoice currency
+     * @param dueInDays Payment due date days from today
+     */
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> requestPaymentWithInvoice(
+            String idObfuscated, SafariStateTransitionDTO dto,
+            Boolean useStoRate, String currency, Integer dueInDays) {
+
+        try {
+            Long id = decodeId(idObfuscated);
+            if (id == null) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid safari ID", "INVALID_SAFARI_ID")
+                );
+            }
+
+            Safari safari = safariRepository.findById(id).orElse(null);
+            if (safari == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND")
+                );
+            }
+
+            if (safari.getState() != SafariState.CONFIRMED) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400,
+                        "Can only request payment for CONFIRMED safaris. Current state: " + safari.getState().getDisplayName(),
+                        "INVALID_STATE_TRANSITION")
+                );
+            }
+
+            if (safari.getCustomer() == null) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Safari has no customer linked — cannot create invoice", "NO_CUSTOMER")
+                );
+            }
+
+            // Step 1: Create Invoice from safari cost estimation
+            String safariObfuscatedId = idObfuscator.encodeId(safari.getId());
+            LocalDate today = LocalDate.now();
+            int dueDays = dueInDays != null ? dueInDays : 30;
+
+            CreateInvoiceFromSafariDTO invoiceDTO = CreateInvoiceFromSafariDTO.builder()
+                .safariId(safariObfuscatedId)
+                .title(safari.getName() + " — Invoice")
+                .description(safari.getDescription())
+                .useStoRate(useStoRate != null ? useStoRate : false)
+                .currency(currency != null ? currency : "USD")
+                .issueDate(today)
+                .dueDate(today.plusDays(dueDays))
+                .build();
+
+            Object createdInvoice = null;
+            try {
+                ResponseEntity<ApiResponse<?>> invoiceResponse = invoiceFromSafariGenerationService.generateInvoiceFromSafari(invoiceDTO);
+                if (invoiceResponse.getStatusCode().is2xxSuccessful() && invoiceResponse.getBody() != null) {
+                    createdInvoice = invoiceResponse.getBody().getData();
+                    log.info("Invoice created for safari {} during payment request", safari.getCode());
+                } else {
+                    log.warn("Invoice creation failed for safari {}: {}", safari.getCode(),
+                        invoiceResponse.getBody() != null ? invoiceResponse.getBody().getMessage() : "Unknown");
+                }
+            } catch (Exception e) {
+                log.warn("Failed to create invoice for safari {}: {}", safari.getCode(), e.getMessage());
+            }
+
+            // Step 2: Transition to PENDING_PAYMENT
+            SafariState previousState = safari.getState();
+            String reason = dto != null && dto.getReason() != null ? dto.getReason() : "Payment requested — invoice generated";
+            safari.changeState(SafariState.PENDING_PAYMENT, reason);
+            Safari savedSafari = safariRepository.save(safari);
+
+            logStateChange(savedSafari.getId(), "REQUEST_PAYMENT", reason,
+                previousState.name(), SafariState.PENDING_PAYMENT.name());
+
+            log.info("Safari {} transitioned to PENDING_PAYMENT with invoice", savedSafari.getCode());
+
+            // Build response with both safari and invoice data
+            java.util.Map<String, Object> result = new java.util.HashMap<>();
+            result.put("safari", convertToDTO(savedSafari));
+            if (createdInvoice != null) {
+                result.put("invoice", createdInvoice);
+            }
+
+            String message = createdInvoice != null
+                ? "Payment requested — Invoice created and safari moved to Pending Payment"
+                : "Payment requested — Safari moved to Pending Payment (invoice creation failed, create manually)";
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, message, result)
+            );
+
+        } catch (Exception e) {
+            log.error("Error requesting payment for safari", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to request payment", "STATE_TRANSITION_FAILED")
+            );
+        }
+    }
+
+    /**
+     * Record payment received — MANUAL OVERRIDE only.
+     * Use when payment comes outside the Invoice system (cash, direct bank transfer).
+     * Normal flow: payments go through Invoice module, SafariPaymentScheduler auto-detects.
+     *
+     * Requires a reason explaining why Invoice flow was bypassed.
      */
     @Transactional
     public ResponseEntity<ApiResponse<?>> recordPayment(String idObfuscated, SafariStateTransitionDTO dto) {
@@ -212,26 +331,47 @@ public class SafariStateTransitionService {
                 );
             }
 
-            SafariState previousState = safari.getState();
+            // Require reason for manual override
+            if (dto == null || dto.getReason() == null || dto.getReason().isBlank()) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Reason is required for manual payment recording. Explain why the Invoice payment flow was bypassed (e.g., 'Cash payment received at office', 'Direct bank transfer confirmed').",
+                                "REASON_REQUIRED")
+                );
+            }
 
-            // Determine if payment is complete based on DTO or safari data
-            boolean isFullyPaid = dto != null && dto.getIsFullPayment() != null ? dto.getIsFullPayment() : false;
+            // Require isFullPayment flag
+            if (dto.getIsFullPayment() == null) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "isFullPayment flag is required. Set true for full payment, false for partial/deposit.",
+                                "PAYMENT_TYPE_REQUIRED")
+                );
+            }
+
+            SafariState previousState = safari.getState();
+            boolean isFullyPaid = dto.getIsFullPayment();
 
             SafariState targetState = isFullyPaid ? SafariState.FULLY_PAID : SafariState.PENDING_PAYMENT;
-            String reason = dto != null && dto.getReason() != null ? dto.getReason() :
-                    (isFullyPaid ? "Full payment received" : "Partial payment received");
+            String reason = "[MANUAL OVERRIDE] " + dto.getReason();
 
             safari.changeState(targetState, reason);
             Safari savedSafari = safariRepository.save(safari);
 
-            logStateChange(savedSafari.getId(), "RECORD_PAYMENT", reason,
+            logStateChange(savedSafari.getId(), "RECORD_PAYMENT_MANUAL", reason,
                     previousState.name(), targetState.name());
 
-            log.info("Payment recorded for safari {}, new state: {}", savedSafari.getId(), targetState);
+            log.info("Manual payment recorded for safari {} ({}), new state: {}", savedSafari.getCode(), reason, targetState);
+
+            // Warn about linked invoices that may not reflect this payment
+            long invoiceCount = invoiceRepository.countBySafariId(safari.getId());
+            String warning = invoiceCount > 0
+                ? " Note: This safari has " + invoiceCount + " linked invoice(s) that may need to be updated separately."
+                : "";
 
             return ResponseEntity.ok().body(
                     ApiResponse.success(200,
-                            isFullyPaid ? "Full payment recorded successfully" : "Partial payment recorded successfully",
+                            (isFullyPaid ? "Full payment recorded (manual override)." : "Partial payment recorded (manual override).") + warning,
                             convertToDTO(savedSafari))
             );
 

@@ -222,6 +222,14 @@ public class Quote {
     private QuoteStatus status = QuoteStatus.DRAFT;
 
     /**
+     * Safari start date used for cost estimation.
+     * Determines which season's rates apply. This date becomes the Safari's
+     * start date when converting the quote to a booking, ensuring price consistency.
+     */
+    @Column(name = "safari_start_date")
+    private LocalDate safariStartDate;
+
+    /**
      * Date the quote was sent to customer
      */
     @Column(name = "sent_date")

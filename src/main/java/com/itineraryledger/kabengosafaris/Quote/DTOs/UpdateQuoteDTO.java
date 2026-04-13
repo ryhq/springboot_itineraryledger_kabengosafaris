@@ -25,6 +25,7 @@ public class UpdateQuoteDTO {
 
     private QuoteStatus status;
 
+    private LocalDate safariStartDate;
     private Boolean isStoRate;
     private BigDecimal taxPercentage;
     private BigDecimal discountPercentage;

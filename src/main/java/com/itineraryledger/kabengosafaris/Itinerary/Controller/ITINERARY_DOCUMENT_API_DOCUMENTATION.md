@@ -264,7 +264,7 @@ curl -X POST "http://localhost:4450/api/itinerary-documents/upload" \
 
 Documents are stored at the configured path:
 ```
-${itinerary.document.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/itinerary-documents/}
+${itinerary.document.storage.path:./data/itinerary-documents/}
 ```
 
 ---

@@ -112,7 +112,29 @@ public class SafariStateTransitionController {
     // ========================
 
     /**
-     * Record safari payment (deposit or full payment)
+     * Request payment from customer (CONFIRMED -> PENDING_PAYMENT)
+     * Auto-creates an Invoice from the safari's cost estimation.
+     *
+     * POST /api/safaris/{id}/state/request-payment
+     *
+     * @param useStoRate Whether to use STO rates for the invoice (default: false = RACK)
+     * @param currency Currency for the invoice (default: USD)
+     * @param dueInDays Number of days from today for payment due date (default: 30)
+     */
+    @PostMapping("/request-payment")
+    @PreAuthorize("hasAuthority('PERM_RECORD_SAFARI_PAYMENT')")
+    public ResponseEntity<ApiResponse<?>> requestPayment(
+            @PathVariable String id,
+            @RequestParam(required = false, defaultValue = "false") Boolean useStoRate,
+            @RequestParam(required = false, defaultValue = "USD") String currency,
+            @RequestParam(required = false, defaultValue = "30") Integer dueInDays,
+            @RequestBody(required = false) SafariStateTransitionDTO dto
+    ) {
+        return stateTransitionService.requestPaymentWithInvoice(id, dto, useStoRate, currency, dueInDays);
+    }
+
+    /**
+     * Record safari payment (deposit or full payment) — manual override
      *
      * POST /api/safaris/{id}/state/record-payment
      *

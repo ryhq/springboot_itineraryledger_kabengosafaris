@@ -718,7 +718,7 @@ All API responses follow a consistent format:
 
 ### File Storage
 - Files are stored on the server filesystem (configurable via `invoice.document.storage.path` in application.properties)
-- Default storage path: `/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/invoice-documents/`
+- Default storage path: `./data/invoice-documents/`
 - Original filenames are hashed using SHA-256 for security
 - System-generated filenames format: `[hash].extension` (e.g., `a1b2c3d4e5f6g7h8.pdf`)
 - Files are cached with `max-age=86400` (24 hours)

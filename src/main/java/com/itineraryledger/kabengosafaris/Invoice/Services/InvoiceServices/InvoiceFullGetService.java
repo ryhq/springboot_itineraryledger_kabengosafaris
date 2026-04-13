@@ -51,18 +51,21 @@ public class InvoiceFullGetService {
     private final InvoiceLineItemRepository invoiceLineItemRepository;
     private final BankAccountRepository bankAccountRepository;
     private final IdObfuscator idObfuscator;
+    private final InvoicePaymentAggregationService paymentAggregationService;
 
     @Autowired
     public InvoiceFullGetService(
         InvoiceRepository invoiceRepository,
         InvoiceLineItemRepository invoiceLineItemRepository,
         BankAccountRepository bankAccountRepository,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        InvoicePaymentAggregationService paymentAggregationService
     ) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceLineItemRepository = invoiceLineItemRepository;
         this.bankAccountRepository = bankAccountRepository;
         this.idObfuscator = idObfuscator;
+        this.paymentAggregationService = paymentAggregationService;
     }
 
     /**
@@ -256,19 +259,17 @@ public class InvoiceFullGetService {
             dto.setGrandTotals(grandTotalDTOs);
         }
 
-        if (invoice.getAmountsPaid() != null) {
-            List<PriceDTO> amountsPaidDTOs = invoice.getAmountsPaid().stream()
-                .map(this::convertPriceToDTO)
-                .collect(Collectors.toList());
-            dto.setAmountsPaid(amountsPaidDTOs);
-        }
+        // Derive amountsPaid and balances from the payments table — they are
+        // not stored on the Invoice entity.
+        List<PriceDTO> amountsPaidDTOs = paymentAggregationService.computeAmountsPaid(invoice).stream()
+            .map(this::convertPriceToDTO)
+            .collect(Collectors.toList());
+        dto.setAmountsPaid(amountsPaidDTOs);
 
-        if (invoice.getBalances() != null) {
-            List<PriceDTO> balanceDTOs = invoice.getBalances().stream()
-                .map(this::convertPriceToDTO)
-                .collect(Collectors.toList());
-            dto.setBalances(balanceDTOs);
-        }
+        List<PriceDTO> balanceDTOs = paymentAggregationService.computeBalances(invoice).stream()
+            .map(this::convertPriceToDTO)
+            .collect(Collectors.toList());
+        dto.setBalances(balanceDTOs);
 
         // ========================
         // BANK ACCOUNTS

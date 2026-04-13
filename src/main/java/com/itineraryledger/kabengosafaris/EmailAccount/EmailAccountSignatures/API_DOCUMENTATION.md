@@ -1103,7 +1103,7 @@ Body:
 
 ## Important Notes
 
-1. **File-Based Storage**: Signatures are stored as HTML/text files in `/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/email-signatures/` directory. The database only stores metadata and file references.
+1. **File-Based Storage**: Signatures are stored as HTML/text files in `./data/email-signatures/` directory. The database only stores metadata and file references.
 
 2. **Signature Filename Format**: `{accountName}_{signatureName}_{timestamp}.html`
    - Example: `support_email_Sales_Team_Standard_1732800645000.html`

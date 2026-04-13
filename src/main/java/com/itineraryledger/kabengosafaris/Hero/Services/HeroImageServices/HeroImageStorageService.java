@@ -32,7 +32,7 @@ import java.security.NoSuchAlgorithmException;
 @Slf4j
 public class HeroImageStorageService {
 
-    @Value("${hero.image.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/hero-images/}")
+    @Value("${hero.image.storage.path:./data/hero-images/}")
     private String storagePath;
 
     @Value("${app.base.url:http://localhost:4450}")

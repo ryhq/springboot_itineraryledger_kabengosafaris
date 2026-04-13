@@ -30,6 +30,7 @@ public class CreateQuoteDTO {
     @NotBlank(message = "Customer ID is required")
     private String customerId;
 
+    private LocalDate safariStartDate;
     private Boolean isStoRate;
     private BigDecimal taxPercentage;
     private BigDecimal discountPercentage;

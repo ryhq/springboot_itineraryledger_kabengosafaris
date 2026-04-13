@@ -26,12 +26,13 @@ import java.util.Map;
  * - Taxes by currency (subtotal × taxPercentage)
  * - Discounts by currency (subtotal × discountPercentage)
  * - Grand totals by currency (subtotal + taxes - discounts)
- * - Balances by currency (grand total - amounts paid)
+ *
+ * Balances by currency are NOT persisted — they are derived on demand
+ * from grandTotals and payment rows (see InvoicePaymentAggregationService).
  *
  * Should be called whenever:
  * - Invoice is created or updated
  * - InvoiceLineItems are added, updated, or deleted
- * - Payments are recorded
  */
 @Service
 @RequiredArgsConstructor
@@ -92,27 +93,19 @@ public class InvoiceTotalsCalculationService {
             discountsByCurrency
         );
 
-        // Calculate balances by currency (grand total - amounts paid)
-        Map<String, BigDecimal> balancesByCurrency = calculateBalancesByCurrency(
-            grandTotalsByCurrency,
-            convertPriceListToMap(invoice.getAmountsPaid())
-        );
-
         // Convert maps to Price lists
         invoice.setSubtotals(convertToPriceList(subtotalsByCurrency));
         invoice.setTaxes(convertToPriceList(taxesByCurrency));
         invoice.setDiscounts(convertToPriceList(discountsByCurrency));
         invoice.setGrandTotals(convertToPriceList(grandTotalsByCurrency));
-        invoice.setBalances(convertToPriceList(balancesByCurrency));
 
         // Save updated invoice
         invoiceRepository.save(invoice);
 
-        log.info("Recalculated totals for invoice {}: {} currencies, grand total: {}, balance: {}",
+        log.info("Recalculated totals for invoice {}: {} currencies, grand total: {}",
             invoice.getId(),
             grandTotalsByCurrency.size(),
-            formatTotals(grandTotalsByCurrency),
-            formatTotals(balancesByCurrency)
+            formatTotals(grandTotalsByCurrency)
         );
     }
 
@@ -224,30 +217,6 @@ public class InvoiceTotalsCalculationService {
     }
 
     /**
-     * Calculate balances by currency: grand total - amounts paid
-     */
-    private Map<String, BigDecimal> calculateBalancesByCurrency(
-        Map<String, BigDecimal> grandTotals,
-        Map<String, BigDecimal> amountsPaid
-    ) {
-        Map<String, BigDecimal> balances = new HashMap<>();
-
-        for (String currency : grandTotals.keySet()) {
-            BigDecimal grandTotal = grandTotals.getOrDefault(currency, BigDecimal.ZERO);
-            BigDecimal amountPaid = amountsPaid.getOrDefault(currency, BigDecimal.ZERO);
-
-            // Balance = Grand Total - Amount Paid
-            BigDecimal balance = grandTotal
-                .subtract(amountPaid)
-                .setScale(2, RoundingMode.HALF_UP);
-
-            balances.put(currency, balance);
-        }
-
-        return balances;
-    }
-
-    /**
      * Convert a currency-amount map to a list of Price objects
      */
     private List<Price> convertToPriceList(Map<String, BigDecimal> amountsByCurrency) {
@@ -265,23 +234,6 @@ public class InvoiceTotalsCalculationService {
         }
 
         return prices;
-    }
-
-    /**
-     * Convert a list of Price objects to a currency-amount map
-     */
-    private Map<String, BigDecimal> convertPriceListToMap(List<Price> prices) {
-        Map<String, BigDecimal> map = new HashMap<>();
-
-        if (prices != null) {
-            for (Price price : prices) {
-                if (price.getCurrency() != null && price.getTotalPrice() != null) {
-                    map.put(price.getCurrency(), price.getTotalPrice());
-                }
-            }
-        }
-
-        return map;
     }
 
     /**

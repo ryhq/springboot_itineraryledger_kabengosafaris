@@ -40,6 +40,7 @@ public class InvoiceUpdateService {
     private final UserRepository userRepository;
     private final IdObfuscator idObfuscator;
     private final InvoiceTotalsCalculationService totalsCalculationService;
+    private final InvoicePaymentAggregationService paymentAggregationService;
 
     @AuditLogAnnotation(
         action = "UPDATE_INVOICE",
@@ -90,8 +91,7 @@ public class InvoiceUpdateService {
             if (currentStatus == InvoiceStatus.PARTIALLY_PAID ||
                 currentStatus == InvoiceStatus.PAID ||
                 currentStatus == InvoiceStatus.OVERDUE ||
-                currentStatus == InvoiceStatus.CANCELLED ||
-                currentStatus == InvoiceStatus.REFUNDED) {
+                currentStatus == InvoiceStatus.CANCELLED) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400,
                         String.format("Cannot edit %s invoice. Payment and final state invoices are read-only.",
@@ -100,8 +100,8 @@ public class InvoiceUpdateService {
                 );
             }
 
-            // 3. SENT/VIEWED invoices can only edit non-critical fields
-            if (currentStatus == InvoiceStatus.SENT || currentStatus == InvoiceStatus.VIEWED) {
+            // 3. SENT invoices can only edit non-critical fields
+            if (currentStatus == InvoiceStatus.SENT) {
                 List<String> blockedFields = new ArrayList<>();
 
                 // Check if critical fields are being changed
@@ -240,8 +240,8 @@ public class InvoiceUpdateService {
             .taxes(invoice.getTaxes())
             .discounts(invoice.getDiscounts())
             .grandTotals(invoice.getGrandTotals())
-            .amountsPaid(invoice.getAmountsPaid())
-            .balances(invoice.getBalances())
+            .amountsPaid(paymentAggregationService.computeAmountsPaid(invoice))
+            .balances(paymentAggregationService.computeBalances(invoice))
             .taxPercentage(invoice.getTaxPercentage())
             .discountPercentage(invoice.getDiscountPercentage())
             .discountReason(invoice.getDiscountReason())

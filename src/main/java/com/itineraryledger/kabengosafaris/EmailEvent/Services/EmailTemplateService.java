@@ -27,7 +27,7 @@ import java.time.format.DateTimeFormatter;
 @Slf4j
 public class EmailTemplateService {
 
-    @Value("${email.template.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/email-templates/}")
+    @Value("${email.template.storage.path:./data/email-templates/}")
     private String templateStoragePath;
 
     @Autowired

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Receipt - Kabengo Safaris</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: #f7f7f7;
+            -webkit-font-smoothing: antialiased;
+        }
+        .email-wrapper {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #f7f7f7;
+            padding: 20px;
+        }
+        .email-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+        .email-header {
+            background: linear-gradient(135deg, #274e22 0%, #1a3517 100%);
+            padding: 40px 30px;
+            text-align: center;
+            border-bottom: 4px solid #5a1e03;
+        }
+        .email-header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .email-header p {
+            color: #f0f0f0;
+            margin: 10px 0 0 0;
+            font-size: 14px;
+        }
+        .email-content {
+            padding: 40px 30px;
+            color: #2c2c2c;
+        }
+        .email-content p {
+            margin: 0 0 16px 0;
+            color: #2c2c2c;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .email-content strong {
+            color: #274e22;
+            font-weight: 600;
+        }
+        .greeting {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c2c2c;
+            margin-bottom: 20px;
+        }
+        .status-banner {
+            background-color: #e8f5e9;
+            border: 1px solid #c8e6c9;
+            border-left: 4px solid #274e22;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .status-banner h2 {
+            color: #274e22;
+            margin: 0 0 10px 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .status-banner p {
+            margin: 0;
+            color: #2c2c2c;
+            font-size: 14px;
+        }
+        .details-box {
+            background-color: #f9f9f9;
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        .details-box h3 {
+            color: #274e22;
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .detail-row {
+            display: table;
+            width: 100%;
+            margin: 8px 0;
+            border-bottom: 1px solid #e8e8e8;
+            padding-bottom: 8px;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .detail-label {
+            display: table-cell;
+            width: 40%;
+            color: #6b6b6b;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .detail-value {
+            display: table-cell;
+            width: 60%;
+            color: #2c2c2c;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: right;
+        }
+        .amount-box {
+            background-color: #274e22;
+            color: #ffffff;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .amount-box h3 {
+            color: #ffffff;
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .amount-box .amount {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+        }
+        .balance-box {
+            background-color: #f9f9f9;
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        .balance-box h3 {
+            color: #274e22;
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .message-box {
+            background-color: #f5f5f5;
+            border: 1px solid #e8e8e8;
+            border-left: 4px solid #274e22;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .message-box h3 {
+            color: #274e22;
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .message-box p {
+            margin: 0;
+            font-size: 14px;
+            color: #2c2c2c;
+            font-style: italic;
+        }
+        .divider {
+            height: 1px;
+            background-color: #efefef;
+            margin: 30px 0;
+        }
+        .cta-section {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .cta-section p {
+            font-size: 15px;
+            color: #2c2c2c;
+            margin-bottom: 10px;
+        }
+        .email-footer {
+            background-color: #f7f7f7;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e8e8e8;
+        }
+        .email-footer p {
+            margin: 8px 0;
+            color: #6b6b6b;
+            font-size: 13px;
+        }
+        .email-footer-brand {
+            color: #274e22;
+            font-weight: 600;
+        }
+        @media only screen and (max-width: 600px) {
+            .email-wrapper { margin: 0; padding: 10px; }
+            .email-header { padding: 30px 20px; }
+            .email-header h1 { font-size: 24px; }
+            .email-content { padding: 30px 20px; }
+            .detail-row { display: block; }
+            .detail-label, .detail-value { display: block; width: 100%; text-align: left; }
+            .detail-value { margin-top: 4px; }
+            .amount-box .amount { font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <div class="email-container">
+            <!-- Header -->
+            <div class="email-header">
+                <h1>Payment Receipt</h1>
+                <p>Kabengo Safaris</p>
+            </div>
+
+            <!-- Content -->
+            <div class="email-content">
+                <p class="greeting">Dear {{customerName}},</p>
+
+                <p>Thank you for your payment. We have successfully received and recorded your payment against invoice <strong>{{invoiceCode}}</strong>.</p>
+
+                <!-- Status Banner -->
+                <div class="status-banner">
+                    <h2>Payment Confirmed</h2>
+                    <p>Status: <strong>{{paymentStatus}}</strong></p>
+                </div>
+
+                <!-- Payment Amount -->
+                <div class="amount-box">
+                    <h3>Amount Received</h3>
+                    <p class="amount">{{paymentAmount}}</p>
+                </div>
+
+                <!-- Payment Details -->
+                <div class="details-box">
+                    <h3>Payment Details</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Payment Date:</span>
+                        <span class="detail-value">{{paymentDate}}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Payment Method:</span>
+                        <span class="detail-value">{{paymentMethod}}</span>
+                    </div>
+                    {{#paymentReference}}
+                    <div class="detail-row">
+                        <span class="detail-label">Reference:</span>
+                        <span class="detail-value">{{paymentReference}}</span>
+                    </div>
+                    {{/paymentReference}}
+                </div>
+
+                <!-- Invoice Summary -->
+                <div class="details-box">
+                    <h3>Invoice Summary</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Invoice:</span>
+                        <span class="detail-value">{{invoiceCode}}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Title:</span>
+                        <span class="detail-value">{{invoiceTitle}}</span>
+                    </div>
+                    {{#safariName}}
+                    <div class="detail-row">
+                        <span class="detail-label">Safari:</span>
+                        <span class="detail-value">{{safariName}} ({{safariCode}})</span>
+                    </div>
+                    {{/safariName}}
+                </div>
+
+                <!-- Balance -->
+                <div class="balance-box">
+                    <h3>Payment Summary</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Invoice Total:</span>
+                        <span class="detail-value">{{grandTotal}}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Total Paid:</span>
+                        <span class="detail-value">{{totalPaid}}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Balance Remaining:</span>
+                        <span class="detail-value"><strong>{{balanceRemaining}}</strong></span>
+                    </div>
+                </div>
+
+                <!-- Payment Notes -->
+                {{#paymentNotes}}
+                <div class="message-box">
+                    <h3>Notes</h3>
+                    <p>{{paymentNotes}}</p>
+                </div>
+                {{/paymentNotes}}
+
+                <div class="divider"></div>
+
+                <!-- CTA -->
+                <div class="cta-section">
+                    <p>If you have any questions about this payment or your invoice, please contact us at <strong>{{companyEmail}}</strong>.</p>
+                    <p>Thank you for choosing Kabengo Safaris!</p>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="email-footer">
+                <p><span class="email-footer-brand">Kabengo Safaris</span></p>
+                <p>&copy; 2026 Kabengo Safaris. All rights reserved.</p>
+                <p style="font-size: 12px; margin-top: 15px;">
+                    This payment receipt was sent on {{sentDate}}.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

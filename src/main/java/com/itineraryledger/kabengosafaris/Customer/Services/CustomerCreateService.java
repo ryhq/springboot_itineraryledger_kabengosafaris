@@ -122,6 +122,7 @@ public class CustomerCreateService {
                 .code("TEMP") // Temporary code, will be updated after save
                 .customerType(createDTO.getCustomerType())
                 .title(createDTO.getTitle())
+                .salutation(createDTO.getSalutation())
                 .firstName(createDTO.getFirstName())
                 .lastName(createDTO.getLastName())
                 .companyName(createDTO.getCompanyName())
@@ -295,6 +296,7 @@ public class CustomerCreateService {
             .customerTypeDisplayName(customer.getCustomerType().getDisplayName())
             .customerTypeDescription(customer.getCustomerType().getDescription())
             .title(customer.getTitle())
+            .salutation(customer.getSalutation())
             .firstName(customer.getFirstName())
             .lastName(customer.getLastName())
             .companyName(customer.getCompanyName())

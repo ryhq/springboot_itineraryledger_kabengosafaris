@@ -56,6 +56,7 @@ public class FullQuoteDTO {
     // ========================
     // VALIDITY AND DATES
     // ========================
+    private LocalDate safariStartDate;
     private LocalDate sentDate;
     private LocalDate validFrom;
     private LocalDate validTo;

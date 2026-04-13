@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,6 +26,7 @@ import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteFrom
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteFullGetService;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteGetService;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteUpdateService;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteVersionService;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteTotalsCalculationService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -52,6 +54,7 @@ public class QuoteController {
     private final QuoteFromItineraryGenerationService quoteFromItineraryGenerationService;
     private final QuoteTotalsCalculationService totalsCalculationService;
     private final com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteStatusService quoteStatusService;
+    private final QuoteVersionService quoteVersionService;
     private final IdObfuscator idObfuscator;
 
     /**
@@ -319,14 +322,30 @@ public class QuoteController {
     /**
      * Send quote to customer
      * Allowed from DRAFT (if ready), READY, SENT (resend), ACCEPTED (resend), CONVERTED (resend)
+     *
+     * @param id The obfuscated quote ID
+     * @param language Optional language code for translating the email and PDF (e.g., "fr", "de", "sw").
+     *                 Falls back to the customer's preferredLanguage if not provided.
+     * @param emailTemplateId Optional obfuscated ID of a specific SEND_QUOTE email template to use.
+     *                        Falls back to the default template if not provided.
+     * @param pdfTemplateId Optional obfuscated ID of a specific PDF template to use for quote PDF generation.
+     *                      Falls back to the default PDF template if not provided.
+     * @param saveAsQuoteDocument Whether to save the generated PDF as a quote document (default: true)
+     * @param saveAsCustomerDocument Whether to save the generated PDF as a customer document (default: true)
      */
     @PostMapping("/{id}/send")
     @PreAuthorize("hasAuthority('PERM_SEND_QUOTE')")
     public ResponseEntity<ApiResponse<?>> sendQuote(
-        @PathVariable String id
+        @PathVariable String id,
+        @RequestParam(required = false) String language,
+        @RequestParam(required = false) String emailTemplateId,
+        @RequestParam(required = false) String pdfTemplateId,
+        @RequestParam(defaultValue = "true") boolean saveAsQuoteDocument,
+        @RequestParam(defaultValue = "true") boolean saveAsCustomerDocument
     ) {
-        log.info("POST /api/quotes/{}/send - Sending quote to customer", id);
-        return quoteStatusService.sendQuote(id);
+        log.info("POST /api/quotes/{}/send - Sending quote (language: {}, emailTemplateId: {}, pdfTemplateId: {}, saveQuoteDoc: {}, saveCustomerDoc: {})",
+            id, language, emailTemplateId, pdfTemplateId, saveAsQuoteDocument, saveAsCustomerDocument);
+        return quoteStatusService.sendQuote(id, language, emailTemplateId, pdfTemplateId, saveAsQuoteDocument, saveAsCustomerDocument);
     }
 
     /**
@@ -397,13 +416,59 @@ public class QuoteController {
     /**
      * Convert quote to booking/safari
      * Only allowed from ACCEPTED status
+     *
+     * Creates a Safari (DRAFT) from the quote's itinerary and customer.
+     * Uses the quote's safariStartDate by default (the date used for cost estimation).
+     * Invoice is NOT created here — it is created later when the safari reaches
+     * CONFIRMED state via POST /api/safaris/{id}/state/request-payment.
+     *
+     * @param id The obfuscated quote ID
+     * @param startDate Optional override for the safari start date. If not provided, uses the
+     *                  quote's safariStartDate (the date used for cost estimation, ensuring season/rate consistency).
      */
     @PostMapping("/{id}/convert")
     @PreAuthorize("hasAuthority('PERM_CONVERT_QUOTE')")
     public ResponseEntity<ApiResponse<?>> convertQuote(
-        @PathVariable String id
+        @PathVariable String id,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate
     ) {
-        log.info("POST /api/quotes/{}/convert - Converting quote to booking", id);
-        return quoteStatusService.convertQuote(id);
+        log.info("POST /api/quotes/{}/convert - Converting quote to booking (startDate: {})", id, startDate);
+        return quoteStatusService.convertQuote(id, startDate);
+    }
+
+    /**
+     * Create a new version of a quote
+     * Allowed from SENT, ACCEPTED, REJECTED, EXPIRED, CANCELLED statuses.
+     * Deep copies the quote into a new DRAFT with incremented version.
+     * If startDate differs from original, items are re-generated from itinerary cost estimation.
+     * Unspecified params inherit from the original quote.
+     *
+     * @param id The obfuscated quote ID
+     * @param versionNotes Optional notes explaining what changed
+     * @param startDate Optional new safari start date (inherits from original if not provided)
+     * @param currency Optional currency override (inherits from original if not provided)
+     * @param useStoRate Optional STO rate flag override (inherits from original if not provided)
+     * @param validityDays Validity period in days from today (default: 30)
+     * @param taxPercentage Optional tax percentage override (inherits from original if not provided)
+     * @param discountPercentage Optional discount percentage override (inherits from original if not provided)
+     * @param discountReason Optional discount reason override (inherits from original if not provided)
+     */
+    @PostMapping("/{id}/create-new-version")
+    @PreAuthorize("hasAuthority('PERM_CREATE_QUOTE')")
+    public ResponseEntity<ApiResponse<?>> createNewVersion(
+        @PathVariable String id,
+        @RequestParam(required = false) String versionNotes,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+        @RequestParam(required = false) String currency,
+        @RequestParam(required = false) Boolean useStoRate,
+        @RequestParam(required = false, defaultValue = "30") Integer validityDays,
+        @RequestParam(required = false) BigDecimal taxPercentage,
+        @RequestParam(required = false) BigDecimal discountPercentage,
+        @RequestParam(required = false) String discountReason
+    ) {
+        log.info("POST /api/quotes/{}/create-new-version - Creating new version (startDate: {}, currency: {}, useStoRate: {})",
+            id, startDate, currency, useStoRate);
+        return quoteVersionService.createNewVersion(id, versionNotes, startDate, currency, useStoRate,
+            validityDays, taxPercentage, discountPercentage, discountReason);
     }
 }

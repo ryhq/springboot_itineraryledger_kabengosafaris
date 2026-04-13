@@ -1,0 +1,37 @@
+[
+  {
+    "name": "safariCode",
+    "description": "Safari reference code",
+    "isRequired": true
+  },
+  {
+    "name": "safariName",
+    "description": "Safari name/title",
+    "isRequired": true
+  },
+  {
+    "name": "customerName",
+    "description": "Customer display name",
+    "isRequired": true
+  },
+  {
+    "name": "startDate",
+    "description": "Safari start date",
+    "isRequired": false
+  },
+  {
+    "name": "endDate",
+    "description": "Safari end date",
+    "isRequired": true
+  },
+  {
+    "name": "totalDays",
+    "description": "Total safari days",
+    "isRequired": false
+  },
+  {
+    "name": "alertDate",
+    "description": "Date the safari was auto-completed",
+    "isRequired": true
+  }
+]

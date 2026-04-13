@@ -480,7 +480,7 @@ A document is considered "currently valid" if:
 
 Documents are stored at the configured path:
 ```
-${park.document.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/park-documents/}
+${park.document.storage.path:./data/park-documents/}
 ```
 
 Filenames are generated using SHA-256 hash + timestamp to ensure uniqueness and prevent conflicts.

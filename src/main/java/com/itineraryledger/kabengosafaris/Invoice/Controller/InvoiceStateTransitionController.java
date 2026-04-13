@@ -3,6 +3,7 @@ package com.itineraryledger.kabengosafaris.Invoice.Controller;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.InvoiceStateTransitionDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceStateTransitionService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,19 +14,13 @@ import org.springframework.web.bind.annotation.*;
 /**
  * InvoiceStateTransitionController - REST API endpoints for Invoice state transitions
  *
- * Implements the simplified 8-state Invoice workflow:
+ * Simplified 6-state workflow:
+ *   DRAFT → SENT → PARTIALLY_PAID → PAID
+ *                        ↕
+ *                     OVERDUE
  *
- * Core Journey (6 states):
- *   DRAFT → SENT → VIEWED → PARTIALLY_PAID → PAID
- *                                ↓
- *                            OVERDUE
- *
- * Exception States (2 states):
- *   CANCELLED, REFUNDED
- *
- * Each endpoint is protected by a specific permission that controls who can
- * perform that state transition. This enables fine-grained access control
- * over the invoice lifecycle.
+ * Exception State:
+ *   CANCELLED (from any non-PAID state)
  *
  * Base URL: /api/invoices/{id}/state
  */
@@ -36,54 +31,67 @@ import org.springframework.web.bind.annotation.*;
 public class InvoiceStateTransitionController {
 
     private final InvoiceStateTransitionService stateTransitionService;
-
-    // ========================
-    // CORE JOURNEY - SENDING PHASE
-    // ========================
+    private final IdObfuscator idObfuscator;
 
     /**
      * Send invoice to customer (DRAFT → SENT)
+     * Transitions status, generates PDF, and sends email with attachment.
      *
      * POST /api/invoices/{id}/state/send
+     *
+     * @param id             Obfuscated invoice ID
+     * @param language       Optional language code for translation (e.g., "fr", "sw")
+     * @param emailTemplateId Optional obfuscated email template ID (must belong to SEND_INVOICE event)
+     * @param pdfTemplateId  Optional obfuscated PDF template ID for FULL_INVOICE
+     * @param attachPdf      Whether to attach the invoice PDF (default true)
      */
     @PostMapping("/send")
     @PreAuthorize("hasAuthority('PERM_SEND_INVOICE')")
     public ResponseEntity<ApiResponse<?>> sendInvoice(
             @PathVariable String id,
-            @RequestBody(required = false) InvoiceStateTransitionDTO dto
+            @RequestParam(required = false) String language,
+            @RequestParam(required = false) String emailTemplateId,
+            @RequestParam(required = false) String pdfTemplateId,
+            @RequestParam(defaultValue = "true") boolean attachPdf
     ) {
-        log.info("POST /api/invoices/{}/state/send - Sending invoice", id);
-        return stateTransitionService.sendInvoice(id, dto);
+        log.info("POST /api/invoices/{}/state/send (language: {}, attachPdf: {})", id, language, attachPdf);
+
+        Long decodedEmailTemplateId = null;
+        if (emailTemplateId != null && !emailTemplateId.isBlank()) {
+            decodedEmailTemplateId = idObfuscator.decodeId(emailTemplateId);
+        }
+
+        return stateTransitionService.sendInvoice(id, language, decodedEmailTemplateId, pdfTemplateId, attachPdf);
     }
 
     /**
-     * Mark invoice as viewed by customer (SENT → VIEWED)
+     * Resend invoice email to customer (no status change)
+     * Available for any non-DRAFT, non-CANCELLED invoice.
      *
-     * POST /api/invoices/{id}/state/mark-viewed
+     * POST /api/invoices/{id}/state/resend
      */
-    @PostMapping("/mark-viewed")
-    @PreAuthorize("hasAuthority('PERM_MARK_INVOICE_VIEWED')")
-    public ResponseEntity<ApiResponse<?>> markAsViewed(
+    @PostMapping("/resend")
+    @PreAuthorize("hasAuthority('PERM_SEND_INVOICE')")
+    public ResponseEntity<ApiResponse<?>> resendInvoice(
             @PathVariable String id,
-            @RequestBody(required = false) InvoiceStateTransitionDTO dto
+            @RequestParam(required = false) String language,
+            @RequestParam(required = false) String emailTemplateId,
+            @RequestParam(required = false) String pdfTemplateId,
+            @RequestParam(defaultValue = "true") boolean attachPdf
     ) {
-        log.info("POST /api/invoices/{}/state/mark-viewed - Marking invoice as viewed", id);
-        return stateTransitionService.markAsViewed(id, dto);
+        log.info("POST /api/invoices/{}/state/resend (language: {}, attachPdf: {})", id, language, attachPdf);
+
+        Long decodedEmailTemplateId = null;
+        if (emailTemplateId != null && !emailTemplateId.isBlank()) {
+            decodedEmailTemplateId = idObfuscator.decodeId(emailTemplateId);
+        }
+
+        return stateTransitionService.resendInvoice(id, language, decodedEmailTemplateId, pdfTemplateId, attachPdf);
     }
 
-    // ========================
-    // CORE JOURNEY - PAYMENT PHASE
-    // ========================
-
     /**
-     * Record invoice payment (SENT/VIEWED/OVERDUE → PARTIALLY_PAID or PAID)
-     *
+     * Record invoice payment (SENT/PARTIALLY_PAID/OVERDUE → PARTIALLY_PAID or PAID)
      * POST /api/invoices/{id}/state/record-payment
-     *
-     * Request body:
-     * - isFullPayment: (required) true for full payment, false for partial payment
-     * - paymentReference: (optional) Payment reference or transaction ID
-     * - notes: (optional) Additional payment notes
      */
     @PostMapping("/record-payment")
     @PreAuthorize("hasAuthority('PERM_RECORD_INVOICE_PAYMENT')")
@@ -91,13 +99,12 @@ public class InvoiceStateTransitionController {
             @PathVariable String id,
             @Valid @RequestBody InvoiceStateTransitionDTO dto
     ) {
-        log.info("POST /api/invoices/{}/state/record-payment - Recording payment", id);
+        log.info("POST /api/invoices/{}/state/record-payment", id);
         return stateTransitionService.recordPayment(id, dto);
     }
 
     /**
-     * Mark invoice as overdue (SENT/VIEWED/PARTIALLY_PAID → OVERDUE)
-     *
+     * Mark invoice as overdue (SENT/PARTIALLY_PAID → OVERDUE)
      * POST /api/invoices/{id}/state/mark-overdue
      */
     @PostMapping("/mark-overdue")
@@ -106,23 +113,13 @@ public class InvoiceStateTransitionController {
             @PathVariable String id,
             @RequestBody(required = false) InvoiceStateTransitionDTO dto
     ) {
-        log.info("POST /api/invoices/{}/state/mark-overdue - Marking invoice as overdue", id);
+        log.info("POST /api/invoices/{}/state/mark-overdue", id);
         return stateTransitionService.markOverdue(id, dto);
     }
 
-    // ========================
-    // EXCEPTION STATES - CANCELLATION
-    // ========================
-
     /**
-     * Cancel invoice (multiple states → CANCELLED)
-     *
+     * Cancel invoice (any non-PAID/non-CANCELLED → CANCELLED)
      * POST /api/invoices/{id}/state/cancel
-     *
-     * Request body:
-     * - reason: (required) Detailed explanation for cancellation
-     * - cancellationCategory: (optional) Category like "Payment failure", "Customer request", etc.
-     * - notes: (optional) Additional context
      */
     @PostMapping("/cancel")
     @PreAuthorize("hasAuthority('PERM_CANCEL_INVOICE')")
@@ -130,32 +127,7 @@ public class InvoiceStateTransitionController {
             @PathVariable String id,
             @Valid @RequestBody InvoiceStateTransitionDTO dto
     ) {
-        log.info("POST /api/invoices/{}/state/cancel - Cancelling invoice", id);
+        log.info("POST /api/invoices/{}/state/cancel", id);
         return stateTransitionService.cancelInvoice(id, dto);
-    }
-
-    // ========================
-    // EXCEPTION STATES - REFUND
-    // ========================
-
-    /**
-     * Initiate refund (PAID/PARTIALLY_PAID → REFUNDED)
-     *
-     * POST /api/invoices/{id}/state/initiate-refund
-     *
-     * Request body:
-     * - reason: (required) Reason for refund
-     * - isFullRefund: (optional) true for full refund, false for partial
-     * - paymentReference: (optional) Refund reference or transaction ID
-     * - notes: (optional) Additional refund notes
-     */
-    @PostMapping("/initiate-refund")
-    @PreAuthorize("hasAuthority('PERM_INITIATE_INVOICE_REFUND')")
-    public ResponseEntity<ApiResponse<?>> initiateRefund(
-            @PathVariable String id,
-            @Valid @RequestBody InvoiceStateTransitionDTO dto
-    ) {
-        log.info("POST /api/invoices/{}/state/initiate-refund - Initiating refund", id);
-        return stateTransitionService.initiateRefund(id, dto);
     }
 }

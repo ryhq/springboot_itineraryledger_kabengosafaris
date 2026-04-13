@@ -484,7 +484,7 @@ curl -X DELETE "http://localhost:4450/api/accommodation-documents?ids=obfuscated
 
 ```properties
 # Storage path for accommodation documents on the filesystem
-accommodation.document.storage.path=/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/accommodation-documents/
+accommodation.document.storage.path=./data/accommodation-documents/
 
 # Base URL (used for constructing full URLs)
 app.base.url=http://localhost:4450

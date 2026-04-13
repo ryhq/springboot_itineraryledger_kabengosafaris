@@ -37,6 +37,9 @@ public class UpdateCustomerDTO {
     @Size(max = 10, message = "Title must not exceed 10 characters")
     private String title;
 
+    @Size(max = 100, message = "Salutation must not exceed 100 characters")
+    private String salutation;
+
     @Size(max = 100, message = "First name must not exceed 100 characters")
     private String firstName;
 

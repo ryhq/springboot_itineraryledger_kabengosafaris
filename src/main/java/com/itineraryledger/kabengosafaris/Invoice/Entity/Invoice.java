@@ -92,12 +92,11 @@ public class Invoice {
     private Customer customer;
 
     /**
-     * The safari this invoice is for (nullable)
-     * Foreign key constraint configured with ON DELETE SET NULL at database level
-     * If Safari is deleted, this field will be automatically set to NULL
+     * The safari this invoice is for (nullable, unique — one invoice per safari).
+     * If Safari is deleted, this field will be automatically set to NULL.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "safari_id", nullable = true)
+    @JoinColumn(name = "safari_id", nullable = true, unique = true)
     private Safari safari;
 
     /**
@@ -197,24 +196,11 @@ public class Invoice {
     // =====================================================================
     // PAYMENT TRACKING
     // =====================================================================
-
-    /**
-     * Amount paid so far (for partial payments)
-     * Payment status is now tracked via the main 'status' field using
-     * InvoiceStatus enum (PARTIALLY_PAID, PAID, OVERDUE, etc.)
-     */
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "invoice_amounts_paid", joinColumns = @JoinColumn(name = "invoice_id"))
-    @Builder.Default
-    private List<Price> amountsPaid = new ArrayList<>();
-
-    /**
-     * Balance remaining (for partial payments)
-     */
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "invoice_balances", joinColumns = @JoinColumn(name = "invoice_id"))
-    @Builder.Default
-    private List<Price> balances = new ArrayList<>();
+    //
+    // Per-currency amountsPaid and balances are NOT stored on this entity.
+    // They are derived on demand by InvoicePaymentAggregationService from
+    // the payments table + grandTotals, so they never drift from truth.
+    // Payment status is tracked via the 'status' field (PARTIALLY_PAID, PAID, etc.)
 
     // =====================================================================
     // WORKFLOW AND STATUS
@@ -308,7 +294,7 @@ public class Invoice {
      */
     @Transient
     public boolean isOverdue() {
-        if (status == InvoiceStatus.PAID || status == InvoiceStatus.REFUNDED) {
+        if (status == InvoiceStatus.PAID || status == InvoiceStatus.CANCELLED) {
             return false;
         }
         return LocalDate.now().isAfter(dueDate);

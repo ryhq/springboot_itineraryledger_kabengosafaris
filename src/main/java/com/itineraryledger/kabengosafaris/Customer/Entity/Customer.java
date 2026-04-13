@@ -80,6 +80,9 @@ public class Customer {
     @Column(length = 10)
     private String title; // Mr, Mrs, Ms, Dr, etc.
 
+    @Column(length = 100)
+    private String salutation; // e.g., Dear Mr. Smith, Dear Dr. Jane
+
     @Column(name = "first_name", length = 100)
     private String firstName; // Required for INDIVIDUAL
 

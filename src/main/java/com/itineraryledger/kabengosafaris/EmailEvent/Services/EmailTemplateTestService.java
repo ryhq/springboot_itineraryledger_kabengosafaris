@@ -190,6 +190,30 @@ public class EmailTemplateTestService {
             case "CONTACT_US":
                 return generateContactUsTestData(user);
 
+            case "SEND_QUOTE":
+                return generateQuoteSentTestData(user);
+
+            case "SAFARI_PAYMENT_GAP":
+                return generateSafariPaymentGapTestData(user);
+
+            case "SAFARI_READINESS_ALERT":
+                return generateSafariReadinessAlertTestData(user);
+
+            case "SAFARI_STARTED":
+                return generateSafariStartedTestData(user);
+
+            case "SAFARI_COMPLETED":
+                return generateSafariCompletedTestData(user);
+
+            case "SAFARI_POST_TRIP_REMINDER":
+                return generateSafariPostTripReminderTestData(user);
+
+            case "SEND_SAFARI_DETAILS":
+                return generateSafariDetailsTestData(user);
+
+            case "SEND_SAFARI_MESSAGE":
+                return generateSafariCustomerMessageTestData(user);
+
             default:
                 throw new UnsupportedOperationException(
                     "Test email not implemented for event: " + eventName + ". " +
@@ -404,9 +428,198 @@ public class EmailTemplateTestService {
         return new TestEmailData(variables, subject);
     }
 
+    private TestEmailData generateQuoteSentTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
+
+        variables.put("customerName", user.getFirstName() + " " + user.getLastName());
+        variables.put("quoteCode", "QT-1042-" + String.format("%02d%02d", now.getMonthValue(), now.getYear() % 100) + "-1");
+        variables.put("quoteTitle", "7-Day Serengeti & Ngorongoro Safari");
+        variables.put("sentDate", now.format(dateFormatter));
+        variables.put("safariStartDate", now.plusMonths(2).format(dateFormatter));
+        variables.put("itineraryName", "7-Day Serengeti & Ngorongoro Safari");
+        variables.put("itineraryCode", "ITI-7D6N-1007");
+        variables.put("tripType", "Private Safari");
+        variables.put("totalDays", "7");
+        variables.put("totalNights", "6");
+        variables.put("startLocation", "Arusha");
+        variables.put("endLocation", "Arusha");
+        variables.put("grandTotal", "USD 3,500.00");
+        variables.put("itemsSummary",
+            "<div class=\"details-box\">" +
+            "<h3>Cost Breakdown</h3>" +
+            "<div class=\"detail-row\"><span class=\"detail-label\">Accommodation (6 nights)</span><span class=\"detail-value\">USD 1,800.00</span></div>" +
+            "<div class=\"detail-row\"><span class=\"detail-label\">Park Entry Fees</span><span class=\"detail-value\">USD 1,200.00</span></div>" +
+            "<div class=\"detail-row\"><span class=\"detail-label\">Activities (Game Drives)</span><span class=\"detail-value\">USD 500.00</span></div>" +
+            "</div>");
+        variables.put("validFrom", now.format(dateFormatter));
+        variables.put("validTo", now.plusDays(30).format(dateFormatter));
+        variables.put("depositPercentage", "30%");
+        variables.put("depositDueDate", now.plusDays(7).format(dateFormatter));
+        variables.put("fullPaymentDueDate", now.plusDays(45).format(dateFormatter));
+        variables.put("customerNotes", "Package includes all park entry fees, accommodation, meals, and ground transport. International flights not included.");
+        variables.put("companyEmail", "info@kabengosafaris.com");
+
+        String subject = "[TEST] Your Safari Quote: " + variables.get("quoteCode") + " - " + variables.get("quoteTitle");
+
+        return new TestEmailData(variables, subject);
+    }
+
     /**
      * Replace {{variableName}} placeholders with actual values
-     *
+     */
+    private TestEmailData generateSafariPaymentGapTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
+
+        variables.put("safariCode", "SAF-7D6N-1007");
+        variables.put("safariName", "7-Day Serengeti & Ngorongoro Safari");
+        variables.put("customerName", user.getFirstName() + " " + user.getLastName());
+        variables.put("startDate", now.minusDays(2).format(dateFormatter));
+        variables.put("endDate", now.plusDays(5).format(dateFormatter));
+        variables.put("currentState", "Pending Payment");
+        variables.put("daysOverdue", "2");
+        variables.put("totalDays", "7");
+        variables.put("alertDate", now.format(dateFormatter));
+
+        return new TestEmailData(variables, "[TEST] CRITICAL: Payment Gap — SAF-7D6N-1007 — 7-Day Serengeti & Ngorongoro Safari");
+    }
+
+    private TestEmailData generateSafariReadinessAlertTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
+
+        variables.put("safariCode", "SAF-7D6N-1007");
+        variables.put("safariName", "7-Day Serengeti & Ngorongoro Safari");
+        variables.put("customerName", user.getFirstName() + " " + user.getLastName());
+        variables.put("startDate", now.plusDays(5).format(dateFormatter));
+        variables.put("daysUntilStart", "5");
+        variables.put("phase", "Starting Soon");
+        variables.put("issueCount", "3");
+        variables.put("issuesList",
+            "<li style=\"margin: 4px 0;\">No vehicles assigned</li>" +
+            "<li style=\"margin: 4px 0;\">2 overnight day(s) missing accommodation</li>" +
+            "<li style=\"margin: 4px 0;\">No passenger categories defined</li>");
+        variables.put("alertDate", now.format(dateFormatter));
+
+        return new TestEmailData(variables, "[TEST] Safari Readiness Issues — SAF-7D6N-1007 starts in 5 day(s)");
+    }
+
+    private TestEmailData generateSafariStartedTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
+
+        variables.put("safariCode", "SAF-7D6N-1007");
+        variables.put("safariName", "7-Day Serengeti & Ngorongoro Safari");
+        variables.put("customerName", user.getFirstName() + " " + user.getLastName());
+        variables.put("startDate", now.format(dateFormatter));
+        variables.put("endDate", now.plusDays(6).format(dateFormatter));
+        variables.put("totalDays", "7");
+        variables.put("totalNights", "6");
+        variables.put("startLocation", "Arusha");
+        variables.put("alertDate", now.format(dateFormatter));
+
+        return new TestEmailData(variables, "[TEST] Safari Started: SAF-7D6N-1007 — 7-Day Serengeti & Ngorongoro Safari");
+    }
+
+    private TestEmailData generateSafariCompletedTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
+
+        variables.put("safariCode", "SAF-7D6N-1007");
+        variables.put("safariName", "7-Day Serengeti & Ngorongoro Safari");
+        variables.put("customerName", user.getFirstName() + " " + user.getLastName());
+        variables.put("startDate", now.minusDays(7).format(dateFormatter));
+        variables.put("endDate", now.minusDays(1).format(dateFormatter));
+        variables.put("totalDays", "7");
+        variables.put("alertDate", now.format(dateFormatter));
+
+        return new TestEmailData(variables, "[TEST] Safari Completed: SAF-7D6N-1007 — 7-Day Serengeti & Ngorongoro Safari");
+    }
+
+    private TestEmailData generateSafariPostTripReminderTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
+
+        variables.put("safariCode", "SAF-7D6N-1007");
+        variables.put("safariName", "7-Day Serengeti & Ngorongoro Safari");
+        variables.put("customerName", user.getFirstName() + " " + user.getLastName());
+        variables.put("endDate", now.minusDays(3).format(dateFormatter));
+        variables.put("daysSinceEnd", "3");
+        variables.put("pendingTasks",
+            "<li style=\"margin: 4px 0;\">Collect guest feedback and reviews</li>" +
+            "<li style=\"margin: 4px 0;\">Reconcile expenses and receipts</li>" +
+            "<li style=\"margin: 4px 0;\">Update driver/guide logs</li>" +
+            "<li style=\"margin: 4px 0;\">Close out any open invoices</li>" +
+            "<li style=\"margin: 4px 0;\">File park entry receipts</li>");
+        variables.put("alertDate", now.format(dateFormatter));
+
+        return new TestEmailData(variables, "[TEST] Post-Trip Tasks Pending — SAF-7D6N-1007 — ended 3 day(s) ago");
+    }
+
+    private TestEmailData generateSafariDetailsTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
+
+        variables.put("customerName", user.getFirstName() + " " + user.getLastName());
+        variables.put("safariCode", "SAF-7D6N-1007");
+        variables.put("safariName", "7-Day Serengeti & Ngorongoro Safari");
+        variables.put("startDate", now.plusMonths(2).format(dateFormatter));
+        variables.put("endDate", now.plusMonths(2).plusDays(6).format(dateFormatter));
+        variables.put("totalDays", "7");
+        variables.put("totalNights", "6");
+        variables.put("startLocation", "Arusha");
+        variables.put("endLocation", "Arusha");
+        variables.put("itineraryName", "7-Day Serengeti & Ngorongoro Safari");
+        variables.put("state", "Confirmed");
+        variables.put("daySummary",
+            "<div class=\"detail-row\"><span class=\"detail-label\">Day 1 (Jun 15)</span><span class=\"detail-value\">Arrival in Arusha</span></div>" +
+            "<div class=\"detail-row\"><span class=\"detail-label\">Day 2 (Jun 16)</span><span class=\"detail-value\">Tarangire National Park</span></div>" +
+            "<div class=\"detail-row\"><span class=\"detail-label\">Day 3 (Jun 17)</span><span class=\"detail-value\">Lake Manyara National Park</span></div>" +
+            "<div class=\"detail-row\"><span class=\"detail-label\">Day 4 (Jun 18)</span><span class=\"detail-value\">Ngorongoro Crater</span></div>" +
+            "<div class=\"detail-row\"><span class=\"detail-label\">Day 5 (Jun 19)</span><span class=\"detail-value\">Serengeti National Park</span></div>" +
+            "<div class=\"detail-row\"><span class=\"detail-label\">Day 6 (Jun 20)</span><span class=\"detail-value\">Serengeti Game Drives</span></div>" +
+            "<div class=\"detail-row\"><span class=\"detail-label\">Day 7 (Jun 21)</span><span class=\"detail-value\">Departure from Arusha</span></div>");
+        variables.put("specialRequests", "Vegetarian meals preferred. Would love to see the Great Migration.");
+        variables.put("emergencyContact", "+255 700 123 456 (Kabengo Safaris 24/7)");
+        variables.put("sentDate", now.format(dateFormatter));
+        variables.put("companyEmail", "info@kabengosafaris.com");
+
+        return new TestEmailData(variables, "[TEST] Your Safari Details: SAF-7D6N-1007 — 7-Day Serengeti & Ngorongoro Safari");
+    }
+
+    private TestEmailData generateSafariCustomerMessageTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
+
+        variables.put("customerName", user.getFirstName() + " " + user.getLastName());
+        variables.put("safariCode", "SAF-7D6N-1007");
+        variables.put("safariName", "7-Day Serengeti & Ngorongoro Safari");
+        variables.put("startDate", now.plusMonths(2).format(dateFormatter));
+        variables.put("endDate", now.plusMonths(2).plusDays(6).format(dateFormatter));
+        variables.put("messageSubject", "Important Update: Vehicle Upgrade");
+        variables.put("messageBody",
+            "<p>We are pleased to inform you that we have upgraded your safari vehicle from a standard Land Cruiser to a <strong>pop-top Land Cruiser</strong> at no additional cost!</p>" +
+            "<p>This vehicle features a hydraulic roof for 360-degree wildlife viewing and is equipped with:</p>" +
+            "<ul><li>Charging ports for cameras and phones</li><li>Cool box for refreshments</li><li>Binoculars for each passenger</li></ul>" +
+            "<p>Your driver-guide, <strong>Joseph Mollel</strong>, has over 15 years of experience in the Serengeti ecosystem and speaks English, French, and Swahili.</p>");
+        variables.put("sentDate", now.format(dateFormatter));
+        variables.put("senderName", "Ricksy Faby, Operations Manager");
+        variables.put("companyEmail", "info@kabengosafaris.com");
+
+        return new TestEmailData(variables, "[TEST] SAF-7D6N-1007 — Important Update: Vehicle Upgrade");
+    }
+
+    /**
      * @param html The HTML template content
      * @param variables Map of variable names to values
      * @return HTML with placeholders replaced

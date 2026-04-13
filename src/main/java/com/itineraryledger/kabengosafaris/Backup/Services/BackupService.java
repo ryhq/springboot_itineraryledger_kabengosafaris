@@ -34,7 +34,7 @@ public class BackupService {
     @Value("${spring.datasource.password:}")
     private String databasePassword;
 
-    @Value("${backup.files.base.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/}")
+    @Value("${backup.files.base.path:./data/}")
     private String filesBasePath;
 
     @Value("${backup.storage.path:/opt/lampp/htdocs/kabengosafaris/backups/}")

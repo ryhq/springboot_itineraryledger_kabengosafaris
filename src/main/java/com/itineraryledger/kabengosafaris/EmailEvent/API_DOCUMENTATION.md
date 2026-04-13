@@ -972,7 +972,7 @@ Add the following to `application.properties`:
 
 ```properties
 # Email Template Configuration
-email.template.storage.path=/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/email-templates/
+email.template.storage.path=./data/email-templates/
 email.template.max.file.size=2097152
 ```
 

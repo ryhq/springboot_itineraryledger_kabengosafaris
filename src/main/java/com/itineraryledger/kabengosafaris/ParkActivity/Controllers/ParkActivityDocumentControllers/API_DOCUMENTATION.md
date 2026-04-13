@@ -289,5 +289,5 @@ curl -X POST "http://localhost:4450/api/park-activity-documents/upload" \
 
 Documents are stored at the configured path:
 ```
-${park-activity.document.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/park-activity-documents/}
+${park-activity.document.storage.path:./data/park-activity-documents/}
 ```

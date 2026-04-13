@@ -177,6 +177,70 @@ public class CustomerDocumentCreateService {
         }
     }
 
+    /**
+     * Save a system-generated document (e.g., quote PDF) to a customer's documents.
+     *
+     * @param customerId The customer database ID
+     * @param pdfBytes The generated PDF content
+     * @param originalFileName The display filename (e.g., "Quote_QT-1001-0426-1.pdf")
+     * @param documentType The type of customer document
+     * @param title The document title
+     * @return The created CustomerDocumentDTO, or null if failed
+     */
+    public CustomerDocumentDTO saveGeneratedDocument(
+            Long customerId,
+            byte[] pdfBytes,
+            String originalFileName,
+            CustomerDocument.DocumentType documentType,
+            String title
+    ) {
+        log.info("Saving generated document for customer {}: {}", customerId, title);
+
+        try {
+            if (customerId == null) {
+                log.error("Customer ID is required for generated document");
+                return null;
+            }
+            if (pdfBytes == null || pdfBytes.length == 0) {
+                log.error("PDF content is required for generated document");
+                return null;
+            }
+
+            Customer customer = customerRepository.findById(customerId).orElse(null);
+            if (customer == null) {
+                log.error("Customer not found: {}", customerId);
+                return null;
+            }
+
+            String savedFileName = storageService.saveDocumentBytes(pdfBytes, originalFileName);
+            if (savedFileName == null) {
+                log.error("Failed to save generated PDF file: {}", originalFileName);
+                return null;
+            }
+
+            CustomerDocument document = CustomerDocument.builder()
+                .customer(customer)
+                .title(title)
+                .documentType(documentType != null ? documentType : CustomerDocument.DocumentType.OTHER)
+                .fileUrl(storageService.constructFileDocumentUrl(savedFileName))
+                .fileName(savedFileName)
+                .originalFileName(originalFileName != null ? originalFileName : "generated-document.pdf")
+                .fileSize((long) pdfBytes.length)
+                .fileType("application/pdf")
+                .isActive(true)
+                .build();
+
+            document = customerDocumentRepository.save(document);
+            log.info("Generated customer document saved successfully: {} (ID: {})", title, document.getId());
+
+            return getService.toDTO(document);
+
+        } catch (Exception e) {
+            log.error("Error saving generated document for customer {}", customerId, e);
+            return null;
+        }
+    }
+
     private void rollbackSavedFiles(List<String> fileNames) {
         for (String fileName : fileNames) {
             try {

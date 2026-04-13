@@ -1,0 +1,48 @@
+[
+  {
+    "name": "safariCode",
+    "description": "Safari reference code",
+    "isRequired": true
+  },
+  {
+    "name": "safariName",
+    "description": "Safari name/title",
+    "isRequired": true
+  },
+  {
+    "name": "customerName",
+    "description": "Customer display name",
+    "isRequired": true
+  },
+  {
+    "name": "startDate",
+    "description": "Safari start date",
+    "isRequired": true
+  },
+  {
+    "name": "endDate",
+    "description": "Safari end date",
+    "isRequired": true
+  },
+  {
+    "name": "totalDays",
+    "description": "Total safari days",
+    "isRequired": false
+  },
+  {
+    "name": "totalNights",
+    "description": "Total safari nights",
+    "isRequired": false
+  },
+  {
+    "name": "startLocation",
+    "description": "Safari start location",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "alertDate",
+    "description": "Date the safari was auto-started",
+    "isRequired": true
+  }
+]

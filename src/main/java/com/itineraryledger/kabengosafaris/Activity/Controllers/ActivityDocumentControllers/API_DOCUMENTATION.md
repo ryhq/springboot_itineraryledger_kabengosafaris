@@ -232,5 +232,5 @@ The `safetyDocumentsOnly=true` parameter filters for these document types:
 
 Documents are stored at the configured path:
 ```
-${activity.document.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/activity-documents/}
+${activity.document.storage.path:./data/activity-documents/}
 ```

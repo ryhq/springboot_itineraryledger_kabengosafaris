@@ -1,0 +1,61 @@
+[
+  {
+    "name": "customerName",
+    "description": "Customer display name",
+    "isRequired": true
+  },
+  {
+    "name": "creditNoteCode",
+    "description": "Credit note reference code (e.g., CN-2026-001)",
+    "isRequired": true
+  },
+  {
+    "name": "creditNoteTitle",
+    "description": "Credit note title",
+    "isRequired": true
+  },
+  {
+    "name": "issueDate",
+    "description": "Issue date (e.g., April 09, 2026)",
+    "isRequired": true
+  },
+  {
+    "name": "invoiceCode",
+    "description": "Original invoice code (e.g., INV-2026-001)",
+    "isRequired": true
+  },
+  {
+    "name": "totalCredit",
+    "description": "Total credit amount with currency (e.g., USD 500.00)",
+    "isRequired": true
+  },
+  {
+    "name": "reason",
+    "description": "Reason for the credit note",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "itemsSummary",
+    "description": "HTML table of credited items (rendered as a table)",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "customerNotes",
+    "description": "Customer-facing notes",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "sentDate",
+    "description": "Date the email was sent (e.g., April 09, 2026)",
+    "isRequired": true
+  },
+  {
+    "name": "companyEmail",
+    "description": "Company contact email address",
+    "isRequired": false,
+    "defaultValue": "info@kabengosafaris.com"
+  }
+]

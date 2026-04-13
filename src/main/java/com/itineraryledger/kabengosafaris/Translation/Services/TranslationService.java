@@ -41,6 +41,37 @@ public class TranslationService {
     private final TranslationCacheAsyncService cacheAsyncService;
 
     /**
+     * Check if a language can be translated by verifying both system support and provider support.
+     *
+     * @param targetLanguage target language code (e.g., "fr", "sw")
+     * @return true if the language is non-English, supported by system settings, and supported by the active provider
+     */
+    public boolean canTranslate(String targetLanguage) {
+        if (targetLanguage == null || targetLanguage.isBlank() || "en".equalsIgnoreCase(targetLanguage)) {
+            return false;
+        }
+        if (!settingsService.isLanguageSupported(targetLanguage)) {
+            log.debug("Language '{}' is not in system supported languages", targetLanguage);
+            return false;
+        }
+        try {
+            if (!providerFactory.hasActiveProvider()) {
+                log.debug("No active translation provider available");
+                return false;
+            }
+            TranslationProvider provider = providerFactory.getActiveProvider();
+            if (!provider.isLanguageSupported(targetLanguage)) {
+                log.debug("Language '{}' is not supported by {} provider", targetLanguage, provider.getProviderType());
+                return false;
+            }
+        } catch (TranslationProviderException e) {
+            log.debug("Cannot verify provider language support: {}", e.getMessage());
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Translate HTML content to the target language.
      * This is the main entry point for PDF translation.
      *
@@ -204,7 +235,7 @@ public class TranslationService {
             if (settingsService.isCacheEnabled()) {
                 Optional<String> cached = getFromCache(segmentText, sourceLanguage, targetLanguage);
                 if (cached.isPresent()) {
-                    translatedSegments[i] = cached.get();
+                    translatedSegments[i] = preserveWhitespace(segmentText, cached.get());
                     continue;
                 }
             }
@@ -223,8 +254,14 @@ public class TranslationService {
                 String originalText = textSegments.get(idx).text;
 
                 try {
-                    // Translate this segment individually
-                    String translatedText = translateSegmentDirectly(originalText, sourceLanguage, targetLanguage);
+                    // Translate this segment, protecting emails/URLs from translation
+                    String translatedText = translateWithProtectedTokens(originalText, sourceLanguage, targetLanguage);
+
+                    // Preserve leading/trailing whitespace from the original text.
+                    // Translation APIs often strip whitespace, which causes translated words
+                    // to merge with adjacent HTML tags (e.g. "à<strong>email" instead of "à <strong>email").
+                    translatedText = preserveWhitespace(originalText, translatedText);
+
                     translatedSegments[idx] = translatedText;
 
                     // Cache each segment individually
@@ -394,6 +431,76 @@ public class TranslationService {
      * Represents a text segment with its position in the HTML.
      */
     private record TextSegment(int start, int end, String text) {}
+
+    // Pattern matching email addresses and URLs that should never be translated
+    private static final Pattern UNTRANSLATABLE_PATTERN = Pattern.compile(
+        "[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}" +  // email addresses
+        "|https?://[^\\s<>\"']+"                                     // URLs
+    );
+
+    /**
+     * Protect email addresses and URLs from translation by replacing them with indexed
+     * placeholders, translating the remaining text, then restoring the originals.
+     */
+    private String translateWithProtectedTokens(String text, String sourceLanguage, String targetLanguage)
+            throws TranslationProviderException {
+        Matcher matcher = UNTRANSLATABLE_PATTERN.matcher(text);
+        List<String> tokens = new ArrayList<>();
+        String masked = text;
+
+        // Replace each email/URL with a numbered placeholder that translation APIs won't touch
+        while (matcher.find()) {
+            tokens.add(matcher.group());
+        }
+
+        if (tokens.isEmpty()) {
+            return translateSegmentDirectly(text, sourceLanguage, targetLanguage);
+        }
+
+        // If the entire segment is a single untranslatable token, skip translation entirely
+        if (tokens.size() == 1 && text.trim().equals(tokens.get(0))) {
+            return text;
+        }
+
+        // Replace tokens with XML-like placeholders (translation APIs generally preserve these)
+        for (int i = 0; i < tokens.size(); i++) {
+            masked = masked.replace(tokens.get(i), "<x id=\"" + i + "\"/>");
+        }
+
+        String translated = translateSegmentDirectly(masked, sourceLanguage, targetLanguage);
+
+        // Restore original tokens
+        for (int i = 0; i < tokens.size(); i++) {
+            translated = translated.replace("<x id=\"" + i + "\"/>", tokens.get(i));
+        }
+
+        return translated;
+    }
+
+    /**
+     * Preserve leading and trailing whitespace from the original text on the translated text.
+     * Translation APIs often strip whitespace, which causes translated words to merge with
+     * adjacent HTML elements (e.g., "à" + "<strong>email" renders as "àemail").
+     */
+    private String preserveWhitespace(String original, String translated) {
+        // Extract leading whitespace from original
+        int leadEnd = 0;
+        while (leadEnd < original.length() && Character.isWhitespace(original.charAt(leadEnd))) {
+            leadEnd++;
+        }
+        String leadingWs = original.substring(0, leadEnd);
+
+        // Extract trailing whitespace from original
+        int trailStart = original.length();
+        while (trailStart > leadEnd && Character.isWhitespace(original.charAt(trailStart - 1))) {
+            trailStart--;
+        }
+        String trailingWs = original.substring(trailStart);
+
+        // Strip whitespace from translated, then re-apply original whitespace
+        String trimmed = translated.strip();
+        return leadingWs + trimmed + trailingWs;
+    }
 
     /**
      * Translate content (either full document or fragment).

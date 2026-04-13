@@ -68,6 +68,22 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
      */
     java.util.List<Invoice> findByStatusIn(java.util.List<InvoiceStatus> statuses);
 
+    /**
+     * Find all invoices linked to a safari
+     */
+    java.util.List<Invoice> findBySafariId(Long safariId);
+
+    /**
+     * Check if an invoice already exists for a safari (one invoice per safari)
+     */
+    boolean existsBySafariId(Long safariId);
+
+    /**
+     * Find all unpaid invoices for a safari (statuses that indicate money is still owed)
+     */
+    @Query("SELECT i FROM Invoice i WHERE i.safari.id = :safariId AND i.status IN ('DRAFT', 'SENT', 'PARTIALLY_PAID', 'OVERDUE')")
+    java.util.List<Invoice> findUnpaidBySafariId(@Param("safariId") Long safariId);
+
     // Navigation queries for next/previous
     @Query("SELECT e.id FROM Invoice e WHERE e.id > :currentId ORDER BY e.id ASC LIMIT 1")
     Optional<Long> findNextId(@Param("currentId") Long currentId);

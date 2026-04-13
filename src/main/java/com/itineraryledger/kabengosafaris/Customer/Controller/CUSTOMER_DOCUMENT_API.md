@@ -546,7 +546,7 @@ A document is considered "currently valid" if:
 
 Documents are stored at the configured path:
 ```
-${customer.document.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/customer-documents/}
+${customer.document.storage.path:./data/customer-documents/}
 ```
 
 Filenames are generated using SHA-256 hash + timestamp to ensure uniqueness and prevent conflicts.

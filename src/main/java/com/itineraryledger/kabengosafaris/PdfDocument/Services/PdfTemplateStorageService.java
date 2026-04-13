@@ -27,7 +27,7 @@ import java.time.format.DateTimeFormatter;
 @Slf4j
 public class PdfTemplateStorageService {
 
-    @Value("${pdf.template.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/pdf-templates/}")
+    @Value("${pdf.template.storage.path:./data/pdf-templates/}")
     private String templateStoragePath;
 
     @Autowired

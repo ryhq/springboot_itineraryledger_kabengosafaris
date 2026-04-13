@@ -148,6 +148,77 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
             "Sent when someone submits a message through the website Contact Us form. Contains sender details, subject, and message content."
         );
 
+        // ========================================
+        // Quote Events
+        // ========================================
+
+        initializeEvent(
+            "SEND_QUOTE",
+            "Sent to a customer when a safari quote is delivered. Contains quote details, itinerary summary, pricing, validity period, and payment terms."
+        );
+
+        // ========================================
+        // Safari Lifecycle Events
+        // ========================================
+
+        initializeEvent(
+            "SAFARI_PAYMENT_GAP",
+            "Critical alert sent to operations when a safari has reached its start date but payment is not complete. Requires immediate action."
+        );
+
+        initializeEvent(
+            "SAFARI_READINESS_ALERT",
+            "Warning sent to operations when an upcoming safari has unresolved readiness issues (missing vehicles, accommodations, pax data)."
+        );
+
+        initializeEvent(
+            "SAFARI_STARTED",
+            "Notification sent when a safari is automatically started by the system on its start date."
+        );
+
+        initializeEvent(
+            "SAFARI_COMPLETED",
+            "Notification sent when a safari is automatically completed after its end date. Post-trip tasks may be pending."
+        );
+
+        initializeEvent(
+            "SAFARI_POST_TRIP_REMINDER",
+            "Reminder sent for recently completed safaris with pending post-trip tasks (feedback collection, expense reconciliation)."
+        );
+
+        // ========================================
+        // Safari Customer Communication Events
+        // ========================================
+
+        initializeEvent(
+            "SEND_SAFARI_DETAILS",
+            "Structured email sent to customer with full safari details: dates, itinerary, day-by-day overview. Optional PDF attachment."
+        );
+
+        initializeEvent(
+            "SEND_SAFARI_MESSAGE",
+            "Flexible freeform email sent to customer about their safari. Operator provides subject and message body."
+        );
+
+        // ========================================
+        // Invoice & Credit Note Events
+        // ========================================
+
+        initializeEvent(
+            "SEND_INVOICE",
+            "Email sent to customer when an invoice is delivered. Includes invoice details, line items summary, total amount, payment terms, and due date."
+        );
+
+        initializeEvent(
+            "SEND_CREDIT_NOTE",
+            "Email sent to customer when a credit note is issued against an invoice. Includes credit details, credited items, total credit amount, and original invoice reference."
+        );
+
+        initializeEvent(
+            "SEND_PAYMENT_RECEIPT",
+            "Email sent to customer when a payment is recorded against an invoice. Includes payment amount, method, reference, invoice details, and remaining balance."
+        );
+
         // TODO: Add other events in future iterations:
         // - EMAIL_VERIFICATION
         // - ACCOUNT_ACTIVATED

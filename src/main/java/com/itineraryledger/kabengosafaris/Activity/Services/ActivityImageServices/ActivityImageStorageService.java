@@ -25,7 +25,7 @@ import java.security.NoSuchAlgorithmException;
 @Slf4j
 public class ActivityImageStorageService {
 
-    @Value("${activity.image.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/activity-images/}")
+    @Value("${activity.image.storage.path:./data/activity-images/}")
     private String storagePath;
 
     @Value("${app.base.url:http://localhost:4450}")

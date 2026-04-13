@@ -36,7 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EmailAccountSignatureService {
 
-    @Value("${email.signature.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/email-signatures/}")
+    @Value("${email.signature.storage.path:./data/email-signatures/}")
     private String signatureStoragePath;
 
     @Value("${email.signature.allowed.extensions:html,txt}")

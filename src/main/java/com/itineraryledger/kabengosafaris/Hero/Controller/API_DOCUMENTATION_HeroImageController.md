@@ -891,12 +891,12 @@ Images are stored in the filesystem with the following configuration:
 
 **Default Storage Path:**
 ```
-/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/hero-images/
+./data/hero-images/
 ```
 
 **Configuration Property:**
 ```properties
-hero.image.storage.path=/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/hero-images/
+hero.image.storage.path=./data/hero-images/
 ```
 
 ### Filename Hashing

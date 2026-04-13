@@ -148,6 +148,7 @@ public class QuoteFullGetService {
         // ========================
         // VALIDITY AND DATES
         // ========================
+        dto.setSafariStartDate(quote.getSafariStartDate());
         dto.setSentDate(quote.getSentDate());
         dto.setValidFrom(quote.getValidFrom());
         dto.setValidTo(quote.getValidTo());

@@ -436,7 +436,7 @@ DELETE /api/safari-documents?ids=id1,id2,id3
 
 Documents are stored at the configured path:
 ```
-${safari.document.storage.path:/opt/lampp/htdocs/kabengosafaris/ItineraryLedger/safari-documents/}
+${safari.document.storage.path:./data/safari-documents/}
 ```
 
 **File Naming Convention:**

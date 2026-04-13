@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -56,6 +58,23 @@ public interface QuoteRepository extends JpaRepository<Quote, Long>, JpaSpecific
      * Count quotes by itinerary
      */
     long countByItineraryId(Long itineraryId);
+
+    /**
+     * Find quotes that are past their validity date and still in an expirable status (READY or SENT)
+     */
+    @Query("SELECT q FROM Quote q WHERE q.validTo < :today AND q.status IN :statuses")
+    List<Quote> findExpiredQuotes(@Param("today") LocalDate today, @Param("statuses") List<QuoteStatus> statuses);
+
+    /**
+     * Find the latest quote for a given itinerary and customer,
+     * preferring ACCEPTED/CONVERTED status, ordered by version descending.
+     */
+    @Query("SELECT q FROM Quote q WHERE q.itinerary.id = :itineraryId AND q.customer.id = :customerId " +
+           "ORDER BY CASE q.status " +
+           "WHEN 'CONVERTED' THEN 0 WHEN 'ACCEPTED' THEN 1 WHEN 'SENT' THEN 2 ELSE 3 END ASC, " +
+           "q.version DESC")
+    List<Quote> findByItineraryAndCustomerOrdered(@Param("itineraryId") Long itineraryId,
+                                                   @Param("customerId") Long customerId);
 
     // Navigation queries for next/previous
     @Query("SELECT e.id FROM Quote e WHERE e.id > :currentId ORDER BY e.id ASC LIMIT 1")
