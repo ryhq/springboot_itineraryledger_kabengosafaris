@@ -31,7 +31,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
         // Skip JWT filter for endpoints that handle their own token validation
-        return path.startsWith("/api/auth/token/");
+        // and for static resources (e.g. email logo images)
+        return path.startsWith("/api/auth/token/") || path.startsWith("/images/");
     }
 
     @Override

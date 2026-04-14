@@ -56,7 +56,8 @@ public class DynamicPermissionFilter extends OncePerRequestFilter {
         "/swagger-ui/",
         "/v3/api-docs/",
         "/actuator/",
-        "/health"
+        "/health",
+        "/images/"
     };
 
     @Override
