@@ -96,6 +96,42 @@
     "isRequired": true
   },
   {
+    "path": "crossCurrency",
+    "type": "Boolean",
+    "description": "Whether payment currency differs from invoice currency",
+    "isRequired": false
+  },
+  {
+    "path": "invoiceCurrency",
+    "type": "String",
+    "description": "Invoice currency the payment settles (e.g., USD)",
+    "isRequired": false
+  },
+  {
+    "path": "exchangeRate",
+    "type": "BigDecimal",
+    "description": "Exchange rate: 1 payment currency = X invoice currency",
+    "isRequired": false
+  },
+  {
+    "path": "baseAmount",
+    "type": "BigDecimal",
+    "description": "Equivalent amount in invoice currency (amount x exchangeRate)",
+    "isRequired": false
+  },
+  {
+    "path": "formattedBaseAmount",
+    "type": "String",
+    "description": "Formatted equivalent amount with invoice currency (e.g., USD 7,560.00)",
+    "isRequired": false
+  },
+  {
+    "path": "bankAccountName",
+    "type": "String",
+    "description": "Name of the bank account the payment was deposited to",
+    "isRequired": false
+  },
+  {
     "path": "customer",
     "type": "Object",
     "description": "Customer information",
