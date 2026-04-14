@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -57,6 +58,12 @@ public class SecurityConfigurations {
     }
 
     @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        // Completely bypass the security filter chain for static resources (e.g. email logo)
+        return (web) -> web.ignoring().requestMatchers("/images/**");
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(
         HttpSecurity httpSecurity,
         JwtAuthenticationFilter jwtAuthenticationFilter,
@@ -89,7 +96,6 @@ public class SecurityConfigurations {
         )
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Set session management to stateless because we're using JWT
         .authorizeHttpRequests(authorizeHttpRequest -> authorizeHttpRequest
-                .requestMatchers("/images/**").permitAll() // Allow public access to static images (email logos, etc.)
                 .requestMatchers("/api/auth/**").permitAll() // Allow unauthenticated access to auth endpoints
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Allow unauthenticated access to Swagger documentation
                 .requestMatchers("/api/accommodation-images/*/file", "/api/accommodation-images/file/*").permitAll() // Allow public access to accommodation image files
