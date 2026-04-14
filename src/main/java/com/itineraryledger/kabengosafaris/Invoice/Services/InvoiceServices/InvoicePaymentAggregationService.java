@@ -18,6 +18,9 @@ import java.util.List;
  *
  * These values are NOT persisted on the Invoice entity — they are derived
  * at read time so they never drift from the source of truth (the payments table).
+ *
+ * Cross-currency payments are accounted for via their baseAmount (= amount × exchangeRate),
+ * grouped by the invoice currency they settle (Payment.invoiceCurrency).
  */
 @Service
 @RequiredArgsConstructor
@@ -26,9 +29,9 @@ public class InvoicePaymentAggregationService {
     private final PaymentRepository paymentRepository;
 
     /**
-     * Sum of payments in each currency present on the invoice's grand totals.
-     * Produces one Price entry per grand-total currency, even when no payment
-     * exists for that currency (in which case totalPrice = 0.00).
+     * Sum of payments (in base/invoice-currency terms) for each currency present
+     * on the invoice's grand totals. Produces one Price entry per grand-total currency,
+     * even when no payment exists (totalPrice = 0.00).
      */
     public List<Price> computeAmountsPaid(Invoice invoice) {
         List<Price> result = new ArrayList<>();
@@ -38,7 +41,8 @@ public class InvoicePaymentAggregationService {
 
         for (Price grandTotal : invoice.getGrandTotals()) {
             String currency = grandTotal.getCurrency();
-            BigDecimal paid = paymentRepository.sumAmountByInvoiceIdAndCurrency(invoice.getId(), currency);
+            BigDecimal paid = paymentRepository.sumBaseAmountByInvoiceIdAndInvoiceCurrency(
+                invoice.getId(), currency);
             if (paid == null) {
                 paid = BigDecimal.ZERO;
             }
@@ -55,7 +59,7 @@ public class InvoicePaymentAggregationService {
     }
 
     /**
-     * Balance remaining per currency = grandTotal − sum(payments in that currency).
+     * Balance remaining per currency = grandTotal − sum(baseAmounts settling that currency).
      */
     public List<Price> computeBalances(Invoice invoice) {
         List<Price> result = new ArrayList<>();
@@ -66,7 +70,8 @@ public class InvoicePaymentAggregationService {
         for (Price grandTotal : invoice.getGrandTotals()) {
             String currency = grandTotal.getCurrency();
             BigDecimal grand = grandTotal.getTotalPrice() != null ? grandTotal.getTotalPrice() : BigDecimal.ZERO;
-            BigDecimal paid = paymentRepository.sumAmountByInvoiceIdAndCurrency(invoice.getId(), currency);
+            BigDecimal paid = paymentRepository.sumBaseAmountByInvoiceIdAndInvoiceCurrency(
+                invoice.getId(), currency);
             if (paid == null) {
                 paid = BigDecimal.ZERO;
             }

@@ -169,7 +169,7 @@ public class PaymentDeleteService {
                         continue;
                     }
 
-                    BigDecimal totalPaid = paymentRepository.sumAmountByInvoiceIdAndCurrency(
+                    BigDecimal totalPaid = paymentRepository.sumBaseAmountByInvoiceIdAndInvoiceCurrency(
                         invoice.getId(), currency
                     );
 
@@ -199,23 +199,30 @@ public class PaymentDeleteService {
 
     /**
      * Check if deleting this payment would cause the invoice to no longer be fully paid.
+     * Uses baseAmount (invoice-currency equivalent) for the simulation.
      */
     private boolean wouldBreakFullyPaid(Payment payment, Invoice invoice) {
         if (invoice.getGrandTotals() == null || invoice.getGrandTotals().isEmpty()) {
             return false;
         }
 
+        String paymentInvoiceCurrency = payment.getInvoiceCurrency() != null
+            ? payment.getInvoiceCurrency() : payment.getCurrency();
+        BigDecimal paymentBaseAmount = payment.getBaseAmount() != null
+            ? payment.getBaseAmount() : payment.getAmount();
+
         for (Price grandTotal : invoice.getGrandTotals()) {
             String currency = grandTotal.getCurrency();
             BigDecimal required = grandTotal.getTotalPrice();
             if (required == null || required.compareTo(BigDecimal.ZERO) <= 0) continue;
 
-            BigDecimal currentPaid = paymentRepository.sumAmountByInvoiceIdAndCurrency(invoice.getId(), currency);
+            BigDecimal currentPaid = paymentRepository.sumBaseAmountByInvoiceIdAndInvoiceCurrency(
+                invoice.getId(), currency);
 
-            // Simulate removing this payment's contribution
+            // Simulate removing this payment's base-amount contribution
             BigDecimal simulatedPaid = currentPaid;
-            if (currency.equalsIgnoreCase(payment.getCurrency())) {
-                simulatedPaid = simulatedPaid.subtract(payment.getAmount());
+            if (currency.equalsIgnoreCase(paymentInvoiceCurrency)) {
+                simulatedPaid = simulatedPaid.subtract(paymentBaseAmount);
             }
 
             if (simulatedPaid.compareTo(required) < 0) {

@@ -36,6 +36,27 @@ public class CreatePaymentDTO {
     @NotNull(message = "Payment method is required")
     private PaymentMethod paymentMethod;
 
+    /**
+     * The invoice currency this payment settles (one of the invoice's grandTotal currencies).
+     * Optional — auto-inferred when the invoice has a single currency in grandTotals,
+     * or when the payment currency matches a grandTotal currency.
+     * Required for cross-currency payments on multi-currency invoices.
+     */
+    private String invoiceCurrency;
+
+    /**
+     * Exchange rate: 1 unit of payment currency = exchangeRate units of invoiceCurrency.
+     * Required when payment currency differs from invoiceCurrency.
+     * Auto-set to 1 when payment currency equals invoiceCurrency.
+     */
+    private BigDecimal exchangeRate;
+
+    /**
+     * Optional bank account (obfuscated ID) that received this payment deposit.
+     * Null for cash-in-hand or when the deposit account is not tracked.
+     */
+    private String bankAccountId;
+
     private String reference;
     private String notes;
 

@@ -34,6 +34,16 @@ public class PaymentDTO {
     private PaymentMethod paymentMethod;
     private String paymentMethodDisplayName;
 
+    // Cross-currency support
+    private String invoiceCurrency;
+    private BigDecimal exchangeRate;
+    private BigDecimal baseAmount;
+
+    // Bank account
+    private String bankAccountId;
+    private String bankAccountName;
+    private String bankAccountCode;
+
     private String reference;
     private String notes;
 

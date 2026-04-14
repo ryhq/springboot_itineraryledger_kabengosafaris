@@ -74,6 +74,42 @@
     "defaultValue": ""
   },
   {
+    "name": "isCrossCurrency",
+    "description": "Whether this is a cross-currency payment (true/false)",
+    "isRequired": false,
+    "defaultValue": "false"
+  },
+  {
+    "name": "exchangeRate",
+    "description": "Exchange rate applied (e.g., 1.08). Only present for cross-currency payments.",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "invoiceCurrency",
+    "description": "The invoice currency the payment settles (e.g., USD). Only present for cross-currency payments.",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "paymentCurrency",
+    "description": "Currency the payment was made in (e.g., EUR)",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "equivalentAmount",
+    "description": "Equivalent amount in invoice currency after conversion (e.g., USD 7,560.00). Only present for cross-currency payments.",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
+    "name": "bankAccountName",
+    "description": "Name of the bank account the payment was deposited to",
+    "isRequired": false,
+    "defaultValue": ""
+  },
+  {
     "name": "sentDate",
     "description": "Date the receipt email was sent (e.g., April 10, 2026)",
     "isRequired": true

@@ -96,6 +96,9 @@ public class PaymentReceiptPdfGenerationService extends PdfGenerationBaseService
     public PaymentReceiptDTO buildReceiptDTO(Payment payment) {
         Invoice invoice = payment.getInvoice();
 
+        boolean isCrossCurrency = payment.getInvoiceCurrency() != null
+            && !payment.getCurrency().equalsIgnoreCase(payment.getInvoiceCurrency());
+
         PaymentReceiptDTO.PaymentReceiptDTOBuilder builder = PaymentReceiptDTO.builder()
             .paymentId(idObfuscator.encodeId(payment.getId()))
             .amount(payment.getAmount())
@@ -105,10 +108,20 @@ public class PaymentReceiptPdfGenerationService extends PdfGenerationBaseService
             .paymentMethod(payment.getPaymentMethod().getDisplayName())
             .reference(payment.getReference())
             .notes(payment.getNotes())
-            .receiptDate(LocalDate.now());
+            .receiptDate(LocalDate.now())
+            .crossCurrency(isCrossCurrency)
+            .invoiceCurrency(payment.getInvoiceCurrency())
+            .exchangeRate(payment.getExchangeRate())
+            .baseAmount(payment.getBaseAmount())
+            .formattedBaseAmount(payment.getBaseAmount() != null
+                ? formatAmount(payment.getBaseAmount(), payment.getInvoiceCurrency()) : null);
 
         if (payment.getRecordedBy() != null) {
             builder.recordedByName(payment.getRecordedBy().getUsername());
+        }
+
+        if (payment.getBankAccount() != null) {
+            builder.bankAccountName(payment.getBankAccount().getAccountName());
         }
 
         // Invoice details
@@ -160,7 +173,7 @@ public class PaymentReceiptPdfGenerationService extends PdfGenerationBaseService
         if (invoice.getGrandTotals() == null || invoice.getGrandTotals().isEmpty()) return "N/A";
         StringBuilder sb = new StringBuilder();
         for (Price gt : invoice.getGrandTotals()) {
-            BigDecimal paid = paymentRepository.sumAmountByInvoiceIdAndCurrency(
+            BigDecimal paid = paymentRepository.sumBaseAmountByInvoiceIdAndInvoiceCurrency(
                 invoice.getId(), gt.getCurrency());
             if (paid == null) paid = BigDecimal.ZERO;
             if (sb.length() > 0) sb.append(" | ");
@@ -174,7 +187,7 @@ public class PaymentReceiptPdfGenerationService extends PdfGenerationBaseService
         StringBuilder sb = new StringBuilder();
         for (Price gt : invoice.getGrandTotals()) {
             BigDecimal grand = gt.getTotalPrice() != null ? gt.getTotalPrice() : BigDecimal.ZERO;
-            BigDecimal paid = paymentRepository.sumAmountByInvoiceIdAndCurrency(
+            BigDecimal paid = paymentRepository.sumBaseAmountByInvoiceIdAndInvoiceCurrency(
                 invoice.getId(), gt.getCurrency());
             if (paid == null) paid = BigDecimal.ZERO;
             BigDecimal balance = grand.subtract(paid);

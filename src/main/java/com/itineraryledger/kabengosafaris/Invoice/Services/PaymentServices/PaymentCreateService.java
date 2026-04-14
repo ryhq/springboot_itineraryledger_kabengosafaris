@@ -1,7 +1,11 @@
 package com.itineraryledger.kabengosafaris.Invoice.Services.PaymentServices;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
+import com.itineraryledger.kabengosafaris.BankAccount.Entity.BankAccount;
+import com.itineraryledger.kabengosafaris.BankAccount.Repository.BankAccountRepository;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.CreatePaymentDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.PaymentDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
@@ -43,6 +49,7 @@ public class PaymentCreateService {
     private final PaymentRepository paymentRepository;
     private final InvoiceRepository invoiceRepository;
     private final UserRepository userRepository;
+    private final BankAccountRepository bankAccountRepository;
     private final IdObfuscator idObfuscator;
     private final PaymentCustomerEmailService paymentCustomerEmailService;
     private final jakarta.persistence.EntityManager entityManager;
@@ -117,6 +124,80 @@ public class PaymentCreateService {
                 );
             }
 
+            String paymentCurrency = dto.getCurrency().toUpperCase();
+
+            // ========================
+            // RESOLVE INVOICE CURRENCY
+            // ========================
+
+            String invoiceCurrency = resolveInvoiceCurrency(dto.getInvoiceCurrency(), paymentCurrency, invoice);
+            if (invoiceCurrency == null) {
+                // Could not auto-infer — multi-currency invoice with cross-currency payment
+                Set<String> grandTotalCurrencies = invoice.getGrandTotals().stream()
+                    .map(Price::getCurrency)
+                    .collect(Collectors.toSet());
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400,
+                        String.format("invoiceCurrency is required for cross-currency payments on " +
+                            "multi-currency invoices. Invoice currencies: %s, payment currency: %s",
+                            grandTotalCurrencies, paymentCurrency),
+                        "INVOICE_CURRENCY_REQUIRED")
+                );
+            }
+
+            // ========================
+            // RESOLVE EXCHANGE RATE
+            // ========================
+
+            boolean crossCurrency = !paymentCurrency.equalsIgnoreCase(invoiceCurrency);
+            BigDecimal exchangeRate;
+
+            if (crossCurrency) {
+                if (dto.getExchangeRate() == null || dto.getExchangeRate().compareTo(BigDecimal.ZERO) <= 0) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                            String.format("exchangeRate is required and must be > 0 for cross-currency payments " +
+                                "(%s → %s). Rate = 1 %s in %s.",
+                                paymentCurrency, invoiceCurrency, paymentCurrency, invoiceCurrency),
+                            "EXCHANGE_RATE_REQUIRED")
+                    );
+                }
+                exchangeRate = dto.getExchangeRate();
+            } else {
+                exchangeRate = BigDecimal.ONE;
+            }
+
+            BigDecimal baseAmount = dto.getAmount()
+                .multiply(exchangeRate)
+                .setScale(2, RoundingMode.HALF_UP);
+
+            // ========================
+            // RESOLVE BANK ACCOUNT (optional)
+            // ========================
+
+            BankAccount bankAccount = null;
+            if (dto.getBankAccountId() != null && !dto.getBankAccountId().isBlank()) {
+                try {
+                    Long bankAccountId = idObfuscator.decodeId(dto.getBankAccountId());
+                    bankAccount = bankAccountRepository.findById(bankAccountId).orElse(null);
+                    if (bankAccount == null) {
+                        return ResponseEntity.badRequest().body(
+                            ApiResponse.error(400, "Bank account not found", "BANK_ACCOUNT_NOT_FOUND")
+                        );
+                    }
+                    if (!Boolean.TRUE.equals(bankAccount.getIsActive())) {
+                        return ResponseEntity.badRequest().body(
+                            ApiResponse.error(400, "Bank account is not active", "BANK_ACCOUNT_INACTIVE")
+                        );
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to decode bank account ID: {}", dto.getBankAccountId(), e);
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Invalid bank account ID", "INVALID_BANK_ACCOUNT_ID")
+                    );
+                }
+            }
+
             // ========================
             // GET CURRENT USER
             // ========================
@@ -130,7 +211,11 @@ public class PaymentCreateService {
             Payment payment = Payment.builder()
                 .invoice(invoice)
                 .amount(dto.getAmount())
-                .currency(dto.getCurrency().toUpperCase())
+                .currency(paymentCurrency)
+                .invoiceCurrency(invoiceCurrency)
+                .exchangeRate(exchangeRate)
+                .baseAmount(baseAmount)
+                .bankAccount(bankAccount)
                 .paymentDate(dto.getPaymentDate())
                 .paymentMethod(dto.getPaymentMethod())
                 .reference(dto.getReference())
@@ -140,7 +225,10 @@ public class PaymentCreateService {
 
             payment = paymentRepository.save(payment);
 
-            log.info("Payment saved with ID: {} for invoice: {}", payment.getId(), invoice.getInvoiceCode());
+            log.info("Payment saved with ID: {} for invoice: {} ({} {} → {} {} @ rate {})",
+                payment.getId(), invoice.getInvoiceCode(),
+                paymentCurrency, dto.getAmount(),
+                invoiceCurrency, baseAmount, exchangeRate);
 
             // ========================
             // AUTO-TRANSITION INVOICE STATUS
@@ -166,6 +254,49 @@ public class PaymentCreateService {
                 ApiResponse.error(500, "Failed to record payment", "PAYMENT_CREATE_FAILED")
             );
         }
+    }
+
+    /**
+     * Resolve which invoice grand-total currency a payment is settling.
+     *
+     * <ol>
+     *   <li>If explicitly provided and valid → use it</li>
+     *   <li>If payment currency matches a grand-total currency → same-currency, use it</li>
+     *   <li>If invoice has exactly one grand-total currency → use that</li>
+     *   <li>Otherwise → null (caller must reject)</li>
+     * </ol>
+     */
+    public String resolveInvoiceCurrency(String explicit, String paymentCurrency, Invoice invoice) {
+        List<Price> grandTotals = invoice.getGrandTotals();
+        if (grandTotals == null || grandTotals.isEmpty()) {
+            return paymentCurrency; // edge case: no totals yet
+        }
+
+        Set<String> grandTotalCurrencies = grandTotals.stream()
+            .map(Price::getCurrency)
+            .collect(Collectors.toSet());
+
+        // 1. Explicit
+        if (explicit != null && !explicit.isBlank()) {
+            String upper = explicit.toUpperCase();
+            if (!grandTotalCurrencies.contains(upper)) {
+                return null; // invalid — not one of the invoice currencies
+            }
+            return upper;
+        }
+
+        // 2. Payment currency matches a grand-total currency
+        if (grandTotalCurrencies.contains(paymentCurrency)) {
+            return paymentCurrency;
+        }
+
+        // 3. Single-currency invoice
+        if (grandTotalCurrencies.size() == 1) {
+            return grandTotalCurrencies.iterator().next();
+        }
+
+        // 4. Ambiguous — cannot infer
+        return null;
     }
 
     /**
@@ -196,7 +327,7 @@ public class PaymentCreateService {
                 continue;
             }
 
-            BigDecimal totalPaid = paymentRepository.sumAmountByInvoiceIdAndCurrency(
+            BigDecimal totalPaid = paymentRepository.sumBaseAmountByInvoiceIdAndInvoiceCurrency(
                 invoice.getId(), currency
             );
 
@@ -230,6 +361,9 @@ public class PaymentCreateService {
             .id(idObfuscator.encodeId(payment.getId()))
             .amount(payment.getAmount())
             .currency(payment.getCurrency())
+            .invoiceCurrency(payment.getInvoiceCurrency())
+            .exchangeRate(payment.getExchangeRate())
+            .baseAmount(payment.getBaseAmount())
             .paymentDate(payment.getPaymentDate())
             .paymentMethod(payment.getPaymentMethod())
             .paymentMethodDisplayName(payment.getPaymentMethod().getDisplayName())
@@ -242,6 +376,13 @@ public class PaymentCreateService {
         if (payment.getInvoice() != null) {
             dto.setInvoiceId(idObfuscator.encodeId(payment.getInvoice().getId()));
             dto.setInvoiceCode(payment.getInvoice().getInvoiceCode());
+        }
+
+        // Set bank account
+        if (payment.getBankAccount() != null) {
+            dto.setBankAccountId(idObfuscator.encodeId(payment.getBankAccount().getId()));
+            dto.setBankAccountName(payment.getBankAccount().getAccountName());
+            dto.setBankAccountCode(payment.getBankAccount().getAccountCode());
         }
 
         // Set recorded by user

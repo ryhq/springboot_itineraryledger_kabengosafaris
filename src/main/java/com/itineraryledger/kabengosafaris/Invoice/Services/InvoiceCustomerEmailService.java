@@ -4,11 +4,8 @@ import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices.Emai
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailTemplateRenderer;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.InvoiceLineItem;
-import com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceRepository;
 import com.itineraryledger.kabengosafaris.PdfDocument.Services.InvoicePdfGenerationService;
 import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
-import com.itineraryledger.kabengosafaris.Response.ApiResponse;
-import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import com.itineraryledger.kabengosafaris.Translation.Services.TranslationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,8 +31,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class InvoiceCustomerEmailService {
 
-    private final InvoiceRepository invoiceRepository;
-    private final IdObfuscator idObfuscator;
     private final EmailTemplateRenderer emailTemplateRenderer;
     private final EmailSendingService emailSendingService;
     private final InvoicePdfGenerationService invoicePdfGenerationService;

@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Invoice.Services.PaymentServices;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Set;
 
 import org.springframework.http.ResponseEntity;
@@ -8,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
+import com.itineraryledger.kabengosafaris.BankAccount.Entity.BankAccount;
+import com.itineraryledger.kabengosafaris.BankAccount.Repository.BankAccountRepository;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.PaymentDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.UpdatePaymentDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
@@ -37,6 +40,7 @@ public class PaymentUpdateService {
 
     private final PaymentRepository paymentRepository;
     private final PaymentCreateService paymentCreateService;
+    private final BankAccountRepository bankAccountRepository;
     private final IdObfuscator idObfuscator;
 
     /** Safari states that are past FULLY_PAID — editing payments here is dangerous */
@@ -80,11 +84,13 @@ public class PaymentUpdateService {
 
             // Guard: block financial changes that would break fully-paid status
             // if the linked safari has already progressed past FULLY_PAID
-            boolean isFinancialEdit = (dto.getAmount() != null || (dto.getCurrency() != null && !dto.getCurrency().isBlank()));
+            boolean isFinancialEdit = (dto.getAmount() != null
+                || (dto.getCurrency() != null && !dto.getCurrency().isBlank())
+                || dto.getExchangeRate() != null
+                || (dto.getInvoiceCurrency() != null && !dto.getInvoiceCurrency().isBlank()));
             if (isFinancialEdit && !Boolean.TRUE.equals(dto.getForce())) {
                 Safari safari = invoice.getSafari();
                 if (safari != null && POST_PAYMENT_STATES.contains(safari.getState())) {
-                    // Simulate: would this edit break the fully-paid status?
                     if (wouldBreakFullyPaid(payment, invoice, dto)) {
                         return ResponseEntity.badRequest().body(
                             ApiResponse.error(400,
@@ -98,7 +104,7 @@ public class PaymentUpdateService {
                 }
             }
 
-            // Track whether amount/currency changed (needs status recalculation)
+            // Track whether financial fields changed (needs status recalculation)
             boolean financialChange = false;
 
             if (dto.getAmount() != null) {
@@ -114,6 +120,54 @@ public class PaymentUpdateService {
             if (dto.getCurrency() != null && !dto.getCurrency().isBlank()) {
                 financialChange = true;
                 payment.setCurrency(dto.getCurrency().toUpperCase());
+            }
+
+            if (dto.getInvoiceCurrency() != null && !dto.getInvoiceCurrency().isBlank()) {
+                financialChange = true;
+                payment.setInvoiceCurrency(dto.getInvoiceCurrency().toUpperCase());
+            }
+
+            if (dto.getExchangeRate() != null) {
+                if (dto.getExchangeRate().compareTo(BigDecimal.ZERO) <= 0) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Exchange rate must be greater than zero", "INVALID_EXCHANGE_RATE")
+                    );
+                }
+                financialChange = true;
+                payment.setExchangeRate(dto.getExchangeRate());
+            }
+
+            // Recompute baseAmount if any financial field changed
+            if (financialChange) {
+                BigDecimal rate = payment.getExchangeRate() != null ? payment.getExchangeRate() : BigDecimal.ONE;
+                // If payment currency == invoice currency, force rate to 1
+                if (payment.getCurrency() != null && payment.getCurrency().equalsIgnoreCase(payment.getInvoiceCurrency())) {
+                    rate = BigDecimal.ONE;
+                    payment.setExchangeRate(BigDecimal.ONE);
+                }
+                payment.setBaseAmount(payment.getAmount().multiply(rate).setScale(2, RoundingMode.HALF_UP));
+            }
+
+            // Bank account (optional) — empty string clears, null leaves unchanged
+            if (dto.getBankAccountId() != null) {
+                if (dto.getBankAccountId().isBlank()) {
+                    payment.setBankAccount(null);
+                } else {
+                    try {
+                        Long bankAccountId = idObfuscator.decodeId(dto.getBankAccountId());
+                        BankAccount bankAccount = bankAccountRepository.findById(bankAccountId).orElse(null);
+                        if (bankAccount == null) {
+                            return ResponseEntity.badRequest().body(
+                                ApiResponse.error(400, "Bank account not found", "BANK_ACCOUNT_NOT_FOUND")
+                            );
+                        }
+                        payment.setBankAccount(bankAccount);
+                    } catch (Exception e) {
+                        return ResponseEntity.badRequest().body(
+                            ApiResponse.error(400, "Invalid bank account ID", "INVALID_BANK_ACCOUNT_ID")
+                        );
+                    }
+                }
             }
 
             if (dto.getPaymentDate() != null) {
@@ -135,7 +189,7 @@ public class PaymentUpdateService {
             payment = paymentRepository.save(payment);
             log.info("Payment {} updated for invoice {}", paymentId, invoice.getInvoiceCode());
 
-            // Recalculate invoice status if amount or currency changed
+            // Recalculate invoice status if financial fields changed
             if (financialChange) {
                 paymentCreateService.recalculateInvoiceStatus(invoice);
             }
@@ -156,33 +210,49 @@ public class PaymentUpdateService {
 
     /**
      * Check if editing this payment would cause the invoice to no longer be fully paid.
-     * Simulates the new totals by subtracting the old payment and adding the new values.
+     * Simulates the new baseAmount totals by subtracting the old contribution and adding the new.
      */
     private boolean wouldBreakFullyPaid(Payment payment, Invoice invoice, UpdatePaymentDTO dto) {
         if (invoice.getGrandTotals() == null || invoice.getGrandTotals().isEmpty()) {
             return false;
         }
 
-        String oldCurrency = payment.getCurrency();
-        BigDecimal oldAmount = payment.getAmount();
-        String newCurrency = (dto.getCurrency() != null && !dto.getCurrency().isBlank())
-            ? dto.getCurrency().toUpperCase() : oldCurrency;
-        BigDecimal newAmount = dto.getAmount() != null ? dto.getAmount() : oldAmount;
+        // Old contribution
+        String oldInvoiceCurrency = payment.getInvoiceCurrency() != null
+            ? payment.getInvoiceCurrency() : payment.getCurrency();
+        BigDecimal oldBaseAmount = payment.getBaseAmount() != null
+            ? payment.getBaseAmount() : payment.getAmount();
+
+        // Simulate new values
+        String newInvoiceCurrency = (dto.getInvoiceCurrency() != null && !dto.getInvoiceCurrency().isBlank())
+            ? dto.getInvoiceCurrency().toUpperCase() : oldInvoiceCurrency;
+        BigDecimal newAmount = dto.getAmount() != null ? dto.getAmount() : payment.getAmount();
+        String newPaymentCurrency = (dto.getCurrency() != null && !dto.getCurrency().isBlank())
+            ? dto.getCurrency().toUpperCase() : payment.getCurrency();
+        BigDecimal newRate;
+        if (newPaymentCurrency.equalsIgnoreCase(newInvoiceCurrency)) {
+            newRate = BigDecimal.ONE;
+        } else {
+            newRate = dto.getExchangeRate() != null ? dto.getExchangeRate()
+                : (payment.getExchangeRate() != null ? payment.getExchangeRate() : BigDecimal.ONE);
+        }
+        BigDecimal newBaseAmount = newAmount.multiply(newRate).setScale(2, RoundingMode.HALF_UP);
 
         for (Price grandTotal : invoice.getGrandTotals()) {
             String currency = grandTotal.getCurrency();
             BigDecimal required = grandTotal.getTotalPrice();
             if (required == null || required.compareTo(BigDecimal.ZERO) <= 0) continue;
 
-            BigDecimal currentPaid = paymentRepository.sumAmountByInvoiceIdAndCurrency(invoice.getId(), currency);
+            BigDecimal currentPaid = paymentRepository.sumBaseAmountByInvoiceIdAndInvoiceCurrency(
+                invoice.getId(), currency);
 
-            // Simulate: subtract old contribution, add new contribution for this currency
+            // Simulate: subtract old contribution, add new contribution
             BigDecimal simulatedPaid = currentPaid;
-            if (currency.equalsIgnoreCase(oldCurrency)) {
-                simulatedPaid = simulatedPaid.subtract(oldAmount);
+            if (currency.equalsIgnoreCase(oldInvoiceCurrency)) {
+                simulatedPaid = simulatedPaid.subtract(oldBaseAmount);
             }
-            if (currency.equalsIgnoreCase(newCurrency)) {
-                simulatedPaid = simulatedPaid.add(newAmount);
+            if (currency.equalsIgnoreCase(newInvoiceCurrency)) {
+                simulatedPaid = simulatedPaid.add(newBaseAmount);
             }
 
             if (simulatedPaid.compareTo(required) < 0) {

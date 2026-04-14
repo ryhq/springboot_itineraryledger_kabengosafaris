@@ -17,6 +17,26 @@ public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpec
 
     long countByInvoiceId(Long invoiceId);
 
+    /**
+     * @deprecated Use {@link #sumBaseAmountByInvoiceIdAndInvoiceCurrency} instead.
+     * This query only sees payments whose raw currency matches, missing cross-currency payments.
+     */
+    @Deprecated
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.invoice.id = :invoiceId AND p.currency = :currency")
     BigDecimal sumAmountByInvoiceIdAndCurrency(@Param("invoiceId") Long invoiceId, @Param("currency") String currency);
+
+    /**
+     * Sum the base (invoice-currency-equivalent) amounts of all payments that settle a given
+     * invoice currency. This correctly accounts for cross-currency payments via their stored
+     * exchangeRate: baseAmount = amount × exchangeRate.
+     *
+     * Falls back to raw amount for legacy rows where baseAmount is still null.
+     */
+    @Query("SELECT COALESCE(SUM(COALESCE(p.baseAmount, p.amount)), 0) " +
+           "FROM Payment p " +
+           "WHERE p.invoice.id = :invoiceId " +
+           "  AND COALESCE(p.invoiceCurrency, p.currency) = :invoiceCurrency")
+    BigDecimal sumBaseAmountByInvoiceIdAndInvoiceCurrency(
+        @Param("invoiceId") Long invoiceId,
+        @Param("invoiceCurrency") String invoiceCurrency);
 }

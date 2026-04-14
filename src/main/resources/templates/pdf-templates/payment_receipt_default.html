@@ -531,6 +531,12 @@
     <div class="amount-banner no-break">
       <div class="label">Amount Received</div>
       <div class="amount" th:text="${receipt.formattedAmount}">USD 1,500.00</div>
+      <!-- Cross-currency conversion line -->
+      <div class="sub" th:if="${receipt.crossCurrency}" style="margin-top:6px; font-size:13px; opacity:0.9;">
+        <span th:text="'Exchange Rate: 1 ' + ${receipt.currency} + ' = ' + ${receipt.exchangeRate} + ' ' + ${receipt.invoiceCurrency}"></span>
+        <br/>
+        <span th:text="'Equivalent: ' + ${receipt.formattedBaseAmount}"></span>
+      </div>
       <div class="sub">Received with thanks</div>
     </div>
 
@@ -586,6 +592,18 @@
         <div class="info-row">
           <span class="info-label">Amount Paid:</span>
           <span class="info-value" th:text="${receipt.formattedAmount}">USD 1,500.00</span>
+        </div>
+        <div class="info-row" th:if="${receipt.crossCurrency}">
+          <span class="info-label">Exchange Rate:</span>
+          <span class="info-value" th:text="'1 ' + ${receipt.currency} + ' = ' + ${receipt.exchangeRate} + ' ' + ${receipt.invoiceCurrency}">1 EUR = 1.08 USD</span>
+        </div>
+        <div class="info-row" th:if="${receipt.crossCurrency}">
+          <span class="info-label">Equivalent Amount:</span>
+          <span class="info-value" th:text="${receipt.formattedBaseAmount}">USD 7,560.00</span>
+        </div>
+        <div class="info-row" th:if="${receipt.bankAccountName != null and !#strings.isEmpty(receipt.bankAccountName)}">
+          <span class="info-label">Deposited To:</span>
+          <span class="info-value" th:text="${receipt.bankAccountName}">Kabengo Safaris USD Account</span>
         </div>
         <div class="info-row" th:if="${receipt.reference != null and !#strings.isEmpty(receipt.reference)}">
           <span class="info-label">Reference:</span>

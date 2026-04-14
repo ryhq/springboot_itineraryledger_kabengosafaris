@@ -168,6 +168,27 @@ public class PaymentCustomerEmailService {
         v.put("paymentReference", payment.getReference() != null ? payment.getReference() : "");
         v.put("paymentNotes", payment.getNotes() != null ? payment.getNotes() : "");
 
+        // Cross-currency variables
+        boolean crossCurrency = payment.getInvoiceCurrency() != null
+            && !payment.getCurrency().equalsIgnoreCase(payment.getInvoiceCurrency());
+        v.put("isCrossCurrency", String.valueOf(crossCurrency));
+        if (crossCurrency) {
+            v.put("exchangeRate", payment.getExchangeRate() != null ? payment.getExchangeRate().toPlainString() : "");
+            v.put("invoiceCurrency", payment.getInvoiceCurrency() != null ? payment.getInvoiceCurrency() : "");
+            v.put("paymentCurrency", payment.getCurrency());
+            v.put("equivalentAmount", payment.getBaseAmount() != null
+                ? formatAmount(payment.getBaseAmount(), payment.getInvoiceCurrency()) : "");
+        } else {
+            v.put("exchangeRate", "");
+            v.put("invoiceCurrency", "");
+            v.put("paymentCurrency", payment.getCurrency());
+            v.put("equivalentAmount", "");
+        }
+
+        // Bank account
+        v.put("bankAccountName", payment.getBankAccount() != null
+            ? payment.getBankAccount().getAccountName() : "");
+
         if (invoice.getSafari() != null) {
             v.put("safariName", invoice.getSafari().getName() != null ? invoice.getSafari().getName() : "");
             v.put("safariCode", invoice.getSafari().getCode() != null ? invoice.getSafari().getCode() : "");
@@ -198,7 +219,7 @@ public class PaymentCustomerEmailService {
         if (invoice.getGrandTotals() == null || invoice.getGrandTotals().isEmpty()) return "N/A";
         StringBuilder sb = new StringBuilder();
         for (Price gt : invoice.getGrandTotals()) {
-            BigDecimal paid = paymentRepository.sumAmountByInvoiceIdAndCurrency(
+            BigDecimal paid = paymentRepository.sumBaseAmountByInvoiceIdAndInvoiceCurrency(
                 invoice.getId(), gt.getCurrency());
             if (paid == null) paid = BigDecimal.ZERO;
             if (sb.length() > 0) sb.append(" | ");
@@ -212,7 +233,7 @@ public class PaymentCustomerEmailService {
         StringBuilder sb = new StringBuilder();
         for (Price gt : invoice.getGrandTotals()) {
             BigDecimal grand = gt.getTotalPrice() != null ? gt.getTotalPrice() : BigDecimal.ZERO;
-            BigDecimal paid = paymentRepository.sumAmountByInvoiceIdAndCurrency(
+            BigDecimal paid = paymentRepository.sumBaseAmountByInvoiceIdAndInvoiceCurrency(
                 invoice.getId(), gt.getCurrency());
             if (paid == null) paid = BigDecimal.ZERO;
             BigDecimal balance = grand.subtract(paid);

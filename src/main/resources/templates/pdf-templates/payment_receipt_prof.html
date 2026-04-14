@@ -438,6 +438,14 @@
         <td style="width: 50%;">
           <div class="as-amount" th:text="${receipt.formattedAmount}">USD 1,500.00</div>
           <div class="as-method" th:text="${'via ' + receipt.paymentMethod}">via Bank Transfer</div>
+          <div th:if="${receipt.crossCurrency}" style="font-size:11px; color:#555; margin-top:4px;">
+            <span th:text="'Rate: 1 ' + ${receipt.currency} + ' = ' + ${receipt.exchangeRate} + ' ' + ${receipt.invoiceCurrency}"></span>
+            &nbsp;|&nbsp;
+            <span th:text="'Equivalent: ' + ${receipt.formattedBaseAmount}"></span>
+          </div>
+          <div th:if="${receipt.bankAccountName != null and !#strings.isEmpty(receipt.bankAccountName)}" style="font-size:11px; color:#555; margin-top:2px;">
+            <span th:text="'Deposited to: ' + ${receipt.bankAccountName}"></span>
+          </div>
         </td>
       </tr>
     </table>

@@ -24,6 +24,24 @@ public class UpdatePaymentDTO {
     private String currency;
     private LocalDate paymentDate;
     private PaymentMethod paymentMethod;
+
+    /**
+     * The invoice currency this payment settles.
+     * When changed, exchangeRate and baseAmount are recomputed.
+     */
+    private String invoiceCurrency;
+
+    /**
+     * Exchange rate: 1 unit of payment currency = exchangeRate units of invoiceCurrency.
+     */
+    private BigDecimal exchangeRate;
+
+    /**
+     * Optional bank account (obfuscated ID) that received this payment deposit.
+     * Pass empty string "" to unlink the current bank account.
+     */
+    private String bankAccountId;
+
     private String reference;
     private String notes;
 

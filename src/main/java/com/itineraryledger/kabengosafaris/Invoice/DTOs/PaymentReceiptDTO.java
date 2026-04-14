@@ -32,6 +32,16 @@ public class PaymentReceiptDTO {
     private String recordedByName;
     private LocalDate receiptDate;
 
+    // Cross-currency support
+    private String invoiceCurrency;
+    private BigDecimal exchangeRate;
+    private BigDecimal baseAmount;
+    private String formattedBaseAmount;
+    private boolean crossCurrency;
+
+    // Bank account
+    private String bankAccountName;
+
     // Invoice details
     private String invoiceCode;
     private String invoiceTitle;
