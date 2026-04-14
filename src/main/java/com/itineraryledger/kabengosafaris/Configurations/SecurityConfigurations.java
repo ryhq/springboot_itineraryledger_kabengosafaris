@@ -89,6 +89,7 @@ public class SecurityConfigurations {
         )
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Set session management to stateless because we're using JWT
         .authorizeHttpRequests(authorizeHttpRequest -> authorizeHttpRequest
+                .requestMatchers("/images/**").permitAll() // Allow public access to static images (email logos, etc.)
                 .requestMatchers("/api/auth/**").permitAll() // Allow unauthenticated access to auth endpoints
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Allow unauthenticated access to Swagger documentation
                 .requestMatchers("/api/accommodation-images/*/file", "/api/accommodation-images/file/*").permitAll() // Allow public access to accommodation image files
