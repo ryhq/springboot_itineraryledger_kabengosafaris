@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -58,12 +57,19 @@ public class SecurityConfigurations {
     }
 
     @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        // Completely bypass the security filter chain for static resources (e.g. email logo)
-        return (web) -> web.ignoring().requestMatchers("/images/**");
+    @org.springframework.core.annotation.Order(1)
+    public SecurityFilterChain staticResourcesFilterChain(HttpSecurity http) throws Exception {
+        return http
+            .securityMatcher("/images/**")
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+            .csrf(csrf -> csrf.disable())
+            .httpBasic(basic -> basic.disable())
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .build();
     }
 
     @Bean
+    @org.springframework.core.annotation.Order(2)
     public SecurityFilterChain securityFilterChain(
         HttpSecurity httpSecurity,
         JwtAuthenticationFilter jwtAuthenticationFilter,
