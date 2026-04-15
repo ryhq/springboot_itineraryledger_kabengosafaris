@@ -100,4 +100,11 @@ public class GeneratePdfRequestDTO {
      * Optional: notes for the saved document.
      */
     private String documentNotes;
+
+    /**
+     * Optional: DOCX engine override ("docx4j" or "libreoffice"). Ignored by
+     * the PDF endpoints — only consumed by the /api/docx/* endpoints. When
+     * null, the global {@code docx.engine} property decides.
+     */
+    private String engine;
 }

@@ -226,6 +226,33 @@
 			<version>5.2.5</version>
 		</dependency>
 
+		<!-- Word (.docx) Generation: docx4j + XHTMLImporter (HTML to DOCX) -->
+		<!-- Versions pinned to 11.4.8 — the latest version of docx4j-ImportXHTML
+		     published to Maven Central (docx4j-core has newer 11.5.x but
+		     ImportXHTML hasn't been re-released against them). -->
+		<dependency>
+			<groupId>org.docx4j</groupId>
+			<artifactId>docx4j-JAXB-ReferenceImpl</artifactId>
+			<version>11.4.8</version>
+		</dependency>
+		<dependency>
+			<groupId>org.docx4j</groupId>
+			<artifactId>docx4j-ImportXHTML</artifactId>
+			<version>11.4.8</version>
+		</dependency>
+
+		<!-- Word (.docx) Generation: JODConverter + headless LibreOffice (higher-fidelity
+		     HTML→DOCX engine). Used when docx.engine=libreoffice. Requires LibreOffice
+		     installed on the host (e.g. `apt install libreoffice`). The lifecycle is
+		     owned by JodConverterManager so settings can be reloaded at runtime via
+		     POST /api/docx-settings/reload/libreoffice (no Spring Boot restart needed).
+		     Hence no spring-boot-starter — we only need the local library. -->
+		<dependency>
+			<groupId>org.jodconverter</groupId>
+			<artifactId>jodconverter-local</artifactId>
+			<version>4.4.11</version>
+		</dependency>
+
 		<!-- Apache Commons Compress — TAR/TAR.GZ backup support -->
 		<dependency>
 			<groupId>org.apache.commons</groupId>
