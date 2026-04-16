@@ -6,12 +6,18 @@ import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jodconverter.core.DocumentConverter;
+import org.jodconverter.core.document.DefaultDocumentFormatRegistry;
+import org.jodconverter.core.document.DocumentFamily;
+import org.jodconverter.core.document.DocumentFormat;
+import org.jodconverter.core.document.DocumentFormatRegistry;
+import org.jodconverter.core.document.JsonDocumentFormatRegistry;
 import org.jodconverter.core.office.OfficeException;
 import org.jodconverter.core.office.OfficeManager;
 import org.jodconverter.local.LocalConverter;
 import org.jodconverter.local.office.LocalOfficeManager;
 import org.springframework.stereotype.Component;
 
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -225,7 +231,10 @@ public class JodConverterManager {
         mgr.start();
 
         this.officeManager = mgr;
-        this.converter = LocalConverter.make(mgr);
+        this.converter = LocalConverter.builder()
+            .officeManager(mgr)
+            .formatRegistry(buildFormatRegistry())
+            .build();
         this.activeOfficeHome = officeHome;
         this.activePortNumbers = portsStr;
         this.activeMaxTasksPerProcess = maxTasks;
@@ -270,6 +279,36 @@ public class JodConverterManager {
             status = Status.STOPPED;
         } finally {
             lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Build a format registry based on the defaults but with the DOCX format
+     * extended to support WEB → DOCX conversion.
+     *
+     * JODConverter's default DOCX format only has store properties for the TEXT
+     * document family. LibreOffice loads HTML files as WebDocuments (WEB family),
+     * so {@code docxFormat.getStoreProperties(WEB)} returns null and the
+     * conversion is rejected with "Unsupported conversion". Adding the WEB
+     * store filter here fixes HTML → DOCX without affecting other conversions.
+     */
+    private DocumentFormatRegistry buildFormatRegistry() {
+        try (InputStream is = getClass().getResourceAsStream("/document-formats.json")) {
+            JsonDocumentFormatRegistry registry = JsonDocumentFormatRegistry.create(is);
+
+            // Extend DOCX: add the "MS Word 2007 XML" store filter for WEB family
+            DocumentFormat docxWithWeb = DocumentFormat.builder()
+                .from(DefaultDocumentFormatRegistry.DOCX)
+                .storeFilterName(DocumentFamily.WEB, "MS Word 2007 XML")
+                .build();
+            registry.addFormat(docxWithWeb);
+
+            log.debug("Custom format registry built: DOCX now supports WEB → DOCX conversion");
+            return registry;
+        } catch (Exception e) {
+            log.warn("Failed to build custom format registry, falling back to defaults. " +
+                "HTML → DOCX conversion may fail.", e);
+            return DefaultDocumentFormatRegistry.getInstance();
         }
     }
 

@@ -81,9 +81,9 @@ public class LibreOfficeDocxEngine implements DocxEngine {
             manager.withConverter(converter -> {
                 try {
                     // File-based: JODConverter infers format from the extension.
-                    // This uses LibreOffice's "HTML (StarWriter)" input filter and
-                    // "MS Word 2007 XML" output filter, both of which are in the
-                    // default document-formats registry.
+                    // JodConverterManager registers a custom format registry that
+                    // adds WEB → DOCX store support, so HTML (WEB family) →
+                    // DOCX conversion succeeds.
                     converter.convert(inHtml.toFile())
                         .to(outDocx.toFile())
                         .execute();
