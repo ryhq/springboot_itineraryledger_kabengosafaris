@@ -190,6 +190,7 @@ public class InvoiceFromSafariGenerationService {
             // 6. Create InvoiceLineItems from cost estimation line items
             int itemsCreated = createInvoiceLineItemsFromEstimation(invoiceId, costEstimation);
 
+
             log.info("Successfully generated invoice: {} with {} items for safari: {}",
                     invoiceDTO.getInvoiceCode(), itemsCreated, dto.getSafariId());
 
