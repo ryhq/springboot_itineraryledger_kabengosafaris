@@ -4,15 +4,18 @@ import com.itineraryledger.kabengosafaris.Dashboard.Service.DashboardService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
+
 /**
- * Dashboard Controller
- * REST API endpoints for dashboard statistics and metrics
+ * Dashboard Controller — aggregated statistics, trends, leaderboards, alerts.
  */
 @RestController
 @RequestMapping("/api/dashboard")
@@ -22,80 +25,115 @@ public class DashboardController {
 
     private final DashboardService dashboardService;
 
-    /**
-     * Get comprehensive dashboard statistics
-     * Includes all metrics: quotes, invoices, customers, safaris, users, activities
-     *
-     * @return ResponseEntity with ApiResponse containing DashboardStatsDTO
-     */
+    // -----------------------------------------------------------------------
+    // Existing overview endpoints
+    // -----------------------------------------------------------------------
+
     @GetMapping("/stats")
     @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD')")
     public ResponseEntity<ApiResponse<?>> getDashboardStats() {
-        log.info("GET /api/dashboard/stats - Fetching comprehensive dashboard statistics");
+        log.info("GET /api/dashboard/stats");
         return dashboardService.getDashboardStats();
     }
 
-    /**
-     * Get quote statistics only
-     * Includes: total quotes, quotes by status, conversion rate, recent quotes
-     *
-     * @return ResponseEntity with ApiResponse containing quote statistics
-     */
     @GetMapping("/stats/quotes")
     @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD') or hasAuthority('PERM_READ_QUOTE')")
     public ResponseEntity<ApiResponse<?>> getQuoteStats() {
-        log.info("GET /api/dashboard/stats/quotes - Fetching quote statistics");
         return dashboardService.getQuoteStats();
     }
 
-    /**
-     * Get invoice statistics only
-     * Includes: total invoices, invoices by status, revenue metrics, recent invoices
-     *
-     * @return ResponseEntity with ApiResponse containing invoice statistics
-     */
     @GetMapping("/stats/invoices")
     @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD') or hasAuthority('PERM_READ_INVOICE')")
     public ResponseEntity<ApiResponse<?>> getInvoiceStats() {
-        log.info("GET /api/dashboard/stats/invoices - Fetching invoice statistics");
         return dashboardService.getInvoiceStats();
     }
 
-    /**
-     * Get customer statistics only
-     * Includes: total customers, active/VIP customers, new customers, recent customers
-     *
-     * @return ResponseEntity with ApiResponse containing customer statistics
-     */
     @GetMapping("/stats/customers")
     @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD') or hasAuthority('PERM_READ_CUSTOMER')")
     public ResponseEntity<ApiResponse<?>> getCustomerStats() {
-        log.info("GET /api/dashboard/stats/customers - Fetching customer statistics");
         return dashboardService.getCustomerStats();
     }
 
-    /**
-     * Get safari statistics only
-     * Includes: total safaris, safaris by state, upcoming/ongoing safaris, recent safaris
-     *
-     * @return ResponseEntity with ApiResponse containing safari statistics
-     */
     @GetMapping("/stats/safaris")
     @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD') or hasAuthority('PERM_READ_SAFARI')")
     public ResponseEntity<ApiResponse<?>> getSafariStats() {
-        log.info("GET /api/dashboard/stats/safaris - Fetching safari statistics");
         return dashboardService.getSafariStats();
     }
 
-    /**
-     * Health check endpoint for dashboard API
-     *
-     * @return ResponseEntity with success message
-     */
+    // -----------------------------------------------------------------------
+    // Trends (time-series)
+    // -----------------------------------------------------------------------
+
+    @GetMapping("/trends/revenue")
+    @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD')")
+    public ResponseEntity<ApiResponse<?>> getRevenueTrend(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "day") String period) {
+        return dashboardService.getRevenueTrend(from, to, period);
+    }
+
+    @GetMapping("/trends/bookings")
+    @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD')")
+    public ResponseEntity<ApiResponse<?>> getBookingsTrend(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "day") String period) {
+        return dashboardService.getBookingsTrend(from, to, period);
+    }
+
+    // -----------------------------------------------------------------------
+    // Leaderboards
+    // -----------------------------------------------------------------------
+
+    @GetMapping("/top/parks")
+    @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD')")
+    public ResponseEntity<ApiResponse<?>> getTopParks(@RequestParam(defaultValue = "5") int limit) {
+        return dashboardService.getTopParks(limit);
+    }
+
+    @GetMapping("/top/activities")
+    @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD')")
+    public ResponseEntity<ApiResponse<?>> getTopActivities(@RequestParam(defaultValue = "5") int limit) {
+        return dashboardService.getTopActivities(limit);
+    }
+
+    @GetMapping("/top/accommodations")
+    @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD')")
+    public ResponseEntity<ApiResponse<?>> getTopAccommodations(@RequestParam(defaultValue = "5") int limit) {
+        return dashboardService.getTopAccommodations(limit);
+    }
+
+    @GetMapping("/top/customers")
+    @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD')")
+    public ResponseEntity<ApiResponse<?>> getTopCustomers(@RequestParam(defaultValue = "5") int limit) {
+        return dashboardService.getTopCustomers(limit);
+    }
+
+    // -----------------------------------------------------------------------
+    // Pipeline, payments, alerts
+    // -----------------------------------------------------------------------
+
+    @GetMapping("/pipeline")
+    @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD') or hasAuthority('PERM_READ_SAFARI')")
+    public ResponseEntity<ApiResponse<?>> getSafariPipeline() {
+        return dashboardService.getSafariPipeline();
+    }
+
+    @GetMapping("/stats/payments")
+    @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD') or hasAuthority('PERM_READ_INVOICE')")
+    public ResponseEntity<ApiResponse<?>> getPaymentStats() {
+        return dashboardService.getPaymentStats();
+    }
+
+    @GetMapping("/alerts")
+    @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD')")
+    public ResponseEntity<ApiResponse<?>> getAlerts() {
+        return dashboardService.getAlerts();
+    }
+
     @GetMapping("/health")
     public ResponseEntity<ApiResponse<?>> health() {
-        return ResponseEntity.ok(
-                ApiResponse.success(200, "Dashboard API is healthy", null)
-        );
+        return ResponseEntity.ok(ApiResponse.success(200, "Dashboard API is healthy", null));
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -16,6 +17,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpec
     List<Payment> findByInvoiceIdOrderByPaymentDateDesc(Long invoiceId);
 
     long countByInvoiceId(Long invoiceId);
+
+    List<Payment> findByPaymentDateBetween(LocalDate from, LocalDate to);
+
+    long countByPaymentDateBetween(LocalDate from, LocalDate to);
+
+    List<Payment> findTop20ByOrderByPaymentDateDescIdDesc();
 
     /**
      * @deprecated Use {@link #sumBaseAmountByInvoiceIdAndInvoiceCurrency} instead.

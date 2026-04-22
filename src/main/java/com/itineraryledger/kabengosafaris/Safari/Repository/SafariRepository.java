@@ -95,6 +95,49 @@ public interface SafariRepository extends JpaRepository<Safari, Long>, JpaSpecif
     @Query("SELECT s FROM Safari s WHERE s.startDate BETWEEN :fromDate AND :toDate AND s.state IN :states AND s.isActive = true")
     List<Safari> findUpcomingInWindow(@Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate, @Param("states") List<SafariState> states);
 
+    /**
+     * Dashboard aggregations.
+     * Returns rows [parkId, parkName, bookingCount] ranking parks by number of
+     * distinct safaris that include them (via itinerary days). Excluded states
+     * are typically DRAFT / CANCELLED so we only count meaningful bookings.
+     */
+    @Query("SELECT idp.park.id, idp.park.name, COUNT(DISTINCT s.id) " +
+           "FROM Safari s JOIN s.itinerary i JOIN i.days d JOIN d.parks idp " +
+           "WHERE s.state NOT IN :excludedStates " +
+           "GROUP BY idp.park.id, idp.park.name " +
+           "ORDER BY COUNT(DISTINCT s.id) DESC")
+    List<Object[]> findTopParksByBookings(@Param("excludedStates") List<SafariState> excludedStates,
+                                           org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT ida.activity.id, ida.activity.name, COUNT(DISTINCT s.id) " +
+           "FROM Safari s JOIN s.itinerary i JOIN i.days d JOIN d.activities ida " +
+           "WHERE s.state NOT IN :excludedStates " +
+           "GROUP BY ida.activity.id, ida.activity.name " +
+           "ORDER BY COUNT(DISTINCT s.id) DESC")
+    List<Object[]> findTopActivitiesByBookings(@Param("excludedStates") List<SafariState> excludedStates,
+                                                org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT idac.accommodation.id, idac.accommodation.name, COUNT(DISTINCT s.id) " +
+           "FROM Safari s JOIN s.itinerary i JOIN i.days d JOIN d.accommodations idac " +
+           "WHERE s.state NOT IN :excludedStates " +
+           "GROUP BY idac.accommodation.id, idac.accommodation.name " +
+           "ORDER BY COUNT(DISTINCT s.id) DESC")
+    List<Object[]> findTopAccommodationsByBookings(@Param("excludedStates") List<SafariState> excludedStates,
+                                                    org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Count safaris grouped by state where start date falls in range.
+     * Returns [state, count] rows.
+     */
+    @Query("SELECT s.state, COUNT(s) FROM Safari s " +
+           "WHERE (:from IS NULL OR s.createdAt >= :from) " +
+           "  AND (:to IS NULL OR s.createdAt <= :to) " +
+           "GROUP BY s.state")
+    List<Object[]> countByStateGrouped(@Param("from") java.time.LocalDateTime from,
+                                        @Param("to") java.time.LocalDateTime to);
+
+    long countByCreatedAtBetween(java.time.LocalDateTime from, java.time.LocalDateTime to);
+
     // Navigation queries for next/previous
     @Query("SELECT e.id FROM Safari e WHERE e.id > :currentId ORDER BY e.id ASC LIMIT 1")
     Optional<Long> findNextId(@Param("currentId") Long currentId);
