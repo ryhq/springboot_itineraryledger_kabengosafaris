@@ -132,6 +132,43 @@ public class DashboardController {
         return dashboardService.getAlerts();
     }
 
+    // -----------------------------------------------------------------------
+    // Expense / money-out aggregations
+    // -----------------------------------------------------------------------
+
+    @GetMapping("/trends/expenses")
+    @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD') or hasAuthority('PERM_READ_EXPENSE')")
+    public ResponseEntity<ApiResponse<?>> getExpenseTrend(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "day") String period) {
+        return dashboardService.getExpenseTrend(from, to, period);
+    }
+
+    @GetMapping("/stats/expenses")
+    @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD') or hasAuthority('PERM_READ_EXPENSE')")
+    public ResponseEntity<ApiResponse<?>> getExpenseStats() {
+        return dashboardService.getExpenseStats();
+    }
+
+    @GetMapping("/top/vendors")
+    @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD') or hasAuthority('PERM_READ_EXPENSE')")
+    public ResponseEntity<ApiResponse<?>> getTopVendors(@RequestParam(defaultValue = "5") int limit) {
+        return dashboardService.getTopVendors(limit);
+    }
+
+    /**
+     * Per-safari profit & loss. Pass {@code safariId} (obfuscated) to scope
+     * to one safari, or omit to receive an array of all safaris that have
+     * either an invoice or an expense linked to them.
+     */
+    @GetMapping("/safari-pnl")
+    @PreAuthorize("hasAuthority('PERM_VIEW_DASHBOARD') or hasAuthority('PERM_READ_EXPENSE')")
+    public ResponseEntity<ApiResponse<?>> getSafariPnL(
+            @RequestParam(required = false) String safariId) {
+        return dashboardService.getSafariPnL(safariId);
+    }
+
     @GetMapping("/health")
     public ResponseEntity<ApiResponse<?>> health() {
         return ResponseEntity.ok(ApiResponse.success(200, "Dashboard API is healthy", null));

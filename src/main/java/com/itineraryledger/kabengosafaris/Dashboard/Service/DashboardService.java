@@ -8,10 +8,22 @@ import com.itineraryledger.kabengosafaris.Dashboard.DTOs.AlertsDTO;
 import com.itineraryledger.kabengosafaris.Dashboard.DTOs.DashboardStatsDTO;
 import com.itineraryledger.kabengosafaris.Dashboard.DTOs.DashboardStatsDTO.RecentActivityDTO;
 import com.itineraryledger.kabengosafaris.Dashboard.DTOs.DashboardStatsDTO.RevenueByCurrency;
+import com.itineraryledger.kabengosafaris.Dashboard.DTOs.ExpenseStatsDTO;
 import com.itineraryledger.kabengosafaris.Dashboard.DTOs.LeaderboardItemDTO;
 import com.itineraryledger.kabengosafaris.Dashboard.DTOs.PaymentStatsDTO;
 import com.itineraryledger.kabengosafaris.Dashboard.DTOs.PipelineStageDTO;
+import com.itineraryledger.kabengosafaris.Dashboard.DTOs.SafariPnLDTO;
 import com.itineraryledger.kabengosafaris.Dashboard.DTOs.TrendPointDTO;
+import com.itineraryledger.kabengosafaris.Expense.Entity.Expense;
+import com.itineraryledger.kabengosafaris.Expense.Entity.ExpenseLineItem;
+import com.itineraryledger.kabengosafaris.Expense.Entity.ExpensePayment;
+import com.itineraryledger.kabengosafaris.Expense.Enums.ExpenseStatus;
+import com.itineraryledger.kabengosafaris.Expense.Repository.ExpenseLineItemRepository;
+import com.itineraryledger.kabengosafaris.Expense.Repository.ExpensePaymentRepository;
+import com.itineraryledger.kabengosafaris.Expense.Repository.ExpenseRepository;
+import com.itineraryledger.kabengosafaris.Expense.Services.ExpenseServices.ExpensePaymentAggregationService;
+import com.itineraryledger.kabengosafaris.Vendor.Entity.Vendor;
+import com.itineraryledger.kabengosafaris.Vendor.Repository.VendorRepository;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Payment;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
@@ -67,6 +79,12 @@ public class DashboardService {
     private final IdObfuscator idObfuscator;
     private final InvoicePaymentAggregationService paymentAggregationService;
     private final PaymentRepository paymentRepository;
+    // Expense side (money out)
+    private final ExpenseRepository expenseRepository;
+    private final ExpenseLineItemRepository expenseLineItemRepository;
+    private final ExpensePaymentRepository expensePaymentRepository;
+    private final ExpensePaymentAggregationService expensePaymentAggregationService;
+    private final VendorRepository vendorRepository;
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -920,5 +938,325 @@ public class DashboardService {
                 default: return date.plusDays(1);
             }
         }
+    }
+
+    // =========================================================================
+    // EXPENSE-SIDE AGGREGATIONS (money out)
+    // =========================================================================
+
+    public ResponseEntity<ApiResponse<?>> getExpenseTrend(LocalDate from, LocalDate to, String period) {
+        try {
+            LocalDate[] range = resolveRange(from, to, 30);
+            TrendPeriod p = TrendPeriod.parse(period);
+
+            List<ExpensePayment> payments = expensePaymentRepository.findByPaymentDateBetween(range[0], range[1]);
+
+            Map<String, List<ExpensePayment>> grouped = payments.stream()
+                    .collect(Collectors.groupingBy(pmt -> p.bucketKey(pmt.getPaymentDate()),
+                            LinkedHashMap::new, Collectors.toList()));
+
+            List<TrendPointDTO> points = new ArrayList<>();
+            for (LocalDate cursor = range[0]; !cursor.isAfter(range[1]); cursor = p.advance(cursor)) {
+                String key = p.bucketKey(cursor);
+                List<ExpensePayment> bucket = grouped.getOrDefault(key, Collections.emptyList());
+
+                Map<String, BigDecimal> byCurrency = new HashMap<>();
+                for (ExpensePayment pmt : bucket) {
+                    String currency = pmt.getExpenseCurrency() != null ? pmt.getExpenseCurrency() : pmt.getCurrency();
+                    BigDecimal amount = pmt.getBaseAmount() != null ? pmt.getBaseAmount() : pmt.getAmount();
+                    if (amount != null && currency != null) {
+                        byCurrency.merge(currency, amount, BigDecimal::add);
+                    }
+                }
+
+                points.add(TrendPointDTO.builder()
+                        .period(key)
+                        .label(p.label(cursor))
+                        .count((long) bucket.size())
+                        .revenue(byCurrency.entrySet().stream()
+                                .map(e -> RevenueByCurrency.builder().currency(e.getKey()).amount(e.getValue()).build())
+                                .collect(Collectors.toList()))
+                        .build());
+            }
+
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("period", p.name().toLowerCase());
+            body.put("from", range[0].toString());
+            body.put("to", range[1].toString());
+            body.put("points", points);
+            return ResponseEntity.ok(ApiResponse.success(200, "Expense trend retrieved successfully", body));
+        } catch (Exception e) {
+            log.error("Error building expense trend", e);
+            return ResponseEntity.status(500).body(
+                    ApiResponse.error(500, "Failed to build expense trend: " + e.getMessage(), "EXPENSE_TREND_ERROR"));
+        }
+    }
+
+    public ResponseEntity<ApiResponse<?>> getExpenseStats() {
+        try {
+            LocalDate today = LocalDate.now();
+            LocalDate weekStart = today.with(DayOfWeek.MONDAY);
+            LocalDate monthStart = today.withDayOfMonth(1);
+            LocalDate yearStart = today.withDayOfYear(1);
+
+            List<ExpensePayment> all = expensePaymentRepository.findAll();
+            List<ExpensePayment> todayList = filterPayments(all, today, today);
+            List<ExpensePayment> weekList = filterPayments(all, weekStart, today);
+            List<ExpensePayment> monthList = filterPayments(all, monthStart, today);
+            List<ExpensePayment> yearList = filterPayments(all, yearStart, today);
+
+            // Outstanding balances across all unpaid expenses
+            Map<String, BigDecimal> outstanding = new HashMap<>();
+            List<Expense> unpaidExpenses = expenseRepository.findByStatusIn(List.of(
+                    ExpenseStatus.RECORDED, ExpenseStatus.PARTIALLY_PAID));
+            for (Expense exp : unpaidExpenses) {
+                for (Price bal : expensePaymentAggregationService.computeBalances(exp)) {
+                    if (bal.getCurrency() == null) continue;
+                    BigDecimal v = bal.getTotalPrice() != null ? bal.getTotalPrice() : BigDecimal.ZERO;
+                    outstanding.merge(bal.getCurrency(), v, BigDecimal::add);
+                }
+            }
+
+            // Counts by status
+            Map<String, Long> byStatus = new LinkedHashMap<>();
+            for (ExpenseStatus s : ExpenseStatus.values()) {
+                byStatus.put(s.name(), expenseRepository.countByStatus(s));
+            }
+
+            // Spend by category — sum line-item totalPrices grouped by category, per currency
+            Map<String, Map<String, BigDecimal>> byCategoryRaw = new LinkedHashMap<>();
+            List<ExpenseLineItem> allLineItems = expenseLineItemRepository.findAll();
+            for (ExpenseLineItem li : allLineItems) {
+                if (li.getCategory() == null || !Boolean.TRUE.equals(li.getIsActive())) continue;
+                Map<String, BigDecimal> bucket = byCategoryRaw
+                        .computeIfAbsent(li.getCategory().name(), k -> new HashMap<>());
+                if (li.getPrices() != null) {
+                    for (Price pr : li.getPrices()) {
+                        if (pr.getCurrency() == null) continue;
+                        BigDecimal v = pr.getTotalPrice() != null ? pr.getTotalPrice() : BigDecimal.ZERO;
+                        bucket.merge(pr.getCurrency(), v, BigDecimal::add);
+                    }
+                }
+            }
+            Map<String, List<RevenueByCurrency>> spendByCategory = new LinkedHashMap<>();
+            for (Map.Entry<String, Map<String, BigDecimal>> e : byCategoryRaw.entrySet()) {
+                spendByCategory.put(e.getKey(), mapRevenue(e.getValue()));
+            }
+
+            // Counts by payment method
+            Map<String, Long> byMethod = new LinkedHashMap<>();
+            for (PaymentMethod m : PaymentMethod.values()) byMethod.put(m.name(), 0L);
+            for (ExpensePayment p : all) {
+                String method = p.getPaymentMethod() != null ? p.getPaymentMethod().name() : "OTHER";
+                byMethod.merge(method, 1L, Long::sum);
+            }
+
+            ExpenseStatsDTO stats = ExpenseStatsDTO.builder()
+                    .spentToday(aggregateExpensePaymentsByCurrency(todayList))
+                    .spentThisWeek(aggregateExpensePaymentsByCurrency(weekList))
+                    .spentThisMonth(aggregateExpensePaymentsByCurrency(monthList))
+                    .spentThisYear(aggregateExpensePaymentsByCurrency(yearList))
+                    .totalExpenses(expenseRepository.count())
+                    .totalPayments((long) all.size())
+                    .paymentsToday((long) todayList.size())
+                    .paymentsThisWeek((long) weekList.size())
+                    .paymentsThisMonth((long) monthList.size())
+                    .outstandingByCurrency(mapRevenue(outstanding))
+                    .expensesByStatus(byStatus)
+                    .spendByCategory(spendByCategory)
+                    .paymentsByMethod(byMethod)
+                    .recentPayments(mapRecentExpensePayments(
+                            expensePaymentRepository.findTop20ByOrderByPaymentDateDescIdDesc()))
+                    .build();
+
+            return ResponseEntity.ok(ApiResponse.success(200, "Expense statistics retrieved successfully", stats));
+        } catch (Exception e) {
+            log.error("Error building expense stats", e);
+            return ResponseEntity.status(500).body(
+                    ApiResponse.error(500, "Failed to build expense stats: " + e.getMessage(), "EXPENSE_STATS_ERROR"));
+        }
+    }
+
+    public ResponseEntity<ApiResponse<?>> getTopVendors(int limit) {
+        try {
+            int n = clampLimit(limit);
+
+            // Sum expense.grandTotals per vendor, per currency.
+            Map<Long, Map<String, BigDecimal>> vendorSpend = new HashMap<>();
+            Map<Long, Long> vendorExpenseCount = new HashMap<>();
+
+            for (Expense exp : expenseRepository.findAll()) {
+                if (exp.getVendor() == null) continue;
+                if (exp.getStatus() == ExpenseStatus.CANCELLED) continue;
+
+                Long vid = exp.getVendor().getId();
+                vendorExpenseCount.merge(vid, 1L, Long::sum);
+
+                Map<String, BigDecimal> bucket = vendorSpend.computeIfAbsent(vid, k -> new HashMap<>());
+                if (exp.getGrandTotals() != null) {
+                    for (Price gt : exp.getGrandTotals()) {
+                        if (gt.getCurrency() == null) continue;
+                        BigDecimal v = gt.getTotalPrice() != null ? gt.getTotalPrice() : BigDecimal.ZERO;
+                        bucket.merge(gt.getCurrency(), v, BigDecimal::add);
+                    }
+                }
+            }
+
+            List<Map.Entry<Long, Map<String, BigDecimal>>> ranked = vendorSpend.entrySet().stream()
+                    .sorted((a, b) -> sumAll(b.getValue()).compareTo(sumAll(a.getValue())))
+                    .limit(n)
+                    .collect(Collectors.toList());
+
+            List<LeaderboardItemDTO> items = new ArrayList<>();
+            for (Map.Entry<Long, Map<String, BigDecimal>> entry : ranked) {
+                Vendor vendor = vendorRepository.findById(entry.getKey()).orElse(null);
+                if (vendor == null) continue;
+                items.add(LeaderboardItemDTO.builder()
+                        .id(idObfuscator.encodeId(vendor.getId()))
+                        .code(vendor.getCode())
+                        .name(vendor.getName())
+                        .subtitle(vendor.getType() != null ? vendor.getType().getDisplayName() : null)
+                        .count(vendorExpenseCount.getOrDefault(vendor.getId(), 0L))
+                        .revenue(mapRevenue(entry.getValue()))
+                        .build());
+            }
+            return ResponseEntity.ok(ApiResponse.success(200, "Top vendors retrieved successfully", items));
+        } catch (Exception e) {
+            log.error("Error building top vendors", e);
+            return ResponseEntity.status(500).body(
+                    ApiResponse.error(500, "Failed to build top vendors: " + e.getMessage(), "TOP_VENDORS_ERROR"));
+        }
+    }
+
+    public ResponseEntity<ApiResponse<?>> getSafariPnL(String safariIdObfuscated) {
+        try {
+            // Build invoice index by safari id once (one query)
+            Map<Long, List<Invoice>> invoicesBySafari = new HashMap<>();
+            for (Invoice inv : invoiceRepository.findAll()) {
+                if (inv.getSafari() != null) {
+                    invoicesBySafari.computeIfAbsent(inv.getSafari().getId(), k -> new ArrayList<>()).add(inv);
+                }
+            }
+            // Same for expenses (only those linked to a safari — operational expenses excluded)
+            Map<Long, List<Expense>> expensesBySafari = new HashMap<>();
+            for (Expense exp : expenseRepository.findAll()) {
+                if (exp.getSafari() != null) {
+                    expensesBySafari.computeIfAbsent(exp.getSafari().getId(), k -> new ArrayList<>()).add(exp);
+                }
+            }
+
+            List<SafariPnLDTO> result = new ArrayList<>();
+
+            if (safariIdObfuscated != null && !safariIdObfuscated.isBlank()) {
+                Long safariId = idObfuscator.decodeId(safariIdObfuscated);
+                Safari s = safariRepository.findById(safariId).orElse(null);
+                if (s == null) {
+                    return ResponseEntity.status(404).body(
+                            ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND"));
+                }
+                result.add(buildSafariPnL(s,
+                        invoicesBySafari.getOrDefault(safariId, List.of()),
+                        expensesBySafari.getOrDefault(safariId, List.of())));
+            } else {
+                Set<Long> ids = new HashSet<>();
+                ids.addAll(invoicesBySafari.keySet());
+                ids.addAll(expensesBySafari.keySet());
+                for (Long sid : ids) {
+                    Safari s = safariRepository.findById(sid).orElse(null);
+                    if (s == null) continue;
+                    result.add(buildSafariPnL(s,
+                            invoicesBySafari.getOrDefault(sid, List.of()),
+                            expensesBySafari.getOrDefault(sid, List.of())));
+                }
+            }
+            return ResponseEntity.ok(ApiResponse.success(200, "Safari P&L retrieved successfully", result));
+        } catch (Exception e) {
+            log.error("Error building safari P&L", e);
+            return ResponseEntity.status(500).body(
+                    ApiResponse.error(500, "Failed to build safari P&L: " + e.getMessage(), "SAFARI_PNL_ERROR"));
+        }
+    }
+
+    // =========================================================================
+    // Internal helpers (expense side)
+    // =========================================================================
+
+    private SafariPnLDTO buildSafariPnL(Safari safari, List<Invoice> invoices, List<Expense> expenses) {
+        Map<String, BigDecimal> revenue = new HashMap<>();
+        for (Invoice inv : invoices) {
+            if (inv.getGrandTotals() == null) continue;
+            for (Price gt : inv.getGrandTotals()) {
+                if (gt.getCurrency() == null) continue;
+                BigDecimal v = gt.getTotalPrice() != null ? gt.getTotalPrice() : BigDecimal.ZERO;
+                revenue.merge(gt.getCurrency(), v, BigDecimal::add);
+            }
+        }
+        Map<String, BigDecimal> expensesByCurrency = new HashMap<>();
+        for (Expense exp : expenses) {
+            if (exp.getGrandTotals() == null) continue;
+            if (exp.getStatus() == ExpenseStatus.CANCELLED) continue;
+            for (Price gt : exp.getGrandTotals()) {
+                if (gt.getCurrency() == null) continue;
+                BigDecimal v = gt.getTotalPrice() != null ? gt.getTotalPrice() : BigDecimal.ZERO;
+                expensesByCurrency.merge(gt.getCurrency(), v, BigDecimal::add);
+            }
+        }
+
+        // Net per currency: revenue − expenses. Currencies present in either side appear.
+        Map<String, BigDecimal> net = new LinkedHashMap<>();
+        Set<String> currencies = new LinkedHashSet<>();
+        currencies.addAll(revenue.keySet());
+        currencies.addAll(expensesByCurrency.keySet());
+        for (String c : currencies) {
+            BigDecimal r = revenue.getOrDefault(c, BigDecimal.ZERO);
+            BigDecimal e = expensesByCurrency.getOrDefault(c, BigDecimal.ZERO);
+            net.put(c, r.subtract(e));
+        }
+
+        return SafariPnLDTO.builder()
+                .safariId(idObfuscator.encodeId(safari.getId()))
+                .safariCode(safari.getCode())
+                .safariName(safari.getName())
+                .customerName(safari.getCustomer() != null ? safari.getCustomer().getDisplayName() : null)
+                .state(safari.getState() != null ? safari.getState().name() : null)
+                .revenue(mapRevenue(revenue))
+                .expenses(mapRevenue(expensesByCurrency))
+                .net(mapRevenue(net))
+                .build();
+    }
+
+    private List<ExpensePayment> filterPayments(List<ExpensePayment> all, LocalDate fromInclusive, LocalDate toInclusive) {
+        return all.stream()
+                .filter(p -> p.getPaymentDate() != null
+                        && !p.getPaymentDate().isBefore(fromInclusive)
+                        && !p.getPaymentDate().isAfter(toInclusive))
+                .collect(Collectors.toList());
+    }
+
+    private List<RevenueByCurrency> aggregateExpensePaymentsByCurrency(List<ExpensePayment> payments) {
+        Map<String, BigDecimal> map = new HashMap<>();
+        for (ExpensePayment p : payments) {
+            String currency = p.getExpenseCurrency() != null ? p.getExpenseCurrency() : p.getCurrency();
+            BigDecimal amount = p.getBaseAmount() != null ? p.getBaseAmount() : p.getAmount();
+            if (currency != null && amount != null) {
+                map.merge(currency, amount, BigDecimal::add);
+            }
+        }
+        return mapRevenue(map);
+    }
+
+    private List<ExpenseStatsDTO.RecentExpensePaymentDTO> mapRecentExpensePayments(List<ExpensePayment> payments) {
+        return payments.stream().map(p -> ExpenseStatsDTO.RecentExpensePaymentDTO.builder()
+                .id(idObfuscator.encodeId(p.getId()))
+                .expenseCode(p.getExpense() != null ? p.getExpense().getExpenseCode() : null)
+                .vendorName(p.getExpense() != null && p.getExpense().getVendor() != null
+                        ? p.getExpense().getVendor().getName() : null)
+                .safariCode(p.getExpense() != null && p.getExpense().getSafari() != null
+                        ? p.getExpense().getSafari().getCode() : null)
+                .method(p.getPaymentMethod() != null ? p.getPaymentMethod().getDisplayName() : null)
+                .currency(p.getCurrency())
+                .amount(p.getAmount())
+                .paymentDate(p.getPaymentDate() != null ? p.getPaymentDate().toString() : null)
+                .build()).collect(Collectors.toList());
     }
 }
