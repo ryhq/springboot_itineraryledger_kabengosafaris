@@ -61,18 +61,18 @@ public interface QuoteItemRepository extends JpaRepository<QuoteItem, Long>, Jpa
     void deleteByQuoteId(Long quoteId);
 
     // ========================
-    // NAVIGATION QUERIES (circular next/previous)
+    // PARENT-SCOPED NAVIGATION QUERIES (circular next/previous within a quote)
     // ========================
 
-    @Query("SELECT q.id FROM QuoteItem q WHERE q.id > :currentId ORDER BY q.id ASC LIMIT 1")
-    Optional<Long> findNextId(@Param("currentId") Long currentId);
+    @Query("SELECT q.id FROM QuoteItem q WHERE q.quote.id = :parentId AND q.id > :currentId ORDER BY q.id ASC LIMIT 1")
+    Optional<Long> findNextIdInQuote(@Param("parentId") Long parentId, @Param("currentId") Long currentId);
 
-    @Query("SELECT q.id FROM QuoteItem q WHERE q.id < :currentId ORDER BY q.id DESC LIMIT 1")
-    Optional<Long> findPreviousId(@Param("currentId") Long currentId);
+    @Query("SELECT q.id FROM QuoteItem q WHERE q.quote.id = :parentId AND q.id < :currentId ORDER BY q.id DESC LIMIT 1")
+    Optional<Long> findPreviousIdInQuote(@Param("parentId") Long parentId, @Param("currentId") Long currentId);
 
-    @Query("SELECT q.id FROM QuoteItem q ORDER BY q.id ASC LIMIT 1")
-    Optional<Long> findFirstId();
+    @Query("SELECT q.id FROM QuoteItem q WHERE q.quote.id = :parentId ORDER BY q.id ASC LIMIT 1")
+    Optional<Long> findFirstIdInQuote(@Param("parentId") Long parentId);
 
-    @Query("SELECT q.id FROM QuoteItem q ORDER BY q.id DESC LIMIT 1")
-    Optional<Long> findLastId();
+    @Query("SELECT q.id FROM QuoteItem q WHERE q.quote.id = :parentId ORDER BY q.id DESC LIMIT 1")
+    Optional<Long> findLastIdInQuote(@Param("parentId") Long parentId);
 }

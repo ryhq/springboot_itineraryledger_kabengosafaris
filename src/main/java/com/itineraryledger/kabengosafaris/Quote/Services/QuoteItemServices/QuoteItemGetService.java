@@ -76,11 +76,17 @@ public class QuoteItemGetService {
             // Convert to DTO
             QuoteItemDTO quoteItemDTO = convertToDTO(quoteItem);
 
-            // Circular navigation
-            Long nextId = quoteItemRepository.findNextId(id).orElse(null);
-            Long previousId = quoteItemRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = quoteItemRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = quoteItemRepository.findLastId().orElse(null);
+            // Circular navigation, scoped to the parent quote so we don't leak
+            // into items from a different quote when reaching the boundary.
+            Long parentQuoteId = quoteItem.getQuote() != null ? quoteItem.getQuote().getId() : null;
+            Long nextId = null;
+            Long previousId = null;
+            if (parentQuoteId != null) {
+                nextId = quoteItemRepository.findNextIdInQuote(parentQuoteId, id).orElse(null);
+                previousId = quoteItemRepository.findPreviousIdInQuote(parentQuoteId, id).orElse(null);
+                if (nextId == null) nextId = quoteItemRepository.findFirstIdInQuote(parentQuoteId).orElse(null);
+                if (previousId == null) previousId = quoteItemRepository.findLastIdInQuote(parentQuoteId).orElse(null);
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("quoteItem", quoteItemDTO);
