@@ -24,7 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * InvoiceFromSafariGenerationService - Generates an invoice from a Safari with cost estimation
@@ -188,7 +191,8 @@ public class InvoiceFromSafariGenerationService {
             String invoiceId = invoiceDTO.getId();
 
             // 6. Create InvoiceLineItems from cost estimation line items
-            int itemsCreated = createInvoiceLineItemsFromEstimation(invoiceId, costEstimation);
+            boolean condenseLineItems = Boolean.TRUE.equals(dto.getCondense());
+            int itemsCreated = createInvoiceLineItemsFromEstimation(invoiceId, costEstimation, condenseLineItems);
 
 
             log.info("Successfully generated invoice: {} with {} items for safari: {}",
@@ -303,46 +307,122 @@ public class InvoiceFromSafariGenerationService {
     }
 
     /**
-     * Create InvoiceLineItems from cost estimation breakdown
+     * Create InvoiceLineItems from cost estimation breakdown.
+     *
+     * <p>When {@code condense} is true, all line items belonging to the same
+     * InvoiceItemType (Accommodation, Park Fee, Activity, …) are merged into
+     * one InvoiceLineItem per type, with prices summed per currency. The
+     * merged row's description preserves the underlying breakdown so the
+     * customer-facing PDF still shows what is included.
+     *
+     * <p>When {@code condense} is false, the original per-line behaviour is
+     * preserved (one line per accommodation per day, one per park per day,
+     * etc.).
      *
      * @param invoiceId The obfuscated invoice ID
      * @param costEstimation The cost estimation DTO
+     * @param condense Whether to collapse line items by type
      * @return Number of items created
      */
-    private int createInvoiceLineItemsFromEstimation(String invoiceId, ItineraryCostEstimationDTO costEstimation) {
+    private int createInvoiceLineItemsFromEstimation(
+            String invoiceId,
+            ItineraryCostEstimationDTO costEstimation,
+            boolean condense
+    ) {
         int itemsCreated = 0;
 
-        // Process accommodation costs
-        if (costEstimation.getAccommodationCosts() != null &&
-                costEstimation.getAccommodationCosts().getItems() != null) {
-            for (ItineraryCostEstimationDTO.CostLineItem lineItem :
-                    costEstimation.getAccommodationCosts().getItems()) {
-                createInvoiceLineItemFromLineItem(invoiceId, lineItem, InvoiceItemType.ACCOMMODATION);
+        List<ItineraryCostEstimationDTO.CostLineItem> accommodation = items(costEstimation.getAccommodationCosts());
+        List<ItineraryCostEstimationDTO.CostLineItem> parkFees = items(costEstimation.getParkFeeCosts());
+        List<ItineraryCostEstimationDTO.CostLineItem> activities = items(costEstimation.getActivityCosts());
+
+        if (condense) {
+            if (createCondensedLineItem(invoiceId, accommodation, InvoiceItemType.ACCOMMODATION, "Accommodation")) itemsCreated++;
+            if (createCondensedLineItem(invoiceId, parkFees, InvoiceItemType.PARK_FEE, "Park Fees")) itemsCreated++;
+            if (createCondensedLineItem(invoiceId, activities, InvoiceItemType.ACTIVITY, "Activities")) itemsCreated++;
+        } else {
+            for (ItineraryCostEstimationDTO.CostLineItem li : accommodation) {
+                createInvoiceLineItemFromLineItem(invoiceId, li, InvoiceItemType.ACCOMMODATION);
                 itemsCreated++;
             }
-        }
-
-        // Process park fee costs
-        if (costEstimation.getParkFeeCosts() != null &&
-                costEstimation.getParkFeeCosts().getItems() != null) {
-            for (ItineraryCostEstimationDTO.CostLineItem lineItem :
-                    costEstimation.getParkFeeCosts().getItems()) {
-                createInvoiceLineItemFromLineItem(invoiceId, lineItem, InvoiceItemType.PARK_FEE);
+            for (ItineraryCostEstimationDTO.CostLineItem li : parkFees) {
+                createInvoiceLineItemFromLineItem(invoiceId, li, InvoiceItemType.PARK_FEE);
                 itemsCreated++;
             }
-        }
-
-        // Process activity costs
-        if (costEstimation.getActivityCosts() != null &&
-                costEstimation.getActivityCosts().getItems() != null) {
-            for (ItineraryCostEstimationDTO.CostLineItem lineItem :
-                    costEstimation.getActivityCosts().getItems()) {
-                createInvoiceLineItemFromLineItem(invoiceId, lineItem, InvoiceItemType.ACTIVITY);
+            for (ItineraryCostEstimationDTO.CostLineItem li : activities) {
+                createInvoiceLineItemFromLineItem(invoiceId, li, InvoiceItemType.ACTIVITY);
                 itemsCreated++;
             }
         }
 
         return itemsCreated;
+    }
+
+    private List<ItineraryCostEstimationDTO.CostLineItem> items(ItineraryCostEstimationDTO.CostBreakdown breakdown) {
+        if (breakdown == null || breakdown.getItems() == null) return List.of();
+        return breakdown.getItems();
+    }
+
+    /**
+     * Build and persist one merged InvoiceLineItem from a list of cost line
+     * items of the same type. Returns true if a row was created, false if
+     * the input list was empty.
+     */
+    private boolean createCondensedLineItem(
+            String invoiceId,
+            List<ItineraryCostEstimationDTO.CostLineItem> lineItems,
+            InvoiceItemType itemType,
+            String displayName
+    ) {
+        if (lineItems == null || lineItems.isEmpty()) return false;
+
+        // Sum totals per currency. Linked map preserves first-seen order.
+        Map<String, BigDecimal> totalsByCurrency = new LinkedHashMap<>();
+        boolean anyRateMissing = false;
+        for (ItineraryCostEstimationDTO.CostLineItem li : lineItems) {
+            if (li.getCurrency() == null) continue;
+            BigDecimal total = li.getTotalPrice() != null
+                    ? li.getTotalPrice()
+                    : (li.getUnitPrice() != null && li.getQuantity() != null
+                        ? li.getUnitPrice().multiply(BigDecimal.valueOf(li.getQuantity()))
+                        : BigDecimal.ZERO);
+            totalsByCurrency.merge(li.getCurrency(), total, BigDecimal::add);
+            if (Boolean.FALSE.equals(li.getRateFound())) anyRateMissing = true;
+        }
+
+        if (totalsByCurrency.isEmpty()) return false;
+
+        String breakdown = lineItems.stream()
+                .map(ItineraryCostEstimationDTO.CostLineItem::getItemName)
+                .filter(n -> n != null && !n.isBlank())
+                .distinct()
+                .collect(Collectors.joining(", "));
+
+        CreateInvoiceLineItemDTO itemDTO = new CreateInvoiceLineItemDTO();
+        itemDTO.setItemType(itemType);
+        itemDTO.setItemName(displayName);
+        if (!breakdown.isEmpty()) itemDTO.setDescription(breakdown);
+        itemDTO.setIsActive(true);
+
+        List<CreateInvoiceLineItemDTO.PriceInput> prices = new ArrayList<>();
+        for (Map.Entry<String, BigDecimal> entry : totalsByCurrency.entrySet()) {
+            CreateInvoiceLineItemDTO.PriceInput price = new CreateInvoiceLineItemDTO.PriceInput();
+            price.setCurrency(entry.getKey());
+            price.setQuantity(1);
+            price.setUnitPrice(entry.getValue());
+            if (anyRateMissing) {
+                price.setBreakdown("Some rates were estimated");
+            }
+            prices.add(price);
+        }
+        itemDTO.setPrices(prices);
+
+        try {
+            invoiceLineItemCreateService.createInvoiceLineItem(invoiceId, itemDTO);
+            return true;
+        } catch (Exception e) {
+            log.error("Failed to create condensed invoice line item for type {}: {}", itemType, e.getMessage());
+            return false;
+        }
     }
 
     /**

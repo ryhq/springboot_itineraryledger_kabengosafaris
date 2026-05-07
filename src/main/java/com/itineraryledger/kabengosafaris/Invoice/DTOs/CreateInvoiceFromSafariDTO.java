@@ -48,4 +48,12 @@ public class CreateInvoiceFromSafariDTO {
     private String paymentTerms;
 
     private Boolean isActive;
+
+    /**
+     * When true, line items are collapsed by InvoiceItemType so the resulting
+     * invoice has one billable line per type (Accommodation, Park Fees,
+     * Activities) instead of one per day per resource. The merged row's
+     * description preserves the underlying breakdown for the PDF. Default false.
+     */
+    private Boolean condense;
 }
