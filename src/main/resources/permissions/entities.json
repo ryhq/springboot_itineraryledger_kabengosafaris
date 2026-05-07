@@ -92,6 +92,7 @@
     "TRANSLATION_SETTING",
     "USER",
     "VEHICLE",
-    "VEHICLE_HIRE"
+    "VEHICLE_HIRE",
+    "VENDOR"
   ]
 }
