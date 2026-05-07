@@ -117,9 +117,12 @@ public class EmailMessage {
     private Integer attachmentCount = 0;
 
     /**
-     * Reference to .eml file on disk
+     * Reference to .eml file on disk. Null for messages sent via the Resend
+     * API (and other API-only senders) — those have no on-disk MIME copy.
+     * Null is only valid when storagePath is also "sent" / no read-back of
+     * the original .eml is expected.
      */
-    @Column(nullable = false)
+    @Column
     private String fileName;
 
     /**
