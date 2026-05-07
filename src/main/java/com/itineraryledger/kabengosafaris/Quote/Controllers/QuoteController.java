@@ -101,10 +101,11 @@ public class QuoteController {
         @RequestParam(required = false, defaultValue = "30") Integer validityDays,
         @RequestParam(required = false) BigDecimal taxPercentage,
         @RequestParam(required = false) BigDecimal discountPercentage,
-        @RequestParam(required = false) String discountReason
+        @RequestParam(required = false) String discountReason,
+        @RequestParam(required = false, defaultValue = "false") Boolean condense
     ) {
-        log.info("POST /api/quotes/generate-from-itinerary - Generating quote from itinerary: {} for customer: {}",
-            itineraryId, customerId);
+        log.info("POST /api/quotes/generate-from-itinerary - Generating quote from itinerary: {} for customer: {} (condense={})",
+            itineraryId, customerId, condense);
         return quoteFromItineraryGenerationService.generateQuoteFromItinerary(
             itineraryId,
             customerId,
@@ -114,7 +115,8 @@ public class QuoteController {
             validityDays,
             taxPercentage,
             discountPercentage,
-            discountReason
+            discountReason,
+            condense
         );
     }
 

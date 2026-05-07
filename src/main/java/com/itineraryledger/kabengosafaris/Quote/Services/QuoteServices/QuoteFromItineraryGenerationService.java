@@ -22,7 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * QuoteFromItineraryGenerationService - Generates a quote from an itinerary cost estimation
@@ -85,8 +88,10 @@ public class QuoteFromItineraryGenerationService {
             Integer validityDays,
             BigDecimal taxPercentage,
             BigDecimal discountPercentage,
-            String discountReason
+            String discountReason,
+            Boolean condense
     ) {
+        boolean condenseLineItems = Boolean.TRUE.equals(condense);
         log.info("Generating quote for itinerary: {} and customer: {}", itineraryIdObfuscated, customerIdObfuscated);
 
         // Default useStoRate to false if not provided
@@ -161,7 +166,7 @@ public class QuoteFromItineraryGenerationService {
             String quoteId = quoteDTO.getId();
 
             // 4. Create QuoteItems from cost estimation line items
-            int itemsCreated = createQuoteItemsFromEstimation(quoteId, costEstimation);
+            int itemsCreated = createQuoteItemsFromEstimation(quoteId, costEstimation, condenseLineItems);
 
             log.info("Successfully generated quote: {} with {} items for itinerary: {} and customer: {}",
                     quoteDTO.getQuoteCode(), itemsCreated, itineraryIdObfuscated, customerIdObfuscated);
@@ -230,46 +235,125 @@ public class QuoteFromItineraryGenerationService {
     }
 
     /**
-     * Create QuoteItems from cost estimation breakdown
+     * Create QuoteItems from cost estimation breakdown.
+     *
+     * <p>When {@code condense} is true, all line items belonging to the same
+     * QuoteItemType (Accommodation, Park Fee, Activity, …) are merged into a
+     * single QuoteItem per type, with prices summed per currency. The merged
+     * row's description preserves the underlying breakdown so the customer
+     * still sees what is included on the PDF.
+     *
+     * <p>When {@code condense} is false, the original per-line behaviour is
+     * preserved (one QuoteItem per accommodation per day, one per park per
+     * day, etc.).
      *
      * @param quoteId The obfuscated quote ID
      * @param costEstimation The cost estimation DTO
+     * @param condense Whether to collapse line items by type
      * @return Number of items created
      */
-    private int createQuoteItemsFromEstimation(String quoteId, ItineraryCostEstimationDTO costEstimation) {
+    private int createQuoteItemsFromEstimation(
+            String quoteId,
+            ItineraryCostEstimationDTO costEstimation,
+            boolean condense
+    ) {
         int itemsCreated = 0;
 
-        // Process accommodation costs
-        if (costEstimation.getAccommodationCosts() != null &&
-                costEstimation.getAccommodationCosts().getItems() != null) {
-            for (ItineraryCostEstimationDTO.CostLineItem lineItem :
-                    costEstimation.getAccommodationCosts().getItems()) {
-                createQuoteItemFromLineItem(quoteId, lineItem, QuoteItemType.ACCOMMODATION);
+        List<ItineraryCostEstimationDTO.CostLineItem> accommodation = items(costEstimation.getAccommodationCosts());
+        List<ItineraryCostEstimationDTO.CostLineItem> parkFees = items(costEstimation.getParkFeeCosts());
+        List<ItineraryCostEstimationDTO.CostLineItem> activities = items(costEstimation.getActivityCosts());
+
+        if (condense) {
+            if (createCondensedItem(quoteId, accommodation, QuoteItemType.ACCOMMODATION, "Accommodation")) itemsCreated++;
+            if (createCondensedItem(quoteId, parkFees, QuoteItemType.PARK_FEE, "Park Fees")) itemsCreated++;
+            if (createCondensedItem(quoteId, activities, QuoteItemType.ACTIVITY, "Activities")) itemsCreated++;
+        } else {
+            for (ItineraryCostEstimationDTO.CostLineItem li : accommodation) {
+                createQuoteItemFromLineItem(quoteId, li, QuoteItemType.ACCOMMODATION);
                 itemsCreated++;
             }
-        }
-
-        // Process park fee costs
-        if (costEstimation.getParkFeeCosts() != null &&
-                costEstimation.getParkFeeCosts().getItems() != null) {
-            for (ItineraryCostEstimationDTO.CostLineItem lineItem :
-                    costEstimation.getParkFeeCosts().getItems()) {
-                createQuoteItemFromLineItem(quoteId, lineItem, QuoteItemType.PARK_FEE);
+            for (ItineraryCostEstimationDTO.CostLineItem li : parkFees) {
+                createQuoteItemFromLineItem(quoteId, li, QuoteItemType.PARK_FEE);
                 itemsCreated++;
             }
-        }
-
-        // Process activity costs
-        if (costEstimation.getActivityCosts() != null &&
-                costEstimation.getActivityCosts().getItems() != null) {
-            for (ItineraryCostEstimationDTO.CostLineItem lineItem :
-                    costEstimation.getActivityCosts().getItems()) {
-                createQuoteItemFromLineItem(quoteId, lineItem, QuoteItemType.ACTIVITY);
+            for (ItineraryCostEstimationDTO.CostLineItem li : activities) {
+                createQuoteItemFromLineItem(quoteId, li, QuoteItemType.ACTIVITY);
                 itemsCreated++;
             }
         }
 
         return itemsCreated;
+    }
+
+    private List<ItineraryCostEstimationDTO.CostLineItem> items(ItineraryCostEstimationDTO.CostBreakdown breakdown) {
+        if (breakdown == null || breakdown.getItems() == null) return List.of();
+        return breakdown.getItems();
+    }
+
+    /**
+     * Build and persist one merged QuoteItem from a list of cost line items
+     * of the same type. Returns true if a row was created, false if the input
+     * list was empty.
+     */
+    private boolean createCondensedItem(
+            String quoteId,
+            List<ItineraryCostEstimationDTO.CostLineItem> lineItems,
+            QuoteItemType itemType,
+            String displayName
+    ) {
+        if (lineItems == null || lineItems.isEmpty()) return false;
+
+        // Sum totals per currency. Linked map preserves first-seen order.
+        Map<String, BigDecimal> totalsByCurrency = new LinkedHashMap<>();
+        boolean anyRateMissing = false;
+        for (ItineraryCostEstimationDTO.CostLineItem li : lineItems) {
+            if (li.getCurrency() == null) continue;
+            BigDecimal total = li.getTotalPrice() != null
+                    ? li.getTotalPrice()
+                    : (li.getUnitPrice() != null && li.getQuantity() != null
+                        ? li.getUnitPrice().multiply(BigDecimal.valueOf(li.getQuantity()))
+                        : BigDecimal.ZERO);
+            totalsByCurrency.merge(li.getCurrency(), total, BigDecimal::add);
+            if (Boolean.FALSE.equals(li.getRateFound())) anyRateMissing = true;
+        }
+
+        if (totalsByCurrency.isEmpty()) return false;
+
+        // Build the breakdown text — distinct itemNames in their original
+        // order. This keeps the merged row's description honest for the PDF.
+        String breakdown = lineItems.stream()
+                .map(ItineraryCostEstimationDTO.CostLineItem::getItemName)
+                .filter(n -> n != null && !n.isBlank())
+                .distinct()
+                .collect(Collectors.joining(", "));
+
+        CreateQuoteItemDTO itemDTO = new CreateQuoteItemDTO();
+        itemDTO.setQuoteId(quoteId);
+        itemDTO.setItemType(itemType);
+        itemDTO.setItemName(displayName);
+        if (!breakdown.isEmpty()) itemDTO.setDescription(breakdown);
+        itemDTO.setIsActive(true);
+
+        List<CreateQuoteItemDTO.PriceInput> prices = new ArrayList<>();
+        for (Map.Entry<String, BigDecimal> entry : totalsByCurrency.entrySet()) {
+            CreateQuoteItemDTO.PriceInput price = new CreateQuoteItemDTO.PriceInput();
+            price.setCurrency(entry.getKey());
+            price.setQuantity(1);
+            price.setUnitPrice(entry.getValue());
+            if (anyRateMissing) {
+                price.setBreakdown("Some rates were estimated");
+            }
+            prices.add(price);
+        }
+        itemDTO.setPrices(prices);
+
+        try {
+            quoteItemCreateService.createQuoteItem(itemDTO);
+            return true;
+        } catch (Exception e) {
+            log.error("Failed to create condensed quote item for type {}: {}", itemType, e.getMessage());
+            return false;
+        }
     }
 
     /**
