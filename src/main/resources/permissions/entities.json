@@ -36,6 +36,8 @@
     "EMAIL_MESSAGE",
     "EMAIL_SETTING",
     "EMAIL_TEMPLATE",
+    "EXPENSE",
+    "EXPENSE_LINE_ITEM",
     "FILE_SETTING",
     "HERO",
     "HERO_IMAGE",

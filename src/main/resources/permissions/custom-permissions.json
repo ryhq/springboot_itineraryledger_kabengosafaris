@@ -323,6 +323,18 @@
       "action": "READ",
       "entity": "LOG",
       "description": "Allows viewing access logs, analytics, security analysis, and real-time log streams"
+    },
+    {
+      "name": "RECORD_EXPENSE_PAYMENT",
+      "action": "UPDATE",
+      "entity": "EXPENSE",
+      "description": "Allows recording, updating and deleting payments made to vendors against an expense"
+    },
+    {
+      "name": "CANCEL_EXPENSE",
+      "action": "CANCEL",
+      "entity": "EXPENSE",
+      "description": "Allows cancelling an expense (-> CANCELLED)"
     }
   ]
 }
