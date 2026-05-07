@@ -396,8 +396,19 @@ public class EmailComposeService {
         CreateEmailResponse response = resend.emails().send(builder.build());
         log.info("Email sent via Resend API from compose. Email ID: {}", response.getId());
 
-        // Save a sent copy record in the database (without .eml file for API sends)
-        saveSentCopyFromResend(account, dto, replyTo);
+        // Build a synthetic MimeMessage purely for storage so the sent-folder
+        // read path (which parses .eml from disk) can show the full HTML body
+        // — not just the 200-char snippet. The mail sender here is never used
+        // to actually send anything; we only need its createMimeMessage() to
+        // produce a Session-backed MimeMessage we can serialize.
+        try {
+            MimeMessage mimeMessage = buildMimeMessage(
+                    new JavaMailSenderImpl(), account, dto, attachments, replyTo);
+            saveSentCopy(account, mimeMessage, dto, replyTo);
+        } catch (Exception e) {
+            log.warn("Failed to persist .eml for Resend API send from {}: {}",
+                    account.getEmail(), e.getMessage());
+        }
     }
 
     private ResponseEntity<ApiResponse<?>> saveDraft(EmailAccount account, ComposeEmailDTO dto, List<MultipartFile> attachments) {
@@ -596,63 +607,6 @@ public class EmailComposeService {
         props.put("mail.smtp.writetimeout", "10000");
 
         return sender;
-    }
-
-    /**
-     * Save a sent copy record for Resend API sends (no .eml file, just DB record)
-     */
-    private void saveSentCopyFromResend(EmailAccount account, ComposeEmailDTO dto, EmailMessage replyTo) {
-        try {
-            Long accountId = account.getId();
-            EmailFolder sentFolder = emailFolderRepository
-                    .findByEmailAccountIdAndType(accountId, EmailFolderType.SENT).orElse(null);
-
-            if (sentFolder == null) {
-                log.warn("No SENT folder found for account {}", account.getEmail());
-                return;
-            }
-
-            // Determine threading
-            String inReplyTo = null;
-            String references = null;
-            String threadId = "<" + UUID.randomUUID() + "@resend.dev>";
-
-            if (replyTo != null) {
-                inReplyTo = replyTo.getMessageId();
-                references = replyTo.getReferences() != null
-                        ? replyTo.getReferences() + " " + replyTo.getMessageId()
-                        : replyTo.getMessageId();
-                threadId = replyTo.getThreadId();
-            }
-
-            EmailMessage emailMessage = EmailMessage.builder()
-                    .emailAccount(account)
-                    .folder(sentFolder)
-                    .messageId(threadId)
-                    .inReplyTo(inReplyTo)
-                    .references(references)
-                    .threadId(threadId)
-                    .fromAddress(account.getEmail())
-                    .fromName(account.getName())
-                    .toAddresses(dto.getToAddresses() != null ? objectMapper.writeValueAsString(dto.getToAddresses()) : null)
-                    .ccAddresses(dto.getCcAddresses() != null ? objectMapper.writeValueAsString(dto.getCcAddresses()) : null)
-                    .bccAddresses(dto.getBccAddresses() != null ? objectMapper.writeValueAsString(dto.getBccAddresses()) : null)
-                    .subject(dto.getSubject())
-                    .snippet(extractSnippet(dto.getHtmlBody(), 200))
-                    .isRead(true)
-                    .isDraft(false)
-                    .hasAttachments(false)
-                    .attachmentCount(0)
-                    .storagePath("sent")
-                    .sentAt(LocalDateTime.now())
-                    .receivedAt(LocalDateTime.now())
-                    .build();
-
-            emailMessageRepository.save(emailMessage);
-            emailFolderRepository.incrementMessageCount(sentFolder.getId(), 1);
-        } catch (Exception e) {
-            log.warn("Failed to save sent copy for Resend API send from account {}: {}", account.getEmail(), e.getMessage());
-        }
     }
 
     private String extractSnippet(String html, int maxLength) {
