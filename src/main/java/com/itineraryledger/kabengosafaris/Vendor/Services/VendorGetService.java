@@ -88,7 +88,7 @@ public class VendorGetService {
 
             Pageable pageable = PageRequest.of(pageNo, pageSize, Sort.by(direction, resolvedSort));
 
-            Specification<Vendor> spec = Specification.unrestricted()
+            Specification<Vendor> spec = Specification.<Vendor>unrestricted()
                     .and(VendorSpecification.byName(name))
                     .and(VendorSpecification.byCode(code))
                     .and(VendorSpecification.byType(type))

@@ -100,7 +100,7 @@ public class ExpenseGetService {
             Long vendorId = decodeOrNull(vendorIdObf);
             Long safariId = decodeOrNull(safariIdObf);
 
-            Specification<Expense> spec = Specification.unrestricted()
+            Specification<Expense> spec = Specification.<Expense>unrestricted()
                 .and(ExpenseSpecification.byExpenseCode(expenseCode))
                 .and(ExpenseSpecification.byTitle(title))
                 .and(ExpenseSpecification.byStatus(status))
