@@ -2,6 +2,8 @@ package com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.Services;
 
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
@@ -32,6 +34,7 @@ import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import com.resend.Resend;
 import com.resend.core.exception.ResendException;
+import com.resend.services.emails.model.Attachment;
 import com.resend.services.emails.model.CreateEmailOptions;
 import com.resend.services.emails.model.CreateEmailResponse;
 
@@ -350,7 +353,7 @@ public class EmailComposeService {
                 mailSender.send(mimeMessage);
 
                 // Save .eml copy to SENT folder
-                saveSentCopy(account, mimeMessage, dto, replyTo);
+                saveSentCopy(account, mimeMessage, dto, attachments, replyTo);
             }
 
             // Auto-harvest contacts from recipients
@@ -393,6 +396,29 @@ public class EmailComposeService {
             builder.bcc(dto.getBccAddresses());
         }
 
+        if (attachments != null && !attachments.isEmpty()) {
+            List<Attachment> resendAttachments = new ArrayList<>(attachments.size());
+            for (MultipartFile file : attachments) {
+                if (file == null || file.isEmpty()) continue;
+                try {
+                    String fileName = file.getOriginalFilename() != null
+                            ? file.getOriginalFilename()
+                            : "attachment";
+                    String base64Content = Base64.getEncoder().encodeToString(file.getBytes());
+                    resendAttachments.add(Attachment.builder()
+                            .fileName(fileName)
+                            .content(base64Content)
+                            .build());
+                } catch (Exception e) {
+                    log.warn("Skipping unreadable attachment '{}' for Resend send: {}",
+                            file.getOriginalFilename(), e.getMessage());
+                }
+            }
+            if (!resendAttachments.isEmpty()) {
+                builder.attachments(resendAttachments);
+            }
+        }
+
         CreateEmailResponse response = resend.emails().send(builder.build());
         log.info("Email sent via Resend API from compose. Email ID: {}", response.getId());
 
@@ -404,7 +430,7 @@ public class EmailComposeService {
         try {
             MimeMessage mimeMessage = buildMimeMessage(
                     new JavaMailSenderImpl(), account, dto, attachments, replyTo);
-            saveSentCopy(account, mimeMessage, dto, replyTo);
+            saveSentCopy(account, mimeMessage, dto, attachments, replyTo);
         } catch (Exception e) {
             log.warn("Failed to persist .eml for Resend API send from {}: {}",
                     account.getEmail(), e.getMessage());
@@ -465,7 +491,7 @@ public class EmailComposeService {
         }
     }
 
-    private void saveSentCopy(EmailAccount account, MimeMessage mimeMessage, ComposeEmailDTO dto, EmailMessage replyTo) {
+    private void saveSentCopy(EmailAccount account, MimeMessage mimeMessage, ComposeEmailDTO dto, List<MultipartFile> attachments, EmailMessage replyTo) {
         try {
             Long accountId = account.getId();
             String fileName = emailStorageService.generateEmlFileName(mimeMessage.getMessageID());
@@ -511,8 +537,8 @@ public class EmailComposeService {
                 .snippet(extractSnippet(dto.getHtmlBody(), 200))
                 .isRead(true)
                 .isDraft(false)
-                .hasAttachments(false)
-                .attachmentCount(0)
+                .hasAttachments(attachments != null && !attachments.isEmpty())
+                .attachmentCount(attachments != null ? attachments.size() : 0)
                 .fileName(fileName)
                 .fileSize((long) baos.size())
                 .storagePath("sent")
