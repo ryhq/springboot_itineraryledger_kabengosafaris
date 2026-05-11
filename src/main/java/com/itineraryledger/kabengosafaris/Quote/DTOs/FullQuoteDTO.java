@@ -53,6 +53,14 @@ public class FullQuoteDTO {
     private BigDecimal discountPercentage;
     private String discountReason;
 
+    // Markup (bakes into per-line-item unit prices; never a separate line)
+    private BigDecimal agentCommissionPercentage;
+    private String agentCommissionReason;
+    private BigDecimal marginUpliftPercentage;
+    private String marginUpliftReason;
+
+    private Boolean condenseItems;
+
     // ========================
     // VALIDITY AND DATES
     // ========================

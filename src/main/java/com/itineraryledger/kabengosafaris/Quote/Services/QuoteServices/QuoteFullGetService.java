@@ -144,6 +144,11 @@ public class QuoteFullGetService {
         dto.setTaxPercentage(quote.getTaxPercentage());
         dto.setDiscountPercentage(quote.getDiscountPercentage());
         dto.setDiscountReason(quote.getDiscountReason());
+        dto.setAgentCommissionPercentage(quote.getAgentCommissionPercentage());
+        dto.setAgentCommissionReason(quote.getAgentCommissionReason());
+        dto.setMarginUpliftPercentage(quote.getMarginUpliftPercentage());
+        dto.setMarginUpliftReason(quote.getMarginUpliftReason());
+        dto.setCondenseItems(quote.getCondenseItems());
 
         // ========================
         // VALIDITY AND DATES

@@ -36,6 +36,8 @@ public class UpdateQuoteDTO {
     private BigDecimal marginUpliftPercentage;
     private String marginUpliftReason;
 
+    private Boolean condenseItems;
+
     private LocalDate validFrom;
     private LocalDate validTo;
     private Boolean isValid;

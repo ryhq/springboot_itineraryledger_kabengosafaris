@@ -45,6 +45,13 @@ public class CreateQuoteDTO {
     private BigDecimal marginUpliftPercentage;
     private String marginUpliftReason;
 
+    /**
+     * When true, derived QuoteItem rows are rolled up by category (one row
+     * per type per currency). When false (default), the per-line breakdown
+     * from cost estimation is preserved.
+     */
+    private Boolean condenseItems;
+
     @NotNull(message = "Valid from date is required")
     private LocalDate validFrom;
 

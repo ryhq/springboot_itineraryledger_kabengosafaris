@@ -397,16 +397,73 @@ public class QuoteCostEstimationService {
      */
     private int persistItems(Quote quote, ItineraryCostEstimationDTO estimation) {
         BigDecimal multiplier = computeMarkupMultiplier(quote);
+        boolean condense = Boolean.TRUE.equals(quote.getCondenseItems());
         int written = 0;
-        written += writeCondensed(quote, estimation.getAccommodationCosts() != null
-                ? estimation.getAccommodationCosts().getItems() : null,
-                QuoteItemType.ACCOMMODATION, "Accommodation", multiplier);
-        written += writeCondensed(quote, estimation.getParkFeeCosts() != null
-                ? estimation.getParkFeeCosts().getItems() : null,
-                QuoteItemType.PARK_FEE, "Park Fees", multiplier);
-        written += writeCondensed(quote, estimation.getActivityCosts() != null
-                ? estimation.getActivityCosts().getItems() : null,
-                QuoteItemType.ACTIVITY, "Activities", multiplier);
+        List<CostLineItem> accommodation = estimation.getAccommodationCosts() != null
+                ? estimation.getAccommodationCosts().getItems() : null;
+        List<CostLineItem> parkFees = estimation.getParkFeeCosts() != null
+                ? estimation.getParkFeeCosts().getItems() : null;
+        List<CostLineItem> activities = estimation.getActivityCosts() != null
+                ? estimation.getActivityCosts().getItems() : null;
+
+        if (condense) {
+            written += writeCondensed(quote, accommodation, QuoteItemType.ACCOMMODATION, "Accommodation", multiplier);
+            written += writeCondensed(quote, parkFees, QuoteItemType.PARK_FEE, "Park Fees", multiplier);
+            written += writeCondensed(quote, activities, QuoteItemType.ACTIVITY, "Activities", multiplier);
+        } else {
+            written += writePerLine(quote, accommodation, QuoteItemType.ACCOMMODATION, multiplier);
+            written += writePerLine(quote, parkFees, QuoteItemType.PARK_FEE, multiplier);
+            written += writePerLine(quote, activities, QuoteItemType.ACTIVITY, multiplier);
+        }
+        return written;
+    }
+
+    /**
+     * Persist one QuoteItem per cost-estimation line item, preserving the
+     * day/pax context in the row's description. Used when the Quote was
+     * generated with condense=false (the default), so the customer sees the
+     * full breakdown rather than a per-type roll-up.
+     */
+    private int writePerLine(Quote quote, List<CostLineItem> lineItems,
+                             QuoteItemType type, BigDecimal multiplier) {
+        if (lineItems == null || lineItems.isEmpty()) return 0;
+        int displayOrder = 0;
+        int written = 0;
+        for (CostLineItem li : lineItems) {
+            if (li.getCurrency() == null) continue;
+            BigDecimal baseUnit = li.getUnitPrice() != null ? li.getUnitPrice() : BigDecimal.ZERO;
+            BigDecimal inflatedUnit = baseUnit.multiply(multiplier)
+                    .setScale(2, java.math.RoundingMode.HALF_UP);
+            int qty = li.getQuantity() != null ? li.getQuantity() : 1;
+
+            Price p = new Price();
+            p.setCurrency(li.getCurrency());
+            p.setQuantity(qty);
+            p.setUnitPrice(inflatedUnit);
+            p.setTotalPrice(inflatedUnit.multiply(BigDecimal.valueOf(qty)));
+            if (Boolean.FALSE.equals(li.getRateFound())) {
+                p.setBreakdown("Rate not found — estimated");
+            }
+
+            StringBuilder desc = new StringBuilder();
+            if (li.getDayNumber() != null) desc.append("Day ").append(li.getDayNumber());
+            if (li.getPaxCategory() != null && !li.getPaxCategory().isBlank()) {
+                if (desc.length() > 0) desc.append(" • ");
+                desc.append(li.getPaxCategory());
+            }
+
+            QuoteItem item = QuoteItem.builder()
+                    .quote(quote)
+                    .itemType(type)
+                    .itemName(li.getItemName() != null ? li.getItemName() : type.name())
+                    .description(desc.length() > 0 ? desc.toString() : null)
+                    .displayOrder(displayOrder++)
+                    .prices(new ArrayList<>(List.of(p)))
+                    .isActive(true)
+                    .build();
+            quoteItemRepository.save(item);
+            written++;
+        }
         return written;
     }
 

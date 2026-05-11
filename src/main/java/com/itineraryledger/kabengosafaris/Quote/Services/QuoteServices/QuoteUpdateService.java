@@ -233,6 +233,13 @@ public class QuoteUpdateService {
             if (updateDTO.getMarginUpliftReason() != null) {
                 quote.setMarginUpliftReason(updateDTO.getMarginUpliftReason());
             }
+            // Toggling the per-line/condensed layout also forces a recalc so
+            // the QuoteItem rows are rewritten in the new shape.
+            if (updateDTO.getCondenseItems() != null
+                    && !updateDTO.getCondenseItems().equals(quote.getCondenseItems())) {
+                quote.setCondenseItems(updateDTO.getCondenseItems());
+                markupChanged = true;
+            }
 
             // Note: Status updates are blocked - must use workflow endpoints
             // (Already validated above)
@@ -347,6 +354,7 @@ public class QuoteUpdateService {
             .agentCommissionReason(quote.getAgentCommissionReason())
             .marginUpliftPercentage(quote.getMarginUpliftPercentage())
             .marginUpliftReason(quote.getMarginUpliftReason())
+            .condenseItems(quote.getCondenseItems())
             .version(quote.getVersion())
             .status(quote.getStatus())
             .safariStartDate(quote.getSafariStartDate())

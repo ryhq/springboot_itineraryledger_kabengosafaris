@@ -234,6 +234,18 @@ public class Quote {
     @Column(name = "margin_uplift_reason", length = 500)
     private String marginUpliftReason;
 
+    /**
+     * Whether the derived QuoteItem rows should be rolled up by category
+     * (Accommodation / Park Fees / Activities — one row per type per
+     * currency) or kept per-line from the cost-estimation breakdown. Driven
+     * by the user's choice on the "Generate Quote from Itinerary" modal and
+     * honored by {@code QuoteCostEstimationService.persistItems}. Defaults
+     * to {@code false} (per-line) so the customer sees the full breakdown.
+     */
+    @Column(name = "condense_items", nullable = false)
+    @Builder.Default
+    private Boolean condenseItems = false;
+
     // =====================================================================
     // VERSIONING
     // =====================================================================

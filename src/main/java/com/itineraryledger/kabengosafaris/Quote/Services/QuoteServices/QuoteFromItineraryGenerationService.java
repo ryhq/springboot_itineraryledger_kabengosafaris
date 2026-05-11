@@ -181,7 +181,8 @@ public class QuoteFromItineraryGenerationService {
                     agentCommissionPercentage,
                     agentCommissionReason,
                     marginUpliftPercentage,
-                    marginUpliftReason
+                    marginUpliftReason,
+                    condenseLineItems
             );
 
             ResponseEntity<ApiResponse<?>> quoteResponse = quoteCreateService.createQuote(createQuoteDTO);
@@ -251,7 +252,8 @@ public class QuoteFromItineraryGenerationService {
             BigDecimal agentCommissionPercentage,
             String agentCommissionReason,
             BigDecimal marginUpliftPercentage,
-            String marginUpliftReason
+            String marginUpliftReason,
+            boolean condenseLineItems
     ) {
         CreateQuoteDTO dto = new CreateQuoteDTO();
 
@@ -289,6 +291,10 @@ public class QuoteFromItineraryGenerationService {
             dto.setMarginUpliftPercentage(marginUpliftPercentage);
             dto.setMarginUpliftReason(marginUpliftReason);
         }
+
+        // Persist the user's per-line vs. condensed choice on the Quote so
+        // future recalcs (from day/pax edits) keep the same shape.
+        dto.setCondenseItems(condenseLineItems);
 
         // Default: active and in draft status
         dto.setIsActive(true);

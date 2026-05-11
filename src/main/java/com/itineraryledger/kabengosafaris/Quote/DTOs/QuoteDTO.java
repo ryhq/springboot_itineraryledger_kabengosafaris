@@ -54,6 +54,9 @@ public class QuoteDTO {
     private BigDecimal marginUpliftPercentage;
     private String marginUpliftReason;
 
+    // Whether derived items are condensed (one row per type) or per-line
+    private Boolean condenseItems;
+
     // Versioning
     private Integer version;
     private String previousVersionId;
