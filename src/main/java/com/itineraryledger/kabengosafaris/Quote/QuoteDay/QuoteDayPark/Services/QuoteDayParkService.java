@@ -12,6 +12,7 @@ import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.QuoteDayPa
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.QuoteDayParkTariff.Repository.QuoteDayParkTariffRepository;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.Repository.QuoteDayParkRepository;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.Repository.QuoteDayRepository;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteCostEstimationService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class QuoteDayParkService {
     private final QuoteDayParkActivityRepository parkActivityRepository;
     private final QuoteDayParkTariffRepository parkTariffRepository;
     private final ParkRepository parkRepository;
+    private final QuoteCostEstimationService quoteCostEstimationService;
     private final IdObfuscator idObfuscator;
 
     public ResponseEntity<ApiResponse<?>> list(String dayIdObf) {
@@ -103,6 +105,7 @@ public class QuoteDayParkService {
                     .notes(dto.getNotes())
                     .build();
             QuoteDayPark saved = quoteDayParkRepository.save(row);
+            quoteCostEstimationService.triggerRecalc(saved.getQuoteDay().getQuote().getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(
                     ApiResponse.success(201, "Park added to quote day", toDTO(saved)));
         } catch (Exception e) {
@@ -137,6 +140,7 @@ public class QuoteDayParkService {
             if (dto.getDepartureTime() != null) row.setDepartureTime(dto.getDepartureTime());
             if (dto.getNotes() != null) row.setNotes(dto.getNotes());
             QuoteDayPark saved = quoteDayParkRepository.save(row);
+            quoteCostEstimationService.triggerRecalc(saved.getQuoteDay().getQuote().getId());
             return ResponseEntity.ok(ApiResponse.success(200, "Park updated successfully", toDTO(saved)));
         } catch (Exception e) {
             log.error("Error updating quote day park", e);
@@ -156,7 +160,9 @@ public class QuoteDayParkService {
             if (row == null) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Not found", "QDP_NOT_FOUND"));
             }
+            Long quoteId = row.getQuoteDay().getQuote().getId();
             quoteDayParkRepository.delete(row);
+            quoteCostEstimationService.triggerRecalc(quoteId);
             return ResponseEntity.ok(ApiResponse.success(200, "Park deleted successfully", null));
         } catch (Exception e) {
             log.error("Error deleting quote day park", e);

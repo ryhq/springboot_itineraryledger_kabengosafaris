@@ -15,6 +15,7 @@ import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.D
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.Entity.QuoteDayAccommodation;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.Repository.QuoteDayAccommodationRepository;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.Repository.QuoteDayRepository;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteCostEstimationService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,7 @@ public class QuoteDayAccommodationService {
     private final AccommodationRoomTypeRepository roomTypeRepository;
     private final AccommodationRoomStandardRepository roomStandardRepository;
     private final AccommodationBoardTypeRepository boardTypeRepository;
+    private final QuoteCostEstimationService quoteCostEstimationService;
     private final IdObfuscator idObfuscator;
 
     public ResponseEntity<ApiResponse<?>> list(String dayIdObf) {
@@ -114,6 +116,7 @@ public class QuoteDayAccommodationService {
                     .notes(dto.getNotes())
                     .build();
             QuoteDayAccommodation saved = quoteDayAccommodationRepository.save(row);
+            quoteCostEstimationService.triggerRecalc(saved.getQuoteDay().getQuote().getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(
                     ApiResponse.success(201, "Accommodation added to quote day", toDTO(saved)));
         } catch (Exception e) {
@@ -159,6 +162,7 @@ public class QuoteDayAccommodationService {
             if (dto.getNotes() != null) row.setNotes(dto.getNotes());
 
             QuoteDayAccommodation saved = quoteDayAccommodationRepository.save(row);
+            quoteCostEstimationService.triggerRecalc(saved.getQuoteDay().getQuote().getId());
             return ResponseEntity.ok(ApiResponse.success(200, "Accommodation updated successfully", toDTO(saved)));
         } catch (Exception e) {
             log.error("Error updating quote day accommodation", e);
@@ -178,7 +182,9 @@ public class QuoteDayAccommodationService {
             if (row == null) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Not found", "QDA_NOT_FOUND"));
             }
+            Long quoteId = row.getQuoteDay().getQuote().getId();
             quoteDayAccommodationRepository.delete(row);
+            quoteCostEstimationService.triggerRecalc(quoteId);
             return ResponseEntity.ok(ApiResponse.success(200, "Accommodation deleted successfully", null));
         } catch (Exception e) {
             log.error("Error deleting quote day accommodation", e);

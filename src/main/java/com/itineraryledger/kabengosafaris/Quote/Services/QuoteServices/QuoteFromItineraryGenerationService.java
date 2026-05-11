@@ -60,6 +60,7 @@ public class QuoteFromItineraryGenerationService {
     private final ItineraryCostEstimationService costEstimationService;
     private final QuoteCreateService quoteCreateService;
     private final QuoteItemCreateService quoteItemCreateService;
+    private final QuoteCostEstimationService quoteCostEstimationService;
     private final ItineraryRepository itineraryRepository;
     private final CustomerRepository customerRepository;
     private final QuoteRepository quoteRepository;
@@ -70,6 +71,7 @@ public class QuoteFromItineraryGenerationService {
             ItineraryCostEstimationService costEstimationService,
             QuoteCreateService quoteCreateService,
             QuoteItemCreateService quoteItemCreateService,
+            QuoteCostEstimationService quoteCostEstimationService,
             ItineraryRepository itineraryRepository,
             CustomerRepository customerRepository,
             QuoteRepository quoteRepository,
@@ -78,6 +80,7 @@ public class QuoteFromItineraryGenerationService {
         this.costEstimationService = costEstimationService;
         this.quoteCreateService = quoteCreateService;
         this.quoteItemCreateService = quoteItemCreateService;
+        this.quoteCostEstimationService = quoteCostEstimationService;
         this.itineraryRepository = itineraryRepository;
         this.customerRepository = customerRepository;
         this.quoteRepository = quoteRepository;
@@ -189,18 +192,19 @@ public class QuoteFromItineraryGenerationService {
             //    template). Cascades persist the children.
             Long decodedQuoteId = idObfuscator.decodeId(quoteId);
             Quote quote = quoteRepository.findById(decodedQuoteId).orElse(null);
+            int itemsCreated;
             if (quote != null) {
                 copyPaxConfiguration(itinerary, quote);
                 copyDaysStructure(itinerary, quote);
                 quoteRepository.save(quote);
+                // Items are derived from the new Quote tree × pax mix by the
+                // shared cost-estimation engine, so any future edits to the
+                // tree update totals through the same path.
+                itemsCreated = quoteCostEstimationService.recalculate(decodedQuoteId);
             } else {
-                log.warn("Quote {} not found immediately after creation; skipping day-tree snapshot.", quoteId);
+                log.warn("Quote {} not found immediately after creation; falling back to legacy items.", quoteId);
+                itemsCreated = createQuoteItemsFromEstimation(quoteId, costEstimation, condenseLineItems);
             }
-
-            // 5. Create QuoteItems from cost estimation line items (price
-            //    summary for the PDF). Phase C will replace this with a
-            //    derivation that walks the Quote's own day-tree × QuotePax.
-            int itemsCreated = createQuoteItemsFromEstimation(quoteId, costEstimation, condenseLineItems);
 
             log.info("Successfully generated quote: {} with {} items for itinerary: {} and customer: {}",
                     quoteDTO.getQuoteCode(), itemsCreated, itineraryIdObfuscated, customerIdObfuscated);

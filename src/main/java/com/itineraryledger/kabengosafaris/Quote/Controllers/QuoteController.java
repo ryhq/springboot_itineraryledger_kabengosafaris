@@ -53,6 +53,7 @@ public class QuoteController {
     private final QuoteFullGetService quoteFullGetService;
     private final QuoteFromItineraryGenerationService quoteFromItineraryGenerationService;
     private final QuoteTotalsCalculationService totalsCalculationService;
+    private final com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteCostEstimationService quoteCostEstimationService;
     private final com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteStatusService quoteStatusService;
     private final QuoteVersionService quoteVersionService;
     private final IdObfuscator idObfuscator;
@@ -229,6 +230,19 @@ public class QuoteController {
                 ApiResponse.error(500, "Failed to trigger recalculation", "RECALCULATION_FAILED")
             );
         }
+    }
+
+    /**
+     * Re-derive the Quote's items from its current day-tree × pax mix.
+     * Drops the existing items and regenerates them via the shared cost
+     * estimation engine, then refreshes totals. No-op for legacy quotes
+     * that have no day snapshot.
+     */
+    @PostMapping("/{idObfuscated}/recalculate-items")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE')")
+    public ResponseEntity<ApiResponse<?>> recalculateItems(@PathVariable String idObfuscated) {
+        log.info("POST /api/quotes/{}/recalculate-items - Recalculating items from Quote tree", idObfuscated);
+        return quoteCostEstimationService.recalculateItemsForQuote(idObfuscated);
     }
 
     /**

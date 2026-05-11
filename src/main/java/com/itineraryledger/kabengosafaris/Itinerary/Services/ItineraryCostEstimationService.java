@@ -80,17 +80,6 @@ public class ItineraryCostEstimationService {
             String currency
     ) {
         try {
-            // Defaults
-            if (startDate == null) {
-                startDate = LocalDate.now();
-            }
-            if (useStoRate == null) {
-                useStoRate = true;
-            }
-            if (currency == null || currency.isBlank()) {
-                currency = DEFAULT_CURRENCY;
-            }
-
             // 1. Fetch full itinerary data
             ResponseEntity<ApiResponse<?>> itineraryResponse = itineraryFullGetService.getFullItinerary(itineraryIdObfuscated);
             if (!itineraryResponse.getStatusCode().is2xxSuccessful()) {
@@ -122,6 +111,40 @@ public class ItineraryCostEstimationService {
                 return ResponseEntity.status(404).body(
                     ApiResponse.error(404, "Itinerary not found", "ITINERARY_NOT_FOUND")
                 );
+            }
+
+            return estimateCostsFromDTO(itinerary, startDate, useStoRate, currency);
+        } catch (Exception e) {
+            log.error("Failed to estimate costs for itinerary: {}", itineraryIdObfuscated, e);
+            return ResponseEntity.status(500).body(
+                ApiResponse.error(500, "Failed to estimate costs: " + e.getMessage(), "COST_ESTIMATION_FAILED")
+            );
+        }
+    }
+
+    /**
+     * Estimate costs given a pre-built {@link FullItineraryDTO} — used by
+     * {@code QuoteCostEstimationService} which synthesises this shape from
+     * the Quote's own day-tree + pax mix, so the customer's per-quote edits
+     * (room counts, pax changes, accommodation swaps) feed through the same
+     * pricing engine the master itinerary uses.
+     */
+    public ResponseEntity<ApiResponse<?>> estimateCostsFromDTO(
+            FullItineraryDTO itinerary,
+            LocalDate startDate,
+            Boolean useStoRate,
+            String currency
+    ) {
+        try {
+            // Defaults
+            if (startDate == null) {
+                startDate = LocalDate.now();
+            }
+            if (useStoRate == null) {
+                useStoRate = true;
+            }
+            if (currency == null || currency.isBlank()) {
+                currency = DEFAULT_CURRENCY;
             }
 
             // 2. Calculate end date
@@ -236,7 +259,7 @@ public class ItineraryCostEstimationService {
             );
 
         } catch (Exception e) {
-            log.error("Failed to estimate costs for itinerary: {}", itineraryIdObfuscated, e);
+            log.error("Failed to estimate costs from DTO", e);
             return ResponseEntity.status(500).body(
                 ApiResponse.error(500, "Failed to estimate costs: " + e.getMessage(), "COST_ESTIMATION_FAILED")
             );

@@ -9,6 +9,7 @@ import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.QuoteDayPa
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.QuoteDayParkActivity.Entity.QuoteDayParkActivity;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.QuoteDayParkActivity.Repository.QuoteDayParkActivityRepository;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.Repository.QuoteDayParkRepository;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteCostEstimationService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class QuoteDayParkActivityService {
     private final QuoteDayParkRepository quoteDayParkRepository;
     private final QuoteDayParkActivityRepository quoteDayParkActivityRepository;
     private final ParkActivityRepository parkActivityRepository;
+    private final QuoteCostEstimationService quoteCostEstimationService;
     private final IdObfuscator idObfuscator;
 
     public ResponseEntity<ApiResponse<?>> list(String dayParkIdObf) {
@@ -106,6 +108,7 @@ public class QuoteDayParkActivityService {
                     .isIncludedInPrice(dto.getIsIncludedInPrice() != null ? dto.getIsIncludedInPrice() : true)
                     .build();
             QuoteDayParkActivity saved = quoteDayParkActivityRepository.save(row);
+            quoteCostEstimationService.triggerRecalc(saved.getQuoteDayPark().getQuoteDay().getQuote().getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(
                     ApiResponse.success(201, "Park activity added", toDTO(saved)));
         } catch (Exception e) {
@@ -133,6 +136,7 @@ public class QuoteDayParkActivityService {
             if (dto.getNotes() != null) row.setNotes(dto.getNotes());
             if (dto.getIsIncludedInPrice() != null) row.setIsIncludedInPrice(dto.getIsIncludedInPrice());
             QuoteDayParkActivity saved = quoteDayParkActivityRepository.save(row);
+            quoteCostEstimationService.triggerRecalc(saved.getQuoteDayPark().getQuoteDay().getQuote().getId());
             return ResponseEntity.ok(ApiResponse.success(200, "Park activity updated successfully", toDTO(saved)));
         } catch (Exception e) {
             log.error("Error updating quote day park activity", e);
@@ -152,7 +156,9 @@ public class QuoteDayParkActivityService {
             if (row == null) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Not found", "QDPA_NOT_FOUND"));
             }
+            Long quoteId = row.getQuoteDayPark().getQuoteDay().getQuote().getId();
             quoteDayParkActivityRepository.delete(row);
+            quoteCostEstimationService.triggerRecalc(quoteId);
             return ResponseEntity.ok(ApiResponse.success(200, "Park activity deleted successfully", null));
         } catch (Exception e) {
             log.error("Error deleting quote day park activity", e);

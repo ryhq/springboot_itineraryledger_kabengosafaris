@@ -8,6 +8,7 @@ import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayActivity.Reposi
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.Repository.QuoteDayParkRepository;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.Repository.QuoteDayRepository;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteCostEstimationService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class QuoteDayService {
     private final QuoteDayAccommodationRepository accRepository;
     private final QuoteDayActivityRepository actRepository;
     private final QuoteDayParkRepository parkRepository;
+    private final QuoteCostEstimationService quoteCostEstimationService;
     private final IdObfuscator idObfuscator;
 
     public ResponseEntity<ApiResponse<?>> getDays(String quoteIdObf) {
@@ -107,6 +109,7 @@ public class QuoteDayService {
             if (dto.getInternalNotes() != null) day.setInternalNotes(dto.getInternalNotes());
 
             QuoteDay saved = quoteDayRepository.save(day);
+            quoteCostEstimationService.triggerRecalc(saved.getQuote().getId());
             return ResponseEntity.ok(ApiResponse.success(200, "Day updated successfully", toDTO(saved)));
         } catch (Exception e) {
             log.error("Error updating quote day", e);
@@ -126,7 +129,9 @@ public class QuoteDayService {
             if (day == null) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Day not found", "DAY_NOT_FOUND"));
             }
+            Long quoteId = day.getQuote().getId();
             quoteDayRepository.delete(day);
+            quoteCostEstimationService.triggerRecalc(quoteId);
             return ResponseEntity.ok(ApiResponse.success(200, "Day deleted successfully", null));
         } catch (Exception e) {
             log.error("Error deleting quote day", e);

@@ -10,6 +10,7 @@ import com.itineraryledger.kabengosafaris.Quote.QuotePax.DTOs.UpsertQuotePaxDTO;
 import com.itineraryledger.kabengosafaris.Quote.QuotePax.Entity.QuotePax;
 import com.itineraryledger.kabengosafaris.Quote.QuotePax.Repository.QuotePaxRepository;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteCostEstimationService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,7 @@ public class QuotePaxService {
     private final QuotePaxRepository quotePaxRepository;
     private final PaxNationCategoryRepository paxNationCategoryRepository;
     private final PaxAgeCategoryRepository paxAgeCategoryRepository;
+    private final QuoteCostEstimationService quoteCostEstimationService;
     private final IdObfuscator idObfuscator;
 
     public ResponseEntity<ApiResponse<?>> getQuotePax(String quoteIdObfuscated) {
@@ -148,6 +150,8 @@ public class QuotePaxService {
                 }
             }
 
+            quoteCostEstimationService.triggerRecalc(quoteId);
+
             Map<String, Object> body = new HashMap<>();
             body.put("paxEntries", resultDTOs);
             body.put("created", created);
@@ -184,6 +188,7 @@ public class QuotePaxService {
                     deleted++;
                 }
             }
+            if (deleted > 0) quoteCostEstimationService.triggerRecalc(quoteId);
             return ResponseEntity.ok(ApiResponse.success(200, "Deleted " + deleted + " pax entries", deleted));
         } catch (Exception e) {
             log.error("Error deleting quote pax", e);
