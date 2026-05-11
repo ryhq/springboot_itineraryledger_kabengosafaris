@@ -146,6 +146,41 @@ public class QuoteDayParkActivityService {
     }
 
     @Transactional
+    public ResponseEntity<ApiResponse<?>> reorder(String dayParkIdObf, java.util.List<String> orderedIds) {
+        try {
+            Long dayParkId = idObfuscator.decodeId(dayParkIdObf);
+            if (dayParkId == null || !quoteDayParkRepository.existsById(dayParkId)) {
+                return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Quote day park not found", "QUOTE_DAY_PARK_NOT_FOUND"));
+            }
+            if (orderedIds == null || orderedIds.isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Ordered ID list is required", "EMPTY_PAYLOAD"));
+            }
+            int updated = 0; int n = 0;
+            Long owningQuoteId = null;
+            for (String obf : orderedIds) {
+                Long id = idObfuscator.decodeId(obf);
+                if (id == null) continue;
+                QuoteDayParkActivity row = quoteDayParkActivityRepository.findById(id).orElse(null);
+                if (row == null || !row.getQuoteDayPark().getId().equals(dayParkId)) continue;
+                row.setSortOrder(n);
+                quoteDayParkActivityRepository.save(row);
+                if (owningQuoteId == null) owningQuoteId = row.getQuoteDayPark().getQuoteDay().getQuote().getId();
+                updated++;
+                n++;
+            }
+            if (owningQuoteId != null) quoteCostEstimationService.triggerRecalc(owningQuoteId);
+            return ResponseEntity.ok(ApiResponse.success(200,
+                    "Reordered " + updated + " park activities", updated));
+        } catch (Exception e) {
+            log.error("Error reordering quote day park activities", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.error(500, "Failed to reorder park activities", "QDPA_REORDER_FAILED"));
+        }
+    }
+
+    @Transactional
     public ResponseEntity<ApiResponse<?>> delete(String idObf) {
         try {
             Long id = idObfuscator.decodeId(idObf);

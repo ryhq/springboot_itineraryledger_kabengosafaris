@@ -150,6 +150,41 @@ public class QuoteDayParkService {
     }
 
     @Transactional
+    public ResponseEntity<ApiResponse<?>> reorder(String dayIdObf, java.util.List<String> orderedIds) {
+        try {
+            Long dayId = idObfuscator.decodeId(dayIdObf);
+            if (dayId == null || !quoteDayRepository.existsById(dayId)) {
+                return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Quote day not found", "QUOTE_DAY_NOT_FOUND"));
+            }
+            if (orderedIds == null || orderedIds.isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Ordered ID list is required", "EMPTY_PAYLOAD"));
+            }
+            int updated = 0; int n = 0;
+            Long owningQuoteId = null;
+            for (String obf : orderedIds) {
+                Long id = idObfuscator.decodeId(obf);
+                if (id == null) continue;
+                QuoteDayPark row = quoteDayParkRepository.findById(id).orElse(null);
+                if (row == null || !row.getQuoteDay().getId().equals(dayId)) continue;
+                row.setSortOrder(n);
+                quoteDayParkRepository.save(row);
+                if (owningQuoteId == null) owningQuoteId = row.getQuoteDay().getQuote().getId();
+                updated++;
+                n++;
+            }
+            if (owningQuoteId != null) quoteCostEstimationService.triggerRecalc(owningQuoteId);
+            return ResponseEntity.ok(ApiResponse.success(200,
+                    "Reordered " + updated + " parks", updated));
+        } catch (Exception e) {
+            log.error("Error reordering quote day parks", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.error(500, "Failed to reorder parks", "QDP_REORDER_FAILED"));
+        }
+    }
+
+    @Transactional
     public ResponseEntity<ApiResponse<?>> delete(String idObf) {
         try {
             Long id = idObfuscator.decodeId(idObf);

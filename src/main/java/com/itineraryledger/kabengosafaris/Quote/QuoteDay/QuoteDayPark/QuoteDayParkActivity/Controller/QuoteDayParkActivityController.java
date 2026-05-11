@@ -51,4 +51,13 @@ public class QuoteDayParkActivityController {
     public ResponseEntity<ApiResponse<?>> delete(@PathVariable String id) {
         return service.delete(id);
     }
+
+    @PostMapping("/api/quote-day-parks/{dayParkId}/activities/reorder")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE_DAY_PARK_ACTIVITY')")
+    public ResponseEntity<ApiResponse<?>> reorder(
+            @PathVariable String dayParkId,
+            @RequestBody java.util.List<String> orderedIds
+    ) {
+        return service.reorder(dayParkId, orderedIds);
+    }
 }

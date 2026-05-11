@@ -44,4 +44,20 @@ public class QuoteDayController {
     public ResponseEntity<ApiResponse<?>> deleteDay(@PathVariable String dayId) {
         return quoteDayService.deleteDay(dayId);
     }
+
+    /**
+     * Bulk-reorder a Quote's days. Client sends an ordered list of day IDs;
+     * server reassigns dayNumber = position-in-list (starting at 1) and
+     * regenerates the dayTag. Triggers a recalc once at the end.
+     */
+    @PostMapping("/api/quotes/{quoteId}/days/reorder")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE_DAY')")
+    public ResponseEntity<ApiResponse<?>> reorderDays(
+            @PathVariable String quoteId,
+            @RequestBody java.util.List<String> orderedDayIds
+    ) {
+        log.info("POST /api/quotes/{}/days/reorder — {} day ids", quoteId,
+                orderedDayIds != null ? orderedDayIds.size() : 0);
+        return quoteDayService.reorderDays(quoteId, orderedDayIds);
+    }
 }

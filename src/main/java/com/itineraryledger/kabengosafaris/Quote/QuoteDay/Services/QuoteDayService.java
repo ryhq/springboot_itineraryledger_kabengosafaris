@@ -119,6 +119,41 @@ public class QuoteDayService {
     }
 
     @Transactional
+    public ResponseEntity<ApiResponse<?>> reorderDays(String quoteIdObf, java.util.List<String> orderedDayIds) {
+        try {
+            Long quoteId = idObfuscator.decodeId(quoteIdObf);
+            if (quoteId == null || !quoteRepository.existsById(quoteId)) {
+                return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Quote not found", "QUOTE_NOT_FOUND"));
+            }
+            if (orderedDayIds == null || orderedDayIds.isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Ordered day ID list is required", "EMPTY_PAYLOAD"));
+            }
+            int updated = 0;
+            int n = 1;
+            for (String obf : orderedDayIds) {
+                Long id = idObfuscator.decodeId(obf);
+                if (id == null) continue;
+                QuoteDay day = quoteDayRepository.findById(id).orElse(null);
+                if (day == null || !day.getQuote().getId().equals(quoteId)) continue;
+                day.setDayNumber(n);
+                day.setDayTag("Day " + n);
+                quoteDayRepository.save(day);
+                updated++;
+                n++;
+            }
+            if (updated > 0) quoteCostEstimationService.triggerRecalc(quoteId);
+            return ResponseEntity.ok(ApiResponse.success(200,
+                    "Renumbered " + updated + " days", updated));
+        } catch (Exception e) {
+            log.error("Error reordering quote days", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.error(500, "Failed to reorder days", "QUOTE_DAY_REORDER_FAILED"));
+        }
+    }
+
+    @Transactional
     public ResponseEntity<ApiResponse<?>> deleteDay(String dayIdObf) {
         try {
             Long dayId = idObfuscator.decodeId(dayIdObf);
