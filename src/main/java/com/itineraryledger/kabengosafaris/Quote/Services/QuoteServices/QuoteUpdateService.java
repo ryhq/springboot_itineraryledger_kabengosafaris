@@ -298,11 +298,12 @@ public class QuoteUpdateService {
             // Save updated quote
             quote = quoteRepository.save(quote);
 
-            // If markup changed, re-derive items (inflated unit prices) — this
-            // also refreshes totals as a side effect, so skip the totals-only
-            // recalc below. Otherwise just refresh totals (tax/discount only).
+            // If markup changed, re-derive items synchronously so the inflated
+            // unit prices are reflected in the response (same behaviour as
+            // tax/discount). recalculate() also refreshes totals at the end,
+            // so the totals-only call below is skipped in that branch.
             if (markupChanged) {
-                quoteCostEstimationService.triggerRecalc(quote.getId());
+                quoteCostEstimationService.recalculate(quote.getId());
             } else {
                 totalsCalculationService.recalculateTotals(quote.getId());
             }
