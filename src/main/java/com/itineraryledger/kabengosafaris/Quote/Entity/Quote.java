@@ -13,8 +13,11 @@ import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
 import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
 import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteStatus;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.Entity.QuoteDay;
+import com.itineraryledger.kabengosafaris.Quote.QuotePax.Entity.QuotePax;
 import com.itineraryledger.kabengosafaris.User.User;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -28,6 +31,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
@@ -111,6 +115,26 @@ public class Quote {
     @OneToMany(mappedBy = "quote", fetch = FetchType.LAZY)
     @Builder.Default
     private List<QuoteDocument> documents = new ArrayList<>();
+
+    /**
+     * Per-customer snapshot of the itinerary day-tree. Populated by
+     * QuoteFromItineraryGenerationService at quote creation. Edits on the day
+     * tree do NOT propagate back to the master Itinerary. Empty for legacy
+     * quotes created before snapshot mode.
+     */
+    @OneToMany(mappedBy = "quote", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("dayNumber ASC")
+    @Builder.Default
+    private List<QuoteDay> days = new ArrayList<>();
+
+    /**
+     * Per-customer snapshot of the pax mix. Populated from ItineraryPax at
+     * quote creation; copied forward into SafariPax on conversion. Empty for
+     * legacy quotes.
+     */
+    @OneToMany(mappedBy = "quote", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<QuotePax> paxList = new ArrayList<>();
 
     // =====================================================================
     // MULTI-CURRENCY TOTALS
