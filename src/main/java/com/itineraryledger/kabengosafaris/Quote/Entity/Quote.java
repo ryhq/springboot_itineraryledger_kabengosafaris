@@ -103,16 +103,21 @@ public class Quote {
     private Customer customer;
 
     /**
-     * Quote items (accommodations, activities, park fees, etc.)
+     * Quote items (accommodations, activities, park fees, etc.). Derived
+     * from the day-tree by QuoteCostEstimationService, so they live and die
+     * with the Quote — cascade ensures deleting the Quote also removes its
+     * item rows (otherwise the FK from quote_items.quote_id blocks the
+     * parent delete).
      */
-    @OneToMany(mappedBy = "quote", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "quote", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<QuoteItem> items = new ArrayList<>();
 
     /**
-     * Quote documents (PDFs, contracts, itineraries, etc.)
+     * Quote documents (PDFs, contracts, itineraries, etc.). Same lifecycle
+     * as items — cascade so the parent Quote is deletable.
      */
-    @OneToMany(mappedBy = "quote", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "quote", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<QuoteDocument> documents = new ArrayList<>();
 

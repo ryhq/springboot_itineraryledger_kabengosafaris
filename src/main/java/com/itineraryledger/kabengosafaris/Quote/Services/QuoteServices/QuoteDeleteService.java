@@ -152,6 +152,15 @@ public class QuoteDeleteService {
         entityIdParamName = "id"
     )
     public void deleteQuote(Long id) {
+        // Unlink any sibling version pointers that reference this quote.
+        // Without this, the self-FK from quotes.previous_version_id /
+        // quotes.next_version_id blocks the delete with a constraint
+        // violation. JPA cascade can't help here — those are inverse
+        // ManyToOne references, not owned children.
+        quoteRepository.clearPreviousVersionRefs(id);
+        quoteRepository.clearNextVersionRefs(id);
+        quoteRepository.flush();
+
         quoteRepository.deleteById(id);
     }
 }

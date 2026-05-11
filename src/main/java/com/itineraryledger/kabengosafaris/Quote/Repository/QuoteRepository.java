@@ -4,6 +4,7 @@ import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
 import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -88,4 +89,17 @@ public interface QuoteRepository extends JpaRepository<Quote, Long>, JpaSpecific
 
     @Query("SELECT e.id FROM Quote e ORDER BY e.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    /**
+     * Null out previous_version_id / next_version_id columns on any quote
+     * that points at the given quote, so the target can be safely deleted
+     * without tripping the self-referential foreign key constraint.
+     */
+    @Modifying
+    @Query("UPDATE Quote q SET q.previousVersion = null WHERE q.previousVersion.id = :id")
+    int clearPreviousVersionRefs(@Param("id") Long id);
+
+    @Modifying
+    @Query("UPDATE Quote q SET q.nextVersion = null WHERE q.nextVersion.id = :id")
+    int clearNextVersionRefs(@Param("id") Long id);
 }
