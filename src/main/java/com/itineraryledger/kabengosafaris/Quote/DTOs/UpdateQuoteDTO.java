@@ -31,6 +31,11 @@ public class UpdateQuoteDTO {
     private BigDecimal discountPercentage;
     private String discountReason;
 
+    private BigDecimal agentCommissionPercentage;
+    private String agentCommissionReason;
+    private BigDecimal marginUpliftPercentage;
+    private String marginUpliftReason;
+
     private LocalDate validFrom;
     private LocalDate validTo;
     private Boolean isValid;

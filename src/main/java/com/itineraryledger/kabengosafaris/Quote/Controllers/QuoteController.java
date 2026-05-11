@@ -104,6 +104,10 @@ public class QuoteController {
         @RequestParam(required = false) BigDecimal taxPercentage,
         @RequestParam(required = false) BigDecimal discountPercentage,
         @RequestParam(required = false) String discountReason,
+        @RequestParam(required = false) BigDecimal agentCommissionPercentage,
+        @RequestParam(required = false) String agentCommissionReason,
+        @RequestParam(required = false) BigDecimal marginUpliftPercentage,
+        @RequestParam(required = false) String marginUpliftReason,
         @RequestParam(required = false, defaultValue = "false") Boolean condense
     ) {
         log.info("POST /api/quotes/generate-from-itinerary - Generating quote from itinerary: {} for customer: {} (condense={})",
@@ -118,6 +122,10 @@ public class QuoteController {
             taxPercentage,
             discountPercentage,
             discountReason,
+            agentCommissionPercentage,
+            agentCommissionReason,
+            marginUpliftPercentage,
+            marginUpliftReason,
             condense
         );
     }

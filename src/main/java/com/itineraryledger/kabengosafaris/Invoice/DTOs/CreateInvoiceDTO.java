@@ -33,6 +33,12 @@ public class CreateInvoiceDTO {
     private BigDecimal discountPercentage;
     private String discountReason;
 
+    // Markup (bake into per-line-item unit price before discount/tax)
+    private BigDecimal agentCommissionPercentage;
+    private String agentCommissionReason;
+    private BigDecimal marginUpliftPercentage;
+    private String marginUpliftReason;
+
     @NotNull(message = "Issue date is required")
     private LocalDate issueDate;
 

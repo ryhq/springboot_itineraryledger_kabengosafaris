@@ -52,6 +52,12 @@ public class FullInvoiceDTO {
     private BigDecimal discountPercentage;
     private String discountReason;
 
+    // Markup (bakes into per-line-item unit prices; not a separate line)
+    private BigDecimal agentCommissionPercentage;
+    private String agentCommissionReason;
+    private BigDecimal marginUpliftPercentage;
+    private String marginUpliftReason;
+
     // ========================
     // DATES
     // ========================

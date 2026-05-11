@@ -7,6 +7,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,8 +16,11 @@ import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.InvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.UpdateInvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
+import com.itineraryledger.kabengosafaris.Invoice.Entity.InvoiceLineItem;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
+import com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceLineItemRepository;
 import com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceRepository;
+import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import com.itineraryledger.kabengosafaris.User.User;
@@ -37,6 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 public class InvoiceUpdateService {
 
     private final InvoiceRepository invoiceRepository;
+    private final InvoiceLineItemRepository invoiceLineItemRepository;
     private final UserRepository userRepository;
     private final IdObfuscator idObfuscator;
     private final InvoiceTotalsCalculationService totalsCalculationService;
@@ -114,6 +120,12 @@ public class InvoiceUpdateService {
                 if (updateDTO.getDiscountPercentage() != null && !updateDTO.getDiscountPercentage().equals(invoice.getDiscountPercentage())) {
                     blockedFields.add("discountPercentage");
                 }
+                if (updateDTO.getAgentCommissionPercentage() != null && !updateDTO.getAgentCommissionPercentage().equals(invoice.getAgentCommissionPercentage())) {
+                    blockedFields.add("agentCommissionPercentage");
+                }
+                if (updateDTO.getMarginUpliftPercentage() != null && !updateDTO.getMarginUpliftPercentage().equals(invoice.getMarginUpliftPercentage())) {
+                    blockedFields.add("marginUpliftPercentage");
+                }
                 if (updateDTO.getIssueDate() != null && !updateDTO.getIssueDate().equals(invoice.getIssueDate())) {
                     blockedFields.add("issueDate");
                 }
@@ -146,6 +158,14 @@ public class InvoiceUpdateService {
             // DRAFT: Can update all fields
             // SENT/VIEWED: Can only update non-critical fields (enforced above)
 
+            // Capture pre-update markup multiplier so we can re-scale line
+            // item unit prices by the *ratio* of new/old when commission or
+            // uplift changes. Without this, switching from 10% to 20% would
+            // double-count the original 10% already baked in.
+            BigDecimal oldMultiplier = computeMarkupMultiplier(
+                    invoice.getAgentCommissionPercentage(), invoice.getMarginUpliftPercentage());
+            boolean markupChanged = false;
+
             if (currentStatus == InvoiceStatus.DRAFT) {
                 // Update title (DRAFT only)
                 if (updateDTO.getTitle() != null) {
@@ -158,6 +178,25 @@ public class InvoiceUpdateService {
                 }
                 if (updateDTO.getDiscountPercentage() != null) {
                     invoice.setDiscountPercentage(updateDTO.getDiscountPercentage());
+                }
+
+                // Markup fields (DRAFT only) — bake into existing line item
+                // unit prices when commission or uplift changes.
+                if (updateDTO.getAgentCommissionPercentage() != null
+                        && !updateDTO.getAgentCommissionPercentage().equals(invoice.getAgentCommissionPercentage())) {
+                    invoice.setAgentCommissionPercentage(updateDTO.getAgentCommissionPercentage());
+                    markupChanged = true;
+                }
+                if (updateDTO.getAgentCommissionReason() != null) {
+                    invoice.setAgentCommissionReason(updateDTO.getAgentCommissionReason());
+                }
+                if (updateDTO.getMarginUpliftPercentage() != null
+                        && !updateDTO.getMarginUpliftPercentage().equals(invoice.getMarginUpliftPercentage())) {
+                    invoice.setMarginUpliftPercentage(updateDTO.getMarginUpliftPercentage());
+                    markupChanged = true;
+                }
+                if (updateDTO.getMarginUpliftReason() != null) {
+                    invoice.setMarginUpliftReason(updateDTO.getMarginUpliftReason());
                 }
 
                 // Update dates (DRAFT only)
@@ -204,6 +243,33 @@ public class InvoiceUpdateService {
             // Save updated invoice
             invoice = invoiceRepository.save(invoice);
 
+            // If markup changed, re-scale every line item's per-currency unit
+            // price by (newMultiplier / oldMultiplier). This keeps prices in
+            // sync with the new percentages without re-deriving from the
+            // safari (invoices are not derived continuously like quotes).
+            if (markupChanged) {
+                BigDecimal newMultiplier = computeMarkupMultiplier(
+                        invoice.getAgentCommissionPercentage(), invoice.getMarginUpliftPercentage());
+                if (oldMultiplier.signum() != 0 && newMultiplier.compareTo(oldMultiplier) != 0) {
+                    BigDecimal ratio = newMultiplier.divide(oldMultiplier, 8, RoundingMode.HALF_UP);
+                    List<InvoiceLineItem> lineItems =
+                            invoiceLineItemRepository.findByInvoiceIdOrderByDisplayOrderAsc(invoice.getId());
+                    for (InvoiceLineItem item : lineItems) {
+                        if (item.getPrices() == null) continue;
+                        for (Price p : item.getPrices()) {
+                            if (p.getUnitPrice() == null) continue;
+                            BigDecimal scaled = p.getUnitPrice().multiply(ratio)
+                                    .setScale(2, RoundingMode.HALF_UP);
+                            p.setUnitPrice(scaled);
+                            if (p.getQuantity() != null) {
+                                p.setTotalPrice(scaled.multiply(BigDecimal.valueOf(p.getQuantity())));
+                            }
+                        }
+                        invoiceLineItemRepository.save(item);
+                    }
+                }
+            }
+
             // Recalculate totals (especially if tax/discount percentages changed)
             totalsCalculationService.recalculateTotals(invoice.getId());
 
@@ -245,6 +311,10 @@ public class InvoiceUpdateService {
             .taxPercentage(invoice.getTaxPercentage())
             .discountPercentage(invoice.getDiscountPercentage())
             .discountReason(invoice.getDiscountReason())
+            .agentCommissionPercentage(invoice.getAgentCommissionPercentage())
+            .agentCommissionReason(invoice.getAgentCommissionReason())
+            .marginUpliftPercentage(invoice.getMarginUpliftPercentage())
+            .marginUpliftReason(invoice.getMarginUpliftReason())
             .issueDate(invoice.getIssueDate())
             .dueDate(invoice.getDueDate())
             .sentDate(invoice.getSentDate())
@@ -288,6 +358,18 @@ public class InvoiceUpdateService {
         }
 
         return dto;
+    }
+
+    /**
+     * (1 + (commission% + uplift%) / 100). Returns {@link BigDecimal#ONE} when
+     * both are null/zero so callers can divide safely.
+     */
+    private BigDecimal computeMarkupMultiplier(BigDecimal commissionPct, BigDecimal upliftPct) {
+        BigDecimal c = commissionPct != null ? commissionPct : BigDecimal.ZERO;
+        BigDecimal u = upliftPct != null ? upliftPct : BigDecimal.ZERO;
+        BigDecimal total = c.add(u);
+        if (total.signum() == 0) return BigDecimal.ONE;
+        return BigDecimal.ONE.add(total.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
     }
 
     /**

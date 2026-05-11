@@ -389,23 +389,43 @@ public class QuoteCostEstimationService {
      * Turn a cost-estimation breakdown into condensed QuoteItem rows — one
      * row per (QuoteItemType, currency), with the breakdown text preserving
      * the underlying line-item names so the PDF still reads honestly.
+     *
+     * Each persisted unit price is the rack-rate cost multiplied by
+     * {@code (1 + agentCommission% + marginUplift%) / 100} so the customer-
+     * facing line-item price is already inflated — there is no separate
+     * "Markup" line on the PDF.
      */
     private int persistItems(Quote quote, ItineraryCostEstimationDTO estimation) {
+        BigDecimal multiplier = computeMarkupMultiplier(quote);
         int written = 0;
         written += writeCondensed(quote, estimation.getAccommodationCosts() != null
                 ? estimation.getAccommodationCosts().getItems() : null,
-                QuoteItemType.ACCOMMODATION, "Accommodation");
+                QuoteItemType.ACCOMMODATION, "Accommodation", multiplier);
         written += writeCondensed(quote, estimation.getParkFeeCosts() != null
                 ? estimation.getParkFeeCosts().getItems() : null,
-                QuoteItemType.PARK_FEE, "Park Fees");
+                QuoteItemType.PARK_FEE, "Park Fees", multiplier);
         written += writeCondensed(quote, estimation.getActivityCosts() != null
                 ? estimation.getActivityCosts().getItems() : null,
-                QuoteItemType.ACTIVITY, "Activities");
+                QuoteItemType.ACTIVITY, "Activities", multiplier);
         return written;
     }
 
+    /**
+     * (1 + agentCommission% + marginUplift%) / 100. Defaults to 1 (no markup)
+     * when both fields are null or zero.
+     */
+    private BigDecimal computeMarkupMultiplier(Quote quote) {
+        BigDecimal commission = quote.getAgentCommissionPercentage() != null
+                ? quote.getAgentCommissionPercentage() : BigDecimal.ZERO;
+        BigDecimal uplift = quote.getMarginUpliftPercentage() != null
+                ? quote.getMarginUpliftPercentage() : BigDecimal.ZERO;
+        BigDecimal totalPct = commission.add(uplift);
+        if (totalPct.signum() == 0) return BigDecimal.ONE;
+        return BigDecimal.ONE.add(totalPct.divide(BigDecimal.valueOf(100), 6, java.math.RoundingMode.HALF_UP));
+    }
+
     private int writeCondensed(Quote quote, List<CostLineItem> lineItems,
-                               QuoteItemType type, String displayName) {
+                               QuoteItemType type, String displayName, BigDecimal multiplier) {
         if (lineItems == null || lineItems.isEmpty()) return 0;
 
         Map<String, BigDecimal> totalsByCurrency = new LinkedHashMap<>();
@@ -428,11 +448,15 @@ public class QuoteCostEstimationService {
 
         List<Price> prices = new ArrayList<>();
         for (Map.Entry<String, BigDecimal> entry : totalsByCurrency.entrySet()) {
+            // Apply markup multiplier in-place; rack base is the input,
+            // inflated price is what gets stored.
+            BigDecimal inflated = entry.getValue().multiply(multiplier)
+                    .setScale(2, java.math.RoundingMode.HALF_UP);
             Price p = new Price();
             p.setCurrency(entry.getKey());
             p.setQuantity(1);
-            p.setUnitPrice(entry.getValue());
-            p.setTotalPrice(entry.getValue());
+            p.setUnitPrice(inflated);
+            p.setTotalPrice(inflated);
             if (anyRateMissing) p.setBreakdown("Some rates were estimated");
             prices.add(p);
         }

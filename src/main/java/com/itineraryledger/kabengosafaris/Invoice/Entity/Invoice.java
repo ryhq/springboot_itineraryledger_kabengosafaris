@@ -166,6 +166,32 @@ public class Invoice {
     private String discountReason;
 
     // =====================================================================
+    // MARKUP (bakes into per-line-item unit prices, not a separate line)
+    // =====================================================================
+
+    /**
+     * Agent commission percentage — pays off the referring agent.
+     * Applied (with marginUplift) as a multiplier on each line item's unit
+     * price before discount/tax, so the customer sees the inflated price as
+     * the line total. P&L expense, not retained profit.
+     */
+    @Column(name = "agent_commission_percentage", precision = 5, scale = 2)
+    private BigDecimal agentCommissionPercentage;
+
+    @Column(name = "agent_commission_reason", length = 500)
+    private String agentCommissionReason;
+
+    /**
+     * Margin uplift percentage — extra profit retained in-house. Applied
+     * together with agentCommissionPercentage as a per-line-item multiplier.
+     */
+    @Column(name = "margin_uplift_percentage", precision = 5, scale = 2)
+    private BigDecimal marginUpliftPercentage;
+
+    @Column(name = "margin_uplift_reason", length = 500)
+    private String marginUpliftReason;
+
+    // =====================================================================
     // INVOICE DATES
     // =====================================================================
 

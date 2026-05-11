@@ -48,6 +48,12 @@ public class QuoteDTO {
     private BigDecimal discountPercentage;
     private String discountReason;
 
+    // Agent commission + margin uplift (internal; bakes into item prices)
+    private BigDecimal agentCommissionPercentage;
+    private String agentCommissionReason;
+    private BigDecimal marginUpliftPercentage;
+    private String marginUpliftReason;
+
     // Versioning
     private Integer version;
     private String previousVersionId;

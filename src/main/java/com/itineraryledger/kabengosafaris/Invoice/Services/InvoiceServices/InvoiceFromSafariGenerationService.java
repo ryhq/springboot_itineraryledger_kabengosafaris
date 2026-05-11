@@ -174,10 +174,22 @@ public class InvoiceFromSafariGenerationService {
                     dto.getTaxPercentage(),
                     dto.getDiscountPercentage(),
                     dto.getDiscountReason(),
+                    dto.getAgentCommissionPercentage(),
+                    dto.getAgentCommissionReason(),
+                    dto.getMarginUpliftPercentage(),
+                    dto.getMarginUpliftReason(),
                     dto.getInternalNotes(),
                     dto.getCustomerNotes(),
                     dto.getPaymentTerms()
             );
+
+            // Markup multiplier baked into each line item's unit price (same
+            // model as Quote): customer never sees a markup line — the
+            // inflated price IS the line total. Falls back to quote values
+            // when not explicitly provided on the DTO.
+            BigDecimal multiplier = computeMarkupMultiplier(
+                    createInvoiceDTO.getAgentCommissionPercentage(),
+                    createInvoiceDTO.getMarginUpliftPercentage());
 
             ResponseEntity<ApiResponse<?>> invoiceResponse = invoiceCreateService.createInvoice(createInvoiceDTO);
             if (!invoiceResponse.getStatusCode().is2xxSuccessful() || invoiceResponse.getBody() == null) {
@@ -192,7 +204,7 @@ public class InvoiceFromSafariGenerationService {
 
             // 6. Create InvoiceLineItems from cost estimation line items
             boolean condenseLineItems = Boolean.TRUE.equals(dto.getCondense());
-            int itemsCreated = createInvoiceLineItemsFromEstimation(invoiceId, costEstimation, condenseLineItems);
+            int itemsCreated = createInvoiceLineItemsFromEstimation(invoiceId, costEstimation, condenseLineItems, multiplier);
 
 
             log.info("Successfully generated invoice: {} with {} items for safari: {}",
@@ -234,6 +246,10 @@ public class InvoiceFromSafariGenerationService {
             BigDecimal taxPercentage,
             BigDecimal discountPercentage,
             String discountReason,
+            BigDecimal agentCommissionPercentage,
+            String agentCommissionReason,
+            BigDecimal marginUpliftPercentage,
+            String marginUpliftReason,
             String internalNotes,
             String customerNotes,
             String paymentTerms
@@ -276,6 +292,26 @@ public class InvoiceFromSafariGenerationService {
             dto.setDiscountPercentage(latestQuote.getDiscountPercentage());
             dto.setDiscountReason(latestQuote.getDiscountReason());
             log.debug("Using discount {}% from quote {}", latestQuote.getDiscountPercentage(), latestQuote.getQuoteCode());
+        }
+
+        // Markup — explicit override beats quote fallback
+        if (agentCommissionPercentage != null) {
+            dto.setAgentCommissionPercentage(agentCommissionPercentage);
+            dto.setAgentCommissionReason(agentCommissionReason);
+        } else if (latestQuote != null && latestQuote.getAgentCommissionPercentage() != null) {
+            dto.setAgentCommissionPercentage(latestQuote.getAgentCommissionPercentage());
+            dto.setAgentCommissionReason(latestQuote.getAgentCommissionReason());
+            log.debug("Using agent commission {}% from quote {}",
+                    latestQuote.getAgentCommissionPercentage(), latestQuote.getQuoteCode());
+        }
+        if (marginUpliftPercentage != null) {
+            dto.setMarginUpliftPercentage(marginUpliftPercentage);
+            dto.setMarginUpliftReason(marginUpliftReason);
+        } else if (latestQuote != null && latestQuote.getMarginUpliftPercentage() != null) {
+            dto.setMarginUpliftPercentage(latestQuote.getMarginUpliftPercentage());
+            dto.setMarginUpliftReason(latestQuote.getMarginUpliftReason());
+            log.debug("Using margin uplift {}% from quote {}",
+                    latestQuote.getMarginUpliftPercentage(), latestQuote.getQuoteCode());
         }
 
         // Notes — fall back to quote values
@@ -327,7 +363,8 @@ public class InvoiceFromSafariGenerationService {
     private int createInvoiceLineItemsFromEstimation(
             String invoiceId,
             ItineraryCostEstimationDTO costEstimation,
-            boolean condense
+            boolean condense,
+            BigDecimal multiplier
     ) {
         int itemsCreated = 0;
 
@@ -336,25 +373,37 @@ public class InvoiceFromSafariGenerationService {
         List<ItineraryCostEstimationDTO.CostLineItem> activities = items(costEstimation.getActivityCosts());
 
         if (condense) {
-            if (createCondensedLineItem(invoiceId, accommodation, InvoiceItemType.ACCOMMODATION, "Accommodation")) itemsCreated++;
-            if (createCondensedLineItem(invoiceId, parkFees, InvoiceItemType.PARK_FEE, "Park Fees")) itemsCreated++;
-            if (createCondensedLineItem(invoiceId, activities, InvoiceItemType.ACTIVITY, "Activities")) itemsCreated++;
+            if (createCondensedLineItem(invoiceId, accommodation, InvoiceItemType.ACCOMMODATION, "Accommodation", multiplier)) itemsCreated++;
+            if (createCondensedLineItem(invoiceId, parkFees, InvoiceItemType.PARK_FEE, "Park Fees", multiplier)) itemsCreated++;
+            if (createCondensedLineItem(invoiceId, activities, InvoiceItemType.ACTIVITY, "Activities", multiplier)) itemsCreated++;
         } else {
             for (ItineraryCostEstimationDTO.CostLineItem li : accommodation) {
-                createInvoiceLineItemFromLineItem(invoiceId, li, InvoiceItemType.ACCOMMODATION);
+                createInvoiceLineItemFromLineItem(invoiceId, li, InvoiceItemType.ACCOMMODATION, multiplier);
                 itemsCreated++;
             }
             for (ItineraryCostEstimationDTO.CostLineItem li : parkFees) {
-                createInvoiceLineItemFromLineItem(invoiceId, li, InvoiceItemType.PARK_FEE);
+                createInvoiceLineItemFromLineItem(invoiceId, li, InvoiceItemType.PARK_FEE, multiplier);
                 itemsCreated++;
             }
             for (ItineraryCostEstimationDTO.CostLineItem li : activities) {
-                createInvoiceLineItemFromLineItem(invoiceId, li, InvoiceItemType.ACTIVITY);
+                createInvoiceLineItemFromLineItem(invoiceId, li, InvoiceItemType.ACTIVITY, multiplier);
                 itemsCreated++;
             }
         }
 
         return itemsCreated;
+    }
+
+    /**
+     * (1 + (commission% + uplift%) / 100). Returns {@link BigDecimal#ONE} when
+     * both are null/zero so callers can multiply unconditionally.
+     */
+    private BigDecimal computeMarkupMultiplier(BigDecimal commissionPct, BigDecimal upliftPct) {
+        BigDecimal c = commissionPct != null ? commissionPct : BigDecimal.ZERO;
+        BigDecimal u = upliftPct != null ? upliftPct : BigDecimal.ZERO;
+        BigDecimal total = c.add(u);
+        if (total.signum() == 0) return BigDecimal.ONE;
+        return BigDecimal.ONE.add(total.divide(BigDecimal.valueOf(100), 6, java.math.RoundingMode.HALF_UP));
     }
 
     private List<ItineraryCostEstimationDTO.CostLineItem> items(ItineraryCostEstimationDTO.CostBreakdown breakdown) {
@@ -371,7 +420,8 @@ public class InvoiceFromSafariGenerationService {
             String invoiceId,
             List<ItineraryCostEstimationDTO.CostLineItem> lineItems,
             InvoiceItemType itemType,
-            String displayName
+            String displayName,
+            BigDecimal multiplier
     ) {
         if (lineItems == null || lineItems.isEmpty()) return false;
 
@@ -408,7 +458,9 @@ public class InvoiceFromSafariGenerationService {
             CreateInvoiceLineItemDTO.PriceInput price = new CreateInvoiceLineItemDTO.PriceInput();
             price.setCurrency(entry.getKey());
             price.setQuantity(1);
-            price.setUnitPrice(entry.getValue());
+            BigDecimal inflated = entry.getValue().multiply(multiplier)
+                    .setScale(2, java.math.RoundingMode.HALF_UP);
+            price.setUnitPrice(inflated);
             if (anyRateMissing) {
                 price.setBreakdown("Some rates were estimated");
             }
@@ -431,7 +483,8 @@ public class InvoiceFromSafariGenerationService {
     private void createInvoiceLineItemFromLineItem(
             String invoiceId,
             ItineraryCostEstimationDTO.CostLineItem lineItem,
-            InvoiceItemType itemType
+            InvoiceItemType itemType,
+            BigDecimal multiplier
     ) {
         CreateInvoiceLineItemDTO itemDTO = new CreateInvoiceLineItemDTO();
         itemDTO.setItemType(itemType);
@@ -450,12 +503,17 @@ public class InvoiceFromSafariGenerationService {
             itemDTO.setDescription(description.toString());
         }
 
-        // Convert price to InvoiceLineItem price format
+        // Convert price to InvoiceLineItem price format. Markup multiplier
+        // bakes into the per-unit price so the customer's line total reflects
+        // the inflated rate; if multiplier is ONE this is a no-op.
         List<CreateInvoiceLineItemDTO.PriceInput> prices = new ArrayList<>();
         CreateInvoiceLineItemDTO.PriceInput price = new CreateInvoiceLineItemDTO.PriceInput();
         price.setCurrency(lineItem.getCurrency());
         price.setQuantity(lineItem.getQuantity());
-        price.setUnitPrice(lineItem.getUnitPrice());
+        BigDecimal baseUnit = lineItem.getUnitPrice() != null ? lineItem.getUnitPrice() : BigDecimal.ZERO;
+        BigDecimal inflatedUnit = baseUnit.multiply(multiplier)
+                .setScale(2, java.math.RoundingMode.HALF_UP);
+        price.setUnitPrice(inflatedUnit);
 
         // Add breakdown if rate was found or missing
         if (lineItem.getRateFound() != null && !lineItem.getRateFound()) {

@@ -202,6 +202,38 @@ public class Quote {
     @Column(length = 500)
     private String discountReason;
 
+    /**
+     * Agent commission percentage — money flowing out of the company to a
+     * third-party agent who referred the customer. Applied to every line
+     * item's unit price as a multiplier (alongside marginUpliftPercentage)
+     * so the customer never sees a separate markup line — the inflated
+     * prices ARE the line-item prices.
+     */
+    @Column(name = "agent_commission_percentage", precision = 5, scale = 2)
+    private BigDecimal agentCommissionPercentage;
+
+    /**
+     * Free-text note explaining the commission (e.g. "Agent Mole Matata —
+     * 5% referral fee on 2026 Q3 bookings"). Internal-only.
+     */
+    @Column(name = "agent_commission_reason", length = 500)
+    private String agentCommissionReason;
+
+    /**
+     * Margin uplift percentage — extra profit kept in-house above the
+     * default rack margin. Applied to every line item's unit price as a
+     * multiplier (alongside agentCommissionPercentage).
+     */
+    @Column(name = "margin_uplift_percentage", precision = 5, scale = 2)
+    private BigDecimal marginUpliftPercentage;
+
+    /**
+     * Free-text note explaining the uplift (e.g. "Premium client surcharge").
+     * Internal-only.
+     */
+    @Column(name = "margin_uplift_reason", length = 500)
+    private String marginUpliftReason;
+
     // =====================================================================
     // VERSIONING
     // =====================================================================

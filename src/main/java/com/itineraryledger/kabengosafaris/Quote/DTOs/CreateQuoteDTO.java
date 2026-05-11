@@ -36,6 +36,15 @@ public class CreateQuoteDTO {
     private BigDecimal discountPercentage;
     private String discountReason;
 
+    // Agent commission + margin uplift — applied multiplicatively to every
+    // QuoteItem's unit price when items are derived from the Quote tree.
+    // Customer never sees a separate line; the inflated price IS the
+    // line-item price on the PDF.
+    private BigDecimal agentCommissionPercentage;
+    private String agentCommissionReason;
+    private BigDecimal marginUpliftPercentage;
+    private String marginUpliftReason;
+
     @NotNull(message = "Valid from date is required")
     private LocalDate validFrom;
 

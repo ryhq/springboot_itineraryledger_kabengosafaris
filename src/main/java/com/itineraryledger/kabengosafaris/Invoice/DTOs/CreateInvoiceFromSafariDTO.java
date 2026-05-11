@@ -37,6 +37,13 @@ public class CreateInvoiceFromSafariDTO {
     private BigDecimal discountPercentage;
     private String discountReason;
 
+    // Markup (commission + uplift bake into per-line-item unit prices before
+    // discount/tax). Customer never sees a separate markup line.
+    private BigDecimal agentCommissionPercentage;
+    private String agentCommissionReason;
+    private BigDecimal marginUpliftPercentage;
+    private String marginUpliftReason;
+
     @NotNull(message = "Issue date is required")
     private LocalDate issueDate;
 

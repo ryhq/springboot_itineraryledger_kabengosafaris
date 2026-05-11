@@ -111,6 +111,10 @@ public class QuoteFromItineraryGenerationService {
             BigDecimal taxPercentage,
             BigDecimal discountPercentage,
             String discountReason,
+            BigDecimal agentCommissionPercentage,
+            String agentCommissionReason,
+            BigDecimal marginUpliftPercentage,
+            String marginUpliftReason,
             Boolean condense
     ) {
         boolean condenseLineItems = Boolean.TRUE.equals(condense);
@@ -173,7 +177,11 @@ public class QuoteFromItineraryGenerationService {
                     useRackRates,
                     taxPercentage,
                     discountPercentage,
-                    discountReason
+                    discountReason,
+                    agentCommissionPercentage,
+                    agentCommissionReason,
+                    marginUpliftPercentage,
+                    marginUpliftReason
             );
 
             ResponseEntity<ApiResponse<?>> quoteResponse = quoteCreateService.createQuote(createQuoteDTO);
@@ -239,7 +247,11 @@ public class QuoteFromItineraryGenerationService {
             boolean useStoRate,
             BigDecimal taxPercentage,
             BigDecimal discountPercentage,
-            String discountReason
+            String discountReason,
+            BigDecimal agentCommissionPercentage,
+            String agentCommissionReason,
+            BigDecimal marginUpliftPercentage,
+            String marginUpliftReason
     ) {
         CreateQuoteDTO dto = new CreateQuoteDTO();
 
@@ -264,6 +276,18 @@ public class QuoteFromItineraryGenerationService {
         if (discountPercentage != null) {
             dto.setDiscountPercentage(discountPercentage);
             dto.setDiscountReason(discountReason);
+        }
+
+        // Internal markup — bakes into every line item's stored unit price
+        // by QuoteCostEstimationService. Customer never sees a separate
+        // markup line.
+        if (agentCommissionPercentage != null) {
+            dto.setAgentCommissionPercentage(agentCommissionPercentage);
+            dto.setAgentCommissionReason(agentCommissionReason);
+        }
+        if (marginUpliftPercentage != null) {
+            dto.setMarginUpliftPercentage(marginUpliftPercentage);
+            dto.setMarginUpliftReason(marginUpliftReason);
         }
 
         // Default: active and in draft status

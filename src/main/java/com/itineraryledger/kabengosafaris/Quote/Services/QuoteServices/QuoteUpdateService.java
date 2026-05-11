@@ -38,6 +38,7 @@ public class QuoteUpdateService {
     private final UserRepository userRepository;
     private final IdObfuscator idObfuscator;
     private final QuoteTotalsCalculationService totalsCalculationService;
+    private final QuoteCostEstimationService quoteCostEstimationService;
 
     @AuditLogAnnotation(
         action = "UPDATE_QUOTE",
@@ -104,6 +105,12 @@ public class QuoteUpdateService {
                 if (updateDTO.getDiscountPercentage() != null && !updateDTO.getDiscountPercentage().equals(quote.getDiscountPercentage())) {
                     blockedFields.add("discountPercentage");
                 }
+                if (updateDTO.getAgentCommissionPercentage() != null && !updateDTO.getAgentCommissionPercentage().equals(quote.getAgentCommissionPercentage())) {
+                    blockedFields.add("agentCommissionPercentage");
+                }
+                if (updateDTO.getMarginUpliftPercentage() != null && !updateDTO.getMarginUpliftPercentage().equals(quote.getMarginUpliftPercentage())) {
+                    blockedFields.add("marginUpliftPercentage");
+                }
                 if (updateDTO.getValidFrom() != null && !updateDTO.getValidFrom().equals(quote.getValidFrom())) {
                     blockedFields.add("validFrom");
                 }
@@ -144,6 +151,12 @@ public class QuoteUpdateService {
                 }
                 if (updateDTO.getDiscountPercentage() != null && !updateDTO.getDiscountPercentage().equals(quote.getDiscountPercentage())) {
                     blockedFields.add("discountPercentage");
+                }
+                if (updateDTO.getAgentCommissionPercentage() != null && !updateDTO.getAgentCommissionPercentage().equals(quote.getAgentCommissionPercentage())) {
+                    blockedFields.add("agentCommissionPercentage");
+                }
+                if (updateDTO.getMarginUpliftPercentage() != null && !updateDTO.getMarginUpliftPercentage().equals(quote.getMarginUpliftPercentage())) {
+                    blockedFields.add("marginUpliftPercentage");
                 }
 
                 if (!blockedFields.isEmpty()) {
@@ -198,6 +211,27 @@ public class QuoteUpdateService {
             }
             if (updateDTO.getDiscountReason() != null) {
                 quote.setDiscountReason(updateDTO.getDiscountReason());
+            }
+
+            // Markup fields — agentCommission + marginUplift bake into line
+            // item prices in QuoteCostEstimationService, so any change to
+            // these triggers a recalc below.
+            boolean markupChanged = false;
+            if (updateDTO.getAgentCommissionPercentage() != null
+                    && !updateDTO.getAgentCommissionPercentage().equals(quote.getAgentCommissionPercentage())) {
+                quote.setAgentCommissionPercentage(updateDTO.getAgentCommissionPercentage());
+                markupChanged = true;
+            }
+            if (updateDTO.getAgentCommissionReason() != null) {
+                quote.setAgentCommissionReason(updateDTO.getAgentCommissionReason());
+            }
+            if (updateDTO.getMarginUpliftPercentage() != null
+                    && !updateDTO.getMarginUpliftPercentage().equals(quote.getMarginUpliftPercentage())) {
+                quote.setMarginUpliftPercentage(updateDTO.getMarginUpliftPercentage());
+                markupChanged = true;
+            }
+            if (updateDTO.getMarginUpliftReason() != null) {
+                quote.setMarginUpliftReason(updateDTO.getMarginUpliftReason());
             }
 
             // Note: Status updates are blocked - must use workflow endpoints
@@ -257,8 +291,14 @@ public class QuoteUpdateService {
             // Save updated quote
             quote = quoteRepository.save(quote);
 
-            // Recalculate totals (especially if tax/discount percentages changed)
-            totalsCalculationService.recalculateTotals(quote.getId());
+            // If markup changed, re-derive items (inflated unit prices) — this
+            // also refreshes totals as a side effect, so skip the totals-only
+            // recalc below. Otherwise just refresh totals (tax/discount only).
+            if (markupChanged) {
+                quoteCostEstimationService.triggerRecalc(quote.getId());
+            } else {
+                totalsCalculationService.recalculateTotals(quote.getId());
+            }
 
             // Reload quote to get updated totals
             quote = quoteRepository.findById(quote.getId()).orElse(quote);
@@ -303,6 +343,10 @@ public class QuoteUpdateService {
             .taxPercentage(quote.getTaxPercentage())
             .discountPercentage(quote.getDiscountPercentage())
             .discountReason(quote.getDiscountReason())
+            .agentCommissionPercentage(quote.getAgentCommissionPercentage())
+            .agentCommissionReason(quote.getAgentCommissionReason())
+            .marginUpliftPercentage(quote.getMarginUpliftPercentage())
+            .marginUpliftReason(quote.getMarginUpliftReason())
             .version(quote.getVersion())
             .status(quote.getStatus())
             .safariStartDate(quote.getSafariStartDate())

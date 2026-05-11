@@ -26,6 +26,12 @@ public class UpdateInvoiceDTO {
     private BigDecimal discountPercentage;
     private String discountReason;
 
+    // Markup (changing these re-derives all line items)
+    private BigDecimal agentCommissionPercentage;
+    private String agentCommissionReason;
+    private BigDecimal marginUpliftPercentage;
+    private String marginUpliftReason;
+
     private LocalDate issueDate;
     private LocalDate dueDate;
     private LocalDate sentDate;

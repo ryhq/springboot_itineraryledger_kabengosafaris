@@ -149,6 +149,10 @@ public class InvoiceFullGetService {
         dto.setTaxPercentage(invoice.getTaxPercentage());
         dto.setDiscountPercentage(invoice.getDiscountPercentage());
         dto.setDiscountReason(invoice.getDiscountReason());
+        dto.setAgentCommissionPercentage(invoice.getAgentCommissionPercentage());
+        dto.setAgentCommissionReason(invoice.getAgentCommissionReason());
+        dto.setMarginUpliftPercentage(invoice.getMarginUpliftPercentage());
+        dto.setMarginUpliftReason(invoice.getMarginUpliftReason());
 
         // ========================
         // DATES
