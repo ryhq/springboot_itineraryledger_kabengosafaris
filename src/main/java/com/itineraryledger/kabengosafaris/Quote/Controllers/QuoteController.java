@@ -54,6 +54,7 @@ public class QuoteController {
     private final QuoteFromItineraryGenerationService quoteFromItineraryGenerationService;
     private final QuoteTotalsCalculationService totalsCalculationService;
     private final com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteCostEstimationService quoteCostEstimationService;
+    private final com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteResyncAndTemplateService quoteResyncAndTemplateService;
     private final com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteStatusService quoteStatusService;
     private final QuoteVersionService quoteVersionService;
     private final IdObfuscator idObfuscator;
@@ -243,6 +244,35 @@ public class QuoteController {
     public ResponseEntity<ApiResponse<?>> recalculateItems(@PathVariable String idObfuscated) {
         log.info("POST /api/quotes/{}/recalculate-items - Recalculating items from Quote tree", idObfuscated);
         return quoteCostEstimationService.recalculateItemsForQuote(idObfuscated);
+    }
+
+    /**
+     * Promote this Quote's customised day-tree back to the Itinerary
+     * catalog as a new template (DRAFT status). Useful when sales builds
+     * a great variant on a quote and wants to reuse it for future customers.
+     */
+    @PostMapping("/{idObfuscated}/save-as-itinerary")
+    @PreAuthorize("hasAuthority('PERM_CREATE_ITINERARY')")
+    public ResponseEntity<ApiResponse<?>> saveAsItinerary(
+            @PathVariable String idObfuscated,
+            @RequestBody(required = false) java.util.Map<String, String> body
+    ) {
+        String name = body != null ? body.get("name") : null;
+        String description = body != null ? body.get("description") : null;
+        log.info("POST /api/quotes/{}/save-as-itinerary — promoting to template", idObfuscated);
+        return quoteResyncAndTemplateService.saveAsItinerary(idObfuscated, name, description);
+    }
+
+    /**
+     * Destructive: wipes the Quote's snapshot and re-snapshots from the
+     * source Itinerary. All per-customer customisations are discarded.
+     * Items are re-derived from the fresh tree.
+     */
+    @PostMapping("/{idObfuscated}/resync-from-itinerary")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE')")
+    public ResponseEntity<ApiResponse<?>> resyncFromItinerary(@PathVariable String idObfuscated) {
+        log.info("POST /api/quotes/{}/resync-from-itinerary — wiping and re-snapshotting", idObfuscated);
+        return quoteResyncAndTemplateService.resyncFromItinerary(idObfuscated);
     }
 
     /**

@@ -454,6 +454,17 @@ public class QuoteFromItineraryGenerationService {
     // the operational fields, so the builder calls are slimmer.
     // =====================================================================
 
+    /**
+     * Snapshot the Itinerary's pax + day-tree onto the Quote in place. Used
+     * by both the initial quote-creation path and
+     * {@link QuoteResyncAndTemplateService#resyncFromItinerary}. Callers
+     * must {@code save()} the Quote afterwards to let cascades persist.
+     */
+    public void snapshotItineraryIntoQuote(Itinerary itinerary, Quote quote) {
+        copyPaxConfiguration(itinerary, quote);
+        copyDaysStructure(itinerary, quote);
+    }
+
     private void copyPaxConfiguration(Itinerary itinerary, Quote quote) {
         if (itinerary.getPaxList() == null || itinerary.getPaxList().isEmpty()) {
             return;
