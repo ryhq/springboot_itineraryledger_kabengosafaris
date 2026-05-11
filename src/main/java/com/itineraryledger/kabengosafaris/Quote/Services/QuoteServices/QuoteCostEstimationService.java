@@ -25,13 +25,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * QuoteCostEstimationService — derives the {@link QuoteItem} price lines
@@ -129,16 +134,64 @@ public class QuoteCostEstimationService {
     }
 
     /**
-     * Trigger recalc by Quote id. Swallows exceptions and just logs them —
-     * call sites use this as a side-effect on top of a CRUD operation, and
-     * the CRUD itself should succeed even if pricing fails.
+     * Coalesce key on the active transaction — multiple {@code triggerRecalc}
+     * calls inside one transaction (e.g. a service touching several
+     * children in sequence) collapse to a single recalc, scheduled to fire
+     * after the transaction commits. Call-sites don't need to know.
+     */
+    private static final String COALESCE_KEY = QuoteCostEstimationService.class.getName() + ".pendingQuoteIds";
+
+    /**
+     * Trigger recalc by Quote id. Coalesces within the active transaction:
+     * the first call for each quoteId schedules an after-commit recalc;
+     * subsequent calls in the same transaction are no-ops. If there's no
+     * active transaction (rare — call-sites are all @Transactional), runs
+     * synchronously. Swallows exceptions either way so a pricing failure
+     * never breaks the CRUD it's piggy-backing on.
      */
     public void triggerRecalc(Long quoteId) {
-        try {
-            recalculate(quoteId);
-        } catch (Exception e) {
-            log.warn("Best-effort recalc failed for quote {}: {}", quoteId, e.getMessage());
+        if (quoteId == null) return;
+
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            // No transaction — recalc immediately; legacy fallback.
+            try { recalculateBestEffort(quoteId); }
+            catch (Exception e) { log.warn("Sync recalc failed for quote {}: {}", quoteId, e.getMessage()); }
+            return;
         }
+
+        @SuppressWarnings("unchecked")
+        Set<Long> pending = (Set<Long>) TransactionSynchronizationManager.getResource(COALESCE_KEY);
+        if (pending == null) {
+            pending = new HashSet<>();
+            TransactionSynchronizationManager.bindResource(COALESCE_KEY, pending);
+            final Set<Long> capturedPending = pending;
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    for (Long id : capturedPending) {
+                        try { recalculateBestEffort(id); }
+                        catch (Exception e) { log.warn("Post-commit recalc failed for quote {}: {}", id, e.getMessage()); }
+                    }
+                }
+                @Override
+                public void afterCompletion(int status) {
+                    if (TransactionSynchronizationManager.hasResource(COALESCE_KEY)) {
+                        TransactionSynchronizationManager.unbindResource(COALESCE_KEY);
+                    }
+                }
+            });
+        }
+        pending.add(quoteId);
+    }
+
+    /**
+     * Run a recalc in its own transaction (REQUIRES_NEW) — used after the
+     * caller's transaction has committed, so we get a clean view of the
+     * data and don't conflict with the original session.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public int recalculateBestEffort(Long quoteId) {
+        return recalculate(quoteId);
     }
 
     // =====================================================================
