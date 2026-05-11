@@ -12,6 +12,15 @@ import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPar
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.Entity.ItineraryDayParkTariff;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryPax.Entity.ItineraryPax;
 import com.itineraryledger.kabengosafaris.Itinerary.Repository.ItineraryRepository;
+import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.Entity.QuoteDay;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.Entity.QuoteDayAccommodation;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayActivity.Entity.QuoteDayActivity;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.Entity.QuoteDayPark;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.QuoteDayParkActivity.Entity.QuoteDayParkActivity;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.QuoteDayParkTariff.Entity.QuoteDayParkTariff;
+import com.itineraryledger.kabengosafaris.Quote.QuotePax.Entity.QuotePax;
+import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Safari.DTOs.CreateSafariFromItineraryDTO;
 import com.itineraryledger.kabengosafaris.Safari.DTOs.SafariDTO;
@@ -53,6 +62,7 @@ public class SafariCreateService {
     private final ItineraryRepository itineraryRepository;
     private final CustomerRepository customerRepository;
     private final UserRepository userRepository;
+    private final QuoteRepository quoteRepository;
     private final IdObfuscator idObfuscator;
 
     @Autowired
@@ -61,12 +71,14 @@ public class SafariCreateService {
             ItineraryRepository itineraryRepository,
             CustomerRepository customerRepository,
             UserRepository userRepository,
+            QuoteRepository quoteRepository,
             IdObfuscator idObfuscator
     ) {
         this.safariRepository = safariRepository;
         this.itineraryRepository = itineraryRepository;
         this.customerRepository = customerRepository;
         this.userRepository = userRepository;
+        this.quoteRepository = quoteRepository;
         this.idObfuscator = idObfuscator;
     }
 
@@ -425,6 +437,276 @@ public class SafariCreateService {
                     .isWaived(false)
                     .build();
 
+            safariPark.addParkTariff(safariParkTariff);
+        }
+    }
+
+    /**
+     * Create a new Safari from a Quote, deep-copying the Quote's day-tree and
+     * pax mix (snapshotted from the Itinerary at quote creation, then edited
+     * during negotiation). This is the path used by
+     * {@code QuoteStatusService.convertQuote()} for any non-legacy quote.
+     *
+     * @param quoteId   the decoded primary-key id of the source Quote
+     * @param startDate the safari start date (used to compute actualDate per day)
+     * @return ResponseEntity with ApiResponse containing the created Safari
+     */
+    @Transactional
+    @AuditLogAnnotation(action = "CREATE_SAFARI", description = "Creating a new safari from quote", entityType = "Safari")
+    public ResponseEntity<ApiResponse<?>> createSafariFromQuote(Long quoteId, LocalDate startDate) {
+        log.info("Creating Safari from Quote: {}", quoteId);
+
+        try {
+            if (quoteId == null) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Quote ID is required", "INVALID_QUOTE_ID"));
+            }
+
+            Quote quote = quoteRepository.findById(quoteId).orElse(null);
+            if (quote == null) {
+                return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Quote not found", "QUOTE_NOT_FOUND"));
+            }
+
+            if (quote.getCustomer() == null) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Quote has no customer", "QUOTE_MISSING_CUSTOMER"));
+            }
+            if (!quote.getCustomer().canBook()) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Customer cannot book safaris. Customer may be inactive or blacklisted.",
+                                "CUSTOMER_CANNOT_BOOK"));
+            }
+
+            if (startDate == null) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Start date is required", "START_DATE_REQUIRED"));
+            }
+            if (startDate.isBefore(LocalDate.now())) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Start date cannot be in the past. Provided: " + startDate + ", Today: " + LocalDate.now(),
+                                "START_DATE_IN_PAST"));
+            }
+
+            // Quote must have its own snapshot to use this path. Legacy quotes
+            // (no day-tree, no pax) should be converted via
+            // createSafariFromItinerary instead.
+            if (quote.getDays() == null || quote.getDays().isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Quote has no day snapshot. Use createSafariFromItinerary for legacy quotes.",
+                                "QUOTE_HAS_NO_DAY_SNAPSHOT"));
+            }
+
+            Itinerary itinerary = quote.getItinerary();
+            int totalDays = quote.getDays().size();
+            int totalNights = Math.max(0, totalDays - 1);
+            LocalDate endDate = startDate.plusDays(totalDays - 1);
+
+            User currentUser = null;
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.isAuthenticated()
+                    && !"anonymousUser".equals(authentication.getPrincipal())) {
+                currentUser = userRepository.findByUsername(authentication.getName()).orElse(null);
+            }
+
+            String safariName = quote.getTitle() != null && !quote.getTitle().isBlank()
+                    ? quote.getTitle()
+                    : (itinerary != null ? itinerary.getName() : "Safari");
+
+            Safari safari = Safari.builder()
+                    .itinerary(itinerary)
+                    .customer(quote.getCustomer())
+                    .name(safariName)
+                    .slug(generateSlug(safariName))
+                    .startDate(startDate)
+                    .endDate(endDate)
+                    .state(SafariState.DRAFT)
+                    .totalDays(totalDays)
+                    .totalNights(totalNights)
+                    .carCount(itinerary != null ? itinerary.getCarCount() : null)
+                    .description(quote.getDescription() != null
+                            ? quote.getDescription()
+                            : (itinerary != null ? itinerary.getDescription() : null))
+                    .highlights(itinerary != null ? itinerary.getHighlights() : null)
+                    .startLocation(itinerary != null ? itinerary.getStartLocation() : null)
+                    .endLocation(itinerary != null ? itinerary.getEndLocation() : null)
+                    .createdBy(currentUser)
+                    .isActive(true)
+                    .build();
+
+            // Deep-copy Quote pax → SafariPax
+            copyQuotePaxConfiguration(quote, safari);
+
+            // Deep-copy Quote day-tree → SafariDay tree, computing actualDate
+            copyQuoteDaysStructure(quote, safari, startDate);
+
+            Safari savedSafari = safariRepository.save(safari);
+            savedSafari.setCode(savedSafari.generateCode());
+            savedSafari = safariRepository.save(savedSafari);
+
+            log.info("Safari created from Quote {} with ID: {} and code: {}",
+                    quote.getId(), savedSafari.getId(), savedSafari.getCode());
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(
+                    ApiResponse.success(201, "Safari created successfully", convertToDTO(savedSafari)));
+
+        } catch (Exception e) {
+            log.error("Error creating Safari from Quote", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.error(500, "Failed to create Safari: " + e.getMessage(), "SAFARI_CREATE_FAILED"));
+        }
+    }
+
+    // =====================================================================
+    // Quote → Safari deep-copy helpers (mirror the Itinerary → Safari helpers
+    // above, reading from the Quote tree instead).
+    // =====================================================================
+
+    private void copyQuotePaxConfiguration(Quote quote, Safari safari) {
+        if (quote.getPaxList() == null || quote.getPaxList().isEmpty()) {
+            return;
+        }
+        for (QuotePax quotePax : quote.getPaxList()) {
+            SafariPax safariPax = SafariPax.builder()
+                    .nationCategory(quotePax.getNationCategory())
+                    .ageCategory(quotePax.getAgeCategory())
+                    .count(quotePax.getCount())
+                    .notes(quotePax.getNotes())
+                    .build();
+            safari.addPax(safariPax);
+        }
+    }
+
+    private void copyQuoteDaysStructure(Quote quote, Safari safari, LocalDate startDate) {
+        if (quote.getDays() == null || quote.getDays().isEmpty()) {
+            return;
+        }
+        for (QuoteDay quoteDay : quote.getDays()) {
+            LocalDate actualDate = startDate.plusDays(quoteDay.getDayNumber() - 1);
+
+            SafariDay safariDay = SafariDay.builder()
+                    .dayNumber(quoteDay.getDayNumber())
+                    .dayTag(quoteDay.getDayTag())
+                    .title(quoteDay.getTitle())
+                    .actualDate(actualDate)
+                    .description(quoteDay.getDescription())
+                    .morningActivities(quoteDay.getMorningActivities())
+                    .afternoonActivities(quoteDay.getAfternoonActivities())
+                    .eveningActivities(quoteDay.getEveningActivities())
+                    .wildlifeHighlights(quoteDay.getWildlifeHighlights())
+                    .scenicHighlights(quoteDay.getScenicHighlights())
+                    .specialNotes(quoteDay.getSpecialNotes())
+                    .startLocation(quoteDay.getStartLocation())
+                    .endLocation(quoteDay.getEndLocation())
+                    .distanceKm(quoteDay.getDistanceKm())
+                    .isOvernight(quoteDay.getIsOvernight())
+                    .mealsIncluded(quoteDay.getMealsIncluded())
+                    .internalNotes(quoteDay.getInternalNotes())
+                    .build();
+
+            copyQuoteDayActivities(quoteDay, safariDay);
+            copyQuoteDayAccommodations(quoteDay, safariDay);
+            copyQuoteDayParks(quoteDay, safariDay);
+
+            safari.addDay(safariDay);
+        }
+    }
+
+    private void copyQuoteDayActivities(QuoteDay quoteDay, SafariDay safariDay) {
+        if (quoteDay.getActivities() == null || quoteDay.getActivities().isEmpty()) {
+            return;
+        }
+        for (QuoteDayActivity quoteActivity : quoteDay.getActivities()) {
+            SafariDayActivity safariActivity = SafariDayActivity.builder()
+                    .activity(quoteActivity.getActivity())
+                    .sortOrder(quoteActivity.getSortOrder())
+                    .durationHours(quoteActivity.getDurationHours())
+                    .startTime(quoteActivity.getStartTime())
+                    .endTime(quoteActivity.getEndTime())
+                    .notes(quoteActivity.getNotes())
+                    .isIncludedInPrice(quoteActivity.getIsIncludedInPrice())
+                    .isOptional(quoteActivity.getIsOptional())
+                    .isCompleted(false)
+                    .isSkipped(false)
+                    .build();
+            safariDay.addActivity(safariActivity);
+        }
+    }
+
+    private void copyQuoteDayAccommodations(QuoteDay quoteDay, SafariDay safariDay) {
+        if (quoteDay.getAccommodations() == null || quoteDay.getAccommodations().isEmpty()) {
+            return;
+        }
+        for (QuoteDayAccommodation quoteAccommodation : quoteDay.getAccommodations()) {
+            SafariDayAccommodation safariAccommodation = SafariDayAccommodation.builder()
+                    .accommodation(quoteAccommodation.getAccommodation())
+                    .roomType(quoteAccommodation.getRoomType())
+                    .roomStandard(quoteAccommodation.getRoomStandard())
+                    .boardType(quoteAccommodation.getBoardType())
+                    .roomCount(quoteAccommodation.getRoomCount())
+                    .isAlternative(quoteAccommodation.getIsAlternative())
+                    .notes(quoteAccommodation.getNotes())
+                    .bookingStatus(SafariDayAccommodation.BookingStatus.PENDING)
+                    .build();
+            safariDay.addAccommodation(safariAccommodation);
+        }
+    }
+
+    private void copyQuoteDayParks(QuoteDay quoteDay, SafariDay safariDay) {
+        if (quoteDay.getParks() == null || quoteDay.getParks().isEmpty()) {
+            return;
+        }
+        for (QuoteDayPark quotePark : quoteDay.getParks()) {
+            SafariDayPark safariPark = SafariDayPark.builder()
+                    .park(quotePark.getPark())
+                    .entryType(quotePark.getEntryType())
+                    .sortOrder(quotePark.getSortOrder())
+                    .arrivalTime(quotePark.getArrivalTime())
+                    .departureTime(quotePark.getDepartureTime())
+                    .notes(quotePark.getNotes())
+                    .feesPaid(false)
+                    .build();
+
+            copyQuoteParkActivities(quotePark, safariPark);
+            copyQuoteParkTariffs(quotePark, safariPark);
+
+            safariDay.addPark(safariPark);
+        }
+    }
+
+    private void copyQuoteParkActivities(QuoteDayPark quotePark, SafariDayPark safariPark) {
+        if (quotePark.getParkActivities() == null || quotePark.getParkActivities().isEmpty()) {
+            return;
+        }
+        for (QuoteDayParkActivity quoteParkActivity : quotePark.getParkActivities()) {
+            SafariDayParkActivity safariParkActivity = SafariDayParkActivity.builder()
+                    .parkActivity(quoteParkActivity.getParkActivity())
+                    .sortOrder(quoteParkActivity.getSortOrder())
+                    .durationHours(quoteParkActivity.getDurationHours())
+                    .notes(quoteParkActivity.getNotes())
+                    .isIncludedInPrice(quoteParkActivity.getIsIncludedInPrice())
+                    .isCompleted(false)
+                    .isSkipped(false)
+                    .build();
+            safariPark.addParkActivity(safariParkActivity);
+        }
+    }
+
+    private void copyQuoteParkTariffs(QuoteDayPark quotePark, SafariDayPark safariPark) {
+        if (quotePark.getParkTariffs() == null || quotePark.getParkTariffs().isEmpty()) {
+            return;
+        }
+        for (QuoteDayParkTariff quoteParkTariff : quotePark.getParkTariffs()) {
+            SafariDayParkTariff safariParkTariff = SafariDayParkTariff.builder()
+                    .parkTariff(quoteParkTariff.getParkTariff())
+                    .notes(quoteParkTariff.getNotes())
+                    .isIncludedInPrice(quoteParkTariff.getIsIncludedInPrice())
+                    .isPaid(false)
+                    .isWaived(false)
+                    .build();
             safariPark.addParkTariff(safariParkTariff);
         }
     }

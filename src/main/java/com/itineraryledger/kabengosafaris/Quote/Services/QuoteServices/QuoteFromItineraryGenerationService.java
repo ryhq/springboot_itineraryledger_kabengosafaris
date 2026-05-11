@@ -3,12 +3,28 @@ package com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices;
 import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.ItineraryCostEstimationDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Entity.ItineraryDay;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayAccommodation.Entity.ItineraryDayAccommodation;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayActivity.Entity.ItineraryDayActivity;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.Entity.ItineraryDayPark;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkActivity.Entity.ItineraryDayParkActivity;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.Entity.ItineraryDayParkTariff;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryPax.Entity.ItineraryPax;
 import com.itineraryledger.kabengosafaris.Itinerary.Repository.ItineraryRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryCostEstimationService;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.CreateQuoteDTO;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.QuoteDTO;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.QuoteItemDTOs.CreateQuoteItemDTO;
+import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
 import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemType;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.Entity.QuoteDay;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.Entity.QuoteDayAccommodation;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayActivity.Entity.QuoteDayActivity;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.Entity.QuoteDayPark;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.QuoteDayParkActivity.Entity.QuoteDayParkActivity;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.QuoteDayParkTariff.Entity.QuoteDayParkTariff;
+import com.itineraryledger.kabengosafaris.Quote.QuotePax.Entity.QuotePax;
+import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteItemServices.QuoteItemCreateService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -46,6 +62,7 @@ public class QuoteFromItineraryGenerationService {
     private final QuoteItemCreateService quoteItemCreateService;
     private final ItineraryRepository itineraryRepository;
     private final CustomerRepository customerRepository;
+    private final QuoteRepository quoteRepository;
     private final IdObfuscator idObfuscator;
 
     @Autowired
@@ -55,6 +72,7 @@ public class QuoteFromItineraryGenerationService {
             QuoteItemCreateService quoteItemCreateService,
             ItineraryRepository itineraryRepository,
             CustomerRepository customerRepository,
+            QuoteRepository quoteRepository,
             IdObfuscator idObfuscator
     ) {
         this.costEstimationService = costEstimationService;
@@ -62,6 +80,7 @@ public class QuoteFromItineraryGenerationService {
         this.quoteItemCreateService = quoteItemCreateService;
         this.itineraryRepository = itineraryRepository;
         this.customerRepository = customerRepository;
+        this.quoteRepository = quoteRepository;
         this.idObfuscator = idObfuscator;
     }
 
@@ -165,7 +184,22 @@ public class QuoteFromItineraryGenerationService {
             QuoteDTO quoteDTO = (QuoteDTO) quoteResponse.getBody().getData();
             String quoteId = quoteDTO.getId();
 
-            // 4. Create QuoteItems from cost estimation line items
+            // 4. Snapshot the itinerary's day-tree and pax mix onto the new
+            //    Quote, so per-customer edits live on the Quote (not the
+            //    template). Cascades persist the children.
+            Long decodedQuoteId = idObfuscator.decodeId(quoteId);
+            Quote quote = quoteRepository.findById(decodedQuoteId).orElse(null);
+            if (quote != null) {
+                copyPaxConfiguration(itinerary, quote);
+                copyDaysStructure(itinerary, quote);
+                quoteRepository.save(quote);
+            } else {
+                log.warn("Quote {} not found immediately after creation; skipping day-tree snapshot.", quoteId);
+            }
+
+            // 5. Create QuoteItems from cost estimation line items (price
+            //    summary for the PDF). Phase C will replace this with a
+            //    derivation that walks the Quote's own day-tree × QuotePax.
             int itemsCreated = createQuoteItemsFromEstimation(quoteId, costEstimation, condenseLineItems);
 
             log.info("Successfully generated quote: {} with {} items for itinerary: {} and customer: {}",
@@ -404,6 +438,152 @@ public class QuoteFromItineraryGenerationService {
         } catch (Exception e) {
             log.error("Failed to create quote item: {} - {}", lineItem.getItemName(), e.getMessage());
             // Continue creating other items even if one fails
+        }
+    }
+
+    // =====================================================================
+    // Itinerary → Quote deep-copy helpers
+    //
+    // Mirror SafariCreateService.copyPaxConfiguration / copyDaysStructure /
+    // copyDayActivities / copyDayAccommodations / copyDayParks /
+    // copyParkActivities / copyParkTariffs. The Quote-side entities drop
+    // the operational fields, so the builder calls are slimmer.
+    // =====================================================================
+
+    private void copyPaxConfiguration(Itinerary itinerary, Quote quote) {
+        if (itinerary.getPaxList() == null || itinerary.getPaxList().isEmpty()) {
+            return;
+        }
+        for (ItineraryPax itineraryPax : itinerary.getPaxList()) {
+            QuotePax quotePax = QuotePax.builder()
+                    .quote(quote)
+                    .nationCategory(itineraryPax.getNationCategory())
+                    .ageCategory(itineraryPax.getAgeCategory())
+                    .count(itineraryPax.getCount())
+                    .notes(itineraryPax.getNotes())
+                    .build();
+            quote.getPaxList().add(quotePax);
+        }
+    }
+
+    private void copyDaysStructure(Itinerary itinerary, Quote quote) {
+        if (itinerary.getDays() == null || itinerary.getDays().isEmpty()) {
+            return;
+        }
+        for (ItineraryDay itineraryDay : itinerary.getDays()) {
+            QuoteDay quoteDay = QuoteDay.builder()
+                    .dayNumber(itineraryDay.getDayNumber())
+                    .dayTag(itineraryDay.getDayTag())
+                    .title(itineraryDay.getTitle())
+                    .description(itineraryDay.getDescription())
+                    .morningActivities(itineraryDay.getMorningActivities())
+                    .afternoonActivities(itineraryDay.getAfternoonActivities())
+                    .eveningActivities(itineraryDay.getEveningActivities())
+                    .wildlifeHighlights(itineraryDay.getWildlifeHighlights())
+                    .scenicHighlights(itineraryDay.getScenicHighlights())
+                    .specialNotes(itineraryDay.getSpecialNotes())
+                    .startLocation(itineraryDay.getStartLocation())
+                    .endLocation(itineraryDay.getEndLocation())
+                    .distanceKm(itineraryDay.getDistanceKm())
+                    .isOvernight(itineraryDay.getIsOvernight())
+                    .mealsIncluded(itineraryDay.getMealsIncluded())
+                    .internalNotes(itineraryDay.getInternalNotes())
+                    .build();
+
+            copyDayActivities(itineraryDay, quoteDay);
+            copyDayAccommodations(itineraryDay, quoteDay);
+            copyDayParks(itineraryDay, quoteDay);
+
+            quoteDay.setQuote(quote);
+            quote.getDays().add(quoteDay);
+        }
+    }
+
+    private void copyDayActivities(ItineraryDay itineraryDay, QuoteDay quoteDay) {
+        if (itineraryDay.getActivities() == null || itineraryDay.getActivities().isEmpty()) {
+            return;
+        }
+        for (ItineraryDayActivity itineraryActivity : itineraryDay.getActivities()) {
+            QuoteDayActivity quoteActivity = QuoteDayActivity.builder()
+                    .activity(itineraryActivity.getActivity())
+                    .sortOrder(itineraryActivity.getSortOrder())
+                    .durationHours(itineraryActivity.getDurationHours())
+                    .startTime(itineraryActivity.getStartTime())
+                    .endTime(itineraryActivity.getEndTime())
+                    .notes(itineraryActivity.getNotes())
+                    .isIncludedInPrice(itineraryActivity.getIsIncludedInPrice())
+                    .isOptional(itineraryActivity.getIsOptional())
+                    .build();
+            quoteDay.addActivity(quoteActivity);
+        }
+    }
+
+    private void copyDayAccommodations(ItineraryDay itineraryDay, QuoteDay quoteDay) {
+        if (itineraryDay.getAccommodations() == null || itineraryDay.getAccommodations().isEmpty()) {
+            return;
+        }
+        for (ItineraryDayAccommodation itineraryAccommodation : itineraryDay.getAccommodations()) {
+            QuoteDayAccommodation quoteAccommodation = QuoteDayAccommodation.builder()
+                    .accommodation(itineraryAccommodation.getAccommodation())
+                    .roomType(itineraryAccommodation.getRoomType())
+                    .roomStandard(itineraryAccommodation.getRoomStandard())
+                    .boardType(itineraryAccommodation.getBoardType())
+                    .roomCount(itineraryAccommodation.getRoomCount())
+                    .isAlternative(itineraryAccommodation.getIsAlternative())
+                    .notes(itineraryAccommodation.getNotes())
+                    .build();
+            quoteDay.addAccommodation(quoteAccommodation);
+        }
+    }
+
+    private void copyDayParks(ItineraryDay itineraryDay, QuoteDay quoteDay) {
+        if (itineraryDay.getParks() == null || itineraryDay.getParks().isEmpty()) {
+            return;
+        }
+        for (ItineraryDayPark itineraryPark : itineraryDay.getParks()) {
+            QuoteDayPark quotePark = QuoteDayPark.builder()
+                    .park(itineraryPark.getPark())
+                    .entryType(itineraryPark.getEntryType())
+                    .sortOrder(itineraryPark.getSortOrder())
+                    .arrivalTime(itineraryPark.getArrivalTime())
+                    .departureTime(itineraryPark.getDepartureTime())
+                    .notes(itineraryPark.getNotes())
+                    .build();
+
+            copyParkActivities(itineraryPark, quotePark);
+            copyParkTariffs(itineraryPark, quotePark);
+
+            quoteDay.addPark(quotePark);
+        }
+    }
+
+    private void copyParkActivities(ItineraryDayPark itineraryPark, QuoteDayPark quotePark) {
+        if (itineraryPark.getParkActivities() == null || itineraryPark.getParkActivities().isEmpty()) {
+            return;
+        }
+        for (ItineraryDayParkActivity itineraryParkActivity : itineraryPark.getParkActivities()) {
+            QuoteDayParkActivity quoteParkActivity = QuoteDayParkActivity.builder()
+                    .parkActivity(itineraryParkActivity.getParkActivity())
+                    .sortOrder(itineraryParkActivity.getSortOrder())
+                    .durationHours(itineraryParkActivity.getDurationHours())
+                    .notes(itineraryParkActivity.getNotes())
+                    .isIncludedInPrice(itineraryParkActivity.getIsIncludedInPrice())
+                    .build();
+            quotePark.addParkActivity(quoteParkActivity);
+        }
+    }
+
+    private void copyParkTariffs(ItineraryDayPark itineraryPark, QuoteDayPark quotePark) {
+        if (itineraryPark.getParkTariffs() == null || itineraryPark.getParkTariffs().isEmpty()) {
+            return;
+        }
+        for (ItineraryDayParkTariff itineraryParkTariff : itineraryPark.getParkTariffs()) {
+            QuoteDayParkTariff quoteParkTariff = QuoteDayParkTariff.builder()
+                    .parkTariff(itineraryParkTariff.getParkTariff())
+                    .notes(itineraryParkTariff.getNotes())
+                    .isIncludedInPrice(itineraryParkTariff.getIsIncludedInPrice())
+                    .build();
+            quotePark.addParkTariff(quoteParkTariff);
         }
     }
 }

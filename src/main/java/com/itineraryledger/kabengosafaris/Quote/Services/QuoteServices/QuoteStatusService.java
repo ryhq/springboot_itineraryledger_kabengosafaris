@@ -641,19 +641,30 @@ public class QuoteStatusService {
             }
 
             // ============================================================
-            // Step 1: Create Safari from itinerary
+            // Step 1: Create Safari — snapshot from Quote's own day-tree if
+            // it has one; fall back to the Itinerary template for legacy
+            // quotes that pre-date snapshot mode.
             // ============================================================
-            String itineraryObfuscatedId = idObfuscator.encodeId(quote.getItinerary().getId());
-            String customerObfuscatedId = idObfuscator.encodeId(quote.getCustomer().getId());
+            ResponseEntity<ApiResponse<?>> safariResponse;
+            boolean hasQuoteSnapshot = quote.getDays() != null && !quote.getDays().isEmpty();
 
-            CreateSafariFromItineraryDTO safariDTO = new CreateSafariFromItineraryDTO();
-            safariDTO.setItineraryId(itineraryObfuscatedId);
-            safariDTO.setCustomerId(customerObfuscatedId);
-            safariDTO.setStartDate(resolvedStartDate);
-            safariDTO.setName(quote.getTitle() != null ? quote.getTitle() : quote.getItinerary().getName());
-            safariDTO.setDescription(quote.getDescription());
+            if (hasQuoteSnapshot) {
+                log.info("Converting quote {} via Quote→Safari snapshot path", quote.getQuoteCode());
+                safariResponse = safariCreateService.createSafariFromQuote(quote.getId(), resolvedStartDate);
+            } else {
+                log.info("Converting quote {} via legacy Itinerary→Safari path", quote.getQuoteCode());
+                String itineraryObfuscatedId = idObfuscator.encodeId(quote.getItinerary().getId());
+                String customerObfuscatedId = idObfuscator.encodeId(quote.getCustomer().getId());
 
-            ResponseEntity<ApiResponse<?>> safariResponse = safariCreateService.createSafariFromItinerary(safariDTO);
+                CreateSafariFromItineraryDTO safariDTO = new CreateSafariFromItineraryDTO();
+                safariDTO.setItineraryId(itineraryObfuscatedId);
+                safariDTO.setCustomerId(customerObfuscatedId);
+                safariDTO.setStartDate(resolvedStartDate);
+                safariDTO.setName(quote.getTitle() != null ? quote.getTitle() : quote.getItinerary().getName());
+                safariDTO.setDescription(quote.getDescription());
+
+                safariResponse = safariCreateService.createSafariFromItinerary(safariDTO);
+            }
 
             if (!safariResponse.getStatusCode().is2xxSuccessful()) {
                 log.error("Safari creation failed during quote conversion for quote {}", quote.getQuoteCode());
