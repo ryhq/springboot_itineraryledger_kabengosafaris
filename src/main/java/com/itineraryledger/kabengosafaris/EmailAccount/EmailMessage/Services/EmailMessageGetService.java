@@ -100,7 +100,11 @@ public class EmailMessageGetService {
             Pageable paging = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
             // Build specification
-            Specification<EmailMessage> spec = Specification.<EmailMessage>unrestricted().and(EmailMessageSpecification.forAccount(accountId));
+            // §3 — hide snoozed messages from list queries. They re-surface
+            // once EmailSnoozeService.wakeDueSnoozes clears the field.
+            Specification<EmailMessage> spec = Specification.<EmailMessage>unrestricted()
+                .and(EmailMessageSpecification.forAccount(accountId))
+                .and(EmailMessageSpecification.notSnoozed());
 
             if (folderId != null && !folderId.isBlank()) {
                 Long decodedFolderId = idObfuscator.decodeId(folderId);

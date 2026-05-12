@@ -14,6 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.DTOs.ComposeEmailDTO;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.DTOs.MoveEmailDTO;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.DTOs.SnoozeDTO;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.Services.EmailSnoozeService;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailAttachment;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.Services.EmailComposeService;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.Services.EmailMessageDeleteService;
@@ -31,6 +33,7 @@ public class EmailMessageController {
     private final EmailMessageGetService emailMessageGetService;
     private final EmailMessageDeleteService emailMessageDeleteService;
     private final EmailComposeService emailComposeService;
+    private final EmailSnoozeService emailSnoozeService;
 
     // =====================================================================
     // List & Get
@@ -250,6 +253,34 @@ public class EmailMessageController {
             @PathVariable("accountId") String accountId,
             @RequestBody List<String> messageIds) {
         return emailMessageDeleteService.batchArchive(accountId, messageIds);
+    }
+
+    // §3 — snooze. Hidden from inbox until snoozeUntil; scheduled job
+    // wakes them and re-asserts unread.
+
+    @PostMapping("/{id}/snooze")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_MESSAGE')")
+    public ResponseEntity<ApiResponse<?>> snooze(
+            @PathVariable("accountId") String accountId,
+            @PathVariable("id") String id,
+            @RequestBody @Validated SnoozeDTO dto) {
+        return emailSnoozeService.snooze(accountId, id, dto);
+    }
+
+    @DeleteMapping("/{id}/snooze")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_MESSAGE')")
+    public ResponseEntity<ApiResponse<?>> unsnooze(
+            @PathVariable("accountId") String accountId,
+            @PathVariable("id") String id) {
+        return emailSnoozeService.unsnooze(accountId, id);
+    }
+
+    @PostMapping("/batch/snooze")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_MESSAGE')")
+    public ResponseEntity<ApiResponse<?>> batchSnooze(
+            @PathVariable("accountId") String accountId,
+            @RequestBody @Validated SnoozeDTO dto) {
+        return emailSnoozeService.snoozeBatch(accountId, dto);
     }
 
     @DeleteMapping("/{id}")
