@@ -210,9 +210,17 @@ public class EmailMessageGetService {
             // §Change — surface the account's last successful sync so the
             // frontend sync pill can colour itself by freshness without an
             // extra request.
-            LocalDateTime lastSyncAt = emailAccountRepository.findById(accountId)
+            //
+            // lastFetchedAt is stored as a zone-less LocalDateTime. Convert
+            // it to an Instant using the JVM default zone so Jackson emits
+            // an ISO-8601 UTC string ("…Z") — the frontend's new Date(...)
+            // then parses it correctly regardless of the user's timezone.
+            LocalDateTime lastSyncLocal = emailAccountRepository.findById(accountId)
                 .map(a -> a.getLastFetchedAt())
                 .orElse(null);
+            java.time.Instant lastSyncAt = lastSyncLocal == null
+                ? null
+                : lastSyncLocal.atZone(java.time.ZoneId.systemDefault()).toInstant();
 
             Map<String, Object> response = new HashMap<>();
             response.put("messages", dtos);

@@ -41,10 +41,13 @@ public class EmailSyncService {
 
         // §9 — broadcast sync.completed to any subscribed SSE clients so
         // the inbox v2 sync pill flips green without waiting for a poll.
+        // Instant serialises as an ISO-8601 UTC string so JS Date() parses
+        // it correctly regardless of the user's timezone (see also the
+        // lastSyncAt note in EmailMessageGetService.getMessages).
         eventBus.publish(account.getId(), "sync.completed", java.util.Map.of(
             "accountId", account.getId(),
             "fetched", fetched,
-            "lastSyncAt", java.time.LocalDateTime.now().toString()
+            "lastSyncAt", java.time.Instant.now().toString()
         ));
     }
 
