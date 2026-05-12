@@ -72,4 +72,15 @@ public class EmailMessageSpecification {
             cb.like(cb.lower(root.get("snippet")), pattern)
         );
     }
+
+    /**
+     * Messages tagged with ANY of the given label database ids. distinct()
+     * keeps the result set unique when a message has multiple matches.
+     */
+    public static Specification<EmailMessage> hasAnyLabel(java.util.List<Long> labelIds) {
+        return (root, query, cb) -> {
+            if (query != null) query.distinct(true);
+            return root.join("labels").get("id").in(labelIds);
+        };
+    }
 }

@@ -74,10 +74,12 @@ public class EmailMessageGetService {
         String folderId,
         Boolean isRead,
         Boolean isStarred,
+        Boolean isFlagged,
         Boolean hasAttachments,
         String search,
         String fromAddress,
         String subject,
+        List<String> labelIds,
         LocalDateTime sentAfter,
         LocalDateTime sentBefore,
         String sortBy,
@@ -116,8 +118,20 @@ public class EmailMessageGetService {
             if (isStarred != null) {
                 spec = spec.and(EmailMessageSpecification.isStarred(isStarred));
             }
+            if (isFlagged != null) {
+                spec = spec.and(EmailMessageSpecification.isFlagged(isFlagged));
+            }
             if (hasAttachments != null) {
                 spec = spec.and(EmailMessageSpecification.hasAttachments(hasAttachments));
+            }
+            if (labelIds != null && !labelIds.isEmpty()) {
+                List<Long> decoded = labelIds.stream()
+                    .map(idObfuscator::decodeId)
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
+                if (!decoded.isEmpty()) {
+                    spec = spec.and(EmailMessageSpecification.hasAnyLabel(decoded));
+                }
             }
             if (search != null && !search.isBlank()) {
                 spec = spec.and(EmailMessageSpecification.searchAll(search));
