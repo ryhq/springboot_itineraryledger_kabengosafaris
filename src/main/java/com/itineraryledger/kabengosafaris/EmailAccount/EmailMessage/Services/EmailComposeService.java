@@ -123,6 +123,90 @@ public class EmailComposeService {
     }
 
     /**
+     * §10 — Quick reply. Builds a minimal ComposeEmailDTO from the
+     * original message (To = sender, optional Cc = original to+cc list
+     * minus this account when REPLY_ALL, subject prefixed with "Re:"
+     * if missing) and routes through the standard reply flow.
+     */
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> quickReply(
+            String accountIdObfuscated,
+            String messageIdObfuscated,
+            com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.DTOs.QuickReplyDTO dto) {
+        try {
+            Long accountId = idObfuscator.decodeId(accountIdObfuscated);
+            Long originalMsgId = idObfuscator.decodeId(messageIdObfuscated);
+
+            EmailAccount account = emailAccountRepository.findById(accountId).orElse(null);
+            if (account == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(404, "Email account not found", "EMAIL_ACCOUNT_NOT_FOUND"));
+            }
+
+            EmailMessage original = emailMessageRepository.findById(originalMsgId).orElse(null);
+            if (original == null || !original.getEmailAccount().getId().equals(accountId)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(404, "Original message not found", "MESSAGE_NOT_FOUND"));
+            }
+
+            String subject = original.getSubject() == null ? "(no subject)" : original.getSubject();
+            if (!subject.toLowerCase().startsWith("re:")) subject = "Re: " + subject;
+
+            java.util.List<String> toList = original.getFromAddress() == null
+                ? java.util.List.of()
+                : java.util.List.of(original.getFromAddress());
+
+            java.util.List<String> ccList = new java.util.ArrayList<>();
+            if (dto.getReplyMode() == com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.DTOs.QuickReplyDTO.ReplyMode.REPLY_ALL) {
+                ccList.addAll(parseAddresses(original.getToAddresses()));
+                ccList.addAll(parseAddresses(original.getCcAddresses()));
+                // Strip the account's own address so we don't cc ourselves
+                String self = account.getEmail();
+                if (self != null) ccList.removeIf(addr -> addr.equalsIgnoreCase(self));
+            }
+
+            String body = dto.getBody();
+            // Treat plain-text bodies as <pre>-style HTML so line breaks survive
+            String htmlBody = body.contains("<") ? body
+                : "<div style=\"white-space:pre-wrap\">" + escapeHtml(body) + "</div>";
+
+            ComposeEmailDTO compose = ComposeEmailDTO.builder()
+                .toAddresses(toList)
+                .ccAddresses(ccList)
+                .subject(subject)
+                .htmlBody(htmlBody)
+                .inReplyToMessageId(idObfuscator.encodeId(original.getId()))
+                .build();
+
+            return sendEmail(account, compose, null, original);
+        } catch (Exception e) {
+            log.error("Error quick-replying", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to quick-reply", "QUICK_REPLY_FAILED"));
+        }
+    }
+
+    private java.util.List<String> parseAddresses(String raw) {
+        if (raw == null || raw.isBlank()) return java.util.List.of();
+        // Stored as JSON array — fall back to a permissive split if parse fails.
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper m = new com.fasterxml.jackson.databind.ObjectMapper();
+            return m.readValue(raw, new com.fasterxml.jackson.core.type.TypeReference<java.util.List<String>>() {});
+        } catch (Exception ignored) {
+            java.util.List<String> out = new java.util.ArrayList<>();
+            for (String s : raw.replace("[", "").replace("]", "").replace("\"", "").split(",")) {
+                String t = s.trim();
+                if (!t.isEmpty()) out.add(t);
+            }
+            return out;
+        }
+    }
+
+    private String escapeHtml(String s) {
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    /**
      * Forward an email
      */
     @Transactional

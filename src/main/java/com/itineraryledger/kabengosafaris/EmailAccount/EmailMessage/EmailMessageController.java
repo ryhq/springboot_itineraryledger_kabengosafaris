@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.DTOs.ComposeEmailDTO;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.DTOs.MoveEmailDTO;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.DTOs.QuickReplyDTO;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.DTOs.SnoozeDTO;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.Services.EmailSnoozeService;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailAttachment;
@@ -158,6 +159,20 @@ public class EmailMessageController {
             @RequestPart("email") @Validated ComposeEmailDTO dto,
             @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments) {
         return emailComposeService.forward(accountId, id, dto, attachments);
+    }
+
+    /**
+     * §10 — quick-reply. JSON body, no attachments. The frontend's inline
+     * reply composer in the reading pane hits this so it can send without
+     * a full-page swap.
+     */
+    @PostMapping("/{id}/quick-reply")
+    @PreAuthorize("hasAuthority('PERM_CREATE_EMAIL_MESSAGE')")
+    public ResponseEntity<ApiResponse<?>> quickReply(
+            @PathVariable("accountId") String accountId,
+            @PathVariable("id") String id,
+            @RequestBody @Validated QuickReplyDTO dto) {
+        return emailComposeService.quickReply(accountId, id, dto);
     }
 
     // =====================================================================
