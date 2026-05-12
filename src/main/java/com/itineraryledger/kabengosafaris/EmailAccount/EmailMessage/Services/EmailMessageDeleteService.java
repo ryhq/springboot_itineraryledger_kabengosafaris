@@ -290,6 +290,55 @@ public class EmailMessageDeleteService {
         }
     }
 
+    /**
+     * Archive a single message — moves it to the account's ARCHIVE folder.
+     * §4 in EMAIL_INBOX_API.md.
+     */
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> archiveMessage(String accountIdObfuscated, String messageIdObfuscated) {
+        try {
+            Long accountId = idObfuscator.decodeId(accountIdObfuscated);
+            EmailFolder archiveFolder = emailFolderRepository
+                .findByEmailAccountIdAndType(accountId, EmailFolderType.ARCHIVE)
+                .orElse(null);
+            if (archiveFolder == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(404, "Archive folder not found", "ARCHIVE_FOLDER_NOT_FOUND"));
+            }
+            return moveMessage(accountIdObfuscated, messageIdObfuscated,
+                idObfuscator.encodeId(archiveFolder.getId()));
+        } catch (Exception e) {
+            log.error("Error archiving message", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to archive message", "ARCHIVE_MESSAGE_FAILED"));
+        }
+    }
+
+    /**
+     * Archive a batch of messages — convenience wrapper around batchMove
+     * targeting the account's ARCHIVE folder so the frontend doesn't need
+     * to look the folder id up first.
+     */
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> batchArchive(String accountIdObfuscated, List<String> messageIdsObfuscated) {
+        try {
+            Long accountId = idObfuscator.decodeId(accountIdObfuscated);
+            EmailFolder archiveFolder = emailFolderRepository
+                .findByEmailAccountIdAndType(accountId, EmailFolderType.ARCHIVE)
+                .orElse(null);
+            if (archiveFolder == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(404, "Archive folder not found", "ARCHIVE_FOLDER_NOT_FOUND"));
+            }
+            return batchMove(accountIdObfuscated, messageIdsObfuscated,
+                idObfuscator.encodeId(archiveFolder.getId()));
+        } catch (Exception e) {
+            log.error("Error batch archiving", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to batch archive", "BATCH_ARCHIVE_FAILED"));
+        }
+    }
+
     // =====================================================================
     // Internal helpers
     // =====================================================================

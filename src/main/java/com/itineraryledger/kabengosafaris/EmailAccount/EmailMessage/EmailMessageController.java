@@ -233,6 +233,25 @@ public class EmailMessageController {
         return emailMessageDeleteService.batchMove(accountId, messageIds, targetFolderId);
     }
 
+    // §4 — dedicated archive endpoints. Equivalent to a move to the
+    // account's ARCHIVE folder but lets the frontend skip the lookup.
+
+    @PostMapping("/{id}/archive")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_MESSAGE')")
+    public ResponseEntity<ApiResponse<?>> archiveMessage(
+            @PathVariable("accountId") String accountId,
+            @PathVariable("id") String id) {
+        return emailMessageDeleteService.archiveMessage(accountId, id);
+    }
+
+    @PostMapping("/batch/archive")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_MESSAGE')")
+    public ResponseEntity<ApiResponse<?>> batchArchive(
+            @PathVariable("accountId") String accountId,
+            @RequestBody List<String> messageIds) {
+        return emailMessageDeleteService.batchArchive(accountId, messageIds);
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_DELETE_EMAIL_MESSAGE')")
     public ResponseEntity<ApiResponse<?>> deleteMessage(
