@@ -4,9 +4,11 @@ import java.io.ByteArrayInputStream;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -130,8 +132,29 @@ public class EmailMessageGetService {
             }
 
             Page<EmailMessage> pagedMessages = emailMessageRepository.findAll(spec, paging);
+
+            // §2 — batch the threadCount lookup for every threadId present in
+            // the page so the list rows can render the count chip without N+1.
+            List<String> threadIds = pagedMessages.getContent().stream()
+                .map(EmailMessage::getThreadId)
+                .filter(t -> t != null && !t.isBlank())
+                .distinct()
+                .toList();
+            Map<String, Long> threadCounts = new HashMap<>();
+            if (!threadIds.isEmpty()) {
+                for (Object[] row : emailMessageRepository.countByThreadIds(accountId, threadIds)) {
+                    threadCounts.put((String) row[0], ((Number) row[1]).longValue());
+                }
+            }
+
             List<EmailMessageListDTO> dtos = pagedMessages.getContent().stream()
-                .map(this::toListDTO).toList();
+                .map(m -> {
+                    EmailMessageListDTO dto = toListDTO(m);
+                    Long count = threadCounts.get(m.getThreadId());
+                    if (count != null && count > 1) dto.setThreadCount(count.intValue());
+                    return dto;
+                })
+                .toList();
 
             // §Change — surface the account's last successful sync so the
             // frontend sync pill can colour itself by freshness without an
@@ -208,7 +231,59 @@ public class EmailMessageGetService {
     }
 
     /**
-     * Get thread (all messages with the same threadId)
+     * §2 — Get a thread by its threadId (RFC-2822 derived string), returning
+     * thread-level metadata plus all messages oldest → newest. This is the
+     * shape the inbox v2 reading pane expects.
+     */
+    public ResponseEntity<ApiResponse<?>> getThreadById(String accountIdObfuscated, String threadId) {
+        try {
+            Long accountId = idObfuscator.decodeId(accountIdObfuscated);
+            List<EmailMessage> messages = emailMessageRepository
+                .findByEmailAccountIdAndThreadIdOrderBySentAtAsc(accountId, threadId);
+            if (messages.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(404, "Thread not found", "THREAD_NOT_FOUND"));
+            }
+
+            EmailMessage latest = messages.get(messages.size() - 1);
+            List<EmailMessageListDTO> messageDtos = messages.stream().map(this::toListDTO).toList();
+
+            // Union of labels across the whole thread, deduplicated by id.
+            Set<String> threadLabels = new HashSet<>();
+            messages.forEach(m -> m.getLabels().forEach(l -> threadLabels.add(idObfuscator.encodeId(l.getId()))));
+
+            // Distinct participants by email address.
+            Map<String, Map<String, String>> participants = new HashMap<>();
+            for (EmailMessage m : messages) {
+                if (m.getFromAddress() == null) continue;
+                participants.putIfAbsent(m.getFromAddress(), Map.of(
+                    "name", m.getFromName() == null ? m.getFromAddress() : m.getFromName(),
+                    "email", m.getFromAddress()
+                ));
+            }
+
+            Map<String, Object> thread = new HashMap<>();
+            thread.put("id", threadId);
+            thread.put("subject", latest.getSubject());
+            thread.put("participants", participants.values());
+            thread.put("labels", threadLabels);
+            thread.put("messages", messageDtos);
+            thread.put("messageCount", messages.size());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("thread", thread);
+
+            return ResponseEntity.ok(ApiResponse.success(200, "Thread retrieved successfully", response));
+        } catch (Exception e) {
+            log.error("Error getting thread by id", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to get thread", "GET_THREAD_FAILED"));
+        }
+    }
+
+    /**
+     * Get thread (all messages with the same threadId) — legacy entry point
+     * that takes a message id and resolves to its thread.
      */
     public ResponseEntity<ApiResponse<?>> getThread(String accountIdObfuscated, String messageIdObfuscated) {
         try {

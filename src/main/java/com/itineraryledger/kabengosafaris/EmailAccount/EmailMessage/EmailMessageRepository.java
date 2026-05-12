@@ -36,6 +36,20 @@ public interface EmailMessageRepository extends JpaRepository<EmailMessage, Long
     @Query("SELECT m FROM EmailMessage m WHERE m.snoozeUntil IS NOT NULL AND m.snoozeUntil <= :now")
     List<EmailMessage> findSnoozedDueBy(@Param("now") LocalDateTime now);
 
+    /**
+     * Batched COUNT(*) grouped by threadId for a given account, restricted
+     * to a set of threadIds. Used to fill in threadCount on list DTOs
+     * without N+1.
+     */
+    @Query("""
+        SELECT m.threadId, COUNT(m)
+          FROM EmailMessage m
+         WHERE m.emailAccount.id = :accountId AND m.threadId IN :threadIds
+         GROUP BY m.threadId
+        """)
+    List<Object[]> countByThreadIds(@Param("accountId") Long accountId,
+                                    @Param("threadIds") List<String> threadIds);
+
     // ========================
     // NAVIGATION QUERIES (circular next/previous within account+folder)
     // ========================
