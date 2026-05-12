@@ -194,14 +194,24 @@ public class QuoteUpdateService {
                 quote.setDescription(updateDTO.getDescription());
             }
 
-            // Update safari start date
-            if (updateDTO.getSafariStartDate() != null) {
+            // Any change to a field that affects the cost-estimation engine
+            // (season rates via start date, rate kind via STO, per-line vs
+            // condensed shape, or markup multipliers) flips this flag so we
+            // do a full items recalc instead of just summing existing rows.
+            boolean needsItemsRecalc = false;
+
+            // Update safari start date — drives season rates
+            if (updateDTO.getSafariStartDate() != null
+                    && !updateDTO.getSafariStartDate().equals(quote.getSafariStartDate())) {
                 quote.setSafariStartDate(updateDTO.getSafariStartDate());
+                needsItemsRecalc = true;
             }
 
             // Update pricing fields
-            if (updateDTO.getIsStoRate() != null) {
+            if (updateDTO.getIsStoRate() != null
+                    && !updateDTO.getIsStoRate().equals(quote.getIsStoRate())) {
                 quote.setIsStoRate(updateDTO.getIsStoRate());
+                needsItemsRecalc = true;
             }
             if (updateDTO.getTaxPercentage() != null) {
                 quote.setTaxPercentage(updateDTO.getTaxPercentage());
@@ -216,11 +226,10 @@ public class QuoteUpdateService {
             // Markup fields — agentCommission + marginUplift bake into line
             // item prices in QuoteCostEstimationService, so any change to
             // these triggers a recalc below.
-            boolean markupChanged = false;
             if (updateDTO.getAgentCommissionPercentage() != null
                     && !updateDTO.getAgentCommissionPercentage().equals(quote.getAgentCommissionPercentage())) {
                 quote.setAgentCommissionPercentage(updateDTO.getAgentCommissionPercentage());
-                markupChanged = true;
+                needsItemsRecalc = true;
             }
             if (updateDTO.getAgentCommissionReason() != null) {
                 quote.setAgentCommissionReason(updateDTO.getAgentCommissionReason());
@@ -228,7 +237,7 @@ public class QuoteUpdateService {
             if (updateDTO.getMarginUpliftPercentage() != null
                     && !updateDTO.getMarginUpliftPercentage().equals(quote.getMarginUpliftPercentage())) {
                 quote.setMarginUpliftPercentage(updateDTO.getMarginUpliftPercentage());
-                markupChanged = true;
+                needsItemsRecalc = true;
             }
             if (updateDTO.getMarginUpliftReason() != null) {
                 quote.setMarginUpliftReason(updateDTO.getMarginUpliftReason());
@@ -238,7 +247,7 @@ public class QuoteUpdateService {
             if (updateDTO.getCondenseItems() != null
                     && !updateDTO.getCondenseItems().equals(quote.getCondenseItems())) {
                 quote.setCondenseItems(updateDTO.getCondenseItems());
-                markupChanged = true;
+                needsItemsRecalc = true;
             }
 
             // Note: Status updates are blocked - must use workflow endpoints
@@ -298,11 +307,12 @@ public class QuoteUpdateService {
             // Save updated quote
             quote = quoteRepository.save(quote);
 
-            // If markup changed, re-derive items synchronously so the inflated
-            // unit prices are reflected in the response (same behaviour as
-            // tax/discount). recalculate() also refreshes totals at the end,
-            // so the totals-only call below is skipped in that branch.
-            if (markupChanged) {
+            // If any field that feeds the cost-estimation engine changed
+            // (start date → season rates, STO rate, condense layout, or
+            // markup multipliers), re-derive items synchronously so the
+            // response reflects the new prices. recalculate() refreshes
+            // totals at the end, so the totals-only call is skipped here.
+            if (needsItemsRecalc) {
                 quoteCostEstimationService.recalculate(quote.getId());
             } else {
                 totalsCalculationService.recalculateTotals(quote.getId());
