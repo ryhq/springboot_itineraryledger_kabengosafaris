@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.Entity.QuoteDay;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.Entity.QuoteDayPark;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -152,15 +154,53 @@ public class QuoteDeleteService {
         entityIdParamName = "id"
     )
     public void deleteQuote(Long id) {
-        // Unlink any sibling version pointers that reference this quote.
-        // Without this, the self-FK from quotes.previous_version_id /
-        // quotes.next_version_id blocks the delete with a constraint
-        // violation. JPA cascade can't help here — those are inverse
-        // ManyToOne references, not owned children.
+        // 1. Load the quote so we can force-initialize every lazy
+        //    collection. Without this, Hibernate may try to delete the
+        //    parent before walking the cascade graph for un-loaded
+        //    collections, and the FKs from quote_items / quote_documents /
+        //    quote_days / quote_pax / day-children block the parent.
+        Quote quote = quoteRepository.findById(id).orElse(null);
+        if (quote == null) {
+            log.warn("deleteQuote: quote {} not found", id);
+            return;
+        }
+        initCascadeGraph(quote);
+
+        // 2. Null out any sibling version pointers that reference this
+        //    quote. Self-referential FK can't be solved via JPA cascade
+        //    because previousVersion/nextVersion are inverse ManyToOne
+        //    refs, not owned children.
         quoteRepository.clearPreviousVersionRefs(id);
         quoteRepository.clearNextVersionRefs(id);
         quoteRepository.flush();
 
-        quoteRepository.deleteById(id);
+        // 3. JPA cascade now removes all children (items, documents, days
+        //    + day-tree, pax) and the @ElementCollection price tables.
+        quoteRepository.delete(quote);
+        quoteRepository.flush();
+    }
+
+    /**
+     * Force every {@code @OneToMany} collection on the Quote and its day
+     * tree into the persistence context so Hibernate's cascade=ALL +
+     * orphanRemoval pipeline issues child DELETEs before the parent
+     * DELETE, regardless of fetch laziness.
+     */
+    private void initCascadeGraph(Quote quote) {
+        if (quote.getItems() != null) quote.getItems().size();
+        if (quote.getDocuments() != null) quote.getDocuments().size();
+        if (quote.getPaxList() != null) quote.getPaxList().size();
+        if (quote.getDays() != null) {
+            for (QuoteDay day : quote.getDays()) {
+                if (day.getAccommodations() != null) day.getAccommodations().size();
+                if (day.getActivities() != null) day.getActivities().size();
+                if (day.getParks() != null) {
+                    for (QuoteDayPark park : day.getParks()) {
+                        if (park.getParkActivities() != null) park.getParkActivities().size();
+                        if (park.getParkTariffs() != null) park.getParkTariffs().size();
+                    }
+                }
+            }
+        }
     }
 }

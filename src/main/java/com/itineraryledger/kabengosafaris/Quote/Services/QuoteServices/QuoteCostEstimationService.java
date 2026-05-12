@@ -445,18 +445,13 @@ public class QuoteCostEstimationService {
                 p.setBreakdown("Rate not found — estimated");
             }
 
-            StringBuilder desc = new StringBuilder();
-            if (li.getDayNumber() != null) desc.append("Day ").append(li.getDayNumber());
-            if (li.getPaxCategory() != null && !li.getPaxCategory().isBlank()) {
-                if (desc.length() > 0) desc.append(" • ");
-                desc.append(li.getPaxCategory());
-            }
+            String description = buildLineDescription(li);
 
             QuoteItem item = QuoteItem.builder()
                     .quote(quote)
                     .itemType(type)
                     .itemName(li.getItemName() != null ? li.getItemName() : type.name())
-                    .description(desc.length() > 0 ? desc.toString() : null)
+                    .description(description)
                     .displayOrder(displayOrder++)
                     .prices(new ArrayList<>(List.of(p)))
                     .isActive(true)
@@ -479,6 +474,41 @@ public class QuoteCostEstimationService {
         BigDecimal totalPct = commission.add(uplift);
         if (totalPct.signum() == 0) return BigDecimal.ONE;
         return BigDecimal.ONE.add(totalPct.divide(BigDecimal.valueOf(100), 6, java.math.RoundingMode.HALF_UP));
+    }
+
+    /**
+     * Build a customer-facing description for a per-line QuoteItem row.
+     * Includes the day number, the full resource name (the same string used
+     * for the item header), and a "charged per X" clause derived from the
+     * pax category — e.g. for a park fee:
+     *
+     *   "Day 2 • Conservation Fee - Serengeti National Park, charged per person."
+     *
+     * The clause is omitted when paxCategory is null/blank, and a leading
+     * "per " is added when the category itself doesn't already start with
+     * it (so "Adult" becomes "per adult", but "Per Person" stays as
+     * "per person").
+     */
+    private String buildLineDescription(CostLineItem li) {
+        StringBuilder desc = new StringBuilder();
+        if (li.getDayNumber() != null) {
+            desc.append("Day ").append(li.getDayNumber());
+        }
+        if (li.getItemName() != null && !li.getItemName().isBlank()) {
+            if (desc.length() > 0) desc.append(" • ");
+            desc.append(li.getItemName());
+        }
+        if (li.getPaxCategory() != null && !li.getPaxCategory().isBlank()) {
+            String pax = li.getPaxCategory().trim().toLowerCase(java.util.Locale.ROOT);
+            String chargedClause = pax.startsWith("per ")
+                    ? "charged " + pax
+                    : "charged per " + pax;
+            if (desc.length() > 0) desc.append(", ");
+            desc.append(chargedClause).append(".");
+        } else if (desc.length() > 0) {
+            desc.append(".");
+        }
+        return desc.length() > 0 ? desc.toString() : null;
     }
 
     private int writeCondensed(Quote quote, List<CostLineItem> lineItems,
