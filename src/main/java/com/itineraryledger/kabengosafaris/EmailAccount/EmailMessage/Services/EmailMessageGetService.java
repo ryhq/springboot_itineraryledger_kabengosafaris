@@ -138,7 +138,36 @@ public class EmailMessageGetService {
                 }
             }
             if (search != null && !search.isBlank()) {
-                spec = spec.and(EmailMessageSpecification.searchAll(search));
+                // §8 — parse operator syntax (from:, to:, label:, has:,
+                // is:, before:, after:) out of the search bar input.
+                SearchQueryParser.Parsed parsed = SearchQueryParser.parse(search);
+                for (String f : parsed.getFrom()) spec = spec.and(EmailMessageSpecification.fromAddressLike(f));
+                for (String t : parsed.getTo()) spec = spec.and(EmailMessageSpecification.toAddressLike(t));
+                for (String s : parsed.getSubject()) spec = spec.and(EmailMessageSpecification.subjectLike(s));
+                if (parsed.getHasAttachment() != null) spec = spec.and(EmailMessageSpecification.hasAttachments(parsed.getHasAttachment()));
+                if (parsed.getIsUnread() != null) spec = spec.and(EmailMessageSpecification.isRead(!parsed.getIsUnread()));
+                if (parsed.getIsStarred() != null) spec = spec.and(EmailMessageSpecification.isStarred(parsed.getIsStarred()));
+                if (parsed.getIsFlagged() != null) spec = spec.and(EmailMessageSpecification.isFlagged(parsed.getIsFlagged()));
+                if (parsed.getBefore() != null) spec = spec.and(EmailMessageSpecification.sentBefore(parsed.getBefore()));
+                if (parsed.getAfter() != null) spec = spec.and(EmailMessageSpecification.sentAfter(parsed.getAfter()));
+                if (!parsed.getLabel().isEmpty()) {
+                    // label:foo resolves on label name substring — convert to ids and use hasAnyLabel.
+                    // (Substring match against EmailLabel.name would need an extra spec; keep it
+                    // simple here and let the explicit `labelIds` query param do exact filtering.)
+                    spec = spec.and((root, query, cb) -> {
+                        if (query != null) query.distinct(true);
+                        var join = root.<EmailMessage, com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailLabel>join("labels");
+                        var disjunction = cb.disjunction();
+                        for (String name : parsed.getLabel()) {
+                            disjunction = cb.or(disjunction,
+                                cb.like(cb.lower(join.<String>get("name")), "%" + name.toLowerCase() + "%"));
+                        }
+                        return disjunction;
+                    });
+                }
+                if (parsed.getFreeText() != null && !parsed.getFreeText().isBlank()) {
+                    spec = spec.and(EmailMessageSpecification.searchAll(parsed.getFreeText()));
+                }
             }
             if (fromAddress != null && !fromAddress.isBlank()) {
                 spec = spec.and(EmailMessageSpecification.fromAddressLike(fromAddress));
