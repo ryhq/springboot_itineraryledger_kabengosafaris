@@ -50,6 +50,7 @@ public class EmailMessageGetService {
     private final EmailAccountRepository emailAccountRepository;
     private final EmailStorageService emailStorageService;
     private final IdObfuscator idObfuscator;
+    private final MuteRuleService muteRuleService;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "sentAt", "receivedAt", "subject", "fromAddress", "isRead", "isStarred", "createdAt"
@@ -104,9 +105,12 @@ public class EmailMessageGetService {
             // Build specification
             // §3 — hide snoozed messages from list queries. They re-surface
             // once EmailSnoozeService.wakeDueSnoozes clears the field.
+            // §7 — also exclude anything matching an active mute rule;
+            // those are reported separately via /folders/{id}/muted-summary.
             Specification<EmailMessage> spec = Specification.<EmailMessage>unrestricted()
                 .and(EmailMessageSpecification.forAccount(accountId))
-                .and(EmailMessageSpecification.notSnoozed());
+                .and(EmailMessageSpecification.notSnoozed())
+                .and(EmailMessageSpecification.notMatchingMuteRules(muteRuleService.getActiveRules(accountId)));
 
             if (folderId != null && !folderId.isBlank()) {
                 Long decodedFolderId = idObfuscator.decodeId(folderId);

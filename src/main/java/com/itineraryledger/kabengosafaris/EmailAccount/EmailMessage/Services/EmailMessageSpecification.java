@@ -83,4 +83,40 @@ public class EmailMessageSpecification {
             return root.join("labels").get("id").in(labelIds);
         };
     }
+
+    /**
+     * Exclude messages that match any active mute rule on the account.
+     * Each rule is an OR'd substring match; this spec NOTs the union.
+     */
+    public static Specification<EmailMessage> notMatchingMuteRules(
+            java.util.List<com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.MuteRule> rules) {
+        if (rules == null || rules.isEmpty()) {
+            return (root, query, cb) -> cb.conjunction();
+        }
+        return (root, query, cb) -> {
+            jakarta.persistence.criteria.Predicate any = cb.disjunction();
+            for (var rule : rules) {
+                String pattern = switch (rule.getMatchMode()) {
+                    case CONTAINS -> "%" + rule.getMatchPattern().toLowerCase() + "%";
+                    case STARTS_WITH -> rule.getMatchPattern().toLowerCase() + "%";
+                    case EQUALS -> rule.getMatchPattern().toLowerCase();
+                };
+                var field = switch (rule.getMatchField()) {
+                    case FROM_ADDRESS -> root.<String>get("fromAddress");
+                    case SUBJECT -> root.<String>get("subject");
+                };
+                any = cb.or(any, cb.like(cb.lower(field), pattern));
+            }
+            return cb.not(any);
+        };
+    }
+
+    /**
+     * Inverse of notMatchingMuteRules — used by the muted-summary endpoint
+     * to count what *would* have shown without the rules.
+     */
+    public static Specification<EmailMessage> matchesAnyMuteRule(
+            java.util.List<com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.MuteRule> rules) {
+        return (root, query, cb) -> cb.not(notMatchingMuteRules(rules).toPredicate(root, query, cb));
+    }
 }
