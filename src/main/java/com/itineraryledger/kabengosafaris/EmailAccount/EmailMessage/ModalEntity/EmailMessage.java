@@ -1,8 +1,11 @@
 package com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -167,6 +170,23 @@ public class EmailMessage {
 
     @OneToMany(mappedBy = "emailMessage", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<EmailAttachment> attachments;
+
+    /**
+     * Labels attached to this message. Batched to avoid N+1 when rendering
+     * a list page (default batch = page size). See EMAIL_INBOX_API.md §1.
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "email_message_labels",
+        joinColumns = @JoinColumn(name = "email_message_id"),
+        inverseJoinColumns = @JoinColumn(name = "email_label_id"),
+        uniqueConstraints = @UniqueConstraint(name = "uk_email_msg_label", columnNames = {"email_message_id", "email_label_id"})
+    )
+    @BatchSize(size = 100)
+    @lombok.ToString.Exclude
+    @lombok.EqualsAndHashCode.Exclude
+    @Builder.Default
+    private Set<EmailLabel> labels = new HashSet<>();
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

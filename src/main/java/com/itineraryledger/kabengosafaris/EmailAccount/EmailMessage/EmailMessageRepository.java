@@ -30,6 +30,12 @@ public interface EmailMessageRepository extends JpaRepository<EmailMessage, Long
     @Query("SELECT m FROM EmailMessage m WHERE m.folder.type = 'TRASH' AND m.updatedAt < :before")
     List<EmailMessage> findTrashOlderThan(@Param("before") LocalDateTime before);
 
+    @Query("SELECT m FROM EmailMessage m JOIN m.labels l WHERE l.id = :labelId")
+    List<EmailMessage> findAllByLabelsId(@Param("labelId") Long labelId);
+
+    @Query("SELECT m FROM EmailMessage m WHERE m.snoozeUntil IS NOT NULL AND m.snoozeUntil <= :now")
+    List<EmailMessage> findSnoozedDueBy(@Param("now") LocalDateTime now);
+
     // ========================
     // NAVIGATION QUERIES (circular next/previous within account+folder)
     // ========================

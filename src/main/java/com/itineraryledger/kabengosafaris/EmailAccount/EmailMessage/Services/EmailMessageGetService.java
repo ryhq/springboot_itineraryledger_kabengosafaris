@@ -374,7 +374,11 @@ public class EmailMessageGetService {
             .sentAt(message.getSentAt())
             .snoozeUntil(message.getSnoozeUntil())
             .threadId(message.getThreadId())
-            // threadCount + labels populated in §2 / §1 commits respectively.
+            .labels(message.getLabels() == null ? java.util.List.of()
+                : message.getLabels().stream()
+                    .map(l -> idObfuscator.encodeId(l.getId()))
+                    .toList())
+            // threadCount populated in §2.
             .build();
     }
 
@@ -404,6 +408,10 @@ public class EmailMessageGetService {
             .sentAt(message.getSentAt())
             .receivedAt(message.getReceivedAt())
             .snoozeUntil(message.getSnoozeUntil())
+            .labels(message.getLabels() == null ? java.util.List.of()
+                : message.getLabels().stream()
+                    .map(l -> idObfuscator.encodeId(l.getId()))
+                    .toList())
             .attachments(attachments)
             .createdAt(message.getCreatedAt())
             .updatedAt(message.getUpdatedAt())
