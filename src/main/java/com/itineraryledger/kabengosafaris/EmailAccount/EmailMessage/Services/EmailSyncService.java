@@ -23,6 +23,7 @@ public class EmailSyncService {
     private final EmailReceivingService emailReceivingService;
     private final EmailFolderService emailFolderService;
     private final IdObfuscator idObfuscator;
+    private final EmailEventBus eventBus;
 
     /**
      * Trigger a manual sync for an account
@@ -37,6 +38,14 @@ public class EmailSyncService {
         // Fetch new emails
         int fetched = emailReceivingService.fetchNewEmails(account);
         log.info("Manual sync complete for account {}: {} new emails fetched", account.getEmail(), fetched);
+
+        // §9 — broadcast sync.completed to any subscribed SSE clients so
+        // the inbox v2 sync pill flips green without waiting for a poll.
+        eventBus.publish(account.getId(), "sync.completed", java.util.Map.of(
+            "accountId", account.getId(),
+            "fetched", fetched,
+            "lastSyncAt", java.time.LocalDateTime.now().toString()
+        ));
     }
 
     /**
