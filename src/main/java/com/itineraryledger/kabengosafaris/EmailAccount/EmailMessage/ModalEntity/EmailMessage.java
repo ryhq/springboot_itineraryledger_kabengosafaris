@@ -22,6 +22,8 @@ import lombok.NoArgsConstructor;
     @Index(name = "idx_email_msg_thread_id", columnList = "thread_id"),
     @Index(name = "idx_email_msg_sent_at", columnList = "sent_at"),
     @Index(name = "idx_email_msg_is_read", columnList = "is_read"),
+    @Index(name = "idx_email_msg_is_flagged", columnList = "is_flagged"),
+    @Index(name = "idx_email_msg_snooze_until", columnList = "snooze_until"),
     @Index(name = "idx_email_msg_from_address", columnList = "from_address")
 })
 @Data
@@ -116,6 +118,18 @@ public class EmailMessage {
     @Builder.Default
     private Integer attachmentCount = 0;
 
+    @Column(name = "is_flagged", nullable = false)
+    @Builder.Default
+    private Boolean isFlagged = false;
+
+    /**
+     * If set in the future, this message is hidden from inbox views until that
+     * timestamp passes. Cleared by EmailSnoozeWakeJob. See EMAIL_INBOX_API.md
+     * §3 (snooze) on the frontend side.
+     */
+    @Column(name = "snooze_until")
+    private LocalDateTime snoozeUntil;
+
     /**
      * Reference to .eml file on disk. Null for messages sent via the Resend
      * API (and other API-only senders) — those have no on-disk MIME copy.
@@ -169,5 +183,6 @@ public class EmailMessage {
         if (this.isDraft == null) this.isDraft = false;
         if (this.hasAttachments == null) this.hasAttachments = false;
         if (this.attachmentCount == null) this.attachmentCount = 0;
+        if (this.isFlagged == null) this.isFlagged = false;
     }
 }

@@ -24,8 +24,23 @@ public class EmailMessageSpecification {
         return (root, query, cb) -> cb.equal(root.get("isStarred"), starred);
     }
 
+    public static Specification<EmailMessage> isFlagged(Boolean flagged) {
+        return (root, query, cb) -> cb.equal(root.get("isFlagged"), flagged);
+    }
+
     public static Specification<EmailMessage> hasAttachments(Boolean has) {
         return (root, query, cb) -> cb.equal(root.get("hasAttachments"), has);
+    }
+
+    /**
+     * Hide messages that have a future snoozeUntil (so they disappear from
+     * inbox-style queries). Messages with snoozeUntil == null also pass.
+     */
+    public static Specification<EmailMessage> notSnoozed() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("snoozeUntil")),
+            cb.lessThanOrEqualTo(root.get("snoozeUntil"), java.time.LocalDateTime.now())
+        );
     }
 
     public static Specification<EmailMessage> subjectLike(String subject) {

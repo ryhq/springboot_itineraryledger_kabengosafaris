@@ -32,12 +32,16 @@ public class EmailMessageDTO {
     private String htmlBody;
     private Boolean isRead;
     private Boolean isStarred;
+    private Boolean isFlagged;
     private Boolean isDraft;
     private Boolean hasAttachments;
     private Integer attachmentCount;
     private Long fileSize;
     private LocalDateTime sentAt;
     private LocalDateTime receivedAt;
+    private LocalDateTime snoozeUntil;
+    private Integer threadCount;
+    private List<String> labels;
     private List<EmailAttachmentDTO> attachments;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

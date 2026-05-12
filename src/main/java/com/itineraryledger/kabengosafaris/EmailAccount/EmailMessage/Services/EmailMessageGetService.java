@@ -133,12 +133,20 @@ public class EmailMessageGetService {
             List<EmailMessageListDTO> dtos = pagedMessages.getContent().stream()
                 .map(this::toListDTO).toList();
 
+            // §Change — surface the account's last successful sync so the
+            // frontend sync pill can colour itself by freshness without an
+            // extra request.
+            LocalDateTime lastSyncAt = emailAccountRepository.findById(accountId)
+                .map(a -> a.getLastFetchedAt())
+                .orElse(null);
+
             Map<String, Object> response = new HashMap<>();
             response.put("messages", dtos);
             response.put("currentPage", pagedMessages.getNumber());
             response.put("totalItems", pagedMessages.getTotalElements());
             response.put("totalPages", pagedMessages.getTotalPages());
             response.put("validSortFields", VALID_SORT_FIELDS);
+            response.put("lastSyncAt", lastSyncAt);
 
             return ResponseEntity.ok(ApiResponse.success(200, "Messages retrieved successfully", response));
         } catch (Exception e) {
@@ -359,9 +367,14 @@ public class EmailMessageGetService {
             .snippet(message.getSnippet())
             .isRead(message.getIsRead())
             .isStarred(message.getIsStarred())
+            .isFlagged(message.getIsFlagged())
+            .isDraft(message.getIsDraft())
             .hasAttachments(message.getHasAttachments())
             .attachmentCount(message.getAttachmentCount())
             .sentAt(message.getSentAt())
+            .snoozeUntil(message.getSnoozeUntil())
+            .threadId(message.getThreadId())
+            // threadCount + labels populated in §2 / §1 commits respectively.
             .build();
     }
 
@@ -383,12 +396,14 @@ public class EmailMessageGetService {
             .htmlBody(htmlBody)
             .isRead(message.getIsRead())
             .isStarred(message.getIsStarred())
+            .isFlagged(message.getIsFlagged())
             .isDraft(message.getIsDraft())
             .hasAttachments(message.getHasAttachments())
             .attachmentCount(message.getAttachmentCount())
             .fileSize(message.getFileSize())
             .sentAt(message.getSentAt())
             .receivedAt(message.getReceivedAt())
+            .snoozeUntil(message.getSnoozeUntil())
             .attachments(attachments)
             .createdAt(message.getCreatedAt())
             .updatedAt(message.getUpdatedAt())

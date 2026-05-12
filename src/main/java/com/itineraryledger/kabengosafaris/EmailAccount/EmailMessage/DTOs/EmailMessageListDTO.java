@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.DTOs;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -23,7 +24,16 @@ public class EmailMessageListDTO {
     private String snippet;
     private Boolean isRead;
     private Boolean isStarred;
+    private Boolean isFlagged;
+    private Boolean isDraft;
     private Boolean hasAttachments;
     private Integer attachmentCount;
     private LocalDateTime sentAt;
+    private LocalDateTime snoozeUntil;
+    private String threadId;
+    /** Count of messages in this thread. Only set when the row represents
+     *  the thread head (see §2 in EMAIL_INBOX_API.md). */
+    private Integer threadCount;
+    /** Label ids attached to this message. Populated once §1 is wired. */
+    private List<String> labels;
 }
