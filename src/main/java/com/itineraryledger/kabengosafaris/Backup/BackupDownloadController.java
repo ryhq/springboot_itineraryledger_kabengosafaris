@@ -88,7 +88,14 @@ public class BackupDownloadController {
         ResponseCookie cookie = ResponseCookie.from(BACKUP_DOWNLOAD_COOKIE, jwt)
                 .httpOnly(true)
                 .secure(true)
-                .sameSite("Lax")
+                // Cross-site cookie (management.kabengosafaris.com sets a
+                // cookie on api.kabengosafaris.ryhqtech.com — different
+                // registrable domains). SameSite=Lax is technically meant
+                // to work for top-level GET navigations, but Chrome refuses
+                // to honour cross-origin Set-Cookie from XHR/fetch with
+                // anything stricter than None. Secure=true is mandatory
+                // when SameSite=None.
+                .sameSite("None")
                 .path("/api/backups/download/")
                 .maxAge(DOWNLOAD_COOKIE_TTL_SECONDS)
                 .build();
@@ -194,7 +201,14 @@ public class BackupDownloadController {
             ResponseCookie cleared = ResponseCookie.from(BACKUP_DOWNLOAD_COOKIE, "")
                     .httpOnly(true)
                     .secure(true)
-                    .sameSite("Lax")
+                    // Cross-site cookie (management.kabengosafaris.com sets a
+                // cookie on api.kabengosafaris.ryhqtech.com — different
+                // registrable domains). SameSite=Lax is technically meant
+                // to work for top-level GET navigations, but Chrome refuses
+                // to honour cross-origin Set-Cookie from XHR/fetch with
+                // anything stricter than None. Secure=true is mandatory
+                // when SameSite=None.
+                .sameSite("None")
                     .path("/api/backups/download/")
                     .maxAge(0)
                     .build();
