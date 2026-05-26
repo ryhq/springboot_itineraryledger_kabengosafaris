@@ -85,6 +85,14 @@ public class SecurityConfigurations {
             corsConfiguration.setExposedHeaders(List.of(
                 HttpHeaders.CONTENT_DISPOSITION
             )); // Expose specific headers
+            // Required so the browser accepts cross-origin requests carrying
+            // cookies (used by the backup download cookie-bridge — a
+            // short-lived path-scoped JWT cookie issued by
+            // /api/backups/{filename}/prepare-download and read on the
+            // following top-level navigation to /api/backups/download/*).
+            // Without this, the prepare-download response is rejected with
+            // "No response from server" even on 200 OK.
+            corsConfiguration.setAllowCredentials(true);
 
             UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource(); // Create a configuration source
             source.registerCorsConfiguration("/**", corsConfiguration); // Apply CORS configuration to all endpoints
