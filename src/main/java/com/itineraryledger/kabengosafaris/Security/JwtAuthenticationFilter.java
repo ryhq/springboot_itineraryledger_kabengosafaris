@@ -11,6 +11,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,17 @@ import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 @RequiredArgsConstructor // Generates a constructor with required arguments (final fields)
 @Slf4j // Enables logging in this class
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    /**
+     * Cookie name used for the short-lived "download bridge" — set by
+     * BackupDownloadController.prepareDownload right before the frontend
+     * does a top-level navigation to /api/backups/download/{filename},
+     * because a {@code window.location} request cannot carry an
+     * {@code Authorization} header. The cookie is HttpOnly, SameSite=Strict,
+     * scoped to the download path, and expires within ~60s.
+     */
+    private static final String BACKUP_DOWNLOAD_COOKIE = "backup_dl_token";
+    private static final String BACKUP_DOWNLOAD_PATH_PREFIX = "/api/backups/download/";
 
     private final JwtTokenProvider tokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
@@ -84,9 +96,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String getJwtFromRequest(HttpServletRequest request) {
+        // Primary path: Authorization: Bearer <jwt>. Used by every XHR / fetch.
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
+        }
+
+        // Fallback for backup downloads only: read the JWT from a
+        // short-lived, path-scoped, HttpOnly cookie. This lets us trigger
+        // a real <a download> / window.location navigation (so Chrome shows
+        // the file in its native download tray and supports pause/resume)
+        // while keeping the JWT out of the URL and the access logs.
+        String path = request.getServletPath();
+        if (path != null && path.startsWith(BACKUP_DOWNLOAD_PATH_PREFIX)) {
+            Cookie[] cookies = request.getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    if (BACKUP_DOWNLOAD_COOKIE.equals(cookie.getName())
+                            && StringUtils.hasText(cookie.getValue())) {
+                        return cookie.getValue();
+                    }
+                }
+            }
         }
         return null;
     }

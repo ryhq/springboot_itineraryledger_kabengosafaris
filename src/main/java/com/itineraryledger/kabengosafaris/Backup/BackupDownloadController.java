@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Backup;
 
 import com.itineraryledger.kabengosafaris.Backup.BackupSettings.BackupSettingsGetterServices;
+import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -8,9 +9,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,10 +48,55 @@ public class BackupDownloadController {
     /** Stream chunk size when copying from RandomAccessFile to the socket. */
     private static final int BUFFER_SIZE = 64 * 1024;
 
+    /** Lifetime of the path-scoped JWT cookie minted by prepareDownload. */
+    private static final int DOWNLOAD_COOKIE_TTL_SECONDS = 60;
+
+    private static final String BACKUP_DOWNLOAD_COOKIE = "backup_dl_token";
+
     private final BackupSettingsGetterServices backupSettings;
 
     @Value("${backup.storage.path:/opt/lampp/htdocs/kabengosafaris/backups/}")
     private String storagePath;
+
+    /**
+     * Mint a short-lived, path-scoped cookie carrying the caller's JWT so a
+     * subsequent top-level navigation to {@code /api/backups/download/...}
+     * (i.e. {@code window.location = url}) authenticates without putting the
+     * token in the URL. Bearer-header auth still works for plain XHR/fetch.
+     *
+     * <p>The cookie is {@code HttpOnly}, {@code SameSite=Strict}, scoped to
+     * {@code /api/backups/download/}, and expires within
+     * {@value #DOWNLOAD_COOKIE_TTL_SECONDS}s — long enough to click "Save",
+     * short enough that a stolen cookie is useless almost immediately.
+     */
+    @PostMapping("/{filename}/prepare-download")
+    @PreAuthorize("hasAuthority('PERM_DOWNLOAD_BACKUP')")
+    public ResponseEntity<ApiResponse<?>> prepareDownload(
+            @PathVariable String filename,
+            @RequestHeader("Authorization") String authorization) {
+
+        if (!isValidFilename(filename)) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid filename", "INVALID_FILENAME"));
+        }
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    ApiResponse.error(401, "Missing bearer token", "NO_BEARER"));
+        }
+
+        String jwt = authorization.substring("Bearer ".length()).trim();
+        ResponseCookie cookie = ResponseCookie.from(BACKUP_DOWNLOAD_COOKIE, jwt)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Lax")
+                .path("/api/backups/download/")
+                .maxAge(DOWNLOAD_COOKIE_TTL_SECONDS)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(ApiResponse.success(200, "Ready", null));
+    }
 
     @GetMapping("/download/{filename}")
     @PreAuthorize("hasAuthority('PERM_DOWNLOAD_BACKUP')")
@@ -134,6 +183,22 @@ public class BackupDownloadController {
         if (partial) {
             response.setHeader(HttpHeaders.CONTENT_RANGE,
                     "bytes " + start + "-" + end + "/" + fileSize);
+        }
+
+        // One-shot semantics for the prepare cookie: as soon as the browser
+        // hits the actual download endpoint, expire the bridge cookie. The
+        // cookie's 60s Max-Age is a backstop; this is the primary defence.
+        // Only clears on the first (non-range / start-of-range) request so
+        // browser-driven resume after a pause still works inside the TTL.
+        if (start == 0) {
+            ResponseCookie cleared = ResponseCookie.from(BACKUP_DOWNLOAD_COOKIE, "")
+                    .httpOnly(true)
+                    .secure(true)
+                    .sameSite("Lax")
+                    .path("/api/backups/download/")
+                    .maxAge(0)
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, cleared.toString());
         }
 
         // 4. HEAD requests want the headers only — Spring will deliver them
