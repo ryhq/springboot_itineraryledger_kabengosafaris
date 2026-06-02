@@ -27,7 +27,8 @@ import lombok.NoArgsConstructor;
     @Index(name = "idx_email_msg_is_read", columnList = "is_read"),
     @Index(name = "idx_email_msg_is_flagged", columnList = "is_flagged"),
     @Index(name = "idx_email_msg_snooze_until", columnList = "snooze_until"),
-    @Index(name = "idx_email_msg_from_address", columnList = "from_address")
+    @Index(name = "idx_email_msg_from_address", columnList = "from_address"),
+    @Index(name = "idx_email_msg_resend_email_id", columnList = "resend_email_id")
 })
 @Data
 @NoArgsConstructor
@@ -167,6 +168,47 @@ public class EmailMessage {
      * IMAP UID for incremental sync
      */
     private String imapUid;
+
+    // =====================================================================
+    // OUTGOING DELIVERY TRACKING (Resend)
+    // =====================================================================
+
+    /**
+     * Resend's internal email id (the {@code email_id} reported by their
+     * webhook events). Set on outgoing messages when we hand them to the
+     * Resend API; null for everything else (IMAP-fetched, drafts, etc.).
+     * Indexed because every incoming webhook does a point lookup on it.
+     */
+    @Column(name = "resend_email_id")
+    private String resendEmailId;
+
+    /**
+     * Latest known delivery state for outgoing messages, advanced by the
+     * Resend webhook handler. {@code null} for non-outgoing rows.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delivery_status", length = 20)
+    private EmailDeliveryStatus deliveryStatus;
+
+    /** When the provider confirmed the recipient inbox accepted the message. */
+    @Column(name = "delivered_at")
+    private LocalDateTime deliveredAt;
+
+    /** When the provider reported a hard/soft bounce. */
+    @Column(name = "bounced_at")
+    private LocalDateTime bouncedAt;
+
+    /** When the recipient marked the message as spam. */
+    @Column(name = "complained_at")
+    private LocalDateTime complainedAt;
+
+    /**
+     * Last verbatim Resend event type for this message (e.g. "email.bounced").
+     * Useful in the UI for explaining *why* the row is in its current state
+     * without having to join against the webhook events table.
+     */
+    @Column(name = "last_event_type", length = 50)
+    private String lastEventType;
 
     @OneToMany(mappedBy = "emailMessage", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<EmailAttachment> attachments;

@@ -512,6 +512,9 @@ public class EmailMessageGetService {
                 : message.getLabels().stream()
                     .map(l -> idObfuscator.encodeId(l.getId()))
                     .toList())
+            .deliveryStatus(message.getDeliveryStatus() != null ? message.getDeliveryStatus().name() : null)
+            .deliveredAt(message.getDeliveredAt())
+            .bouncedAt(message.getBouncedAt())
             // threadCount populated in §2.
             .build();
     }
@@ -547,6 +550,11 @@ public class EmailMessageGetService {
                     .map(l -> idObfuscator.encodeId(l.getId()))
                     .toList())
             .attachments(attachments)
+            .deliveryStatus(message.getDeliveryStatus() != null ? message.getDeliveryStatus().name() : null)
+            .lastEventType(message.getLastEventType())
+            .deliveredAt(message.getDeliveredAt())
+            .bouncedAt(message.getBouncedAt())
+            .complainedAt(message.getComplainedAt())
             .createdAt(message.getCreatedAt())
             .updatedAt(message.getUpdatedAt())
             .build();

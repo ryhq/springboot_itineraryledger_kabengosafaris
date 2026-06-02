@@ -11,6 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountRepository;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.EmailMessageRepository;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailDeliveryStatus;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailMessage;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccount;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccountProvider;
 import com.itineraryledger.kabengosafaris.EmailAccount.Components.EncryptionUtil;
@@ -28,6 +31,7 @@ public class ResendWebhookService {
     private final ResendWebhookEventRepository webhookEventRepository;
     private final ResendWebhookVerifier webhookVerifier;
     private final EmailAccountRepository emailAccountRepository;
+    private final EmailMessageRepository emailMessageRepository;
     private final ObjectMapper objectMapper;
 
     @Autowired
@@ -35,10 +39,12 @@ public class ResendWebhookService {
             ResendWebhookEventRepository webhookEventRepository,
             ResendWebhookVerifier webhookVerifier,
             EmailAccountRepository emailAccountRepository,
+            EmailMessageRepository emailMessageRepository,
             ObjectMapper objectMapper) {
         this.webhookEventRepository = webhookEventRepository;
         this.webhookVerifier = webhookVerifier;
         this.emailAccountRepository = emailAccountRepository;
+        this.emailMessageRepository = emailMessageRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -126,7 +132,7 @@ public class ResendWebhookService {
             log.info("Resend webhook event stored: type={}, emailId={}, from={}, to={}", eventType, emailId, fromEmail, toEmail);
 
             // 6. Handle side effects based on event type
-            handleEventSideEffects(eventType, account, emailId);
+            handleEventSideEffects(eventType, account, emailId, eventTimestamp);
 
             return true;
 
@@ -138,34 +144,100 @@ public class ResendWebhookService {
 
     /**
      * Handle side effects for specific event types.
+     *
+     * <p>Two side-effects:
+     * <ol>
+     *   <li>Account-level counters (bounce count) — unchanged.</li>
+     *   <li>Per-message delivery status on the matching {@link EmailMessage}
+     *       row, looked up by {@code resend_email_id}. This is what surfaces
+     *       in the email list UI ("Delivered", "Bounced" chips).</li>
+     * </ol>
+     *
+     * <p>Webhooks can arrive out of order — we ignore transitions that would
+     * walk back from a terminal state ({@code DELIVERED} / {@code BOUNCED}
+     * / {@code COMPLAINED}), so a late {@code delivery_delayed} after a
+     * delivered event doesn't flip the row backwards.
      */
-    private void handleEventSideEffects(String eventType, EmailAccount account, String emailId) {
-        if (account == null) return;
+    private void handleEventSideEffects(String eventType, EmailAccount account, String emailId, LocalDateTime eventTimestamp) {
+        if (account != null && "email.bounced".equals(eventType)) {
+            Long failedCount = account.getEmailsFailedCount() != null ? account.getEmailsFailedCount() : 0L;
+            account.setEmailsFailedCount(failedCount + 1);
+            emailAccountRepository.save(account);
+        }
+
+        if (emailId == null || emailId.isBlank()) return;
+
+        // Primary lookup uses the dedicated column. For rows persisted before
+        // the column existed, fall back to messageId="<emailId>" — the
+        // wrapper format the sender service has always used — and back-fill
+        // the new column so subsequent webhooks hit the fast path.
+        EmailMessage match = emailMessageRepository.findByResendEmailId(emailId).orElse(null);
+        if (match == null) {
+            match = emailMessageRepository
+                    .findByEmailAccountIdAndMessageId(
+                            account != null ? account.getId() : -1L,
+                            "<" + emailId + ">")
+                    .orElse(null);
+            if (match != null) {
+                match.setResendEmailId(emailId);
+            }
+        }
+        if (match == null) {
+            log.debug("No EmailMessage row matched Resend emailId={}; event stored only", emailId);
+            return;
+        }
+
+        LocalDateTime at = eventTimestamp != null ? eventTimestamp : LocalDateTime.now();
+        EmailDeliveryStatus current = match.getDeliveryStatus();
+        boolean transitioned = true;
 
         switch (eventType) {
-            case "email.bounced":
-                log.warn("Email bounced: emailId={}, account={}", emailId, account.getEmail());
-                Long failedCount = account.getEmailsFailedCount() != null ? account.getEmailsFailedCount() : 0L;
-                account.setEmailsFailedCount(failedCount + 1);
-                emailAccountRepository.save(account);
-                break;
-
-            case "email.complained":
-                log.warn("Spam complaint received: emailId={}, account={}", emailId, account.getEmail());
-                break;
-
             case "email.delivered":
-                log.info("Email delivered: emailId={}, account={}", emailId, account.getEmail());
+                if (!isTerminal(current)) {
+                    match.setDeliveryStatus(EmailDeliveryStatus.DELIVERED);
+                    match.setDeliveredAt(at);
+                }
                 break;
-
+            case "email.bounced":
+                if (current != EmailDeliveryStatus.DELIVERED) {
+                    match.setDeliveryStatus(EmailDeliveryStatus.BOUNCED);
+                    match.setBouncedAt(at);
+                }
+                break;
+            case "email.complained":
+                // Complaints can follow a delivery, so they're allowed to
+                // override DELIVERED — that's the whole signal.
+                match.setDeliveryStatus(EmailDeliveryStatus.COMPLAINED);
+                match.setComplainedAt(at);
+                break;
             case "email.delivery_delayed":
-                log.warn("Email delivery delayed: emailId={}, account={}", emailId, account.getEmail());
+                if (!isTerminal(current)) {
+                    match.setDeliveryStatus(EmailDeliveryStatus.DELIVERY_DELAYED);
+                }
                 break;
-
+            case "email.sent":
+                if (current == null) {
+                    match.setDeliveryStatus(EmailDeliveryStatus.SENT);
+                }
+                break;
             default:
                 log.debug("Unhandled Resend event type: {}", eventType);
+                transitioned = false;
                 break;
         }
+
+        if (transitioned) {
+            match.setLastEventType(eventType);
+            emailMessageRepository.save(match);
+            log.info("EmailMessage {} → {} (event {})",
+                    match.getId(), match.getDeliveryStatus(), eventType);
+        }
+    }
+
+    private boolean isTerminal(EmailDeliveryStatus status) {
+        return status == EmailDeliveryStatus.DELIVERED
+                || status == EmailDeliveryStatus.BOUNCED
+                || status == EmailDeliveryStatus.COMPLAINED;
     }
 
     /**

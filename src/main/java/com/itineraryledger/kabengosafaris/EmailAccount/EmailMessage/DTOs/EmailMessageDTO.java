@@ -43,6 +43,12 @@ public class EmailMessageDTO {
     private Integer threadCount;
     private List<String> labels;
     private List<EmailAttachmentDTO> attachments;
+    /** Latest delivery state from Resend webhook events (outgoing only). */
+    private String deliveryStatus;
+    private String lastEventType;
+    private LocalDateTime deliveredAt;
+    private LocalDateTime bouncedAt;
+    private LocalDateTime complainedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

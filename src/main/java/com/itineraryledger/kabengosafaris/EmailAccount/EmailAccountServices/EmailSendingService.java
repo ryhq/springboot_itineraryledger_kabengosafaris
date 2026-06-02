@@ -510,11 +510,16 @@ public class EmailSendingService {
                 snippet = subject != null && subject.length() > 200 ? subject.substring(0, 200) : subject;
             }
 
-            // Create metadata record
+            // Create metadata record. resendEmailId is the dedicated column
+            // the webhook handler indexes on — the messageId column keeps
+            // the RFC-2822-shaped value for compatibility with anything that
+            // already parses it.
             EmailMessage emailMessage = EmailMessage.builder()
                 .emailAccount(account)
                 .folder(sentFolder)
                 .messageId("<" + resendEmailId + ">")
+                .resendEmailId(resendEmailId)
+                .deliveryStatus(com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailDeliveryStatus.SENT)
                 .fromAddress(account.getEmail())
                 .fromName(account.getName())
                 .toAddresses(objectMapper.writeValueAsString(List.of(toEmail)))

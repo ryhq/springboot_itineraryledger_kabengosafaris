@@ -17,6 +17,13 @@ public interface EmailMessageRepository extends JpaRepository<EmailMessage, Long
 
     Optional<EmailMessage> findByEmailAccountIdAndMessageId(Long emailAccountId, String messageId);
 
+    /**
+     * Used by ResendWebhookService when a delivery/bounce/complaint event
+     * arrives — the webhook's {@code email_id} field is what we persisted
+     * as {@code resend_email_id} at send time.
+     */
+    Optional<EmailMessage> findByResendEmailId(String resendEmailId);
+
     List<EmailMessage> findByEmailAccountIdAndThreadIdOrderBySentAtAsc(Long emailAccountId, String threadId);
 
     @Query("SELECT COUNT(m) FROM EmailMessage m WHERE m.folder.id = :folderId AND m.isRead = false")

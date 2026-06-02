@@ -36,4 +36,13 @@ public class EmailMessageListDTO {
     private Integer threadCount;
     /** Label ids attached to this message. Populated once §1 is wired. */
     private List<String> labels;
+    /**
+     * For outgoing Resend-sent messages, the latest delivery state reported
+     * via webhook: SENT / DELIVERY_DELAYED / DELIVERED / BOUNCED / COMPLAINED.
+     * Null for inbound / IMAP-fetched messages. Frontend renders a chip
+     * from this field.
+     */
+    private String deliveryStatus;
+    private LocalDateTime deliveredAt;
+    private LocalDateTime bouncedAt;
 }
