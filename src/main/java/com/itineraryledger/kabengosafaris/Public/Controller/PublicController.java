@@ -282,6 +282,11 @@ public class PublicController {
         return publicTestimonyService.getPublicTestimonies(parsedLang);
     }
 
+    @GetMapping("/testimonies/summary")
+    public ResponseEntity<ApiResponse<?>> getTestimonySummary() {
+        return publicTestimonyService.getTestimonySummary();
+    }
+
     @GetMapping("/testimonies/featured")
     public ResponseEntity<ApiResponse<?>> getFeaturedTestimonies(
         @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang

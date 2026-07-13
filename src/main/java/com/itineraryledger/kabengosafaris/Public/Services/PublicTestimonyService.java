@@ -114,6 +114,30 @@ public class PublicTestimonyService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<?>> getTestimonySummary() {
+        log.info("Fetching public testimony rating summary");
+        try {
+            long reviewCount = testimonyRepository.countByIsApprovedTrueAndIsActiveTrueAndRatingNotNull();
+            Double rawAvg = testimonyRepository.averageApprovedActiveRating();
+            double averageRating = (rawAvg != null && reviewCount > 0)
+                ? Math.round(rawAvg * 10.0) / 10.0
+                : 0.0;
+
+            Map<String, Object> summary = new HashMap<>();
+            summary.put("averageRating", averageRating);
+            summary.put("reviewCount", reviewCount);
+            summary.put("bestRating", 5);
+            summary.put("worstRating", 1);
+
+            return ResponseEntity.ok(ApiResponse.success(200, "Testimony summary retrieved successfully", summary));
+        } catch (Exception e) {
+            log.error("Error fetching testimony summary", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(500, "Failed to fetch testimony summary", "TESTIMONY_SUMMARY_FAILED"));
+        }
+    }
+
     // ── Public testimony submission ──────────────────────────────────
 
     @Transactional

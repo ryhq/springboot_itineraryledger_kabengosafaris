@@ -27,6 +27,12 @@ public interface TestimonyRepository extends JpaRepository<Testimony, Long>, Jpa
 
     long countByIsApprovedTrueAndIsActiveTrue();
 
+    long countByIsApprovedTrueAndIsActiveTrueAndRatingNotNull();
+
+    @Query("SELECT COALESCE(AVG(t.rating), 0) FROM Testimony t " +
+           "WHERE t.isApproved = true AND t.isActive = true AND t.rating IS NOT NULL")
+    Double averageApprovedActiveRating();
+
     long countByIsFeaturedTrue();
 
     long countByIsActiveTrue();
