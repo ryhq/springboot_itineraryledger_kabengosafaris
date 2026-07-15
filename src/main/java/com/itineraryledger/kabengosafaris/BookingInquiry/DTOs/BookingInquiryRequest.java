@@ -48,8 +48,11 @@ public class BookingInquiryRequest {
     /** Experiences from planner step 1 (e.g. ["SAFARI","GREAT_MIGRATION"]). */
     private List<String> interests;
 
-    /** Preferred trip length in days from planner step 2. */
+    /** Preferred trip length in days from the planner. */
     private Integer preferredDurationDays;
+
+    /** Destination park identifiers (obfuscated id or slug) from the "Where" step. */
+    private List<String> destinationParkIds;
 
     private String specialRequests;
     private String message;

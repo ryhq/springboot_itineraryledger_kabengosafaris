@@ -5,6 +5,7 @@ import com.itineraryledger.kabengosafaris.Itinerary.Entity.BudgetCategory;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripInterest;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
+import com.itineraryledger.kabengosafaris.Park.Park;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -87,8 +88,16 @@ public class BookingInquiry {
     @Builder.Default
     private Set<TripInterest> interests = new HashSet<>();
 
-    /** Preferred trip length in days (planner step 2). */
+    /** Preferred trip length in days (planner step). */
     private Integer preferredDurationDays;
+
+    /** Destinations (parks) the client wants to visit (planner "Where" step). */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "booking_inquiry_parks",
+            joinColumns = @JoinColumn(name = "inquiry_id"),
+            inverseJoinColumns = @JoinColumn(name = "park_id"))
+    @Builder.Default
+    private Set<Park> destinationParks = new HashSet<>();
 
     @Column(columnDefinition = "TEXT")
     private String specialRequests;

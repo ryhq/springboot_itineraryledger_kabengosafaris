@@ -41,6 +41,8 @@ public class BookingInquiryDTO {
     private Set<TripInterest> interests;
     private List<String> interestDisplayNames;
     private Integer preferredDurationDays;
+    private List<String> destinationParkIds;
+    private List<String> destinationParkNames;
     private String specialRequests;
     private String message;
     private InquiryStatus status;

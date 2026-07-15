@@ -75,6 +75,11 @@
     "isRequired": false
   },
   {
+    "name": "destinations",
+    "description": "Destination parks the client wants to visit, comma-separated (from the planner)",
+    "isRequired": false
+  },
+  {
     "name": "itineraryName",
     "description": "Name of the itinerary the inquiry is about (if applicable)",
     "isRequired": false

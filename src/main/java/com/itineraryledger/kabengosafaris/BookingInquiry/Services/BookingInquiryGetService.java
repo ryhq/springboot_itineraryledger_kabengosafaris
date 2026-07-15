@@ -184,6 +184,12 @@ public class BookingInquiryGetService {
                 ? inquiry.getInterests().stream().map(TripInterest::getDisplayName).collect(java.util.stream.Collectors.toList())
                 : java.util.List.of())
             .preferredDurationDays(inquiry.getPreferredDurationDays())
+            .destinationParkIds(inquiry.getDestinationParks() != null
+                ? inquiry.getDestinationParks().stream().map(p -> idObfuscator.encodeId(p.getId())).collect(java.util.stream.Collectors.toList())
+                : java.util.List.of())
+            .destinationParkNames(inquiry.getDestinationParks() != null
+                ? inquiry.getDestinationParks().stream().map(com.itineraryledger.kabengosafaris.Park.Park::getName).collect(java.util.stream.Collectors.toList())
+                : java.util.List.of())
             .specialRequests(inquiry.getSpecialRequests())
             .message(inquiry.getMessage())
             .status(inquiry.getStatus())

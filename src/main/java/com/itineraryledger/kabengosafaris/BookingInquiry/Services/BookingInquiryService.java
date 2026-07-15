@@ -11,6 +11,8 @@ import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripInterest;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
 import com.itineraryledger.kabengosafaris.Itinerary.Repository.ItineraryRepository;
+import com.itineraryledger.kabengosafaris.Park.Park;
+import com.itineraryledger.kabengosafaris.Park.ParkRepository;
 import com.itineraryledger.kabengosafaris.NotificationSetting.NotificationSettingGetterServices;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +39,7 @@ public class BookingInquiryService {
     private final CustomerEmailRepository customerEmailRepository;
     private final IdObfuscator idObfuscator;
     private final ItineraryRepository itineraryRepository;
+    private final ParkRepository parkRepository;
     private final NotificationSettingGetterServices notificationSettingGetterServices;
     private final EmailTemplateRenderer emailTemplateRenderer;
     private final EmailSendingService emailSendingService;
@@ -45,6 +48,7 @@ public class BookingInquiryService {
                                  CustomerEmailRepository customerEmailRepository,
                                  IdObfuscator idObfuscator,
                                  ItineraryRepository itineraryRepository,
+                                 ParkRepository parkRepository,
                                  NotificationSettingGetterServices notificationSettingGetterServices,
                                  EmailTemplateRenderer emailTemplateRenderer,
                                  EmailSendingService emailSendingService) {
@@ -52,6 +56,7 @@ public class BookingInquiryService {
         this.customerEmailRepository = customerEmailRepository;
         this.idObfuscator = idObfuscator;
         this.itineraryRepository = itineraryRepository;
+        this.parkRepository = parkRepository;
         this.notificationSettingGetterServices = notificationSettingGetterServices;
         this.emailTemplateRenderer = emailTemplateRenderer;
         this.emailSendingService = emailSendingService;
@@ -96,9 +101,19 @@ public class BookingInquiryService {
             inquiry.setInterests(interests);
         }
 
-        // Preferred trip length (planner step 2)
+        // Preferred trip length (planner step)
         if (request.getPreferredDurationDays() != null && request.getPreferredDurationDays() > 0) {
             inquiry.setPreferredDurationDays(request.getPreferredDurationDays());
+        }
+
+        // Destination parks (planner "Where" step) — resolve identifiers to Park entities
+        if (request.getDestinationParkIds() != null && !request.getDestinationParkIds().isEmpty()) {
+            java.util.Set<Park> parks = new java.util.HashSet<>();
+            for (String ident : request.getDestinationParkIds()) {
+                Park park = resolvePark(ident);
+                if (park != null) parks.add(park);
+            }
+            inquiry.setDestinationParks(parks);
         }
 
         if (request.getSpecialRequests() != null && !request.getSpecialRequests().isBlank()) {
@@ -155,6 +170,24 @@ public class BookingInquiryService {
         } catch (Exception ignored) {}
     }
 
+    /** Resolve a park by obfuscated id or slug (mirrors the public entity resolver). */
+    private Park resolvePark(String identifier) {
+        if (identifier == null || identifier.isBlank()) return null;
+        String id = identifier.trim();
+        try {
+            Long decoded = idObfuscator.decodeId(id);
+            if (decoded != null) {
+                Park byId = parkRepository.findById(decoded).orElse(null);
+                if (byId != null) return byId;
+            }
+        } catch (Exception ignored) {}
+        try {
+            return parkRepository.findBySlug(id).orElse(null);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
     private void linkToCustomer(BookingInquiry inquiry, String email) {
         try {
             customerEmailRepository.findByEmail(email).ifPresent(customerEmail ->
@@ -203,6 +236,10 @@ public class BookingInquiryService {
                     : "");
             variables.put("preferredDurationDays", inquiry.getPreferredDurationDays() != null
                     ? String.valueOf(inquiry.getPreferredDurationDays()) : "");
+            variables.put("destinations", inquiry.getDestinationParks() != null && !inquiry.getDestinationParks().isEmpty()
+                    ? inquiry.getDestinationParks().stream().map(Park::getName)
+                        .collect(java.util.stream.Collectors.joining(", "))
+                    : "");
             variables.put("specialRequests", inquiry.getSpecialRequests() != null
                     ? inquiry.getSpecialRequests() : "");
             variables.put("message", inquiry.getMessage() != null ? inquiry.getMessage() : "");
