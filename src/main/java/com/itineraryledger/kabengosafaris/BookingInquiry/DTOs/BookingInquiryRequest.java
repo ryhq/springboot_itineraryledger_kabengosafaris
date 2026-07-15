@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -42,6 +44,12 @@ public class BookingInquiryRequest {
 
     private String budgetCategory;
     private String tripType;
+
+    /** Experiences from planner step 1 (e.g. ["SAFARI","GREAT_MIGRATION"]). */
+    private List<String> interests;
+
+    /** Preferred trip length in days from planner step 2. */
+    private Integer preferredDurationDays;
 
     private String specialRequests;
     private String message;

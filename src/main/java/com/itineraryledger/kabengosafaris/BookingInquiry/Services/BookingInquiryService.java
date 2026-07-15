@@ -8,6 +8,7 @@ import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices.Emai
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailTemplateRenderer;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.BudgetCategory;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
+import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripInterest;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
 import com.itineraryledger.kabengosafaris.Itinerary.Repository.ItineraryRepository;
 import com.itineraryledger.kabengosafaris.NotificationSetting.NotificationSettingGetterServices;
@@ -84,6 +85,21 @@ public class BookingInquiryService {
         // Parse enums
         inquiry.setBudgetCategory(parseEnum(BudgetCategory.class, request.getBudgetCategory()));
         inquiry.setTripType(parseEnum(TripType.class, request.getTripType()));
+
+        // Structured interests (planner step 1, multi-select)
+        if (request.getInterests() != null && !request.getInterests().isEmpty()) {
+            java.util.Set<TripInterest> interests = new java.util.HashSet<>();
+            for (String raw : request.getInterests()) {
+                TripInterest interest = parseEnum(TripInterest.class, raw);
+                if (interest != null) interests.add(interest);
+            }
+            inquiry.setInterests(interests);
+        }
+
+        // Preferred trip length (planner step 2)
+        if (request.getPreferredDurationDays() != null && request.getPreferredDurationDays() > 0) {
+            inquiry.setPreferredDurationDays(request.getPreferredDurationDays());
+        }
 
         if (request.getSpecialRequests() != null && !request.getSpecialRequests().isBlank()) {
             inquiry.setSpecialRequests(request.getSpecialRequests().trim());
@@ -181,6 +197,12 @@ public class BookingInquiryService {
                     ? inquiry.getBudgetCategory().name() : "");
             variables.put("tripType", inquiry.getTripType() != null
                     ? inquiry.getTripType().name() : "");
+            variables.put("interests", inquiry.getInterests() != null && !inquiry.getInterests().isEmpty()
+                    ? inquiry.getInterests().stream().map(TripInterest::getDisplayName)
+                        .collect(java.util.stream.Collectors.joining(", "))
+                    : "");
+            variables.put("preferredDurationDays", inquiry.getPreferredDurationDays() != null
+                    ? String.valueOf(inquiry.getPreferredDurationDays()) : "");
             variables.put("specialRequests", inquiry.getSpecialRequests() != null
                     ? inquiry.getSpecialRequests() : "");
             variables.put("message", inquiry.getMessage() != null ? inquiry.getMessage() : "");

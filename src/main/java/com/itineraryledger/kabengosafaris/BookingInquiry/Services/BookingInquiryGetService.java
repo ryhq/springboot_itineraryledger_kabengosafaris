@@ -25,6 +25,7 @@ import com.itineraryledger.kabengosafaris.BookingInquiry.Entity.InquiryStatus;
 import com.itineraryledger.kabengosafaris.BookingInquiry.Repository.BookingInquiryRepository;
 import com.itineraryledger.kabengosafaris.BookingInquiry.Specifications.BookingInquirySpecification;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.BudgetCategory;
+import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripInterest;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -178,6 +179,11 @@ public class BookingInquiryGetService {
             .budgetCategoryDisplayName(inquiry.getBudgetCategory() != null ? inquiry.getBudgetCategory().getDisplayName() : null)
             .tripType(inquiry.getTripType())
             .tripTypeDisplayName(inquiry.getTripType() != null ? inquiry.getTripType().getDisplayName() : null)
+            .interests(inquiry.getInterests())
+            .interestDisplayNames(inquiry.getInterests() != null
+                ? inquiry.getInterests().stream().map(TripInterest::getDisplayName).collect(java.util.stream.Collectors.toList())
+                : java.util.List.of())
+            .preferredDurationDays(inquiry.getPreferredDurationDays())
             .specialRequests(inquiry.getSpecialRequests())
             .message(inquiry.getMessage())
             .status(inquiry.getStatus())

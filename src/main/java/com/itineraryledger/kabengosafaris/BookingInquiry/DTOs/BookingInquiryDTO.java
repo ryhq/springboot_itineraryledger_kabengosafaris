@@ -2,9 +2,12 @@ package com.itineraryledger.kabengosafaris.BookingInquiry.DTOs;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
 
 import com.itineraryledger.kabengosafaris.BookingInquiry.Entity.InquiryStatus;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.BudgetCategory;
+import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripInterest;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
 
 import lombok.AllArgsConstructor;
@@ -35,6 +38,9 @@ public class BookingInquiryDTO {
     private String budgetCategoryDisplayName;
     private TripType tripType;
     private String tripTypeDisplayName;
+    private Set<TripInterest> interests;
+    private List<String> interestDisplayNames;
+    private Integer preferredDurationDays;
     private String specialRequests;
     private String message;
     private InquiryStatus status;

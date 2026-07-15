@@ -65,6 +65,16 @@
     "isRequired": false
   },
   {
+    "name": "interests",
+    "description": "Experiences the client is interested in, comma-separated (e.g., Safari, Great Migration)",
+    "isRequired": false
+  },
+  {
+    "name": "preferredDurationDays",
+    "description": "Preferred trip length in days (from the planner)",
+    "isRequired": false
+  },
+  {
     "name": "itineraryName",
     "description": "Name of the itinerary the inquiry is about (if applicable)",
     "isRequired": false

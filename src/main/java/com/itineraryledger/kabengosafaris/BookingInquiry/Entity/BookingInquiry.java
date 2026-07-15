@@ -3,6 +3,7 @@ package com.itineraryledger.kabengosafaris.BookingInquiry.Entity;
 import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.BudgetCategory;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
+import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripInterest;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -14,6 +15,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "booking_inquiries", indexes = {
@@ -74,6 +77,18 @@ public class BookingInquiry {
     @Enumerated(EnumType.STRING)
     @Column(length = 30)
     private TripType tripType;
+
+    /** Experiences the client is interested in (planner step 1, multi-select). */
+    @ElementCollection(targetClass = TripInterest.class, fetch = FetchType.EAGER)
+    @CollectionTable(name = "booking_inquiry_interests",
+            joinColumns = @JoinColumn(name = "inquiry_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "interest", length = 30)
+    @Builder.Default
+    private Set<TripInterest> interests = new HashSet<>();
+
+    /** Preferred trip length in days (planner step 2). */
+    private Integer preferredDurationDays;
 
     @Column(columnDefinition = "TEXT")
     private String specialRequests;
