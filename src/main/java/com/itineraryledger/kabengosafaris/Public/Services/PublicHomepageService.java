@@ -7,6 +7,9 @@ import com.itineraryledger.kabengosafaris.Hero.Entity.Hero;
 import com.itineraryledger.kabengosafaris.Hero.Enums.HeroPage;
 import com.itineraryledger.kabengosafaris.Hero.Repository.HeroRepository;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicHeroDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.ItineraryCostSummaryDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Entity.ItineraryCostSummary;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Repository.ItineraryCostSummaryRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
 import com.itineraryledger.kabengosafaris.Itinerary.Repository.ItineraryRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.Specifications.ItinerarySpecification;
@@ -33,6 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -46,6 +51,7 @@ public class PublicHomepageService {
     private final HeroRepository heroRepository;
     private final PublicHeroService publicHeroService;
     private final ItineraryRepository itineraryRepository;
+    private final ItineraryCostSummaryRepository costSummaryRepository;
 
     private final PublicImageResolver imageResolver;
     private final ParkRepository parkRepository;
@@ -80,9 +86,21 @@ public class PublicHomepageService {
                 ItinerarySpecification.isActive(true),
                 PageRequest.of(0, DEFAULT_SAFARIS_LIMIT, Sort.by("createdAt").descending())
             );
-            List<PublicItineraryDTO> safariDtos = itineraryPage.getContent().stream()
-                .map(this::convertToListItineraryDTO)
+            // Batch-fetch cost summaries so homepage cards can show a "from" price (like /public/safaris)
+            List<Long> itineraryIds = itineraryPage.getContent().stream()
+                .map(Itinerary::getId)
                 .collect(Collectors.toList());
+            Map<Long, List<ItineraryCostSummary>> costsByItinerary = itineraryIds.isEmpty()
+                ? Collections.emptyMap()
+                : costSummaryRepository.findByItinerary_IdIn(itineraryIds).stream()
+                    .collect(Collectors.groupingBy(cs -> cs.getItinerary().getId()));
+
+            List<PublicItineraryDTO> safariDtos = new ArrayList<>();
+            for (Itinerary entity : itineraryPage.getContent()) {
+                PublicItineraryDTO dto = convertToListItineraryDTO(entity);
+                dto.setCostSummary(mapToPublicCostSummary(costsByItinerary.getOrDefault(entity.getId(), Collections.emptyList())));
+                safariDtos.add(dto);
+            }
             publicTranslationService.translateDtoList(safariDtos, lang);
             homepage.put("safaris", safariDtos);
             homepage.put("safarisTotalItems", itineraryPage.getTotalElements());
@@ -156,7 +174,32 @@ public class PublicHomepageService {
             .totalPaxCount(itinerary.getTotalPaxCount())
             .totalDaysCount(itinerary.getDays() != null ? itinerary.getDays().size() : 0)
             .primaryImageUrl(primaryImage)
+            .paxBreakdown(mapToPaxBreakdown(itinerary))
             .build();
+    }
+
+    private List<ItineraryCostSummaryDTO> mapToPublicCostSummary(List<ItineraryCostSummary> costs) {
+        if (costs == null || costs.isEmpty()) return null;
+        return costs.stream()
+            .map(cs -> ItineraryCostSummaryDTO.builder()
+                .currency(cs.getCurrency())
+                .accommodationRack(cs.getAccommodationRack())
+                .parkFeesRack(cs.getParkFeesRack())
+                .activitiesRack(cs.getActivitiesRack())
+                .grandTotalRack(cs.getGrandTotalRack())
+                .build())
+            .collect(Collectors.toList());
+    }
+
+    private List<PublicItineraryDTO.PublicPaxDTO> mapToPaxBreakdown(Itinerary itinerary) {
+        if (itinerary.getPaxList() == null || itinerary.getPaxList().isEmpty()) return null;
+        return itinerary.getPaxList().stream()
+            .map(pax -> PublicItineraryDTO.PublicPaxDTO.builder()
+                .nationCategoryName(pax.getNationCategory() != null ? pax.getNationCategory().getName() : null)
+                .ageCategoryName(pax.getAgeCategory() != null ? pax.getAgeCategory().getName() : null)
+                .count(pax.getCount())
+                .build())
+            .collect(Collectors.toList());
     }
 
     private String pickRandomImageFromItinerary(Itinerary itinerary) {
