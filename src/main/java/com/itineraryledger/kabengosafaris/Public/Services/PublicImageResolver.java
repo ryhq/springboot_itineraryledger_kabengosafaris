@@ -4,6 +4,8 @@ import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationIm
 import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationImageRepository;
 import com.itineraryledger.kabengosafaris.Activity.Entities.ActivityImage;
 import com.itineraryledger.kabengosafaris.Activity.Repositories.ActivityImageRepository;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryImage.Entity.ItineraryImage;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryImage.Repository.ItineraryImageRepository;
 import com.itineraryledger.kabengosafaris.Park.Entities.ParkImage;
 import com.itineraryledger.kabengosafaris.Park.Repositories.ParkImageRepository;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicImageDTO;
@@ -29,17 +31,43 @@ public class PublicImageResolver {
     private final ParkImageRepository parkImageRepository;
     private final ActivityImageRepository activityImageRepository;
     private final AccommodationImageRepository accommodationImageRepository;
+    private final ItineraryImageRepository itineraryImageRepository;
     private final String appBaseUrl;
 
     public PublicImageResolver(
             ParkImageRepository parkImageRepository,
             ActivityImageRepository activityImageRepository,
             AccommodationImageRepository accommodationImageRepository,
+            ItineraryImageRepository itineraryImageRepository,
             @Value("${app.base.url}") String appBaseUrl) {
         this.parkImageRepository = parkImageRepository;
         this.activityImageRepository = activityImageRepository;
         this.accommodationImageRepository = accommodationImageRepository;
+        this.itineraryImageRepository = itineraryImageRepository;
         this.appBaseUrl = appBaseUrl;
+    }
+
+    /**
+     * Resolve the itinerary's own uploaded hero image (Option B).
+     * Priority: the primary image → the first active image → null.
+     * Callers should try this first, then fall back to the deterministic
+     * park/activity pick ({@link #resolveSafariImageDeterministic}).
+     */
+    public String resolveItineraryHero(Long itineraryId) {
+        if (itineraryId == null) return null;
+        try {
+            Optional<ItineraryImage> primary = itineraryImageRepository.findPrimaryByItineraryId(itineraryId);
+            if (primary.isPresent() && primary.get().getFileName() != null) {
+                return toFullImageUrl("/api/itinerary-images/file/" + primary.get().getFileName());
+            }
+            List<ItineraryImage> active = itineraryImageRepository.findActiveByItineraryId(itineraryId);
+            if (!active.isEmpty() && active.get(0).getFileName() != null) {
+                return toFullImageUrl("/api/itinerary-images/file/" + active.get(0).getFileName());
+            }
+        } catch (Exception e) {
+            log.debug("Could not resolve itinerary hero image for itinerary {}", itineraryId);
+        }
+        return null;
     }
 
     /**

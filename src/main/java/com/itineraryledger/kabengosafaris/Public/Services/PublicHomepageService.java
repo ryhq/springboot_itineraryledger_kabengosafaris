@@ -231,7 +231,11 @@ public class PublicHomepageService {
             }
         }
 
-        // Deterministic per-safari pick — stable and diversified across trips
+        // 1. Prefer the itinerary's own uploaded hero image
+        String hero = imageResolver.resolveItineraryHero(itinerary.getId());
+        if (hero != null) return hero;
+
+        // 2. Fall back to a deterministic per-safari pick — stable and diversified across trips
         long seed = itinerary.getId() != null ? itinerary.getId() : 0L;
         return imageResolver.resolveSafariImageDeterministic(seed, allParkIds, allActivityIds, allAccIds, allParkImages, allActivityImages);
     }
