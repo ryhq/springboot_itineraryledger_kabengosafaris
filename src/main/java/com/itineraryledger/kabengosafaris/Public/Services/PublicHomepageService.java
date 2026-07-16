@@ -231,11 +231,9 @@ public class PublicHomepageService {
             }
         }
 
-        String resolved = imageResolver.resolveSafariImage(allParkIds, allActivityIds, allAccIds, allParkImages, allActivityImages);
-        if (resolved != null) return resolved;
-
-        List<String> pool = imageResolver.collectDayImages(allParkIds, allActivityIds, allAccIds, allParkImages, allActivityImages);
-        return imageResolver.pickRandom(pool);
+        // Deterministic per-safari pick — stable and diversified across trips
+        long seed = itinerary.getId() != null ? itinerary.getId() : 0L;
+        return imageResolver.resolveSafariImageDeterministic(seed, allParkIds, allActivityIds, allAccIds, allParkImages, allActivityImages);
     }
 
     private PublicParkListDTO convertToParkListDTO(Park p) {
