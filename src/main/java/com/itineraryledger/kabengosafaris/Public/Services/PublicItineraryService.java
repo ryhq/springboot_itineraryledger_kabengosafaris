@@ -63,14 +63,13 @@ public class PublicItineraryService {
             Sort.Direction dir = "asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC;
 
             // Whitelist sort keys → safe entity properties (prevents 500s on bad input).
+            // NOTE: price sort maps to createdAt for now — there is no denormalized price column;
+            // reintroduce via a cost-summary join or a proper migration when needed.
             String sortField = switch (sortBy == null ? "" : sortBy) {
-                case "price", "fromPriceUsd" -> "fromPriceUsd";
                 case "duration", "totalDays" -> "totalDays";
                 case "name" -> "name";
-                case "newest", "createdAt", "popular", "featured" -> "createdAt";
-                default -> "createdAt";
+                default -> "createdAt"; // newest / createdAt / popular / featured / price → newest
             };
-            // Unpriced trips sort last when ordering by price.
             Sort sort = Sort.by(new Sort.Order(dir, sortField).nullsLast());
             Pageable pageable = PageRequest.of(page, size, sort);
 
@@ -163,7 +162,6 @@ public class PublicItineraryService {
             .totalPaxCount(itinerary.getTotalPaxCount())
             .totalDaysCount(itinerary.getDays() != null ? itinerary.getDays().size() : 0)
             .primaryImageUrl(primaryImage)
-            .fromPriceUsd(itinerary.getFromPriceUsd())
             .paxBreakdown(mapToPaxBreakdown(itinerary))
             .build();
     }

@@ -63,8 +63,6 @@ public class ItineraryCostPersistenceService {
             if (grandTotals == null || grandTotals.isEmpty()) {
                 log.debug("No cost data for itinerary {} ({})", itinerary.getId(), itinerary.getName());
                 costSummaryRepository.deleteByItineraryId(itinerary.getId());
-                itinerary.setFromPriceUsd(null);
-                itineraryRepository.save(itinerary);
                 return List.of();
             }
 
@@ -97,20 +95,6 @@ public class ItineraryCostPersistenceService {
             List<ItineraryCostSummary> saved = costSummaryRepository.saveAll(summaries);
             log.debug("Persisted {} cost summary rows for itinerary {} ({})",
                 saved.size(), itinerary.getId(), itinerary.getName());
-
-            // Denormalize a per-person "from" price (USD preferred) so the public
-            // listing can sort/filter by price without joining cost summaries.
-            ItineraryCostSummary primary = saved.stream()
-                .filter(s -> "USD".equalsIgnoreCase(s.getCurrency()))
-                .findFirst()
-                .orElse(saved.get(0));
-            if (primary.getGrandTotalRack() != null) {
-                int pax = Math.max(1, itinerary.getTotalPaxCount());
-                itinerary.setFromPriceUsd(primary.getGrandTotalRack().doubleValue() / pax);
-            } else {
-                itinerary.setFromPriceUsd(null);
-            }
-            itineraryRepository.save(itinerary);
 
             return saved.stream().map(this::toDTO).toList();
 

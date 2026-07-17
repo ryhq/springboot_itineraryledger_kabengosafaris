@@ -90,9 +90,6 @@ public class Itinerary {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
-    @Column(name = "from_price_usd")
-    private Double fromPriceUsd; // denormalized per-person "from" rack price (USD) for public sort/filter
-
     @Column(name = "created_by")
     private Long createdBy; // User ID who created this itinerary
 
