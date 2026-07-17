@@ -56,7 +56,7 @@ public class PublicItineraryService {
 
     public ResponseEntity<ApiResponse<?>> getItineraries(Integer page, Integer size, String sortBy, String sortDirection,
                                                           TripType tripType, BudgetCategory budgetCategory, String keyword,
-                                                          Integer minDays, Integer maxDays, Boolean featured, String lang) {
+                                                          Integer minDays, Integer maxDays, String lang) {
         try {
             page = page != null ? page : 0;
             size = size != null ? size : 20;
@@ -67,8 +67,7 @@ public class PublicItineraryService {
                 case "price", "fromPriceUsd" -> "fromPriceUsd";
                 case "duration", "totalDays" -> "totalDays";
                 case "name" -> "name";
-                case "featured", "popular" -> "featured";
-                case "newest", "createdAt" -> "createdAt";
+                case "newest", "createdAt", "popular", "featured" -> "createdAt";
                 default -> "createdAt";
             };
             // Unpriced trips sort last when ordering by price.
@@ -78,7 +77,6 @@ public class PublicItineraryService {
             Specification<Itinerary> spec = ItinerarySpecification.isActive(true);
             if (tripType != null) spec = spec.and(ItinerarySpecification.hasTripType(tripType));
             if (budgetCategory != null) spec = spec.and(ItinerarySpecification.hasBudgetCategory(budgetCategory));
-            if (featured != null) spec = spec.and(ItinerarySpecification.isFeatured(featured));
             if (keyword != null && !keyword.isEmpty()) spec = spec.and(ItinerarySpecification.searchKeyword(keyword));
             if (minDays != null) spec = spec.and(ItinerarySpecification.minTotalDays(minDays));
             if (maxDays != null) spec = spec.and(ItinerarySpecification.maxTotalDays(maxDays));
@@ -165,7 +163,6 @@ public class PublicItineraryService {
             .totalPaxCount(itinerary.getTotalPaxCount())
             .totalDaysCount(itinerary.getDays() != null ? itinerary.getDays().size() : 0)
             .primaryImageUrl(primaryImage)
-            .featured(itinerary.getFeatured())
             .fromPriceUsd(itinerary.getFromPriceUsd())
             .paxBreakdown(mapToPaxBreakdown(itinerary))
             .build();
