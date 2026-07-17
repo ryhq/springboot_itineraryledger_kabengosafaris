@@ -63,14 +63,15 @@ public class PublicItineraryService {
             Sort.Direction dir = "asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC;
 
             // Whitelist sort keys → safe entity properties (prevents 500s on bad input).
-            // NOTE: price sort maps to createdAt for now — there is no denormalized price column;
-            // reintroduce via a cost-summary join or a proper migration when needed.
             String sortField = switch (sortBy == null ? "" : sortBy) {
                 case "duration", "totalDays" -> "totalDays";
                 case "name" -> "name";
                 default -> "createdAt"; // newest / createdAt / popular / featured / price → newest
             };
-            Sort sort = Sort.by(new Sort.Order(dir, sortField).nullsLast());
+            // NOTE: do NOT use Sort.Order.nullsLast() here — Hibernate throws
+            // "Applying Null Precedence using Criteria Queries is not yet supported"
+            // for Specification/Criteria queries, which 500s every request.
+            Sort sort = Sort.by(dir, sortField);
             Pageable pageable = PageRequest.of(page, size, sort);
 
             Specification<Itinerary> spec = ItinerarySpecification.isActive(true);
