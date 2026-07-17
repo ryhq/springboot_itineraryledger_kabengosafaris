@@ -64,6 +64,9 @@ public class PublicItineraryDTO {
     private String primaryImageUrl;
 
     // Cost summary (rack prices only - no agent/net prices)
+    private Boolean featured;
+    private Double fromPriceUsd;
+
     private List<ItineraryCostSummaryDTO> costSummary;
 
     // Pax breakdown (nationality + age category + count) — tells users "price is for X adults, Y nationality"

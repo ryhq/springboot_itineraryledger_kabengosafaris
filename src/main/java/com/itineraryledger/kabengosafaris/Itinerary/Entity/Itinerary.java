@@ -90,6 +90,13 @@ public class Itinerary {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
+    @Builder.Default
+    @Column(name = "featured", nullable = false)
+    private Boolean featured = false; // editor-curated: shown in the public "featured" strip / "popular" sort
+
+    @Column(name = "from_price_usd")
+    private Double fromPriceUsd; // denormalized per-person "from" rack price (USD) for public sort/filter
+
     @Column(name = "created_by")
     private Long createdBy; // User ID who created this itinerary
 

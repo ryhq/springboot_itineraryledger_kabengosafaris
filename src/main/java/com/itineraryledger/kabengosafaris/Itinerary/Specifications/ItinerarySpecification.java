@@ -173,4 +173,12 @@ public class ItinerarySpecification {
         return (root, query, cb) ->
             cb.equal(root.get("budgetCategory"), budgetCategory);
     }
+
+    /**
+     * Filter by the editor-curated "featured" flag
+     */
+    public static Specification<Itinerary> isFeatured(Boolean featured) {
+        return (root, query, cb) ->
+            featured == null ? cb.conjunction() : cb.equal(root.get("featured"), featured);
+    }
 }

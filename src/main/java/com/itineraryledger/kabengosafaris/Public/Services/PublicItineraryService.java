@@ -56,19 +56,29 @@ public class PublicItineraryService {
 
     public ResponseEntity<ApiResponse<?>> getItineraries(Integer page, Integer size, String sortBy, String sortDirection,
                                                           TripType tripType, BudgetCategory budgetCategory, String keyword,
-                                                          Integer minDays, Integer maxDays, String lang) {
+                                                          Integer minDays, Integer maxDays, Boolean featured, String lang) {
         try {
             page = page != null ? page : 0;
             size = size != null ? size : 20;
-            sortDirection = sortDirection != null ? sortDirection : "desc";
-            sortBy = sortBy != null && !sortBy.isBlank() ? sortBy : "createdAt";
+            Sort.Direction dir = "asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC;
 
-            Sort sort = sortDirection.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+            // Whitelist sort keys → safe entity properties (prevents 500s on bad input).
+            String sortField = switch (sortBy == null ? "" : sortBy) {
+                case "price", "fromPriceUsd" -> "fromPriceUsd";
+                case "duration", "totalDays" -> "totalDays";
+                case "name" -> "name";
+                case "featured", "popular" -> "featured";
+                case "newest", "createdAt" -> "createdAt";
+                default -> "createdAt";
+            };
+            // Unpriced trips sort last when ordering by price.
+            Sort sort = Sort.by(new Sort.Order(dir, sortField).nullsLast());
             Pageable pageable = PageRequest.of(page, size, sort);
 
             Specification<Itinerary> spec = ItinerarySpecification.isActive(true);
             if (tripType != null) spec = spec.and(ItinerarySpecification.hasTripType(tripType));
             if (budgetCategory != null) spec = spec.and(ItinerarySpecification.hasBudgetCategory(budgetCategory));
+            if (featured != null) spec = spec.and(ItinerarySpecification.isFeatured(featured));
             if (keyword != null && !keyword.isEmpty()) spec = spec.and(ItinerarySpecification.searchKeyword(keyword));
             if (minDays != null) spec = spec.and(ItinerarySpecification.minTotalDays(minDays));
             if (maxDays != null) spec = spec.and(ItinerarySpecification.maxTotalDays(maxDays));
@@ -155,6 +165,8 @@ public class PublicItineraryService {
             .totalPaxCount(itinerary.getTotalPaxCount())
             .totalDaysCount(itinerary.getDays() != null ? itinerary.getDays().size() : 0)
             .primaryImageUrl(primaryImage)
+            .featured(itinerary.getFeatured())
+            .fromPriceUsd(itinerary.getFromPriceUsd())
             .paxBreakdown(mapToPaxBreakdown(itinerary))
             .build();
     }
