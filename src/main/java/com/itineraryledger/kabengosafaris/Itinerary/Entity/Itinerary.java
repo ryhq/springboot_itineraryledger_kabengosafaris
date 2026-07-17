@@ -91,7 +91,7 @@ public class Itinerary {
     private Boolean isActive = true;
 
     @Builder.Default
-    @Column(name = "featured", nullable = false)
+    @Column(name = "featured") // nullable so ddl-auto can ADD COLUMN on tables with existing rows (strict-mode safe)
     private Boolean featured = false; // editor-curated: shown in the public "featured" strip / "popular" sort
 
     @Column(name = "from_price_usd")
