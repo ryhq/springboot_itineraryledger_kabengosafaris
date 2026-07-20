@@ -63,6 +63,9 @@ public class PublicItineraryDTO {
     // Primary image (derived from first day's park)
     private String primaryImageUrl;
 
+    // How many actual Safaris were converted from this itinerary — set only by the "most booked" endpoint.
+    private Long bookingCount;
+
     // Cost summary (rack prices only - no agent/net prices)
 
     private List<ItineraryCostSummaryDTO> costSummary;

@@ -2,6 +2,7 @@ package com.itineraryledger.kabengosafaris.Safari.Repository;
 
 import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
 import com.itineraryledger.kabengosafaris.Safari.Enums.SafariState;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -24,6 +25,13 @@ public interface SafariRepository extends JpaRepository<Safari, Long>, JpaSpecif
     boolean existsByCode(String code);
 
     List<Safari> findByItineraryId(Long itineraryId);
+
+    /**
+     * Itineraries ranked by how many actual Safaris were converted from them
+     * ("most booked"). Returns rows of [itineraryId (Long), count (Long)] ordered desc.
+     */
+    @Query("SELECT s.itinerary.id, COUNT(s) FROM Safari s WHERE s.itinerary IS NOT NULL GROUP BY s.itinerary.id ORDER BY COUNT(s) DESC")
+    List<Object[]> findMostBookedItineraryIds(Pageable pageable);
 
     List<Safari> findByState(SafariState state);
 

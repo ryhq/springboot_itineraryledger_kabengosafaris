@@ -231,6 +231,15 @@ public class PublicController {
         return publicItineraryService.getItineraries(page, size, sortBy, sortDirection, tripType, budgetCategory, keyword, minDays, maxDays, publicTranslationService.parseLanguage(lang));
     }
 
+    /** Most-booked safaris = itineraries converted into the most actual Safaris. */
+    @GetMapping("/safaris/popular")
+    public ResponseEntity<ApiResponse<?>> getPopularSafaris(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
+        @RequestParam(required = false) Integer size
+    ) {
+        return publicItineraryService.getMostBooked(size, publicTranslationService.parseLanguage(lang));
+    }
+
     @GetMapping("/safaris/{identifier}")
     public ResponseEntity<ApiResponse<?>> getSafari(
         @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,

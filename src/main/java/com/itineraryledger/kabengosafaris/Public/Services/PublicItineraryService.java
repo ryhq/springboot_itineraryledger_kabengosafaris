@@ -11,6 +11,7 @@ import com.itineraryledger.kabengosafaris.Itinerary.Repository.ItineraryReposito
 import com.itineraryledger.kabengosafaris.Itinerary.Specifications.ItinerarySpecification;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicItineraryDTO;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Safari.Repository.SafariRepository;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -40,18 +41,21 @@ public class PublicItineraryService {
     private final PublicEntityResolver entityResolver;
     private final PublicImageResolver imageResolver;
     private final PublicTranslationService publicTranslationService;
+    private final SafariRepository safariRepository;
 
     public PublicItineraryService(
             ItineraryRepository itineraryRepository,
             ItineraryCostSummaryRepository costSummaryRepository,
             PublicEntityResolver entityResolver,
             PublicImageResolver imageResolver,
-            PublicTranslationService publicTranslationService) {
+            PublicTranslationService publicTranslationService,
+            SafariRepository safariRepository) {
         this.itineraryRepository = itineraryRepository;
         this.costSummaryRepository = costSummaryRepository;
         this.entityResolver = entityResolver;
         this.imageResolver = imageResolver;
         this.publicTranslationService = publicTranslationService;
+        this.safariRepository = safariRepository;
     }
 
     public ResponseEntity<ApiResponse<?>> getItineraries(Integer page, Integer size, String sortBy, String sortDirection,
@@ -106,6 +110,65 @@ public class PublicItineraryService {
             log.error("Error fetching public itineraries", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error(500, "Failed to fetch safaris", "SAFARIS_FETCH_FAILED"));
+        }
+    }
+
+    /**
+     * "Most booked" itineraries — those that have been converted into the most actual Safaris.
+     * Ranked by count of linked Safari records; only publicly-visible (active) itineraries are returned.
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<?>> getMostBooked(Integer size, String lang) {
+        try {
+            int limit = (size != null && size > 0) ? size : 6;
+            // Pull a few extra ranked rows so we can drop any that are no longer public and still fill `limit`.
+            List<Object[]> rows = safariRepository.findMostBookedItineraryIds(PageRequest.of(0, Math.max(limit * 3, limit)));
+            if (rows.isEmpty()) {
+                return ResponseEntity.ok(ApiResponse.success(200, "Most booked safaris", Collections.emptyList()));
+            }
+
+            List<Long> orderedIds = new ArrayList<>();
+            Map<Long, Long> countById = new java.util.LinkedHashMap<>();
+            for (Object[] r : rows) {
+                Long id = ((Number) r[0]).longValue();
+                orderedIds.add(id);
+                countById.put(id, ((Number) r[1]).longValue());
+            }
+
+            // Only publicly-visible itineraries (match the list endpoint: active).
+            Map<Long, Itinerary> byId = itineraryRepository.findAllById(orderedIds).stream()
+                .filter(it -> Boolean.TRUE.equals(it.getIsActive()))
+                .collect(Collectors.toMap(Itinerary::getId, it -> it));
+
+            List<Itinerary> ranked = orderedIds.stream()
+                .map(byId::get)
+                .filter(java.util.Objects::nonNull)
+                .limit(limit)
+                .collect(Collectors.toList());
+
+            if (ranked.isEmpty()) {
+                return ResponseEntity.ok(ApiResponse.success(200, "Most booked safaris", Collections.emptyList()));
+            }
+
+            List<Long> rankedIds = ranked.stream().map(Itinerary::getId).collect(Collectors.toList());
+            Map<Long, List<ItineraryCostSummary>> costsByItinerary = costSummaryRepository
+                .findByItinerary_IdIn(rankedIds).stream()
+                .collect(Collectors.groupingBy(cs -> cs.getItinerary().getId()));
+
+            List<PublicItineraryDTO> dtos = new ArrayList<>();
+            for (Itinerary entity : ranked) {
+                PublicItineraryDTO dto = convertToListDTO(entity);
+                dto.setCostSummary(mapToPublicCostSummary(costsByItinerary.getOrDefault(entity.getId(), Collections.emptyList())));
+                dto.setBookingCount(countById.get(entity.getId()));
+                dtos.add(dto);
+            }
+
+            publicTranslationService.translateDtoList(dtos, lang);
+            return ResponseEntity.ok(ApiResponse.success(200, "Most booked safaris", dtos));
+        } catch (Exception e) {
+            log.error("Error fetching most booked safaris", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(500, "Failed to fetch most booked safaris", "SAFARIS_POPULAR_FAILED"));
         }
     }
 
