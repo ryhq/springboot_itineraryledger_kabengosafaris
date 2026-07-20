@@ -197,7 +197,8 @@ public class ParkSpecification {
                 cb.like(cb.lower(root.get("shortDescription")), likePattern),
                 cb.like(cb.lower(root.get("region")), likePattern),
                 cb.like(cb.lower(root.get("district")), likePattern),
-                cb.like(cb.lower(root.get("location")), likePattern)
+                cb.like(cb.lower(root.get("location")), likePattern),
+                cb.like(cb.lower(root.get("tags").as(String.class)), likePattern)
             );
         };
     }
@@ -277,7 +278,8 @@ public class ParkSpecification {
     public static Specification<Park> hasTag(String tag) {
         return (root, query, cb) -> {
             if (tag == null || tag.isBlank()) return cb.conjunction();
-            return cb.like(cb.lower(root.get("tags")), "%" + tag.toLowerCase() + "%");
+            // tags is @Lob/TEXT (CLOB) — cast to String so LIKE/LOWER work in Criteria.
+            return cb.like(cb.lower(root.get("tags").as(String.class)), "%" + tag.toLowerCase() + "%");
         };
     }
 }
