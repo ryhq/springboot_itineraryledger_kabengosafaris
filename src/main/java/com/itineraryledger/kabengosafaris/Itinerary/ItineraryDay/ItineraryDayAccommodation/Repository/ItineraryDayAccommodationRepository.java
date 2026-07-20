@@ -38,4 +38,14 @@ public interface ItineraryDayAccommodationRepository extends JpaRepository<Itine
 
     @Query("SELECT a.id FROM ItineraryDayAccommodation a WHERE a.itineraryDay.id = :parentId ORDER BY a.id DESC LIMIT 1")
     Optional<Long> findLastIdInParent(@Param("parentId") Long parentId);
+
+    /**
+     * Per-accommodation usage: distinct ACTIVE itineraries that stay at each accommodation.
+     * Returns rows of [accommodationId (Long), count (Long)]. Powers the public "guest favourites".
+     */
+    @Query("SELECT da.accommodation.id, COUNT(DISTINCT da.itineraryDay.itinerary.id) " +
+           "FROM ItineraryDayAccommodation da " +
+           "WHERE da.accommodation.id IN :accIds AND da.itineraryDay.itinerary.isActive = true " +
+           "GROUP BY da.accommodation.id")
+    List<Object[]> countActiveItinerariesByAccommodationIds(@Param("accIds") List<Long> accIds);
 }

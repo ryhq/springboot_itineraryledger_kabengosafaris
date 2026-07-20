@@ -30,4 +30,5 @@ public class PublicAccommodationListDTO {
     private String region;
     @Translatable private String shortDescription;
     private String primaryImageUrl;
+    private Long safariCount; // distinct active itineraries that stay here (public "guest favourites")
 }

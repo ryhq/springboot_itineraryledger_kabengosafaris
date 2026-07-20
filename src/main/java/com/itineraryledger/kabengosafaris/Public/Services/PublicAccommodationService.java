@@ -14,7 +14,9 @@ import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayAccommodation.Repository.ItineraryDayAccommodationRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -39,6 +41,7 @@ public class PublicAccommodationService {
     private final AccommodationImageRepository accommodationImageRepository;
     private final PublicEntityResolver entityResolver;
     private final PublicImageResolver imageResolver;
+    private final ItineraryDayAccommodationRepository itineraryDayAccommodationRepository;
 
     private final PublicTranslationService publicTranslationService;
 
@@ -51,19 +54,43 @@ public class PublicAccommodationService {
             sortDirection = sortDirection != null ? sortDirection : "asc";
             sortBy = sortBy != null && !sortBy.isBlank() ? sortBy : "name";
 
-            Sort sort = sortDirection.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-            Pageable pageable = PageRequest.of(page, size, sort);
-
             Specification<Accommodation> spec = AccommodationSpecification.isActive(true).and(AccommodationSpecification.isWebActive(true));
             if (region != null && !region.isEmpty()) spec = spec.and(AccommodationSpecification.regionLike(region));
             if (type != null) spec = spec.and(AccommodationSpecification.hasAccommodationType(type));
             if (category != null) spec = spec.and(AccommodationSpecification.hasCategory(category));
             if (keyword != null && !keyword.isEmpty()) spec = spec.and(AccommodationSpecification.searchKeyword(keyword));
 
-            Page<Accommodation> accommodationPage = accommodationRepository.findAll(spec, pageable);
+            boolean sortByPopularity = "visited".equalsIgnoreCase(sortBy) || "popular".equalsIgnoreCase(sortBy);
+
+            Page<Accommodation> accommodationPage;
+            if (sortByPopularity) {
+                // Rank by number of active itineraries that stay here (in-memory: usage count is not a DB column).
+                List<Accommodation> all = accommodationRepository.findAll(spec);
+                Map<Long, Long> counts = usageCounts(all.stream().map(Accommodation::getId).collect(Collectors.toList()));
+                all.sort((a, b) -> {
+                    int cmp = Long.compare(counts.getOrDefault(b.getId(), 0L), counts.getOrDefault(a.getId(), 0L));
+                    if (cmp != 0) return cmp;
+                    return safeName(a).compareToIgnoreCase(safeName(b)); // stable tie-break
+                });
+                int from = Math.min(page * size, all.size());
+                int to = Math.min(from + size, all.size());
+                accommodationPage = new PageImpl<>(all.subList(from, to), PageRequest.of(page, size), all.size());
+            } else {
+                Sort sort = sortDirection.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+                Pageable pageable = PageRequest.of(page, size, sort);
+                accommodationPage = accommodationRepository.findAll(spec, pageable);
+            }
+
             List<PublicAccommodationListDTO> dtos = accommodationPage.getContent().stream()
                 .map(this::convertToListDTO)
                 .collect(Collectors.toList());
+
+            // Populate usage count on the returned page (used for the public "guest favourites" badge).
+            Map<Long, Long> pageCounts = usageCounts(accommodationPage.getContent().stream()
+                .map(Accommodation::getId).collect(Collectors.toList()));
+            for (int i = 0; i < dtos.size(); i++) {
+                dtos.get(i).setSafariCount(pageCounts.getOrDefault(accommodationPage.getContent().get(i).getId(), 0L));
+            }
 
             publicTranslationService.translateDtoList(dtos, lang);
 
@@ -152,6 +179,23 @@ public class PublicAccommodationService {
             .shortDescription(a.getShortDescription())
             .primaryImageUrl(imageResolver.resolveAccommodationImage(a.getId()))
             .build();
+    }
+
+    /**
+     * Batch usage counts: accommodationId -> number of distinct active itineraries that stay there.
+     * Returns an empty map for an empty/null input so callers can default missing ids to 0.
+     */
+    private Map<Long, Long> usageCounts(List<Long> accommodationIds) {
+        Map<Long, Long> counts = new HashMap<>();
+        if (accommodationIds == null || accommodationIds.isEmpty()) return counts;
+        for (Object[] row : itineraryDayAccommodationRepository.countActiveItinerariesByAccommodationIds(accommodationIds)) {
+            counts.put((Long) row[0], (Long) row[1]);
+        }
+        return counts;
+    }
+
+    private static String safeName(Accommodation a) {
+        return a.getName() != null ? a.getName() : "";
     }
 
     private PublicAccommodationDTO convertToDetailDTO(Accommodation a) {
