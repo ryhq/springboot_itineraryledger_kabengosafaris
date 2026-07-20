@@ -18,6 +18,7 @@ import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -48,32 +49,41 @@ public class PublicParkService {
     private final PublicTranslationService publicTranslationService;
 
     public ResponseEntity<ApiResponse<?>> getParks(Integer page, Integer size, String sortBy, String sortDirection,
-                                                    String region, ParkType parkType, String keyword, String lang) {
+                                                    String region, ParkType parkType, String keyword, List<String> tags, String lang) {
         try {
             page = page != null ? page : 0;
             size = size != null ? size : 20;
             sortDirection = sortDirection != null ? sortDirection : "asc";
             sortBy = sortBy != null && !sortBy.isBlank() ? sortBy : "name";
 
-            Sort sort = sortDirection.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-            Pageable pageable = PageRequest.of(page, size, sort);
-
             Specification<Park> spec = ParkSpecification.isActive(true).and(ParkSpecification.isWebActive(true));
             if (region != null && !region.isEmpty()) spec = spec.and(ParkSpecification.regionLike(region));
             if (parkType != null) spec = spec.and(ParkSpecification.hasParkType(parkType));
             if (keyword != null && !keyword.isEmpty()) spec = spec.and(ParkSpecification.searchKeyword(keyword));
+            if (tags != null) for (String tg : tags) if (tg != null && !tg.isBlank()) spec = spec.and(ParkSpecification.hasTag(tg));
 
-            Page<Park> parkPage = parkRepository.findAll(spec, pageable);
+            Page<Park> parkPage;
+            if ("visited".equalsIgnoreCase(sortBy) || "safariCount".equalsIgnoreCase(sortBy)) {
+                // Computed sort — order by usage count. Small dataset, so sort in memory then page.
+                List<Park> all = parkRepository.findAll(spec, Sort.by("name").ascending());
+                Map<Long, Long> allCounts = usageCounts(all.stream().map(Park::getId).collect(Collectors.toList()));
+                all.sort((a, b) -> {
+                    long ca = allCounts.getOrDefault(a.getId(), 0L), cbn = allCounts.getOrDefault(b.getId(), 0L);
+                    return cbn != ca ? Long.compare(cbn, ca) : a.getName().compareToIgnoreCase(b.getName());
+                });
+                int from = Math.min(page * size, all.size()), to = Math.min(from + size, all.size());
+                parkPage = new PageImpl<>(all.subList(from, to), PageRequest.of(page, size), all.size());
+            } else {
+                Sort sort = sortDirection.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+                parkPage = parkRepository.findAll(spec, PageRequest.of(page, size, sort));
+            }
+
             List<Park> content = parkPage.getContent();
             List<PublicParkListDTO> dtos = content.stream()
                 .map(this::convertToListDTO)
                 .collect(Collectors.toList());
 
-            // Batch per-park usage counts (distinct active itineraries that visit each park).
-            List<Long> parkIds = content.stream().map(Park::getId).collect(Collectors.toList());
-            Map<Long, Long> counts = parkIds.isEmpty() ? Map.of() : itineraryDayParkRepository
-                .countActiveItinerariesByParkIds(parkIds).stream()
-                .collect(Collectors.toMap(r -> ((Number) r[0]).longValue(), r -> ((Number) r[1]).longValue()));
+            Map<Long, Long> counts = usageCounts(content.stream().map(Park::getId).collect(Collectors.toList()));
             for (int i = 0; i < content.size(); i++) {
                 dtos.get(i).setSafariCount(counts.getOrDefault(content.get(i).getId(), 0L));
             }
@@ -199,6 +209,13 @@ public class PublicParkService {
         response.put("images", images);
         response.put("totalImages", totalImages);
         return ResponseEntity.ok(ApiResponse.success(200, "Park retrieved", response));
+    }
+
+    /** Batch: distinct active itineraries that visit each of the given parks. */
+    private Map<Long, Long> usageCounts(List<Long> parkIds) {
+        if (parkIds == null || parkIds.isEmpty()) return Map.of();
+        return itineraryDayParkRepository.countActiveItinerariesByParkIds(parkIds).stream()
+            .collect(Collectors.toMap(r -> ((Number) r[0]).longValue(), r -> ((Number) r[1]).longValue()));
     }
 
     private PublicParkListDTO convertToListDTO(Park p) {

@@ -273,4 +273,11 @@ public class ParkSpecification {
             return cb.not(root.get("id").in(subquery));
         };
     }
+    /** Match parks whose comma/JSON tags string contains the given tag (case-insensitive). */
+    public static Specification<Park> hasTag(String tag) {
+        return (root, query, cb) -> {
+            if (tag == null || tag.isBlank()) return cb.conjunction();
+            return cb.like(cb.lower(root.get("tags")), "%" + tag.toLowerCase() + "%");
+        };
+    }
 }

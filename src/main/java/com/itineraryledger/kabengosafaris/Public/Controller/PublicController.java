@@ -100,9 +100,10 @@ public class PublicController {
         @RequestParam(required = false) String sortDirection,
         @RequestParam(required = false) String region,
         @RequestParam(required = false) ParkType parkType,
-        @RequestParam(required = false) String keyword
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) java.util.List<String> tag
     ) {
-        return publicParkService.getParks(page, size, sortBy, sortDirection, region, parkType, keyword, publicTranslationService.parseLanguage(lang));
+        return publicParkService.getParks(page, size, sortBy, sortDirection, region, parkType, keyword, tag, publicTranslationService.parseLanguage(lang));
     }
 
     @GetMapping("/parks/{identifier}")
