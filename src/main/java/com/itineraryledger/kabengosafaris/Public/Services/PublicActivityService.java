@@ -5,6 +5,7 @@ import com.itineraryledger.kabengosafaris.Activity.ActivityRepository;
 import com.itineraryledger.kabengosafaris.Activity.ActivitySpecification;
 import com.itineraryledger.kabengosafaris.Activity.Entities.ActivityImage;
 import com.itineraryledger.kabengosafaris.Activity.Repositories.ActivityImageRepository;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayActivity.Repository.ItineraryDayActivityRepository;
 import com.itineraryledger.kabengosafaris.ParkActivity.ParkActivity;
 import com.itineraryledger.kabengosafaris.ParkActivity.ParkActivityRepository;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicActivityDetailDTO;
@@ -16,6 +17,7 @@ import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -39,6 +41,7 @@ public class PublicActivityService {
     private final ActivityRepository activityRepository;
     private final ActivityImageRepository activityImageRepository;
     private final ParkActivityRepository parkActivityRepository;
+    private final ItineraryDayActivityRepository itineraryDayActivityRepository;
     private final PublicEntityResolver entityResolver;
     private final PublicImageResolver imageResolver;
 
@@ -52,17 +55,41 @@ public class PublicActivityService {
             sortDirection = sortDirection != null ? sortDirection : "asc";
             sortBy = sortBy != null && !sortBy.isBlank() ? sortBy : "name";
 
-            Sort sort = sortDirection.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-            Pageable pageable = PageRequest.of(page, size, sort);
-
             Specification<Activity> spec = ActivitySpecification.isActive(true)
                 .and(ActivitySpecification.isWebActive(true));
             if (keyword != null && !keyword.isEmpty()) spec = spec.and(ActivitySpecification.searchKeyword(keyword));
 
-            Page<Activity> activityPage = activityRepository.findAll(spec, pageable);
+            boolean sortByPopularity = "visited".equalsIgnoreCase(sortBy) || "popular".equalsIgnoreCase(sortBy);
+
+            Page<Activity> activityPage;
+            if (sortByPopularity) {
+                // Rank by number of active itineraries that include the activity (in-memory: usage is not a DB column).
+                List<Activity> all = activityRepository.findAll(spec);
+                Map<Long, Long> counts = usageCounts(all.stream().map(Activity::getId).collect(Collectors.toList()));
+                all.sort((a, b) -> {
+                    int cmp = Long.compare(counts.getOrDefault(b.getId(), 0L), counts.getOrDefault(a.getId(), 0L));
+                    if (cmp != 0) return cmp;
+                    return safeName(a).compareToIgnoreCase(safeName(b)); // stable tie-break
+                });
+                int from = Math.min(page * size, all.size());
+                int to = Math.min(from + size, all.size());
+                activityPage = new PageImpl<>(all.subList(from, to), PageRequest.of(page, size), all.size());
+            } else {
+                Sort sort = sortDirection.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+                Pageable pageable = PageRequest.of(page, size, sort);
+                activityPage = activityRepository.findAll(spec, pageable);
+            }
+
             List<PublicActivityListDTO> dtos = activityPage.getContent().stream()
                 .map(this::convertToListDTO)
                 .collect(Collectors.toList());
+
+            // Populate usage count on the returned page (used for the public "most popular" badge).
+            Map<Long, Long> pageCounts = usageCounts(activityPage.getContent().stream()
+                .map(Activity::getId).collect(Collectors.toList()));
+            for (int i = 0; i < dtos.size(); i++) {
+                dtos.get(i).setSafariCount(pageCounts.getOrDefault(activityPage.getContent().get(i).getId(), 0L));
+            }
 
             publicTranslationService.translateDtoList(dtos, lang);
 
@@ -196,6 +223,23 @@ public class PublicActivityService {
             .primaryImageUrl(imageResolver.resolveActivityImage(a.getId(), a.getPrimaryImage()))
             .seasonAvailability(a.getSeasonAvailability())
             .build();
+    }
+
+    /**
+     * Batch usage counts: activityId -> number of distinct active itineraries that include it.
+     * Returns an empty map for an empty/null input so callers can default missing ids to 0.
+     */
+    private Map<Long, Long> usageCounts(List<Long> activityIds) {
+        Map<Long, Long> counts = new HashMap<>();
+        if (activityIds == null || activityIds.isEmpty()) return counts;
+        for (Object[] row : itineraryDayActivityRepository.countActiveItinerariesByActivityIds(activityIds)) {
+            counts.put((Long) row[0], (Long) row[1]);
+        }
+        return counts;
+    }
+
+    private static String safeName(Activity a) {
+        return a.getName() != null ? a.getName() : "";
     }
 
     private PublicActivityDetailDTO convertToDetailDTO(Activity a) {

@@ -23,4 +23,5 @@ public class PublicActivityListDTO {
     @Translatable private String description;
     private String primaryImageUrl;
     private String seasonAvailability;
+    private Long safariCount; // distinct active itineraries that include this activity (public "most popular")
 }
