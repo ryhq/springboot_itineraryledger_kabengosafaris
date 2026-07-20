@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Public.Services;
 
 import com.itineraryledger.kabengosafaris.Park.Park;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.Repository.ItineraryDayParkRepository;
 import com.itineraryledger.kabengosafaris.Park.ParkRepository;
 import com.itineraryledger.kabengosafaris.Park.ParkSpecification;
 import com.itineraryledger.kabengosafaris.Park.ParkType;
@@ -42,6 +43,7 @@ public class PublicParkService {
     private final ParkActivityRepository parkActivityRepository;
     private final PublicEntityResolver entityResolver;
     private final PublicImageResolver imageResolver;
+    private final ItineraryDayParkRepository itineraryDayParkRepository;
 
     private final PublicTranslationService publicTranslationService;
 
@@ -62,9 +64,19 @@ public class PublicParkService {
             if (keyword != null && !keyword.isEmpty()) spec = spec.and(ParkSpecification.searchKeyword(keyword));
 
             Page<Park> parkPage = parkRepository.findAll(spec, pageable);
-            List<PublicParkListDTO> dtos = parkPage.getContent().stream()
+            List<Park> content = parkPage.getContent();
+            List<PublicParkListDTO> dtos = content.stream()
                 .map(this::convertToListDTO)
                 .collect(Collectors.toList());
+
+            // Batch per-park usage counts (distinct active itineraries that visit each park).
+            List<Long> parkIds = content.stream().map(Park::getId).collect(Collectors.toList());
+            Map<Long, Long> counts = parkIds.isEmpty() ? Map.of() : itineraryDayParkRepository
+                .countActiveItinerariesByParkIds(parkIds).stream()
+                .collect(Collectors.toMap(r -> ((Number) r[0]).longValue(), r -> ((Number) r[1]).longValue()));
+            for (int i = 0; i < content.size(); i++) {
+                dtos.get(i).setSafariCount(counts.getOrDefault(content.get(i).getId(), 0L));
+            }
 
             publicTranslationService.translateDtoList(dtos, lang);
 
@@ -197,6 +209,7 @@ public class PublicParkService {
             .region(p.getRegion())
             .shortDescription(p.getShortDescription())
             .primaryImageUrl(imageResolver.resolveParkImage(p.getId(), p.getPrimaryImage()))
+            .tags(p.getTags())
             .build();
     }
 

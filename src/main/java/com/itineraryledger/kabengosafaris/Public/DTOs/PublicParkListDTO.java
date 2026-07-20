@@ -25,4 +25,6 @@ public class PublicParkListDTO {
     private String region;
     @Translatable private String shortDescription;
     private String primaryImageUrl;
+    private String tags; // JSON array string, e.g. ["Big Five","Great Migration"] — for the highlights facet
+    private Long safariCount; // distinct active itineraries that visit this park (public "most visited")
 }

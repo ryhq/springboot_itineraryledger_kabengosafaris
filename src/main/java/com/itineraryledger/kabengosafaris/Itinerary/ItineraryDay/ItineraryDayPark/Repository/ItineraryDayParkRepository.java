@@ -36,4 +36,14 @@ public interface ItineraryDayParkRepository extends JpaRepository<ItineraryDayPa
 
     @Query("SELECT p.id FROM ItineraryDayPark p WHERE p.itineraryDay.id = :parentId ORDER BY p.id DESC LIMIT 1")
     Optional<Long> findLastIdInParent(@Param("parentId") Long parentId);
+
+    /**
+     * Per-park usage: how many distinct ACTIVE itineraries visit each park.
+     * Returns rows of [parkId (Long), count (Long)]. Powers the public "most visited parks".
+     */
+    @Query("SELECT dp.park.id, COUNT(DISTINCT dp.itineraryDay.itinerary.id) " +
+           "FROM ItineraryDayPark dp " +
+           "WHERE dp.park.id IN :parkIds AND dp.itineraryDay.itinerary.isActive = true " +
+           "GROUP BY dp.park.id")
+    List<Object[]> countActiveItinerariesByParkIds(@Param("parkIds") List<Long> parkIds);
 }
