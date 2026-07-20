@@ -42,7 +42,7 @@ public class HeroGetService {
     private final HeroImageStorageService storageService;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
-        "title", "page", "createdAt", "updatedAt"
+        "displayOrder", "title", "page", "createdAt", "updatedAt"
     );
     private static final String DEFAULT_SORT_FIELD = "createdAt";
 
