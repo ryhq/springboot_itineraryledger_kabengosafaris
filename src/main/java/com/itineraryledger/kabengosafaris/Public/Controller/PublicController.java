@@ -133,6 +133,16 @@ public class PublicController {
         return publicParkService.getParkActivities(identifier, page, size, publicTranslationService.parseLanguage(lang));
     }
 
+    @GetMapping("/parks/{identifier}/safaris")
+    public ResponseEntity<ApiResponse<?>> getParkSafaris(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
+        @PathVariable String identifier,
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size
+    ) {
+        return publicItineraryService.getParkSafaris(identifier, page, size, publicTranslationService.parseLanguage(lang));
+    }
+
     // ========================
     // ACTIVITIES
     // ========================
@@ -174,6 +184,16 @@ public class PublicController {
         @RequestParam(required = false) Integer size
     ) {
         return publicActivityService.getActivityParks(identifier, page, size, publicTranslationService.parseLanguage(lang));
+    }
+
+    @GetMapping("/activities/{identifier}/safaris")
+    public ResponseEntity<ApiResponse<?>> getActivitySafaris(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
+        @PathVariable String identifier,
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size
+    ) {
+        return publicItineraryService.getActivitySafaris(identifier, page, size, publicTranslationService.parseLanguage(lang));
     }
 
     // ========================

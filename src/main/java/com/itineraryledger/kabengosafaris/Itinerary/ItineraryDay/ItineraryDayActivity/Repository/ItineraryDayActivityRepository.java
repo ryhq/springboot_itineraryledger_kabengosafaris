@@ -46,4 +46,12 @@ public interface ItineraryDayActivityRepository extends JpaRepository<ItineraryD
            "WHERE da.activity.id IN :activityIds AND da.itineraryDay.itinerary.isActive = true " +
            "GROUP BY da.activity.id")
     List<Object[]> countActiveItinerariesByActivityIds(@Param("activityIds") List<Long> activityIds);
+
+    /**
+     * Distinct ACTIVE itinerary ids that feature a given activity.
+     * Powers the public "safaris featuring this experience" section.
+     */
+    @Query("SELECT DISTINCT da.itineraryDay.itinerary.id FROM ItineraryDayActivity da " +
+           "WHERE da.activity.id = :activityId AND da.itineraryDay.itinerary.isActive = true")
+    List<Long> findActiveItineraryIdsByActivityId(@Param("activityId") Long activityId);
 }

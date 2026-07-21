@@ -7,14 +7,19 @@ import com.itineraryledger.kabengosafaris.Itinerary.Entity.BudgetCategory;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Entity.ItineraryDay;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayActivity.Repository.ItineraryDayActivityRepository;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.Repository.ItineraryDayParkRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.Repository.ItineraryRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.Specifications.ItinerarySpecification;
+import com.itineraryledger.kabengosafaris.Activity.Activity;
+import com.itineraryledger.kabengosafaris.Park.Park;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicItineraryDTO;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Safari.Repository.SafariRepository;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -42,6 +47,8 @@ public class PublicItineraryService {
     private final PublicImageResolver imageResolver;
     private final PublicTranslationService publicTranslationService;
     private final SafariRepository safariRepository;
+    private final ItineraryDayParkRepository itineraryDayParkRepository;
+    private final ItineraryDayActivityRepository itineraryDayActivityRepository;
 
     public PublicItineraryService(
             ItineraryRepository itineraryRepository,
@@ -49,13 +56,17 @@ public class PublicItineraryService {
             PublicEntityResolver entityResolver,
             PublicImageResolver imageResolver,
             PublicTranslationService publicTranslationService,
-            SafariRepository safariRepository) {
+            SafariRepository safariRepository,
+            ItineraryDayParkRepository itineraryDayParkRepository,
+            ItineraryDayActivityRepository itineraryDayActivityRepository) {
         this.itineraryRepository = itineraryRepository;
         this.costSummaryRepository = costSummaryRepository;
         this.entityResolver = entityResolver;
         this.imageResolver = imageResolver;
         this.publicTranslationService = publicTranslationService;
         this.safariRepository = safariRepository;
+        this.itineraryDayParkRepository = itineraryDayParkRepository;
+        this.itineraryDayActivityRepository = itineraryDayActivityRepository;
     }
 
     public ResponseEntity<ApiResponse<?>> getItineraries(Integer page, Integer size, String sortBy, String sortDirection,
@@ -111,6 +122,79 @@ public class PublicItineraryService {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error(500, "Failed to fetch safaris", "SAFARIS_FETCH_FAILED"));
         }
+    }
+
+    /**
+     * Public safaris (itineraries) that VISIT a given park.
+     */
+    public ResponseEntity<ApiResponse<?>> getParkSafaris(String identifier, Integer page, Integer size, String lang) {
+        try {
+            Park park = entityResolver.resolvePark(identifier).orElse(null);
+            if (park == null || !Boolean.TRUE.equals(park.getIsActive()) || !Boolean.TRUE.equals(park.getIsWebActive())) {
+                return ResponseEntity.status(404).body(ApiResponse.error(404, "Park not found", "PARK_NOT_FOUND"));
+            }
+            return safariPageFromIds(itineraryDayParkRepository.findActiveItineraryIdsByParkId(park.getId()), page, size, lang);
+        } catch (Exception e) {
+            log.error("Error fetching safaris for park: {}", identifier, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(500, "Failed to fetch safaris", "SAFARIS_FETCH_FAILED"));
+        }
+    }
+
+    /**
+     * Public safaris (itineraries) that FEATURE a given activity.
+     */
+    public ResponseEntity<ApiResponse<?>> getActivitySafaris(String identifier, Integer page, Integer size, String lang) {
+        try {
+            Activity activity = entityResolver.resolveActivity(identifier).orElse(null);
+            if (activity == null || !Boolean.TRUE.equals(activity.getIsActive()) || !Boolean.TRUE.equals(activity.getIsWebActive())) {
+                return ResponseEntity.status(404).body(ApiResponse.error(404, "Activity not found", "ACTIVITY_NOT_FOUND"));
+            }
+            return safariPageFromIds(itineraryDayActivityRepository.findActiveItineraryIdsByActivityId(activity.getId()), page, size, lang);
+        } catch (Exception e) {
+            log.error("Error fetching safaris for activity: {}", identifier, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(500, "Failed to fetch safaris", "SAFARIS_FETCH_FAILED"));
+        }
+    }
+
+    /**
+     * Build a paginated "safaris" page from a set of itinerary ids — active only,
+     * newest first, in-memory paginated. Produces identical cards to /public/safaris.
+     */
+    private ResponseEntity<ApiResponse<?>> safariPageFromIds(List<Long> ids, Integer page, Integer size, String lang) {
+        page = page != null ? page : 0;
+        size = size != null ? size : 6;
+
+        List<Itinerary> all = (ids == null || ids.isEmpty())
+            ? Collections.emptyList()
+            : itineraryRepository.findAllById(ids).stream()
+                .filter(i -> Boolean.TRUE.equals(i.getIsActive()))
+                .sorted(Comparator.comparing(Itinerary::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                .collect(Collectors.toList());
+
+        int total = all.size();
+        int from = Math.min(page * size, total);
+        int to = Math.min(from + size, total);
+        List<Itinerary> pageItems = all.subList(from, to);
+
+        List<Long> pageIds = pageItems.stream().map(Itinerary::getId).collect(Collectors.toList());
+        Map<Long, List<ItineraryCostSummary>> costsByItinerary = pageIds.isEmpty()
+            ? Collections.emptyMap()
+            : costSummaryRepository.findByItinerary_IdIn(pageIds).stream()
+                .collect(Collectors.groupingBy(cs -> cs.getItinerary().getId()));
+
+        List<PublicItineraryDTO> dtos = new ArrayList<>();
+        for (Itinerary entity : pageItems) {
+            PublicItineraryDTO dto = convertToListDTO(entity);
+            dto.setCostSummary(mapToPublicCostSummary(costsByItinerary.getOrDefault(entity.getId(), Collections.emptyList())));
+            dtos.add(dto);
+        }
+
+        publicTranslationService.translateDtoList(dtos, lang);
+
+        Page<Itinerary> pageObj = new PageImpl<>(pageItems, PageRequest.of(page, size), total);
+        return ResponseEntity.ok(ApiResponse.success(200, "Safaris retrieved", PublicServiceUtils.buildPageResponse("safaris", dtos, pageObj)));
     }
 
     /**
