@@ -25,10 +25,12 @@ public class PublicTestimonyDTO {
     private String authorName;
     private String authorTitle;
     private String authorCountry;
+    @Translatable private String reviewTitle;
     @Translatable private String message;
     private Integer rating;
     private LocalDate reviewDate;
     private String sourceDisplayName;
+    private String sourceUrl;
     private Boolean isVerifiedBooking;
     private String safariName;
     private String primaryImageUrl;

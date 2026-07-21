@@ -28,6 +28,8 @@ public class CreateTestimonyDTO {
 
     private String authorEmail;
 
+    private String reviewTitle;
+
     @NotBlank(message = "Message is required")
     private String message;
 
@@ -38,6 +40,8 @@ public class CreateTestimonyDTO {
 
     @NotNull(message = "Source is required")
     private TestimonySource source;
+
+    private String sourceUrl;
 
     private LocalDate reviewDate;
 

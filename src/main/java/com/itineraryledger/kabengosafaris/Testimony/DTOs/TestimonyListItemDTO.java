@@ -21,9 +21,11 @@ public class TestimonyListItemDTO {
     private String authorTitle;
     private String authorCountry;
     private String authorEmail;
+    private String reviewTitle;
     private String message;
     private Integer rating;
     private TestimonySource source;
+    private String sourceUrl;
     private String sourceDisplayName;
     private Boolean isApproved;
     private Boolean isFeatured;

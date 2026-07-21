@@ -22,12 +22,14 @@ public class TestimonyDTO {
     private String authorTitle;
     private String authorCountry;
     private String authorEmail;
+    @Translatable private String reviewTitle;
     @Translatable private String message;
     private Integer rating;
     private String adminResponse;
     private LocalDateTime adminResponseDate;
     private LocalDate reviewDate;
     private TestimonySource source;
+    private String sourceUrl;
     private String sourceDisplayName;
     private Boolean isVerifiedBooking;
     private Boolean isApproved;

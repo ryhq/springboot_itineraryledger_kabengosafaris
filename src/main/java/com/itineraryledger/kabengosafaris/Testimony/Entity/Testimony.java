@@ -68,6 +68,9 @@ public class Testimony {
     @Column(name = "author_email", length = 255)
     private String authorEmail;
 
+    @Column(name = "review_title", length = 255)
+    private String reviewTitle;
+
     @Lob
     @Column(name = "message", columnDefinition = "TEXT", nullable = false)
     private String message;
@@ -88,6 +91,9 @@ public class Testimony {
     @Enumerated(EnumType.STRING)
     @Column(name = "source", nullable = false, length = 50)
     private TestimonySource source;
+
+    @Column(name = "source_url", length = 1000)
+    private String sourceUrl;
 
     @Builder.Default
     @Column(name = "is_verified_booking", nullable = false)

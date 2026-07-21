@@ -21,6 +21,7 @@ public class UpdateTestimonyDTO {
     private String authorTitle;
     private String authorCountry;
     private String authorEmail;
+    private String reviewTitle;
     private String message;
 
     @Min(value = 1, message = "Rating must be at least 1")
@@ -28,6 +29,7 @@ public class UpdateTestimonyDTO {
     private Integer rating;
 
     private TestimonySource source;
+    private String sourceUrl;
     private LocalDate reviewDate;
     private Boolean isVerifiedBooking;
     private Boolean isApproved;
