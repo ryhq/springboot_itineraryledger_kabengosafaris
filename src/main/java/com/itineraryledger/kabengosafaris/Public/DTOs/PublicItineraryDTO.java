@@ -55,6 +55,10 @@ public class PublicItineraryDTO {
     @Translatable private String startLocation;
     @Translatable private String endLocation;
 
+    // What's included / not included (one item per line; delivered as a list)
+    private java.util.List<String> inclusions;
+    private java.util.List<String> exclusions;
+
     // Counts
     private Integer carCount;
     private Integer totalPaxCount;
@@ -119,6 +123,8 @@ public class PublicItineraryDTO {
         private String parkSlug;
         @Translatable private String parkName;
         private String primaryImageUrl;
+        private java.math.BigDecimal latitude;   // for the route map
+        private java.math.BigDecimal longitude;  // for the route map
     }
 
     @Data
@@ -142,6 +148,10 @@ public class PublicItineraryDTO {
         private String accommodationSlug;
         @Translatable private String accommodationName;
         private String primaryImageUrl;
+        private String board;         // board type display name, e.g. "Full Board"
+        private String roomType;      // e.g. "Deluxe Double"
+        private String roomStandard;  // e.g. "Deluxe"
+        private Integer nights;       // consecutive nights at this lodge on this trip
     }
 
     @Data

@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -336,6 +337,8 @@ public class PublicItineraryService {
                 && itinerary.getTotalNights() != null && itinerary.getTotalNights() == 0)
             .description(itinerary.getDescription())
             .highlights(itinerary.getHighlights())
+            .inclusions(splitLines(itinerary.getInclusions()))
+            .exclusions(splitLines(itinerary.getExclusions()))
             .startLocation(itinerary.getStartLocation())
             .endLocation(itinerary.getEndLocation())
             .carCount(itinerary.getCarCount())
@@ -351,6 +354,16 @@ public class PublicItineraryService {
 
             List<PublicItineraryDTO.PublicItineraryDayDTO> dayDTOs = new ArrayList<>();
             List<String> allDayImages = new ArrayList<>();
+
+            // Nights per lodge across the trip (non-alternative day-accommodations).
+            java.util.Map<Long, Integer> nightsByAcc = new java.util.HashMap<>();
+            for (ItineraryDay d : sortedDays) {
+                if (d.getAccommodations() != null) {
+                    d.getAccommodations().stream()
+                        .filter(a -> !Boolean.TRUE.equals(a.getIsAlternative()) && a.getAccommodation() != null)
+                        .forEach(a -> nightsByAcc.merge(a.getAccommodation().getId(), 1, Integer::sum));
+                }
+            }
 
             for (ItineraryDay day : sortedDays) {
                 List<Long> dayParkIds = new ArrayList<>();
@@ -387,6 +400,8 @@ public class PublicItineraryService {
                                 .parkSlug(dp.getPark().getSlug())
                                 .parkName(dp.getPark().getName())
                                 .primaryImageUrl(imageResolver.resolveParkImage(dp.getPark().getId(), dp.getPark().getPrimaryImage()))
+                                .latitude(dp.getPark().getLatitude())
+                                .longitude(dp.getPark().getLongitude())
                                 .build();
                         })
                         .collect(Collectors.toList());
@@ -420,6 +435,10 @@ public class PublicItineraryService {
                                 .accommodationSlug(da.getAccommodation().getSlug())
                                 .accommodationName(da.getAccommodation().getName())
                                 .primaryImageUrl(imageResolver.resolveAccommodationImage(da.getAccommodation().getId()))
+                                .board(da.getBoardType() != null ? da.getBoardType().getName() : null)
+                                .roomType(da.getRoomType() != null ? da.getRoomType().getName() : null)
+                                .roomStandard(da.getRoomStandard() != null ? da.getRoomStandard().getName() : null)
+                                .nights(nightsByAcc.get(da.getAccommodation().getId()))
                                 .build();
                         })
                         .collect(Collectors.toList());
@@ -454,6 +473,14 @@ public class PublicItineraryService {
         }
 
         return builder.build();
+    }
+
+    /** Split a newline-separated TEXT field into a trimmed list (null if empty). */
+    private List<String> splitLines(String text) {
+        if (text == null || text.isBlank()) return null;
+        List<String> out = Arrays.stream(text.split("\\r?\\n"))
+            .map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+        return out.isEmpty() ? null : out;
     }
 
     /**

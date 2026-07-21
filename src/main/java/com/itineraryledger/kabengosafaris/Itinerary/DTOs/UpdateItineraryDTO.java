@@ -34,6 +34,10 @@ public class UpdateItineraryDTO {
 
     private String description;
     private String highlights;
+
+    private String inclusions;
+
+    private String exclusions;
     private String startLocation;
     private String endLocation;
     private Boolean isActive;

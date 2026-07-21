@@ -340,6 +340,8 @@ public class ItineraryGetService {
         dto.setCarCount(itinerary.getCarCount());
         dto.setDescription(itinerary.getDescription());
         dto.setHighlights(itinerary.getHighlights());
+        dto.setInclusions(itinerary.getInclusions());
+        dto.setExclusions(itinerary.getExclusions());
         dto.setStartLocation(itinerary.getStartLocation());
         dto.setEndLocation(itinerary.getEndLocation());
         dto.setIsActive(itinerary.getIsActive());

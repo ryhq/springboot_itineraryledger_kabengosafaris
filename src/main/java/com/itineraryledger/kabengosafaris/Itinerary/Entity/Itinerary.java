@@ -80,6 +80,14 @@ public class Itinerary {
     @Column(columnDefinition = "TEXT")
     private String highlights; // Key highlights (JSON array format)
 
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String inclusions; // What's included — one item per line
+
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String exclusions; // What's not included — one item per line
+
     @Column(name = "start_location", length = 200)
     private String startLocation; // e.g., "Arusha"
 

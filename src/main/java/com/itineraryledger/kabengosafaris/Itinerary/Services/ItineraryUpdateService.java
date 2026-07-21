@@ -178,6 +178,12 @@ public class ItineraryUpdateService {
         if (updateItineraryDTO.getHighlights() != null) {
             itinerary.setHighlights(updateItineraryDTO.getHighlights());
         }
+        if (updateItineraryDTO.getInclusions() != null) {
+            itinerary.setInclusions(updateItineraryDTO.getInclusions());
+        }
+        if (updateItineraryDTO.getExclusions() != null) {
+            itinerary.setExclusions(updateItineraryDTO.getExclusions());
+        }
         if (updateItineraryDTO.getStartLocation() != null) {
             itinerary.setStartLocation(updateItineraryDTO.getStartLocation());
         }
@@ -240,6 +246,8 @@ public class ItineraryUpdateService {
         dto.setCarCount(itinerary.getCarCount());
         dto.setDescription(itinerary.getDescription());
         dto.setHighlights(itinerary.getHighlights());
+        dto.setInclusions(itinerary.getInclusions());
+        dto.setExclusions(itinerary.getExclusions());
         dto.setStartLocation(itinerary.getStartLocation());
         dto.setEndLocation(itinerary.getEndLocation());
         dto.setIsActive(itinerary.getIsActive());

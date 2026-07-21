@@ -42,6 +42,8 @@ public class ItineraryDTO {
     private Integer carCount;
     @Translatable private String description;
     @Translatable private String highlights;
+    private String inclusions;
+    private String exclusions;
     @Translatable private String startLocation;
     @Translatable private String endLocation;
     private Boolean isActive;

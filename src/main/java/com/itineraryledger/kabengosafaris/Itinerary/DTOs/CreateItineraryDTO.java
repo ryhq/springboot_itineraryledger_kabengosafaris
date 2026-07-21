@@ -38,6 +38,10 @@ public class CreateItineraryDTO {
 
     private String description;
     private String highlights;
+
+    private String inclusions;
+
+    private String exclusions;
     private String startLocation;
     private String endLocation;
 }

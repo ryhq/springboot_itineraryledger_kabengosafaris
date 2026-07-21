@@ -74,6 +74,8 @@ public class ItineraryCreateService {
                 .carCount(createItineraryDTO.getCarCount() != null ? createItineraryDTO.getCarCount() : 1)
                 .description(createItineraryDTO.getDescription())
                 .highlights(createItineraryDTO.getHighlights())
+                .inclusions(createItineraryDTO.getInclusions())
+                .exclusions(createItineraryDTO.getExclusions())
                 .startLocation(createItineraryDTO.getStartLocation())
                 .endLocation(createItineraryDTO.getEndLocation())
                 .build();
@@ -134,6 +136,8 @@ public class ItineraryCreateService {
         dto.setCarCount(itinerary.getCarCount());
         dto.setDescription(itinerary.getDescription());
         dto.setHighlights(itinerary.getHighlights());
+        dto.setInclusions(itinerary.getInclusions());
+        dto.setExclusions(itinerary.getExclusions());
         dto.setStartLocation(itinerary.getStartLocation());
         dto.setEndLocation(itinerary.getEndLocation());
         dto.setIsActive(itinerary.getIsActive());
