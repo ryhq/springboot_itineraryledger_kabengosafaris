@@ -7,10 +7,12 @@ import com.itineraryledger.kabengosafaris.Itinerary.Entity.BudgetCategory;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Entity.ItineraryDay;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayAccommodation.Repository.ItineraryDayAccommodationRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayActivity.Repository.ItineraryDayActivityRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.Repository.ItineraryDayParkRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.Repository.ItineraryRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.Specifications.ItinerarySpecification;
+import com.itineraryledger.kabengosafaris.Accommodation.Entities.Accommodation;
 import com.itineraryledger.kabengosafaris.Activity.Activity;
 import com.itineraryledger.kabengosafaris.Park.Park;
 import com.itineraryledger.kabengosafaris.Public.DTOs.PublicItineraryDTO;
@@ -50,6 +52,7 @@ public class PublicItineraryService {
     private final SafariRepository safariRepository;
     private final ItineraryDayParkRepository itineraryDayParkRepository;
     private final ItineraryDayActivityRepository itineraryDayActivityRepository;
+    private final ItineraryDayAccommodationRepository itineraryDayAccommodationRepository;
 
     public PublicItineraryService(
             ItineraryRepository itineraryRepository,
@@ -59,7 +62,8 @@ public class PublicItineraryService {
             PublicTranslationService publicTranslationService,
             SafariRepository safariRepository,
             ItineraryDayParkRepository itineraryDayParkRepository,
-            ItineraryDayActivityRepository itineraryDayActivityRepository) {
+            ItineraryDayActivityRepository itineraryDayActivityRepository,
+            ItineraryDayAccommodationRepository itineraryDayAccommodationRepository) {
         this.itineraryRepository = itineraryRepository;
         this.costSummaryRepository = costSummaryRepository;
         this.entityResolver = entityResolver;
@@ -68,6 +72,7 @@ public class PublicItineraryService {
         this.safariRepository = safariRepository;
         this.itineraryDayParkRepository = itineraryDayParkRepository;
         this.itineraryDayActivityRepository = itineraryDayActivityRepository;
+        this.itineraryDayAccommodationRepository = itineraryDayAccommodationRepository;
     }
 
     public ResponseEntity<ApiResponse<?>> getItineraries(Integer page, Integer size, String sortBy, String sortDirection,
@@ -154,6 +159,23 @@ public class PublicItineraryService {
             return safariPageFromIds(itineraryDayActivityRepository.findActiveItineraryIdsByActivityId(activity.getId()), page, size, lang);
         } catch (Exception e) {
             log.error("Error fetching safaris for activity: {}", identifier, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(500, "Failed to fetch safaris", "SAFARIS_FETCH_FAILED"));
+        }
+    }
+
+    /**
+     * Public safaris (itineraries) that STAY at a given accommodation.
+     */
+    public ResponseEntity<ApiResponse<?>> getAccommodationSafaris(String identifier, Integer page, Integer size, String lang) {
+        try {
+            Accommodation accommodation = entityResolver.resolveAccommodation(identifier).orElse(null);
+            if (accommodation == null || !Boolean.TRUE.equals(accommodation.getIsActive()) || !Boolean.TRUE.equals(accommodation.getIsWebActive())) {
+                return ResponseEntity.status(404).body(ApiResponse.error(404, "Accommodation not found", "ACCOMMODATION_NOT_FOUND"));
+            }
+            return safariPageFromIds(itineraryDayAccommodationRepository.findActiveItineraryIdsByAccommodationId(accommodation.getId()), page, size, lang);
+        } catch (Exception e) {
+            log.error("Error fetching safaris for accommodation: {}", identifier, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error(500, "Failed to fetch safaris", "SAFARIS_FETCH_FAILED"));
         }

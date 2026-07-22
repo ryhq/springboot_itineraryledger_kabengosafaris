@@ -232,6 +232,16 @@ public class PublicController {
         return publicAccommodationService.getAccommodationImages(identifier, page, size);
     }
 
+    @GetMapping("/accommodations/{identifier}/safaris")
+    public ResponseEntity<ApiResponse<?>> getAccommodationSafaris(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
+        @PathVariable String identifier,
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size
+    ) {
+        return publicItineraryService.getAccommodationSafaris(identifier, page, size, publicTranslationService.parseLanguage(lang));
+    }
+
     // ========================
     // SAFARIS (Itineraries exposed as Safaris)
     // ========================

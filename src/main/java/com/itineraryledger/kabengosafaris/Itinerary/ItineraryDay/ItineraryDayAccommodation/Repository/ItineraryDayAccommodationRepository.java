@@ -48,4 +48,15 @@ public interface ItineraryDayAccommodationRepository extends JpaRepository<Itine
            "WHERE da.accommodation.id IN :accIds AND da.itineraryDay.itinerary.isActive = true " +
            "GROUP BY da.accommodation.id")
     List<Object[]> countActiveItinerariesByAccommodationIds(@Param("accIds") List<Long> accIds);
+
+    /**
+     * Distinct ACTIVE itinerary ids that stay at a given accommodation (excluding
+     * backup/alternative lodging). Powers the public "safaris that stay here" carousel.
+     */
+    @Query("SELECT DISTINCT da.itineraryDay.itinerary.id " +
+           "FROM ItineraryDayAccommodation da " +
+           "WHERE da.accommodation.id = :accommodationId " +
+           "AND da.itineraryDay.itinerary.isActive = true " +
+           "AND (da.isAlternative IS NULL OR da.isAlternative = false)")
+    List<Long> findActiveItineraryIdsByAccommodationId(@Param("accommodationId") Long accommodationId);
 }
