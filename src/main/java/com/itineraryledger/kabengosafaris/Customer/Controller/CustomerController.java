@@ -87,6 +87,8 @@ public class CustomerController {
             @RequestParam(required = false) BigDecimal minTotalSpent,
             @RequestParam(required = false) BigDecimal maxTotalSpent,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdBefore,
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "10") Integer size,
             @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
@@ -97,8 +99,19 @@ public class CustomerController {
                 name, email, phone, code, customerType, source,
                 nationality, country, city, isActive, isVip, isBlacklisted,
                 hasBookings, minTotalSpent, maxTotalSpent, keyword,
+                createdAfter, createdBefore,
                 page, size, sortBy, sortDirection
         );
+    }
+
+    /**
+     * Summary counts for the customer list header.
+     */
+    @GetMapping("/stats")
+    @PreAuthorize("hasAuthority('PERM_READ_CUSTOMER')")
+    public ResponseEntity<ApiResponse<?>> getCustomerStats() {
+        log.info("GET /api/customers/stats - Fetching customer stats");
+        return getService.getCustomerStats();
     }
 
     // ========================

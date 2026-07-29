@@ -180,4 +180,46 @@ public class CustomerNoteController {
         );
     }
 
+    /**
+     * Notes for one customer — parent-scoped variant matching the other
+     * customer sub-resources (emails, phones, documents all have it).
+     */
+    @GetMapping("/customer/{customerId}")
+    @PreAuthorize("hasAuthority('PERM_READ_CUSTOMER_NOTE')")
+    public ResponseEntity<ApiResponse<?>> getCustomersNotes(
+        @PathVariable String customerId,
+        @RequestParam(required = false) NoteType noteType,
+        @RequestParam(required = false) String subject,
+        @RequestParam(required = false) Boolean isPinned,
+        @RequestParam(required = false) Boolean isPrivate,
+        @RequestParam(required = false) NotePriority priority,
+        @RequestParam(required = false) Boolean followUpCompleted,
+        @RequestParam(required = false) Boolean pendingFollowUpsOnly,
+        @RequestParam(required = false) Boolean overdueFollowUpsOnly,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false, defaultValue = "0") Integer page,
+        @RequestParam(required = false, defaultValue = "10") Integer size,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false, defaultValue = "desc") String sortDirection
+    ) {
+        log.info("GET /api/customer-notes/customer/{} - Fetching notes for customer", customerId);
+
+        return customerNoteGetService.getAllCustomerNotes(
+            customerId,
+            noteType,
+            subject,
+            isPinned,
+            isPrivate,
+            priority,
+            followUpCompleted,
+            pendingFollowUpsOnly,
+            overdueFollowUpsOnly,
+            keyword,
+            page,
+            size,
+            sortBy,
+            sortDirection
+        );
+    }
+
 }

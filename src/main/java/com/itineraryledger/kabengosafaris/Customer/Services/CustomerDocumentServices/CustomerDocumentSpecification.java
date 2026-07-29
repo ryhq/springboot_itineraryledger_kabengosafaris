@@ -127,7 +127,12 @@ public class CustomerDocumentSpecification {
             if (email == null || email.trim().isEmpty()) {
                 return cb.conjunction();
             }
-            return cb.like(cb.lower(root.get("customer").get("primaryEmail")), "%" + email.toLowerCase().trim() + "%");
+            // primaryEmail is a @Transient helper — query the customer's email rows instead
+            query.distinct(true);
+            return cb.like(
+                cb.lower(root.join("customer").join("emails", jakarta.persistence.criteria.JoinType.LEFT).get("email")),
+                "%" + email.toLowerCase().trim() + "%"
+            );
         };
     }
 }

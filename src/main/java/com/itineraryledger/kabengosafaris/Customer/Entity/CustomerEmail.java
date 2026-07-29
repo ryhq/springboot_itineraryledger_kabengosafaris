@@ -23,7 +23,8 @@ import java.time.LocalDateTime;
     indexes = {
         @Index(name = "idx_customer_email_customer_id", columnList = "customer_id"),
         @Index(name = "idx_customer_email_type", columnList = "email_type"),
-        @Index(name = "idx_customer_email_is_primary", columnList = "is_primary")
+        @Index(name = "idx_customer_email_is_primary", columnList = "is_primary"),
+        @Index(name = "idx_customer_email_email", columnList = "email")
     }
 )
 @Data

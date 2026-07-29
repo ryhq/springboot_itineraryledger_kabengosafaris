@@ -14,6 +14,8 @@ import java.util.Optional;
 
 @Repository
 public interface BookingInquiryRepository extends JpaRepository<BookingInquiry, Long>, JpaSpecificationExecutor<BookingInquiry> {
+
+    boolean existsByCustomerId(Long customerId);
     List<BookingInquiry> findByEmailIgnoreCase(String email);
     long countByStatus(InquiryStatus status);
     List<BookingInquiry> findByItineraryId(Long itineraryId);

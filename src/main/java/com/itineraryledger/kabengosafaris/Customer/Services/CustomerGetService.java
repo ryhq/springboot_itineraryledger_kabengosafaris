@@ -123,6 +123,8 @@ public class CustomerGetService {
             BigDecimal minTotalSpent,
             BigDecimal maxTotalSpent,
             String keyword,
+            java.time.LocalDateTime createdAfter,
+            java.time.LocalDateTime createdBefore,
             Integer page,
             Integer size,
             String sortBy,
@@ -186,10 +188,17 @@ public class CustomerGetService {
             if (keyword != null && !keyword.isEmpty()) {
                 spec = spec.and(CustomerSpecification.searchKeyword(keyword));
             }
+            if (createdAfter != null) {
+                spec = spec.and(CustomerSpecification.createdAfter(createdAfter));
+            }
+            if (createdBefore != null) {
+                spec = spec.and(CustomerSpecification.createdBefore(createdBefore));
+            }
 
             // Pagination
             int pageNumber = (page != null && page >= 0) ? page : 0;
-            int pageSize = (size != null && size > 0) ? size : 10;
+            // clamp: unbounded page sizes were a cheap way to hurt the server
+            int pageSize = (size != null && size > 0) ? Math.min(size, 100) : 10;
 
             // Sorting with validation
             String validatedSortBy = validateSortField(sortBy);
@@ -233,6 +242,37 @@ public class CustomerGetService {
             log.error("Error fetching customers", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 ApiResponse.error(500, "Failed to fetch customers", "CUSTOMERS_FETCH_FAILED")
+            );
+        }
+    }
+
+    /**
+     * Summary counts for the customer list header.
+     */
+    public ResponseEntity<ApiResponse<?>> getCustomerStats() {
+        try {
+            long total = customerRepository.count();
+            long active = customerRepository.countByIsActiveTrue();
+
+            Map<String, Object> byType = new HashMap<>();
+            for (CustomerType type : CustomerType.values()) {
+                byType.put(type.name(), customerRepository.countByCustomerType(type));
+            }
+
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("total", total);
+            stats.put("active", active);
+            stats.put("inactive", total - active);
+            stats.put("vip", customerRepository.countByIsVipTrue());
+            stats.put("blacklisted", customerRepository.countByIsBlacklistedTrue());
+            stats.put("newLast30Days", customerRepository.countByCreatedAtAfter(java.time.LocalDateTime.now().minusDays(30)));
+            stats.put("byType", byType);
+
+            return ResponseEntity.ok(ApiResponse.success(200, "Customer stats retrieved", stats));
+        } catch (Exception e) {
+            log.error("Error fetching customer stats", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to fetch customer stats", "CUSTOMER_STATS_FAILED")
             );
         }
     }

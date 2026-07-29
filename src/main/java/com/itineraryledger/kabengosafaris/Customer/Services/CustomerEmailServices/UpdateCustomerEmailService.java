@@ -108,9 +108,9 @@ public class UpdateCustomerEmailService {
             );
         }
 
-        // Check if email is being changed and if it's unique
+        // Check if email is being changed and if it's unique (excluding this row itself)
         if (updateDTO.getEmail() != null && !updateDTO.getEmail().equals(email.getEmail())) {
-            if (customerEmailRepository.existsByEmail(updateDTO.getEmail())) {
+            if (customerEmailRepository.existsByEmailAndIdNot(updateDTO.getEmail(), email.getId())) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(
                         400,

@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -40,7 +41,8 @@ import java.util.List;
         @Index(name = "idx_customer_is_active", columnList = "is_active"),
         @Index(name = "idx_customer_is_vip", columnList = "is_vip"),
         @Index(name = "idx_customer_is_blacklisted", columnList = "is_blacklisted"),
-        @Index(name = "idx_customer_source", columnList = "source")
+        @Index(name = "idx_customer_source", columnList = "source"),
+        @Index(name = "idx_customer_created_at", columnList = "created_at")
     },
     uniqueConstraints = {
         @UniqueConstraint(name = "uk_customer_code", columnNames = {"code"})
@@ -236,18 +238,22 @@ public class Customer {
     // ========================
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 100)
     @Builder.Default
     private List<CustomerEmail> emails = new ArrayList<>();
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 100)
     @Builder.Default
     private List<CustomerPhone> phones = new ArrayList<>();
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 100)
     @Builder.Default
     private List<CustomerDocument> documents = new ArrayList<>();
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 100)
     @OrderBy("createdAt DESC")
     @Builder.Default
     private List<CustomerNote> notes = new ArrayList<>();

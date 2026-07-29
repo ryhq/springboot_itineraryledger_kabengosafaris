@@ -52,7 +52,7 @@ public class CreateCustomerDTO {
     @Size(max = 100, message = "First name must not exceed 100 characters")
     private String firstName; // Required for INDIVIDUAL
 
-    @Size(max = 100, message = "Last namludovic.marotel@gmail.come must not exceed 100 characters")
+    @Size(max = 100, message = "Last name must not exceed 100 characters")
     private String lastName; // Required for INDIVIDUAL
 
     @Size(max = 200, message = "Company name must not exceed 200 characters")

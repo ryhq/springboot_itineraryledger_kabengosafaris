@@ -36,12 +36,26 @@ public class CustomerSpecification {
         return (root, query, cb) -> cb.like(cb.lower(root.get("companyName")), "%" + companyName.toLowerCase() + "%");
     }
 
+    // email/phone live on child tables (customer_emails / customer_phones) — join, and
+    // deduplicate the customer rows the join multiplies
     public static Specification<Customer> emailLike(String email) {
-        return (root, query, cb) -> cb.like(cb.lower(root.get("email")), "%" + email.toLowerCase() + "%");
+        return (root, query, cb) -> {
+            query.distinct(true);
+            return cb.like(
+                cb.lower(root.join("emails", jakarta.persistence.criteria.JoinType.LEFT).get("email")),
+                "%" + email.toLowerCase() + "%"
+            );
+        };
     }
 
     public static Specification<Customer> phoneLike(String phone) {
-        return (root, query, cb) -> cb.like(root.get("phone"), "%" + phone + "%");
+        return (root, query, cb) -> {
+            query.distinct(true);
+            return cb.like(
+                root.join("phones", jakarta.persistence.criteria.JoinType.LEFT).get("phoneNumber"),
+                "%" + phone + "%"
+            );
+        };
     }
 
     // ========================
@@ -63,14 +77,19 @@ public class CustomerSpecification {
 
     public static Specification<Customer> searchKeyword(String keyword) {
         String lowerKeyword = "%" + keyword.toLowerCase() + "%";
-        return (root, query, cb) -> cb.or(
+        return (root, query, cb) -> {
+            query.distinct(true);
+            var emailJoin = root.join("emails", jakarta.persistence.criteria.JoinType.LEFT);
+            var phoneJoin = root.join("phones", jakarta.persistence.criteria.JoinType.LEFT);
+            return cb.or(
                 cb.like(cb.lower(root.get("code")), lowerKeyword),
                 cb.like(cb.lower(root.get("firstName")), lowerKeyword),
                 cb.like(cb.lower(root.get("lastName")), lowerKeyword),
                 cb.like(cb.lower(root.get("companyName")), lowerKeyword),
-                cb.like(cb.lower(root.get("email")), lowerKeyword),
-                cb.like(root.get("phone"), lowerKeyword)
-        );
+                cb.like(cb.lower(emailJoin.get("email")), lowerKeyword),
+                cb.like(phoneJoin.get("phoneNumber"), lowerKeyword)
+            );
+        };
     }
 
     // ========================

@@ -1,9 +1,14 @@
 package com.itineraryledger.kabengosafaris.Customer.Services;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
+import com.itineraryledger.kabengosafaris.BookingInquiry.Repository.BookingInquiryRepository;
+import com.itineraryledger.kabengosafaris.CreditNote.Repository.CreditNoteRepository;
 import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
 import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerRepository;
+import com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceRepository;
+import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Safari.Repository.SafariRepository;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.framework.AopContext;
@@ -28,14 +33,43 @@ public class CustomerDeleteService {
 
     private final CustomerRepository customerRepository;
     private final IdObfuscator idObfuscator;
+    private final QuoteRepository quoteRepository;
+    private final InvoiceRepository invoiceRepository;
+    private final SafariRepository safariRepository;
+    private final CreditNoteRepository creditNoteRepository;
+    private final BookingInquiryRepository bookingInquiryRepository;
 
     @Autowired
     public CustomerDeleteService(
         CustomerRepository customerRepository,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        QuoteRepository quoteRepository,
+        InvoiceRepository invoiceRepository,
+        SafariRepository safariRepository,
+        CreditNoteRepository creditNoteRepository,
+        BookingInquiryRepository bookingInquiryRepository
     ) {
         this.customerRepository = customerRepository;
         this.idObfuscator = idObfuscator;
+        this.quoteRepository = quoteRepository;
+        this.invoiceRepository = invoiceRepository;
+        this.safariRepository = safariRepository;
+        this.creditNoteRepository = creditNoteRepository;
+        this.bookingInquiryRepository = bookingInquiryRepository;
+    }
+
+    /**
+     * Names of record types that still reference the customer, empty when deletable.
+     * These FKs are what used to make hard deletes fail silently at the DB layer.
+     */
+    private List<String> blockingReferences(Long customerId) {
+        List<String> refs = new ArrayList<>();
+        if (quoteRepository.countByCustomerId(customerId) > 0) refs.add("quotes");
+        if (invoiceRepository.countByCustomerId(customerId) > 0) refs.add("invoices");
+        if (safariRepository.existsByCustomerId(customerId)) refs.add("safaris");
+        if (creditNoteRepository.countByCustomerId(customerId) > 0) refs.add("credit notes");
+        if (bookingInquiryRepository.existsByCustomerId(customerId)) refs.add("booking inquiries");
+        return refs;
     }
 
     /**
@@ -83,45 +117,57 @@ public class CustomerDeleteService {
      * Delete customers by list of IDs (internal method)
      */
     private ResponseEntity<ApiResponse<?>> deleteCustomersInternal(List<Long> ids) {
-        int deletedCount = 0;
-        List<String> skippedWithBookings = new ArrayList<>();
+        List<String> deletedIds = new ArrayList<>();
+        List<Map<String, Object>> skipped = new ArrayList<>();
 
         for (Long id : ids) {
+            String encodedId = idObfuscator.encodeId(id);
             try {
                 Customer customer = customerRepository.findById(id).orElse(null);
 
                 if (customer == null) {
-                    log.warn("Customer not found: {}", id);
+                    skipped.add(Map.of("id", encodedId, "reason", "Customer not found"));
                     continue;
                 }
 
-                // Check if customer has bookings
-                if (customer.getTotalBookings() != null && customer.getTotalBookings() > 0) {
-                    log.warn("Customer {} has bookings, skipping deletion", customer.getCode());
-                    skippedWithBookings.add(customer.getCode());
+                // Referential integrity: a referenced customer must be deactivated, not deleted.
+                List<String> refs = blockingReferences(id);
+                if (!refs.isEmpty()) {
+                    log.warn("Customer {} referenced by {}, skipping deletion", customer.getCode(), refs);
+                    skipped.add(Map.of(
+                        "id", encodedId,
+                        "code", customer.getCode(),
+                        "reason", "Referenced by " + String.join(", ", refs) + " — deactivate instead"
+                    ));
                     continue;
                 }
 
                 // Use AopContext to get proxy and trigger AOP aspect
                 ((CustomerDeleteService) AopContext.currentProxy()).deleteCustomer(id);
-                deletedCount++;
+                deletedIds.add(encodedId);
                 log.info("Customer deleted successfully: {}", id);
 
             } catch (Exception e) {
                 log.error("Error deleting customer: {}", id, e);
+                skipped.add(Map.of("id", encodedId, "reason", "Delete failed unexpectedly"));
             }
         }
 
-        String message = deletedCount + " customer(s) deleted successfully";
-        if (!skippedWithBookings.isEmpty()) {
-            message += ". " + skippedWithBookings.size() + " customer(s) skipped due to existing bookings: " + String.join(", ", skippedWithBookings);
+        String message = deletedIds.size() + " customer(s) deleted successfully";
+        if (!skipped.isEmpty()) {
+            message += ", " + skipped.size() + " skipped";
         }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("deletedCount", deletedIds.size());
+        data.put("deletedIds", deletedIds);
+        data.put("skipped", skipped);
 
         return ResponseEntity.ok().body(
             ApiResponse.success(
                 200,
                 message,
-                null
+                data
             )
         );
     }

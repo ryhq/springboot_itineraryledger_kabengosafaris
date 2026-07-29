@@ -16,6 +16,8 @@ import java.util.Optional;
 @Repository
 public interface SafariRepository extends JpaRepository<Safari, Long>, JpaSpecificationExecutor<Safari> {
 
+    boolean existsByCustomerId(Long customerId);
+
     Optional<Safari> findBySlug(String slug);
 
     Optional<Safari> findByCode(String code);
