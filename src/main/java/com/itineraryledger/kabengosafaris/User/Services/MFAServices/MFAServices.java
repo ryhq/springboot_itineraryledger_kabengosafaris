@@ -214,6 +214,11 @@ public class MFAServices {
         return backupCodes;
     }
 
+    /** Strip the dash and case so backup codes match regardless of input formatting. */
+    private String normalizeBackupCode(String code) {
+        return code == null ? "" : code.replace("-", "").trim().toUpperCase();
+    }
+
     /**
      * Verify if provided code is a valid backup code
      */
@@ -230,8 +235,12 @@ public class MFAServices {
                 return false;
             }
 
+            // Codes are stored as XXXX-XXXX; accept user input with or without the
+            // dash and in any case rather than failing on formatting.
+            String normalizedInput = normalizeBackupCode(code);
+
             for (BackupCodeEntry entry : data.codes) {
-                if (entry.code.equals(code) && !entry.used) {
+                if (normalizeBackupCode(entry.code).equals(normalizedInput) && !entry.used) {
                     entry.used = true;
                     user.setMfaBackupCodes(gson.toJson(data));
                     userService.saveUser(user);
