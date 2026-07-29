@@ -475,8 +475,9 @@ public class MFAServices {
                 );
             }
 
-            // Verify the provided code (must be valid TOTP code)
-            if (!verifyCode(user.getMfaSecret(), code)) {
+            // Verify the provided code (TOTP or an unused backup code, so a user
+            // who lost the authenticator can still disable MFA with a backup code)
+            if (!verifyMFACode(user, code)) {
                 return ResponseEntity.status(401).body(
                     ApiResponse.error(401, "Invalid MFA code. Cannot disable MFA without valid code.", "INVALID_MFA_CODE")
                 );
