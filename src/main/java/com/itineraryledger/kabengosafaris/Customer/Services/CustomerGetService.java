@@ -128,6 +128,7 @@ public class CustomerGetService {
             Boolean hasEmail,
             Boolean hasPhone,
             Boolean passportExpiringSoon,
+            Boolean includeStats,
             Integer page,
             Integer size,
             String sortBy,
@@ -177,9 +178,14 @@ public class CustomerGetService {
             response.put("currentPage", customerPage.getNumber());
             response.put("totalItems", customerPage.getTotalElements());
             response.put("totalPages", customerPage.getTotalPages());
+            response.put("pageSize", pageSize);
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            // dashboard counters for exactly this filter set (opt out with includeStats=false)
+            if (!Boolean.FALSE.equals(includeStats)) {
+                response.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Customers retrieved successfully", response)
@@ -237,60 +243,34 @@ public class CustomerGetService {
     }
 
     /**
-     * Summary counts for the customer list header. Accepts the same filters as
-     * the list so the cards can summarise exactly what the user is looking at
-     * (pass nothing for whole-database totals).
+     * Summary counts over everything the current filters match — returned inside
+     * the list response so the dashboard cards and the table can never disagree.
+     * Page-scoped figures are derived by the client from the returned rows.
      */
-    public ResponseEntity<ApiResponse<?>> getCustomerStats(
-            String keyword,
-            CustomerType customerType,
-            CustomerSource source,
-            String country,
-            Boolean isActive,
-            Boolean isVip,
-            Boolean isBlacklisted,
-            java.time.LocalDateTime createdAfter,
-            Boolean hasEmail,
-            Boolean hasPhone,
-            Boolean passportExpiringSoon
-    ) {
-        try {
-            Specification<Customer> base = buildSpec(
-                null, null, null, null, customerType, source, null, country, null,
-                isActive, isVip, isBlacklisted, null, null, null,
-                keyword, createdAfter, null, hasEmail, hasPhone, passportExpiringSoon
-            );
-
-            Map<String, Object> byType = new HashMap<>();
-            for (CustomerType type : CustomerType.values()) {
-                byType.put(type.name(), customerRepository.count(base.and(CustomerSpecification.hasCustomerType(type))));
-            }
-
-            long total = customerRepository.count(base);
-            long active = customerRepository.count(base.and(CustomerSpecification.isActive(true)));
-
-            Map<String, Object> stats = new HashMap<>();
-            stats.put("total", total);
-            stats.put("active", active);
-            stats.put("inactive", total - active);
-            stats.put("vip", customerRepository.count(base.and(CustomerSpecification.isVip(true))));
-            stats.put("blacklisted", customerRepository.count(base.and(CustomerSpecification.isBlacklisted(true))));
-            stats.put("newLast7Days", customerRepository.count(base.and(CustomerSpecification.createdAfter(java.time.LocalDateTime.now().minusDays(7)))));
-            stats.put("newLast30Days", customerRepository.count(base.and(CustomerSpecification.createdAfter(java.time.LocalDateTime.now().minusDays(30)))));
-            stats.put("byType", byType);
-            // data-quality counters an admin can act on
-            stats.put("missingEmail", customerRepository.count(base.and(CustomerSpecification.hasEmail(false))));
-            stats.put("missingPhone", customerRepository.count(base.and(CustomerSpecification.hasPhone(false))));
-            stats.put("passportExpiringSoon", customerRepository.count(
-                base.and(CustomerSpecification.passportExpiringBefore(java.time.LocalDate.now().plusMonths(6)))));
-
-            return ResponseEntity.ok(ApiResponse.success(200, "Customer stats retrieved", stats));
-        } catch (Exception e) {
-            log.error("Error fetching customer stats", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                ApiResponse.error(500, "Failed to fetch customer stats", "CUSTOMER_STATS_FAILED")
-            );
+    private Map<String, Object> computeStats(Specification<Customer> base) {
+        Map<String, Object> byType = new HashMap<>();
+        for (CustomerType type : CustomerType.values()) {
+            byType.put(type.name(), customerRepository.count(base.and(CustomerSpecification.hasCustomerType(type))));
         }
+
+        long total = customerRepository.count(base);
+        long active = customerRepository.count(base.and(CustomerSpecification.isActive(true)));
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("total", total);
+        stats.put("active", active);
+        stats.put("inactive", total - active);
+        stats.put("vip", customerRepository.count(base.and(CustomerSpecification.isVip(true))));
+        stats.put("blacklisted", customerRepository.count(base.and(CustomerSpecification.isBlacklisted(true))));
+        stats.put("newLast7Days", customerRepository.count(base.and(CustomerSpecification.createdAfter(java.time.LocalDateTime.now().minusDays(7)))));
+        stats.put("newLast30Days", customerRepository.count(base.and(CustomerSpecification.createdAfter(java.time.LocalDateTime.now().minusDays(30)))));
+        stats.put("byType", byType);
+        // data-quality counters an admin can act on
+        stats.put("missingEmail", customerRepository.count(base.and(CustomerSpecification.hasEmail(false))));
+        stats.put("missingPhone", customerRepository.count(base.and(CustomerSpecification.hasPhone(false))));
+        stats.put("passportExpiringSoon", customerRepository.count(
+            base.and(CustomerSpecification.passportExpiringBefore(java.time.LocalDate.now().plusMonths(6)))));
+        return stats;
     }
 
     /**

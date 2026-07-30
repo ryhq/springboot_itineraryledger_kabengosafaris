@@ -92,6 +92,7 @@ public class CustomerController {
             @RequestParam(required = false) Boolean hasEmail,
             @RequestParam(required = false) Boolean hasPhone,
             @RequestParam(required = false) Boolean passportExpiringSoon,
+            @RequestParam(required = false, defaultValue = "true") Boolean includeStats,
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "10") Integer size,
             @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
@@ -103,33 +104,8 @@ public class CustomerController {
                 nationality, country, city, isActive, isVip, isBlacklisted,
                 hasBookings, minTotalSpent, maxTotalSpent, keyword,
                 createdAfter, createdBefore,
-                hasEmail, hasPhone, passportExpiringSoon,
+                hasEmail, hasPhone, passportExpiringSoon, includeStats,
                 page, size, sortBy, sortDirection
-        );
-    }
-
-    /**
-     * Summary counts for the customer list header.
-     */
-    @GetMapping("/stats")
-    @PreAuthorize("hasAuthority('PERM_READ_CUSTOMER')")
-    public ResponseEntity<ApiResponse<?>> getCustomerStats(
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) CustomerType customerType,
-            @RequestParam(required = false) CustomerSource source,
-            @RequestParam(required = false) String country,
-            @RequestParam(required = false) Boolean isActive,
-            @RequestParam(required = false) Boolean isVip,
-            @RequestParam(required = false) Boolean isBlacklisted,
-            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
-            @RequestParam(required = false) Boolean hasEmail,
-            @RequestParam(required = false) Boolean hasPhone,
-            @RequestParam(required = false) Boolean passportExpiringSoon
-    ) {
-        log.info("GET /api/customers/stats - Fetching customer stats");
-        return getService.getCustomerStats(
-            keyword, customerType, source, country, isActive, isVip, isBlacklisted,
-            createdAfter, hasEmail, hasPhone, passportExpiringSoon
         );
     }
 
