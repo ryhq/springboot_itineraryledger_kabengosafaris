@@ -43,6 +43,7 @@ public class CustomerGetService {
 
     private final CustomerRepository customerRepository;
     private final IdObfuscator idObfuscator;
+    private final jakarta.persistence.EntityManager entityManager;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "code", "firstName", "lastName", "companyName", "customerType", "nationality",
@@ -54,7 +55,19 @@ public class CustomerGetService {
     /**
      * Get a single customer by obfuscated ID
      */
-    public ResponseEntity<ApiResponse<?>> getCustomerById(String idObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getCustomerById(
+            String idObfuscated,
+            String keyword,
+            String country,
+            java.util.List<CustomerType> customerTypes,
+            java.util.List<CustomerSource> sources,
+            java.util.List<String> statuses,
+            java.util.List<String> flags,
+            java.util.List<String> qualities,
+            java.time.LocalDateTime createdAfter,
+            String sortBy,
+            String sortDirection
+    ) {
         log.info("Fetching customer with ID: {}", idObfuscated);
 
         try {
@@ -77,16 +90,31 @@ public class CustomerGetService {
 
             CustomerDTO customerDTO = convertToDTO(customer);
 
-            // Circular navigation
-            Long nextId = customerRepository.findNextId(id).orElse(null);
-            Long previousId = customerRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = customerRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = customerRepository.findLastId().orElse(null);
+            // Navigation walks the SAME filtered+sorted set the user came from, so
+            // paging from a filtered list stays inside that filter (wraps at the ends).
+            Specification<Customer> navSpec = buildSpec(
+                null, null, null, null, null, null, null, country, null,
+                null, null, null, null, null, null,
+                keyword, createdAfter, null, null, null, null,
+                customerTypes, sources, statuses, flags, qualities
+            );
+            List<Long> orderedIds = navigationIds(navSpec, sortBy, sortDirection);
+            int index = orderedIds.indexOf(id);
+
+            Long nextId = null;
+            Long previousId = null;
+            if (index >= 0 && orderedIds.size() > 1) {
+                nextId = orderedIds.get((index + 1) % orderedIds.size());
+                previousId = orderedIds.get((index - 1 + orderedIds.size()) % orderedIds.size());
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("customer", customerDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            // lets the UI show "3 of 6" so wrapping past the last record is visible
+            response.put("position", index >= 0 ? index + 1 : null);
+            response.put("total", orderedIds.size());
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Customer retrieved successfully", response)
@@ -203,6 +231,35 @@ public class CustomerGetService {
                 ApiResponse.error(500, "Failed to fetch customers", "CUSTOMERS_FETCH_FAILED")
             );
         }
+    }
+
+    /** hard cap so record paging can never load an unbounded id list */
+    private static final int NAV_ID_LIMIT = 20_000;
+
+    /**
+     * Ids of everything matching the spec, in the requested sort order — the
+     * backbone of filter-aware next/previous navigation. Only ids are selected,
+     * so this stays cheap compared with fetching entities.
+     */
+    private List<Long> navigationIds(Specification<Customer> spec, String sortBy, String sortDirection) {
+        var cb = entityManager.getCriteriaBuilder();
+        var query = cb.createQuery(Long.class);
+        var root = query.from(Customer.class);
+        query.select(root.get("id"));
+
+        var predicate = spec.toPredicate(root, query, cb);
+        if (predicate != null) query.where(predicate);
+
+        String field = validateSortField(sortBy);
+        if (field == null) field = DEFAULT_SORT_FIELD;
+        boolean asc = sortDirection != null && sortDirection.equalsIgnoreCase("asc");
+        // id is the tiebreaker so the order is stable and matches the list page
+        query.orderBy(
+            asc ? cb.asc(root.get(field)) : cb.desc(root.get(field)),
+            asc ? cb.asc(root.get("id")) : cb.desc(root.get("id"))
+        );
+
+        return entityManager.createQuery(query).setMaxResults(NAV_ID_LIMIT).getResultList();
     }
 
     /**

@@ -59,13 +59,30 @@ public class CustomerController {
     // READ
     // ========================
 
+    /**
+     * Single customer. The optional filter/sort params are the ones the list page
+     * was using, so next/previous navigation stays inside that same filtered set.
+     */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_CUSTOMER')")
     public ResponseEntity<ApiResponse<?>> getCustomerById(
-            @PathVariable String id
+            @PathVariable String id,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String country,
+            @RequestParam(required = false) java.util.List<CustomerType> customerTypes,
+            @RequestParam(required = false) java.util.List<CustomerSource> sources,
+            @RequestParam(required = false) java.util.List<String> statuses,
+            @RequestParam(required = false) java.util.List<String> flags,
+            @RequestParam(required = false) java.util.List<String> qualities,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
+            @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
+            @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/customers/{} - Fetching customer", id);
-        return getService.getCustomerById(id);
+        return getService.getCustomerById(
+            id, keyword, country, customerTypes, sources, statuses, flags, qualities,
+            createdAfter, sortBy, sortDirection
+        );
     }
 
     @GetMapping
