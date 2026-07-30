@@ -106,4 +106,36 @@ public class ParkDocumentSpecification {
             return cb.like(cb.lower(root.get("park").get("region")), "%" + region.toLowerCase().trim() + "%");
         };
     }
+
+    /* ---- stat-card support: every counter below is also a filter ---- */
+
+    public static Specification<ParkDocument> createdAfter(java.time.LocalDateTime after) {
+        return (root, query, cb) ->
+            after == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), after);
+    }
+
+    /** Past its valid-to date. */
+    public static Specification<ParkDocument> expired() {
+        return (root, query, cb) -> cb.and(
+            cb.isNotNull(root.get("validTo")),
+            cb.lessThan(root.get("validTo"), java.time.LocalDateTime.now())
+        );
+    }
+
+    /** Expires within the next N days (and has not expired yet). */
+    public static Specification<ParkDocument> expiringWithin(int days) {
+        return (root, query, cb) -> {
+            var now = java.time.LocalDateTime.now();
+            return cb.and(
+                cb.isNotNull(root.get("validTo")),
+                cb.greaterThanOrEqualTo(root.get("validTo"), now),
+                cb.lessThanOrEqualTo(root.get("validTo"), now.plusDays(days))
+            );
+        };
+    }
+
+    /** Open-ended — no valid-to recorded. */
+    public static Specification<ParkDocument> noExpiry() {
+        return (root, query, cb) -> cb.isNull(root.get("validTo"));
+    }
 }

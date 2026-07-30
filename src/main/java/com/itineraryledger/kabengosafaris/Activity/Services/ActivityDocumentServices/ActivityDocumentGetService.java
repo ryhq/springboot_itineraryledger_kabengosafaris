@@ -36,6 +36,8 @@ import lombok.extern.slf4j.Slf4j;
 public class ActivityDocumentGetService {
 
     private final ActivityDocumentRepository activityDocumentRepository;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final ActivityDocumentStorageService storageService;
     private final IdObfuscator idObfuscator;
 
@@ -130,6 +132,8 @@ public class ActivityDocumentGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+        // counters share the SAME spec as the rows, so cards and table always agree
+        response.put("stats", computeStats(spec));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Activity documents retrieved successfully", response)
@@ -292,6 +296,19 @@ public class ActivityDocumentGetService {
             .isActive(document.getIsActive())
             .createdAt(document.getCreatedAt())
             .updatedAt(document.getUpdatedAt())
+            .build();
+    }
+
+    /** Dashboard counters for the CURRENT filter set (see CLAUDE.md: stats on every list). */
+    private Map<String, Object> computeStats(Specification<ActivityDocument> base) {
+        return listStats.of(ActivityDocument.class, base)
+            .total()
+            .count("active", ActivityDocumentSpecification.byIsActive(true))
+            .complement("inactive", "active")
+            .count("expired", ActivityDocumentSpecification.expired())
+            .count("expiringSoon", ActivityDocumentSpecification.expiringWithin(30))
+            .count("noExpiry", ActivityDocumentSpecification.noExpiry())
+            .recency(ActivityDocumentSpecification::createdAfter)
             .build();
     }
 }

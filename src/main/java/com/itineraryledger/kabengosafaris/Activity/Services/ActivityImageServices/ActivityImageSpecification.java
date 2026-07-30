@@ -68,4 +68,27 @@ public class ActivityImageSpecification {
             ? cb.conjunction()
             : cb.equal(root.get("activity").get("hasTariff"), hasTariff);
     }
+
+    /* ---- stat-card support: every counter below is also a filter ---- */
+
+    public static Specification<ActivityImage> createdAfter(java.time.LocalDateTime after) {
+        return (root, query, cb) ->
+            after == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), after);
+    }
+
+    /** No caption — the image cannot be labelled on the website. */
+    public static Specification<ActivityImage> missingCaption() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("caption")),
+            cb.equal(cb.trim(root.get("caption").as(String.class)), "")
+        );
+    }
+
+    /** No alt text — an accessibility gap. */
+    public static Specification<ActivityImage> missingAltText() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("altText")),
+            cb.equal(cb.trim(root.get("altText").as(String.class)), "")
+        );
+    }
 }

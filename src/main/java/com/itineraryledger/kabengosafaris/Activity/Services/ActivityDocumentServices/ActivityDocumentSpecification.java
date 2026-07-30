@@ -104,4 +104,36 @@ public class ActivityDocumentSpecification {
             ? cb.conjunction()
             : cb.equal(root.get("activity").get("hasTariff"), hasTariff);
     }
+
+    /* ---- stat-card support: every counter below is also a filter ---- */
+
+    public static Specification<ActivityDocument> createdAfter(java.time.LocalDateTime after) {
+        return (root, query, cb) ->
+            after == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), after);
+    }
+
+    /** Past its valid-to date. */
+    public static Specification<ActivityDocument> expired() {
+        return (root, query, cb) -> cb.and(
+            cb.isNotNull(root.get("validTo")),
+            cb.lessThan(root.get("validTo"), java.time.LocalDateTime.now())
+        );
+    }
+
+    /** Expires within the next N days (and has not expired yet). */
+    public static Specification<ActivityDocument> expiringWithin(int days) {
+        return (root, query, cb) -> {
+            var now = java.time.LocalDateTime.now();
+            return cb.and(
+                cb.isNotNull(root.get("validTo")),
+                cb.greaterThanOrEqualTo(root.get("validTo"), now),
+                cb.lessThanOrEqualTo(root.get("validTo"), now.plusDays(days))
+            );
+        };
+    }
+
+    /** Open-ended — no valid-to recorded. */
+    public static Specification<ActivityDocument> noExpiry() {
+        return (root, query, cb) -> cb.isNull(root.get("validTo"));
+    }
 }

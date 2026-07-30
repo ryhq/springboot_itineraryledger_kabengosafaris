@@ -37,6 +37,8 @@ import lombok.extern.slf4j.Slf4j;
 public class ParkDocumentGetService {
 
     private final ParkDocumentRepository parkDocumentRepository;
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final ParkDocumentStorageService storageService;
     private final IdObfuscator idObfuscator;
 
@@ -131,6 +133,8 @@ public class ParkDocumentGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+        // counters share the SAME spec as the rows, so cards and table always agree
+        response.put("stats", computeStats(spec));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Park documents retrieved successfully", response)
@@ -293,6 +297,19 @@ public class ParkDocumentGetService {
             .isActive(document.getIsActive())
             .createdAt(document.getCreatedAt())
             .updatedAt(document.getUpdatedAt())
+            .build();
+    }
+
+    /** Dashboard counters for the CURRENT filter set (see CLAUDE.md: stats on every list). */
+    private Map<String, Object> computeStats(Specification<ParkDocument> base) {
+        return listStats.of(ParkDocument.class, base)
+            .total()
+            .count("active", ParkDocumentSpecification.byIsActive(true))
+            .complement("inactive", "active")
+            .count("expired", ParkDocumentSpecification.expired())
+            .count("expiringSoon", ParkDocumentSpecification.expiringWithin(30))
+            .count("noExpiry", ParkDocumentSpecification.noExpiry())
+            .recency(ParkDocumentSpecification::createdAfter)
             .build();
     }
 }

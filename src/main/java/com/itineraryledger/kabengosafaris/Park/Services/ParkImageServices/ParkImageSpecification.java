@@ -78,4 +78,27 @@ public class ParkImageSpecification {
             return cb.like(cb.lower(root.get("park").get("region")), "%" + region.toLowerCase().trim() + "%");
         };
     }
+
+    /* ---- stat-card support: every counter below is also a filter ---- */
+
+    public static Specification<ParkImage> createdAfter(java.time.LocalDateTime after) {
+        return (root, query, cb) ->
+            after == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), after);
+    }
+
+    /** No caption — the image cannot be labelled on the website. */
+    public static Specification<ParkImage> missingCaption() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("caption")),
+            cb.equal(cb.trim(root.get("caption").as(String.class)), "")
+        );
+    }
+
+    /** No alt text — an accessibility gap. */
+    public static Specification<ParkImage> missingAltText() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("altText")),
+            cb.equal(cb.trim(root.get("altText").as(String.class)), "")
+        );
+    }
 }

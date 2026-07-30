@@ -33,6 +33,7 @@ import java.util.Map;
 public class ParkImageGetService {
 
     private final ParkImageRepository parkImageRepository;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final ParkImageStorageService storageService;
     private final IdObfuscator idObfuscator;
 
@@ -45,11 +46,13 @@ public class ParkImageGetService {
     public ParkImageGetService(
         ParkImageRepository parkImageRepository,
         ParkImageStorageService storageService,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats
     ) {
         this.parkImageRepository = parkImageRepository;
         this.storageService = storageService;
         this.idObfuscator = idObfuscator;
+        this.listStats = listStats;
     }
 
     public ParkImageDTO toDTO(ParkImage image) {
@@ -165,6 +168,8 @@ public class ParkImageGetService {
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("currentSortBy", validatedSortBy);
         response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+        // counters share the SAME spec as the rows, so cards and table always agree
+        response.put("stats", computeStats(spec));
 
         return ResponseEntity.ok(ApiResponse.success(200, "Park images retrieved successfully", response));
     }
@@ -258,5 +263,19 @@ public class ParkImageGetService {
             if (field.equalsIgnoreCase(sortBy)) return field;
         }
         return null;
+    }
+
+    /** Dashboard counters for the CURRENT filter set (see CLAUDE.md: stats on every list). */
+    private Map<String, Object> computeStats(Specification<ParkImage> base) {
+        return listStats.of(ParkImage.class, base)
+            .total()
+            .count("active", ParkImageSpecification.byIsActive(true))
+            .complement("inactive", "active")
+            .count("primary", ParkImageSpecification.byIsPrimary(true))
+            .count("missingCaption", ParkImageSpecification.missingCaption())
+            .count("missingAltText", ParkImageSpecification.missingAltText())
+            .breakdown("byImageType", ImageType.values(), ParkImageSpecification::byImageType)
+            .recency(ParkImageSpecification::createdAfter)
+            .build();
     }
 }

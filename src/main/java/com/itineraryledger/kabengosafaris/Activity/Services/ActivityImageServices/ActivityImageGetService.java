@@ -32,6 +32,7 @@ import java.util.Map;
 public class ActivityImageGetService {
 
     private final ActivityImageRepository activityImageRepository;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final ActivityImageStorageService storageService;
     private final IdObfuscator idObfuscator;
 
@@ -44,11 +45,13 @@ public class ActivityImageGetService {
     public ActivityImageGetService(
         ActivityImageRepository activityImageRepository,
         ActivityImageStorageService storageService,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats
     ) {
         this.activityImageRepository = activityImageRepository;
         this.storageService = storageService;
         this.idObfuscator = idObfuscator;
+        this.listStats = listStats;
     }
 
     public ActivityImageDTO toDTO(ActivityImage image) {
@@ -159,6 +162,8 @@ public class ActivityImageGetService {
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("currentSortBy", validatedSortBy);
         response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+        // counters share the SAME spec as the rows, so cards and table always agree
+        response.put("stats", computeStats(spec));
 
         return ResponseEntity.ok(ApiResponse.success(200, "Activity images retrieved successfully", response));
     }
@@ -252,5 +257,19 @@ public class ActivityImageGetService {
             if (field.equalsIgnoreCase(sortBy)) return field;
         }
         return null;
+    }
+
+    /** Dashboard counters for the CURRENT filter set (see CLAUDE.md: stats on every list). */
+    private Map<String, Object> computeStats(Specification<ActivityImage> base) {
+        return listStats.of(ActivityImage.class, base)
+            .total()
+            .count("active", ActivityImageSpecification.byIsActive(true))
+            .complement("inactive", "active")
+            .count("primary", ActivityImageSpecification.byIsPrimary(true))
+            .count("missingCaption", ActivityImageSpecification.missingCaption())
+            .count("missingAltText", ActivityImageSpecification.missingAltText())
+            .breakdown("byImageType", ImageType.values(), ActivityImageSpecification::byImageType)
+            .recency(ActivityImageSpecification::createdAfter)
+            .build();
     }
 }
