@@ -92,6 +92,11 @@ public class CustomerController {
             @RequestParam(required = false) Boolean hasEmail,
             @RequestParam(required = false) Boolean hasPhone,
             @RequestParam(required = false) Boolean passportExpiringSoon,
+            @RequestParam(required = false) java.util.List<CustomerType> customerTypes,
+            @RequestParam(required = false) java.util.List<CustomerSource> sources,
+            @RequestParam(required = false) java.util.List<String> statuses,
+            @RequestParam(required = false) java.util.List<String> flags,
+            @RequestParam(required = false) java.util.List<String> qualities,
             @RequestParam(required = false, defaultValue = "true") Boolean includeStats,
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "10") Integer size,
@@ -104,7 +109,8 @@ public class CustomerController {
                 nationality, country, city, isActive, isVip, isBlacklisted,
                 hasBookings, minTotalSpent, maxTotalSpent, keyword,
                 createdAfter, createdBefore,
-                hasEmail, hasPhone, passportExpiringSoon, includeStats,
+                hasEmail, hasPhone, passportExpiringSoon,
+                customerTypes, sources, statuses, flags, qualities, includeStats,
                 page, size, sortBy, sortDirection
         );
     }

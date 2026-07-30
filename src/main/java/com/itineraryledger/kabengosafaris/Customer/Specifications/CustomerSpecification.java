@@ -165,6 +165,50 @@ public class CustomerSpecification {
     // ========================
 
     // ========================
+    // MULTI-VALUE FACETS (dashboard cards: OR within a dimension, AND across)
+    // ========================
+
+    public static Specification<Customer> customerTypeIn(java.util.List<CustomerType> types) {
+        return (root, query, cb) -> root.get("customerType").in(types);
+    }
+
+    public static Specification<Customer> sourceIn(java.util.List<CustomerSource> sources) {
+        return (root, query, cb) -> root.get("source").in(sources);
+    }
+
+    /** any of the requested status flags — e.g. active OR inactive */
+    public static Specification<Customer> activeIn(java.util.List<Boolean> states) {
+        return (root, query, cb) -> root.get("isActive").in(states);
+    }
+
+    /** vip OR blacklisted, whichever were requested */
+    public static Specification<Customer> anyFlag(boolean vip, boolean blacklisted) {
+        return (root, query, cb) -> {
+            java.util.List<jakarta.persistence.criteria.Predicate> or = new java.util.ArrayList<>();
+            if (vip) or.add(cb.isTrue(root.get("isVip")));
+            if (blacklisted) or.add(cb.isTrue(root.get("isBlacklisted")));
+            return or.isEmpty() ? cb.conjunction() : cb.or(or.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+    }
+
+    /** missing email OR missing phone OR passport expiring, whichever were requested */
+    public static Specification<Customer> anyQualityIssue(
+            boolean noEmail, boolean noPhone, boolean passportSoon, java.time.LocalDate passportCutoff) {
+        return (root, query, cb) -> {
+            java.util.List<jakarta.persistence.criteria.Predicate> or = new java.util.ArrayList<>();
+            if (noEmail) or.add(cb.isEmpty(root.get("emails")));
+            if (noPhone) or.add(cb.isEmpty(root.get("phones")));
+            if (passportSoon) {
+                or.add(cb.and(
+                    cb.isNotNull(root.get("passportExpiry")),
+                    cb.lessThanOrEqualTo(root.get("passportExpiry"), passportCutoff)
+                ));
+            }
+            return or.isEmpty() ? cb.conjunction() : cb.or(or.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+    }
+
+    // ========================
     // DATA QUALITY (dashboard cards)
     // ========================
 

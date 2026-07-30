@@ -128,6 +128,11 @@ public class CustomerGetService {
             Boolean hasEmail,
             Boolean hasPhone,
             Boolean passportExpiringSoon,
+            java.util.List<CustomerType> customerTypes,
+            java.util.List<CustomerSource> sources,
+            java.util.List<String> statuses,
+            java.util.List<String> flags,
+            java.util.List<String> qualities,
             Boolean includeStats,
             Integer page,
             Integer size,
@@ -140,7 +145,8 @@ public class CustomerGetService {
             Specification<Customer> spec = buildSpec(
                 name, email, phone, code, customerType, source, nationality, country, city,
                 isActive, isVip, isBlacklisted, hasBookings, minTotalSpent, maxTotalSpent,
-                keyword, createdAfter, createdBefore, hasEmail, hasPhone, passportExpiringSoon
+                keyword, createdAfter, createdBefore, hasEmail, hasPhone, passportExpiringSoon,
+                customerTypes, sources, statuses, flags, qualities
             );
 
             // Pagination
@@ -210,9 +216,39 @@ public class CustomerGetService {
             Boolean isActive, Boolean isVip, Boolean isBlacklisted, Boolean hasBookings,
             BigDecimal minTotalSpent, BigDecimal maxTotalSpent, String keyword,
             java.time.LocalDateTime createdAfter, java.time.LocalDateTime createdBefore,
-            Boolean hasEmail, Boolean hasPhone, Boolean passportExpiringSoon
+            Boolean hasEmail, Boolean hasPhone, Boolean passportExpiringSoon,
+            java.util.List<CustomerType> customerTypes,
+            java.util.List<CustomerSource> sources,
+            java.util.List<String> statuses,
+            java.util.List<String> flags,
+            java.util.List<String> qualities
     ) {
         Specification<Customer> spec = Specification.unrestricted();
+
+        // multi-value facets: OR inside each dimension, AND between dimensions
+        if (customerTypes != null && !customerTypes.isEmpty()) {
+            spec = spec.and(CustomerSpecification.customerTypeIn(customerTypes));
+        }
+        if (sources != null && !sources.isEmpty()) {
+            spec = spec.and(CustomerSpecification.sourceIn(sources));
+        }
+        if (statuses != null && !statuses.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            if (!states.isEmpty() && states.size() < 2) spec = spec.and(CustomerSpecification.activeIn(states));
+        }
+        if (flags != null && !flags.isEmpty()) {
+            spec = spec.and(CustomerSpecification.anyFlag(flags.contains("vip"), flags.contains("blacklisted")));
+        }
+        if (qualities != null && !qualities.isEmpty()) {
+            spec = spec.and(CustomerSpecification.anyQualityIssue(
+                qualities.contains("no-email"),
+                qualities.contains("no-phone"),
+                qualities.contains("passport"),
+                java.time.LocalDate.now().plusMonths(6)
+            ));
+        }
 
         if (name != null && !name.isEmpty()) spec = spec.and(CustomerSpecification.nameLike(name));
         if (email != null && !email.isEmpty()) spec = spec.and(CustomerSpecification.emailLike(email));
