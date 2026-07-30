@@ -105,10 +105,20 @@ public class ParkController {
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_PARK')")
     public ResponseEntity<ApiResponse<?>> getParkById(
-        @Parameter(description = "Obfuscated park ID") @PathVariable String idObfuscated
+        @Parameter(description = "Obfuscated park ID") @PathVariable String idObfuscated,
+        @Parameter(description = "Search keyword the list was filtered by") @RequestParam(required = false) String keyword,
+        @Parameter(description = "Park types the list was filtered by") @RequestParam(required = false) java.util.List<ParkType> parkTypes,
+        @Parameter(description = "Statuses the list was filtered by") @RequestParam(required = false) java.util.List<String> statuses,
+        @Parameter(description = "Visibilities the list was filtered by") @RequestParam(required = false) java.util.List<String> visibilities,
+        @Parameter(description = "Quality gaps the list was filtered by") @RequestParam(required = false) java.util.List<String> qualities,
+        @Parameter(description = "Sort field the list used") @RequestParam(required = false) String sortBy,
+        @Parameter(description = "Sort direction the list used") @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/parks/{} - Fetching park by ID", idObfuscated);
-        return parkGetService.getParkById(idObfuscated);
+        // the filter context makes record paging walk the same set the list showed
+        return parkGetService.getParkById(
+            idObfuscated, keyword, parkTypes, statuses, visibilities, qualities, sortBy, sortDirection
+        );
     }
 
     /**
@@ -155,6 +165,13 @@ public class ParkController {
         @Parameter(description = "Filter by active status") @RequestParam(required = false) Boolean isActive,
         @Parameter(description = "Filter by web active status") @RequestParam(required = false) Boolean isWebActive,
         @Parameter(description = "Search keyword across multiple fields") @RequestParam(required = false) String keyword,
+        @Parameter(description = "Park types (OR within the dimension)") @RequestParam(required = false) java.util.List<ParkType> parkTypes,
+        @Parameter(description = "Statuses: active, inactive") @RequestParam(required = false) java.util.List<String> statuses,
+        @Parameter(description = "Website visibility: on-web, off-web") @RequestParam(required = false) java.util.List<String> visibilities,
+        @Parameter(description = "Data-quality gaps: no-description, no-image, no-coordinates, no-tariff") @RequestParam(required = false) java.util.List<String> qualities,
+        @Parameter(description = "Created on or after (ISO date-time)") @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
+        @Parameter(description = "Created on or before (ISO date-time)") @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdBefore,
+        @Parameter(description = "Include dashboard stats in the response (default true)") @RequestParam(required = false) Boolean includeStats,
         @Parameter(description = "Page number (0-indexed)") @RequestParam(required = false, defaultValue = "0") Integer page,
         @Parameter(description = "Page size") @RequestParam(required = false, defaultValue = "10") Integer size,
         @Parameter(description = "Sort by field") @RequestParam(required = false) String sortBy,
@@ -172,6 +189,13 @@ public class ParkController {
             isActive,
             isWebActive,
             keyword,
+            parkTypes,
+            statuses,
+            visibilities,
+            qualities,
+            createdAfter,
+            createdBefore,
+            includeStats,
             page,
             size,
             sortBy,

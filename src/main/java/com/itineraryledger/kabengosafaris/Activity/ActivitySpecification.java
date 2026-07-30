@@ -196,4 +196,72 @@ public class ActivitySpecification {
             }
         };
     }
+
+    /* ------------------------------------------------------------------
+     * Multi-value facets + data-quality gaps. The rows, the stat counters
+     * and the prev/next walk all build on these.
+     * ------------------------------------------------------------------ */
+
+    /** Any of the given charging bases. */
+    public static Specification<Activity> chargingBasisIn(java.util.List<ChargingBasis> bases) {
+        return (root, query, cb) -> {
+            if (bases == null || bases.isEmpty()) return cb.conjunction();
+            return root.get("chargingBasis").in(bases);
+        };
+    }
+
+    /** Any of the given active states; both cancels to no constraint. */
+    public static Specification<Activity> activeIn(java.util.List<Boolean> states) {
+        return (root, query, cb) -> {
+            if (states == null || states.isEmpty() || states.size() > 1) return cb.conjunction();
+            return cb.equal(root.get("isActive"), states.get(0));
+        };
+    }
+
+    /** Any of the given website-visibility states. */
+    public static Specification<Activity> webActiveIn(java.util.List<Boolean> states) {
+        return (root, query, cb) -> {
+            if (states == null || states.isEmpty() || states.size() > 1) return cb.conjunction();
+            return cb.equal(root.get("isWebActive"), states.get(0));
+        };
+    }
+
+    public static Specification<Activity> createdAfter(java.time.LocalDateTime after) {
+        return (root, query, cb) ->
+            after == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), after);
+    }
+
+    public static Specification<Activity> createdBefore(java.time.LocalDateTime before) {
+        return (root, query, cb) ->
+            before == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("createdAt"), before);
+    }
+
+    /** Actionable gaps, each also reachable as a filter. */
+    public static Specification<Activity> anyQualityIssue(
+        boolean missingDescription,
+        boolean missingTariff,
+        boolean missingSafety
+    ) {
+        return (root, query, cb) -> {
+            java.util.List<jakarta.persistence.criteria.Predicate> any = new java.util.ArrayList<>();
+            if (missingDescription) {
+                any.add(cb.or(
+                    cb.isNull(root.get("description")),
+                    cb.equal(cb.trim(root.get("description").as(String.class)), "")
+                ));
+            }
+            if (missingTariff) {
+                any.add(cb.or(cb.isNull(root.get("hasTariff")), cb.isFalse(root.get("hasTariff"))));
+            }
+            if (missingSafety) {
+                any.add(cb.or(
+                    cb.isNull(root.get("safetyInformation")),
+                    cb.equal(cb.trim(root.get("safetyInformation").as(String.class)), "")
+                ));
+            }
+            if (any.isEmpty()) return cb.conjunction();
+            query.distinct(true);
+            return cb.or(any.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+    }
 }

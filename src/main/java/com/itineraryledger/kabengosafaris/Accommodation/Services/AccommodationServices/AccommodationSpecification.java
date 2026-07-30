@@ -408,4 +408,89 @@ public class AccommodationSpecification {
             return cb.equal(root.get("vrn"), vrn);
         };
     }
+
+    /* ------------------------------------------------------------------
+     * Multi-value facets + recency + data-quality gaps, for the stat cards
+     * on the list page. Each figure is also reachable as a filter.
+     * ------------------------------------------------------------------ */
+
+    public static Specification<Accommodation> accommodationTypeIn(java.util.List<AccommodationType> types) {
+        return (root, query, cb) -> {
+            if (types == null || types.isEmpty()) return cb.conjunction();
+            return root.get("accommodationType").in(types);
+        };
+    }
+
+    public static Specification<Accommodation> categoryIn(java.util.List<AccommodationCategory> categories) {
+        return (root, query, cb) -> {
+            if (categories == null || categories.isEmpty()) return cb.conjunction();
+            return root.get("category").in(categories);
+        };
+    }
+
+    /** Both states cancels to no constraint. */
+    public static Specification<Accommodation> activeIn(java.util.List<Boolean> states) {
+        return (root, query, cb) -> {
+            if (states == null || states.isEmpty() || states.size() > 1) return cb.conjunction();
+            return cb.equal(root.get("isActive"), states.get(0));
+        };
+    }
+
+    public static Specification<Accommodation> webActiveIn(java.util.List<Boolean> states) {
+        return (root, query, cb) -> {
+            if (states == null || states.isEmpty() || states.size() > 1) return cb.conjunction();
+            return cb.equal(root.get("isWebActive"), states.get(0));
+        };
+    }
+
+    public static Specification<Accommodation> createdAfter(java.time.LocalDateTime after) {
+        return (root, query, cb) ->
+            after == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), after);
+    }
+
+    public static Specification<Accommodation> createdBefore(java.time.LocalDateTime before) {
+        return (root, query, cb) ->
+            before == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("createdAt"), before);
+    }
+
+    /** Negations of the presence specs, so absence is filterable and countable. */
+    public static Specification<Accommodation> noImages() {
+        return Specification.not(hasImages());
+    }
+
+    public static Specification<Accommodation> noRates() {
+        return Specification.not(hasRates());
+    }
+
+    public static Specification<Accommodation> noCoordinates() {
+        return Specification.not(hasCoordinates());
+    }
+
+    /** Missing TIN — distinct from hasTin(value), which matches a specific TIN. */
+    public static Specification<Accommodation> missingTin() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("tin")),
+            cb.equal(cb.trim(root.get("tin").as(String.class)), "")
+        );
+    }
+
+    /** OR of the requested gaps: no rates, no images, no coordinates, no TIN. */
+    public static Specification<Accommodation> anyQualityIssue(
+        boolean missingRates,
+        boolean missingImages,
+        boolean missingCoordinates,
+        boolean missingTin
+    ) {
+        return (root, query, cb) -> {
+            java.util.List<jakarta.persistence.criteria.Predicate> any = new java.util.ArrayList<>();
+            if (missingRates) any.add(noRates().toPredicate(root, query, cb));
+            if (missingImages) any.add(noImages().toPredicate(root, query, cb));
+            if (missingCoordinates) any.add(noCoordinates().toPredicate(root, query, cb));
+            if (missingTin) any.add(missingTin().toPredicate(root, query, cb));
+            any.removeIf(java.util.Objects::isNull);
+            if (any.isEmpty()) return cb.conjunction();
+            query.distinct(true);
+            return cb.or(any.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+    }
 }

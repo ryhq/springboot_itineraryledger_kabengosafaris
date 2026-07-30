@@ -36,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ActivityGetService {
 
     private final ActivityRepository activityRepository;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -46,10 +47,12 @@ public class ActivityGetService {
     @Autowired
     public ActivityGetService(
         ActivityRepository activityRepository,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats
     ) {
         this.activityRepository = activityRepository;
         this.idObfuscator = idObfuscator;
+        this.listStats = listStats;
     }
 
     /**
@@ -193,6 +196,13 @@ public class ActivityGetService {
         Boolean isActive,
         Boolean isStandalone,
         String keyword,
+        java.util.List<ChargingBasis> chargingBases,
+        java.util.List<String> statuses,
+        java.util.List<String> visibilities,
+        java.util.List<String> qualities,
+        java.time.LocalDateTime createdAfter,
+        java.time.LocalDateTime createdBefore,
+        Boolean includeStats,
         Integer page,
         Integer size,
         String sortBy,
@@ -201,37 +211,15 @@ public class ActivityGetService {
         log.info("Fetching all activities with filters");
 
         try {
-            // Build specification for filtering
-            Specification<Activity> spec = Specification.unrestricted();
-
-            if (name != null && !name.isEmpty()) {
-                spec = spec.and(ActivitySpecification.nameLike(name));
-            }
-            if (slug != null && !slug.isEmpty()) {
-                spec = spec.and(ActivitySpecification.slugLike(slug));
-            }
-            if (hasTariff != null) {
-                spec = spec.and(ActivitySpecification.hasTariff(hasTariff));
-            }
-            if (isWebActive != null) {
-                spec = spec.and(ActivitySpecification.isWebActive(isWebActive));
-            }
-            if (chargingBasis != null) {
-                spec = spec.and(ActivitySpecification.hasChargingBasis(chargingBasis));
-            }
-            if (isActive != null) {
-                spec = spec.and(ActivitySpecification.isActive(isActive));
-            }
-            if (isStandalone != null) {
-                spec = spec.and(ActivitySpecification.isStandalone(isStandalone));
-            }
-            if (keyword != null && !keyword.isEmpty()) {
-                spec = spec.and(ActivitySpecification.searchKeyword(keyword));
-            }
+            // ONE filter chain, shared with the stat counters below
+            Specification<Activity> spec = buildSpec(
+                name, slug, hasTariff, isWebActive, chargingBasis, isActive, isStandalone, keyword,
+                chargingBases, statuses, visibilities, qualities, createdAfter, createdBefore
+            );
 
             // Set default pagination values
             int pageNumber = (page != null && page >= 0) ? page : 0;
-            int pageSize = (size != null && size > 0) ? size : 10;
+            int pageSize = (size != null && size > 0) ? Math.min(size, 100) : 10;
 
             // Sorting with validation
             String validatedSortBy = validateSortField(sortBy);
@@ -267,6 +255,9 @@ public class ActivityGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            if (!Boolean.FALSE.equals(includeStats)) {
+                response.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -321,4 +312,80 @@ public class ActivityGetService {
         dto.setUpdatedAt(activity.getUpdatedAt());
         return dto;
     }
+
+    /**
+     * Shared filter chain — rows and stats must always agree, so both build here.
+     */
+    private Specification<Activity> buildSpec(
+        String name,
+        String slug,
+        Boolean hasTariff,
+        Boolean isWebActive,
+        ChargingBasis chargingBasis,
+        Boolean isActive,
+        Boolean isStandalone,
+        String keyword,
+        java.util.List<ChargingBasis> chargingBases,
+        java.util.List<String> statuses,
+        java.util.List<String> visibilities,
+        java.util.List<String> qualities,
+        java.time.LocalDateTime createdAfter,
+        java.time.LocalDateTime createdBefore
+    ) {
+        Specification<Activity> spec = Specification.unrestricted();
+
+        // multi-value facets: OR inside a dimension, AND across dimensions
+        if (chargingBases != null && !chargingBases.isEmpty()) {
+            spec = spec.and(ActivitySpecification.chargingBasisIn(chargingBases));
+        }
+        if (statuses != null && !statuses.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            spec = spec.and(ActivitySpecification.activeIn(states));
+        }
+        if (visibilities != null && !visibilities.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (visibilities.contains("on-web")) states.add(true);
+            if (visibilities.contains("off-web")) states.add(false);
+            spec = spec.and(ActivitySpecification.webActiveIn(states));
+        }
+        if (qualities != null && !qualities.isEmpty()) {
+            spec = spec.and(ActivitySpecification.anyQualityIssue(
+                qualities.contains("no-description"),
+                qualities.contains("no-tariff"),
+                qualities.contains("no-safety")
+            ));
+        }
+
+        if (name != null && !name.isEmpty()) spec = spec.and(ActivitySpecification.nameLike(name));
+        if (slug != null && !slug.isEmpty()) spec = spec.and(ActivitySpecification.slugLike(slug));
+        if (hasTariff != null) spec = spec.and(ActivitySpecification.hasTariff(hasTariff));
+        if (isWebActive != null) spec = spec.and(ActivitySpecification.isWebActive(isWebActive));
+        if (chargingBasis != null) spec = spec.and(ActivitySpecification.hasChargingBasis(chargingBasis));
+        if (isActive != null) spec = spec.and(ActivitySpecification.isActive(isActive));
+        if (isStandalone != null) spec = spec.and(ActivitySpecification.isStandalone(isStandalone));
+        if (keyword != null && !keyword.isEmpty()) spec = spec.and(ActivitySpecification.searchKeyword(keyword));
+        if (createdAfter != null) spec = spec.and(ActivitySpecification.createdAfter(createdAfter));
+        if (createdBefore != null) spec = spec.and(ActivitySpecification.createdBefore(createdBefore));
+        return spec;
+    }
+
+    /** Dashboard counters for the CURRENT filter set. */
+    private Map<String, Object> computeStats(Specification<Activity> base) {
+        return listStats.of(Activity.class, base)
+            .total()
+            .count("active", ActivitySpecification.isActive(true))
+            .complement("inactive", "active")
+            .count("onWebsite", ActivitySpecification.isWebActive(true))
+            .complement("offWebsite", "onWebsite")
+            .count("priced", ActivitySpecification.hasTariff(true))
+            .complement("unpriced", "priced")
+            .breakdown("byChargingBasis", ChargingBasis.values(), ActivitySpecification::hasChargingBasis)
+            .recency(ActivitySpecification::createdAfter)
+            .count("missingDescription", ActivitySpecification.anyQualityIssue(true, false, false))
+            .count("missingSafety", ActivitySpecification.anyQualityIssue(false, false, true))
+            .build();
+    }
+
 }

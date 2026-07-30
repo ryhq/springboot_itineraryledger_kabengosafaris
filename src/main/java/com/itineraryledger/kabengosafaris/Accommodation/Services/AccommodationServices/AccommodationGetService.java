@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 public class AccommodationGetService {
 
     private final AccommodationRepository accommodationRepository;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -46,10 +47,12 @@ public class AccommodationGetService {
     @Autowired
     public AccommodationGetService(
         AccommodationRepository accommodationRepository,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats
     ) {
         this.accommodationRepository = accommodationRepository;
         this.idObfuscator = idObfuscator;
+        this.listStats = listStats;
     }
 
     /**
@@ -230,6 +233,14 @@ public class AccommodationGetService {
         Boolean hasRates,
         Boolean hasCoordinates,
         String keyword,
+        java.util.List<AccommodationType> accommodationTypes,
+        java.util.List<AccommodationCategory> categories,
+        java.util.List<String> statuses,
+        java.util.List<String> visibilities,
+        java.util.List<String> qualities,
+        java.time.LocalDateTime createdAfter,
+        java.time.LocalDateTime createdBefore,
+        Boolean includeStats,
         Integer page,
         Integer size,
         String sortBy,
@@ -335,9 +346,39 @@ public class AccommodationGetService {
                 spec = spec.and(AccommodationSpecification.searchKeyword(keyword));
             }
 
+            // multi-value facets: OR inside a dimension, AND across dimensions
+            if (accommodationTypes != null && !accommodationTypes.isEmpty()) {
+                spec = spec.and(AccommodationSpecification.accommodationTypeIn(accommodationTypes));
+            }
+            if (categories != null && !categories.isEmpty()) {
+                spec = spec.and(AccommodationSpecification.categoryIn(categories));
+            }
+            if (statuses != null && !statuses.isEmpty()) {
+                java.util.List<Boolean> states = new java.util.ArrayList<>();
+                if (statuses.contains("active")) states.add(true);
+                if (statuses.contains("inactive")) states.add(false);
+                spec = spec.and(AccommodationSpecification.activeIn(states));
+            }
+            if (visibilities != null && !visibilities.isEmpty()) {
+                java.util.List<Boolean> states = new java.util.ArrayList<>();
+                if (visibilities.contains("on-web")) states.add(true);
+                if (visibilities.contains("off-web")) states.add(false);
+                spec = spec.and(AccommodationSpecification.webActiveIn(states));
+            }
+            if (qualities != null && !qualities.isEmpty()) {
+                spec = spec.and(AccommodationSpecification.anyQualityIssue(
+                    qualities.contains("no-rates"),
+                    qualities.contains("no-images"),
+                    qualities.contains("no-coordinates"),
+                    qualities.contains("no-tin")
+                ));
+            }
+            if (createdAfter != null) spec = spec.and(AccommodationSpecification.createdAfter(createdAfter));
+            if (createdBefore != null) spec = spec.and(AccommodationSpecification.createdBefore(createdBefore));
+
             // Set default pagination values
             int pageNumber = (page != null && page >= 0) ? page : 0;
-            int pageSize = (size != null && size > 0) ? size : 10;
+            int pageSize = (size != null && size > 0) ? Math.min(size, 100) : 10;
 
             // Sorting with validation
             String validatedSortBy = validateSortField(sortBy);
@@ -373,6 +414,10 @@ public class AccommodationGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            // stats from the SAME spec the rows came from
+            if (!Boolean.FALSE.equals(includeStats)) {
+                response.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -536,4 +581,26 @@ public class AccommodationGetService {
             .isWebActive(accommodation.getIsWebActive())
             .build();
     }
+
+    /** Dashboard counters for the CURRENT filter set. */
+    private Map<String, Object> computeStats(Specification<Accommodation> base) {
+        return listStats.of(Accommodation.class, base)
+            .total()
+            .count("active", AccommodationSpecification.isActive(true))
+            .complement("inactive", "active")
+            .count("onWebsite", AccommodationSpecification.isWebActive(true))
+            .complement("offWebsite", "onWebsite")
+            .count("headquarters", AccommodationSpecification.isHeadquarters(true))
+            .count("withRates", AccommodationSpecification.hasRates())
+            .complement("missingRates", "withRates")
+            .count("withImages", AccommodationSpecification.hasImages())
+            .complement("missingImages", "withImages")
+            .breakdown("byType", AccommodationType.values(), AccommodationSpecification::hasAccommodationType)
+            .breakdown("byCategory", AccommodationCategory.values(), AccommodationSpecification::hasCategory)
+            .recency(AccommodationSpecification::createdAfter)
+            .count("missingCoordinates", AccommodationSpecification.noCoordinates())
+            .count("missingTin", AccommodationSpecification.missingTin())
+            .build();
+    }
+
 }

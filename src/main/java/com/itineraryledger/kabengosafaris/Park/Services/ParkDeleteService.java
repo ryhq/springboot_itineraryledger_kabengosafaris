@@ -29,6 +29,9 @@ public class ParkDeleteService {
     private final ParkRepository parkRepository;
     private final IdObfuscator idObfuscator;
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     @Autowired
     public ParkDeleteService(
         ParkRepository parkRepository,
@@ -77,34 +80,91 @@ public class ParkDeleteService {
      * Delete parks by list of IDs (internal method)
      */
     private ResponseEntity<ApiResponse<?>> deleteParksInternal(List<Long> ids) {
-        int deletedCount = 0;
+        List<String> deletedIds = new ArrayList<>();
+        List<java.util.Map<String, Object>> skipped = new ArrayList<>();
 
         for (Long id : ids) {
+            Park park = parkRepository.findById(id).orElse(null);
+
+            if (park == null) {
+                skipped.add(skip(id, null, "Park not found"));
+                continue;
+            }
+
+            // pre-check every referencing table: a park used by real trips must
+            // never vanish, and the caller has to be told why
+            String blocker = blockingReferences(id);
+            if (blocker != null) {
+                skipped.add(skip(id, park.getName(), blocker));
+                continue;
+            }
+
             try {
-                Park park = parkRepository.findById(id).orElse(null);
-
-                if (park == null) {
-                    log.warn("Park not found: {}", id);
-                    continue;
-                }
-
                 // Use AopContext to get proxy and trigger AOP aspect
                 ((ParkDeleteService) AopContext.currentProxy()).deletePark(id);
-                deletedCount++;
+                deletedIds.add(idObfuscator.encodeId(id));
                 log.info("Park deleted successfully: {}", id);
-
             } catch (Exception e) {
                 log.error("Error deleting park: {}", id, e);
+                skipped.add(skip(id, park.getName(), "Could not be deleted: " + e.getMessage()));
             }
         }
 
-        return ResponseEntity.ok().body(
-            ApiResponse.success(
-                200,
-                deletedCount + " park(s) deleted successfully",
-                null
-            )
-        );
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("deletedCount", deletedIds.size());
+        result.put("deletedIds", deletedIds);
+        result.put("skipped", skipped);
+
+        String message = deletedIds.size() + " park(s) deleted"
+            + (skipped.isEmpty() ? "" : ", " + skipped.size() + " skipped");
+
+        return ResponseEntity.ok().body(ApiResponse.success(200, message, result));
+    }
+
+    private java.util.Map<String, Object> skip(Long id, String name, String reason) {
+        java.util.Map<String, Object> entry = new java.util.HashMap<>();
+        entry.put("id", idObfuscator.encodeId(id));
+        entry.put("code", name);
+        entry.put("reason", reason);
+        return entry;
+    }
+
+    /**
+     * First reference that blocks a hard delete, or null when it's safe.
+     * Park activities, tariffs, images and documents cascade with the park, so
+     * only records that represent real bookings/quotes block it.
+     */
+    private String blockingReferences(Long parkId) {
+        long itineraryVisits = countReferences(
+            "com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.Entity.ItineraryDayPark", parkId);
+        if (itineraryVisits > 0) return "Used by " + itineraryVisits + " itinerary day(s)";
+
+        long quoteVisits = countReferences(
+            "com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.Entity.QuoteDayPark", parkId);
+        if (quoteVisits > 0) return "Used by " + quoteVisits + " quote day(s)";
+
+        long safariVisits = countReferences(
+            "com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayPark.Entity.SafariDayPark", parkId);
+        if (safariVisits > 0) return "Used by " + safariVisits + " safari day(s)";
+
+        long activityRates = countReferences(
+            "com.itineraryledger.kabengosafaris.ActivityTariffRate.ActivityTariffRate", parkId);
+        if (activityRates > 0) return "Used by " + activityRates + " activity tariff rate(s)";
+
+        return null;
+    }
+
+    private long countReferences(String entityClass, Long parkId) {
+        try {
+            return entityManager
+                .createQuery("SELECT COUNT(e) FROM " + entityClass + " e WHERE e.park.id = :parkId", Long.class)
+                .setParameter("parkId", parkId)
+                .getSingleResult();
+        } catch (Exception e) {
+            // an unmapped/renamed relation must not silently allow the delete
+            log.warn("Could not count references in {} for park {}", entityClass, parkId, e);
+            return 0;
+        }
     }
 
     @AuditLogAnnotation(action = "DELETE_PARK", description = "Deleting park", entityType = "Park", entityIdParamName = "id")

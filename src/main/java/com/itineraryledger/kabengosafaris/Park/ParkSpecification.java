@@ -274,6 +274,123 @@ public class ParkSpecification {
             return cb.not(root.get("id").in(subquery));
         };
     }
+    /* ------------------------------------------------------------------
+     * Multi-value facets: OR inside a dimension, AND across dimensions.
+     * The list rows and the stat counters both build on these, so a card
+     * and the table it heads can never disagree.
+     * ------------------------------------------------------------------ */
+
+    /** Any of the given park types. */
+    public static Specification<Park> parkTypeIn(java.util.List<ParkType> types) {
+        return (root, query, cb) -> {
+            if (types == null || types.isEmpty()) return cb.conjunction();
+            return root.get("parkType").in(types);
+        };
+    }
+
+    /** Any of the given active states; passing both cancels to no constraint. */
+    public static Specification<Park> activeIn(java.util.List<Boolean> states) {
+        return (root, query, cb) -> {
+            if (states == null || states.isEmpty() || states.size() > 1) return cb.conjunction();
+            return cb.equal(root.get("isActive"), states.get(0));
+        };
+    }
+
+    /** Any of the given website-visibility states. */
+    public static Specification<Park> webActiveIn(java.util.List<Boolean> states) {
+        return (root, query, cb) -> {
+            if (states == null || states.isEmpty() || states.size() > 1) return cb.conjunction();
+            return cb.equal(root.get("isWebActive"), states.get(0));
+        };
+    }
+
+    /** Any of the given regions (exact, case-insensitive). */
+    public static Specification<Park> regionIn(java.util.List<String> regions) {
+        return (root, query, cb) -> {
+            if (regions == null || regions.isEmpty()) return cb.conjunction();
+            java.util.List<jakarta.persistence.criteria.Predicate> any = new java.util.ArrayList<>();
+            for (String region : regions) {
+                if (region != null && !region.isBlank()) {
+                    any.add(cb.equal(cb.lower(root.get("region")), region.toLowerCase()));
+                }
+            }
+            return any.isEmpty() ? cb.conjunction() : cb.or(any.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+    }
+
+    /** Parks created on or after the given instant. */
+    public static Specification<Park> createdAfter(java.time.LocalDateTime after) {
+        return (root, query, cb) ->
+            after == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), after);
+    }
+
+    /** Parks created on or before the given instant. */
+    public static Specification<Park> createdBefore(java.time.LocalDateTime before) {
+        return (root, query, cb) ->
+            before == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("createdAt"), before);
+    }
+
+    /** True = has at least one image; false = has none. */
+    public static Specification<Park> hasImages(Boolean has) {
+        return (root, query, cb) -> {
+            if (has == null) return cb.conjunction();
+            var sub = query.subquery(Long.class);
+            var image = sub.from(com.itineraryledger.kabengosafaris.Park.Entities.ParkImage.class);
+            sub.select(cb.count(image)).where(cb.equal(image.get("park"), root));
+            return has ? cb.greaterThan(sub, 0L) : cb.equal(sub, 0L);
+        };
+    }
+
+    /** True = priced (has at least one tariff); false = unpriced. */
+    public static Specification<Park> hasTariffs(Boolean has) {
+        return (root, query, cb) -> {
+            if (has == null) return cb.conjunction();
+            var sub = query.subquery(Long.class);
+            var tariff = sub.from(ParkTariff.class);
+            sub.select(cb.count(tariff)).where(cb.equal(tariff.get("park"), root));
+            return has ? cb.greaterThan(sub, 0L) : cb.equal(sub, 0L);
+        };
+    }
+
+    /**
+     * Actionable data-quality gaps — every one of these is also a stat card, so
+     * a count the admin sees is always reachable as a filter.
+     */
+    public static Specification<Park> anyQualityIssue(
+        boolean missingDescription,
+        boolean missingImage,
+        boolean missingCoordinates,
+        boolean missingTariff
+    ) {
+        return (root, query, cb) -> {
+            java.util.List<jakarta.persistence.criteria.Predicate> any = new java.util.ArrayList<>();
+            if (missingDescription) {
+                any.add(cb.or(
+                    cb.isNull(root.get("shortDescription")),
+                    cb.equal(cb.trim(root.get("shortDescription").as(String.class)), "")
+                ));
+            }
+            if (missingImage) {
+                var sub = query.subquery(Long.class);
+                var image = sub.from(com.itineraryledger.kabengosafaris.Park.Entities.ParkImage.class);
+                sub.select(cb.count(image)).where(cb.equal(image.get("park"), root));
+                any.add(cb.equal(sub, 0L));
+            }
+            if (missingCoordinates) {
+                any.add(cb.or(cb.isNull(root.get("latitude")), cb.isNull(root.get("longitude"))));
+            }
+            if (missingTariff) {
+                var sub = query.subquery(Long.class);
+                var tariff = sub.from(ParkTariff.class);
+                sub.select(cb.count(tariff)).where(cb.equal(tariff.get("park"), root));
+                any.add(cb.equal(sub, 0L));
+            }
+            if (any.isEmpty()) return cb.conjunction();
+            query.distinct(true);
+            return cb.or(any.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+    }
+
     /** Match parks whose comma/JSON tags string contains the given tag (case-insensitive). */
     public static Specification<Park> hasTag(String tag) {
         return (root, query, cb) -> {
