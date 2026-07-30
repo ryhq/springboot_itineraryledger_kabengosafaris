@@ -164,6 +164,29 @@ public class CustomerSpecification {
     // DATE FILTERS
     // ========================
 
+    // ========================
+    // DATA QUALITY (dashboard cards)
+    // ========================
+
+    /** true = has at least one email row, false = none at all */
+    public static Specification<Customer> hasEmail(Boolean has) {
+        return (root, query, cb) ->
+            has ? cb.isNotEmpty(root.get("emails")) : cb.isEmpty(root.get("emails"));
+    }
+
+    public static Specification<Customer> hasPhone(Boolean has) {
+        return (root, query, cb) ->
+            has ? cb.isNotEmpty(root.get("phones")) : cb.isEmpty(root.get("phones"));
+    }
+
+    /** passports expiring on or before the cutoff (null expiry never matches) */
+    public static Specification<Customer> passportExpiringBefore(java.time.LocalDate cutoff) {
+        return (root, query, cb) -> cb.and(
+            cb.isNotNull(root.get("passportExpiry")),
+            cb.lessThanOrEqualTo(root.get("passportExpiry"), cutoff)
+        );
+    }
+
     public static Specification<Customer> createdAfter(LocalDateTime date) {
         return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), date);
     }

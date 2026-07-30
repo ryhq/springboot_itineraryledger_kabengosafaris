@@ -125,6 +125,9 @@ public class CustomerGetService {
             String keyword,
             java.time.LocalDateTime createdAfter,
             java.time.LocalDateTime createdBefore,
+            Boolean hasEmail,
+            Boolean hasPhone,
+            Boolean passportExpiringSoon,
             Integer page,
             Integer size,
             String sortBy,
@@ -133,67 +136,11 @@ public class CustomerGetService {
         log.info("Fetching all customers with filters");
 
         try {
-            // Build specification
-            Specification<Customer> spec = Specification.unrestricted();
-
-            if (name != null && !name.isEmpty()) {
-                spec = spec.and(CustomerSpecification.nameLike(name));
-            }
-            if (email != null && !email.isEmpty()) {
-                spec = spec.and(CustomerSpecification.emailLike(email));
-            }
-            if (phone != null && !phone.isEmpty()) {
-                spec = spec.and(CustomerSpecification.phoneLike(phone));
-            }
-            if (code != null && !code.isEmpty()) {
-                spec = spec.and(CustomerSpecification.codeLike(code));
-            }
-            if (customerType != null) {
-                spec = spec.and(CustomerSpecification.hasCustomerType(customerType));
-            }
-            if (source != null) {
-                spec = spec.and(CustomerSpecification.hasSource(source));
-            }
-            if (nationality != null && !nationality.isEmpty()) {
-                spec = spec.and(CustomerSpecification.nationalityLike(nationality));
-            }
-            if (country != null && !country.isEmpty()) {
-                spec = spec.and(CustomerSpecification.countryLike(country));
-            }
-            if (city != null && !city.isEmpty()) {
-                spec = spec.and(CustomerSpecification.cityLike(city));
-            }
-            if (isActive != null) {
-                spec = spec.and(CustomerSpecification.isActive(isActive));
-            }
-            if (isVip != null) {
-                spec = spec.and(CustomerSpecification.isVip(isVip));
-            }
-            if (isBlacklisted != null) {
-                spec = spec.and(CustomerSpecification.isBlacklisted(isBlacklisted));
-            }
-            if (hasBookings != null) {
-                if (hasBookings) {
-                    spec = spec.and(CustomerSpecification.hasBookings());
-                } else {
-                    spec = spec.and(CustomerSpecification.hasNoBookings());
-                }
-            }
-            if (minTotalSpent != null) {
-                spec = spec.and(CustomerSpecification.minTotalSpent(minTotalSpent));
-            }
-            if (maxTotalSpent != null) {
-                spec = spec.and(CustomerSpecification.maxTotalSpent(maxTotalSpent));
-            }
-            if (keyword != null && !keyword.isEmpty()) {
-                spec = spec.and(CustomerSpecification.searchKeyword(keyword));
-            }
-            if (createdAfter != null) {
-                spec = spec.and(CustomerSpecification.createdAfter(createdAfter));
-            }
-            if (createdBefore != null) {
-                spec = spec.and(CustomerSpecification.createdBefore(createdBefore));
-            }
+            Specification<Customer> spec = buildSpec(
+                name, email, phone, code, customerType, source, nationality, country, city,
+                isActive, isVip, isBlacklisted, hasBookings, minTotalSpent, maxTotalSpent,
+                keyword, createdAfter, createdBefore, hasEmail, hasPhone, passportExpiringSoon
+            );
 
             // Pagination
             int pageNumber = (page != null && page >= 0) ? page : 0;
@@ -247,26 +194,95 @@ public class CustomerGetService {
     }
 
     /**
-     * Summary counts for the customer list header.
+     * Shared filter chain — the list and the stats must always agree, so both
+     * build their Specification here.
      */
-    public ResponseEntity<ApiResponse<?>> getCustomerStats() {
+    private Specification<Customer> buildSpec(
+            String name, String email, String phone, String code,
+            CustomerType customerType, CustomerSource source,
+            String nationality, String country, String city,
+            Boolean isActive, Boolean isVip, Boolean isBlacklisted, Boolean hasBookings,
+            BigDecimal minTotalSpent, BigDecimal maxTotalSpent, String keyword,
+            java.time.LocalDateTime createdAfter, java.time.LocalDateTime createdBefore,
+            Boolean hasEmail, Boolean hasPhone, Boolean passportExpiringSoon
+    ) {
+        Specification<Customer> spec = Specification.unrestricted();
+
+        if (name != null && !name.isEmpty()) spec = spec.and(CustomerSpecification.nameLike(name));
+        if (email != null && !email.isEmpty()) spec = spec.and(CustomerSpecification.emailLike(email));
+        if (phone != null && !phone.isEmpty()) spec = spec.and(CustomerSpecification.phoneLike(phone));
+        if (code != null && !code.isEmpty()) spec = spec.and(CustomerSpecification.codeLike(code));
+        if (customerType != null) spec = spec.and(CustomerSpecification.hasCustomerType(customerType));
+        if (source != null) spec = spec.and(CustomerSpecification.hasSource(source));
+        if (nationality != null && !nationality.isEmpty()) spec = spec.and(CustomerSpecification.nationalityLike(nationality));
+        if (country != null && !country.isEmpty()) spec = spec.and(CustomerSpecification.countryLike(country));
+        if (city != null && !city.isEmpty()) spec = spec.and(CustomerSpecification.cityLike(city));
+        if (isActive != null) spec = spec.and(CustomerSpecification.isActive(isActive));
+        if (isVip != null) spec = spec.and(CustomerSpecification.isVip(isVip));
+        if (isBlacklisted != null) spec = spec.and(CustomerSpecification.isBlacklisted(isBlacklisted));
+        if (hasBookings != null) {
+            spec = spec.and(hasBookings ? CustomerSpecification.hasBookings() : CustomerSpecification.hasNoBookings());
+        }
+        if (minTotalSpent != null) spec = spec.and(CustomerSpecification.minTotalSpent(minTotalSpent));
+        if (maxTotalSpent != null) spec = spec.and(CustomerSpecification.maxTotalSpent(maxTotalSpent));
+        if (keyword != null && !keyword.isEmpty()) spec = spec.and(CustomerSpecification.searchKeyword(keyword));
+        if (createdAfter != null) spec = spec.and(CustomerSpecification.createdAfter(createdAfter));
+        if (createdBefore != null) spec = spec.and(CustomerSpecification.createdBefore(createdBefore));
+        if (hasEmail != null) spec = spec.and(CustomerSpecification.hasEmail(hasEmail));
+        if (hasPhone != null) spec = spec.and(CustomerSpecification.hasPhone(hasPhone));
+        if (Boolean.TRUE.equals(passportExpiringSoon)) {
+            spec = spec.and(CustomerSpecification.passportExpiringBefore(java.time.LocalDate.now().plusMonths(6)));
+        }
+        return spec;
+    }
+
+    /**
+     * Summary counts for the customer list header. Accepts the same filters as
+     * the list so the cards can summarise exactly what the user is looking at
+     * (pass nothing for whole-database totals).
+     */
+    public ResponseEntity<ApiResponse<?>> getCustomerStats(
+            String keyword,
+            CustomerType customerType,
+            CustomerSource source,
+            String country,
+            Boolean isActive,
+            Boolean isVip,
+            Boolean isBlacklisted,
+            java.time.LocalDateTime createdAfter,
+            Boolean hasEmail,
+            Boolean hasPhone,
+            Boolean passportExpiringSoon
+    ) {
         try {
-            long total = customerRepository.count();
-            long active = customerRepository.countByIsActiveTrue();
+            Specification<Customer> base = buildSpec(
+                null, null, null, null, customerType, source, null, country, null,
+                isActive, isVip, isBlacklisted, null, null, null,
+                keyword, createdAfter, null, hasEmail, hasPhone, passportExpiringSoon
+            );
 
             Map<String, Object> byType = new HashMap<>();
             for (CustomerType type : CustomerType.values()) {
-                byType.put(type.name(), customerRepository.countByCustomerType(type));
+                byType.put(type.name(), customerRepository.count(base.and(CustomerSpecification.hasCustomerType(type))));
             }
+
+            long total = customerRepository.count(base);
+            long active = customerRepository.count(base.and(CustomerSpecification.isActive(true)));
 
             Map<String, Object> stats = new HashMap<>();
             stats.put("total", total);
             stats.put("active", active);
             stats.put("inactive", total - active);
-            stats.put("vip", customerRepository.countByIsVipTrue());
-            stats.put("blacklisted", customerRepository.countByIsBlacklistedTrue());
-            stats.put("newLast30Days", customerRepository.countByCreatedAtAfter(java.time.LocalDateTime.now().minusDays(30)));
+            stats.put("vip", customerRepository.count(base.and(CustomerSpecification.isVip(true))));
+            stats.put("blacklisted", customerRepository.count(base.and(CustomerSpecification.isBlacklisted(true))));
+            stats.put("newLast7Days", customerRepository.count(base.and(CustomerSpecification.createdAfter(java.time.LocalDateTime.now().minusDays(7)))));
+            stats.put("newLast30Days", customerRepository.count(base.and(CustomerSpecification.createdAfter(java.time.LocalDateTime.now().minusDays(30)))));
             stats.put("byType", byType);
+            // data-quality counters an admin can act on
+            stats.put("missingEmail", customerRepository.count(base.and(CustomerSpecification.hasEmail(false))));
+            stats.put("missingPhone", customerRepository.count(base.and(CustomerSpecification.hasPhone(false))));
+            stats.put("passportExpiringSoon", customerRepository.count(
+                base.and(CustomerSpecification.passportExpiringBefore(java.time.LocalDate.now().plusMonths(6)))));
 
             return ResponseEntity.ok(ApiResponse.success(200, "Customer stats retrieved", stats));
         } catch (Exception e) {

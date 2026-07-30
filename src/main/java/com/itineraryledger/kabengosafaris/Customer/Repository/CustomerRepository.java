@@ -100,6 +100,17 @@ public interface CustomerRepository extends JpaRepository<Customer, Long>, JpaSp
      */
     long countByCreatedAtAfter(java.time.LocalDateTime createdAt);
 
+    // ---- data-quality counters for the customer dashboard ----
+
+    @Query("SELECT COUNT(c) FROM Customer c WHERE c.emails IS EMPTY")
+    long countCustomersWithoutEmail();
+
+    @Query("SELECT COUNT(c) FROM Customer c WHERE c.phones IS EMPTY")
+    long countCustomersWithoutPhone();
+
+    @Query("SELECT COUNT(c) FROM Customer c WHERE c.passportExpiry IS NOT NULL AND c.passportExpiry <= :cutoff")
+    long countPassportsExpiringBefore(@Param("cutoff") java.time.LocalDate cutoff);
+
     // ========================
     // NAVIGATION QUERIES (circular next/previous)
     // ========================
