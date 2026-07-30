@@ -62,9 +62,11 @@ public class UpdateCustomerDTO {
     @Size(max = 50, message = "Passport number must not exceed 50 characters")
     private String passportNumber;
 
-    private LocalDate passportExpiry;
+    /** ISO date. null = leave unchanged, "" = clear the value. */
+    private String passportExpiry;
 
-    private LocalDate dateOfBirth;
+    /** ISO date. null = leave unchanged, "" = clear the value. */
+    private String dateOfBirth;
 
     // ========================
     // ADDRESS
@@ -98,7 +100,8 @@ public class UpdateCustomerDTO {
     // ACQUISITION & SOURCE
     // ========================
 
-    private CustomerSource source;
+    /** enum name. null = leave unchanged, "" = clear the value. */
+    private String source;
 
     @Size(max = 200, message = "Referred by must not exceed 200 characters")
     private String referredBy;

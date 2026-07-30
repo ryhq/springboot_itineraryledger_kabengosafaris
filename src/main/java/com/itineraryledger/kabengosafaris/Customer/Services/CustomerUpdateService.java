@@ -4,6 +4,7 @@ import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.Customer.DTOs.CustomerDTO;
 import com.itineraryledger.kabengosafaris.Customer.DTOs.UpdateCustomerDTO;
 import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
+import com.itineraryledger.kabengosafaris.Customer.Enums.CustomerSource;
 import com.itineraryledger.kabengosafaris.Customer.Enums.CustomerType;
 import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerRepository;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
@@ -31,6 +32,17 @@ public class CustomerUpdateService {
 
     private final CustomerRepository customerRepository;
     private final IdObfuscator idObfuscator;
+
+    /** blank clears the date; anything else must be a valid ISO date */
+    private java.time.LocalDate parseDateOrClear(String raw, String field) {
+        String value = raw.trim();
+        if (value.isEmpty()) return null;
+        try {
+            return java.time.LocalDate.parse(value);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new IllegalArgumentException(field + " must be an ISO date (yyyy-MM-dd)");
+        }
+    }
 
     /**
      * Update an existing customer
@@ -87,11 +99,13 @@ public class CustomerUpdateService {
             if (updateDTO.getPassportNumber() != null) {
                 customer.setPassportNumber(updateDTO.getPassportNumber());
             }
+            // dates/enums arrive as strings so a blank value can CLEAR them
+            // (null still means "leave unchanged")
             if (updateDTO.getPassportExpiry() != null) {
-                customer.setPassportExpiry(updateDTO.getPassportExpiry());
+                customer.setPassportExpiry(parseDateOrClear(updateDTO.getPassportExpiry(), "passportExpiry"));
             }
             if (updateDTO.getDateOfBirth() != null) {
-                customer.setDateOfBirth(updateDTO.getDateOfBirth());
+                customer.setDateOfBirth(parseDateOrClear(updateDTO.getDateOfBirth(), "dateOfBirth"));
             }
             if (updateDTO.getAddress() != null) {
                 customer.setAddress(updateDTO.getAddress());
@@ -115,7 +129,8 @@ public class CustomerUpdateService {
                 customer.setPreferredCurrency(updateDTO.getPreferredCurrency());
             }
             if (updateDTO.getSource() != null) {
-                customer.setSource(updateDTO.getSource());
+                String raw = updateDTO.getSource().trim();
+                customer.setSource(raw.isEmpty() ? null : CustomerSource.valueOf(raw));
             }
             if (updateDTO.getReferredBy() != null) {
                 customer.setReferredBy(updateDTO.getReferredBy());
@@ -168,6 +183,12 @@ public class CustomerUpdateService {
                 ApiResponse.success(200, "Customer updated successfully", customerDTO)
             );
 
+        } catch (IllegalArgumentException e) {
+            // bad date / unknown enum value — a client mistake, not a server fault
+            log.warn("Invalid value in customer update: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, e.getMessage(), "VALIDATION_ERROR")
+            );
         } catch (Exception e) {
             log.error("Error updating customer", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
