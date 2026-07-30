@@ -91,6 +91,11 @@ public class ParkDocumentController {
             @RequestParam(value = "tariffDocumentsOnly", required = false) Boolean tariffDocumentsOnly,
             @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
             @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection,
+            @RequestParam(value = "documentTypes", required = false) java.util.List<ParkDocument.DocumentType> documentTypes,
+            @RequestParam(value = "statuses", required = false) java.util.List<String> statuses,
+            @RequestParam(value = "validity", required = false) java.util.List<String> validity,
+            @RequestParam(value = "createdAfter", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
+            @RequestParam(value = "createdBefore", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdBefore,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size
     ) {
@@ -105,6 +110,11 @@ public class ParkDocumentController {
             parkType,
             region,
             tariffDocumentsOnly,
+            documentTypes,
+            statuses,
+            validity,
+            createdAfter,
+            createdBefore,
             sortBy,
             sortDirection,
             page,

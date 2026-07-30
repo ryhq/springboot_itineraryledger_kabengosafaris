@@ -91,4 +91,29 @@ public class ActivityImageSpecification {
             cb.equal(cb.trim(root.get("altText").as(String.class)), "")
         );
     }
+
+    /** Any of the given image types (OR within the dimension). */
+    public static Specification<ActivityImage> imageTypeIn(java.util.List<ActivityImage.ImageType> types) {
+        return (root, query, cb) -> {
+            if (types == null || types.isEmpty()) return cb.conjunction();
+            return root.get("imageType").in(types);
+        };
+    }
+
+    public static Specification<ActivityImage> createdBefore(java.time.LocalDateTime before) {
+        return (root, query, cb) ->
+            before == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("createdAt"), before);
+    }
+
+    /** OR of the requested gaps, so the "No caption"/"No alt text" cards filter. */
+    public static Specification<ActivityImage> anyQualityIssue(boolean noCaption, boolean noAlt) {
+        return (root, query, cb) -> {
+            java.util.List<jakarta.persistence.criteria.Predicate> any = new java.util.ArrayList<>();
+            if (noCaption) any.add(missingCaption().toPredicate(root, query, cb));
+            if (noAlt) any.add(missingAltText().toPredicate(root, query, cb));
+            any.removeIf(java.util.Objects::isNull);
+            if (any.isEmpty()) return cb.conjunction();
+            return cb.or(any.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+    }
 }

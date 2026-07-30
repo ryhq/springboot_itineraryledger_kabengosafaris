@@ -92,6 +92,11 @@ public class ActivityImageGetService {
             Boolean isPrimary,
             Boolean isActive,
             Integer displayOrder,
+            java.util.List<ActivityImage.ImageType> imageTypes,
+            java.util.List<String> statuses,
+            java.util.List<String> qualities,
+            java.time.LocalDateTime createdAfter,
+            java.time.LocalDateTime createdBefore,
             int page,
             int size,
             String sortBy,
@@ -131,6 +136,26 @@ public class ActivityImageGetService {
         }
 
         // Sorting with validation
+
+        // multi-value + data-quality facets: every stat card must be filterable
+        if (imageTypes != null && !imageTypes.isEmpty()) {
+            spec = spec.and(ActivityImageSpecification.imageTypeIn(imageTypes));
+        }
+        if (statuses != null && !statuses.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            if (states.size() == 1) spec = spec.and(ActivityImageSpecification.byIsActive(states.get(0)));
+        }
+        if (qualities != null && !qualities.isEmpty()) {
+            spec = spec.and(ActivityImageSpecification.anyQualityIssue(
+                qualities.contains("no-caption"),
+                qualities.contains("no-alt")
+            ));
+        }
+        if (createdAfter != null) spec = spec.and(ActivityImageSpecification.createdAfter(createdAfter));
+        if (createdBefore != null) spec = spec.and(ActivityImageSpecification.createdBefore(createdBefore));
+
         String validatedSortBy = validateSortField(sortBy);
         if (validatedSortBy == null) {
             log.warn("Invalid sort field: {}", sortBy);

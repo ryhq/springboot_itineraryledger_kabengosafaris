@@ -65,6 +65,11 @@ public class ActivityDocumentGetService {
             Boolean activityIsActive,
             Boolean hasTariff,
             Boolean safetyDocumentsOnly,
+            java.util.List<ActivityDocument.DocumentType> documentTypes,
+            java.util.List<String> statuses,
+            java.util.List<String> validity,
+            java.time.LocalDateTime createdAfter,
+            java.time.LocalDateTime createdBefore,
             String sortBy,
             String sortDirection,
             int page,
@@ -86,6 +91,8 @@ public class ActivityDocumentGetService {
             }
 
             // Sorting with validation
+
+
             String validatedSortBy = validateSortField(sortBy);
             if (validatedSortBy == null) {
                 log.warn("Invalid sort field: {}", sortBy);
@@ -117,6 +124,25 @@ public class ActivityDocumentGetService {
             if (Boolean.TRUE.equals(safetyDocumentsOnly)) {
                 spec = spec.and(ActivityDocumentSpecification.bySafetyDocument());
             }
+            // multi-value + validity facets: every stat card must be filterable
+            if (documentTypes != null && !documentTypes.isEmpty()) {
+                spec = spec.and(ActivityDocumentSpecification.documentTypeIn(documentTypes));
+            }
+            if (statuses != null && !statuses.isEmpty()) {
+                java.util.List<Boolean> states = new java.util.ArrayList<>();
+                if (statuses.contains("active")) states.add(true);
+                if (statuses.contains("inactive")) states.add(false);
+                if (states.size() == 1) spec = spec.and(ActivityDocumentSpecification.byIsActive(states.get(0)));
+            }
+            if (validity != null && !validity.isEmpty()) {
+                spec = spec.and(ActivityDocumentSpecification.anyValidityState(
+                    validity.contains("expired"),
+                    validity.contains("expiring"),
+                    validity.contains("no-expiry")
+                ));
+            }
+            if (createdAfter != null) spec = spec.and(ActivityDocumentSpecification.createdAfter(createdAfter));
+            if (createdBefore != null) spec = spec.and(ActivityDocumentSpecification.createdBefore(createdBefore));
 
             Page<ActivityDocument> documentPage = activityDocumentRepository.findAll(spec, pageable);
             Page<ActivityDocumentDTO> dtoPage = documentPage.map(this::toDTO);

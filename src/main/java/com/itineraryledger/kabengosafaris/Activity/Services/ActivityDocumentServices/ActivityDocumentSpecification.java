@@ -136,4 +136,30 @@ public class ActivityDocumentSpecification {
     public static Specification<ActivityDocument> noExpiry() {
         return (root, query, cb) -> cb.isNull(root.get("validTo"));
     }
+
+    /** Any of the given document types (OR within the dimension). */
+    public static Specification<ActivityDocument> documentTypeIn(java.util.List<ActivityDocument.DocumentType> types) {
+        return (root, query, cb) -> {
+            if (types == null || types.isEmpty()) return cb.conjunction();
+            return root.get("documentType").in(types);
+        };
+    }
+
+    public static Specification<ActivityDocument> createdBefore(java.time.LocalDateTime before) {
+        return (root, query, cb) ->
+            before == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("createdAt"), before);
+    }
+
+    /** OR of the requested validity states, so those cards filter. */
+    public static Specification<ActivityDocument> anyValidityState(boolean isExpired, boolean isExpiring, boolean hasNoExpiry) {
+        return (root, query, cb) -> {
+            java.util.List<jakarta.persistence.criteria.Predicate> any = new java.util.ArrayList<>();
+            if (isExpired) any.add(expired().toPredicate(root, query, cb));
+            if (isExpiring) any.add(expiringWithin(30).toPredicate(root, query, cb));
+            if (hasNoExpiry) any.add(noExpiry().toPredicate(root, query, cb));
+            any.removeIf(java.util.Objects::isNull);
+            if (any.isEmpty()) return cb.conjunction();
+            return cb.or(any.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+    }
 }

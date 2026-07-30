@@ -66,6 +66,11 @@ public class ParkDocumentGetService {
             ParkType parkType,
             String region,
             Boolean tariffDocumentsOnly,
+            java.util.List<ParkDocument.DocumentType> documentTypes,
+            java.util.List<String> statuses,
+            java.util.List<String> validity,
+            java.time.LocalDateTime createdAfter,
+            java.time.LocalDateTime createdBefore,
             String sortBy,
             String sortDirection,
             int page,
@@ -87,6 +92,8 @@ public class ParkDocumentGetService {
             }
 
             // Sorting with validation
+
+
             String validatedSortBy = validateSortField(sortBy);
             if (validatedSortBy == null) {
                 log.warn("Invalid sort field: {}", sortBy);
@@ -118,6 +125,25 @@ public class ParkDocumentGetService {
             if (Boolean.TRUE.equals(tariffDocumentsOnly)) {
                 spec = spec.and(ParkDocumentSpecification.byTariffDocument());
             }
+            // multi-value + validity facets: every stat card must be filterable
+            if (documentTypes != null && !documentTypes.isEmpty()) {
+                spec = spec.and(ParkDocumentSpecification.documentTypeIn(documentTypes));
+            }
+            if (statuses != null && !statuses.isEmpty()) {
+                java.util.List<Boolean> states = new java.util.ArrayList<>();
+                if (statuses.contains("active")) states.add(true);
+                if (statuses.contains("inactive")) states.add(false);
+                if (states.size() == 1) spec = spec.and(ParkDocumentSpecification.byIsActive(states.get(0)));
+            }
+            if (validity != null && !validity.isEmpty()) {
+                spec = spec.and(ParkDocumentSpecification.anyValidityState(
+                    validity.contains("expired"),
+                    validity.contains("expiring"),
+                    validity.contains("no-expiry")
+                ));
+            }
+            if (createdAfter != null) spec = spec.and(ParkDocumentSpecification.createdAfter(createdAfter));
+            if (createdBefore != null) spec = spec.and(ParkDocumentSpecification.createdBefore(createdBefore));
 
             Page<ParkDocument> documentPage = parkDocumentRepository.findAll(spec, pageable);
             Page<ParkDocumentDTO> dtoPage = documentPage.map(this::toDTO);
