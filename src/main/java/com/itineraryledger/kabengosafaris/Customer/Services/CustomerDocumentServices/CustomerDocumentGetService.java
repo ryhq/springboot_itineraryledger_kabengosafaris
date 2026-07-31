@@ -39,6 +39,7 @@ public class CustomerDocumentGetService {
     private final CustomerDocumentRepository customerDocumentRepository;
     private final CustomerDocumentStorageService storageService;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "title", "documentType", "fileName", "fileSize", "createdAt", "updatedAt"
@@ -60,6 +61,12 @@ public class CustomerDocumentGetService {
             Boolean travelDocumentsOnly,
             String sortBy,
             String sortDirection,
+            java.util.List<CustomerDocument.DocumentType> documentTypes,
+            java.util.List<String> statuses,
+            java.util.List<String> validity,
+            java.time.LocalDateTime createdAfter,
+            java.time.LocalDateTime createdBefore,
+            Boolean includeStats,
             int page,
             int size
     ) {
@@ -115,6 +122,36 @@ public class CustomerDocumentGetService {
                 spec = spec.and(CustomerDocumentSpecification.byTravelDocument());
             }
 
+            // multi-value facets, so every stat card is also a filter
+
+            if (documentTypes != null && !documentTypes.isEmpty()) spec = spec.and(CustomerDocumentSpecification.documentTypeIn(documentTypes));
+
+            if (statuses != null && !statuses.isEmpty()) {
+
+                java.util.List<Boolean> states = new java.util.ArrayList<>();
+
+                if (statuses.contains("active")) states.add(true);
+
+                if (statuses.contains("inactive")) states.add(false);
+
+                if (states.size() == 1) spec = spec.and(CustomerDocumentSpecification.byIsActive(states.get(0)));
+
+            }
+
+            if (validity != null && !validity.isEmpty()) {
+
+                if (validity.contains("expired")) spec = spec.and(CustomerDocumentSpecification.expired());
+
+                if (validity.contains("expiring")) spec = spec.and(CustomerDocumentSpecification.expiringWithin(30));
+
+                if (validity.contains("no-expiry")) spec = spec.and(CustomerDocumentSpecification.noExpiry());
+
+            }
+
+            if (createdAfter != null) spec = spec.and(CustomerDocumentSpecification.createdAfter(createdAfter));
+
+            if (createdBefore != null) spec = spec.and(CustomerDocumentSpecification.createdBefore(createdBefore));
+
             Page<CustomerDocument> documentPage = customerDocumentRepository.findAll(spec, pageable);
             Page<CustomerDocumentDTO> dtoPage = documentPage.map(this::toDTO);
 
@@ -129,6 +166,9 @@ public class CustomerDocumentGetService {
             responseData.put("validSortFields", VALID_SORT_FIELDS);
             responseData.put("currentSortBy", validatedSortBy);
             responseData.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            if (!Boolean.FALSE.equals(includeStats)) {
+                responseData.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Customer documents retrieved successfully", responseData)
@@ -372,6 +412,21 @@ public class CustomerDocumentGetService {
             .isActive(document.getIsActive())
             .createdAt(document.getCreatedAt())
             .updatedAt(document.getUpdatedAt())
+            .build();
+    }
+
+    /** Dashboard counters for the CURRENT filter set (stats on every list). */
+    private Map<String, Object> computeStats(Specification<CustomerDocument> base) {
+        return listStats.of(CustomerDocument.class, base)
+            .total()
+            .count("active", CustomerDocumentSpecification.byIsActive(true)).complement("inactive", "active")
+            .count("expired", CustomerDocumentSpecification.expired())
+            .count("expiringSoon", CustomerDocumentSpecification.expiringWithin(30))
+            .count("noExpiry", CustomerDocumentSpecification.noExpiry())
+            .count("identityDocuments", CustomerDocumentSpecification.byIdentityDocument())
+            .count("travelDocuments", CustomerDocumentSpecification.byTravelDocument())
+            .breakdown("byDocumentType", CustomerDocument.DocumentType.values(), CustomerDocumentSpecification::byDocumentType)
+            .recency(CustomerDocumentSpecification::createdAfter)
             .build();
     }
 }

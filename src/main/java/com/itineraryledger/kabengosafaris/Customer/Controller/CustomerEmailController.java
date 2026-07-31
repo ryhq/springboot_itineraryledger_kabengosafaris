@@ -138,7 +138,13 @@ public class CustomerEmailController {
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
-    ) {
+    ,
+            @RequestParam(required = false) java.util.List<com.itineraryledger.kabengosafaris.Customer.Entity.CustomerEmail.EmailType> emailTypes,
+            @RequestParam(required = false) java.util.List<String> statuses,
+            @RequestParam(required = false) java.util.List<String> qualities,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdBefore,
+            @RequestParam(required = false) Boolean includeStats) {
         log.info("GET /api/customer-emails - Fetching all emails with filters");
 
         return customerEmailGetService.getAllCustomerEmails(
@@ -149,6 +155,12 @@ public class CustomerEmailController {
             isActive,
             label,
             keyword,
+            emailTypes,
+            statuses,
+            qualities,
+            createdAfter,
+            createdBefore,
+            includeStats,
             page,
             size,
             sortBy,

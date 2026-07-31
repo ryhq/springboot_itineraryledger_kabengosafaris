@@ -140,7 +140,13 @@ public class CustomerPhoneController {
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
-    ) {
+    ,
+            @RequestParam(required = false) java.util.List<com.itineraryledger.kabengosafaris.Customer.Entity.CustomerPhone.PhoneType> phoneTypes,
+            @RequestParam(required = false) java.util.List<String> statuses,
+            @RequestParam(required = false) java.util.List<String> qualities,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdBefore,
+            @RequestParam(required = false) Boolean includeStats) {
         log.info("GET /api/customer-phones - Fetching all phones with filters");
 
         return customerPhoneGetService.getAllCustomerPhones(
@@ -152,6 +158,12 @@ public class CustomerPhoneController {
             isActive,
             label,
             keyword,
+            phoneTypes,
+            statuses,
+            qualities,
+            createdAfter,
+            createdBefore,
+            includeStats,
             page,
             size,
             sortBy,

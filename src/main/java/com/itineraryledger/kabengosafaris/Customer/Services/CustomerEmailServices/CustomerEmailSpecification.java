@@ -96,4 +96,31 @@ public class CustomerEmailSpecification {
             );
         };
     }
+
+    /* ---- stat-card support: every counter below is also a filter ---- */
+
+    public static Specification<CustomerEmail> createdAfter(java.time.LocalDateTime after) {
+        return (root, query, cb) ->
+            after == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), after);
+    }
+
+    public static Specification<CustomerEmail> createdBefore(java.time.LocalDateTime before) {
+        return (root, query, cb) ->
+            before == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("createdAt"), before);
+    }
+
+    public static Specification<CustomerEmail> emailTypeIn(java.util.List<CustomerEmail.EmailType> types) {
+        return (root, query, cb) -> {
+            if (types == null || types.isEmpty()) return cb.conjunction();
+            return root.get("emailType").in(types);
+        };
+    }
+
+    /** No label — unclear who the address reaches. */
+    public static Specification<CustomerEmail> missingLabel() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("label")),
+            cb.equal(cb.trim(root.get("label").as(String.class)), "")
+        );
+    }
 }

@@ -33,6 +33,7 @@ import java.util.Map;
 public class CustomerNoteGetService {
 
     private final CustomerNoteRepository customerNoteRepository;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -43,10 +44,12 @@ public class CustomerNoteGetService {
     @Autowired
     public CustomerNoteGetService(
         CustomerNoteRepository customerNoteRepository,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats
     ) {
         this.customerNoteRepository = customerNoteRepository;
         this.idObfuscator = idObfuscator;
+        this.listStats = listStats;
     }
 
     /**
@@ -167,6 +170,12 @@ public class CustomerNoteGetService {
         Boolean pendingFollowUpsOnly,
         Boolean overdueFollowUpsOnly,
         String keyword,
+        java.util.List<CustomerNote.NoteType> noteTypes,
+        java.util.List<CustomerNote.NotePriority> priorities,
+        java.util.List<String> queues,
+        java.time.LocalDateTime createdAfter,
+        java.time.LocalDateTime createdBefore,
+        Boolean includeStats,
         Integer page,
         Integer size,
         String sortBy,
@@ -245,6 +254,18 @@ public class CustomerNoteGetService {
             Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
 
             // Fetch paginated results
+            // multi-value facets, so every stat card is also a filter
+            if (noteTypes != null && !noteTypes.isEmpty()) spec = spec.and(CustomerNoteSpecification.noteTypeIn(noteTypes));
+            if (priorities != null && !priorities.isEmpty()) spec = spec.and(CustomerNoteSpecification.priorityIn(priorities));
+            if (queues != null && !queues.isEmpty()) {
+                if (queues.contains("pending")) spec = spec.and(CustomerNoteSpecification.hasPendingFollowUp());
+                if (queues.contains("overdue")) spec = spec.and(CustomerNoteSpecification.hasOverdueFollowUp());
+                if (queues.contains("pinned")) spec = spec.and(CustomerNoteSpecification.isPinned(true));
+                if (queues.contains("private")) spec = spec.and(CustomerNoteSpecification.isPrivate(true));
+                if (queues.contains("done")) spec = spec.and(CustomerNoteSpecification.isFollowUpCompleted(true));
+            }
+            if (createdAfter != null) spec = spec.and(CustomerNoteSpecification.createdAfter(createdAfter));
+            if (createdBefore != null) spec = spec.and(CustomerNoteSpecification.createdBefore(createdBefore));
             Page<CustomerNote> notePage = customerNoteRepository.findAll(spec, pageable);
 
             // Convert to DTOs
@@ -260,6 +281,9 @@ public class CustomerNoteGetService {
             responseData.put("validSortFields", VALID_SORT_FIELDS);
             responseData.put("currentSortBy", validatedSortBy);
             responseData.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            if (!Boolean.FALSE.equals(includeStats)) {
+                responseData.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -313,6 +337,22 @@ public class CustomerNoteGetService {
             .priorityDescription(note.getPriority() != null ? note.getPriority().getDescription() : null)
             .createdAt(note.getCreatedAt())
             .updatedAt(note.getUpdatedAt())
+            .build();
+    }
+
+    /** Dashboard counters for the CURRENT filter set (stats on every list). */
+    private Map<String, Object> computeStats(Specification<CustomerNote> base) {
+        return listStats.of(CustomerNote.class, base)
+            .total()
+            .count("pending", CustomerNoteSpecification.hasPendingFollowUp())
+            .count("overdue", CustomerNoteSpecification.hasOverdueFollowUp())
+            .count("dueWithin7Days", CustomerNoteSpecification.followUpDueWithin(7))
+            .count("completed", CustomerNoteSpecification.isFollowUpCompleted(true))
+            .count("pinned", CustomerNoteSpecification.isPinned(true))
+            .count("privateNotes", CustomerNoteSpecification.isPrivate(true))
+            .breakdown("byNoteType", CustomerNote.NoteType.values(), CustomerNoteSpecification::hasNoteType)
+            .breakdown("byPriority", CustomerNote.NotePriority.values(), CustomerNoteSpecification::hasPriority)
+            .recency(CustomerNoteSpecification::createdAfter)
             .build();
     }
 }

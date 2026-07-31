@@ -135,4 +135,47 @@ public class CustomerDocumentSpecification {
             );
         };
     }
+
+    /* ---- stat-card support: every counter below is also a filter ---- */
+
+    public static Specification<CustomerDocument> createdAfter(java.time.LocalDateTime after) {
+        return (root, query, cb) ->
+            after == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), after);
+    }
+
+    public static Specification<CustomerDocument> createdBefore(java.time.LocalDateTime before) {
+        return (root, query, cb) ->
+            before == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("createdAt"), before);
+    }
+
+    public static Specification<CustomerDocument> documentTypeIn(java.util.List<CustomerDocument.DocumentType> types) {
+        return (root, query, cb) -> {
+            if (types == null || types.isEmpty()) return cb.conjunction();
+            return root.get("documentType").in(types);
+        };
+    }
+
+    /** Past its valid-to date. */
+    public static Specification<CustomerDocument> expired() {
+        return (root, query, cb) -> cb.and(
+            cb.isNotNull(root.get("validTo")),
+            cb.lessThan(root.get("validTo"), java.time.LocalDateTime.now())
+        );
+    }
+
+    /** Expires within the next N days — the warning that matters before departure. */
+    public static Specification<CustomerDocument> expiringWithin(int days) {
+        return (root, query, cb) -> {
+            var now = java.time.LocalDateTime.now();
+            return cb.and(
+                cb.isNotNull(root.get("validTo")),
+                cb.greaterThanOrEqualTo(root.get("validTo"), now),
+                cb.lessThanOrEqualTo(root.get("validTo"), now.plusDays(days))
+            );
+        };
+    }
+
+    public static Specification<CustomerDocument> noExpiry() {
+        return (root, query, cb) -> cb.isNull(root.get("validTo"));
+    }
 }

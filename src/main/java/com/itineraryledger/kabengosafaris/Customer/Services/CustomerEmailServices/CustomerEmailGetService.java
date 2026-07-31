@@ -33,6 +33,7 @@ import java.util.Map;
 public class CustomerEmailGetService {
 
     private final CustomerEmailRepository customerEmailRepository;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -43,10 +44,12 @@ public class CustomerEmailGetService {
     @Autowired
     public CustomerEmailGetService(
         CustomerEmailRepository customerEmailRepository,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats
     ) {
         this.customerEmailRepository = customerEmailRepository;
         this.idObfuscator = idObfuscator;
+        this.listStats = listStats;
     }
 
     /**
@@ -161,6 +164,12 @@ public class CustomerEmailGetService {
         Boolean isActive,
         String label,
         String keyword,
+        java.util.List<CustomerEmail.EmailType> emailTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> qualities,
+        java.time.LocalDateTime createdAfter,
+        java.time.LocalDateTime createdBefore,
+        Boolean includeStats,
         Integer page,
         Integer size,
         String sortBy,
@@ -230,6 +239,17 @@ public class CustomerEmailGetService {
             Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
 
             // Fetch paginated results
+            // multi-value facets, so every stat card is also a filter
+            if (emailTypes != null && !emailTypes.isEmpty()) spec = spec.and(CustomerEmailSpecification.emailTypeIn(emailTypes));
+            if (statuses != null && !statuses.isEmpty()) {
+                java.util.List<Boolean> states = new java.util.ArrayList<>();
+                if (statuses.contains("active")) states.add(true);
+                if (statuses.contains("inactive")) states.add(false);
+                if (states.size() == 1) spec = spec.and(CustomerEmailSpecification.isActive(states.get(0)));
+            }
+            if (qualities != null && qualities.contains("no-label")) spec = spec.and(CustomerEmailSpecification.missingLabel());
+            if (createdAfter != null) spec = spec.and(CustomerEmailSpecification.createdAfter(createdAfter));
+            if (createdBefore != null) spec = spec.and(CustomerEmailSpecification.createdBefore(createdBefore));
             Page<CustomerEmail> emailPage = customerEmailRepository.findAll(spec, pageable);
 
             // Convert to DTOs
@@ -245,6 +265,9 @@ public class CustomerEmailGetService {
             responseData.put("validSortFields", VALID_SORT_FIELDS);
             responseData.put("currentSortBy", validatedSortBy);
             responseData.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            if (!Boolean.FALSE.equals(includeStats)) {
+                responseData.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -416,6 +439,18 @@ public class CustomerEmailGetService {
             .label(email.getLabel())
             .createdAt(email.getCreatedAt())
             .updatedAt(email.getUpdatedAt())
+            .build();
+    }
+
+    /** Dashboard counters for the CURRENT filter set (stats on every list). */
+    private Map<String, Object> computeStats(Specification<CustomerEmail> base) {
+        return listStats.of(CustomerEmail.class, base)
+            .total()
+            .count("active", CustomerEmailSpecification.isActive(true)).complement("inactive", "active")
+            .count("primary", CustomerEmailSpecification.isPrimary(true))
+            .count("missingLabel", CustomerEmailSpecification.missingLabel())
+            .breakdown("byEmailType", CustomerEmail.EmailType.values(), CustomerEmailSpecification::hasEmailType)
+            .recency(CustomerEmailSpecification::createdAfter)
             .build();
     }
 }

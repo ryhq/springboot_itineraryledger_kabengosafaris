@@ -109,4 +109,38 @@ public class CustomerPhoneSpecification {
             );
         };
     }
+
+    /* ---- stat-card support: every counter below is also a filter ---- */
+
+    public static Specification<CustomerPhone> createdAfter(java.time.LocalDateTime after) {
+        return (root, query, cb) ->
+            after == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), after);
+    }
+
+    public static Specification<CustomerPhone> createdBefore(java.time.LocalDateTime before) {
+        return (root, query, cb) ->
+            before == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("createdAt"), before);
+    }
+
+    public static Specification<CustomerPhone> phoneTypeIn(java.util.List<CustomerPhone.PhoneType> types) {
+        return (root, query, cb) -> {
+            if (types == null || types.isEmpty()) return cb.conjunction();
+            return root.get("phoneType").in(types);
+        };
+    }
+
+    public static Specification<CustomerPhone> missingLabel() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("label")),
+            cb.equal(cb.trim(root.get("label").as(String.class)), "")
+        );
+    }
+
+    /** No country code — may not dial internationally. */
+    public static Specification<CustomerPhone> missingCountryCode() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("countryCode")),
+            cb.equal(cb.trim(root.get("countryCode").as(String.class)), "")
+        );
+    }
 }

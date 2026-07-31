@@ -159,7 +159,13 @@ public class CustomerNoteController {
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
-    ) {
+    ,
+            @RequestParam(required = false) java.util.List<com.itineraryledger.kabengosafaris.Customer.Entity.CustomerNote.NoteType> noteTypes,
+            @RequestParam(required = false) java.util.List<com.itineraryledger.kabengosafaris.Customer.Entity.CustomerNote.NotePriority> priorities,
+            @RequestParam(required = false) java.util.List<String> queues,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdBefore,
+            @RequestParam(required = false) Boolean includeStats) {
         log.info("GET /api/customer-notes - Fetching all notes with filters");
 
         return customerNoteGetService.getAllCustomerNotes(
@@ -173,6 +179,12 @@ public class CustomerNoteController {
             pendingFollowUpsOnly,
             overdueFollowUpsOnly,
             keyword,
+            noteTypes,
+            priorities,
+            queues,
+            createdAfter,
+            createdBefore,
+            includeStats,
             page,
             size,
             sortBy,
@@ -215,6 +227,12 @@ public class CustomerNoteController {
             pendingFollowUpsOnly,
             overdueFollowUpsOnly,
             keyword,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             page,
             size,
             sortBy,

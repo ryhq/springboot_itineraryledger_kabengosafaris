@@ -33,6 +33,7 @@ import java.util.Map;
 public class CustomerPhoneGetService {
 
     private final CustomerPhoneRepository customerPhoneRepository;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -43,10 +44,12 @@ public class CustomerPhoneGetService {
     @Autowired
     public CustomerPhoneGetService(
         CustomerPhoneRepository customerPhoneRepository,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats
     ) {
         this.customerPhoneRepository = customerPhoneRepository;
         this.idObfuscator = idObfuscator;
+        this.listStats = listStats;
     }
 
     /**
@@ -163,6 +166,12 @@ public class CustomerPhoneGetService {
         Boolean isActive,
         String label,
         String keyword,
+        java.util.List<CustomerPhone.PhoneType> phoneTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> qualities,
+        java.time.LocalDateTime createdAfter,
+        java.time.LocalDateTime createdBefore,
+        Boolean includeStats,
         Integer page,
         Integer size,
         String sortBy,
@@ -235,6 +244,18 @@ public class CustomerPhoneGetService {
             Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
 
             // Fetch paginated results
+            // multi-value facets, so every stat card is also a filter
+            if (phoneTypes != null && !phoneTypes.isEmpty()) spec = spec.and(CustomerPhoneSpecification.phoneTypeIn(phoneTypes));
+            if (statuses != null && !statuses.isEmpty()) {
+                java.util.List<Boolean> states = new java.util.ArrayList<>();
+                if (statuses.contains("active")) states.add(true);
+                if (statuses.contains("inactive")) states.add(false);
+                if (states.size() == 1) spec = spec.and(CustomerPhoneSpecification.isActive(states.get(0)));
+            }
+            if (qualities != null && qualities.contains("no-label")) spec = spec.and(CustomerPhoneSpecification.missingLabel());
+            if (qualities != null && qualities.contains("no-country-code")) spec = spec.and(CustomerPhoneSpecification.missingCountryCode());
+            if (createdAfter != null) spec = spec.and(CustomerPhoneSpecification.createdAfter(createdAfter));
+            if (createdBefore != null) spec = spec.and(CustomerPhoneSpecification.createdBefore(createdBefore));
             Page<CustomerPhone> phonePage = customerPhoneRepository.findAll(spec, pageable);
 
             // Convert to DTOs
@@ -250,6 +271,9 @@ public class CustomerPhoneGetService {
             responseData.put("validSortFields", VALID_SORT_FIELDS);
             responseData.put("currentSortBy", validatedSortBy);
             responseData.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            if (!Boolean.FALSE.equals(includeStats)) {
+                responseData.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -428,6 +452,20 @@ public class CustomerPhoneGetService {
             .label(phone.getLabel())
             .createdAt(phone.getCreatedAt())
             .updatedAt(phone.getUpdatedAt())
+            .build();
+    }
+
+    /** Dashboard counters for the CURRENT filter set (stats on every list). */
+    private Map<String, Object> computeStats(Specification<CustomerPhone> base) {
+        return listStats.of(CustomerPhone.class, base)
+            .total()
+            .count("active", CustomerPhoneSpecification.isActive(true)).complement("inactive", "active")
+            .count("primary", CustomerPhoneSpecification.isPrimary(true))
+            .count("whatsApp", CustomerPhoneSpecification.isWhatsApp(true))
+            .count("missingLabel", CustomerPhoneSpecification.missingLabel())
+            .count("missingCountryCode", CustomerPhoneSpecification.missingCountryCode())
+            .breakdown("byPhoneType", CustomerPhone.PhoneType.values(), CustomerPhoneSpecification::hasPhoneType)
+            .recency(CustomerPhoneSpecification::createdAfter)
             .build();
     }
 }

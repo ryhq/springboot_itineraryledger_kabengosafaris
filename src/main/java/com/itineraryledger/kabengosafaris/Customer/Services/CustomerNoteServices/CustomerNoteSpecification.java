@@ -132,4 +132,43 @@ public class CustomerNoteSpecification {
             );
         };
     }
+
+    /* ---- stat-card support: every counter below is also a filter ---- */
+
+    public static Specification<CustomerNote> createdAfter(java.time.LocalDateTime after) {
+        return (root, query, cb) ->
+            after == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), after);
+    }
+
+    public static Specification<CustomerNote> createdBefore(java.time.LocalDateTime before) {
+        return (root, query, cb) ->
+            before == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("createdAt"), before);
+    }
+
+    public static Specification<CustomerNote> noteTypeIn(java.util.List<CustomerNote.NoteType> types) {
+        return (root, query, cb) -> {
+            if (types == null || types.isEmpty()) return cb.conjunction();
+            return root.get("noteType").in(types);
+        };
+    }
+
+    public static Specification<CustomerNote> priorityIn(java.util.List<CustomerNote.NotePriority> priorities) {
+        return (root, query, cb) -> {
+            if (priorities == null || priorities.isEmpty()) return cb.conjunction();
+            return root.get("priority").in(priorities);
+        };
+    }
+
+    /** Follow-up due within the next N days and not yet done. */
+    public static Specification<CustomerNote> followUpDueWithin(int days) {
+        return (root, query, cb) -> {
+            var now = java.time.LocalDateTime.now();
+            return cb.and(
+                cb.isNotNull(root.get("followUpDate")),
+                cb.or(cb.isNull(root.get("followUpCompleted")), cb.isFalse(root.get("followUpCompleted"))),
+                cb.greaterThanOrEqualTo(root.get("followUpDate"), now),
+                cb.lessThanOrEqualTo(root.get("followUpDate"), now.plusDays(days))
+            );
+        };
+    }
 }

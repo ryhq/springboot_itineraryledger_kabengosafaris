@@ -95,7 +95,13 @@ public class CustomerDocumentController {
             @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size
-    ) {
+    ,
+            @RequestParam(required = false) java.util.List<com.itineraryledger.kabengosafaris.Customer.Entity.CustomerDocument.DocumentType> documentTypes,
+            @RequestParam(required = false) java.util.List<String> statuses,
+            @RequestParam(required = false) java.util.List<String> validity,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdBefore,
+            @RequestParam(required = false) Boolean includeStats) {
         return getService.getAllDocuments(
             customerId,
             documentType,
@@ -111,6 +117,12 @@ public class CustomerDocumentController {
             travelDocumentsOnly,
             sortBy,
             sortDirection,
+            documentTypes,
+            statuses,
+            validity,
+            createdAfter,
+            createdBefore,
+            includeStats,
             page,
             size
         );
