@@ -161,7 +161,12 @@ public class AccommodationDocumentController {
 
         // Set content disposition for download (use inline for PDFs to view in browser)
         String disposition = mimeType.equals("application/pdf") ? "inline" : "attachment";
-        headers.setContentDispositionFormData(disposition, document.getFileName());
+        headers.setContentDisposition(
+            ("attachment".equalsIgnoreCase(disposition)
+                ? org.springframework.http.ContentDisposition.attachment()
+                : org.springframework.http.ContentDisposition.inline())
+                .filename(document.getFileName(), java.nio.charset.StandardCharsets.UTF_8)
+                .build());
 
         return new ResponseEntity<>(documentBytes, headers, HttpStatus.OK);
     }
@@ -207,7 +212,12 @@ public class AccommodationDocumentController {
 
         // Set content disposition for download (use inline for PDFs to view in browser)
         String disposition = mimeType.equals("application/pdf") ? "inline" : "attachment";
-        headers.setContentDispositionFormData(disposition, document.getFileName());
+        headers.setContentDisposition(
+            ("attachment".equalsIgnoreCase(disposition)
+                ? org.springframework.http.ContentDisposition.attachment()
+                : org.springframework.http.ContentDisposition.inline())
+                .filename(document.getFileName(), java.nio.charset.StandardCharsets.UTF_8)
+                .build());
 
         return new ResponseEntity<>(documentBytes, headers, HttpStatus.OK);
     }

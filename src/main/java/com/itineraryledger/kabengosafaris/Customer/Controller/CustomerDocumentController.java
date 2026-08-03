@@ -205,7 +205,10 @@ public class CustomerDocumentController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(mimeType));
         headers.setContentLength(documentBytes.length);
-        headers.setContentDispositionFormData("inline", document.getOriginalFileName());
+        headers.setContentDisposition(
+            org.springframework.http.ContentDisposition.inline()
+                .filename(document.getOriginalFileName(), java.nio.charset.StandardCharsets.UTF_8)
+                .build());
         headers.setCacheControl("public, max-age=86400");
 
         return new ResponseEntity<>(documentBytes, headers, HttpStatus.OK);
@@ -244,7 +247,10 @@ public class CustomerDocumentController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(mimeType));
         headers.setContentLength(documentBytes.length);
-        headers.setContentDispositionFormData("inline", document.getOriginalFileName());
+        headers.setContentDisposition(
+            org.springframework.http.ContentDisposition.inline()
+                .filename(document.getOriginalFileName(), java.nio.charset.StandardCharsets.UTF_8)
+                .build());
         headers.setCacheControl("public, max-age=86400");
 
         return new ResponseEntity<>(documentBytes, headers, HttpStatus.OK);
