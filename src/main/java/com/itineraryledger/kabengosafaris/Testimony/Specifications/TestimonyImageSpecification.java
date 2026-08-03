@@ -25,7 +25,7 @@ public class TestimonyImageSpecification {
             return cb.or(
                 cb.like(cb.lower(root.get("altText")), pattern),
                 cb.like(cb.lower(root.get("caption")), pattern),
-                cb.like(cb.lower(root.get("description")), pattern)
+                cb.like(cb.lower(root.get("description").as(String.class)), pattern)
             );
         };
     }

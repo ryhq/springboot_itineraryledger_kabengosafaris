@@ -92,7 +92,7 @@ public class AccommodationBoardTypeSpecification {
                 cb.like(cb.lower(root.get("name")), pattern),
                 cb.like(cb.lower(root.get("description")), pattern),
                 cb.like(cb.lower(root.get("mealsIncluded")), pattern),
-                cb.like(cb.lower(root.get("inclusions")), pattern)
+                cb.like(cb.lower(root.get("inclusions").as(String.class)), pattern)
             );
         };
     }

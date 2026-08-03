@@ -112,7 +112,7 @@ public class EmailAccountSpecification {
             if (description == null || description.isEmpty()) {
                 return cb.conjunction();
             }
-            return cb.like(cb.lower(root.get("description")), "%" + description.toLowerCase() + "%");
+            return cb.like(cb.lower(root.get("description").as(String.class)), "%" + description.toLowerCase() + "%");
         };
     }
 
