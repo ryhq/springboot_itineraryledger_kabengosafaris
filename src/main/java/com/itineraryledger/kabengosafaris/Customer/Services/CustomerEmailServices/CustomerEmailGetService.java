@@ -62,6 +62,24 @@ public class CustomerEmailGetService {
      * @return ResponseEntity with ApiResponse containing the email
      */
     public ResponseEntity<ApiResponse<?>> getCustomerEmailById(String idObfuscated, String scopeParentId) {
+        return getCustomerEmailById(idObfuscated, scopeParentId, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * A record plus prev/next over the SAME filtered set the list was showing.
+     * Paging from a '@gmail' search therefore stays inside those matches.
+     */
+    public ResponseEntity<ApiResponse<?>> getCustomerEmailById(
+        String idObfuscated,
+        String scopeParentId,
+        String keyword,
+        java.util.List<CustomerEmail.EmailType> emailTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> qualities,
+        java.time.LocalDateTime createdAfter,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching customer email with ID: {}", idObfuscated);
 
         try {
@@ -106,31 +124,27 @@ public class CustomerEmailGetService {
             }
 
             // Circular navigation (scoped if parent provided, global otherwise)
-            Long nextId, previousId;
-            if (decodedParentId != null) {
-                nextId = customerEmailRepository.findNextIdByParent(id, decodedParentId).orElse(null);
-                previousId = customerEmailRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
-                if (nextId == null) nextId = customerEmailRepository.findFirstIdByParent(decodedParentId).orElse(null);
-                if (previousId == null) previousId = customerEmailRepository.findLastIdByParent(decodedParentId).orElse(null);
-            } else {
-                nextId = customerEmailRepository.findNextId(id).orElse(null);
-                previousId = customerEmailRepository.findPreviousId(id).orElse(null);
-                if (nextId == null) nextId = customerEmailRepository.findFirstId().orElse(null);
-                if (previousId == null) previousId = customerEmailRepository.findLastId().orElse(null);
-            }
+            // walk the caller's filtered + sorted set, scoped to the parent when given
+            Specification<CustomerEmail> navSpec = buildSpec(
+                decodedParentId, null, null, null, null, null, keyword,
+                emailTypes, statuses, qualities, createdAfter, null
+            );
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                CustomerEmail.class,
+                navSpec,
+                validateSortField(sortBy) != null ? validateSortField(sortBy) : "createdAt",
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("email", emailDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
-            // the "3 of 6" readout, over the SAME set the caller was looking at:
-            // scoped to this customer when scopeParentId was given, else the whole list
-            response.putAll(recordNavigation.positionOf(
-                CustomerEmail.class,
-                decodedParentId != null ? CustomerEmailSpecification.hasCustomerId(decodedParentId) : null,
-                "id",
-                false,
-                id));
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(
@@ -189,45 +203,22 @@ public class CustomerEmailGetService {
         log.info("Fetching all customer emails with optional filters");
 
         try {
-            // Build specification
-            Specification<CustomerEmail> spec = Specification.unrestricted();
-
-            // Add optional customer ID filter
+            Long decodedCustomerId = null;
             if (customerId != null && !customerId.isEmpty()) {
                 try {
-                    Long decodedCustomerId = idObfuscator.decodeId(customerId);
-                    spec = spec.and(CustomerEmailSpecification.hasCustomerId(decodedCustomerId));
+                    decodedCustomerId = idObfuscator.decodeId(customerId);
                 } catch (Exception e) {
                     log.warn("Failed to decode customer ID: {}", customerId, e);
                     return ResponseEntity.badRequest().body(
-                        ApiResponse.error(
-                            400,
-                            "Invalid customer ID",
-                            "INVALID_CUSTOMER_ID"
-                        )
+                        ApiResponse.error(400, "Invalid customer ID", "INVALID_CUSTOMER_ID")
                     );
                 }
             }
 
-            // Add other optional filters
-            if (email != null && !email.isEmpty()) {
-                spec = spec.and(CustomerEmailSpecification.emailLike(email));
-            }
-            if (emailType != null) {
-                spec = spec.and(CustomerEmailSpecification.hasEmailType(emailType));
-            }
-            if (isPrimary != null) {
-                spec = spec.and(CustomerEmailSpecification.isPrimary(isPrimary));
-            }
-            if (isActive != null) {
-                spec = spec.and(CustomerEmailSpecification.isActive(isActive));
-            }
-            if (label != null && !label.isEmpty()) {
-                spec = spec.and(CustomerEmailSpecification.labelLike(label));
-            }
-            if (keyword != null && !keyword.isEmpty()) {
-                spec = spec.and(CustomerEmailSpecification.searchKeyword(keyword));
-            }
+            Specification<CustomerEmail> spec = buildSpec(
+                decodedCustomerId, email, emailType, isPrimary, isActive, label, keyword,
+                emailTypes, statuses, qualities, createdAfter, createdBefore
+            );
 
             // Pagination
             int pageNumber = (page != null && page >= 0) ? page : 0;
@@ -250,17 +241,6 @@ public class CustomerEmailGetService {
             Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(direction, validatedSortBy));
 
             // Fetch paginated results
-            // multi-value facets, so every stat card is also a filter
-            if (emailTypes != null && !emailTypes.isEmpty()) spec = spec.and(CustomerEmailSpecification.emailTypeIn(emailTypes));
-            if (statuses != null && !statuses.isEmpty()) {
-                java.util.List<Boolean> states = new java.util.ArrayList<>();
-                if (statuses.contains("active")) states.add(true);
-                if (statuses.contains("inactive")) states.add(false);
-                if (states.size() == 1) spec = spec.and(CustomerEmailSpecification.isActive(states.get(0)));
-            }
-            if (qualities != null && qualities.contains("no-label")) spec = spec.and(CustomerEmailSpecification.missingLabel());
-            if (createdAfter != null) spec = spec.and(CustomerEmailSpecification.createdAfter(createdAfter));
-            if (createdBefore != null) spec = spec.and(CustomerEmailSpecification.createdBefore(createdBefore));
             Page<CustomerEmail> emailPage = customerEmailRepository.findAll(spec, pageable);
 
             // Convert to DTOs
@@ -463,5 +443,49 @@ public class CustomerEmailGetService {
             .breakdown("byEmailType", CustomerEmail.EmailType.values(), CustomerEmailSpecification::hasEmailType)
             .recency(CustomerEmailSpecification::createdAfter)
             .build();
+    }
+
+    /**
+     * ONE filter chain for the rows, the stat counters AND the record pager.
+     *
+     * Paging must walk the same set the list showed (see CLAUDE.md), so the detail
+     * endpoint builds its Specification here too rather than re-deriving one.
+     */
+    private Specification<CustomerEmail> buildSpec(
+        Long decodedCustomerId,
+        String email,
+        EmailType emailType,
+        Boolean isPrimary,
+        Boolean isActive,
+        String label,
+        String keyword,
+        java.util.List<CustomerEmail.EmailType> emailTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> qualities,
+        java.time.LocalDateTime createdAfter,
+        java.time.LocalDateTime createdBefore
+    ) {
+        Specification<CustomerEmail> spec = Specification.unrestricted();
+
+        if (decodedCustomerId != null) spec = spec.and(CustomerEmailSpecification.hasCustomerId(decodedCustomerId));
+        if (email != null && !email.isEmpty()) spec = spec.and(CustomerEmailSpecification.emailLike(email));
+        if (emailType != null) spec = spec.and(CustomerEmailSpecification.hasEmailType(emailType));
+        if (isPrimary != null) spec = spec.and(CustomerEmailSpecification.isPrimary(isPrimary));
+        if (isActive != null) spec = spec.and(CustomerEmailSpecification.isActive(isActive));
+        if (label != null && !label.isEmpty()) spec = spec.and(CustomerEmailSpecification.labelLike(label));
+        if (keyword != null && !keyword.isEmpty()) spec = spec.and(CustomerEmailSpecification.searchKeyword(keyword));
+
+        // multi-value facets, so every stat card is also a filter
+        if (emailTypes != null && !emailTypes.isEmpty()) spec = spec.and(CustomerEmailSpecification.emailTypeIn(emailTypes));
+        if (statuses != null && !statuses.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            if (states.size() == 1) spec = spec.and(CustomerEmailSpecification.isActive(states.get(0)));
+        }
+        if (qualities != null && qualities.contains("no-label")) spec = spec.and(CustomerEmailSpecification.missingLabel());
+        if (createdAfter != null) spec = spec.and(CustomerEmailSpecification.createdAfter(createdAfter));
+        if (createdBefore != null) spec = spec.and(CustomerEmailSpecification.createdBefore(createdBefore));
+        return spec;
     }
 }
