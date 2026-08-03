@@ -7,7 +7,10 @@ import com.itineraryledger.kabengosafaris.Invoice.DTOs.CreateInvoiceLineItemDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.InvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceItemType;
 import com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceLineItemServices.InvoiceLineItemCreateService;
+import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
+import com.itineraryledger.kabengosafaris.Quote.Entity.QuoteItem;
+import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteItemRepository;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
@@ -50,6 +53,7 @@ public class InvoiceFromSafariGenerationService {
     private final InvoiceLineItemCreateService invoiceLineItemCreateService;
     private final SafariRepository safariRepository;
     private final QuoteRepository quoteRepository;
+    private final QuoteItemRepository quoteItemRepository;
     private final IdObfuscator idObfuscator;
 
     @Autowired
@@ -59,6 +63,7 @@ public class InvoiceFromSafariGenerationService {
             InvoiceLineItemCreateService invoiceLineItemCreateService,
             SafariRepository safariRepository,
             QuoteRepository quoteRepository,
+            QuoteItemRepository quoteItemRepository,
             IdObfuscator idObfuscator
     ) {
         this.costEstimationService = costEstimationService;
@@ -66,6 +71,7 @@ public class InvoiceFromSafariGenerationService {
         this.invoiceLineItemCreateService = invoiceLineItemCreateService;
         this.safariRepository = safariRepository;
         this.quoteRepository = quoteRepository;
+        this.quoteItemRepository = quoteItemRepository;
         this.idObfuscator = idObfuscator;
     }
 
@@ -143,22 +149,38 @@ public class InvoiceFromSafariGenerationService {
                 }
             }
 
-            // 4. Get cost estimation from safari
-            ResponseEntity<ApiResponse<?>> costResponse =
-                    costEstimationService.estimateCosts(dto.getSafariId(), useStoRates, currency);
-
-            if (!costResponse.getStatusCode().is2xxSuccessful() || costResponse.getBody() == null) {
-                log.error("Failed to get cost estimation for safari: {}", dto.getSafariId());
-                return ResponseEntity.status(500).body(
-                        ApiResponse.error(500, "Failed to estimate costs", "COST_ESTIMATION_FAILED")
+            // 3c. Decide where line items come from. "QUOTE" copies the quote's
+            // line items verbatim (incl. manual lines like the flight); anything
+            // else re-derives them from cost estimation.
+            boolean fromQuote = "QUOTE".equalsIgnoreCase(dto.getLineItemSource());
+            if (fromQuote && latestQuote == null) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "Cannot copy line items from quote: no quote found for this safari's itinerary and customer. "
+                                        + "Create/convert a quote first, or generate the invoice from cost estimation instead.",
+                                "NO_QUOTE_FOR_SAFARI")
                 );
             }
 
-            ItineraryCostEstimationDTO costEstimation = (ItineraryCostEstimationDTO) costResponse.getBody().getData();
-            if (costEstimation == null) {
-                return ResponseEntity.status(500).body(
-                        ApiResponse.error(500, "Cost estimation returned null", "NULL_ESTIMATION")
-                );
+            // 4. Get cost estimation from safari (only needed when re-deriving line items)
+            ItineraryCostEstimationDTO costEstimation = null;
+            if (!fromQuote) {
+                ResponseEntity<ApiResponse<?>> costResponse =
+                        costEstimationService.estimateCosts(dto.getSafariId(), useStoRates, currency);
+
+                if (!costResponse.getStatusCode().is2xxSuccessful() || costResponse.getBody() == null) {
+                    log.error("Failed to get cost estimation for safari: {}", dto.getSafariId());
+                    return ResponseEntity.status(500).body(
+                            ApiResponse.error(500, "Failed to estimate costs", "COST_ESTIMATION_FAILED")
+                    );
+                }
+
+                costEstimation = (ItineraryCostEstimationDTO) costResponse.getBody().getData();
+                if (costEstimation == null) {
+                    return ResponseEntity.status(500).body(
+                            ApiResponse.error(500, "Cost estimation returned null", "NULL_ESTIMATION")
+                    );
+                }
             }
 
             // 5. Create the Invoice entity (quote accounting fields used as defaults when not explicitly provided)
@@ -202,9 +224,18 @@ public class InvoiceFromSafariGenerationService {
             InvoiceDTO invoiceDTO = (InvoiceDTO) invoiceResponse.getBody().getData();
             String invoiceId = invoiceDTO.getId();
 
-            // 6. Create InvoiceLineItems from cost estimation line items
-            boolean condenseLineItems = Boolean.TRUE.equals(dto.getCondense());
-            int itemsCreated = createInvoiceLineItemsFromEstimation(invoiceId, costEstimation, condenseLineItems, multiplier);
+            // 6. Create InvoiceLineItems — either copied verbatim from the quote
+            // (preserving manual lines like the flight) or re-derived from the
+            // cost estimation.
+            int itemsCreated;
+            if (fromQuote) {
+                itemsCreated = createInvoiceLineItemsFromQuote(invoiceId, latestQuote);
+                log.info("Copied {} line item(s) from quote {} into invoice",
+                        itemsCreated, latestQuote.getQuoteCode());
+            } else {
+                boolean condenseLineItems = Boolean.TRUE.equals(dto.getCondense());
+                itemsCreated = createInvoiceLineItemsFromEstimation(invoiceId, costEstimation, condenseLineItems, multiplier);
+            }
 
 
             log.info("Successfully generated invoice: {} with {} items for safari: {}",
@@ -388,6 +419,67 @@ public class InvoiceFromSafariGenerationService {
             for (ItineraryCostEstimationDTO.CostLineItem li : activities) {
                 createInvoiceLineItemFromLineItem(invoiceId, li, InvoiceItemType.ACTIVITY, multiplier);
                 itemsCreated++;
+            }
+        }
+
+        return itemsCreated;
+    }
+
+    /**
+     * Copy the quote's active line items verbatim into the invoice.
+     *
+     * <p>This preserves the exact shape of the quote — including any
+     * manually-added lines (e.g. a TRANSPORT/flight line) that cost estimation
+     * cannot produce — and whatever condensed/detailed form the quote is
+     * already in. Prices are copied as-is: the quote already has markup baked
+     * into its unit prices, so no commission/uplift multiplier is applied here
+     * (doing so would double-inflate).
+     *
+     * @param invoiceId The obfuscated invoice ID
+     * @param quote     The source quote (non-null)
+     * @return Number of items created
+     */
+    private int createInvoiceLineItemsFromQuote(String invoiceId, Quote quote) {
+        List<QuoteItem> quoteItems = quoteItemRepository.findActiveByQuoteId(quote.getId());
+        int itemsCreated = 0;
+
+        for (QuoteItem qi : quoteItems) {
+            if (qi.getPrices() == null || qi.getPrices().isEmpty()) continue;
+
+            CreateInvoiceLineItemDTO itemDTO = new CreateInvoiceLineItemDTO();
+
+            // Quote and invoice item types share identical names, so map 1:1.
+            // Fall back to OTHER defensively if a type ever diverges.
+            InvoiceItemType type;
+            try {
+                type = InvoiceItemType.valueOf(qi.getItemType().name());
+            } catch (IllegalArgumentException | NullPointerException ex) {
+                type = InvoiceItemType.OTHER;
+            }
+            itemDTO.setItemType(type);
+            itemDTO.setItemName(qi.getItemName());
+            itemDTO.setDescription(qi.getDescription());
+            itemDTO.setIsActive(true);
+
+            List<CreateInvoiceLineItemDTO.PriceInput> prices = new ArrayList<>();
+            for (Price p : qi.getPrices()) {
+                if (p.getCurrency() == null || p.getUnitPrice() == null) continue;
+                CreateInvoiceLineItemDTO.PriceInput pi = new CreateInvoiceLineItemDTO.PriceInput();
+                pi.setCurrency(p.getCurrency());
+                pi.setQuantity(p.getQuantity() != null && p.getQuantity() >= 1 ? p.getQuantity() : 1);
+                pi.setUnitPrice(p.getUnitPrice()); // verbatim — markup already baked in
+                pi.setBreakdown(p.getBreakdown());
+                prices.add(pi);
+            }
+            if (prices.isEmpty()) continue;
+            itemDTO.setPrices(prices);
+
+            try {
+                invoiceLineItemCreateService.createInvoiceLineItem(invoiceId, itemDTO);
+                itemsCreated++;
+            } catch (Exception e) {
+                log.error("Failed to copy quote item '{}' to invoice: {}", qi.getItemName(), e.getMessage());
+                // Continue copying the rest even if one fails
             }
         }
 

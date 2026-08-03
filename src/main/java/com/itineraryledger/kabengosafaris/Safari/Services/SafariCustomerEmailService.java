@@ -124,8 +124,8 @@ public class SafariCustomerEmailService {
             CompletableFuture.runAsync(() -> {
                 try {
                     String renderedHtml = templateId != null
-                        ? emailTemplateRenderer.renderTemplate("SEND_SEND_SAFARI_DETAILS", templateId, variables)
-                        : emailTemplateRenderer.renderTemplate("SEND_SEND_SAFARI_DETAILS", variables);
+                        ? emailTemplateRenderer.renderTemplate("SEND_SAFARI_DETAILS", templateId, variables)
+                        : emailTemplateRenderer.renderTemplate("SEND_SAFARI_DETAILS", variables);
 
                     String finalSubject = subject;
 
@@ -147,7 +147,7 @@ public class SafariCustomerEmailService {
                     }
                     log.info("Safari details email sent to {} for safari {}", customerEmail, safariCode);
                 } catch (Exception e) {
-                    log.warn("Failed to send safari details email for {}: {}", safariCode, e.getMessage());
+                    log.error("Failed to send safari details email for {} to {}", safariCode, customerEmail, e);
                 }
             });
 
