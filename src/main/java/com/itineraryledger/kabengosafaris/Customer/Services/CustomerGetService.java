@@ -98,7 +98,15 @@ public class CustomerGetService {
                 keyword, createdAfter, null, null, null, null,
                 customerTypes, sources, statuses, flags, qualities
             );
-            List<Long> orderedIds = navigationIds(navSpec, sortBy, sortDirection);
+            // paging is a nicety: a bad sort field or filter must not take the
+            // record down with it, so the walk degrades to no arrows
+            List<Long> orderedIds;
+            try {
+                orderedIds = navigationIds(navSpec, sortBy, sortDirection);
+            } catch (Exception e) {
+                log.warn("Record navigation failed for customer {}; serving without paging", id, e);
+                orderedIds = List.of();
+            }
             int index = orderedIds.indexOf(id);
 
             Long nextId = null;
@@ -243,23 +251,34 @@ public class CustomerGetService {
      */
     private List<Long> navigationIds(Specification<Customer> spec, String sortBy, String sortDirection) {
         var cb = entityManager.getCriteriaBuilder();
-        var query = cb.createQuery(Long.class);
+        // Object[] so the sort column can be SELECTed: a keyword search joins
+        // emails/phones and sets distinct(true), and SELECT DISTINCT cannot ORDER BY
+        // a column that is not in its select list.
+        var query = cb.createQuery(Object[].class);
         var root = query.from(Customer.class);
-        query.select(root.get("id"));
+
+        String field = validateSortField(sortBy);
+        if (field == null) field = DEFAULT_SORT_FIELD;
+        var sortPath = root.get(field);
+        query.multiselect(root.get("id"), sortPath);
 
         var predicate = spec.toPredicate(root, query, cb);
         if (predicate != null) query.where(predicate);
 
-        String field = validateSortField(sortBy);
-        if (field == null) field = DEFAULT_SORT_FIELD;
         boolean asc = sortDirection != null && sortDirection.equalsIgnoreCase("asc");
         // id is the tiebreaker so the order is stable and matches the list page
         query.orderBy(
-            asc ? cb.asc(root.get(field)) : cb.desc(root.get(field)),
+            asc ? cb.asc(sortPath) : cb.desc(sortPath),
             asc ? cb.asc(root.get("id")) : cb.desc(root.get("id"))
         );
 
-        return entityManager.createQuery(query).setMaxResults(NAV_ID_LIMIT).getResultList();
+        return entityManager.createQuery(query)
+            .setMaxResults(NAV_ID_LIMIT)
+            .getResultList()
+            .stream()
+            .map(row -> (Long) row[0])
+            .distinct()
+            .toList();
     }
 
     /**

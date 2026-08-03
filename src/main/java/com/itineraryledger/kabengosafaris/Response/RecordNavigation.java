@@ -43,9 +43,13 @@ public class RecordNavigation {
         boolean ascending
     ) {
         var cb = entityManager.getCriteriaBuilder();
-        var query = cb.createQuery(Long.class);
+        // Object[] so the sort column can be SELECTed: specs that join child tables
+        // set distinct(true), and SELECT DISTINCT cannot ORDER BY a column outside
+        // its select list.
+        var query = cb.createQuery(Object[].class);
         var root = query.from(entityClass);
-        query.select(root.get("id"));
+        var sortPath = resolveSortPath(root, sortBy);
+        query.multiselect(root.get("id"), sortPath);
 
         if (spec != null) {
             var predicate = spec.toPredicate(root, query, cb);
@@ -53,13 +57,18 @@ public class RecordNavigation {
         }
 
         // id is the tiebreaker so the order is stable and matches the list page
-        var sortPath = resolveSortPath(root, sortBy);
         query.orderBy(
             ascending ? cb.asc(sortPath) : cb.desc(sortPath),
             ascending ? cb.asc(root.get("id")) : cb.desc(root.get("id"))
         );
 
-        return entityManager.createQuery(query).setMaxResults(NAV_ID_LIMIT).getResultList();
+        return entityManager.createQuery(query)
+            .setMaxResults(NAV_ID_LIMIT)
+            .getResultList()
+            .stream()
+            .map(row -> (Long) row[0])
+            .distinct()
+            .toList();
     }
 
     /** nextId / previousId / position / total for one record inside a filtered set. */
