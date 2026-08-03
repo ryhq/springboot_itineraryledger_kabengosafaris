@@ -123,9 +123,14 @@ public class CustomerNoteGetService {
             response.put("note", noteDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
-            // the "3 of 6" readout: without it, wrapping past the last record is invisible
+            // the "3 of 6" readout, over the SAME set the caller was looking at:
+            // scoped to this customer when scopeParentId was given, else the whole list
             response.putAll(recordNavigation.positionOf(
-                CustomerNote.class, "customer.id", decodedParentId, id));
+                CustomerNote.class,
+                decodedParentId != null ? CustomerNoteSpecification.hasCustomerId(decodedParentId) : null,
+                "id",
+                false,
+                id));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(

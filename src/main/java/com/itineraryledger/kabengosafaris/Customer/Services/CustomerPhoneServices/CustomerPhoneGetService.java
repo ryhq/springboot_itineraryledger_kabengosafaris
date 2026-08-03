@@ -123,9 +123,14 @@ public class CustomerPhoneGetService {
             response.put("phone", phoneDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
-            // the "3 of 6" readout: without it, wrapping past the last record is invisible
+            // the "3 of 6" readout, over the SAME set the caller was looking at:
+            // scoped to this customer when scopeParentId was given, else the whole list
             response.putAll(recordNavigation.positionOf(
-                CustomerPhone.class, "customer.id", decodedParentId, id));
+                CustomerPhone.class,
+                decodedParentId != null ? CustomerPhoneSpecification.hasCustomerId(decodedParentId) : null,
+                "id",
+                false,
+                id));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(

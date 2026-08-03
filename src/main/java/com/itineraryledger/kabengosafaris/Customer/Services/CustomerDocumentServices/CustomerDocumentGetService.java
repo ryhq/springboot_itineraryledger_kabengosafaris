@@ -234,9 +234,14 @@ public class CustomerDocumentGetService {
             response.put("document", documentDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
-            // the "3 of 6" readout: without it, wrapping past the last record is invisible
+            // the "3 of 6" readout, over the SAME set the caller was looking at:
+            // scoped to this customer when scopeParentId was given, else the whole list
             response.putAll(recordNavigation.positionOf(
-                CustomerDocument.class, "customer.id", decodedParentId, id));
+                CustomerDocument.class,
+                decodedParentId != null ? CustomerDocumentSpecification.byCustomerId(decodedParentId) : null,
+                "id",
+                false,
+                id));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(
