@@ -75,11 +75,13 @@ public class InvoiceCreateService {
                 );
             }
 
-            // One invoice per safari — reject if one already exists
-            if (invoiceRepository.existsBySafariId(safari.getId())) {
+            // One LIVE invoice per safari — reject only if a non-cancelled invoice
+            // already exists. Cancelled invoices are retained for audit but must
+            // not block generating a fresh one.
+            if (invoiceRepository.existsBySafariIdAndStatusNot(safari.getId(), InvoiceStatus.CANCELLED)) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400,
-                        "An invoice already exists for this safari. Each safari can only have one invoice.",
+                        "An active invoice already exists for this safari. Cancel it first, then create a new one.",
                         "INVOICE_ALREADY_EXISTS")
                 );
             }

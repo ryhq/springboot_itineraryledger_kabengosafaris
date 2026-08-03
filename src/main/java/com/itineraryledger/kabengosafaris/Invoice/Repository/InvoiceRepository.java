@@ -79,6 +79,13 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
     boolean existsBySafariId(Long safariId);
 
     /**
+     * Check if a NON-cancelled invoice already exists for a safari. Cancelled
+     * invoices are kept for audit but must not block generating a fresh one,
+     * so the "one invoice per safari" rule only counts live invoices.
+     */
+    boolean existsBySafariIdAndStatusNot(Long safariId, InvoiceStatus status);
+
+    /**
      * Find all unpaid invoices for a safari (statuses that indicate money is still owed)
      */
     @Query("SELECT i FROM Invoice i WHERE i.safari.id = :safariId AND i.status IN ('DRAFT', 'SENT', 'PARTIALLY_PAID', 'OVERDUE')")
