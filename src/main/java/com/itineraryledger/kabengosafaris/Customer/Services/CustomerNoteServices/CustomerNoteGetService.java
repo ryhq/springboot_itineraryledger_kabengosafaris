@@ -33,6 +33,7 @@ import java.util.Map;
 public class CustomerNoteGetService {
 
     private final CustomerNoteRepository customerNoteRepository;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final IdObfuscator idObfuscator;
 
@@ -45,11 +46,13 @@ public class CustomerNoteGetService {
     public CustomerNoteGetService(
         CustomerNoteRepository customerNoteRepository,
         IdObfuscator idObfuscator,
-        com.itineraryledger.kabengosafaris.Response.ListStats listStats
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.customerNoteRepository = customerNoteRepository;
         this.idObfuscator = idObfuscator;
         this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
     }
 
     /**
@@ -120,6 +123,9 @@ public class CustomerNoteGetService {
             response.put("note", noteDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            // the "3 of 6" readout: without it, wrapping past the last record is invisible
+            response.putAll(recordNavigation.positionOf(
+                CustomerNote.class, "customer.id", decodedParentId, id));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(

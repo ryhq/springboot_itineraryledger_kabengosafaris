@@ -37,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CustomerDocumentGetService {
 
     private final CustomerDocumentRepository customerDocumentRepository;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final CustomerDocumentStorageService storageService;
     private final IdObfuscator idObfuscator;
     private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
@@ -233,6 +234,9 @@ public class CustomerDocumentGetService {
             response.put("document", documentDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            // the "3 of 6" readout: without it, wrapping past the last record is invisible
+            response.putAll(recordNavigation.positionOf(
+                CustomerDocument.class, "customer.id", decodedParentId, id));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(

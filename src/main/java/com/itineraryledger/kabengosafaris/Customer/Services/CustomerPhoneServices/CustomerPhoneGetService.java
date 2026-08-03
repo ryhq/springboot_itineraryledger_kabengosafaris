@@ -33,6 +33,7 @@ import java.util.Map;
 public class CustomerPhoneGetService {
 
     private final CustomerPhoneRepository customerPhoneRepository;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final IdObfuscator idObfuscator;
 
@@ -45,11 +46,13 @@ public class CustomerPhoneGetService {
     public CustomerPhoneGetService(
         CustomerPhoneRepository customerPhoneRepository,
         IdObfuscator idObfuscator,
-        com.itineraryledger.kabengosafaris.Response.ListStats listStats
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.customerPhoneRepository = customerPhoneRepository;
         this.idObfuscator = idObfuscator;
         this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
     }
 
     /**
@@ -120,6 +123,9 @@ public class CustomerPhoneGetService {
             response.put("phone", phoneDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            // the "3 of 6" readout: without it, wrapping past the last record is invisible
+            response.putAll(recordNavigation.positionOf(
+                CustomerPhone.class, "customer.id", decodedParentId, id));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(
