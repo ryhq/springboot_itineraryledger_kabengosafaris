@@ -62,6 +62,21 @@ public class CustomerPhoneGetService {
      * @return ResponseEntity with ApiResponse containing the phone
      */
     public ResponseEntity<ApiResponse<?>> getCustomerPhoneById(String idObfuscated, String scopeParentId) {
+        return getCustomerPhoneById(idObfuscated, scopeParentId, null, null, null, null, null, null, null);
+    }
+
+    /** A record plus prev/next over the SAME filtered set the list was showing. */
+    public ResponseEntity<ApiResponse<?>> getCustomerPhoneById(
+        String idObfuscated,
+        String scopeParentId,
+        String keyword,
+        java.util.List<CustomerPhone.PhoneType> phoneTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> qualities,
+        java.time.LocalDateTime createdAfter,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching customer phone with ID: {}", idObfuscated);
 
         try {
@@ -106,31 +121,23 @@ public class CustomerPhoneGetService {
             }
 
             // Circular navigation (scoped if parent provided, global otherwise)
-            Long nextId, previousId;
-            if (decodedParentId != null) {
-                nextId = customerPhoneRepository.findNextIdByParent(id, decodedParentId).orElse(null);
-                previousId = customerPhoneRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
-                if (nextId == null) nextId = customerPhoneRepository.findFirstIdByParent(decodedParentId).orElse(null);
-                if (previousId == null) previousId = customerPhoneRepository.findLastIdByParent(decodedParentId).orElse(null);
-            } else {
-                nextId = customerPhoneRepository.findNextId(id).orElse(null);
-                previousId = customerPhoneRepository.findPreviousId(id).orElse(null);
-                if (nextId == null) nextId = customerPhoneRepository.findFirstId().orElse(null);
-                if (previousId == null) previousId = customerPhoneRepository.findLastId().orElse(null);
-            }
+            // walk the caller's filtered + sorted set, scoped to the parent when given
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                CustomerPhone.class,
+                navigationSpec(decodedParentId, keyword, phoneTypes, statuses, qualities, createdAfter),
+                validateSortField(sortBy) != null ? validateSortField(sortBy) : "createdAt",
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("phone", phoneDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
-            // the "3 of 6" readout, over the SAME set the caller was looking at:
-            // scoped to this customer when scopeParentId was given, else the whole list
-            response.putAll(recordNavigation.positionOf(
-                CustomerPhone.class,
-                decodedParentId != null ? CustomerPhoneSpecification.hasCustomerId(decodedParentId) : null,
-                "id",
-                false,
-                id));
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(
@@ -478,5 +485,33 @@ public class CustomerPhoneGetService {
             .breakdown("byPhoneType", CustomerPhone.PhoneType.values(), CustomerPhoneSpecification::hasPhoneType)
             .recency(CustomerPhoneSpecification::createdAfter)
             .build();
+    }
+
+    /**
+     * The filter chain the record pager walks — the same dimensions the list
+     * offers, so paging from a filtered list stays inside those matches.
+     */
+    private Specification<CustomerPhone> navigationSpec(
+        Long decodedParentId,
+        String keyword,
+        java.util.List<CustomerPhone.PhoneType> phoneTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> qualities,
+        java.time.LocalDateTime createdAfter
+    ) {
+        Specification<CustomerPhone> spec = Specification.unrestricted();
+        if (decodedParentId != null) spec = spec.and(CustomerPhoneSpecification.hasCustomerId(decodedParentId));
+        if (keyword != null && !keyword.isEmpty()) spec = spec.and(CustomerPhoneSpecification.searchKeyword(keyword));
+        if (phoneTypes != null && !phoneTypes.isEmpty()) spec = spec.and(CustomerPhoneSpecification.phoneTypeIn(phoneTypes));
+        if (statuses != null && !statuses.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            if (states.size() == 1) spec = spec.and(CustomerPhoneSpecification.isActive(states.get(0)));
+        }
+        if (qualities != null && qualities.contains("no-label")) spec = spec.and(CustomerPhoneSpecification.missingLabel());
+        if (qualities != null && qualities.contains("no-country-code")) spec = spec.and(CustomerPhoneSpecification.missingCountryCode());
+        if (createdAfter != null) spec = spec.and(CustomerPhoneSpecification.createdAfter(createdAfter));
+        return spec;
     }
 }

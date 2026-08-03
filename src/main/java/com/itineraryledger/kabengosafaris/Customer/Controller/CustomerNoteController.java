@@ -118,10 +118,20 @@ public class CustomerNoteController {
     @PreAuthorize("hasAuthority('PERM_READ_CUSTOMER_NOTE')")
     public ResponseEntity<ApiResponse<?>> getCustomerNoteById(
         @PathVariable String idObfuscated,
-        @RequestParam(required = false) String scopeParentId
+        @RequestParam(required = false) String scopeParentId,
+        // the list's filter context, so prev/next walks the set the user was in
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) java.util.List<com.itineraryledger.kabengosafaris.Customer.Entity.CustomerNote.NoteType> noteTypes,
+        @RequestParam(required = false) java.util.List<com.itineraryledger.kabengosafaris.Customer.Entity.CustomerNote.NotePriority> priorities,
+        @RequestParam(required = false) java.util.List<String> queues,
+        @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/customer-notes/{} - Fetching note by ID", idObfuscated);
-        return customerNoteGetService.getCustomerNoteById(idObfuscated, scopeParentId);
+        return customerNoteGetService.getCustomerNoteById(
+            idObfuscated, scopeParentId, keyword, noteTypes, priorities, queues, createdAfter, sortBy, sortDirection
+        );
     }
 
     /**

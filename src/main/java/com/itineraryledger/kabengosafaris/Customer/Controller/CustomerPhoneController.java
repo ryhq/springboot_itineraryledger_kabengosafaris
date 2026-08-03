@@ -103,10 +103,20 @@ public class CustomerPhoneController {
     @PreAuthorize("hasAuthority('PERM_READ_CUSTOMER_PHONE')")
     public ResponseEntity<ApiResponse<?>> getCustomerPhoneById(
         @PathVariable String idObfuscated,
-        @RequestParam(required = false) String scopeParentId
+        @RequestParam(required = false) String scopeParentId,
+        // the list's filter context, so prev/next walks the set the user was in
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) java.util.List<com.itineraryledger.kabengosafaris.Customer.Entity.CustomerPhone.PhoneType> phoneTypes,
+        @RequestParam(required = false) java.util.List<String> statuses,
+        @RequestParam(required = false) java.util.List<String> qualities,
+        @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/customer-phones/{} - Fetching phone by ID", idObfuscated);
-        return customerPhoneGetService.getCustomerPhoneById(idObfuscated, scopeParentId);
+        return customerPhoneGetService.getCustomerPhoneById(
+            idObfuscated, scopeParentId, keyword, phoneTypes, statuses, qualities, createdAfter, sortBy, sortDirection
+        );
     }
 
     /**

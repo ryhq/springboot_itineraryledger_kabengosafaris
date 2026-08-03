@@ -62,6 +62,21 @@ public class CustomerNoteGetService {
      * @return ResponseEntity with ApiResponse containing the note
      */
     public ResponseEntity<ApiResponse<?>> getCustomerNoteById(String idObfuscated, String scopeParentId) {
+        return getCustomerNoteById(idObfuscated, scopeParentId, null, null, null, null, null, null, null);
+    }
+
+    /** A record plus prev/next over the SAME filtered set the list was showing. */
+    public ResponseEntity<ApiResponse<?>> getCustomerNoteById(
+        String idObfuscated,
+        String scopeParentId,
+        String keyword,
+        java.util.List<CustomerNote.NoteType> noteTypes,
+        java.util.List<CustomerNote.NotePriority> priorities,
+        java.util.List<String> queues,
+        java.time.LocalDateTime createdAfter,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching customer note with ID: {}", idObfuscated);
 
         try {
@@ -106,31 +121,23 @@ public class CustomerNoteGetService {
             }
 
             // Circular navigation (scoped if parent provided, global otherwise)
-            Long nextId, previousId;
-            if (decodedParentId != null) {
-                nextId = customerNoteRepository.findNextIdByParent(id, decodedParentId).orElse(null);
-                previousId = customerNoteRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
-                if (nextId == null) nextId = customerNoteRepository.findFirstIdByParent(decodedParentId).orElse(null);
-                if (previousId == null) previousId = customerNoteRepository.findLastIdByParent(decodedParentId).orElse(null);
-            } else {
-                nextId = customerNoteRepository.findNextId(id).orElse(null);
-                previousId = customerNoteRepository.findPreviousId(id).orElse(null);
-                if (nextId == null) nextId = customerNoteRepository.findFirstId().orElse(null);
-                if (previousId == null) previousId = customerNoteRepository.findLastId().orElse(null);
-            }
+            // walk the caller's filtered + sorted set, scoped to the parent when given
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                CustomerNote.class,
+                navigationSpec(decodedParentId, keyword, noteTypes, priorities, queues, createdAfter),
+                validateSortField(sortBy) != null ? validateSortField(sortBy) : "createdAt",
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("note", noteDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
-            // the "3 of 6" readout, over the SAME set the caller was looking at:
-            // scoped to this customer when scopeParentId was given, else the whole list
-            response.putAll(recordNavigation.positionOf(
-                CustomerNote.class,
-                decodedParentId != null ? CustomerNoteSpecification.hasCustomerId(decodedParentId) : null,
-                "id",
-                false,
-                id));
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(
@@ -365,5 +372,33 @@ public class CustomerNoteGetService {
             .breakdown("byPriority", CustomerNote.NotePriority.values(), CustomerNoteSpecification::hasPriority)
             .recency(CustomerNoteSpecification::createdAfter)
             .build();
+    }
+
+    /**
+     * The filter chain the record pager walks — the same dimensions the list
+     * offers, so paging from a filtered list stays inside those matches.
+     */
+    private Specification<CustomerNote> navigationSpec(
+        Long decodedParentId,
+        String keyword,
+        java.util.List<CustomerNote.NoteType> noteTypes,
+        java.util.List<CustomerNote.NotePriority> priorities,
+        java.util.List<String> queues,
+        java.time.LocalDateTime createdAfter
+    ) {
+        Specification<CustomerNote> spec = Specification.unrestricted();
+        if (decodedParentId != null) spec = spec.and(CustomerNoteSpecification.hasCustomerId(decodedParentId));
+        if (keyword != null && !keyword.isEmpty()) spec = spec.and(CustomerNoteSpecification.searchKeyword(keyword));
+        if (noteTypes != null && !noteTypes.isEmpty()) spec = spec.and(CustomerNoteSpecification.noteTypeIn(noteTypes));
+        if (priorities != null && !priorities.isEmpty()) spec = spec.and(CustomerNoteSpecification.priorityIn(priorities));
+        if (queues != null && !queues.isEmpty()) {
+            if (queues.contains("pending")) spec = spec.and(CustomerNoteSpecification.hasPendingFollowUp());
+            if (queues.contains("overdue")) spec = spec.and(CustomerNoteSpecification.hasOverdueFollowUp());
+            if (queues.contains("pinned")) spec = spec.and(CustomerNoteSpecification.isPinned(true));
+            if (queues.contains("private")) spec = spec.and(CustomerNoteSpecification.isPrivate(true));
+            if (queues.contains("done")) spec = spec.and(CustomerNoteSpecification.isFollowUpCompleted(true));
+        }
+        if (createdAfter != null) spec = spec.and(CustomerNoteSpecification.createdAfter(createdAfter));
+        return spec;
     }
 }

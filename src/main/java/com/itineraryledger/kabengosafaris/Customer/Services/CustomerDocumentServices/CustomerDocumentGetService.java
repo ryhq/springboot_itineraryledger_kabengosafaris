@@ -184,6 +184,21 @@ public class CustomerDocumentGetService {
     }
 
     public ResponseEntity<ApiResponse<?>> getDocumentById(String obfuscatedId, String scopeParentId) {
+        return getDocumentById(obfuscatedId, scopeParentId, null, null, null, null, null, null, null);
+    }
+
+    /** A record plus prev/next over the SAME filtered set the list was showing. */
+    public ResponseEntity<ApiResponse<?>> getDocumentById(
+        String obfuscatedId,
+        String scopeParentId,
+        String keyword,
+        java.util.List<CustomerDocument.DocumentType> documentTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> validity,
+        java.time.LocalDateTime createdAfter,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching customer document with ID: {}", obfuscatedId);
 
         try {
@@ -217,31 +232,23 @@ public class CustomerDocumentGetService {
             }
 
             // Circular navigation (scoped if parent provided, global otherwise)
-            Long nextId, previousId;
-            if (decodedParentId != null) {
-                nextId = customerDocumentRepository.findNextIdByParent(id, decodedParentId).orElse(null);
-                previousId = customerDocumentRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
-                if (nextId == null) nextId = customerDocumentRepository.findFirstIdByParent(decodedParentId).orElse(null);
-                if (previousId == null) previousId = customerDocumentRepository.findLastIdByParent(decodedParentId).orElse(null);
-            } else {
-                nextId = customerDocumentRepository.findNextId(id).orElse(null);
-                previousId = customerDocumentRepository.findPreviousId(id).orElse(null);
-                if (nextId == null) nextId = customerDocumentRepository.findFirstId().orElse(null);
-                if (previousId == null) previousId = customerDocumentRepository.findLastId().orElse(null);
-            }
+            // walk the caller's filtered + sorted set, scoped to the parent when given
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                CustomerDocument.class,
+                navigationSpec(decodedParentId, keyword, documentTypes, statuses, validity, createdAfter),
+                validateSortField(sortBy) != null ? validateSortField(sortBy) : "createdAt",
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("document", documentDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
-            // the "3 of 6" readout, over the SAME set the caller was looking at:
-            // scoped to this customer when scopeParentId was given, else the whole list
-            response.putAll(recordNavigation.positionOf(
-                CustomerDocument.class,
-                decodedParentId != null ? CustomerDocumentSpecification.byCustomerId(decodedParentId) : null,
-                "id",
-                false,
-                id));
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(
@@ -437,5 +444,37 @@ public class CustomerDocumentGetService {
             .breakdown("byDocumentType", CustomerDocument.DocumentType.values(), CustomerDocumentSpecification::byDocumentType)
             .recency(CustomerDocumentSpecification::createdAfter)
             .build();
+    }
+
+    /**
+     * The filter chain the record pager walks — the same dimensions the list
+     * offers, so paging from a filtered list stays inside those matches.
+     */
+    private Specification<CustomerDocument> navigationSpec(
+        Long decodedParentId,
+        String keyword,
+        java.util.List<CustomerDocument.DocumentType> documentTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> validity,
+        java.time.LocalDateTime createdAfter
+    ) {
+        Specification<CustomerDocument> spec = Specification.unrestricted();
+        if (decodedParentId != null) spec = spec.and(CustomerDocumentSpecification.byCustomerId(decodedParentId));
+        // documents have no keyword spec; the list searches by title, so match that
+        if (keyword != null && !keyword.isEmpty()) spec = spec.and(CustomerDocumentSpecification.byTitleContains(keyword));
+        if (documentTypes != null && !documentTypes.isEmpty()) spec = spec.and(CustomerDocumentSpecification.documentTypeIn(documentTypes));
+        if (statuses != null && !statuses.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            if (states.size() == 1) spec = spec.and(CustomerDocumentSpecification.byIsActive(states.get(0)));
+        }
+        if (validity != null && !validity.isEmpty()) {
+            if (validity.contains("expired")) spec = spec.and(CustomerDocumentSpecification.expired());
+            if (validity.contains("expiring")) spec = spec.and(CustomerDocumentSpecification.expiringWithin(30));
+            if (validity.contains("no-expiry")) spec = spec.and(CustomerDocumentSpecification.noExpiry());
+        }
+        if (createdAfter != null) spec = spec.and(CustomerDocumentSpecification.createdAfter(createdAfter));
+        return spec;
     }
 }

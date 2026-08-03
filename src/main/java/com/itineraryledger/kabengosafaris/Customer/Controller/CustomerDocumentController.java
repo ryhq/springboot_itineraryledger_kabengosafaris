@@ -136,9 +136,20 @@ public class CustomerDocumentController {
     @PreAuthorize("hasAuthority('PERM_READ_CUSTOMER_DOCUMENT')")
     public ResponseEntity<?> getDocumentById(
             @PathVariable("id") String id,
-            @RequestParam(value = "scopeParentId", required = false) String scopeParentId
+            @RequestParam(value = "scopeParentId", required = false) String scopeParentId,
+            // the list's filter context, so prev/next walks the set the user was in
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) java.util.List<com.itineraryledger.kabengosafaris.Customer.Entity.CustomerDocument.DocumentType> documentTypes,
+            @RequestParam(required = false) java.util.List<String> statuses,
+            @RequestParam(required = false) java.util.List<String> validity,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection
     ) {
-        return getService.getDocumentById(id, scopeParentId);
+        return getService.getDocumentById(
+            id, scopeParentId, keyword, documentTypes, statuses, validity,
+            createdAfter, sortBy, sortDirection
+        );
     }
 
     /**
