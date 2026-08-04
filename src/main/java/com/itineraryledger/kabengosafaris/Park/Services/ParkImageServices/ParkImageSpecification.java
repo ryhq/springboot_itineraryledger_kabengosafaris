@@ -126,4 +126,22 @@ public class ParkImageSpecification {
             return cb.or(any.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
     }
+
+    /**
+     * Free-text search over the fields a person would recognise: the caption, the
+     * alt text and both filenames. The list page has always offered a search box;
+     * without this the parameter was ignored, which is worse than no search.
+     */
+    public static Specification<ParkImage> searchKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) return cb.conjunction();
+            String like = "%" + keyword.toLowerCase() + "%";
+            return cb.or(
+                cb.like(cb.lower(root.get("caption")), like),
+                cb.like(cb.lower(root.get("altText")), like),
+                cb.like(cb.lower(root.get("fileName")), like),
+                cb.like(cb.lower(root.get("originalFileName")), like)
+            );
+        };
+    }
 }

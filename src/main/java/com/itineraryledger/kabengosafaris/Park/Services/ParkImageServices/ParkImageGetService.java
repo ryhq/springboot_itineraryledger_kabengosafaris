@@ -103,6 +103,7 @@ public class ParkImageGetService {
             java.util.List<String> qualities,
             java.time.LocalDateTime createdAfter,
             java.time.LocalDateTime createdBefore,
+            String keyword,
             int page,
             int size,
             String sortBy,
@@ -178,6 +179,9 @@ public class ParkImageGetService {
             : Sort.Direction.DESC;
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
+
+        if (keyword != null && !keyword.isBlank()) spec = spec.and(ParkImageSpecification.searchKeyword(keyword));
+
 
         Page<ParkImage> imagePage = parkImageRepository.findAll(spec, pageable);
 

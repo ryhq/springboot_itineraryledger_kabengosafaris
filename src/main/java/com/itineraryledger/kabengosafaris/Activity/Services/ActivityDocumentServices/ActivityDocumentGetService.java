@@ -72,6 +72,7 @@ public class ActivityDocumentGetService {
             java.time.LocalDateTime createdBefore,
             String sortBy,
             String sortDirection,
+            String keyword,
             int page,
             int size
     ) {
@@ -143,6 +144,9 @@ public class ActivityDocumentGetService {
             }
             if (createdAfter != null) spec = spec.and(ActivityDocumentSpecification.createdAfter(createdAfter));
             if (createdBefore != null) spec = spec.and(ActivityDocumentSpecification.createdBefore(createdBefore));
+
+            if (keyword != null && !keyword.isBlank()) spec = spec.and(ActivityDocumentSpecification.searchKeyword(keyword));
+
 
             Page<ActivityDocument> documentPage = activityDocumentRepository.findAll(spec, pageable);
             Page<ActivityDocumentDTO> dtoPage = documentPage.map(this::toDTO);

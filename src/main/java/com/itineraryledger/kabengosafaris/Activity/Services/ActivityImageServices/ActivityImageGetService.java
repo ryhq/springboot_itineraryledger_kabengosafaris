@@ -97,6 +97,7 @@ public class ActivityImageGetService {
             java.util.List<String> qualities,
             java.time.LocalDateTime createdAfter,
             java.time.LocalDateTime createdBefore,
+            String keyword,
             int page,
             int size,
             String sortBy,
@@ -169,6 +170,9 @@ public class ActivityImageGetService {
             : Sort.Direction.DESC;
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
+
+        if (keyword != null && !keyword.isBlank()) spec = spec.and(ActivityImageSpecification.searchKeyword(keyword));
+
 
         Page<ActivityImage> imagePage = activityImageRepository.findAll(spec, pageable);
 

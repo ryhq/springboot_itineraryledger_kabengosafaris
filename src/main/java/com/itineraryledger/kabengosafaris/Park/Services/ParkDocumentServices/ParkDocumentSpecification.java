@@ -164,4 +164,20 @@ public class ParkDocumentSpecification {
             return cb.or(any.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
     }
+
+    /**
+     * Free-text search over title and both filenames — the fields a person would
+     * recognise. Without it the list's search box sent a parameter nothing read.
+     */
+    public static Specification<ParkDocument> searchKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) return cb.conjunction();
+            String like = "%" + keyword.toLowerCase() + "%";
+            return cb.or(
+                cb.like(cb.lower(root.get("title")), like),
+                cb.like(cb.lower(root.get("fileName")), like),
+                cb.like(cb.lower(root.get("originalFileName")), like)
+            );
+        };
+    }
 }
