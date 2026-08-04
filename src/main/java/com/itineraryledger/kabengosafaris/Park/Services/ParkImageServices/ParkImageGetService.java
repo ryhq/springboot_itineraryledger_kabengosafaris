@@ -36,6 +36,7 @@ public class ParkImageGetService {
     private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final ParkImageStorageService storageService;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "imageType", "isPrimary", "isActive", "displayOrder", "fileSize", "createdAt", "updatedAt"
@@ -47,12 +48,14 @@ public class ParkImageGetService {
         ParkImageRepository parkImageRepository,
         ParkImageStorageService storageService,
         IdObfuscator idObfuscator,
-        com.itineraryledger.kabengosafaris.Response.ListStats listStats
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.parkImageRepository = parkImageRepository;
         this.storageService = storageService;
         this.idObfuscator = idObfuscator;
         this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
     }
 
     public ParkImageDTO toDTO(ParkImage image) {
@@ -200,6 +203,20 @@ public class ParkImageGetService {
     }
 
     public ResponseEntity<?> getImageById(String obfuscatedId, String scopeParentId) {
+        return getImageById(obfuscatedId, scopeParentId, null, null, null, null, null, null);
+    }
+
+    /** A record plus prev/next over the SAME filtered set the list was showing. */
+    public ResponseEntity<?> getImageById(
+        String obfuscatedId,
+        String scopeParentId,
+        java.util.List<ParkImage.ImageType> imageTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> qualities,
+        java.time.LocalDateTime createdAfter,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Getting park image with ID: {}", obfuscatedId);
 
         try {
@@ -225,23 +242,24 @@ public class ParkImageGetService {
             }
 
             // Circular navigation (scoped if parent provided, global otherwise)
-            Long nextId, previousId;
-            if (decodedParentId != null) {
-                nextId = parkImageRepository.findNextIdByParent(id, decodedParentId).orElse(null);
-                previousId = parkImageRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
-                if (nextId == null) nextId = parkImageRepository.findFirstIdByParent(decodedParentId).orElse(null);
-                if (previousId == null) previousId = parkImageRepository.findLastIdByParent(decodedParentId).orElse(null);
-            } else {
-                nextId = parkImageRepository.findNextId(id).orElse(null);
-                previousId = parkImageRepository.findPreviousId(id).orElse(null);
-                if (nextId == null) nextId = parkImageRepository.findFirstId().orElse(null);
-                if (previousId == null) previousId = parkImageRepository.findLastId().orElse(null);
-            }
+            // walk the caller's filtered + sorted set, scoped to the parent when given
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                ParkImage.class,
+                navigationSpec(decodedParentId, imageTypes, statuses, qualities, createdAfter),
+                validateSortField(sortBy) != null ? validateSortField(sortBy) : "displayOrder",
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("image", imageDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            // the "N of M" readout makes the wraparound visible
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok(ApiResponse.success(200, "Park image retrieved successfully", response));
@@ -302,5 +320,32 @@ public class ParkImageGetService {
             .breakdown("byImageType", ImageType.values(), ParkImageSpecification::byImageType)
             .recency(ParkImageSpecification::createdAfter)
             .build();
+    }
+
+    /**
+     * The filter chain the record pager walks — the same dimensions the list
+     * offers, so paging from a filtered list stays inside those matches.
+     */
+    private Specification<ParkImage> navigationSpec(
+        Long decodedParentId,
+        java.util.List<ParkImage.ImageType> imageTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> qualities,
+        java.time.LocalDateTime createdAfter
+    ) {
+        Specification<ParkImage> spec = Specification.unrestricted();
+        if (decodedParentId != null) spec = spec.and(ParkImageSpecification.byParkId(decodedParentId));
+        if (imageTypes != null && !imageTypes.isEmpty()) spec = spec.and(ParkImageSpecification.imageTypeIn(imageTypes));
+        if (statuses != null && !statuses.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            if (states.size() == 1) spec = spec.and(ParkImageSpecification.byIsActive(states.get(0)));
+        }
+        if (qualities != null && !qualities.isEmpty()) {
+            spec = spec.and(ParkImageSpecification.anyQualityIssue(qualities.contains("no-caption"), qualities.contains("no-alt")));
+        }
+        if (createdAfter != null) spec = spec.and(ParkImageSpecification.createdAfter(createdAfter));
+        return spec;
     }
 }

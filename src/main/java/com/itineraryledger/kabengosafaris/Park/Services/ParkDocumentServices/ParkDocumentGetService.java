@@ -41,6 +41,7 @@ public class ParkDocumentGetService {
     private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final ParkDocumentStorageService storageService;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "title", "documentType", "fileName", "fileSize", "createdAt", "updatedAt"
@@ -175,6 +176,20 @@ public class ParkDocumentGetService {
     }
 
     public ResponseEntity<ApiResponse<?>> getDocumentById(String obfuscatedId, String scopeParentId) {
+        return getDocumentById(obfuscatedId, scopeParentId, null, null, null, null, null, null);
+    }
+
+    /** A record plus prev/next over the SAME filtered set the list was showing. */
+    public ResponseEntity<ApiResponse<?>> getDocumentById(
+        String obfuscatedId,
+        String scopeParentId,
+        java.util.List<ParkDocument.DocumentType> documentTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> validity,
+        java.time.LocalDateTime createdAfter,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching park document with ID: {}", obfuscatedId);
 
         try {
@@ -208,23 +223,24 @@ public class ParkDocumentGetService {
             }
 
             // Circular navigation (scoped if parent provided, global otherwise)
-            Long nextId, previousId;
-            if (decodedParentId != null) {
-                nextId = parkDocumentRepository.findNextIdByParent(id, decodedParentId).orElse(null);
-                previousId = parkDocumentRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
-                if (nextId == null) nextId = parkDocumentRepository.findFirstIdByParent(decodedParentId).orElse(null);
-                if (previousId == null) previousId = parkDocumentRepository.findLastIdByParent(decodedParentId).orElse(null);
-            } else {
-                nextId = parkDocumentRepository.findNextId(id).orElse(null);
-                previousId = parkDocumentRepository.findPreviousId(id).orElse(null);
-                if (nextId == null) nextId = parkDocumentRepository.findFirstId().orElse(null);
-                if (previousId == null) previousId = parkDocumentRepository.findLastId().orElse(null);
-            }
+            // walk the caller's filtered + sorted set, scoped to the parent when given
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                ParkDocument.class,
+                navigationSpec(decodedParentId, documentTypes, statuses, validity, createdAfter),
+                validateSortField(sortBy) != null ? validateSortField(sortBy) : "createdAt",
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("document", documentDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            // the "N of M" readout makes the wraparound visible
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(
@@ -337,5 +353,33 @@ public class ParkDocumentGetService {
             .count("noExpiry", ParkDocumentSpecification.noExpiry())
             .recency(ParkDocumentSpecification::createdAfter)
             .build();
+    }
+
+    /**
+     * The filter chain the record pager walks — the same dimensions the list
+     * offers, so paging from a filtered list stays inside those matches.
+     */
+    private Specification<ParkDocument> navigationSpec(
+        Long decodedParentId,
+        java.util.List<ParkDocument.DocumentType> documentTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> validity,
+        java.time.LocalDateTime createdAfter
+    ) {
+        Specification<ParkDocument> spec = Specification.unrestricted();
+        if (decodedParentId != null) spec = spec.and(ParkDocumentSpecification.byParkId(decodedParentId));
+        if (documentTypes != null && !documentTypes.isEmpty()) spec = spec.and(ParkDocumentSpecification.documentTypeIn(documentTypes));
+        if (statuses != null && !statuses.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            if (states.size() == 1) spec = spec.and(ParkDocumentSpecification.byIsActive(states.get(0)));
+        }
+        if (validity != null && !validity.isEmpty()) {
+            spec = spec.and(ParkDocumentSpecification.anyValidityState(validity.contains("expired"), validity.contains("expiring"),
+                validity.contains("no-expiry")));
+        }
+        if (createdAfter != null) spec = spec.and(ParkDocumentSpecification.createdAfter(createdAfter));
+        return spec;
     }
 }

@@ -138,9 +138,18 @@ public class ParkImageController {
     @PreAuthorize("hasAuthority('PERM_READ_PARK_IMAGE')")
     public ResponseEntity<?> getImageById(
             @PathVariable("id") String id,
-            @RequestParam(required = false) String scopeParentId
+            @RequestParam(required = false) String scopeParentId,
+            // the list's filter context, so prev/next walks the set the user was in
+            @RequestParam(required = false) java.util.List<com.itineraryledger.kabengosafaris.Park.Entities.ParkImage.ImageType> imageTypes,
+            @RequestParam(required = false) java.util.List<String> statuses,
+            @RequestParam(required = false) java.util.List<String> qualities,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection
     ) {
-        return getService.getImageById(id, scopeParentId);
+        return getService.getImageById(
+            id, scopeParentId, imageTypes, statuses, qualities, createdAfter, sortBy, sortDirection
+        );
     }
 
     /**
