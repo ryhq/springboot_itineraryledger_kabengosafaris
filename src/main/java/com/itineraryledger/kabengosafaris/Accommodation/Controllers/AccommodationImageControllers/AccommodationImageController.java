@@ -297,4 +297,26 @@ public class AccommodationImageController {
     public ResponseEntity<?> bulkDeleteImages(@RequestParam("ids") List<String> ids) {
         return deleteService.bulkDeleteImages(ids);
     }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationImageRepository bulkFlagsRepository;
+
+    /**
+     * PATCH /bulk — one request for a whole selection. Only the flags present in
+     * the body apply, and per-id outcomes come back rather than a bare 200.
+     */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_ACCOMMODATION_IMAGE')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("accommodation image", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+            if (request.getIsWebActive() != null) entity.setIsWebActive(request.getIsWebActive());
+        });
+    }
 }

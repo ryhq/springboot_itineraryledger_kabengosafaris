@@ -180,4 +180,30 @@ public class CustomerController {
         log.info("POST /api/customers/{}/reactivate - Reactivating customer", id);
         return deleteService.reactivateCustomer(id);
     }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Customer.Repository.CustomerRepository bulkFlagsRepository;
+
+    /**
+     * PATCH /bulk — one request for a whole selection.
+     *
+     * Only the flags present in the body apply, so the same endpoint serves
+     * activate, deactivate, blacklist, VIP. Returns per-id
+     * outcomes rather than a bare 200 that hides what did not change.
+     */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_CUSTOMER')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("customer", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+            if (request.getIsBlacklisted() != null) entity.setIsBlacklisted(request.getIsBlacklisted());
+            if (request.getIsVip() != null) entity.setIsVip(request.getIsVip());
+        });
+    }
 }

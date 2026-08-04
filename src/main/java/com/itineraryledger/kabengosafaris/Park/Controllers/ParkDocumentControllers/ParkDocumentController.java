@@ -314,4 +314,28 @@ public class ParkDocumentController {
     public ResponseEntity<?> bulkDeleteDocuments(@RequestParam("ids") List<String> ids) {
         return deleteService.deleteDocuments(ids);
     }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Park.Repositories.ParkDocumentRepository bulkFlagsRepository;
+
+    /**
+     * PATCH /bulk — one request for a whole selection.
+     *
+     * Only the flags present in the body apply, so the same endpoint serves
+     * activate, deactivate. Returns per-id
+     * outcomes rather than a bare 200 that hides what did not change.
+     */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_PARK_DOCUMENT')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("park document", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+        });
+    }
 }
