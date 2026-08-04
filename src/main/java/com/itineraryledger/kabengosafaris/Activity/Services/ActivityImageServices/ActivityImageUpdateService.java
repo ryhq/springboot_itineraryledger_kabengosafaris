@@ -74,6 +74,9 @@ public class ActivityImageUpdateService {
             if (updateDTO.getIsActive() != null) {
                 image.setIsActive(updateDTO.getIsActive());
             }
+            if (updateDTO.getIsWebActive() != null) {
+                image.setIsWebActive(updateDTO.getIsWebActive());
+            }
 
             image = activityImageRepository.save(image);
 

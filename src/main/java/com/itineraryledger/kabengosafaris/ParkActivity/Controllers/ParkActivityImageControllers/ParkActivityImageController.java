@@ -146,8 +146,24 @@ public class ParkActivityImageController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_PARK_ACTIVITY_IMAGE')")
-    public ResponseEntity<?> getImageById(@PathVariable("id") String id) {
-        return getService.getImageById(id);
+    public ResponseEntity<?> getImageById(
+            @PathVariable("id") String id,
+            // the list's filter context, so prev/next walks the SAME set
+            @RequestParam(value = "parkId", required = false) String parkId,
+            @RequestParam(value = "activityId", required = false) String activityId,
+            @RequestParam(value = "imageTypes", required = false) java.util.List<ImageType> imageTypes,
+            @RequestParam(value = "statuses", required = false) java.util.List<String> statuses,
+            @RequestParam(value = "qualities", required = false) java.util.List<String> qualities,
+            @RequestParam(value = "createdAfter", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.LocalDateTime createdAfter,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "sortBy", required = false) String sortBy,
+            @RequestParam(value = "sortDirection", required = false) String sortDirection
+    ) {
+        return getService.getImageById(
+            id, parkId, activityId, imageTypes, statuses, qualities, createdAfter, keyword, sortBy, sortDirection
+        );
     }
 
     /**

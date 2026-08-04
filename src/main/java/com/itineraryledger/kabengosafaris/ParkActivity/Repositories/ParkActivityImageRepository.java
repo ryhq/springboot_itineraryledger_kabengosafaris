@@ -61,6 +61,26 @@ public interface ParkActivityImageRepository extends JpaRepository<ParkActivityI
     List<ParkActivityImage> findByActivityIdOrderByDisplayOrderAsc(@Param("activityId") Long activityId);
 
     /**
+     * PUBLIC: every published photo of any activity that happens in this park.
+     * Both sides of the pairing must themselves be live, or a hidden park could
+     * leak through its activity's gallery.
+     */
+    @Query("SELECT pai FROM ParkActivityImage pai " +
+           "WHERE pai.parkActivity.park.id = :parkId " +
+           "AND pai.isActive = true AND pai.isWebActive = true " +
+           "AND pai.parkActivity.activity.isActive = true " +
+           "ORDER BY pai.displayOrder ASC, pai.createdAt DESC")
+    List<ParkActivityImage> findPublishedByParkId(@Param("parkId") Long parkId);
+
+    /** PUBLIC: every published photo of this activity, in whichever park it happens. */
+    @Query("SELECT pai FROM ParkActivityImage pai " +
+           "WHERE pai.parkActivity.activity.id = :activityId " +
+           "AND pai.isActive = true AND pai.isWebActive = true " +
+           "AND pai.parkActivity.park.isActive = true AND pai.parkActivity.park.isWebActive = true " +
+           "ORDER BY pai.displayOrder ASC, pai.createdAt DESC")
+    List<ParkActivityImage> findPublishedByActivityId(@Param("activityId") Long activityId);
+
+    /**
      * Find image by filename
      */
     Optional<ParkActivityImage> findByFileName(String fileName);

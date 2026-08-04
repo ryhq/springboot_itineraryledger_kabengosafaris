@@ -41,6 +41,7 @@ public class PublicParkService {
 
     private final ParkRepository parkRepository;
     private final ParkImageRepository parkImageRepository;
+    private final com.itineraryledger.kabengosafaris.ParkActivity.Repositories.ParkActivityImageRepository parkActivityImageRepository;
     private final ParkActivityRepository parkActivityRepository;
     private final PublicEntityResolver entityResolver;
     private final PublicImageResolver imageResolver;
@@ -134,7 +135,21 @@ public class PublicParkService {
                 .map(imageResolver::toPublicDTO)
                 .collect(Collectors.toList());
 
-            return ResponseEntity.ok(ApiResponse.success(200, "Park images retrieved", PublicServiceUtils.buildPageResponse("images", dtos, imagePage)));
+            /*
+             * A park's gallery also shows the published photos of the activities it
+             * offers — the park's own images lead, those follow. Merged here rather
+             * than served separately so the website needs no change to benefit.
+             */
+            List<PublicImageDTO> pair = activityImagesForPark(park.getId());
+            java.util.Map<String, Object> body = PublicServiceUtils.buildPageResponse("images", dtos, imagePage);
+            if (!pair.isEmpty() && imagePage.getNumber() == 0) {
+                List<PublicImageDTO> merged = new java.util.ArrayList<>(dtos);
+                merged.addAll(pair);
+                body.put("images", merged);
+                body.put("activityImageCount", pair.size());
+            }
+
+            return ResponseEntity.ok(ApiResponse.success(200, "Park images retrieved", body));
         } catch (Exception e) {
             log.error("Error fetching park images", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -200,7 +215,13 @@ public class PublicParkService {
             .map(imageResolver::toPublicDTO)
             .collect(Collectors.toList());
 
-        long totalImages = imagePage.getTotalElements();
+        List<PublicImageDTO> activityImages = activityImagesForPark(park.getId());
+        if (!activityImages.isEmpty()) {
+            images = new java.util.ArrayList<>(images);
+            images.addAll(activityImages);
+        }
+
+        long totalImages = imagePage.getTotalElements() + activityImages.size();
 
         publicTranslationService.translateDto(dto, lang);
 
@@ -209,6 +230,16 @@ public class PublicParkService {
         response.put("images", images);
         response.put("totalImages", totalImages);
         return ResponseEntity.ok(ApiResponse.success(200, "Park retrieved", response));
+    }
+
+    /**
+     * Published photos of every activity this park offers, in pairing display
+     * order. Each carries its activityName so a gallery can caption it.
+     */
+    private List<PublicImageDTO> activityImagesForPark(Long parkId) {
+        return parkActivityImageRepository.findPublishedByParkId(parkId).stream()
+            .map(imageResolver::toPublicDTO)
+            .collect(Collectors.toList());
     }
 
     /** Batch: distinct active itineraries that visit each of the given parks. */

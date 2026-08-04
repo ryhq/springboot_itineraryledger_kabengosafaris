@@ -27,4 +27,6 @@ public class UpdateParkActivityImageDTO {
     private Boolean isPrimary;
 
     private Boolean isActive;
+
+    private Boolean isWebActive;
 }

@@ -23,4 +23,12 @@ public class PublicImageDTO {
     @Translatable private String altText;
     @Translatable private String caption;
     private String imageType;
+
+    /**
+     * Set only on park-activity photos: the activity a park's gallery is showing,
+     * or the park an activity's gallery is showing. Lets the site caption or group
+     * them; null for a record's own images.
+     */
+    private String activityName;
+    private String parkName;
 }

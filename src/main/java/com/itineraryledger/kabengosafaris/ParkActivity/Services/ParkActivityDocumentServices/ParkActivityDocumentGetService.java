@@ -36,6 +36,7 @@ public class ParkActivityDocumentGetService {
     private final ParkActivityDocumentStorageService storageService;
     private final IdObfuscator idObfuscator;
     private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "title", "documentType", "fileName", "fileSize", "createdAt", "updatedAt"
@@ -55,12 +56,14 @@ public class ParkActivityDocumentGetService {
         ParkActivityDocumentRepository parkActivityDocumentRepository,
         ParkActivityDocumentStorageService storageService,
         IdObfuscator idObfuscator,
-        com.itineraryledger.kabengosafaris.Response.ListStats listStats
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.parkActivityDocumentRepository = parkActivityDocumentRepository;
         this.storageService = storageService;
         this.idObfuscator = idObfuscator;
         this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
     }
 
     public ParkActivityDocumentDTO toDTO(ParkActivityDocument document) {
@@ -232,6 +235,49 @@ public class ParkActivityDocumentGetService {
         return ResponseEntity.ok(ApiResponse.success(200, "Park activity documents retrieved successfully", response));
     }
 
+    /**
+     * The filter chain the record pager walks — the same dimensions the list
+     * offers, so paging from a filtered list stays inside those matches.
+     */
+    private Specification<ParkActivityDocument> navigationSpec(
+        String obfuscatedParkId,
+        String obfuscatedActivityId,
+        java.util.List<DocumentType> documentTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> validity,
+        LocalDateTime createdAfter,
+        String keyword
+    ) {
+        Specification<ParkActivityDocument> spec = Specification.unrestricted();
+        if (obfuscatedParkId != null && !obfuscatedParkId.isBlank()) {
+            try {
+                spec = spec.and(ParkActivityDocumentSpecification.byParkId(idObfuscator.decodeId(obfuscatedParkId)));
+            } catch (Exception ignored) { /* an unreadable id just means no park filter */ }
+        }
+        if (obfuscatedActivityId != null && !obfuscatedActivityId.isBlank()) {
+            try {
+                spec = spec.and(ParkActivityDocumentSpecification.byActivityId(idObfuscator.decodeId(obfuscatedActivityId)));
+            } catch (Exception ignored) { /* likewise */ }
+        }
+        if (documentTypes != null && !documentTypes.isEmpty()) {
+            spec = spec.and(ParkActivityDocumentSpecification.documentTypeIn(documentTypes));
+        }
+        if (statuses != null && !statuses.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            if (states.size() == 1) spec = spec.and(ParkActivityDocumentSpecification.byIsActive(states.get(0)));
+        }
+        if (validity != null && !validity.isEmpty()) {
+            spec = spec.and(ParkActivityDocumentSpecification.validityIn(validity));
+        }
+        if (createdAfter != null) spec = spec.and(ParkActivityDocumentSpecification.createdAfter(createdAfter));
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(ParkActivityDocumentSpecification.searchKeyword(keyword));
+        }
+        return spec;
+    }
+
     /** Dashboard counters for the CURRENT filter set (see CLAUDE.md: stats on every list). */
     private Map<String, Object> computeStats(Specification<ParkActivityDocument> base) {
         return listStats.of(ParkActivityDocument.class, base)
@@ -247,6 +293,25 @@ public class ParkActivityDocumentGetService {
     }
 
     public ResponseEntity<?> getDocumentById(String obfuscatedId) {
+        return getDocumentById(obfuscatedId, null, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One document, plus where it sits in the set the caller was looking at — the
+     * arrows walk the same filtered, sorted list the table showed.
+     */
+    public ResponseEntity<?> getDocumentById(
+            String obfuscatedId,
+            String obfuscatedParkId,
+            String obfuscatedActivityId,
+            java.util.List<DocumentType> documentTypes,
+            java.util.List<String> statuses,
+            java.util.List<String> validity,
+            LocalDateTime createdAfter,
+            String keyword,
+            String sortBy,
+            String sortDirection
+    ) {
         log.info("Getting park activity document with ID: {}", obfuscatedId);
 
         try {
@@ -261,16 +326,24 @@ public class ParkActivityDocumentGetService {
 
             ParkActivityDocumentDTO documentDTO = toDTO(document);
 
-            // Circular navigation
-            Long nextId = parkActivityDocumentRepository.findNextId(id).orElse(null);
-            Long previousId = parkActivityDocumentRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = parkActivityDocumentRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = parkActivityDocumentRepository.findLastId().orElse(null);
+            String validatedSortBy = validateSortField(sortBy);
+            Map<String, Object> nav = recordNavigation.navigate(
+                ParkActivityDocument.class,
+                navigationSpec(obfuscatedParkId, obfuscatedActivityId, documentTypes, statuses, validity, createdAfter, keyword),
+                validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("document", documentDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            // the "N of M" readout makes the wraparound visible
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok(ApiResponse.success(200, "Park activity document retrieved successfully", response));
 

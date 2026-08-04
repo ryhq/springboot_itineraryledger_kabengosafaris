@@ -27,4 +27,6 @@ public class UpdateActivityImageDTO {
     private Boolean isPrimary;
 
     private Boolean isActive;
+
+    private Boolean isWebActive;
 }

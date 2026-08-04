@@ -35,6 +35,7 @@ public class ParkActivityImageGetService {
     private final ParkActivityImageStorageService storageService;
     private final IdObfuscator idObfuscator;
     private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "isPrimary", "isActive", "displayOrder", "fileSize", "createdAt", "updatedAt"
@@ -44,6 +45,7 @@ public class ParkActivityImageGetService {
     @Autowired
     public ParkActivityImageGetService(
         com.itineraryledger.kabengosafaris.Response.ListStats listStats,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation,
         ParkActivityImageRepository parkActivityImageRepository,
         ParkActivityImageStorageService storageService,
         IdObfuscator idObfuscator
@@ -52,6 +54,7 @@ public class ParkActivityImageGetService {
         this.storageService = storageService;
         this.idObfuscator = idObfuscator;
         this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
     }
 
     public ParkActivityImageDTO toDTO(ParkActivityImage image) {
@@ -74,6 +77,7 @@ public class ParkActivityImageGetService {
             .description(image.getDescription())
             .isPrimary(image.getIsPrimary())
             .isActive(image.getIsActive())
+            .isWebActive(image.getIsWebActive())
             .displayOrder(image.getDisplayOrder())
             .fileSize(image.getFileSize())
             .fileSizeFormatted(image.getFileSize() != null ? storageService.formatFileSize(image.getFileSize()) : null)
@@ -222,6 +226,51 @@ public class ParkActivityImageGetService {
         return ResponseEntity.ok(ApiResponse.success(200, "Park activity images retrieved successfully", response));
     }
 
+    /**
+     * The filter chain the record pager walks — the same dimensions the list
+     * offers, so paging from a filtered list stays inside those matches.
+     */
+    private org.springframework.data.jpa.domain.Specification<ParkActivityImage> navigationSpec(
+        String obfuscatedParkId,
+        String obfuscatedActivityId,
+        java.util.List<ImageType> imageTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> qualities,
+        java.time.LocalDateTime createdAfter,
+        String keyword
+    ) {
+        org.springframework.data.jpa.domain.Specification<ParkActivityImage> spec =
+            org.springframework.data.jpa.domain.Specification.unrestricted();
+        if (obfuscatedParkId != null && !obfuscatedParkId.isBlank()) {
+            try {
+                spec = spec.and(ParkActivityImageSpecification.byParkId(idObfuscator.decodeId(obfuscatedParkId)));
+            } catch (Exception ignored) { /* an unreadable id just means no park filter */ }
+        }
+        if (obfuscatedActivityId != null && !obfuscatedActivityId.isBlank()) {
+            try {
+                spec = spec.and(ParkActivityImageSpecification.byActivityId(idObfuscator.decodeId(obfuscatedActivityId)));
+            } catch (Exception ignored) { /* likewise */ }
+        }
+        if (imageTypes != null && !imageTypes.isEmpty()) {
+            spec = spec.and(ParkActivityImageSpecification.imageTypeIn(imageTypes));
+        }
+        if (statuses != null && !statuses.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            if (states.size() == 1) spec = spec.and(ParkActivityImageSpecification.byIsActive(states.get(0)));
+        }
+        if (qualities != null && !qualities.isEmpty()) {
+            spec = spec.and(ParkActivityImageSpecification.anyQualityIssue(
+                qualities.contains("no-caption"), qualities.contains("no-alt")));
+        }
+        if (createdAfter != null) spec = spec.and(ParkActivityImageSpecification.createdAfter(createdAfter));
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(ParkActivityImageSpecification.searchKeyword(keyword));
+        }
+        return spec;
+    }
+
     /** Dashboard counters for the CURRENT filter set (see CLAUDE.md: stats on every list). */
     private Map<String, Object> computeStats(org.springframework.data.jpa.domain.Specification<ParkActivityImage> base) {
         return listStats.of(ParkActivityImage.class, base)
@@ -237,6 +286,28 @@ public class ParkActivityImageGetService {
     }
 
     public ResponseEntity<?> getImageById(String obfuscatedId) {
+        return getImageById(obfuscatedId, null, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One image, plus where it sits in the set the caller was looking at.
+     *
+     * The arrows MUST walk the same filtered and sorted list the table showed —
+     * paging into records the user never saw is worse than no arrows — so the
+     * caller's filters come back in and rebuild that exact Specification.
+     */
+    public ResponseEntity<?> getImageById(
+            String obfuscatedId,
+            String obfuscatedParkId,
+            String obfuscatedActivityId,
+            java.util.List<ImageType> imageTypes,
+            java.util.List<String> statuses,
+            java.util.List<String> qualities,
+            java.time.LocalDateTime createdAfter,
+            String keyword,
+            String sortBy,
+            String sortDirection
+    ) {
         log.info("Getting park activity image with ID: {}", obfuscatedId);
 
         try {
@@ -251,16 +322,24 @@ public class ParkActivityImageGetService {
 
             ParkActivityImageDTO imageDTO = toDTO(image);
 
-            // Circular navigation
-            Long nextId = parkActivityImageRepository.findNextId(id).orElse(null);
-            Long previousId = parkActivityImageRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = parkActivityImageRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = parkActivityImageRepository.findLastId().orElse(null);
+            String validatedSortBy = validateSortField(sortBy);
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                ParkActivityImage.class,
+                navigationSpec(obfuscatedParkId, obfuscatedActivityId, imageTypes, statuses, qualities, createdAfter, keyword),
+                validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("image", imageDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            // the "N of M" readout makes the wraparound visible
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok(ApiResponse.success(200, "Park activity image retrieved successfully", response));
 

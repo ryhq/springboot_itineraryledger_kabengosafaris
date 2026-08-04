@@ -40,6 +40,7 @@ public class PublicActivityService {
 
     private final ActivityRepository activityRepository;
     private final ActivityImageRepository activityImageRepository;
+    private final com.itineraryledger.kabengosafaris.ParkActivity.Repositories.ParkActivityImageRepository parkActivityImageRepository;
     private final ParkActivityRepository parkActivityRepository;
     private final ItineraryDayActivityRepository itineraryDayActivityRepository;
     private final PublicEntityResolver entityResolver;
@@ -137,12 +138,36 @@ public class PublicActivityService {
                 .map(imageResolver::toPublicDTO)
                 .collect(Collectors.toList());
 
-            return ResponseEntity.ok(ApiResponse.success(200, "Activity images retrieved", PublicServiceUtils.buildPageResponse("images", dtos, imagePage)));
+            /*
+             * An activity's gallery also shows how it looks in each park that offers
+             * it — the activity's own images lead, those follow. Each pair photo
+             * carries its parkName so the site can say where it was taken.
+             */
+            List<PublicImageDTO> pair = parkImagesForActivity(activity.getId());
+            java.util.Map<String, Object> body = PublicServiceUtils.buildPageResponse("images", dtos, imagePage);
+            if (!pair.isEmpty() && imagePage.getNumber() == 0) {
+                List<PublicImageDTO> merged = new java.util.ArrayList<>(dtos);
+                merged.addAll(pair);
+                body.put("images", merged);
+                body.put("parkImageCount", pair.size());
+            }
+
+            return ResponseEntity.ok(ApiResponse.success(200, "Activity images retrieved", body));
         } catch (Exception e) {
             log.error("Error fetching activity images", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error(500, "Failed to fetch activity images", "ACTIVITY_IMAGES_FETCH_FAILED"));
         }
+    }
+
+    /**
+     * Published photos of this activity in each park that offers it, in pairing
+     * display order. Each carries its parkName so a gallery can caption it.
+     */
+    private List<PublicImageDTO> parkImagesForActivity(Long activityId) {
+        return parkActivityImageRepository.findPublishedByActivityId(activityId).stream()
+            .map(imageResolver::toPublicDTO)
+            .collect(Collectors.toList());
     }
 
     /**
@@ -204,7 +229,13 @@ public class PublicActivityService {
             .map(imageResolver::toPublicDTO)
             .collect(Collectors.toList());
 
-        long totalImages = imagePage.getTotalElements();
+        List<PublicImageDTO> parkImages = parkImagesForActivity(activity.getId());
+        if (!parkImages.isEmpty()) {
+            images = new java.util.ArrayList<>(images);
+            images.addAll(parkImages);
+        }
+
+        long totalImages = imagePage.getTotalElements() + parkImages.size();
 
         publicTranslationService.translateDto(dto, lang);
 

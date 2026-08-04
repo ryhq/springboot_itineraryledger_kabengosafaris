@@ -72,6 +72,7 @@ public class ActivityImageGetService {
             .description(image.getDescription())
             .isPrimary(image.getIsPrimary())
             .isActive(image.getIsActive())
+            .isWebActive(image.getIsWebActive())
             .displayOrder(image.getDisplayOrder())
             .fileSize(image.getFileSize())
             .fileSizeFormatted(image.getFileSize() != null ? storageService.formatFileSize(image.getFileSize()) : null)

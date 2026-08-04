@@ -78,6 +78,15 @@ public class ParkActivityImage {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
+    /**
+     * Website visibility, separate from isActive: an image can be in use in the
+     * panel while being kept off the public site. Defaults to hidden — new photos
+     * are published deliberately, not by accident.
+     */
+    @Builder.Default
+    @Column(name = "is_web_active", nullable = false)
+    private Boolean isWebActive = false;
+
     @Builder.Default
     @Column(name = "display_order", nullable = false)
     private Integer displayOrder = 0;

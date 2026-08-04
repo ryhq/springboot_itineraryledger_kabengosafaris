@@ -78,6 +78,9 @@ public class ParkActivityImageUpdateService {
             if (updateDTO.getIsActive() != null) {
                 image.setIsActive(updateDTO.getIsActive());
             }
+            if (updateDTO.getIsWebActive() != null) {
+                image.setIsWebActive(updateDTO.getIsWebActive());
+            }
 
             image = parkActivityImageRepository.save(image);
 

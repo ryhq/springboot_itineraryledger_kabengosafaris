@@ -140,8 +140,24 @@ public class ParkActivityDocumentController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_PARK_ACTIVITY_DOCUMENT')")
-    public ResponseEntity<?> getDocumentById(@PathVariable("id") String id) {
-        return getService.getDocumentById(id);
+    public ResponseEntity<?> getDocumentById(
+            @PathVariable("id") String id,
+            // the list's filter context, so prev/next walks the SAME set
+            @RequestParam(value = "parkId", required = false) String parkId,
+            @RequestParam(value = "activityId", required = false) String activityId,
+            @RequestParam(value = "documentTypes", required = false) java.util.List<DocumentType> documentTypes,
+            @RequestParam(value = "statuses", required = false) java.util.List<String> statuses,
+            @RequestParam(value = "validity", required = false) java.util.List<String> validity,
+            @RequestParam(value = "createdAfter", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.LocalDateTime createdAfter,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "sortBy", required = false) String sortBy,
+            @RequestParam(value = "sortDirection", required = false) String sortDirection
+    ) {
+        return getService.getDocumentById(
+            id, parkId, activityId, documentTypes, statuses, validity, createdAfter, keyword, sortBy, sortDirection
+        );
     }
 
     /**

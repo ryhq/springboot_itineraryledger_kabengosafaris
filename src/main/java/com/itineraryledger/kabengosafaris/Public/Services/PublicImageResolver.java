@@ -315,6 +315,18 @@ public class PublicImageResolver {
             .build();
     }
 
+    /** A pairing's photo, tagged with both sides so a gallery can label it. */
+    public PublicImageDTO toPublicDTO(com.itineraryledger.kabengosafaris.ParkActivity.Entities.ParkActivityImage image) {
+        return PublicImageDTO.builder()
+            .imageUrl(toFullImageUrl("/api/park-activity-images/file/" + image.getFileName()))
+            .altText(image.getAltText())
+            .caption(image.getCaption())
+            .imageType(image.getImageType() != null ? image.getImageType().getDisplayName() : null)
+            .activityName(image.getParkActivity().getActivity().getName())
+            .parkName(image.getParkActivity().getPark().getName())
+            .build();
+    }
+
     public PublicImageDTO toPublicDTO(ActivityImage image) {
         return PublicImageDTO.builder()
             .imageUrl(toFullImageUrl("/api/activity-images/file/" + image.getFileName()))

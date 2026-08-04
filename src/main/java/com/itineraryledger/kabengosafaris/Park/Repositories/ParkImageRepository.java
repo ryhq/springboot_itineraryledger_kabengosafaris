@@ -31,7 +31,7 @@ public interface ParkImageRepository extends JpaRepository<ParkImage, Long>, Jpa
     /**
      * Find all active images for a park
      */
-    @Query("SELECT img FROM ParkImage img WHERE img.park.id = :parkId AND img.isActive = true ORDER BY img.displayOrder ASC, img.createdAt DESC")
+    @Query("SELECT img FROM ParkImage img WHERE img.park.id = :parkId AND img.isActive = true AND img.isWebActive = true ORDER BY img.displayOrder ASC, img.createdAt DESC")
     List<ParkImage> findActiveByParkId(@Param("parkId") Long parkId);
 
     /**
@@ -88,7 +88,8 @@ public interface ParkImageRepository extends JpaRepository<ParkImage, Long>, Jpa
     Page<ParkImage> findByParkIdPaginated(@Param("parkId") Long parkId, Pageable pageable);
 
     /**
-     * Find active images with pagination
+     * The PUBLIC gallery query: active AND published. isActive keeps a photo usable
+     * in the panel; isWebActive decides whether the website may show it.
      */
     @Query("SELECT img FROM ParkImage img WHERE img.park.id = :parkId AND img.isActive = true ORDER BY img.displayOrder ASC, img.createdAt DESC")
     Page<ParkImage> findActiveByParkIdPaginated(@Param("parkId") Long parkId, Pageable pageable);

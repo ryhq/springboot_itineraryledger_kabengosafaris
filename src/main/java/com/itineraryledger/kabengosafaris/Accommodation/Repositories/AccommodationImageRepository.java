@@ -88,6 +88,13 @@ public interface AccommodationImageRepository extends JpaRepository<Accommodatio
     Page<AccommodationImage> findByAccommodationIdPaginated(@Param("accommodationId") Long accommodationId, Pageable pageable);
 
     /**
+     * The PUBLIC gallery query. The website was using the unfiltered one, so an
+     * inactive or unpublished photo still reached the site.
+     */
+    @Query("SELECT img FROM AccommodationImage img WHERE img.accommodation.id = :accommodationId AND img.isActive = true AND img.isWebActive = true ORDER BY img.displayOrder ASC, img.createdAt DESC")
+    Page<AccommodationImage> findPublishedByAccommodationIdPaginated(@Param("accommodationId") Long accommodationId, Pageable pageable);
+
+    /**
      * Check if accommodation has a primary image
      */
     @Query("SELECT COUNT(img) > 0 FROM AccommodationImage img WHERE img.accommodation.id = :accommodationId AND img.isPrimary = true AND img.isActive = true")

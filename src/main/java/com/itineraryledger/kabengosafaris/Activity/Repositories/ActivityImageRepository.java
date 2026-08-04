@@ -41,9 +41,10 @@ public interface ActivityImageRepository extends JpaRepository<ActivityImage, Lo
     long countActiveByActivityId(@Param("activityId") Long activityId);
 
     /**
-     * Find active images with pagination
+     * The PUBLIC gallery query: active AND published. isActive keeps a photo usable
+     * in the panel; isWebActive decides whether the website may show it.
      */
-    @Query("SELECT ai FROM ActivityImage ai WHERE ai.activity.id = :activityId AND ai.isActive = true ORDER BY ai.displayOrder ASC, ai.createdAt DESC")
+    @Query("SELECT ai FROM ActivityImage ai WHERE ai.activity.id = :activityId AND ai.isActive = true AND ai.isWebActive = true ORDER BY ai.displayOrder ASC, ai.createdAt DESC")
     Page<ActivityImage> findActiveByActivityIdPaginated(@Param("activityId") Long activityId, Pageable pageable);
 
     boolean existsByActivityIdAndFileName(Long activityId, String fileName);

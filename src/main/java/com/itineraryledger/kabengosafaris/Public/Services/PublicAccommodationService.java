@@ -133,7 +133,7 @@ public class PublicAccommodationService {
             size = size != null ? size : 6;
             Pageable pageable = PageRequest.of(page, size);
 
-            Page<AccommodationImage> imagePage = accommodationImageRepository.findByAccommodationIdPaginated(accommodation.getId(), pageable);
+            Page<AccommodationImage> imagePage = accommodationImageRepository.findPublishedByAccommodationIdPaginated(accommodation.getId(), pageable);
             List<PublicImageDTO> dtos = imagePage.getContent().stream()
                 .map(imageResolver::toPublicDTO)
                 .collect(Collectors.toList());
@@ -150,7 +150,7 @@ public class PublicAccommodationService {
         PublicAccommodationDTO dto = convertToDetailDTO(accommodation);
 
         Pageable firstPage = PageRequest.of(0, 6);
-        Page<AccommodationImage> imagePage = accommodationImageRepository.findByAccommodationIdPaginated(accommodation.getId(), firstPage);
+        Page<AccommodationImage> imagePage = accommodationImageRepository.findPublishedByAccommodationIdPaginated(accommodation.getId(), firstPage);
         List<PublicImageDTO> images = imagePage.getContent().stream()
             .map(imageResolver::toPublicDTO)
             .collect(Collectors.toList());
