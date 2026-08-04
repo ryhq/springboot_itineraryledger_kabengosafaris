@@ -100,6 +100,7 @@ public class ParkActivityImageController {
             @RequestParam(value = "displayOrder", required = false) Integer displayOrder,
             @RequestParam(value = "imageTypes", required = false) java.util.List<ImageType> imageTypes,
             @RequestParam(value = "statuses", required = false) java.util.List<String> statuses,
+            @RequestParam(value = "visibilities", required = false) java.util.List<String> visibilities,
             @RequestParam(value = "qualities", required = false) java.util.List<String> qualities,
             @RequestParam(value = "createdAfter", required = false)
             @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
@@ -128,6 +129,7 @@ public class ParkActivityImageController {
             displayOrder,
             imageTypes,
             statuses,
+            visibilities,
             qualities,
             createdAfter,
             createdBefore,
@@ -153,6 +155,7 @@ public class ParkActivityImageController {
             @RequestParam(value = "activityId", required = false) String activityId,
             @RequestParam(value = "imageTypes", required = false) java.util.List<ImageType> imageTypes,
             @RequestParam(value = "statuses", required = false) java.util.List<String> statuses,
+            @RequestParam(value = "visibilities", required = false) java.util.List<String> visibilities,
             @RequestParam(value = "qualities", required = false) java.util.List<String> qualities,
             @RequestParam(value = "createdAfter", required = false)
             @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
@@ -162,7 +165,7 @@ public class ParkActivityImageController {
             @RequestParam(value = "sortDirection", required = false) String sortDirection
     ) {
         return getService.getImageById(
-            id, parkId, activityId, imageTypes, statuses, qualities, createdAfter, keyword, sortBy, sortDirection
+            id, parkId, activityId, imageTypes, statuses, visibilities, qualities, createdAfter, keyword, sortBy, sortDirection
         );
     }
 

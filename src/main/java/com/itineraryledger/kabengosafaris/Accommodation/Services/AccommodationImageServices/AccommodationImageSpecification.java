@@ -79,4 +79,34 @@ public class AccommodationImageSpecification {
             ? cb.conjunction()
             : cb.equal(root.get("accommodation").get("category"), category);
     }
+
+    /* Data-quality and recency predicates, so every stat card can also filter. */
+
+    public static Specification<AccommodationImage> missingCaption() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("caption")), cb.equal(cb.trim(root.get("caption")), ""));
+    }
+
+    public static Specification<AccommodationImage> missingAltText() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("altText")), cb.equal(cb.trim(root.get("altText")), ""));
+    }
+
+    public static Specification<AccommodationImage> createdAfter(java.time.LocalDateTime moment) {
+        return (root, query, cb) ->
+            moment == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), moment);
+    }
+
+    /** Free-text over the fields a person recognises. */
+    public static Specification<AccommodationImage> searchKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) return cb.conjunction();
+            String like = "%" + keyword.toLowerCase() + "%";
+            return cb.or(
+                cb.like(cb.lower(root.get("caption")), like),
+                cb.like(cb.lower(root.get("altText")), like),
+                cb.like(cb.lower(root.get("fileName")), like),
+                cb.like(cb.lower(root.get("originalFileName")), like));
+        };
+    }
 }

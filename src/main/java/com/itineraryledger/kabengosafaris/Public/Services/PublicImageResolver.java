@@ -77,7 +77,7 @@ public class PublicImageResolver {
     public String resolveParkImage(Long parkId, String entityPrimaryImage) {
         // 1. Check isPrimary flag on park images
         try {
-            Optional<ParkImage> primary = parkImageRepository.findPrimaryByParkId(parkId);
+            Optional<ParkImage> primary = parkImageRepository.findPublishedPrimaryByParkId(parkId);
             if (primary.isPresent() && primary.get().getFileName() != null) {
                 return toFullImageUrl("/api/park-images/file/" + primary.get().getFileName());
             }
@@ -112,7 +112,7 @@ public class PublicImageResolver {
     public String resolveActivityImage(Long activityId, String entityPrimaryImage) {
         // 1. Check isPrimary flag
         try {
-            Optional<ActivityImage> primary = activityImageRepository.findByActivityIdAndIsPrimaryTrue(activityId);
+            Optional<ActivityImage> primary = activityImageRepository.findPublishedPrimaryByActivityId(activityId);
             if (primary.isPresent() && primary.get().getFileName() != null) {
                 return toFullImageUrl("/api/activity-images/file/" + primary.get().getFileName());
             }
@@ -149,7 +149,7 @@ public class PublicImageResolver {
         // 1. Check isPrimary flag
         try {
             Optional<AccommodationImage> primary = accommodationImageRepository
-                .findPrimaryByAccommodationId(accommodationId);
+                .findPublishedPrimaryByAccommodationId(accommodationId);
             if (primary.isPresent() && primary.get().getFileName() != null) {
                 return toFullImageUrl("/api/accommodation-images/file/" + primary.get().getFileName());
             }

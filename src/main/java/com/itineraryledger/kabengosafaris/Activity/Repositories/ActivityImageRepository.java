@@ -26,6 +26,9 @@ public interface ActivityImageRepository extends JpaRepository<ActivityImage, Lo
     Optional<ActivityImage> findByFileName(String fileName);
 
     Optional<ActivityImage> findByActivityIdAndIsPrimaryTrue(Long activityId);
+    /** PUBLIC: the primary image only if it is itself published. */
+    @Query("SELECT ai FROM ActivityImage ai WHERE ai.activity.id = :activityId AND ai.isPrimary = true AND ai.isActive = true AND ai.isWebActive = true")
+    Optional<ActivityImage> findPublishedPrimaryByActivityId(@Param("activityId") Long activityId);
 
     @Query("SELECT COALESCE(MAX(ai.displayOrder), 0) FROM ActivityImage ai WHERE ai.activity.id = :activityId")
     int findMaxDisplayOrderByActivityId(@Param("activityId") Long activityId);
@@ -84,6 +87,6 @@ public interface ActivityImageRepository extends JpaRepository<ActivityImage, Lo
     /**
      * Find all active images across all active/web-active activities (for gallery)
      */
-    @Query("SELECT ai FROM ActivityImage ai JOIN ai.activity a WHERE ai.isActive = true AND a.isActive = true AND a.isWebActive = true ORDER BY ai.createdAt DESC")
+    @Query("SELECT ai FROM ActivityImage ai JOIN ai.activity a WHERE ai.isActive = true AND ai.isWebActive = true AND a.isActive = true AND a.isWebActive = true ORDER BY ai.createdAt DESC")
     Page<ActivityImage> findAllActiveForGallery(Pageable pageable);
 }

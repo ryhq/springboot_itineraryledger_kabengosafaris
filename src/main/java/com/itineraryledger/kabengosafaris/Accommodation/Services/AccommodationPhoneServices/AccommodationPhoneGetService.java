@@ -31,6 +31,12 @@ import java.util.Map;
 public class AccommodationPhoneGetService {
 
     private final AccommodationPhoneRepository accommodationPhoneRepository;
+
+    // dashboard counters for the CURRENT filter set (see CLAUDE.md)
+
+    @org.springframework.beans.factory.annotation.Autowired
+
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -241,6 +247,8 @@ public class AccommodationPhoneGetService {
             responseData.put("validSortFields", VALID_SORT_FIELDS);
             responseData.put("currentSortBy", validatedSortBy);
             responseData.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            // counters share the rows' Specification, so cards and table agree
+            responseData.put("stats", computeStats(spec));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -413,6 +421,18 @@ public class AccommodationPhoneGetService {
             .operatingHours(phone.getOperatingHours())
             .createdAt(phone.getCreatedAt())
             .updatedAt(phone.getUpdatedAt())
+            .build();
+    }
+
+    /** Dashboard counters built from the SAME Specification as the rows. */
+    private java.util.Map<String, Object> computeStats(
+        org.springframework.data.jpa.domain.Specification<AccommodationPhone> base
+    ) {
+        return listStats.of(AccommodationPhone.class, base)
+            .total()
+            .count("active", AccommodationPhoneSpecification.isActive(true))
+            .complement("inactive", "active")
+            .recency(AccommodationPhoneSpecification::createdAfter)
             .build();
     }
 }

@@ -45,6 +45,9 @@ public interface AccommodationImageRepository extends JpaRepository<Accommodatio
      */
     @Query("SELECT img FROM AccommodationImage img WHERE img.accommodation.id = :accommodationId AND img.isPrimary = true AND img.isActive = true")
     Optional<AccommodationImage> findPrimaryByAccommodationId(@Param("accommodationId") Long accommodationId);
+    /** PUBLIC: the primary image only if it is itself published. */
+    @Query("SELECT img FROM AccommodationImage img WHERE img.accommodation.id = :accommodationId AND img.isPrimary = true AND img.isActive = true AND img.isWebActive = true")
+    Optional<AccommodationImage> findPublishedPrimaryByAccommodationId(@Param("accommodationId") Long accommodationId);
 
     /**
      * Count images for an accommodation

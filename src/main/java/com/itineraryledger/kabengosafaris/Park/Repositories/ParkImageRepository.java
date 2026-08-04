@@ -45,6 +45,9 @@ public interface ParkImageRepository extends JpaRepository<ParkImage, Long>, Jpa
      */
     @Query("SELECT img FROM ParkImage img WHERE img.park.id = :parkId AND img.isPrimary = true AND img.isActive = true")
     Optional<ParkImage> findPrimaryByParkId(@Param("parkId") Long parkId);
+    /** PUBLIC: the primary image only if it is itself published. */
+    @Query("SELECT img FROM ParkImage img WHERE img.park.id = :parkId AND img.isPrimary = true AND img.isActive = true AND img.isWebActive = true")
+    Optional<ParkImage> findPublishedPrimaryByParkId(@Param("parkId") Long parkId);
 
     /**
      * Count images for a park

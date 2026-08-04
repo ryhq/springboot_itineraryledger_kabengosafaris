@@ -116,4 +116,40 @@ public class AccommodationDocumentSpecification {
             ? cb.conjunction()
             : cb.equal(root.get("accommodation").get("category"), category);
     }
+
+    /* Validity, recency and free-text — warn BEFORE expiry, which is the point. */
+
+    public static Specification<AccommodationDocument> expired() {
+        return (root, query, cb) -> cb.and(
+            cb.isNotNull(root.get("validTo")),
+            cb.lessThan(root.get("validTo"), java.time.LocalDateTime.now()));
+    }
+
+    public static Specification<AccommodationDocument> expiringWithin(int days) {
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        return (root, query, cb) -> cb.and(
+            cb.isNotNull(root.get("validTo")),
+            cb.greaterThanOrEqualTo(root.get("validTo"), now),
+            cb.lessThanOrEqualTo(root.get("validTo"), now.plusDays(days)));
+    }
+
+    public static Specification<AccommodationDocument> noExpiry() {
+        return (root, query, cb) -> cb.isNull(root.get("validTo"));
+    }
+
+    public static Specification<AccommodationDocument> createdAfter(java.time.LocalDateTime moment) {
+        return (root, query, cb) ->
+            moment == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), moment);
+    }
+
+    public static Specification<AccommodationDocument> searchKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) return cb.conjunction();
+            String like = "%" + keyword.toLowerCase() + "%";
+            return cb.or(
+                cb.like(cb.lower(root.get("title")), like),
+                cb.like(cb.lower(root.get("fileName")), like),
+                cb.like(cb.lower(root.get("originalFileName")), like));
+        };
+    }
 }

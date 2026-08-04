@@ -103,6 +103,7 @@ public class ParkActivityImageGetService {
             Integer displayOrder,
             java.util.List<ImageType> imageTypes,
             java.util.List<String> statuses,
+            java.util.List<String> visibilities,
             java.util.List<String> qualities,
             java.time.LocalDateTime createdAfter,
             java.time.LocalDateTime createdBefore,
@@ -174,6 +175,13 @@ public class ParkActivityImageGetService {
             // active+inactive is every row, so it cancels to no constraint
             if (states.size() == 1) spec = spec.and(ParkActivityImageSpecification.byIsActive(states.get(0)));
         }
+        if (visibilities != null && !visibilities.isEmpty()) {
+            java.util.List<Boolean> live = new java.util.ArrayList<>();
+            if (visibilities.contains("live")) live.add(true);
+            if (visibilities.contains("hidden")) live.add(false);
+            // both at once is every row, so it cancels to no constraint
+            if (live.size() == 1) spec = spec.and(ParkActivityImageSpecification.isWebActive(live.get(0)));
+        }
         if (qualities != null && !qualities.isEmpty()) {
             spec = spec.and(ParkActivityImageSpecification.anyQualityIssue(
                 qualities.contains("no-caption"),
@@ -235,6 +243,7 @@ public class ParkActivityImageGetService {
         String obfuscatedActivityId,
         java.util.List<ImageType> imageTypes,
         java.util.List<String> statuses,
+        java.util.List<String> visibilities,
         java.util.List<String> qualities,
         java.time.LocalDateTime createdAfter,
         String keyword
@@ -260,6 +269,12 @@ public class ParkActivityImageGetService {
             if (statuses.contains("inactive")) states.add(false);
             if (states.size() == 1) spec = spec.and(ParkActivityImageSpecification.byIsActive(states.get(0)));
         }
+        if (visibilities != null && !visibilities.isEmpty()) {
+            java.util.List<Boolean> live = new java.util.ArrayList<>();
+            if (visibilities.contains("live")) live.add(true);
+            if (visibilities.contains("hidden")) live.add(false);
+            if (live.size() == 1) spec = spec.and(ParkActivityImageSpecification.isWebActive(live.get(0)));
+        }
         if (qualities != null && !qualities.isEmpty()) {
             spec = spec.and(ParkActivityImageSpecification.anyQualityIssue(
                 qualities.contains("no-caption"), qualities.contains("no-alt")));
@@ -278,6 +293,8 @@ public class ParkActivityImageGetService {
             .count("active", ParkActivityImageSpecification.byIsActive(true))
             .complement("inactive", "active")
             .count("primary", ParkActivityImageSpecification.byIsPrimary(true))
+            .count("webActive", ParkActivityImageSpecification.isWebActive(true))
+            .complement("webHidden", "webActive")
             .count("missingCaption", ParkActivityImageSpecification.missingCaption())
             .count("missingAltText", ParkActivityImageSpecification.missingAltText())
             .breakdown("byImageType", ParkActivityImage.ImageType.values(), ParkActivityImageSpecification::byImageType)
@@ -286,7 +303,7 @@ public class ParkActivityImageGetService {
     }
 
     public ResponseEntity<?> getImageById(String obfuscatedId) {
-        return getImageById(obfuscatedId, null, null, null, null, null, null, null, null, null);
+        return getImageById(obfuscatedId, null, null, null, null, null, null, null, null, null, null);
     }
 
     /**
@@ -302,6 +319,7 @@ public class ParkActivityImageGetService {
             String obfuscatedActivityId,
             java.util.List<ImageType> imageTypes,
             java.util.List<String> statuses,
+            java.util.List<String> visibilities,
             java.util.List<String> qualities,
             java.time.LocalDateTime createdAfter,
             String keyword,
@@ -325,7 +343,7 @@ public class ParkActivityImageGetService {
             String validatedSortBy = validateSortField(sortBy);
             java.util.Map<String, Object> nav = recordNavigation.navigate(
                 ParkActivityImage.class,
-                navigationSpec(obfuscatedParkId, obfuscatedActivityId, imageTypes, statuses, qualities, createdAfter, keyword),
+                navigationSpec(obfuscatedParkId, obfuscatedActivityId, imageTypes, statuses, visibilities, qualities, createdAfter, keyword),
                 validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
                 "asc".equalsIgnoreCase(sortDirection),
                 id

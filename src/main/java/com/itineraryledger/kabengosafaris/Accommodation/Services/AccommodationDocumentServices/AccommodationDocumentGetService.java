@@ -44,6 +44,9 @@ public class AccommodationDocumentGetService {
     private final AccommodationDocumentStorageService storageService;
     private final IdObfuscator idObfuscator;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "title", "documentType", "fileName", "fileSize", "createdAt", "updatedAt"
     );
@@ -120,6 +123,11 @@ public class AccommodationDocumentGetService {
             String version,
             Boolean isActive,
             Boolean currentlyValid,
+            java.util.List<String> statuses,
+            java.util.List<String> validity,
+            java.time.LocalDateTime createdAfter,
+            String keyword,
+            Boolean includeStats,
             int page,
             int size,
             String sortBy,
@@ -182,6 +190,29 @@ public class AccommodationDocumentGetService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
         // Execute query
+        // multi-value facets: every stat card must also work as a filter
+        if (statuses != null && !statuses.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            if (states.size() == 1) spec = spec.and(AccommodationDocumentSpecification.byIsActive(states.get(0)));
+        }
+        if (validity != null && !validity.isEmpty()) {
+            java.util.List<Specification<AccommodationDocument>> any = new java.util.ArrayList<>();
+            if (validity.contains("expired")) any.add(AccommodationDocumentSpecification.expired());
+            if (validity.contains("expiringSoon")) any.add(AccommodationDocumentSpecification.expiringWithin(30));
+            if (validity.contains("noExpiry")) any.add(AccommodationDocumentSpecification.noExpiry());
+            if (!any.isEmpty()) {
+                Specification<AccommodationDocument> combined = any.get(0);
+                for (int i = 1; i < any.size(); i++) combined = combined.or(any.get(i));
+                spec = spec.and(combined);
+            }
+        }
+        if (createdAfter != null) spec = spec.and(AccommodationDocumentSpecification.createdAfter(createdAfter));
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(AccommodationDocumentSpecification.searchKeyword(keyword));
+        }
+
         Page<AccommodationDocument> documentPage = accommodationDocumentRepository.findAll(spec, pageable);
 
         // Convert to DTOs
@@ -201,8 +232,25 @@ public class AccommodationDocumentGetService {
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("currentSortBy", validatedSortBy);
         response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+        // counters from the SAME spec as the rows
+        if (includeStats == null || includeStats) {
+            response.put("stats", computeStats(spec));
+        }
 
         return ResponseEntity.ok(ApiResponse.success(200, "Documents retrieved successfully", response));
+    }
+
+    /** Dashboard counters for the CURRENT filter set (see CLAUDE.md: stats on every list). */
+    private Map<String, Object> computeStats(Specification<AccommodationDocument> base) {
+        return listStats.of(AccommodationDocument.class, base)
+            .total()
+            .count("active", AccommodationDocumentSpecification.byIsActive(true))
+            .complement("inactive", "active")
+            .count("expired", AccommodationDocumentSpecification.expired())
+            .count("expiringSoon", AccommodationDocumentSpecification.expiringWithin(30))
+            .count("noExpiry", AccommodationDocumentSpecification.noExpiry())
+            .recency(AccommodationDocumentSpecification::createdAfter)
+            .build();
     }
 
     /**

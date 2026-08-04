@@ -31,6 +31,12 @@ import java.util.Map;
 public class AccommodationEmailGetService {
 
     private final AccommodationEmailRepository accommodationEmailRepository;
+
+    // dashboard counters for the CURRENT filter set (see CLAUDE.md)
+
+    @org.springframework.beans.factory.annotation.Autowired
+
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -231,6 +237,8 @@ public class AccommodationEmailGetService {
             responseData.put("validSortFields", VALID_SORT_FIELDS);
             responseData.put("currentSortBy", validatedSortBy);
             responseData.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            // counters share the rows' Specification, so cards and table agree
+            responseData.put("stats", computeStats(spec));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -390,6 +398,18 @@ public class AccommodationEmailGetService {
             .label(email.getLabel())
             .createdAt(email.getCreatedAt())
             .updatedAt(email.getUpdatedAt())
+            .build();
+    }
+
+    /** Dashboard counters built from the SAME Specification as the rows. */
+    private java.util.Map<String, Object> computeStats(
+        org.springframework.data.jpa.domain.Specification<AccommodationEmail> base
+    ) {
+        return listStats.of(AccommodationEmail.class, base)
+            .total()
+            .count("active", AccommodationEmailSpecification.isActive(true))
+            .complement("inactive", "active")
+            .recency(AccommodationEmailSpecification::createdAfter)
             .build();
     }
 }

@@ -31,6 +31,12 @@ import java.util.stream.Collectors;
 public class AccommodationRoomStandardGetService {
 
     private final AccommodationRoomStandardRepository roomStandardRepository;
+
+    // dashboard counters for the CURRENT filter set (see CLAUDE.md)
+
+    @org.springframework.beans.factory.annotation.Autowired
+
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -237,6 +243,8 @@ public class AccommodationRoomStandardGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            // counters share the rows' Specification, so cards and table agree
+            response.put("stats", computeStats(spec));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -442,5 +450,17 @@ public class AccommodationRoomStandardGetService {
                 )
             );
         }
+    }
+
+    /** Dashboard counters built from the SAME Specification as the rows. */
+    private java.util.Map<String, Object> computeStats(
+        org.springframework.data.jpa.domain.Specification<AccommodationRoomStandard> base
+    ) {
+        return listStats.of(AccommodationRoomStandard.class, base)
+            .total()
+            .count("active", AccommodationRoomStandardSpecification.isActive(true))
+            .complement("inactive", "active")
+            .recency(AccommodationRoomStandardSpecification::createdAfter)
+            .build();
     }
 }

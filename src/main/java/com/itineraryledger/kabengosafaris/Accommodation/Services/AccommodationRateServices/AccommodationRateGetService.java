@@ -40,6 +40,12 @@ import java.util.stream.Collectors;
 public class AccommodationRateGetService {
 
     private final AccommodationRateRepository rateRepository;
+
+    // dashboard counters for the CURRENT filter set (see CLAUDE.md)
+
+    @org.springframework.beans.factory.annotation.Autowired
+
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -240,6 +246,8 @@ public class AccommodationRateGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            // counters share the rows' Specification, so cards and table agree
+            response.put("stats", computeStats(spec));
 
             return ResponseEntity.ok(ApiResponse.success(200, "Rates retrieved successfully", response));
 
@@ -355,6 +363,18 @@ public class AccommodationRateGetService {
             .isActive(rate.getIsActive())
             .createdAt(rate.getCreatedAt())
             .updatedAt(rate.getUpdatedAt())
+            .build();
+    }
+
+    /** Dashboard counters built from the SAME Specification as the rows. */
+    private java.util.Map<String, Object> computeStats(
+        org.springframework.data.jpa.domain.Specification<AccommodationRate> base
+    ) {
+        return listStats.of(AccommodationRate.class, base)
+            .total()
+            .count("active", AccommodationRateSpecification.isActive(true))
+            .complement("inactive", "active")
+            .recency(AccommodationRateSpecification::createdAfter)
             .build();
     }
 }

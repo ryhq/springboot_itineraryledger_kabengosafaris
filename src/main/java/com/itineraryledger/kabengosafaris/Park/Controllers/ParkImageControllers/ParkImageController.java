@@ -100,6 +100,7 @@ public class ParkImageController {
             @RequestParam(value = "displayOrder", required = false) Integer displayOrder,
             @RequestParam(value = "imageTypes", required = false) java.util.List<ParkImage.ImageType> imageTypes,
             @RequestParam(value = "statuses", required = false) java.util.List<String> statuses,
+            @RequestParam(value = "visibilities", required = false) java.util.List<String> visibilities,
             @RequestParam(value = "qualities", required = false) java.util.List<String> qualities,
             @RequestParam(value = "createdAfter", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
             @RequestParam(value = "createdBefore", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdBefore,
@@ -121,6 +122,7 @@ public class ParkImageController {
             displayOrder,
             imageTypes,
             statuses,
+            visibilities,
             qualities,
             createdAfter,
             createdBefore,
@@ -144,13 +146,14 @@ public class ParkImageController {
             // the list's filter context, so prev/next walks the set the user was in
             @RequestParam(required = false) java.util.List<com.itineraryledger.kabengosafaris.Park.Entities.ParkImage.ImageType> imageTypes,
             @RequestParam(required = false) java.util.List<String> statuses,
+            @RequestParam(required = false) java.util.List<String> visibilities,
             @RequestParam(required = false) java.util.List<String> qualities,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortDirection
     ) {
         return getService.getImageById(
-            id, scopeParentId, imageTypes, statuses, qualities, createdAfter, sortBy, sortDirection
+            id, scopeParentId, imageTypes, statuses, visibilities, qualities, createdAfter, sortBy, sortDirection
         );
     }
 

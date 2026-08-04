@@ -134,4 +134,10 @@ public class ActivityImageSpecification {
             );
         };
     }
+
+    /** Website visibility, so the "On website" card can both count and filter. */
+    public static Specification<ActivityImage> isWebActive(Boolean isWebActive) {
+        return (root, query, cb) ->
+            isWebActive == null ? cb.conjunction() : cb.equal(root.get("isWebActive"), isWebActive);
+    }
 }

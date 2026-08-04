@@ -170,4 +170,10 @@ public class ParkActivityImageSpecification {
         return (root, query, cb) ->
             moment == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("createdAt"), moment);
     }
+
+    /** Website visibility, so the "On website" card can both count and filter. */
+    public static Specification<ParkActivityImage> isWebActive(Boolean isWebActive) {
+        return (root, query, cb) ->
+            isWebActive == null ? cb.conjunction() : cb.equal(root.get("isWebActive"), isWebActive);
+    }
 }

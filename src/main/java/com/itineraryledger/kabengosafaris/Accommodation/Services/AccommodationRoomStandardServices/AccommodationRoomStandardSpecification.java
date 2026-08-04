@@ -71,4 +71,10 @@ public class AccommodationRoomStandardSpecification {
             );
         };
     }
+
+    /** Recency, for the "new in the last N days" counters. */
+    public static Specification<AccommodationRoomStandard> createdAfter(java.time.LocalDateTime moment) {
+        return (root, query, cb) ->
+            moment == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), moment);
+    }
 }

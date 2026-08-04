@@ -95,6 +95,7 @@ public class ActivityImageGetService {
             Integer displayOrder,
             java.util.List<ActivityImage.ImageType> imageTypes,
             java.util.List<String> statuses,
+            java.util.List<String> visibilities,
             java.util.List<String> qualities,
             java.time.LocalDateTime createdAfter,
             java.time.LocalDateTime createdBefore,
@@ -148,6 +149,13 @@ public class ActivityImageGetService {
             if (statuses.contains("active")) states.add(true);
             if (statuses.contains("inactive")) states.add(false);
             if (states.size() == 1) spec = spec.and(ActivityImageSpecification.byIsActive(states.get(0)));
+        }
+        if (visibilities != null && !visibilities.isEmpty()) {
+            java.util.List<Boolean> live = new java.util.ArrayList<>();
+            if (visibilities.contains("live")) live.add(true);
+            if (visibilities.contains("hidden")) live.add(false);
+            // both at once is every row, so it cancels to no constraint
+            if (live.size() == 1) spec = spec.and(ActivityImageSpecification.isWebActive(live.get(0)));
         }
         if (qualities != null && !qualities.isEmpty()) {
             spec = spec.and(ActivityImageSpecification.anyQualityIssue(
@@ -296,6 +304,8 @@ public class ActivityImageGetService {
             .count("active", ActivityImageSpecification.byIsActive(true))
             .complement("inactive", "active")
             .count("primary", ActivityImageSpecification.byIsPrimary(true))
+            .count("webActive", ActivityImageSpecification.isWebActive(true))
+            .complement("webHidden", "webActive")
             .count("missingCaption", ActivityImageSpecification.missingCaption())
             .count("missingAltText", ActivityImageSpecification.missingAltText())
             .breakdown("byImageType", ImageType.values(), ActivityImageSpecification::byImageType)

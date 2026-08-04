@@ -100,6 +100,7 @@ public class ParkImageGetService {
             Integer displayOrder,
             java.util.List<ParkImage.ImageType> imageTypes,
             java.util.List<String> statuses,
+            java.util.List<String> visibilities,
             java.util.List<String> qualities,
             java.time.LocalDateTime createdAfter,
             java.time.LocalDateTime createdBefore,
@@ -157,6 +158,13 @@ public class ParkImageGetService {
             if (statuses.contains("inactive")) states.add(false);
             if (states.size() == 1) spec = spec.and(ParkImageSpecification.byIsActive(states.get(0)));
         }
+        if (visibilities != null && !visibilities.isEmpty()) {
+            java.util.List<Boolean> live = new java.util.ArrayList<>();
+            if (visibilities.contains("live")) live.add(true);
+            if (visibilities.contains("hidden")) live.add(false);
+            // both at once is every row, so it cancels to no constraint
+            if (live.size() == 1) spec = spec.and(ParkImageSpecification.isWebActive(live.get(0)));
+        }
         if (qualities != null && !qualities.isEmpty()) {
             spec = spec.and(ParkImageSpecification.anyQualityIssue(
                 qualities.contains("no-caption"),
@@ -207,7 +215,7 @@ public class ParkImageGetService {
     }
 
     public ResponseEntity<?> getImageById(String obfuscatedId, String scopeParentId) {
-        return getImageById(obfuscatedId, scopeParentId, null, null, null, null, null, null);
+        return getImageById(obfuscatedId, scopeParentId, null, null, null, null, null, null, null);
     }
 
     /** A record plus prev/next over the SAME filtered set the list was showing. */
@@ -216,6 +224,7 @@ public class ParkImageGetService {
         String scopeParentId,
         java.util.List<ParkImage.ImageType> imageTypes,
         java.util.List<String> statuses,
+        java.util.List<String> visibilities,
         java.util.List<String> qualities,
         java.time.LocalDateTime createdAfter,
         String sortBy,
@@ -249,7 +258,7 @@ public class ParkImageGetService {
             // walk the caller's filtered + sorted set, scoped to the parent when given
             java.util.Map<String, Object> nav = recordNavigation.navigate(
                 ParkImage.class,
-                navigationSpec(decodedParentId, imageTypes, statuses, qualities, createdAfter),
+                navigationSpec(decodedParentId, imageTypes, statuses, visibilities, qualities, createdAfter),
                 validateSortField(sortBy) != null ? validateSortField(sortBy) : "displayOrder",
                 "asc".equalsIgnoreCase(sortDirection),
                 id
@@ -319,6 +328,8 @@ public class ParkImageGetService {
             .count("active", ParkImageSpecification.byIsActive(true))
             .complement("inactive", "active")
             .count("primary", ParkImageSpecification.byIsPrimary(true))
+            .count("webActive", ParkImageSpecification.isWebActive(true))
+            .complement("webHidden", "webActive")
             .count("missingCaption", ParkImageSpecification.missingCaption())
             .count("missingAltText", ParkImageSpecification.missingAltText())
             .breakdown("byImageType", ImageType.values(), ParkImageSpecification::byImageType)
@@ -334,6 +345,7 @@ public class ParkImageGetService {
         Long decodedParentId,
         java.util.List<ParkImage.ImageType> imageTypes,
         java.util.List<String> statuses,
+        java.util.List<String> visibilities,
         java.util.List<String> qualities,
         java.time.LocalDateTime createdAfter
     ) {
@@ -345,6 +357,12 @@ public class ParkImageGetService {
             if (statuses.contains("active")) states.add(true);
             if (statuses.contains("inactive")) states.add(false);
             if (states.size() == 1) spec = spec.and(ParkImageSpecification.byIsActive(states.get(0)));
+        }
+        if (visibilities != null && !visibilities.isEmpty()) {
+            java.util.List<Boolean> live = new java.util.ArrayList<>();
+            if (visibilities.contains("live")) live.add(true);
+            if (visibilities.contains("hidden")) live.add(false);
+            if (live.size() == 1) spec = spec.and(ParkImageSpecification.isWebActive(live.get(0)));
         }
         if (qualities != null && !qualities.isEmpty()) {
             spec = spec.and(ParkImageSpecification.anyQualityIssue(qualities.contains("no-caption"), qualities.contains("no-alt")));

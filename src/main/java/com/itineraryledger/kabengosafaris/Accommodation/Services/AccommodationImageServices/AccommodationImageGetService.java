@@ -45,6 +45,9 @@ public class AccommodationImageGetService {
     @Autowired
     private IdObfuscator idObfuscator;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "imageType", "isPrimary", "isActive", "displayOrder", "fileSize", "createdAt", "updatedAt"
     );
@@ -104,6 +107,12 @@ public class AccommodationImageGetService {
             Boolean isActive,
             Boolean isWebActive,
             Integer displayOrder,
+            java.util.List<String> statuses,
+            java.util.List<String> visibilities,
+            java.util.List<String> qualities,
+            java.time.LocalDateTime createdAfter,
+            String keyword,
+            Boolean includeStats,
             int page,
             int size,
             String sortBy,
@@ -153,6 +162,34 @@ public class AccommodationImageGetService {
         }
 
         // Sorting with validation
+        // multi-value facets: every stat card must also work as a filter
+        if (statuses != null && !statuses.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            if (states.size() == 1) spec = spec.and(AccommodationImageSpecification.byIsActive(states.get(0)));
+        }
+        if (visibilities != null && !visibilities.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (visibilities.contains("live")) states.add(true);
+            if (visibilities.contains("hidden")) states.add(false);
+            if (states.size() == 1) spec = spec.and(AccommodationImageSpecification.isWebActive(states.get(0)));
+        }
+        if (qualities != null && !qualities.isEmpty()) {
+            java.util.List<org.springframework.data.jpa.domain.Specification<AccommodationImage>> any = new java.util.ArrayList<>();
+            if (qualities.contains("no-caption")) any.add(AccommodationImageSpecification.missingCaption());
+            if (qualities.contains("no-alt")) any.add(AccommodationImageSpecification.missingAltText());
+            if (!any.isEmpty()) {
+                org.springframework.data.jpa.domain.Specification<AccommodationImage> combined = any.get(0);
+                for (int i = 1; i < any.size(); i++) combined = combined.or(any.get(i));
+                spec = spec.and(combined);
+            }
+        }
+        if (createdAfter != null) spec = spec.and(AccommodationImageSpecification.createdAfter(createdAfter));
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(AccommodationImageSpecification.searchKeyword(keyword));
+        }
+
         String validatedSortBy = validateSortField(sortBy);
         if (validatedSortBy == null) {
             log.warn("Invalid sort field: {}", sortBy);
@@ -184,8 +221,27 @@ public class AccommodationImageGetService {
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("currentSortBy", validatedSortBy);
         response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+        // counters from the SAME spec as the rows, so cards and table cannot disagree
+        if (includeStats == null || includeStats) {
+            response.put("stats", computeStats(spec));
+        }
 
         return ResponseEntity.ok(ApiResponse.success(200, "Accommodation images retrieved successfully.", response));
+    }
+
+    /** Dashboard counters for the CURRENT filter set (see CLAUDE.md: stats on every list). */
+    private Map<String, Object> computeStats(Specification<AccommodationImage> base) {
+        return listStats.of(AccommodationImage.class, base)
+            .total()
+            .count("active", AccommodationImageSpecification.byIsActive(true))
+            .complement("inactive", "active")
+            .count("primary", AccommodationImageSpecification.byIsPrimary(true))
+            .count("webActive", AccommodationImageSpecification.isWebActive(true))
+            .complement("webHidden", "webActive")
+            .count("missingCaption", AccommodationImageSpecification.missingCaption())
+            .count("missingAltText", AccommodationImageSpecification.missingAltText())
+            .recency(AccommodationImageSpecification::createdAfter)
+            .build();
     }
 
     /**
