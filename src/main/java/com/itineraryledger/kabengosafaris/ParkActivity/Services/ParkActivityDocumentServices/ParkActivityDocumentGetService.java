@@ -35,6 +35,7 @@ public class ParkActivityDocumentGetService {
     private final ParkActivityDocumentRepository parkActivityDocumentRepository;
     private final ParkActivityDocumentStorageService storageService;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "title", "documentType", "fileName", "fileSize", "createdAt", "updatedAt"
@@ -53,11 +54,13 @@ public class ParkActivityDocumentGetService {
     public ParkActivityDocumentGetService(
         ParkActivityDocumentRepository parkActivityDocumentRepository,
         ParkActivityDocumentStorageService storageService,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats
     ) {
         this.parkActivityDocumentRepository = parkActivityDocumentRepository;
         this.storageService = storageService;
         this.idObfuscator = idObfuscator;
+        this.listStats = listStats;
     }
 
     public ParkActivityDocumentDTO toDTO(ParkActivityDocument document) {
@@ -104,6 +107,13 @@ public class ParkActivityDocumentGetService {
             Boolean parkIsActive,
             Boolean activityIsActive,
             Boolean hasTariff,
+            java.util.List<DocumentType> documentTypes,
+            java.util.List<String> statuses,
+            java.util.List<String> validity,
+            LocalDateTime createdAfter,
+            LocalDateTime createdBefore,
+            String keyword,
+            Boolean includeStats,
             String sortBy,
             String sortDirection,
             int page,
@@ -161,6 +171,25 @@ public class ParkActivityDocumentGetService {
         if (hasTariff != null) {
             spec = spec.and(ParkActivityDocumentSpecification.byActivityHasTariff(hasTariff));
         }
+        // multi-value facets: every stat card must be reachable as a filter
+        if (documentTypes != null && !documentTypes.isEmpty()) {
+            spec = spec.and(ParkActivityDocumentSpecification.documentTypeIn(documentTypes));
+        }
+        if (statuses != null && !statuses.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            // active+inactive is every row, so it cancels to no constraint
+            if (states.size() == 1) spec = spec.and(ParkActivityDocumentSpecification.byIsActive(states.get(0)));
+        }
+        if (validity != null && !validity.isEmpty()) {
+            spec = spec.and(ParkActivityDocumentSpecification.validityIn(validity));
+        }
+        if (createdAfter != null) spec = spec.and(ParkActivityDocumentSpecification.createdAfter(createdAfter));
+        if (createdBefore != null) spec = spec.and(ParkActivityDocumentSpecification.createdBefore(createdBefore));
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(ParkActivityDocumentSpecification.searchKeyword(keyword));
+        }
 
         // Sorting with validation
         String validatedSortBy = validateSortField(sortBy);
@@ -195,8 +224,26 @@ public class ParkActivityDocumentGetService {
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("currentSortBy", validatedSortBy);
         response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+        // counters built from the SAME spec as the rows, so cards and table agree
+        if (includeStats == null || includeStats) {
+            response.put("stats", computeStats(spec));
+        }
 
         return ResponseEntity.ok(ApiResponse.success(200, "Park activity documents retrieved successfully", response));
+    }
+
+    /** Dashboard counters for the CURRENT filter set (see CLAUDE.md: stats on every list). */
+    private Map<String, Object> computeStats(Specification<ParkActivityDocument> base) {
+        return listStats.of(ParkActivityDocument.class, base)
+            .total()
+            .count("active", ParkActivityDocumentSpecification.byIsActive(true))
+            .complement("inactive", "active")
+            .count("expired", ParkActivityDocumentSpecification.expired())
+            .count("expiringSoon", ParkActivityDocumentSpecification.expiringWithin(30))
+            .count("noExpiry", ParkActivityDocumentSpecification.noExpiry())
+            .breakdown("byDocumentType", ParkActivityDocument.DocumentType.values(), ParkActivityDocumentSpecification::byDocumentType)
+            .recency(ParkActivityDocumentSpecification::createdAfter)
+            .build();
     }
 
     public ResponseEntity<?> getDocumentById(String obfuscatedId) {

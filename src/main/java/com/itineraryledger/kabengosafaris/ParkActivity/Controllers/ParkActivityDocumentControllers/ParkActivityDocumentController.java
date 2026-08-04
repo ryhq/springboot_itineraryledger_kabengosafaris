@@ -91,6 +91,17 @@ public class ParkActivityDocumentController {
             @RequestParam(value = "parkIsActive", required = false) Boolean parkIsActive,
             @RequestParam(value = "activityIsActive", required = false) Boolean activityIsActive,
             @RequestParam(value = "hasTariff", required = false) Boolean hasTariff,
+            @RequestParam(value = "documentTypes", required = false) java.util.List<DocumentType> documentTypes,
+            @RequestParam(value = "statuses", required = false) java.util.List<String> statuses,
+            @RequestParam(value = "validity", required = false) java.util.List<String> validity,
+            @RequestParam(value = "createdAfter", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.LocalDateTime createdAfter,
+            @RequestParam(value = "createdBefore", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.LocalDateTime createdBefore,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "includeStats", required = false) Boolean includeStats,
             @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
             @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection,
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -109,6 +120,13 @@ public class ParkActivityDocumentController {
             parkIsActive,
             activityIsActive,
             hasTariff,
+            documentTypes,
+            statuses,
+            validity,
+            createdAfter,
+            createdBefore,
+            keyword,
+            includeStats,
             sortBy,
             sortDirection,
             page,

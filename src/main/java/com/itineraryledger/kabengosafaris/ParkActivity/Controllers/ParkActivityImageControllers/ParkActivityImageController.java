@@ -98,6 +98,17 @@ public class ParkActivityImageController {
             @RequestParam(value = "isPrimary", required = false) Boolean isPrimary,
             @RequestParam(value = "isActive", required = false) Boolean isActive,
             @RequestParam(value = "displayOrder", required = false) Integer displayOrder,
+            @RequestParam(value = "imageTypes", required = false) java.util.List<ImageType> imageTypes,
+            @RequestParam(value = "statuses", required = false) java.util.List<String> statuses,
+            @RequestParam(value = "qualities", required = false) java.util.List<String> qualities,
+            @RequestParam(value = "createdAfter", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.LocalDateTime createdAfter,
+            @RequestParam(value = "createdBefore", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.LocalDateTime createdBefore,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "includeStats", required = false) Boolean includeStats,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size,
             @RequestParam(value = "sortBy", required = false) String sortBy,
@@ -115,6 +126,13 @@ public class ParkActivityImageController {
             isPrimary,
             isActive,
             displayOrder,
+            imageTypes,
+            statuses,
+            qualities,
+            createdAfter,
+            createdBefore,
+            keyword,
+            includeStats,
             page,
             size,
             sortBy,

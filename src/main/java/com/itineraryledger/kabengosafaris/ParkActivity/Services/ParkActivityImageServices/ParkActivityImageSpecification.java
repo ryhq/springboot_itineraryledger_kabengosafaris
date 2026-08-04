@@ -109,4 +109,65 @@ public class ParkActivityImageSpecification {
             ? cb.conjunction()
             : cb.equal(root.get("parkActivity").get("activity").get("hasTariff"), hasTariff);
     }
+
+    /**
+     * Free-text over the fields a person would recognise. The list page has always
+     * shown a search box; without this it sent `keyword` into the void.
+     */
+    public static Specification<ParkActivityImage> searchKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) return cb.conjunction();
+            String like = "%" + keyword.toLowerCase() + "%";
+            return cb.or(
+                cb.like(cb.lower(root.get("caption")), like),
+                cb.like(cb.lower(root.get("altText")), like),
+                cb.like(cb.lower(root.get("fileName")), like),
+                cb.like(cb.lower(root.get("originalFileName")), like)
+            );
+        };
+    }
+
+    /** Data-quality counters: every stat must also be reachable as a filter. */
+    public static Specification<ParkActivityImage> missingCaption() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("caption")),
+            cb.equal(cb.trim(root.get("caption")), "")
+        );
+    }
+
+    public static Specification<ParkActivityImage> missingAltText() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("altText")),
+            cb.equal(cb.trim(root.get("altText")), "")
+        );
+    }
+
+    public static Specification<ParkActivityImage> createdAfter(java.time.LocalDateTime moment) {
+        return (root, query, cb) ->
+            moment == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), moment);
+    }
+
+    /* Multi-value facets: OR inside a dimension, AND across dimensions. */
+
+    public static Specification<ParkActivityImage> imageTypeIn(java.util.List<ImageType> types) {
+        return (root, query, cb) ->
+            types == null || types.isEmpty() ? cb.conjunction() : root.get("imageType").in(types);
+    }
+
+    /** Either quality problem, so one "data quality" facet can carry both. */
+    public static Specification<ParkActivityImage> anyQualityIssue(boolean noCaption, boolean noAlt) {
+        return (root, query, cb) -> {
+            java.util.List<jakarta.persistence.criteria.Predicate> any = new java.util.ArrayList<>();
+            if (noCaption) any.add(cb.or(
+                cb.isNull(root.get("caption")), cb.equal(cb.trim(root.get("caption")), "")));
+            if (noAlt) any.add(cb.or(
+                cb.isNull(root.get("altText")), cb.equal(cb.trim(root.get("altText")), "")));
+            return any.isEmpty() ? cb.conjunction() : cb.or(any.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+    }
+
+    public static Specification<ParkActivityImage> createdBefore(java.time.LocalDateTime moment) {
+        return (root, query, cb) ->
+            moment == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("createdAt"), moment);
+    }
 }

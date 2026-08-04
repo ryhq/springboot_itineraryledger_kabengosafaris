@@ -34,6 +34,7 @@ public class ParkActivityImageGetService {
     private final ParkActivityImageRepository parkActivityImageRepository;
     private final ParkActivityImageStorageService storageService;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "isPrimary", "isActive", "displayOrder", "fileSize", "createdAt", "updatedAt"
@@ -42,6 +43,7 @@ public class ParkActivityImageGetService {
 
     @Autowired
     public ParkActivityImageGetService(
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats,
         ParkActivityImageRepository parkActivityImageRepository,
         ParkActivityImageStorageService storageService,
         IdObfuscator idObfuscator
@@ -49,6 +51,7 @@ public class ParkActivityImageGetService {
         this.parkActivityImageRepository = parkActivityImageRepository;
         this.storageService = storageService;
         this.idObfuscator = idObfuscator;
+        this.listStats = listStats;
     }
 
     public ParkActivityImageDTO toDTO(ParkActivityImage image) {
@@ -94,6 +97,13 @@ public class ParkActivityImageGetService {
             Boolean isPrimary,
             Boolean isActive,
             Integer displayOrder,
+            java.util.List<ImageType> imageTypes,
+            java.util.List<String> statuses,
+            java.util.List<String> qualities,
+            java.time.LocalDateTime createdAfter,
+            java.time.LocalDateTime createdBefore,
+            String keyword,
+            Boolean includeStats,
             int page,
             int size,
             String sortBy,
@@ -149,6 +159,29 @@ public class ParkActivityImageGetService {
             spec = spec.and(ParkActivityImageSpecification.byDisplayOrder(displayOrder));
         }
 
+        // multi-value facets: every stat card must be reachable as a filter
+        if (imageTypes != null && !imageTypes.isEmpty()) {
+            spec = spec.and(ParkActivityImageSpecification.imageTypeIn(imageTypes));
+        }
+        if (statuses != null && !statuses.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            // active+inactive is every row, so it cancels to no constraint
+            if (states.size() == 1) spec = spec.and(ParkActivityImageSpecification.byIsActive(states.get(0)));
+        }
+        if (qualities != null && !qualities.isEmpty()) {
+            spec = spec.and(ParkActivityImageSpecification.anyQualityIssue(
+                qualities.contains("no-caption"),
+                qualities.contains("no-alt")
+            ));
+        }
+        if (createdAfter != null) spec = spec.and(ParkActivityImageSpecification.createdAfter(createdAfter));
+        if (createdBefore != null) spec = spec.and(ParkActivityImageSpecification.createdBefore(createdBefore));
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(ParkActivityImageSpecification.searchKeyword(keyword));
+        }
+
         // Sorting with validation
         String validatedSortBy = validateSortField(sortBy);
         if (validatedSortBy == null) {
@@ -181,8 +214,26 @@ public class ParkActivityImageGetService {
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("currentSortBy", validatedSortBy);
         response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+        // counters built from the SAME spec as the rows, so cards and table agree
+        if (includeStats == null || includeStats) {
+            response.put("stats", computeStats(spec));
+        }
 
         return ResponseEntity.ok(ApiResponse.success(200, "Park activity images retrieved successfully", response));
+    }
+
+    /** Dashboard counters for the CURRENT filter set (see CLAUDE.md: stats on every list). */
+    private Map<String, Object> computeStats(org.springframework.data.jpa.domain.Specification<ParkActivityImage> base) {
+        return listStats.of(ParkActivityImage.class, base)
+            .total()
+            .count("active", ParkActivityImageSpecification.byIsActive(true))
+            .complement("inactive", "active")
+            .count("primary", ParkActivityImageSpecification.byIsPrimary(true))
+            .count("missingCaption", ParkActivityImageSpecification.missingCaption())
+            .count("missingAltText", ParkActivityImageSpecification.missingAltText())
+            .breakdown("byImageType", ParkActivityImage.ImageType.values(), ParkActivityImageSpecification::byImageType)
+            .recency(ParkActivityImageSpecification::createdAfter)
+            .build();
     }
 
     public ResponseEntity<?> getImageById(String obfuscatedId) {
