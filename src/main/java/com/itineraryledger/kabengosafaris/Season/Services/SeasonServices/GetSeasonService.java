@@ -35,6 +35,12 @@ import java.util.stream.Collectors;
 public class GetSeasonService {
 
     private final SeasonRepository seasonRepository;
+
+    // filter-aware prev/next + the N of M readout
+
+    @org.springframework.beans.factory.annotation.Autowired
+
+    private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -66,6 +72,15 @@ public class GetSeasonService {
      * @return ResponseEntity with ApiResponse containing the season
      */
     public ResponseEntity<ApiResponse<?>> getSeasonById(String idObfuscated) {
+        return getSeasonById(idObfuscated, null, null);
+    }
+
+    /** One season, plus where it sits in the set the caller was looking at. */
+    public ResponseEntity<ApiResponse<?>> getSeasonById(
+        String idObfuscated,
+        String accommodationId,
+        String keyword
+    ) {
         log.info("Fetching season with ID: {}", idObfuscated);
 
         try {
@@ -99,16 +114,38 @@ public class GetSeasonService {
             // Convert to DTO
             SeasonDTO seasonDTO = convertToDTO(season);
 
-            // Navigation IDs
-            Long nextId = seasonRepository.findNextId(id).orElse(null);
-            Long previousId = seasonRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = seasonRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = seasonRepository.findLastId().orElse(null);
+            /*
+             * Prev/next walks the SAME set the caller was looking at — this
+             * property's seasons when opened through it — and the N of M readout
+             * makes the wraparound visible.
+             */
+            Long scopedAccommodationId = null;
+            if (accommodationId != null && !accommodationId.isBlank()) {
+                try {
+                    scopedAccommodationId = idObfuscator.decodeId(accommodationId);
+                } catch (Exception ex) {
+                    log.warn("Invalid accommodationId scope: {}, paging globally", accommodationId);
+                }
+            }
+            org.springframework.data.jpa.domain.Specification<Season> navSpec =
+                scopedAccommodationId != null
+                    ? SeasonSpecification.hasAccommodationId(scopedAccommodationId)
+                    : org.springframework.data.jpa.domain.Specification.unrestricted();
+            if (keyword != null && !keyword.isBlank()) {
+                navSpec = navSpec.and(SeasonSpecification.searchKeyword(keyword));
+            }
+            Map<String, Object> nav = recordNavigation.navigate(
+                Season.class, navSpec, "name", true, id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("season", seasonDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(

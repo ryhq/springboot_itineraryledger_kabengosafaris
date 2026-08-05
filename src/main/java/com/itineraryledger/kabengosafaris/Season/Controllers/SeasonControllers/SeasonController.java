@@ -87,10 +87,13 @@ public class SeasonController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_SEASON')")
     public ResponseEntity<ApiResponse<?>> getSeasonById(
-        @PathVariable String id
+        @PathVariable String id,
+        // the list's context, so prev/next walks the SAME set
+        @RequestParam(required = false) String accommodationId,
+        @RequestParam(required = false) String keyword
     ) {
         log.info("GET /api/seasons/{} - Fetching season by ID", id);
-        return getSeasonService.getSeasonById(id);
+        return getSeasonService.getSeasonById(id, accommodationId, keyword);
     }
 
     /**
