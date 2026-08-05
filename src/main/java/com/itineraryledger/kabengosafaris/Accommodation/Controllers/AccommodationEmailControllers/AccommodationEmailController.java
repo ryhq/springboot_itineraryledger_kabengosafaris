@@ -106,10 +106,22 @@ public class AccommodationEmailController {
     @PreAuthorize("hasAuthority('PERM_READ_ACCOMMODATION_EMAIL')")
     public ResponseEntity<ApiResponse<?>> getAccommodationEmailById(
         @PathVariable String idObfuscated,
-        @RequestParam(required = false) String scopeParentId
+        @RequestParam(required = false) String scopeParentId,
+        // the list's filters and sort, so prev/next stays inside the set on screen
+        @RequestParam(required = false) String accommodationId,
+        @RequestParam(required = false) String email,
+        @RequestParam(required = false) EmailType emailType,
+        @RequestParam(required = false) Boolean isPrimary,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) String label,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/accommodation-emails/{} - Fetching email by ID", idObfuscated);
-        return accommodationEmailGetService.getAccommodationEmailById(idObfuscated, scopeParentId);
+        return accommodationEmailGetService.getAccommodationEmailById(
+            idObfuscated, scopeParentId, accommodationId, email, emailType, isPrimary, isActive, label, keyword, sortBy, sortDirection
+        );
     }
 
     /**

@@ -233,4 +233,27 @@ public class AccommodationRateSpecification {
         return (root, query, cb) ->
             moment == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), moment);
     }
+
+    /**
+     * Free-text search across the names a rate is identified by.
+     *
+     * The rates list has always shown a "Search accommodation or season…" box; the
+     * endpoint had no keyword parameter, so every keystroke was discarded server
+     * side. This joins the five owning records so the box does what it says.
+     */
+    public static Specification<AccommodationRate> searchKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) return cb.conjunction();
+            String like = "%" + keyword.toLowerCase().trim() + "%";
+            if (query != null) query.distinct(true);
+            return cb.or(
+                cb.like(cb.lower(root.join("accommodation").get("name")), like),
+                cb.like(cb.lower(root.join("season").get("name")), like),
+                cb.like(cb.lower(root.join("roomType").get("name")), like),
+                cb.like(cb.lower(root.join("roomStandard").get("name")), like),
+                cb.like(cb.lower(root.join("boardType").get("name")), like),
+                cb.like(cb.lower(root.get("notes")), like)
+            );
+        };
+    }
 }

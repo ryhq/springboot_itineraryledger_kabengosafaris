@@ -86,10 +86,21 @@ public class SeasonPeriodController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_SEASON_PERIOD')")
     public ResponseEntity<ApiResponse<?>> getSeasonPeriodById(
-        @PathVariable String id
+        @PathVariable String id,
+        // the list's filters, so prev/next stays inside the set on screen
+        @RequestParam(required = false) String seasonId,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) Boolean isSystem,
+        @RequestParam(required = false) Integer year,
+        @RequestParam(required = false) Boolean isRecurring,
+        @RequestParam(required = false) String notes,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/season-periods/{} - Fetching season period by ID", id);
-        return getSeasonPeriodService.getSeasonPeriodById(id);
+        return getSeasonPeriodService.getSeasonPeriodById(
+            id, seasonId, isActive, isSystem, year, isRecurring, notes, sortBy, sortDirection
+        );
     }
 
     /**
@@ -115,6 +126,7 @@ public class SeasonPeriodController {
         @RequestParam(required = false) Integer year,
         @RequestParam(required = false) Boolean isRecurring,
         @RequestParam(required = false) String notes,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
@@ -130,6 +142,7 @@ public class SeasonPeriodController {
             null, // startDate - not commonly filtered by users
             null, // endDate - not commonly filtered by users
             notes,
+            includeStats,
             page,
             size,
             sortBy,

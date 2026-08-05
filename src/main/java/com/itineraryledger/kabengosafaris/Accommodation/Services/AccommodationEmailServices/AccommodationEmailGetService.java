@@ -66,6 +66,33 @@ public class AccommodationEmailGetService {
      * @return ResponseEntity with ApiResponse containing the email
      */
     public ResponseEntity<ApiResponse<?>> getAccommodationEmailById(String idObfuscated, String scopeParentId) {
+        return getAccommodationEmailById(idObfuscated, scopeParentId, null, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One record, plus where it sits in the set the caller was looking at.
+     *
+     * The list's filters and sort arrive here because paging out of a filtered
+     * list must stay inside that filter, and the N of M readout must count the
+     * same set. Arrows that traverse a different set are worse than no arrows.
+     */
+    public ResponseEntity<ApiResponse<?>> getAccommodationEmailById(
+        String idObfuscated,
+        String scopeParentId,
+        /*
+         * The global list filters by accommodation through a facet, not a scope; both
+         * forms have to reach the walk or paging escapes the filter on screen.
+         */
+        String accommodationId,
+        String emailFilter,
+        EmailType emailType,
+        Boolean isPrimary,
+        Boolean isActive,
+        String label,
+        String keyword,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching accommodation email with ID: {}", idObfuscated);
 
         try {
@@ -114,12 +141,12 @@ public class AccommodationEmailGetService {
              * children when scoped, everything otherwise — and returns the position so
              * the record page can show 'N of M' with the wraparound visible.
              */
-            org.springframework.data.jpa.domain.Specification<AccommodationEmail> navSpec =
-                decodedParentId != null
-                    ? AccommodationEmailSpecification.hasAccommodationId(decodedParentId)
-                    : org.springframework.data.jpa.domain.Specification.unrestricted();
+            Specification<AccommodationEmail> navSpec = buildSpec(decodedParentId != null ? decodedParentId : decodeOrNull(accommodationId), emailFilter, emailType, isPrimary, isActive, label, keyword);
+            String navSortBy = validateSortField(sortBy);
+            if (navSortBy == null) navSortBy = DEFAULT_SORT_FIELD;
+            boolean navAscending = sortDirection != null && sortDirection.equalsIgnoreCase("asc");
             java.util.Map<String, Object> nav = recordNavigation.navigate(
-                AccommodationEmail.class, navSpec, "createdAt", false, id
+                AccommodationEmail.class, navSpec, navSortBy, navAscending, id
             );
             Long nextId = (Long) nav.get("nextRawId");
             Long previousId = (Long) nav.get("previousRawId");
@@ -191,44 +218,18 @@ public class AccommodationEmailGetService {
             }
 
             // Build specification
-            Specification<AccommodationEmail> spec = Specification.unrestricted();
-
-            // Add optional accommodation ID filter
+            Long decodedAccommodationId = null;
             if (accommodationId != null && !accommodationId.isEmpty()) {
                 try {
-                    Long decodedAccommodationId = idObfuscator.decodeId(accommodationId);
-                    spec = spec.and(AccommodationEmailSpecification.hasAccommodationId(decodedAccommodationId));
+                    decodedAccommodationId = idObfuscator.decodeId(accommodationId);
                 } catch (Exception e) {
                     log.warn("Failed to decode accommodation ID: {}", accommodationId, e);
                     return ResponseEntity.badRequest().body(
-                        ApiResponse.error(
-                            400,
-                            "Invalid accommodation ID",
-                            "INVALID_ACCOMMODATION_ID"
-                        )
+                        ApiResponse.error(400, "Invalid accommodation ID", "INVALID_ACCOMMODATION_ID")
                     );
                 }
             }
-
-            // Add other optional filters
-            if (email != null && !email.isEmpty()) {
-                spec = spec.and(AccommodationEmailSpecification.emailLike(email));
-            }
-            if (emailType != null) {
-                spec = spec.and(AccommodationEmailSpecification.hasEmailType(emailType));
-            }
-            if (isPrimary != null) {
-                spec = spec.and(AccommodationEmailSpecification.isPrimary(isPrimary));
-            }
-            if (isActive != null) {
-                spec = spec.and(AccommodationEmailSpecification.isActive(isActive));
-            }
-            if (label != null && !label.isEmpty()) {
-                spec = spec.and(AccommodationEmailSpecification.labelLike(label));
-            }
-            if (keyword != null && !keyword.isEmpty()) {
-                spec = spec.and(AccommodationEmailSpecification.searchKeyword(keyword));
-            }
+            Specification<AccommodationEmail> spec = buildSpec(decodedAccommodationId, email, emailType, isPrimary, isActive, label, keyword);
 
             // Fetch paginated results
             Page<AccommodationEmail> emailPage = accommodationEmailRepository.findAll(spec, pageable);
@@ -420,5 +421,57 @@ public class AccommodationEmailGetService {
             .complement("inactive", "active")
             .recency(AccommodationEmailSpecification::createdAfter)
             .build();
+    }
+
+    /**
+     * The ONE place a AccommodationEmail filter is expressed.
+     *
+     * The rows, the stat counters and prev/next paging all build from this, so a
+     * card can never disagree with the table and the arrows can never walk a
+     * different set from the one on screen.
+     */
+    private Specification<AccommodationEmail> buildSpec(
+        Long accommodationId,
+        String email,
+        EmailType emailType,
+        Boolean isPrimary,
+        Boolean isActive,
+        String label,
+        String keyword
+    ) {
+        Specification<AccommodationEmail> spec = Specification.unrestricted();
+        if (accommodationId != null) {
+            spec = spec.and(AccommodationEmailSpecification.hasAccommodationId(accommodationId));
+        }
+    if (email != null && !email.isEmpty()) {
+    spec = spec.and(AccommodationEmailSpecification.emailLike(email));
+    }
+    if (emailType != null) {
+    spec = spec.and(AccommodationEmailSpecification.hasEmailType(emailType));
+    }
+    if (isPrimary != null) {
+    spec = spec.and(AccommodationEmailSpecification.isPrimary(isPrimary));
+    }
+    if (isActive != null) {
+    spec = spec.and(AccommodationEmailSpecification.isActive(isActive));
+    }
+    if (label != null && !label.isEmpty()) {
+    spec = spec.and(AccommodationEmailSpecification.labelLike(label));
+    }
+    if (keyword != null && !keyword.isEmpty()) {
+    spec = spec.and(AccommodationEmailSpecification.searchKeyword(keyword));
+    }
+        return spec;
+    }
+
+    /** Decodes an obfuscated id, or null when absent or unreadable. */
+    private Long decodeOrNull(String obfuscated) {
+        if (obfuscated == null || obfuscated.isBlank()) return null;
+        try {
+            return idObfuscator.decodeId(obfuscated);
+        } catch (Exception e) {
+            log.warn("Unreadable id in filter: {}", obfuscated);
+            return null;
+        }
     }
 }

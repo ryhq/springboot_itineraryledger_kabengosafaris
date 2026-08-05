@@ -41,6 +41,10 @@ public class GetSeasonService {
     @org.springframework.beans.factory.annotation.Autowired
 
     private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+
+    // declarative counters against the rows' own Specification
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -72,14 +76,28 @@ public class GetSeasonService {
      * @return ResponseEntity with ApiResponse containing the season
      */
     public ResponseEntity<ApiResponse<?>> getSeasonById(String idObfuscated) {
-        return getSeasonById(idObfuscated, null, null);
+        return getSeasonById(idObfuscated, null, null, null, null, null, null, null, null, null, null);
     }
 
-    /** One season, plus where it sits in the set the caller was looking at. */
+    /**
+     * One season, plus where it sits in the set the caller was looking at.
+     *
+     * Every list filter is accepted here for one reason: paging from a filtered
+     * list must stay inside that filter, and the N of M readout must count the
+     * same set. Arrows that traverse a different set are worse than no arrows.
+     */
     public ResponseEntity<ApiResponse<?>> getSeasonById(
         String idObfuscated,
+        String name,
+        Season.SeasonType seasonType,
+        Boolean isActive,
+        Boolean isGlobal,
+        Boolean isSystem,
         String accommodationId,
-        String keyword
+        String description,
+        String keyword,
+        String sortBy,
+        String sortDirection
     ) {
         log.info("Fetching season with ID: {}", idObfuscated);
 
@@ -127,15 +145,14 @@ public class GetSeasonService {
                     log.warn("Invalid accommodationId scope: {}, paging globally", accommodationId);
                 }
             }
-            org.springframework.data.jpa.domain.Specification<Season> navSpec =
-                scopedAccommodationId != null
-                    ? SeasonSpecification.hasAccommodationId(scopedAccommodationId)
-                    : org.springframework.data.jpa.domain.Specification.unrestricted();
-            if (keyword != null && !keyword.isBlank()) {
-                navSpec = navSpec.and(SeasonSpecification.searchKeyword(keyword));
-            }
+            Specification<Season> navSpec = buildSpec(
+                name, seasonType, isActive, isGlobal, isSystem, scopedAccommodationId, description, keyword
+            );
+            String navSortBy = validateSortField(sortBy);
+            if (navSortBy == null) navSortBy = DEFAULT_SORT_FIELD;
+            boolean navAscending = sortDirection == null || sortDirection.equalsIgnoreCase("asc");
             Map<String, Object> nav = recordNavigation.navigate(
-                Season.class, navSpec, "name", true, id
+                Season.class, navSpec, navSortBy, navAscending, id
             );
             Long nextId = (Long) nav.get("nextRawId");
             Long previousId = (Long) nav.get("previousRawId");
@@ -192,6 +209,7 @@ public class GetSeasonService {
         String accommodationId,
         String description,
         String keyword,
+        Boolean includeStats,
         Integer page,
         Integer size,
         String sortBy,
@@ -208,45 +226,20 @@ public class GetSeasonService {
                     ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
                 );
             }
-            // Build specification for filtering
-            Specification<Season> spec = Specification.unrestricted();
-
-            if (name != null && !name.isEmpty()) {
-                spec = spec.and(SeasonSpecification.nameLike(name));
-            }
-            if (seasonType != null) {
-                spec = spec.and(SeasonSpecification.hasSeasonType(seasonType));
-            }
-            if (isActive != null) {
-                spec = spec.and(SeasonSpecification.isActive(isActive));
-            }
-            if (isGlobal != null) {
-                spec = spec.and(SeasonSpecification.isGlobal(isGlobal));
-            }
-            if (isSystem != null) {
-                spec = spec.and(SeasonSpecification.isSystem(isSystem));
-            }
+            Long decodedAccommodationId = null;
             if (accommodationId != null && !accommodationId.isEmpty()) {
                 try {
-                    Long decodedAccommodationId = idObfuscator.decodeId(accommodationId);
-                    spec = spec.and(SeasonSpecification.hasAccommodationId(decodedAccommodationId));
+                    decodedAccommodationId = idObfuscator.decodeId(accommodationId);
                 } catch (Exception e) {
                     log.warn("Failed to decode accommodation ID: {}", accommodationId, e);
                     return ResponseEntity.badRequest().body(
-                        ApiResponse.error(
-                            400,
-                            "Invalid accommodation ID",
-                            "INVALID_ACCOMMODATION_ID"
-                        )
+                        ApiResponse.error(400, "Invalid accommodation ID", "INVALID_ACCOMMODATION_ID")
                     );
                 }
             }
-            if (description != null && !description.isEmpty()) {
-                spec = spec.and(SeasonSpecification.descriptionLike(description));
-            }
-            if (keyword != null && !keyword.isEmpty()) {
-                spec = spec.and(SeasonSpecification.searchKeyword(keyword));
-            }
+            Specification<Season> spec = buildSpec(
+                name, seasonType, isActive, isGlobal, isSystem, decodedAccommodationId, description, keyword
+            );
 
             // Set default pagination values
             int pageNumber = (page != null && page >= 0) ? page : 0;
@@ -278,6 +271,10 @@ public class GetSeasonService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            // counters share the rows' Specification, so cards and table agree
+            if (includeStats == null || includeStats) {
+                response.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -386,6 +383,49 @@ public class GetSeasonService {
             .durationDays(period.getDurationDays())
             .createdAt(period.getCreatedAt())
             .updatedAt(period.getUpdatedAt())
+            .build();
+    }
+
+    /**
+     * The ONE place a season filter is expressed.
+     *
+     * The rows, the stat counters and prev/next paging all build from this, so a
+     * card can never disagree with the table and the arrows can never walk a
+     * different set from the one on screen.
+     */
+    private Specification<Season> buildSpec(
+        String name,
+        Season.SeasonType seasonType,
+        Boolean isActive,
+        Boolean isGlobal,
+        Boolean isSystem,
+        Long accommodationId,
+        String description,
+        String keyword
+    ) {
+        Specification<Season> spec = Specification.unrestricted();
+        if (name != null && !name.isEmpty()) spec = spec.and(SeasonSpecification.nameLike(name));
+        if (seasonType != null) spec = spec.and(SeasonSpecification.hasSeasonType(seasonType));
+        if (isActive != null) spec = spec.and(SeasonSpecification.isActive(isActive));
+        if (isGlobal != null) spec = spec.and(SeasonSpecification.isGlobal(isGlobal));
+        if (isSystem != null) spec = spec.and(SeasonSpecification.isSystem(isSystem));
+        if (accommodationId != null) spec = spec.and(SeasonSpecification.hasAccommodationId(accommodationId));
+        if (description != null && !description.isEmpty()) spec = spec.and(SeasonSpecification.descriptionLike(description));
+        if (keyword != null && !keyword.isEmpty()) spec = spec.and(SeasonSpecification.searchKeyword(keyword));
+        return spec;
+    }
+
+    /** Counters built from the SAME Specification as the rows. */
+    private Map<String, Object> computeStats(Specification<Season> base) {
+        return listStats.of(Season.class, base)
+            .total()
+            .count("active", SeasonSpecification.isActive(true))
+            .complement("inactive", "active")
+            .count("global", SeasonSpecification.isGlobal(true))
+            .complement("perProperty", "global")
+            .count("system", SeasonSpecification.isSystem(true))
+            .breakdown("byType", Season.SeasonType.values(), SeasonSpecification::hasSeasonType)
+            .recency(SeasonSpecification::createdAfter)
             .build();
     }
 }

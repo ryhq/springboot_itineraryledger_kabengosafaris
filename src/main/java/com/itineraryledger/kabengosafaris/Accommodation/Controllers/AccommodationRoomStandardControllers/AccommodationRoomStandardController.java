@@ -104,10 +104,23 @@ public class AccommodationRoomStandardController {
     @PreAuthorize("hasAuthority('PERM_READ_ACCOMMODATION_ROOM_STANDARD')")
     public ResponseEntity<ApiResponse<?>> getAccommodationRoomStandardById(
         @PathVariable String idObfuscated,
-        @RequestParam(required = false) String scopeParentId
+        @RequestParam(required = false) String scopeParentId,
+        // the list's filters and sort, so prev/next stays inside the set on screen
+        @RequestParam(required = false) String accommodationId,
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) String viewType,
+        @RequestParam(required = false) String floorLevel,
+        @RequestParam(required = false) Integer minOccupancy,
+        @RequestParam(required = false) Integer maxOccupancy,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/accommodation-room-standards/{} - Fetching room standard by ID", idObfuscated);
-        return accommodationRoomStandardGetService.getAccommodationRoomStandardById(idObfuscated, scopeParentId);
+        return accommodationRoomStandardGetService.getAccommodationRoomStandardById(
+            idObfuscated, scopeParentId, accommodationId, name, viewType, floorLevel, minOccupancy, maxOccupancy, isActive, keyword, sortBy, sortDirection
+        );
     }
 
     /**

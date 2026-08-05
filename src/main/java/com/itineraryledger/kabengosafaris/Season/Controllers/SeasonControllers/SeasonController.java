@@ -88,12 +88,23 @@ public class SeasonController {
     @PreAuthorize("hasAuthority('PERM_READ_SEASON')")
     public ResponseEntity<ApiResponse<?>> getSeasonById(
         @PathVariable String id,
-        // the list's context, so prev/next walks the SAME set
+        // the list's whole filter set, so prev/next walks the SAME set and N of M counts it
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) Season.SeasonType seasonType,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) Boolean isGlobal,
+        @RequestParam(required = false) Boolean isSystem,
         @RequestParam(required = false) String accommodationId,
-        @RequestParam(required = false) String keyword
+        @RequestParam(required = false) String description,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/seasons/{} - Fetching season by ID", id);
-        return getSeasonService.getSeasonById(id, accommodationId, keyword);
+        return getSeasonService.getSeasonById(
+            id, name, seasonType, isActive, isGlobal, isSystem, accommodationId, description, keyword,
+            sortBy, sortDirection
+        );
     }
 
     /**
@@ -123,6 +134,7 @@ public class SeasonController {
         @RequestParam(required = false) String accommodationId,
         @RequestParam(required = false) String description,
         @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
@@ -138,6 +150,7 @@ public class SeasonController {
             accommodationId,
             description,
             keyword,
+            includeStats,
             page,
             size,
             sortBy,

@@ -104,10 +104,25 @@ public class AccommodationBoardTypeController {
     @PreAuthorize("hasAuthority('PERM_READ_ACCOMMODATION_BOARD_TYPE')")
     public ResponseEntity<ApiResponse<?>> getAccommodationBoardTypeById(
         @PathVariable String idObfuscated,
-        @RequestParam(required = false) String scopeParentId
+        @RequestParam(required = false) String scopeParentId,
+        // the list's filters and sort, so prev/next stays inside the set on screen
+        @RequestParam(required = false) String accommodationId,
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) Boolean breakfastIncluded,
+        @RequestParam(required = false) Boolean lunchIncluded,
+        @RequestParam(required = false) Boolean dinnerIncluded,
+        @RequestParam(required = false) Boolean drinksIncluded,
+        @RequestParam(required = false) Boolean alcoholicDrinksIncluded,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) Boolean hasFullMealPlan,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/accommodation-board-types/{} - Fetching board type by ID", idObfuscated);
-        return accommodationBoardTypeGetService.getAccommodationBoardTypeById(idObfuscated, scopeParentId);
+        return accommodationBoardTypeGetService.getAccommodationBoardTypeById(
+            idObfuscated, scopeParentId, accommodationId, name, breakfastIncluded, lunchIncluded, dinnerIncluded, drinksIncluded, alcoholicDrinksIncluded, isActive, hasFullMealPlan, keyword, sortBy, sortDirection
+        );
     }
 
     /**

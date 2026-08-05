@@ -66,6 +66,34 @@ public class AccommodationRoomStandardGetService {
      * @return ResponseEntity with ApiResponse containing the room standard
      */
     public ResponseEntity<ApiResponse<?>> getAccommodationRoomStandardById(String idObfuscated, String scopeParentId) {
+        return getAccommodationRoomStandardById(idObfuscated, scopeParentId, null, null, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One record, plus where it sits in the set the caller was looking at.
+     *
+     * The list's filters and sort arrive here because paging out of a filtered
+     * list must stay inside that filter, and the N of M readout must count the
+     * same set. Arrows that traverse a different set are worse than no arrows.
+     */
+    public ResponseEntity<ApiResponse<?>> getAccommodationRoomStandardById(
+        String idObfuscated,
+        String scopeParentId,
+        /*
+         * The global list filters by accommodation through a facet, not a scope; both
+         * forms have to reach the walk or paging escapes the filter on screen.
+         */
+        String accommodationId,
+        String name,
+        String viewType,
+        String floorLevel,
+        Integer minOccupancy,
+        Integer maxOccupancy,
+        Boolean isActive,
+        String keyword,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching accommodation room standard by ID: {}", idObfuscated);
 
         try {
@@ -114,12 +142,12 @@ public class AccommodationRoomStandardGetService {
              * children when scoped, everything otherwise — and returns the position so
              * the record page can show 'N of M' with the wraparound visible.
              */
-            org.springframework.data.jpa.domain.Specification<AccommodationRoomStandard> navSpec =
-                decodedParentId != null
-                    ? AccommodationRoomStandardSpecification.hasAccommodationId(decodedParentId)
-                    : org.springframework.data.jpa.domain.Specification.unrestricted();
+            Specification<AccommodationRoomStandard> navSpec = buildSpec(decodedParentId != null ? decodedParentId : decodeOrNull(accommodationId), name, viewType, floorLevel, minOccupancy, maxOccupancy, isActive, keyword);
+            String navSortBy = validateSortField(sortBy);
+            if (navSortBy == null) navSortBy = DEFAULT_SORT_FIELD;
+            boolean navAscending = sortDirection != null && sortDirection.equalsIgnoreCase("asc");
             java.util.Map<String, Object> nav = recordNavigation.navigate(
-                AccommodationRoomStandard.class, navSpec, "createdAt", false, roomStandardId
+                AccommodationRoomStandard.class, navSpec, navSortBy, navAscending, roomStandardId
             );
             Long nextId = (Long) nav.get("nextRawId");
             Long previousId = (Long) nav.get("previousRawId");
@@ -193,47 +221,18 @@ public class AccommodationRoomStandardGetService {
             }
 
             // Build specification
-            Specification<AccommodationRoomStandard> spec = Specification.unrestricted();
-
-            // Filter by accommodation ID if provided
+            Long decodedAccommodationId = null;
             if (accommodationId != null && !accommodationId.isEmpty()) {
                 try {
-                    Long accId = idObfuscator.decodeId(accommodationId);
-                    spec = spec.and(AccommodationRoomStandardSpecification.hasAccommodationId(accId));
+                    decodedAccommodationId = idObfuscator.decodeId(accommodationId);
                 } catch (Exception e) {
                     log.warn("Failed to decode accommodation ID: {}", accommodationId, e);
                     return ResponseEntity.badRequest().body(
-                        ApiResponse.error(
-                            400,
-                            "Invalid accommodation ID",
-                            "INVALID_ACCOMMODATION_ID"
-                        )
+                        ApiResponse.error(400, "Invalid accommodation ID", "INVALID_ACCOMMODATION_ID")
                     );
                 }
             }
-
-            // Apply other filters
-            if (name != null && !name.isEmpty()) {
-                spec = spec.and(AccommodationRoomStandardSpecification.hasName(name));
-            }
-            if (viewType != null && !viewType.isEmpty()) {
-                spec = spec.and(AccommodationRoomStandardSpecification.hasViewType(viewType));
-            }
-            if (floorLevel != null && !floorLevel.isEmpty()) {
-                spec = spec.and(AccommodationRoomStandardSpecification.hasFloorLevel(floorLevel));
-            }
-            if (minOccupancy != null) {
-                spec = spec.and(AccommodationRoomStandardSpecification.hasMinOccupancy(minOccupancy));
-            }
-            if (maxOccupancy != null) {
-                spec = spec.and(AccommodationRoomStandardSpecification.hasMaxOccupancy(maxOccupancy));
-            }
-            if (isActive != null) {
-                spec = spec.and(AccommodationRoomStandardSpecification.isActive(isActive));
-            }
-            if (keyword != null && !keyword.isEmpty()) {
-                spec = spec.and(AccommodationRoomStandardSpecification.searchKeyword(keyword));
-            }
+            Specification<AccommodationRoomStandard> spec = buildSpec(decodedAccommodationId, name, viewType, floorLevel, minOccupancy, maxOccupancy, isActive, keyword);
 
             // Fetch paginated results
             Page<AccommodationRoomStandard> roomStandardsPage = roomStandardRepository.findAll(spec, pageable);
@@ -471,5 +470,61 @@ public class AccommodationRoomStandardGetService {
             .complement("inactive", "active")
             .recency(AccommodationRoomStandardSpecification::createdAfter)
             .build();
+    }
+
+    /**
+     * The ONE place a AccommodationRoomStandard filter is expressed.
+     *
+     * The rows, the stat counters and prev/next paging all build from this, so a
+     * card can never disagree with the table and the arrows can never walk a
+     * different set from the one on screen.
+     */
+    private Specification<AccommodationRoomStandard> buildSpec(
+        Long accommodationId,
+        String name,
+        String viewType,
+        String floorLevel,
+        Integer minOccupancy,
+        Integer maxOccupancy,
+        Boolean isActive,
+        String keyword
+    ) {
+        Specification<AccommodationRoomStandard> spec = Specification.unrestricted();
+        if (accommodationId != null) {
+            spec = spec.and(AccommodationRoomStandardSpecification.hasAccommodationId(accommodationId));
+        }
+    if (name != null && !name.isEmpty()) {
+    spec = spec.and(AccommodationRoomStandardSpecification.hasName(name));
+    }
+    if (viewType != null && !viewType.isEmpty()) {
+    spec = spec.and(AccommodationRoomStandardSpecification.hasViewType(viewType));
+    }
+    if (floorLevel != null && !floorLevel.isEmpty()) {
+    spec = spec.and(AccommodationRoomStandardSpecification.hasFloorLevel(floorLevel));
+    }
+    if (minOccupancy != null) {
+    spec = spec.and(AccommodationRoomStandardSpecification.hasMinOccupancy(minOccupancy));
+    }
+    if (maxOccupancy != null) {
+    spec = spec.and(AccommodationRoomStandardSpecification.hasMaxOccupancy(maxOccupancy));
+    }
+    if (isActive != null) {
+    spec = spec.and(AccommodationRoomStandardSpecification.isActive(isActive));
+    }
+    if (keyword != null && !keyword.isEmpty()) {
+    spec = spec.and(AccommodationRoomStandardSpecification.searchKeyword(keyword));
+    }
+        return spec;
+    }
+
+    /** Decodes an obfuscated id, or null when absent or unreadable. */
+    private Long decodeOrNull(String obfuscated) {
+        if (obfuscated == null || obfuscated.isBlank()) return null;
+        try {
+            return idObfuscator.decodeId(obfuscated);
+        } catch (Exception e) {
+            log.warn("Unreadable id in filter: {}", obfuscated);
+            return null;
+        }
     }
 }

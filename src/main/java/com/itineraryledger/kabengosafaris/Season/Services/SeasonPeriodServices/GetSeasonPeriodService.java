@@ -32,6 +32,13 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class GetSeasonPeriodService {
 
+    // filter-aware prev/next + the N of M readout, and declarative counters
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+
     private final SeasonPeriodRepository seasonPeriodRepository;
     private final IdObfuscator idObfuscator;
 
@@ -69,6 +76,26 @@ public class GetSeasonPeriodService {
      * @return ResponseEntity with ApiResponse containing the season period
      */
     public ResponseEntity<ApiResponse<?>> getSeasonPeriodById(String idObfuscated) {
+        return getSeasonPeriodById(idObfuscated, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One period, plus where it sits in the set the caller was looking at.
+     *
+     * The filters are accepted here because paging out of a filtered list must stay
+     * inside that filter, and N of M must count that same set.
+     */
+    public ResponseEntity<ApiResponse<?>> getSeasonPeriodById(
+        String idObfuscated,
+        String seasonId,
+        Boolean isActive,
+        Boolean isSystem,
+        Integer year,
+        Boolean isRecurring,
+        String notes,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching season period with ID: {}", idObfuscated);
 
         try {
@@ -102,16 +129,37 @@ public class GetSeasonPeriodService {
             // Convert to DTO
             SeasonPeriodDTO seasonPeriodDTO = convertToDTO(seasonPeriod);
 
-            // Navigation IDs
-            Long nextId = seasonPeriodRepository.findNextId(id).orElse(null);
-            Long previousId = seasonPeriodRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = seasonPeriodRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = seasonPeriodRepository.findLastId().orElse(null);
+            /*
+             * Prev/next walks the SAME filtered, sorted set the list showed. The old
+             * findNextId/findPreviousId pair walked raw id order over every period in
+             * the system, so paging out of one season landed in another's dates.
+             */
+            Long decodedSeasonId = null;
+            if (seasonId != null && !seasonId.isBlank()) {
+                try {
+                    decodedSeasonId = idObfuscator.decodeId(seasonId);
+                } catch (Exception ex) {
+                    log.warn("Invalid seasonId scope: {}, paging across every period", seasonId);
+                }
+            }
+            Specification<SeasonPeriod> navSpec = buildSpec(
+                decodedSeasonId, isActive, isSystem, year, isRecurring, null, null, notes
+            );
+            String navSortBy = validateSortField(sortBy);
+            if (navSortBy == null) navSortBy = DEFAULT_SORT_FIELD;
+            boolean navAscending = sortDirection == null || sortDirection.equalsIgnoreCase("asc");
+            Map<String, Object> nav = recordNavigation.navigate(
+                SeasonPeriod.class, navSpec, navSortBy, navAscending, id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("seasonPeriod", seasonPeriodDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -158,6 +206,7 @@ public class GetSeasonPeriodService {
         MonthDay startDate,
         MonthDay endDate,
         String notes,
+        Boolean includeStats,
         Integer page,
         Integer size,
         String sortBy,
@@ -174,56 +223,20 @@ public class GetSeasonPeriodService {
                     ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
                 );
             }
-            // Build specification based on filters
-            Specification<SeasonPeriod> spec = Specification.unrestricted();
-
-            // Decode and apply season ID filter
+            Long decodedSeasonId = null;
             if (seasonId != null && !seasonId.isBlank()) {
                 try {
-                    Long decodedSeasonId = idObfuscator.decodeId(seasonId);
-                    spec = spec.and(SeasonPeriodSpecification.hasSeasonId(decodedSeasonId));
+                    decodedSeasonId = idObfuscator.decodeId(seasonId);
                 } catch (Exception e) {
                     log.warn("Failed to decode season ID: {}", seasonId, e);
                     return ResponseEntity.badRequest().body(
-                        ApiResponse.error(
-                            400,
-                            "Invalid season ID",
-                            "INVALID_SEASON_ID"
-                        )
+                        ApiResponse.error(400, "Invalid season ID", "INVALID_SEASON_ID")
                     );
                 }
             }
-
-            // Apply other filters
-            if (isActive != null) {
-                spec = spec.and(SeasonPeriodSpecification.isActive(isActive));
-            }
-
-            if (isSystem != null) {
-                spec = spec.and(SeasonPeriodSpecification.isSystem(isSystem));
-            }
-
-            if (isRecurring != null && isRecurring) {
-                spec = spec.and(SeasonPeriodSpecification.isRecurring());
-            } else if (isRecurring != null && !isRecurring) {
-                spec = spec.and(SeasonPeriodSpecification.isNonRecurring());
-            }
-
-            if (year != null) {
-                spec = spec.and(SeasonPeriodSpecification.hasYear(year));
-            }
-
-            if (startDate != null) {
-                spec = spec.and(SeasonPeriodSpecification.hasStartDate(startDate));
-            }
-
-            if (endDate != null) {
-                spec = spec.and(SeasonPeriodSpecification.hasEndDate(endDate));
-            }
-
-            if (notes != null && !notes.isBlank()) {
-                spec = spec.and(SeasonPeriodSpecification.notesLike(notes));
-            }
+            Specification<SeasonPeriod> spec = buildSpec(
+                decodedSeasonId, isActive, isSystem, year, isRecurring, startDate, endDate, notes
+            );
 
             // Set default pagination values
             int pageNumber = (page != null && page >= 0) ? page : 0;
@@ -255,6 +268,10 @@ public class GetSeasonPeriodService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            // counters share the rows' Specification, so cards and table agree
+            if (includeStats == null || includeStats) {
+                response.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -295,6 +312,51 @@ public class GetSeasonPeriodService {
             .durationDays(period.getDurationDays())
             .createdAt(period.getCreatedAt())
             .updatedAt(period.getUpdatedAt())
+            .build();
+    }
+
+    /**
+     * The ONE place a period filter is expressed — rows, counters and prev/next all
+     * build from this, so a card can never disagree with the table and the arrows
+     * can never walk a different set from the one on screen.
+     */
+    private Specification<SeasonPeriod> buildSpec(
+        Long seasonId,
+        Boolean isActive,
+        Boolean isSystem,
+        Integer year,
+        Boolean isRecurring,
+        MonthDay startDate,
+        MonthDay endDate,
+        String notes
+    ) {
+        Specification<SeasonPeriod> spec = Specification.unrestricted();
+        if (seasonId != null) spec = spec.and(SeasonPeriodSpecification.hasSeasonId(seasonId));
+        if (isActive != null) spec = spec.and(SeasonPeriodSpecification.isActive(isActive));
+        if (isSystem != null) spec = spec.and(SeasonPeriodSpecification.isSystem(isSystem));
+        if (isRecurring != null) {
+            spec = spec.and(isRecurring
+                ? SeasonPeriodSpecification.isRecurring()
+                : SeasonPeriodSpecification.isNonRecurring());
+        }
+        if (year != null) spec = spec.and(SeasonPeriodSpecification.hasYear(year));
+        if (startDate != null) spec = spec.and(SeasonPeriodSpecification.hasStartDate(startDate));
+        if (endDate != null) spec = spec.and(SeasonPeriodSpecification.hasEndDate(endDate));
+        if (notes != null && !notes.isBlank()) spec = spec.and(SeasonPeriodSpecification.notesLike(notes));
+        return spec;
+    }
+
+    /** Counters built from the SAME Specification as the rows. */
+    private Map<String, Object> computeStats(Specification<SeasonPeriod> base) {
+        return listStats.of(SeasonPeriod.class, base)
+            .total()
+            .count("active", SeasonPeriodSpecification.isActive(true))
+            .complement("inactive", "active")
+            .count("recurring", SeasonPeriodSpecification.isRecurring())
+            .complement("fixedYear", "recurring")
+            .count("system", SeasonPeriodSpecification.isSystem(true))
+            .count("wrapsYear", SeasonPeriodSpecification.wrapsTheYear())
+            .recency(SeasonPeriodSpecification::createdAfter)
             .build();
     }
 }

@@ -66,6 +66,36 @@ public class AccommodationBoardTypeGetService {
      * @return ResponseEntity with ApiResponse containing the board type
      */
     public ResponseEntity<ApiResponse<?>> getAccommodationBoardTypeById(String idObfuscated, String scopeParentId) {
+        return getAccommodationBoardTypeById(idObfuscated, scopeParentId, null, null, null, null, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One record, plus where it sits in the set the caller was looking at.
+     *
+     * The list's filters and sort arrive here because paging out of a filtered
+     * list must stay inside that filter, and the N of M readout must count the
+     * same set. Arrows that traverse a different set are worse than no arrows.
+     */
+    public ResponseEntity<ApiResponse<?>> getAccommodationBoardTypeById(
+        String idObfuscated,
+        String scopeParentId,
+        /*
+         * The global list filters by accommodation through a facet, not a scope; both
+         * forms have to reach the walk or paging escapes the filter on screen.
+         */
+        String accommodationId,
+        String name,
+        Boolean breakfastIncluded,
+        Boolean lunchIncluded,
+        Boolean dinnerIncluded,
+        Boolean drinksIncluded,
+        Boolean alcoholicDrinksIncluded,
+        Boolean isActive,
+        Boolean hasFullMealPlan,
+        String keyword,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching accommodation board type by ID: {}", idObfuscated);
 
         try {
@@ -114,12 +144,12 @@ public class AccommodationBoardTypeGetService {
              * children when scoped, everything otherwise — and returns the position so
              * the record page can show 'N of M' with the wraparound visible.
              */
-            org.springframework.data.jpa.domain.Specification<AccommodationBoardType> navSpec =
-                decodedParentId != null
-                    ? AccommodationBoardTypeSpecification.hasAccommodationId(decodedParentId)
-                    : org.springframework.data.jpa.domain.Specification.unrestricted();
+            Specification<AccommodationBoardType> navSpec = buildSpec(decodedParentId != null ? decodedParentId : decodeOrNull(accommodationId), name, breakfastIncluded, lunchIncluded, dinnerIncluded, drinksIncluded, alcoholicDrinksIncluded, isActive, hasFullMealPlan, keyword);
+            String navSortBy = validateSortField(sortBy);
+            if (navSortBy == null) navSortBy = DEFAULT_SORT_FIELD;
+            boolean navAscending = sortDirection != null && sortDirection.equalsIgnoreCase("asc");
             java.util.Map<String, Object> nav = recordNavigation.navigate(
-                AccommodationBoardType.class, navSpec, "createdAt", false, boardTypeId
+                AccommodationBoardType.class, navSpec, navSortBy, navAscending, boardTypeId
             );
             Long nextId = (Long) nav.get("nextRawId");
             Long previousId = (Long) nav.get("previousRawId");
@@ -197,53 +227,18 @@ public class AccommodationBoardTypeGetService {
             }
 
             // Build specification
-            Specification<AccommodationBoardType> spec = Specification.unrestricted();
-
-            // Filter by accommodation ID if provided
+            Long decodedAccommodationId = null;
             if (accommodationId != null && !accommodationId.isEmpty()) {
                 try {
-                    Long accId = idObfuscator.decodeId(accommodationId);
-                    spec = spec.and(AccommodationBoardTypeSpecification.hasAccommodationId(accId));
+                    decodedAccommodationId = idObfuscator.decodeId(accommodationId);
                 } catch (Exception e) {
                     log.warn("Failed to decode accommodation ID: {}", accommodationId, e);
                     return ResponseEntity.badRequest().body(
-                        ApiResponse.error(
-                            400,
-                            "Invalid accommodation ID",
-                            "INVALID_ACCOMMODATION_ID"
-                        )
+                        ApiResponse.error(400, "Invalid accommodation ID", "INVALID_ACCOMMODATION_ID")
                     );
                 }
             }
-
-            // Apply other filters
-            if (name != null && !name.isEmpty()) {
-                spec = spec.and(AccommodationBoardTypeSpecification.hasName(name));
-            }
-            if (breakfastIncluded != null) {
-                spec = spec.and(AccommodationBoardTypeSpecification.hasBreakfastIncluded(breakfastIncluded));
-            }
-            if (lunchIncluded != null) {
-                spec = spec.and(AccommodationBoardTypeSpecification.hasLunchIncluded(lunchIncluded));
-            }
-            if (dinnerIncluded != null) {
-                spec = spec.and(AccommodationBoardTypeSpecification.hasDinnerIncluded(dinnerIncluded));
-            }
-            if (drinksIncluded != null) {
-                spec = spec.and(AccommodationBoardTypeSpecification.hasDrinksIncluded(drinksIncluded));
-            }
-            if (alcoholicDrinksIncluded != null) {
-                spec = spec.and(AccommodationBoardTypeSpecification.hasAlcoholicDrinksIncluded(alcoholicDrinksIncluded));
-            }
-            if (isActive != null) {
-                spec = spec.and(AccommodationBoardTypeSpecification.isActive(isActive));
-            }
-            if (hasFullMealPlan != null && hasFullMealPlan) {
-                spec = spec.and(AccommodationBoardTypeSpecification.hasFullMealPlan());
-            }
-            if (keyword != null && !keyword.isEmpty()) {
-                spec = spec.and(AccommodationBoardTypeSpecification.searchKeyword(keyword));
-            }
+            Specification<AccommodationBoardType> spec = buildSpec(decodedAccommodationId, name, breakfastIncluded, lunchIncluded, dinnerIncluded, drinksIncluded, alcoholicDrinksIncluded, isActive, hasFullMealPlan, keyword);
 
             // Fetch paginated results
             Page<AccommodationBoardType> boardTypesPage = boardTypeRepository.findAll(spec, pageable);
@@ -499,5 +494,69 @@ public class AccommodationBoardTypeGetService {
             .complement("inactive", "active")
             .recency(AccommodationBoardTypeSpecification::createdAfter)
             .build();
+    }
+
+    /**
+     * The ONE place a AccommodationBoardType filter is expressed.
+     *
+     * The rows, the stat counters and prev/next paging all build from this, so a
+     * card can never disagree with the table and the arrows can never walk a
+     * different set from the one on screen.
+     */
+    private Specification<AccommodationBoardType> buildSpec(
+        Long accommodationId,
+        String name,
+        Boolean breakfastIncluded,
+        Boolean lunchIncluded,
+        Boolean dinnerIncluded,
+        Boolean drinksIncluded,
+        Boolean alcoholicDrinksIncluded,
+        Boolean isActive,
+        Boolean hasFullMealPlan,
+        String keyword
+    ) {
+        Specification<AccommodationBoardType> spec = Specification.unrestricted();
+        if (accommodationId != null) {
+            spec = spec.and(AccommodationBoardTypeSpecification.hasAccommodationId(accommodationId));
+        }
+    if (name != null && !name.isEmpty()) {
+    spec = spec.and(AccommodationBoardTypeSpecification.hasName(name));
+    }
+    if (breakfastIncluded != null) {
+    spec = spec.and(AccommodationBoardTypeSpecification.hasBreakfastIncluded(breakfastIncluded));
+    }
+    if (lunchIncluded != null) {
+    spec = spec.and(AccommodationBoardTypeSpecification.hasLunchIncluded(lunchIncluded));
+    }
+    if (dinnerIncluded != null) {
+    spec = spec.and(AccommodationBoardTypeSpecification.hasDinnerIncluded(dinnerIncluded));
+    }
+    if (drinksIncluded != null) {
+    spec = spec.and(AccommodationBoardTypeSpecification.hasDrinksIncluded(drinksIncluded));
+    }
+    if (alcoholicDrinksIncluded != null) {
+    spec = spec.and(AccommodationBoardTypeSpecification.hasAlcoholicDrinksIncluded(alcoholicDrinksIncluded));
+    }
+    if (isActive != null) {
+    spec = spec.and(AccommodationBoardTypeSpecification.isActive(isActive));
+    }
+    if (hasFullMealPlan != null && hasFullMealPlan) {
+    spec = spec.and(AccommodationBoardTypeSpecification.hasFullMealPlan());
+    }
+    if (keyword != null && !keyword.isEmpty()) {
+    spec = spec.and(AccommodationBoardTypeSpecification.searchKeyword(keyword));
+    }
+        return spec;
+    }
+
+    /** Decodes an obfuscated id, or null when absent or unreadable. */
+    private Long decodeOrNull(String obfuscated) {
+        if (obfuscated == null || obfuscated.isBlank()) return null;
+        try {
+            return idObfuscator.decodeId(obfuscated);
+        } catch (Exception e) {
+            log.warn("Unreadable id in filter: {}", obfuscated);
+            return null;
+        }
     }
 }

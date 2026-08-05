@@ -170,4 +170,20 @@ public class SeasonPeriodSpecification {
             }
         };
     }
+
+    /** Rows created on or after `moment` — the recency counters ("new this week"). */
+    public static Specification<SeasonPeriod> createdAfter(java.time.LocalDateTime moment) {
+        return (root, query, cb) ->
+            moment == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), moment);
+    }
+
+    /**
+     * Periods running across 31 December (end before start).
+     *
+     * MonthDay is stored as an 'MM-dd' string, so the comparison is a plain string
+     * comparison — which is exactly the ordering months and days already have.
+     */
+    public static Specification<SeasonPeriod> wrapsTheYear() {
+        return (root, query, cb) -> cb.lessThan(root.get("endDate"), root.get("startDate"));
+    }
 }

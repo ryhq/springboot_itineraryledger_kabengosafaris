@@ -49,10 +49,25 @@ public class AccommodationRateController {
     @PreAuthorize("hasAuthority('PERM_READ_ACCOMMODATION_RATE')")
     public ResponseEntity<ApiResponse<?>> getRateById(
         @PathVariable String idObfuscated,
-        @RequestParam(required = false) String scopeParentId
+        @RequestParam(required = false) String scopeParentId,
+        // the list's filters and sort, so prev/next stays inside the set on screen
+        @RequestParam(required = false) String accommodationId,
+        @RequestParam(required = false) String seasonId,
+        @RequestParam(required = false) String roomTypeId,
+        @RequestParam(required = false) String roomStandardId,
+        @RequestParam(required = false) String boardTypeId,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) Boolean isPerPerson,
+        @RequestParam(required = false) String currency,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/accommodation-rates/{} - Fetching rate", idObfuscated);
-        return getService.getRateById(idObfuscated, scopeParentId);
+        return getService.getRateById(
+            idObfuscated, scopeParentId, accommodationId, seasonId, roomTypeId, roomStandardId,
+            boardTypeId, isActive, isPerPerson, currency, keyword, sortBy, sortDirection
+        );
     }
 
     /**
@@ -70,13 +85,19 @@ public class AccommodationRateController {
         @RequestParam(required = false) String boardTypeId,
         @RequestParam(required = false) Boolean isActive,
         @RequestParam(required = false) Boolean isPerPerson,
+        @RequestParam(required = false) String currency,
+        // the list's search box has always said "accommodation or season"; now it works
+        @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/accommodation-rates - Fetching all rates with filters");
-        return getService.getAllRates(accommodationId, seasonId, roomTypeId, roomStandardId, boardTypeId, isActive, isPerPerson, page, size, sortBy, sortDirection);
+        return getService.getAllRates(
+            accommodationId, seasonId, roomTypeId, roomStandardId, boardTypeId,
+            isActive, isPerPerson, currency, keyword, page, size, sortBy, sortDirection
+        );
     }
 
     /**

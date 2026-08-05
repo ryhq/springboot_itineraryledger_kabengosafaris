@@ -106,10 +106,24 @@ public class AccommodationPhoneController {
     @PreAuthorize("hasAuthority('PERM_READ_ACCOMMODATION_PHONE')")
     public ResponseEntity<ApiResponse<?>> getAccommodationPhoneById(
         @PathVariable String idObfuscated,
-        @RequestParam(required = false) String scopeParentId
+        @RequestParam(required = false) String scopeParentId,
+        // the list's filters and sort, so prev/next stays inside the set on screen
+        @RequestParam(required = false) String accommodationId,
+        @RequestParam(required = false) String phoneNumber,
+        @RequestParam(required = false) String countryCode,
+        @RequestParam(required = false) PhoneType phoneType,
+        @RequestParam(required = false) Boolean isPrimary,
+        @RequestParam(required = false) Boolean isWhatsApp,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) String label,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/accommodation-phones/{} - Fetching phone by ID", idObfuscated);
-        return accommodationPhoneGetService.getAccommodationPhoneById(idObfuscated, scopeParentId);
+        return accommodationPhoneGetService.getAccommodationPhoneById(
+            idObfuscated, scopeParentId, accommodationId, phoneNumber, countryCode, phoneType, isPrimary, isWhatsApp, isActive, label, keyword, sortBy, sortDirection
+        );
     }
 
     /**

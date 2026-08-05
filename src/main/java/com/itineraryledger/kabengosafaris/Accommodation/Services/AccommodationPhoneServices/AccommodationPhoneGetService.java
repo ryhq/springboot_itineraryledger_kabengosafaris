@@ -66,6 +66,35 @@ public class AccommodationPhoneGetService {
      * @return ResponseEntity with ApiResponse containing the phone
      */
     public ResponseEntity<ApiResponse<?>> getAccommodationPhoneById(String idObfuscated, String scopeParentId) {
+        return getAccommodationPhoneById(idObfuscated, scopeParentId, null, null, null, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One record, plus where it sits in the set the caller was looking at.
+     *
+     * The list's filters and sort arrive here because paging out of a filtered
+     * list must stay inside that filter, and the N of M readout must count the
+     * same set. Arrows that traverse a different set are worse than no arrows.
+     */
+    public ResponseEntity<ApiResponse<?>> getAccommodationPhoneById(
+        String idObfuscated,
+        String scopeParentId,
+        /*
+         * The global list filters by accommodation through a facet, not a scope; both
+         * forms have to reach the walk or paging escapes the filter on screen.
+         */
+        String accommodationId,
+        String phoneNumber,
+        String countryCode,
+        PhoneType phoneType,
+        Boolean isPrimary,
+        Boolean isWhatsApp,
+        Boolean isActive,
+        String label,
+        String keyword,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching accommodation phone with ID: {}", idObfuscated);
 
         try {
@@ -114,12 +143,12 @@ public class AccommodationPhoneGetService {
              * children when scoped, everything otherwise — and returns the position so
              * the record page can show 'N of M' with the wraparound visible.
              */
-            org.springframework.data.jpa.domain.Specification<AccommodationPhone> navSpec =
-                decodedParentId != null
-                    ? AccommodationPhoneSpecification.hasAccommodationId(decodedParentId)
-                    : org.springframework.data.jpa.domain.Specification.unrestricted();
+            Specification<AccommodationPhone> navSpec = buildSpec(decodedParentId != null ? decodedParentId : decodeOrNull(accommodationId), phoneNumber, countryCode, phoneType, isPrimary, isWhatsApp, isActive, label, keyword);
+            String navSortBy = validateSortField(sortBy);
+            if (navSortBy == null) navSortBy = DEFAULT_SORT_FIELD;
+            boolean navAscending = sortDirection != null && sortDirection.equalsIgnoreCase("asc");
             java.util.Map<String, Object> nav = recordNavigation.navigate(
-                AccommodationPhone.class, navSpec, "createdAt", false, id
+                AccommodationPhone.class, navSpec, navSortBy, navAscending, id
             );
             Long nextId = (Long) nav.get("nextRawId");
             Long previousId = (Long) nav.get("previousRawId");
@@ -195,50 +224,18 @@ public class AccommodationPhoneGetService {
             }
 
             // Build specification
-            Specification<AccommodationPhone> spec = Specification.unrestricted();
-
-            // Add optional accommodation ID filter
+            Long decodedAccommodationId = null;
             if (accommodationId != null && !accommodationId.isEmpty()) {
                 try {
-                    Long decodedAccommodationId = idObfuscator.decodeId(accommodationId);
-                    spec = spec.and(AccommodationPhoneSpecification.hasAccommodationId(decodedAccommodationId));
+                    decodedAccommodationId = idObfuscator.decodeId(accommodationId);
                 } catch (Exception e) {
                     log.warn("Failed to decode accommodation ID: {}", accommodationId, e);
                     return ResponseEntity.badRequest().body(
-                        ApiResponse.error(
-                            400,
-                            "Invalid accommodation ID",
-                            "INVALID_ACCOMMODATION_ID"
-                        )
+                        ApiResponse.error(400, "Invalid accommodation ID", "INVALID_ACCOMMODATION_ID")
                     );
                 }
             }
-
-            // Add other optional filters
-            if (phoneNumber != null && !phoneNumber.isEmpty()) {
-                spec = spec.and(AccommodationPhoneSpecification.phoneNumberLike(phoneNumber));
-            }
-            if (countryCode != null && !countryCode.isEmpty()) {
-                spec = spec.and(AccommodationPhoneSpecification.hasCountryCode(countryCode));
-            }
-            if (phoneType != null) {
-                spec = spec.and(AccommodationPhoneSpecification.hasPhoneType(phoneType));
-            }
-            if (isPrimary != null) {
-                spec = spec.and(AccommodationPhoneSpecification.isPrimary(isPrimary));
-            }
-            if (isWhatsApp != null) {
-                spec = spec.and(AccommodationPhoneSpecification.isWhatsApp(isWhatsApp));
-            }
-            if (isActive != null) {
-                spec = spec.and(AccommodationPhoneSpecification.isActive(isActive));
-            }
-            if (label != null && !label.isEmpty()) {
-                spec = spec.and(AccommodationPhoneSpecification.labelLike(label));
-            }
-            if (keyword != null && !keyword.isEmpty()) {
-                spec = spec.and(AccommodationPhoneSpecification.searchKeyword(keyword));
-            }
+            Specification<AccommodationPhone> spec = buildSpec(decodedAccommodationId, phoneNumber, countryCode, phoneType, isPrimary, isWhatsApp, isActive, label, keyword);
 
             // Fetch paginated results
             Page<AccommodationPhone> phonePage = accommodationPhoneRepository.findAll(spec, pageable);
@@ -443,5 +440,65 @@ public class AccommodationPhoneGetService {
             .complement("inactive", "active")
             .recency(AccommodationPhoneSpecification::createdAfter)
             .build();
+    }
+
+    /**
+     * The ONE place a AccommodationPhone filter is expressed.
+     *
+     * The rows, the stat counters and prev/next paging all build from this, so a
+     * card can never disagree with the table and the arrows can never walk a
+     * different set from the one on screen.
+     */
+    private Specification<AccommodationPhone> buildSpec(
+        Long accommodationId,
+        String phoneNumber,
+        String countryCode,
+        PhoneType phoneType,
+        Boolean isPrimary,
+        Boolean isWhatsApp,
+        Boolean isActive,
+        String label,
+        String keyword
+    ) {
+        Specification<AccommodationPhone> spec = Specification.unrestricted();
+        if (accommodationId != null) {
+            spec = spec.and(AccommodationPhoneSpecification.hasAccommodationId(accommodationId));
+        }
+    if (phoneNumber != null && !phoneNumber.isEmpty()) {
+    spec = spec.and(AccommodationPhoneSpecification.phoneNumberLike(phoneNumber));
+    }
+    if (countryCode != null && !countryCode.isEmpty()) {
+    spec = spec.and(AccommodationPhoneSpecification.hasCountryCode(countryCode));
+    }
+    if (phoneType != null) {
+    spec = spec.and(AccommodationPhoneSpecification.hasPhoneType(phoneType));
+    }
+    if (isPrimary != null) {
+    spec = spec.and(AccommodationPhoneSpecification.isPrimary(isPrimary));
+    }
+    if (isWhatsApp != null) {
+    spec = spec.and(AccommodationPhoneSpecification.isWhatsApp(isWhatsApp));
+    }
+    if (isActive != null) {
+    spec = spec.and(AccommodationPhoneSpecification.isActive(isActive));
+    }
+    if (label != null && !label.isEmpty()) {
+    spec = spec.and(AccommodationPhoneSpecification.labelLike(label));
+    }
+    if (keyword != null && !keyword.isEmpty()) {
+    spec = spec.and(AccommodationPhoneSpecification.searchKeyword(keyword));
+    }
+        return spec;
+    }
+
+    /** Decodes an obfuscated id, or null when absent or unreadable. */
+    private Long decodeOrNull(String obfuscated) {
+        if (obfuscated == null || obfuscated.isBlank()) return null;
+        try {
+            return idObfuscator.decodeId(obfuscated);
+        } catch (Exception e) {
+            log.warn("Unreadable id in filter: {}", obfuscated);
+            return null;
+        }
     }
 }

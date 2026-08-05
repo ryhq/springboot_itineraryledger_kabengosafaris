@@ -63,6 +63,30 @@ public class AccommodationRateGetService {
      * Get rate by ID
      */
     public ResponseEntity<ApiResponse<?>> getRateById(String idObfuscated, String scopeParentId) {
+        return getRateById(idObfuscated, scopeParentId, null, null, null, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One rate, plus where it sits in the set the caller was looking at.
+     *
+     * The list's filters and sort arrive here because paging out of a filtered list
+     * must stay inside that filter, and N of M must count the same set.
+     */
+    public ResponseEntity<ApiResponse<?>> getRateById(
+        String idObfuscated,
+        String scopeParentId,
+        String accommodationId,
+        String seasonId,
+        String roomTypeId,
+        String roomStandardId,
+        String boardTypeId,
+        Boolean isActive,
+        Boolean isPerPerson,
+        String currency,
+        String keyword,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching accommodation rate by ID: {}", idObfuscated);
 
         try {
@@ -97,12 +121,22 @@ public class AccommodationRateGetService {
              * children when scoped, everything otherwise — and returns the position so
              * the record page can show 'N of M' with the wraparound visible.
              */
-            org.springframework.data.jpa.domain.Specification<AccommodationRate> navSpec =
-                decodedParentId != null
-                    ? AccommodationRateSpecification.byAccommodationId(decodedParentId)
-                    : org.springframework.data.jpa.domain.Specification.unrestricted();
+            Specification<AccommodationRate> navSpec = buildSpec(
+                decodedParentId != null ? decodedParentId : decodeOrNull(accommodationId),
+                decodeOrNull(seasonId),
+                decodeOrNull(roomTypeId),
+                decodeOrNull(roomStandardId),
+                decodeOrNull(boardTypeId),
+                isActive,
+                isPerPerson,
+                currency,
+                keyword
+            );
+            String navSortBy = validateSortField(sortBy);
+            if (navSortBy == null) navSortBy = DEFAULT_SORT_FIELD;
+            boolean navAscending = sortDirection != null && sortDirection.equalsIgnoreCase("asc");
             java.util.Map<String, Object> nav = recordNavigation.navigate(
-                AccommodationRate.class, navSpec, "createdAt", false, id
+                AccommodationRate.class, navSpec, navSortBy, navAscending, id
             );
             Long nextId = (Long) nav.get("nextRawId");
             Long previousId = (Long) nav.get("previousRawId");
@@ -138,6 +172,8 @@ public class AccommodationRateGetService {
         String boardTypeIdObfuscated,
         Boolean isActive,
         Boolean isPerPerson,
+        String currency,
+        String keyword,
         Integer page,
         Integer size,
         String sortBy,
@@ -146,81 +182,17 @@ public class AccommodationRateGetService {
         log.info("Fetching accommodation rates with filters");
 
         try {
-            // Build specification
-            Specification<AccommodationRate> spec = Specification.unrestricted();
-
-            if (accommodationIdObfuscated != null) {
-                try {
-                    Long accommodationId = idObfuscator.decodeId(accommodationIdObfuscated);
-                    if (accommodationId != null) {
-                        spec = spec.and(AccommodationRateSpecification.byAccommodationId(accommodationId));
-                    }
-                } catch (Exception e) {
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400, "Invalid accommodation ID format", "INVALID_ACCOMMODATION_ID")
-                    );
-                }
-            }
-
-            if (seasonIdObfuscated != null) {
-                try {
-                    Long seasonId = idObfuscator.decodeId(seasonIdObfuscated);
-                    if (seasonId != null) {
-                        spec = spec.and(AccommodationRateSpecification.bySeasonId(seasonId));
-                    }
-                } catch (Exception e) {
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400, "Invalid season ID format", "INVALID_SEASON_ID")
-                    );
-                }
-            }
-
-            if (roomTypeIdObfuscated != null) {
-                try {
-                    Long roomTypeId = idObfuscator.decodeId(roomTypeIdObfuscated);
-                    if (roomTypeId != null) {
-                        spec = spec.and(AccommodationRateSpecification.byRoomTypeId(roomTypeId));
-                    }
-                } catch (Exception e) {
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400, "Invalid room type ID format", "INVALID_ROOM_TYPE_ID")
-                    );
-                }
-            }
-
-            if (roomStandardIdObfuscated != null) {
-                try {
-                    Long roomStandardId = idObfuscator.decodeId(roomStandardIdObfuscated);
-                    if (roomStandardId != null) {
-                        spec = spec.and(AccommodationRateSpecification.byRoomStandardId(roomStandardId));
-                    }
-                } catch (Exception e) {
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400, "Invalid room standard ID format", "INVALID_ROOM_STANDARD_ID")
-                    );
-                }
-            }
-
-            if (boardTypeIdObfuscated != null) {
-                try {
-                    Long boardTypeId = idObfuscator.decodeId(boardTypeIdObfuscated);
-                    if (boardTypeId != null) {
-                        spec = spec.and(AccommodationRateSpecification.byBoardTypeId(boardTypeId));
-                    }
-                } catch (Exception e) {
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400, "Invalid board type ID format", "INVALID_BOARD_TYPE_ID")
-                    );
-                }
-            }
-
-            if (isActive != null) {
-                spec = spec.and(AccommodationRateSpecification.isActive(isActive));
-            }
-
-            if (isPerPerson != null) {
-                spec = spec.and(AccommodationRateSpecification.isPerPerson(isPerPerson));
-            }
+            Specification<AccommodationRate> spec = buildSpec(
+                decodeOrNull(accommodationIdObfuscated),
+                decodeOrNull(seasonIdObfuscated),
+                decodeOrNull(roomTypeIdObfuscated),
+                decodeOrNull(roomStandardIdObfuscated),
+                decodeOrNull(boardTypeIdObfuscated),
+                isActive,
+                isPerPerson,
+                currency,
+                keyword
+            );
 
             // Sorting with validation
             String validatedSortBy = validateSortField(sortBy);
@@ -383,7 +355,54 @@ public class AccommodationRateGetService {
             .total()
             .count("active", AccommodationRateSpecification.isActive(true))
             .complement("inactive", "active")
+            // every card on the rates list needs a filtered figure, not a dash
+            .count("perPerson", AccommodationRateSpecification.isPerPerson(true))
+            .complement("perUnit", "perPerson")
+            .count("hasSto", AccommodationRateSpecification.hasStoRate())
+            .complement("missingSto", "hasSto")
             .recency(AccommodationRateSpecification::createdAfter)
             .build();
+    }
+
+    /**
+     * The ONE place a rate filter is expressed.
+     *
+     * The rows, the stat counters and prev/next paging all build from this, so a
+     * card can never disagree with the table and the arrows can never walk a
+     * different set from the one on screen.
+     */
+    private Specification<AccommodationRate> buildSpec(
+        Long accommodationId,
+        Long seasonId,
+        Long roomTypeId,
+        Long roomStandardId,
+        Long boardTypeId,
+        Boolean isActive,
+        Boolean isPerPerson,
+        String currency,
+        String keyword
+    ) {
+        Specification<AccommodationRate> spec = Specification.unrestricted();
+        if (accommodationId != null) spec = spec.and(AccommodationRateSpecification.byAccommodationId(accommodationId));
+        if (seasonId != null) spec = spec.and(AccommodationRateSpecification.bySeasonId(seasonId));
+        if (roomTypeId != null) spec = spec.and(AccommodationRateSpecification.byRoomTypeId(roomTypeId));
+        if (roomStandardId != null) spec = spec.and(AccommodationRateSpecification.byRoomStandardId(roomStandardId));
+        if (boardTypeId != null) spec = spec.and(AccommodationRateSpecification.byBoardTypeId(boardTypeId));
+        if (isActive != null) spec = spec.and(AccommodationRateSpecification.isActive(isActive));
+        if (isPerPerson != null) spec = spec.and(AccommodationRateSpecification.isPerPerson(isPerPerson));
+        if (currency != null && !currency.isBlank()) spec = spec.and(AccommodationRateSpecification.byCurrency(currency));
+        if (keyword != null && !keyword.isBlank()) spec = spec.and(AccommodationRateSpecification.searchKeyword(keyword));
+        return spec;
+    }
+
+    /** Decodes an obfuscated id, or null when absent/unreadable. */
+    private Long decodeOrNull(String obfuscated) {
+        if (obfuscated == null || obfuscated.isBlank()) return null;
+        try {
+            return idObfuscator.decodeId(obfuscated);
+        } catch (Exception e) {
+            log.warn("Unreadable id in filter: {}", obfuscated);
+            return null;
+        }
     }
 }
