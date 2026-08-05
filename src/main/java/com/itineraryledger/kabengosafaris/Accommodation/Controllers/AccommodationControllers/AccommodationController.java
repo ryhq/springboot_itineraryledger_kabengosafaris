@@ -103,10 +103,19 @@ public class AccommodationController {
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_ACCOMMODATION')")
     public ResponseEntity<ApiResponse<?>> getAccommodationById(
-        @PathVariable String idObfuscated
+        @PathVariable String idObfuscated,
+        // the list's filter context, so prev/next walks the SAME set
+        @RequestParam(required = false) java.util.List<String> statuses,
+        @RequestParam(required = false) java.util.List<String> visibilities,
+        @RequestParam(required = false) java.util.List<AccommodationCategory> categories,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/accommodations/{} - Fetching accommodation by ID", idObfuscated);
-        return accommodationGetService.getAccommodationById(idObfuscated);
+        return accommodationGetService.getAccommodationById(
+            idObfuscated, statuses, visibilities, categories, keyword, sortBy, sortDirection
+        );
     }
 
     /**

@@ -36,6 +36,7 @@ public class AccommodationGetService {
 
     private final AccommodationRepository accommodationRepository;
     private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -48,11 +49,13 @@ public class AccommodationGetService {
     public AccommodationGetService(
         AccommodationRepository accommodationRepository,
         IdObfuscator idObfuscator,
-        com.itineraryledger.kabengosafaris.Response.ListStats listStats
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.accommodationRepository = accommodationRepository;
         this.idObfuscator = idObfuscator;
         this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
     }
 
     /**
@@ -62,6 +65,19 @@ public class AccommodationGetService {
      * @return ResponseEntity with ApiResponse containing the accommodation
      */
     public ResponseEntity<ApiResponse<?>> getAccommodationById(String idObfuscated) {
+        return getAccommodationById(idObfuscated, null, null, null, null, null, null);
+    }
+
+    /** One accommodation, plus where it sits in the set the caller was looking at. */
+    public ResponseEntity<ApiResponse<?>> getAccommodationById(
+        String idObfuscated,
+        java.util.List<String> statuses,
+        java.util.List<String> visibilities,
+        java.util.List<AccommodationCategory> categories,
+        String keyword,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching accommodation with ID: {}", idObfuscated);
 
         try {
@@ -95,16 +111,27 @@ public class AccommodationGetService {
             // Convert to DTO
             AccommodationDTO accommodationDTO = convertToDTO(accommodation);
 
-            // Circular navigation
-            Long nextId = accommodationRepository.findNextId(id).orElse(null);
-            Long previousId = accommodationRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = accommodationRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = accommodationRepository.findLastId().orElse(null);
+            /*
+             * Prev/next must walk the same filtered, sorted set the list showed —
+             * arrows that traverse a different set are worse than no arrows — and
+             * the N of M readout makes the wraparound visible.
+             */
+            Map<String, Object> nav = recordNavigation.navigate(
+                Accommodation.class,
+                navigationSpec(statuses, visibilities, categories, keyword),
+                validateSortField(sortBy) != null ? validateSortField(sortBy) : "name",
+                !"desc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("accommodation", accommodationDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -580,6 +607,38 @@ public class AccommodationGetService {
             .isActive(accommodation.getIsActive())
             .isWebActive(accommodation.getIsWebActive())
             .build();
+    }
+
+    /**
+     * The filter chain the record pager walks — the same dimensions the list
+     * offers, so paging from a filtered list stays inside those matches.
+     */
+    private Specification<Accommodation> navigationSpec(
+        java.util.List<String> statuses,
+        java.util.List<String> visibilities,
+        java.util.List<AccommodationCategory> categories,
+        String keyword
+    ) {
+        Specification<Accommodation> spec = Specification.unrestricted();
+        if (statuses != null && !statuses.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            if (states.size() == 1) spec = spec.and(AccommodationSpecification.isActive(states.get(0)));
+        }
+        if (visibilities != null && !visibilities.isEmpty()) {
+            java.util.List<Boolean> live = new java.util.ArrayList<>();
+            if (visibilities.contains("on-web")) live.add(true);
+            if (visibilities.contains("off-web")) live.add(false);
+            if (live.size() == 1) spec = spec.and(AccommodationSpecification.isWebActive(live.get(0)));
+        }
+        if (categories != null && !categories.isEmpty()) {
+            spec = spec.and((root, q, cb) -> root.get("category").in(categories));
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(AccommodationSpecification.searchKeyword(keyword));
+        }
+        return spec;
     }
 
     /** Dashboard counters for the CURRENT filter set. */
