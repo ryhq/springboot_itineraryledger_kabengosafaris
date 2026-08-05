@@ -35,10 +35,15 @@ public class GetSeasonPeriodService {
     private final SeasonPeriodRepository seasonPeriodRepository;
     private final IdObfuscator idObfuscator;
 
+    /*
+     * A list of date ranges is only useful in date order, so startDate and endDate
+     * are sortable and startDate is the default — sorting periods by creation time
+     * tells you nothing about when they apply.
+     */
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
-        "year", "createdAt", "updatedAt"
+        "startDate", "endDate", "year", "createdAt", "updatedAt"
     );
-    private static final String DEFAULT_SORT_FIELD = "createdAt";
+    private static final String DEFAULT_SORT_FIELD = "startDate";
 
     private String validateSortField(String sortBy) {
         if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;

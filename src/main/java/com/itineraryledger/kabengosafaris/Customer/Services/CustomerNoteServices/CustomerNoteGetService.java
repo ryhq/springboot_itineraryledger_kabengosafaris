@@ -37,8 +37,14 @@ public class CustomerNoteGetService {
     private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final IdObfuscator idObfuscator;
 
+    /*
+     * followUpCompleted and followUpDate are sortable because the follow-up queue
+     * is the reason this list exists — the panel defaults to ordering by when a
+     * note is due, and a rejected sort field is a 400, not a fallback.
+     */
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
-        "subject", "noteType", "priority", "isPinned", "isPrivate", "createdAt", "updatedAt"
+        "subject", "noteType", "priority", "isPinned", "isPrivate",
+        "followUpDate", "followUpCompleted", "createdAt", "updatedAt"
     );
     private static final String DEFAULT_SORT_FIELD = "createdAt";
 
