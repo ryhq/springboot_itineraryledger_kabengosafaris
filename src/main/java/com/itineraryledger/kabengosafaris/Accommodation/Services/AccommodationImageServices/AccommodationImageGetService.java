@@ -38,6 +38,9 @@ public class AccommodationImageGetService {
 
     @Autowired
     private AccommodationImageRepository accommodationImageRepository;
+    // filter-aware prev/next + the N of M readout
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     @Autowired
     private AccommodationImageStorageService storageService;
@@ -277,25 +280,28 @@ public class AccommodationImageGetService {
             }
         }
 
-        // Circular navigation (scoped if parent provided, global otherwise)
-        Long nextId, previousId;
-        if (decodedParentId != null) {
-            nextId = accommodationImageRepository.findNextIdByParent(id, decodedParentId).orElse(null);
-            previousId = accommodationImageRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
-            if (nextId == null) nextId = accommodationImageRepository.findFirstIdByParent(decodedParentId).orElse(null);
-            if (previousId == null) previousId = accommodationImageRepository.findLastIdByParent(decodedParentId).orElse(null);
-        } else {
-            nextId = accommodationImageRepository.findNextId(id).orElse(null);
-            previousId = accommodationImageRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = accommodationImageRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = accommodationImageRepository.findLastId().orElse(null);
-        }
+        /*
+         * Prev/next walks the SAME set the caller was looking at — this parent's
+         * children when scoped, everything otherwise — and returns the position so
+         * the record page can show 'N of M' with the wraparound visible.
+         */
+        org.springframework.data.jpa.domain.Specification<AccommodationImage> navSpec =
+            decodedParentId != null
+                ? AccommodationImageSpecification.byAccommodationId(decodedParentId)
+                : org.springframework.data.jpa.domain.Specification.unrestricted();
+        java.util.Map<String, Object> nav = recordNavigation.navigate(
+            AccommodationImage.class, navSpec, "createdAt", false, id
+        );
+        Long nextId = (Long) nav.get("nextRawId");
+        Long previousId = (Long) nav.get("previousRawId");
 
         Map<String, Object> response = new HashMap<>();
         response.put("image", imageDTO);
         response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
         response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
-        response.put("scopeParentId", scopeParentId);
+        response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
+            response.put("scopeParentId", scopeParentId);
 
         return ResponseEntity.ok(ApiResponse.success(200, "Image retrieved successfully.", response));
     }

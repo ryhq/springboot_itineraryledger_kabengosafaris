@@ -32,6 +32,12 @@ public class AccommodationRoomTypeGetService {
 
     private final AccommodationRoomTypeRepository roomTypeRepository;
 
+    // filter-aware prev/next + the N of M readout
+
+    @org.springframework.beans.factory.annotation.Autowired
+
+    private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+
     // dashboard counters for the CURRENT filter set (see CLAUDE.md)
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -103,24 +109,27 @@ public class AccommodationRoomTypeGetService {
                 }
             }
 
-            // Circular navigation (scoped if parent provided, global otherwise)
-            Long nextId, previousId;
-            if (decodedParentId != null) {
-                nextId = roomTypeRepository.findNextIdByParent(roomTypeId, decodedParentId).orElse(null);
-                previousId = roomTypeRepository.findPreviousIdByParent(roomTypeId, decodedParentId).orElse(null);
-                if (nextId == null) nextId = roomTypeRepository.findFirstIdByParent(decodedParentId).orElse(null);
-                if (previousId == null) previousId = roomTypeRepository.findLastIdByParent(decodedParentId).orElse(null);
-            } else {
-                nextId = roomTypeRepository.findNextId(roomTypeId).orElse(null);
-                previousId = roomTypeRepository.findPreviousId(roomTypeId).orElse(null);
-                if (nextId == null) nextId = roomTypeRepository.findFirstId().orElse(null);
-                if (previousId == null) previousId = roomTypeRepository.findLastId().orElse(null);
-            }
+            /*
+             * Prev/next walks the SAME set the caller was looking at — this parent's
+             * children when scoped, everything otherwise — and returns the position so
+             * the record page can show 'N of M' with the wraparound visible.
+             */
+            org.springframework.data.jpa.domain.Specification<AccommodationRoomType> navSpec =
+                decodedParentId != null
+                    ? AccommodationRoomTypeSpecification.hasAccommodationId(decodedParentId)
+                    : org.springframework.data.jpa.domain.Specification.unrestricted();
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                AccommodationRoomType.class, navSpec, "createdAt", false, roomTypeId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("roomType", roomTypeDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(

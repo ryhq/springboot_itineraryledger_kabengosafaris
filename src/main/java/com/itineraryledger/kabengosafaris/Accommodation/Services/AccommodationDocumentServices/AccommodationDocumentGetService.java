@@ -41,6 +41,12 @@ import java.util.Map;
 public class AccommodationDocumentGetService {
 
     private final AccommodationDocumentRepository accommodationDocumentRepository;
+
+    // filter-aware prev/next + the N of M readout
+
+    @org.springframework.beans.factory.annotation.Autowired
+
+    private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final AccommodationDocumentStorageService storageService;
     private final IdObfuscator idObfuscator;
 
@@ -284,19 +290,20 @@ public class AccommodationDocumentGetService {
                 }
             }
 
-            // Circular navigation (scoped if parent provided, global otherwise)
-            Long nextId, previousId;
-            if (decodedParentId != null) {
-                nextId = accommodationDocumentRepository.findNextIdByParent(id, decodedParentId).orElse(null);
-                previousId = accommodationDocumentRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
-                if (nextId == null) nextId = accommodationDocumentRepository.findFirstIdByParent(decodedParentId).orElse(null);
-                if (previousId == null) previousId = accommodationDocumentRepository.findLastIdByParent(decodedParentId).orElse(null);
-            } else {
-                nextId = accommodationDocumentRepository.findNextId(id).orElse(null);
-                previousId = accommodationDocumentRepository.findPreviousId(id).orElse(null);
-                if (nextId == null) nextId = accommodationDocumentRepository.findFirstId().orElse(null);
-                if (previousId == null) previousId = accommodationDocumentRepository.findLastId().orElse(null);
-            }
+            /*
+             * Prev/next walks the SAME set the caller was looking at — this parent's
+             * children when scoped, everything otherwise — and returns the position so
+             * the record page can show 'N of M' with the wraparound visible.
+             */
+            org.springframework.data.jpa.domain.Specification<AccommodationDocument> navSpec =
+                decodedParentId != null
+                    ? AccommodationDocumentSpecification.byAccommodationId(decodedParentId)
+                    : org.springframework.data.jpa.domain.Specification.unrestricted();
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                AccommodationDocument.class, navSpec, "createdAt", false, id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> responseMap = new HashMap<>();
             responseMap.put("document", documentDTO);

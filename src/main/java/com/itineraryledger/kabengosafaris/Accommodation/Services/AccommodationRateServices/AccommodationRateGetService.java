@@ -41,6 +41,12 @@ public class AccommodationRateGetService {
 
     private final AccommodationRateRepository rateRepository;
 
+    // filter-aware prev/next + the N of M readout
+
+    @org.springframework.beans.factory.annotation.Autowired
+
+    private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+
     // dashboard counters for the CURRENT filter set (see CLAUDE.md)
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -86,24 +92,27 @@ public class AccommodationRateGetService {
                 }
             }
 
-            // Circular navigation (scoped if parent provided, global otherwise)
-            Long nextId, previousId;
-            if (decodedParentId != null) {
-                nextId = rateRepository.findNextIdByParent(id, decodedParentId).orElse(null);
-                previousId = rateRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
-                if (nextId == null) nextId = rateRepository.findFirstIdByParent(decodedParentId).orElse(null);
-                if (previousId == null) previousId = rateRepository.findLastIdByParent(decodedParentId).orElse(null);
-            } else {
-                nextId = rateRepository.findNextId(id).orElse(null);
-                previousId = rateRepository.findPreviousId(id).orElse(null);
-                if (nextId == null) nextId = rateRepository.findFirstId().orElse(null);
-                if (previousId == null) previousId = rateRepository.findLastId().orElse(null);
-            }
+            /*
+             * Prev/next walks the SAME set the caller was looking at — this parent's
+             * children when scoped, everything otherwise — and returns the position so
+             * the record page can show 'N of M' with the wraparound visible.
+             */
+            org.springframework.data.jpa.domain.Specification<AccommodationRate> navSpec =
+                decodedParentId != null
+                    ? AccommodationRateSpecification.byAccommodationId(decodedParentId)
+                    : org.springframework.data.jpa.domain.Specification.unrestricted();
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                AccommodationRate.class, navSpec, "createdAt", false, id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("rate", rateDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok(ApiResponse.success(200, "Rate retrieved successfully", response));
