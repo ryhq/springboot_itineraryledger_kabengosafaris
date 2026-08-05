@@ -151,4 +151,27 @@ public class SeasonPeriodController {
         log.info("DELETE /api/season-periods - Deleting {} season periods", ids.size());
         return deleteSeasonPeriodService.deleteSeasonPeriods(ids);
     }
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Season.Repositories.SeasonPeriodRepository bulkFlagsRepository;
+
+    /**
+     * PATCH /bulk — one request for a whole selection.
+     *
+     * Activating fifty rows one request at a time is slow and can leave the set
+     * half-changed; this applies only the flags present in the body and reports
+     * per-id outcomes, so the UI can say what did not change and why.
+     */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_SEASON_PERIOD')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("season period", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+        });
+    }
 }
