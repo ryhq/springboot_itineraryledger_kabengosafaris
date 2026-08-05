@@ -108,7 +108,8 @@ public class PublicActivityService {
     public ResponseEntity<ApiResponse<?>> getActivityByIdentifier(String identifier, String lang) {
         try {
             Activity activity = entityResolver.resolveActivity(identifier).orElse(null);
-            if (activity == null || !Boolean.TRUE.equals(activity.getIsActive())) {
+            if (activity == null || !Boolean.TRUE.equals(activity.getIsActive())
+                || !Boolean.TRUE.equals(activity.getIsWebActive())) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Activity not found", "ACTIVITY_NOT_FOUND"));
             }
             return buildActivityDetailResponse(activity, lang);
@@ -125,7 +126,8 @@ public class PublicActivityService {
     public ResponseEntity<ApiResponse<?>> getActivityImages(String identifier, Integer page, Integer size) {
         try {
             Activity activity = entityResolver.resolveActivity(identifier).orElse(null);
-            if (activity == null || !Boolean.TRUE.equals(activity.getIsActive())) {
+            if (activity == null || !Boolean.TRUE.equals(activity.getIsActive())
+                || !Boolean.TRUE.equals(activity.getIsWebActive())) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Activity not found", "ACTIVITY_NOT_FOUND"));
             }
 
@@ -176,7 +178,8 @@ public class PublicActivityService {
     public ResponseEntity<ApiResponse<?>> getActivityParks(String identifier, Integer page, Integer size, String lang) {
         try {
             Activity activity = entityResolver.resolveActivity(identifier).orElse(null);
-            if (activity == null || !Boolean.TRUE.equals(activity.getIsActive())) {
+            if (activity == null || !Boolean.TRUE.equals(activity.getIsActive())
+                || !Boolean.TRUE.equals(activity.getIsWebActive())) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Activity not found", "ACTIVITY_NOT_FOUND"));
             }
 
@@ -187,7 +190,8 @@ public class PublicActivityService {
 
             List<PublicParkListDTO> allParks = parkActivities.stream()
                 .map(ParkActivity::getPark)
-                .filter(p -> Boolean.TRUE.equals(p.getIsActive()))
+                .filter(p -> Boolean.TRUE.equals(p.getIsActive())
+                    && Boolean.TRUE.equals(p.getIsWebActive()))
                 .map(p -> PublicParkListDTO.builder()
                     .slug(p.getSlug())
                     .name(p.getName())
