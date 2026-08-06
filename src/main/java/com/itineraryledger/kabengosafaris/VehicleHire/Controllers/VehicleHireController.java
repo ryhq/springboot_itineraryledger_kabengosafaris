@@ -39,8 +39,21 @@ public class VehicleHireController {
 
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_VEHICLE_HIRE')")
-    public ResponseEntity<?> getVehicleHireById(@PathVariable String idObfuscated) {
-        return vehicleHireGetService.getVehicleHireById(idObfuscated);
+    public ResponseEntity<?> getVehicleHireById(
+        @PathVariable String idObfuscated,
+        // the list's filters and sort, so prev/next stays inside the set on screen
+        @RequestParam(required = false) String vehicleId,
+        @RequestParam(required = false) String rentalClientId,
+        @RequestParam(required = false) HireStatus status,
+        @RequestParam(required = false) PaymentStatus paymentStatus,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDateAfter,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDateBefore,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDateAfter,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDateBefore,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy
+    ) {
+        return vehicleHireGetService.getVehicleHireById(idObfuscated, vehicleId, rentalClientId, status, paymentStatus, startDateAfter, startDateBefore, endDateAfter, endDateBefore, keyword, sortBy);
     }
 
     @GetMapping
@@ -55,6 +68,7 @@ public class VehicleHireController {
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDateAfter,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDateBefore,
         @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(defaultValue = "0") Integer page,
         @RequestParam(defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
@@ -63,7 +77,7 @@ public class VehicleHireController {
         return vehicleHireGetService.getAllVehicleHires(
             vehicleId, rentalClientId, status, paymentStatus,
             startDateAfter, startDateBefore, endDateAfter, endDateBefore,
-            keyword, page, size, sortBy, sortDirection);
+            keyword, includeStats, page, size, sortBy, sortDirection);
     }
 
     @PutMapping("/{idObfuscated}")

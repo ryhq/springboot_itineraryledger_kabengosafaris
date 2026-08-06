@@ -36,8 +36,20 @@ public class RentalClientController {
 
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_RENTAL_CLIENT')")
-    public ResponseEntity<?> getRentalClientById(@PathVariable String idObfuscated) {
-        return rentalClientGetService.getRentalClientById(idObfuscated);
+    public ResponseEntity<?> getRentalClientById(
+        @PathVariable String idObfuscated,
+        // the list's filters and sort, so prev/next stays inside the set on screen
+        @RequestParam(required = false) RentalClientType clientType,
+        @RequestParam(required = false) String firstName,
+        @RequestParam(required = false) String lastName,
+        @RequestParam(required = false) String companyName,
+        @RequestParam(required = false) String phone,
+        @RequestParam(required = false) String email,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy
+    ) {
+        return rentalClientGetService.getRentalClientById(idObfuscated, clientType, firstName, lastName, companyName, phone, email, isActive, keyword, sortBy);
     }
 
     @GetMapping("/list")
@@ -57,6 +69,7 @@ public class RentalClientController {
         @RequestParam(required = false) String email,
         @RequestParam(required = false) Boolean isActive,
         @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(defaultValue = "0") Integer page,
         @RequestParam(defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
@@ -64,7 +77,7 @@ public class RentalClientController {
     ) {
         return rentalClientGetService.getAllRentalClients(
             clientType, firstName, lastName, companyName, phone, email,
-            isActive, keyword, page, size, sortBy, sortDirection
+            isActive, keyword, includeStats, page, size, sortBy, sortDirection
         );
     }
 

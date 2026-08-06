@@ -29,6 +29,13 @@ public class VehicleHireGetService {
     private final VehicleHireRepository vehicleHireRepository;
     private final IdObfuscator idObfuscator;
 
+    // filter-aware prev/next + the N of M readout, and declarative counters
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "startDate", "endDate", "dailyRate", "totalAmount",
         "status", "paymentStatus", "createdAt", "updatedAt"
@@ -36,6 +43,26 @@ public class VehicleHireGetService {
     private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     public ResponseEntity<ApiResponse<?>> getVehicleHireById(String idObfuscated) {
+        return getVehicleHireById(idObfuscated, null, null, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One hire, plus where it sits in the set the caller was looking at — the
+     * list's filters and sort decide the walk, not raw id order.
+     */
+    public ResponseEntity<ApiResponse<?>> getVehicleHireById(
+        String idObfuscated,
+        String vehicleIdObfuscated,
+        String rentalClientIdObfuscated,
+        HireStatus status,
+        PaymentStatus paymentStatus,
+        LocalDate startDateAfter,
+        LocalDate startDateBefore,
+        LocalDate endDateAfter,
+        LocalDate endDateBefore,
+        String keyword,
+        String sortBy
+    ) {
         log.info("Fetching vehicle hire: {}", idObfuscated);
         try {
             Long id = idObfuscator.decodeId(idObfuscated);
@@ -46,15 +73,28 @@ public class VehicleHireGetService {
             }
 
             VehicleHireDTO dto = convertToDTO(hire);
-            Long nextId = vehicleHireRepository.findNextId(id).orElse(null);
-            Long previousId = vehicleHireRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = vehicleHireRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = vehicleHireRepository.findLastId().orElse(null);
+            /*
+             * Prev/next walks the SAME filtered, sorted set the list showed; the old
+             * pair walked raw id order over every hire regardless of the filter.
+             */
+            Specification<VehicleHire> navSpec = buildSpec(
+                decodeOrNull(vehicleIdObfuscated), decodeOrNull(rentalClientIdObfuscated), status, paymentStatus,
+                startDateAfter, startDateBefore, endDateAfter, endDateBefore, keyword
+            );
+            String navSortBy = validateSortField(sortBy);
+            if (navSortBy == null) navSortBy = "createdAt";
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                VehicleHire.class, navSpec, navSortBy, false, id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("vehicleHire", dto);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok(ApiResponse.success(200, "Vehicle hire retrieved successfully", response));
         } catch (Exception e) {
@@ -67,7 +107,8 @@ public class VehicleHireGetService {
     public ResponseEntity<ApiResponse<?>> getAllVehicleHires(
         String vehicleIdObfuscated, String rentalClientIdObfuscated, HireStatus status, PaymentStatus paymentStatus,
         LocalDate startDateAfter, LocalDate startDateBefore, LocalDate endDateAfter, LocalDate endDateBefore,
-        String keyword, Integer page, Integer size, String sortBy, String sortDirection
+        String keyword, Boolean includeStats,
+        Integer page, Integer size, String sortBy, String sortDirection
     ) {
         log.info("Fetching vehicle hires - page: {}, size: {}", page, size);
         try {
@@ -90,16 +131,10 @@ public class VehicleHireGetService {
                 ? Sort.by(validatedSortBy).descending() : Sort.by(validatedSortBy).ascending();
             PageRequest pageRequest = PageRequest.of(page != null ? page : 0, size != null ? size : 10, sort);
 
-            Specification<VehicleHire> spec = Specification.<VehicleHire>unrestricted()
-                .and(VehicleHireSpecification.hasVehicleId(vehicleId))
-                .and(VehicleHireSpecification.hasRentalClientId(rentalClientId))
-                .and(VehicleHireSpecification.hasStatus(status))
-                .and(VehicleHireSpecification.hasPaymentStatus(paymentStatus))
-                .and(VehicleHireSpecification.startDateAfter(startDateAfter))
-                .and(VehicleHireSpecification.startDateBefore(startDateBefore))
-                .and(VehicleHireSpecification.endDateAfter(endDateAfter))
-                .and(VehicleHireSpecification.endDateBefore(endDateBefore))
-                .and(VehicleHireSpecification.keyword(keyword));
+            Specification<VehicleHire> spec = buildSpec(
+                vehicleId, rentalClientId, status, paymentStatus,
+                startDateAfter, startDateBefore, endDateAfter, endDateBefore, keyword
+            );
 
             Page<VehicleHire> hirePage = vehicleHireRepository.findAll(spec, pageRequest);
             List<VehicleHireDTO> dtos = hirePage.getContent().stream().map(this::convertToDTO).collect(Collectors.toList());
@@ -112,6 +147,10 @@ public class VehicleHireGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            // counters share the rows' Specification, so cards and table agree
+            if (includeStats == null || includeStats) {
+                response.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok(ApiResponse.success(200, "Vehicle hires retrieved successfully", response));
         } catch (Exception e) {
@@ -161,5 +200,47 @@ public class VehicleHireGetService {
             if (field.equalsIgnoreCase(sortBy)) return field;
         }
         return null;
+    }
+
+    /**
+     * The ONE place a hire filter is expressed — rows, counters and prev/next all
+     * build from it, so a card can never disagree with the table.
+     */
+    private Specification<VehicleHire> buildSpec(
+        Long vehicleId, Long rentalClientId, HireStatus status, PaymentStatus paymentStatus,
+        LocalDate startDateAfter, LocalDate startDateBefore,
+        LocalDate endDateAfter, LocalDate endDateBefore, String keyword
+    ) {
+        return Specification.<VehicleHire>unrestricted()
+            .and(VehicleHireSpecification.hasVehicleId(vehicleId))
+            .and(VehicleHireSpecification.hasRentalClientId(rentalClientId))
+            .and(VehicleHireSpecification.hasStatus(status))
+            .and(VehicleHireSpecification.hasPaymentStatus(paymentStatus))
+            .and(VehicleHireSpecification.startDateAfter(startDateAfter))
+            .and(VehicleHireSpecification.startDateBefore(startDateBefore))
+            .and(VehicleHireSpecification.endDateAfter(endDateAfter))
+            .and(VehicleHireSpecification.endDateBefore(endDateBefore))
+            .and(VehicleHireSpecification.keyword(keyword));
+    }
+
+    /** Decodes an obfuscated id, or null when absent or unreadable. */
+    private Long decodeOrNull(String obfuscated) {
+        if (obfuscated == null || obfuscated.isBlank()) return null;
+        try {
+            return idObfuscator.decodeId(obfuscated);
+        } catch (Exception e) {
+            log.warn("Unreadable id in filter: {}", obfuscated);
+            return null;
+        }
+    }
+
+    /** Counters built from the SAME Specification as the rows. */
+    private Map<String, Object> computeStats(Specification<VehicleHire> base) {
+        return listStats.of(VehicleHire.class, base)
+            .total()
+            .breakdown("byStatus", HireStatus.values(), VehicleHireSpecification::hasStatus)
+            .breakdown("byPaymentStatus", PaymentStatus.values(), VehicleHireSpecification::hasPaymentStatus)
+            .recency(VehicleHireSpecification::createdAfter)
+            .build();
     }
 }
