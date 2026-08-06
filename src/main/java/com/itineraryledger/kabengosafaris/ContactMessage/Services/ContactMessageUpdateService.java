@@ -65,9 +65,13 @@ public class ContactMessageUpdateService {
 
             if (updateDTO.getStatus() != null) {
                 ContactMessageStatus oldStatus = message.getStatus();
-                message.setStatus(updateDTO.getStatus());
+                // the status arrives as a String so a blank can CLEAR it; parse it once
+                ContactMessageStatus requestedStatus = updateDTO.getStatus().isBlank()
+                    ? null
+                    : ContactMessageStatus.valueOf(updateDTO.getStatus().trim());
+                message.setStatus(requestedStatus);
 
-                if (updateDTO.getStatus() == ContactMessageStatus.RESPONDED && oldStatus != ContactMessageStatus.RESPONDED && message.getRespondedAt() == null) {
+                if (requestedStatus == ContactMessageStatus.RESPONDED && oldStatus != ContactMessageStatus.RESPONDED && message.getRespondedAt() == null) {
                     message.setRespondedAt(LocalDateTime.now());
                 }
             }

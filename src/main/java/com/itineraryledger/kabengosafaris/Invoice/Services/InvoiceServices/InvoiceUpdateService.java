@@ -84,7 +84,8 @@ public class InvoiceUpdateService {
             // ========================
 
             // 1. Block direct status changes - must use workflow endpoints
-            if (updateDTO.getStatus() != null && updateDTO.getStatus() != currentStatus) {
+            if (updateDTO.getStatus() != null
+                && !updateDTO.getStatus().trim().equalsIgnoreCase(currentStatus == null ? "" : currentStatus.name())) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400,
                         "Cannot change invoice status directly. Use the workflow endpoints at /api/invoices/{id}/state/* " +

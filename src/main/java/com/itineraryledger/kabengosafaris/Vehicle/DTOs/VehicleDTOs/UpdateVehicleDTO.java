@@ -17,13 +17,19 @@ public class UpdateVehicleDTO {
 
     private String name;
     private String registrationNumber;
-    private VehicleType type;
+    /*
+     * Enums arrive as Strings so a blank can CLEAR the field; null still means
+     * "leave unchanged". Bound as the enum itself, an empty value makes Jackson
+     * reject the whole request body, which is how a set value became impossible
+     * to unset (see the charging-basis fix).
+     */
+    private String type;
     private String make;
     private String model;
     private Integer year;
     private String color;
     private Integer capacity;
-    private FuelType fuelType;
+    private String fuelType;
     private Long mileage;
     private LocalDate insuranceExpiryDate;
     private LocalDate inspectionExpiryDate;

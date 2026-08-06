@@ -92,7 +92,7 @@ public class SafariDayParkUpdateService {
 
             // Update fields if provided
             if (updateDTO.getEntryType() != null) {
-                parkVisit.setEntryType(updateDTO.getEntryType());
+                parkVisit.setEntryType(updateDTO.getEntryType().isBlank() ? null : com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.Entity.ItineraryDayPark.ParkEntryType.valueOf(updateDTO.getEntryType().trim()));
             }
             if (updateDTO.getArrivalTime() != null) {
                 parkVisit.setArrivalTime(updateDTO.getArrivalTime());

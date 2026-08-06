@@ -124,7 +124,7 @@ public class UpdateCustomerEmailService {
 
         // Update other fields if provided
         if (updateDTO.getEmailType() != null) {
-            email.setEmailType(updateDTO.getEmailType());
+            email.setEmailType(updateDTO.getEmailType().isBlank() ? null : com.itineraryledger.kabengosafaris.Customer.Entity.CustomerEmail.EmailType.valueOf(updateDTO.getEmailType().trim()));
         }
         if (updateDTO.getIsPrimary() != null) {
             // If setting this email as primary, mark all other emails for this customer as non-primary

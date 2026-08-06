@@ -127,7 +127,7 @@ public class UpdateCustomerPhoneService {
             phone.setCountryCode(updateDTO.getCountryCode());
         }
         if (updateDTO.getPhoneType() != null) {
-            phone.setPhoneType(updateDTO.getPhoneType());
+            phone.setPhoneType(updateDTO.getPhoneType().isBlank() ? null : com.itineraryledger.kabengosafaris.Customer.Entity.CustomerPhone.PhoneType.valueOf(updateDTO.getPhoneType().trim()));
         }
         if (updateDTO.getIsPrimary() != null) {
             // If setting this phone as primary, mark all other phones for this customer as non-primary

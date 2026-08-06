@@ -52,7 +52,7 @@ public class VendorUpdateService {
                 }
                 vendor.setName(newName);
             }
-            if (dto.getType() != null) vendor.setType(dto.getType());
+            if (dto.getType() != null) vendor.setType(dto.getType().isBlank() ? null : com.itineraryledger.kabengosafaris.Vendor.Enums.VendorType.valueOf(dto.getType().trim()));
             if (dto.getContactPerson() != null) vendor.setContactPerson(trimToNull(dto.getContactPerson()));
             if (dto.getEmail() != null) vendor.setEmail(trimToNull(dto.getEmail()));
             if (dto.getPhone() != null) vendor.setPhone(trimToNull(dto.getPhone()));

@@ -124,10 +124,14 @@ public class ItineraryUpdateService {
             if (updateItineraryDTO.getTotalNights() != null && !updateItineraryDTO.getTotalNights().equals(itinerary.getTotalNights())) {
                 blockedFields.add("totalNights");
             }
-            if (updateItineraryDTO.getTripType() != null && updateItineraryDTO.getTripType() != itinerary.getTripType()) {
+            if (updateItineraryDTO.getTripType() != null
+                && !updateItineraryDTO.getTripType().trim().equalsIgnoreCase(
+                    itinerary.getTripType() == null ? "" : itinerary.getTripType().name())) {
                 blockedFields.add("tripType");
             }
-            if (updateItineraryDTO.getBudgetCategory() != null && updateItineraryDTO.getBudgetCategory() != itinerary.getBudgetCategory()) {
+            if (updateItineraryDTO.getBudgetCategory() != null
+                && !updateItineraryDTO.getBudgetCategory().trim().equalsIgnoreCase(
+                    itinerary.getBudgetCategory() == null ? "" : itinerary.getBudgetCategory().name())) {
                 blockedFields.add("budgetCategory");
             }
 
@@ -194,10 +198,10 @@ public class ItineraryUpdateService {
             itinerary.setIsActive(updateItineraryDTO.getIsActive());
         }
         if (updateItineraryDTO.getTripType() != null) {
-            itinerary.setTripType(updateItineraryDTO.getTripType());
+            itinerary.setTripType(updateItineraryDTO.getTripType().isBlank() ? null : com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType.valueOf(updateItineraryDTO.getTripType().trim()));
         }
         if (updateItineraryDTO.getBudgetCategory() != null) {
-            itinerary.setBudgetCategory(updateItineraryDTO.getBudgetCategory());
+            itinerary.setBudgetCategory(updateItineraryDTO.getBudgetCategory().isBlank() ? null : com.itineraryledger.kabengosafaris.Itinerary.Entity.BudgetCategory.valueOf(updateItineraryDTO.getBudgetCategory().trim()));
         }
 
         // Regenerate code if days or nights changed

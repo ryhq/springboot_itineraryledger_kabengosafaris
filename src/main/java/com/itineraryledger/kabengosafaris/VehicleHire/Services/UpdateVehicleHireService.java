@@ -116,8 +116,8 @@ public class UpdateVehicleHireService {
             if (updateDTO.getDailyRate() != null) hire.setDailyRate(updateDTO.getDailyRate());
             if (updateDTO.getTotalAmount() != null) hire.setTotalAmount(updateDTO.getTotalAmount());
             if (updateDTO.getCurrency() != null) hire.setCurrency(updateDTO.getCurrency());
-            if (updateDTO.getStatus() != null) hire.setStatus(updateDTO.getStatus());
-            if (updateDTO.getPaymentStatus() != null) hire.setPaymentStatus(updateDTO.getPaymentStatus());
+            if (updateDTO.getStatus() != null) hire.setStatus(updateDTO.getStatus().isBlank() ? null : com.itineraryledger.kabengosafaris.VehicleHire.Enums.HireStatus.valueOf(updateDTO.getStatus().trim()));
+            if (updateDTO.getPaymentStatus() != null) hire.setPaymentStatus(updateDTO.getPaymentStatus().isBlank() ? null : com.itineraryledger.kabengosafaris.VehicleHire.Enums.PaymentStatus.valueOf(updateDTO.getPaymentStatus().trim()));
             if (updateDTO.getNotes() != null) hire.setNotes(updateDTO.getNotes());
 
             hire = vehicleHireRepository.save(hire);

@@ -52,7 +52,7 @@ public class ItineraryImageUpdateService {
                 );
             }
 
-            if (updateDTO.getImageType() != null) image.setImageType(updateDTO.getImageType());
+            if (updateDTO.getImageType() != null) image.setImageType(updateDTO.getImageType().isBlank() ? null : com.itineraryledger.kabengosafaris.Itinerary.ItineraryImage.Entity.ItineraryImage.ImageType.valueOf(updateDTO.getImageType().trim()));
             if (updateDTO.getAltText() != null) image.setAltText(updateDTO.getAltText());
             if (updateDTO.getCaption() != null) image.setCaption(updateDTO.getCaption());
             if (updateDTO.getDescription() != null) image.setDescription(updateDTO.getDescription());

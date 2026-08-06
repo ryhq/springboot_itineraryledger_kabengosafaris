@@ -54,7 +54,7 @@ public class ActivityImageUpdateService {
             }
 
             if (updateDTO.getImageType() != null) {
-                image.setImageType(updateDTO.getImageType());
+                image.setImageType(updateDTO.getImageType().isBlank() ? null : com.itineraryledger.kabengosafaris.Activity.Entities.ActivityImage.ImageType.valueOf(updateDTO.getImageType().trim()));
             }
             if (updateDTO.getAltText() != null) {
                 image.setAltText(updateDTO.getAltText());

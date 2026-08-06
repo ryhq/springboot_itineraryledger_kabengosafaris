@@ -47,13 +47,13 @@ public class UpdateVehicleService {
             }
 
             if (updateDTO.getName() != null) vehicle.setName(updateDTO.getName());
-            if (updateDTO.getType() != null) vehicle.setType(updateDTO.getType());
+            if (updateDTO.getType() != null) vehicle.setType(updateDTO.getType().isBlank() ? null : com.itineraryledger.kabengosafaris.Vehicle.Enums.VehicleType.valueOf(updateDTO.getType().trim()));
             if (updateDTO.getMake() != null) vehicle.setMake(updateDTO.getMake());
             if (updateDTO.getModel() != null) vehicle.setModel(updateDTO.getModel());
             if (updateDTO.getYear() != null) vehicle.setYear(updateDTO.getYear());
             if (updateDTO.getColor() != null) vehicle.setColor(updateDTO.getColor());
             if (updateDTO.getCapacity() != null) vehicle.setCapacity(updateDTO.getCapacity());
-            if (updateDTO.getFuelType() != null) vehicle.setFuelType(updateDTO.getFuelType());
+            if (updateDTO.getFuelType() != null) vehicle.setFuelType(updateDTO.getFuelType().isBlank() ? null : com.itineraryledger.kabengosafaris.Vehicle.Enums.FuelType.valueOf(updateDTO.getFuelType().trim()));
             if (updateDTO.getMileage() != null) vehicle.setMileage(updateDTO.getMileage());
             if (updateDTO.getInsuranceExpiryDate() != null) vehicle.setInsuranceExpiryDate(updateDTO.getInsuranceExpiryDate());
             if (updateDTO.getInspectionExpiryDate() != null) vehicle.setInspectionExpiryDate(updateDTO.getInspectionExpiryDate());

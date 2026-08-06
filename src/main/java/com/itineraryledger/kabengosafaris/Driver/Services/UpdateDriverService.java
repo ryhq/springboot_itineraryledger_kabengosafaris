@@ -56,7 +56,7 @@ public class UpdateDriverService {
             if (updateDTO.getTalaExpiryDate() != null) driver.setTalaExpiryDate(updateDTO.getTalaExpiryDate());
             if (updateDTO.getTourGuideId() != null) driver.setTourGuideId(updateDTO.getTourGuideId());
             if (updateDTO.getTourGuideIdExpiryDate() != null) driver.setTourGuideIdExpiryDate(updateDTO.getTourGuideIdExpiryDate());
-            if (updateDTO.getStatus() != null) driver.setStatus(updateDTO.getStatus());
+            if (updateDTO.getStatus() != null) driver.setStatus(updateDTO.getStatus().isBlank() ? null : com.itineraryledger.kabengosafaris.Driver.Enums.DriverStatus.valueOf(updateDTO.getStatus().trim()));
             if (updateDTO.getIsActive() != null) driver.setIsActive(updateDTO.getIsActive());
             if (updateDTO.getNotes() != null) driver.setNotes(updateDTO.getNotes());
 

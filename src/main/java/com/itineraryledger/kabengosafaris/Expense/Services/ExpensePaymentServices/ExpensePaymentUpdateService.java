@@ -54,7 +54,7 @@ public class ExpensePaymentUpdateService {
             if (dto.getAmount() != null) p.setAmount(dto.getAmount());
             if (dto.getCurrency() != null) p.setCurrency(dto.getCurrency().toUpperCase().trim());
             if (dto.getPaymentDate() != null) p.setPaymentDate(dto.getPaymentDate());
-            if (dto.getPaymentMethod() != null) p.setPaymentMethod(dto.getPaymentMethod());
+            if (dto.getPaymentMethod() != null) p.setPaymentMethod(dto.getPaymentMethod().isBlank() ? null : com.itineraryledger.kabengosafaris.Invoice.Enums.PaymentMethod.valueOf(dto.getPaymentMethod().trim()));
             if (dto.getExpenseCurrency() != null) p.setExpenseCurrency(dto.getExpenseCurrency().toUpperCase().trim());
             if (dto.getExchangeRate() != null) p.setExchangeRate(dto.getExchangeRate());
 

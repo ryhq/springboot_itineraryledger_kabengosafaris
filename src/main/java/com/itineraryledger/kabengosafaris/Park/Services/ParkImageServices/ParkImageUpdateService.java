@@ -54,7 +54,7 @@ public class ParkImageUpdateService {
             }
 
             if (updateDTO.getImageType() != null) {
-                image.setImageType(updateDTO.getImageType());
+                image.setImageType(updateDTO.getImageType().isBlank() ? null : com.itineraryledger.kabengosafaris.Park.Entities.ParkImage.ImageType.valueOf(updateDTO.getImageType().trim()));
             }
             if (updateDTO.getAltText() != null) {
                 image.setAltText(updateDTO.getAltText());

@@ -65,12 +65,16 @@ public class BookingInquiryUpdateService {
 
             if (updateDTO.getStatus() != null) {
                 InquiryStatus oldStatus = inquiry.getStatus();
-                inquiry.setStatus(updateDTO.getStatus());
+                // the status arrives as a String so a blank can CLEAR it; parse it once
+                InquiryStatus requestedStatus = updateDTO.getStatus().isBlank()
+                    ? null
+                    : InquiryStatus.valueOf(updateDTO.getStatus().trim());
+                inquiry.setStatus(requestedStatus);
 
-                if (updateDTO.getStatus() == InquiryStatus.CONTACTED && oldStatus != InquiryStatus.CONTACTED && inquiry.getContactedAt() == null) {
+                if (requestedStatus == InquiryStatus.CONTACTED && oldStatus != InquiryStatus.CONTACTED && inquiry.getContactedAt() == null) {
                     inquiry.setContactedAt(LocalDateTime.now());
                 }
-                if (updateDTO.getStatus() == InquiryStatus.CONVERTED && oldStatus != InquiryStatus.CONVERTED && inquiry.getConvertedAt() == null) {
+                if (requestedStatus == InquiryStatus.CONVERTED && oldStatus != InquiryStatus.CONVERTED && inquiry.getConvertedAt() == null) {
                     inquiry.setConvertedAt(LocalDateTime.now());
                 }
             }

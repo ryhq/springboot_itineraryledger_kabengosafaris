@@ -16,7 +16,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UpdateCustomerNoteDTO {
 
-    private NoteType noteType;
+    /*
+     * Enums arrive as Strings so a blank can CLEAR the field; null still means
+     * "leave unchanged". Bound as the enum itself, an empty value makes Jackson
+     * reject the whole request body, which is how a set value became impossible
+     * to unset (see the charging-basis fix).
+     */
+    private String noteType;
 
     @Size(max = 200, message = "Subject must not exceed 200 characters")
     private String subject;
@@ -28,5 +34,5 @@ public class UpdateCustomerNoteDTO {
 
     private Boolean isPrivate;
 
-    private NotePriority priority;
+    private String priority;
 }

@@ -209,7 +209,7 @@ public class UpdateCustomerNoteService {
 
         // Update fields if provided
         if (updateDTO.getNoteType() != null) {
-            note.setNoteType(updateDTO.getNoteType());
+            note.setNoteType(updateDTO.getNoteType().isBlank() ? null : com.itineraryledger.kabengosafaris.Customer.Entity.CustomerNote.NoteType.valueOf(updateDTO.getNoteType().trim()));
         }
         if (updateDTO.getSubject() != null) {
             note.setSubject(updateDTO.getSubject());
@@ -224,7 +224,7 @@ public class UpdateCustomerNoteService {
             note.setIsPrivate(updateDTO.getIsPrivate());
         }
         if (updateDTO.getPriority() != null) {
-            note.setPriority(updateDTO.getPriority());
+            note.setPriority(updateDTO.getPriority().isBlank() ? null : com.itineraryledger.kabengosafaris.Customer.Entity.CustomerNote.NotePriority.valueOf(updateDTO.getPriority().trim()));
         }
 
         // Save updated note

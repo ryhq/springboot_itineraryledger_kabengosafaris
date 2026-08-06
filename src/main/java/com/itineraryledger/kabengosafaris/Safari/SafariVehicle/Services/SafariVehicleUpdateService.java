@@ -132,7 +132,7 @@ public class SafariVehicleUpdateService {
                 }
             }
             if (updateDTO.getAssignmentNotes() != null) safariVehicle.setAssignmentNotes(updateDTO.getAssignmentNotes());
-            if (updateDTO.getStatus() != null) safariVehicle.setStatus(updateDTO.getStatus());
+            if (updateDTO.getStatus() != null) safariVehicle.setStatus(updateDTO.getStatus().isBlank() ? null : com.itineraryledger.kabengosafaris.Safari.SafariVehicle.Enums.SafariVehicleStatus.valueOf(updateDTO.getStatus().trim()));
 
             safariVehicle = safariVehicleRepository.save(safariVehicle);
             log.info("Safari vehicle updated: {}", id);

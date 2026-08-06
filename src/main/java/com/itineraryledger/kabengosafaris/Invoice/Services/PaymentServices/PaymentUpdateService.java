@@ -175,7 +175,7 @@ public class PaymentUpdateService {
             }
 
             if (dto.getPaymentMethod() != null) {
-                payment.setPaymentMethod(dto.getPaymentMethod());
+                payment.setPaymentMethod(dto.getPaymentMethod().isBlank() ? null : com.itineraryledger.kabengosafaris.Invoice.Enums.PaymentMethod.valueOf(dto.getPaymentMethod().trim()));
             }
 
             if (dto.getReference() != null) {

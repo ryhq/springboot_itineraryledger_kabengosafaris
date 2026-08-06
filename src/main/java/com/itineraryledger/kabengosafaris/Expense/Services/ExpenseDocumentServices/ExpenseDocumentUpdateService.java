@@ -42,7 +42,7 @@ public class ExpenseDocumentUpdateService {
             }
 
             if (dto.getTitle() != null) doc.setTitle(dto.getTitle().trim());
-            if (dto.getDocumentType() != null) doc.setDocumentType(dto.getDocumentType());
+            if (dto.getDocumentType() != null) doc.setDocumentType(dto.getDocumentType().isBlank() ? null : com.itineraryledger.kabengosafaris.Expense.Entity.ExpenseDocument.DocumentType.valueOf(dto.getDocumentType().trim()));
             if (dto.getDescription() != null) doc.setDescription(dto.getDescription());
             if (dto.getDocumentNumber() != null) doc.setDocumentNumber(dto.getDocumentNumber());
             if (dto.getVersion() != null) doc.setVersion(dto.getVersion());

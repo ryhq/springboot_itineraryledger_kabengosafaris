@@ -88,7 +88,7 @@ public class UpdatePaxNationCategoryService {
                 category.setName(updateDTO.getName().trim());
             }
             if (updateDTO.getCategoryType() != null) {
-                category.setCategoryType(updateDTO.getCategoryType());
+                category.setCategoryType(updateDTO.getCategoryType().isBlank() ? null : com.itineraryledger.kabengosafaris.PaxNationCategory.PaxNationCategory.CategoryType.valueOf(updateDTO.getCategoryType().trim()));
             }
             if (updateDTO.getDescription() != null) {
                 category.setDescription(updateDTO.getDescription());

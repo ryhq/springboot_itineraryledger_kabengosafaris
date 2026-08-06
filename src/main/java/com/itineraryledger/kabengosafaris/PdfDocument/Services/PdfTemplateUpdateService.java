@@ -62,10 +62,10 @@ public class PdfTemplateUpdateService {
                 template.setDescription(updateDTO.getDescription());
             }
             if (updateDTO.getPaperSize() != null) {
-                template.setPaperSize(updateDTO.getPaperSize());
+                template.setPaperSize(updateDTO.getPaperSize().isBlank() ? null : com.itineraryledger.kabengosafaris.PdfDocument.Entity.PaperSize.valueOf(updateDTO.getPaperSize().trim()));
             }
             if (updateDTO.getOrientation() != null) {
-                template.setOrientation(updateDTO.getOrientation());
+                template.setOrientation(updateDTO.getOrientation().isBlank() ? null : com.itineraryledger.kabengosafaris.PdfDocument.Entity.Orientation.valueOf(updateDTO.getOrientation().trim()));
             }
             if (updateDTO.getMarginTop() != null) {
                 template.setMarginTop(updateDTO.getMarginTop());

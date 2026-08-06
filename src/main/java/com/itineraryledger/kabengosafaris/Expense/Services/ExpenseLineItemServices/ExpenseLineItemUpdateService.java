@@ -56,7 +56,7 @@ public class ExpenseLineItemUpdateService {
                         "EXPENSE_NOT_EDITABLE"));
             }
 
-            if (dto.getCategory() != null) item.setCategory(dto.getCategory());
+            if (dto.getCategory() != null) item.setCategory(dto.getCategory().isBlank() ? null : com.itineraryledger.kabengosafaris.Expense.Enums.ExpenseCategory.valueOf(dto.getCategory().trim()));
             if (dto.getItemName() != null) item.setItemName(dto.getItemName().trim());
             if (dto.getDescription() != null) item.setDescription(dto.getDescription());
             if (dto.getIsActive() != null) item.setIsActive(dto.getIsActive());

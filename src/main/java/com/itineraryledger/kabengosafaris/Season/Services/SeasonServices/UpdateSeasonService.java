@@ -145,7 +145,7 @@ public class UpdateSeasonService {
 
         // Update other fields if provided
         if (updateDTO.getSeasonType() != null) {
-            season.setSeasonType(updateDTO.getSeasonType());
+            season.setSeasonType(updateDTO.getSeasonType().isBlank() ? null : com.itineraryledger.kabengosafaris.Season.Season.SeasonType.valueOf(updateDTO.getSeasonType().trim()));
         }
         if (updateDTO.getDescription() != null) {
             season.setDescription(updateDTO.getDescription());

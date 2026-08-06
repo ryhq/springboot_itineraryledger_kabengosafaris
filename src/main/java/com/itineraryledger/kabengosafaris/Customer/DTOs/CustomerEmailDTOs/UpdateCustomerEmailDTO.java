@@ -20,7 +20,13 @@ public class UpdateCustomerEmailDTO {
     @Size(max = 255, message = "Email must not exceed 255 characters")
     private String email;
 
-    private EmailType emailType;
+    /*
+     * Enums arrive as Strings so a blank can CLEAR the field; null still means
+     * "leave unchanged". Bound as the enum itself, an empty value makes Jackson
+     * reject the whole request body, which is how a set value became impossible
+     * to unset (see the charging-basis fix).
+     */
+    private String emailType;
 
     private Boolean isPrimary;
 

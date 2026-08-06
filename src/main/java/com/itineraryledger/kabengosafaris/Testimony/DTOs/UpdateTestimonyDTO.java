@@ -28,7 +28,13 @@ public class UpdateTestimonyDTO {
     @Max(value = 5, message = "Rating must be at most 5")
     private Integer rating;
 
-    private TestimonySource source;
+    /*
+     * Enums arrive as Strings so a blank can CLEAR the field; null still means
+     * "leave unchanged". Bound as the enum itself, an empty value makes Jackson
+     * reject the whole request body, which is how a set value became impossible
+     * to unset (see the charging-basis fix).
+     */
+    private String source;
     private String sourceUrl;
     private LocalDate reviewDate;
     private Boolean isVerifiedBooking;

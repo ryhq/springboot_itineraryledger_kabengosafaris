@@ -20,8 +20,14 @@ public class UpdateItineraryDTO {
     @Size(min = 3, max = 200, message = "Name must be between 3 and 200 characters")
     private String name;
 
-    private TripType tripType;
-    private BudgetCategory budgetCategory;
+    /*
+     * Enums arrive as Strings so a blank can CLEAR the field; null still means
+     * "leave unchanged". Bound as the enum itself, an empty value makes Jackson
+     * reject the whole request body, which is how a set value became impossible
+     * to unset (see the charging-basis fix).
+     */
+    private String tripType;
+    private String budgetCategory;
 
     @Min(value = 1, message = "Total days must be at least 1")
     private Integer totalDays;

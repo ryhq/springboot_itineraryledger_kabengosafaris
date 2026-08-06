@@ -59,7 +59,7 @@ public class SafariDocumentUpdateService {
                 document.setTitle(updateDTO.getTitle());
             }
             if (updateDTO.getDocumentType() != null) {
-                document.setDocumentType(updateDTO.getDocumentType());
+                document.setDocumentType(updateDTO.getDocumentType().isBlank() ? null : com.itineraryledger.kabengosafaris.Safari.Entity.SafariDocument.DocumentType.valueOf(updateDTO.getDocumentType().trim()));
             }
             if (updateDTO.getDescription() != null) {
                 document.setDescription(updateDTO.getDescription());

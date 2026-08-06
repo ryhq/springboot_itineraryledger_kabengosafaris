@@ -133,7 +133,7 @@ public class EmailLabelService {
                 }
                 label.setName(newName);
             }
-            if (dto.getColor() != null) label.setColor(dto.getColor());
+            if (dto.getColor() != null) label.setColor(dto.getColor().isBlank() ? null : com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailLabelColor.valueOf(dto.getColor().trim()));
             emailLabelRepository.save(label);
             return ResponseEntity.ok(ApiResponse.success(200, "Label updated", toDTO(label, null)));
         } catch (Exception e) {

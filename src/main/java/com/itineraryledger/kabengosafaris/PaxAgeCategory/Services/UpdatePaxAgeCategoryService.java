@@ -151,7 +151,7 @@ public class UpdatePaxAgeCategoryService {
             category.setName(updateDTO.getName());
         }
         if (updateDTO.getCategoryType() != null) {
-            category.setCategoryType(updateDTO.getCategoryType());
+            category.setCategoryType(updateDTO.getCategoryType().isBlank() ? null : com.itineraryledger.kabengosafaris.PaxAgeCategory.PaxAgeCategory.CategoryType.valueOf(updateDTO.getCategoryType().trim()));
         }
         if (updateDTO.getMinAge() != null) {
             category.setMinAge(updateDTO.getMinAge());

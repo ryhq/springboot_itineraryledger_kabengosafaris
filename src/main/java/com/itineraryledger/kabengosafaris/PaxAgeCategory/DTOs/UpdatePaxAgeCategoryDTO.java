@@ -16,7 +16,13 @@ import lombok.NoArgsConstructor;
 public class UpdatePaxAgeCategoryDTO {
 
     private String name;
-    private PaxAgeCategory.CategoryType categoryType;
+    /*
+     * Enums arrive as Strings so a blank can CLEAR the field; null still means
+     * "leave unchanged". Bound as the enum itself, an empty value makes Jackson
+     * reject the whole request body, which is how a set value became impossible
+     * to unset (see the charging-basis fix).
+     */
+    private String categoryType;
     private Integer minAge;
     private Integer maxAge;
     private String description;

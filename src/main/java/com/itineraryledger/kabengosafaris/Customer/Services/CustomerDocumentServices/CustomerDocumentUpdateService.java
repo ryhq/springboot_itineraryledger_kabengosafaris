@@ -59,7 +59,7 @@ public class CustomerDocumentUpdateService {
                 document.setTitle(updateDTO.getTitle());
             }
             if (updateDTO.getDocumentType() != null) {
-                document.setDocumentType(updateDTO.getDocumentType());
+                document.setDocumentType(updateDTO.getDocumentType().isBlank() ? null : com.itineraryledger.kabengosafaris.Customer.Entity.CustomerDocument.DocumentType.valueOf(updateDTO.getDocumentType().trim()));
             }
             if (updateDTO.getDescription() != null) {
                 document.setDescription(updateDTO.getDescription());

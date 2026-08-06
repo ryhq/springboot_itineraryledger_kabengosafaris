@@ -123,7 +123,7 @@ public class ParkUpdateService {
 
         // Update other fields if provided
         if (updateParkDTO.getParkType() != null) {
-            park.setParkType(updateParkDTO.getParkType());
+            park.setParkType(updateParkDTO.getParkType().isBlank() ? null : com.itineraryledger.kabengosafaris.Park.ParkType.valueOf(updateParkDTO.getParkType().trim()));
         }
         if (updateParkDTO.getRegion() != null) {
             park.setRegion(updateParkDTO.getRegion());

@@ -69,7 +69,7 @@ public class InvoiceLineItemUpdateService {
             }
 
             if (updateDTO.getItemType() != null) {
-                lineItem.setItemType(updateDTO.getItemType());
+                lineItem.setItemType(updateDTO.getItemType().isBlank() ? null : com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceItemType.valueOf(updateDTO.getItemType().trim()));
             }
             if (updateDTO.getItemName() != null) {
                 lineItem.setItemName(updateDTO.getItemName());

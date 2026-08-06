@@ -134,7 +134,7 @@ public class QuoteDayParkService {
                 }
                 row.setPark(park);
             }
-            if (dto.getEntryType() != null) row.setEntryType(dto.getEntryType());
+            if (dto.getEntryType() != null) row.setEntryType(dto.getEntryType().isBlank() ? null : com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.Entity.ItineraryDayPark.ParkEntryType.valueOf(dto.getEntryType().trim()));
             if (dto.getSortOrder() != null) row.setSortOrder(dto.getSortOrder());
             if (dto.getArrivalTime() != null) row.setArrivalTime(dto.getArrivalTime());
             if (dto.getDepartureTime() != null) row.setDepartureTime(dto.getDepartureTime());

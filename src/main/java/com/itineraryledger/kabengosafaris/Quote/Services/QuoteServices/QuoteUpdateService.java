@@ -174,7 +174,8 @@ public class QuoteUpdateService {
             }
 
             // Block direct status updates (must use workflow endpoints)
-            if (updateDTO.getStatus() != null && updateDTO.getStatus() != status) {
+            if (updateDTO.getStatus() != null
+                && !updateDTO.getStatus().trim().equalsIgnoreCase(status == null ? "" : status.name())) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(
                         400,

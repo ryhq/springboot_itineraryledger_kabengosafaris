@@ -114,7 +114,7 @@ public class HeroUpdateService {
             hero.setDescription(updateHeroDTO.getDescription());
         }
         if (updateHeroDTO.getPage() != null) {
-            hero.setPage(updateHeroDTO.getPage());
+            hero.setPage(updateHeroDTO.getPage().isBlank() ? null : com.itineraryledger.kabengosafaris.Hero.Enums.HeroPage.valueOf(updateHeroDTO.getPage().trim()));
         }
         if (updateHeroDTO.getCtaText() != null) {
             hero.setCtaText(updateHeroDTO.getCtaText());

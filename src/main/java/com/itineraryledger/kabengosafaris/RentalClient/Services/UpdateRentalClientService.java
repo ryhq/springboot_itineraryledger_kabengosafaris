@@ -38,7 +38,7 @@ public class UpdateRentalClientService {
                 );
             }
 
-            if (updateDTO.getClientType() != null) client.setClientType(updateDTO.getClientType());
+            if (updateDTO.getClientType() != null) client.setClientType(updateDTO.getClientType().isBlank() ? null : com.itineraryledger.kabengosafaris.RentalClient.Enums.RentalClientType.valueOf(updateDTO.getClientType().trim()));
             if (updateDTO.getFirstName() != null) client.setFirstName(updateDTO.getFirstName());
             if (updateDTO.getLastName() != null) client.setLastName(updateDTO.getLastName());
             if (updateDTO.getCompanyName() != null) client.setCompanyName(updateDTO.getCompanyName());

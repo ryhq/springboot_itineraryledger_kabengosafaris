@@ -20,8 +20,14 @@ public class UpdateAccommodationDTO {
     // Basic Information
     private String name;
     private String slug;
-    private AccommodationType accommodationType;
-    private AccommodationCategory category;
+    /*
+     * Enums arrive as Strings so a blank can CLEAR the field; null still means
+     * "leave unchanged". Bound as the enum itself, an empty value makes Jackson
+     * reject the whole request body, which is how a set value became impossible
+     * to unset (see the charging-basis fix).
+     */
+    private String accommodationType;
+    private String category;
 
     // Business Information
     private String tin;

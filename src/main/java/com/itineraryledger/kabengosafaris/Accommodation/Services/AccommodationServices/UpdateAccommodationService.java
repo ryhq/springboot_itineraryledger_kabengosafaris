@@ -128,10 +128,10 @@ public class UpdateAccommodationService {
 
         // Update basic information
         if (updateAccommodationDTO.getAccommodationType() != null) {
-            accommodation.setAccommodationType(updateAccommodationDTO.getAccommodationType());
+            accommodation.setAccommodationType(updateAccommodationDTO.getAccommodationType().isBlank() ? null : com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationType.valueOf(updateAccommodationDTO.getAccommodationType().trim()));
         }
         if (updateAccommodationDTO.getCategory() != null) {
-            accommodation.setCategory(updateAccommodationDTO.getCategory());
+            accommodation.setCategory(updateAccommodationDTO.getCategory().isBlank() ? null : com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationCategory.valueOf(updateAccommodationDTO.getCategory().trim()));
         }
 
         // Update business information

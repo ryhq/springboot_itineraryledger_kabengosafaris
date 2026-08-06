@@ -72,7 +72,7 @@ public class QuoteItemUpdateService {
 
             // Update fields if provided
             if (updateDTO.getItemType() != null) {
-                quoteItem.setItemType(updateDTO.getItemType());
+                quoteItem.setItemType(updateDTO.getItemType().isBlank() ? null : com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemType.valueOf(updateDTO.getItemType().trim()));
             }
             if (updateDTO.getItemName() != null) {
                 quoteItem.setItemName(updateDTO.getItemName());

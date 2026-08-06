@@ -15,7 +15,13 @@ import java.time.LocalDateTime;
 @Builder
 public class UpdateExpenseDocumentDTO {
     private String title;
-    private ExpenseDocument.DocumentType documentType;
+    /*
+     * Enums arrive as Strings so a blank can CLEAR the field; null still means
+     * "leave unchanged". Bound as the enum itself, an empty value makes Jackson
+     * reject the whole request body, which is how a set value became impossible
+     * to unset (see the charging-basis fix).
+     */
+    private String documentType;
     private String description;
     private String documentNumber;
     private String version;

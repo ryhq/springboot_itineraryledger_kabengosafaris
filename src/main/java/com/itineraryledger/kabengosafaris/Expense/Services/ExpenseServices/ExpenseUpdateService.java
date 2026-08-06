@@ -52,14 +52,20 @@ public class ExpenseUpdateService {
             }
 
             // Status transition handling first
-            if (dto.getStatus() != null && dto.getStatus() != expense.getStatus()) {
-                if (expense.getStatus() != null && !expense.getStatus().canTransitionTo(dto.getStatus())) {
+            // the status arrives as a String so a blank can CLEAR it; parse it once
+            com.itineraryledger.kabengosafaris.Expense.Enums.ExpenseStatus requestedStatus =
+                dto.getStatus() == null || dto.getStatus().isBlank()
+                    ? null
+                    : com.itineraryledger.kabengosafaris.Expense.Enums.ExpenseStatus.valueOf(dto.getStatus().trim());
+            if (dto.getStatus() != null && requestedStatus != expense.getStatus()) {
+                if (expense.getStatus() != null && requestedStatus != null
+                    && !expense.getStatus().canTransitionTo(requestedStatus)) {
                     return ResponseEntity.badRequest().body(
                         ApiResponse.error(400,
                             "Invalid status transition: " + expense.getStatus() + " → " + dto.getStatus(),
                             "INVALID_STATUS_TRANSITION"));
                 }
-                expense.setStatus(dto.getStatus());
+                expense.setStatus(requestedStatus);
             }
 
             boolean lockedForEdit = !expense.isEditable() && dto.getStatus() == null;

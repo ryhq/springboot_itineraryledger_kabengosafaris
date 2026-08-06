@@ -81,7 +81,7 @@ public class TestimonyUpdateService {
             if (updateDTO.getReviewTitle() != null) testimony.setReviewTitle(updateDTO.getReviewTitle());
             if (updateDTO.getMessage() != null) testimony.setMessage(updateDTO.getMessage());
             if (updateDTO.getRating() != null) testimony.setRating(updateDTO.getRating());
-            if (updateDTO.getSource() != null) testimony.setSource(updateDTO.getSource());
+            if (updateDTO.getSource() != null) testimony.setSource(updateDTO.getSource().isBlank() ? null : com.itineraryledger.kabengosafaris.Testimony.Enums.TestimonySource.valueOf(updateDTO.getSource().trim()));
             if (updateDTO.getSourceUrl() != null) testimony.setSourceUrl(updateDTO.getSourceUrl());
             if (updateDTO.getReviewDate() != null) testimony.setReviewDate(updateDTO.getReviewDate());
             if (updateDTO.getIsVerifiedBooking() != null) testimony.setIsVerifiedBooking(updateDTO.getIsVerifiedBooking());

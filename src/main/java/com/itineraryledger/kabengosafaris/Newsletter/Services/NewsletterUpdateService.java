@@ -66,11 +66,15 @@ public class NewsletterUpdateService {
 
             if (updateDTO.getStatus() != null) {
                 SubscriptionStatus oldStatus = subscription.getStatus();
-                subscription.setStatus(updateDTO.getStatus());
+                // the status arrives as a String so a blank can CLEAR it; parse it once
+                SubscriptionStatus requestedStatus = updateDTO.getStatus().isBlank()
+                    ? null
+                    : SubscriptionStatus.valueOf(updateDTO.getStatus().trim());
+                subscription.setStatus(requestedStatus);
 
-                if (updateDTO.getStatus() == SubscriptionStatus.UNSUBSCRIBED && oldStatus != SubscriptionStatus.UNSUBSCRIBED) {
+                if (requestedStatus == SubscriptionStatus.UNSUBSCRIBED && oldStatus != SubscriptionStatus.UNSUBSCRIBED) {
                     subscription.setUnsubscribedAt(LocalDateTime.now());
-                } else if (updateDTO.getStatus() == SubscriptionStatus.ACTIVE && oldStatus == SubscriptionStatus.UNSUBSCRIBED) {
+                } else if (requestedStatus == SubscriptionStatus.ACTIVE && oldStatus == SubscriptionStatus.UNSUBSCRIBED) {
                     subscription.setUnsubscribedAt(null);
                 }
             }

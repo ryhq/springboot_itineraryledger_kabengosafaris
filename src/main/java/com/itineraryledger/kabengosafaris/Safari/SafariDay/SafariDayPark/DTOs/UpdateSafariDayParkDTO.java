@@ -15,7 +15,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class UpdateSafariDayParkDTO {
 
-    private ParkEntryType entryType;
+    /*
+     * Enums arrive as Strings so a blank can CLEAR the field; null still means
+     * "leave unchanged". Bound as the enum itself, an empty value makes Jackson
+     * reject the whole request body, which is how a set value became impossible
+     * to unset (see the charging-basis fix).
+     */
+    private String entryType;
     private String arrivalTime;
     private String departureTime;
     private String notes;

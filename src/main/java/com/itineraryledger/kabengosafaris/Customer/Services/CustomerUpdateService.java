@@ -73,7 +73,7 @@ public class CustomerUpdateService {
 
             // Update fields if provided
             if (updateDTO.getCustomerType() != null) {
-                customer.setCustomerType(updateDTO.getCustomerType());
+                customer.setCustomerType(updateDTO.getCustomerType().isBlank() ? null : com.itineraryledger.kabengosafaris.Customer.Enums.CustomerType.valueOf(updateDTO.getCustomerType().trim()));
             }
             if (updateDTO.getTitle() != null) {
                 customer.setTitle(updateDTO.getTitle());
