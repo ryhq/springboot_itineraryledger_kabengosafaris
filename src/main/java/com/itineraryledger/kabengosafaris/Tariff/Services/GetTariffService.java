@@ -40,6 +40,13 @@ public class GetTariffService {
     private final TariffRepository tariffRepository;
     private final IdObfuscator idObfuscator;
 
+    // filter-aware prev/next + the N of M readout, and declarative counters
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "name", "slug", "chargingBasis", "isActive", "createdAt", "updatedAt"
     );
@@ -69,6 +76,26 @@ public class GetTariffService {
      * @return ResponseEntity with ApiResponse containing the tariff
      */
     public ResponseEntity<ApiResponse<?>> getTariffById(String id) {
+        return getTariffById(id, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One tariff, plus where it sits in the set the caller was looking at.
+     *
+     * The list's filters and sort arrive here because paging out of a filtered list
+     * must stay inside that filter, and the N of M readout must count the same set.
+     */
+    public ResponseEntity<ApiResponse<?>> getTariffById(
+        String id,
+        String name,
+        String slug,
+        ChargingBasis chargingBasis,
+        Boolean isActive,
+        Boolean isSystem,
+        String keyword,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching tariff by ID: {}", id);
 
         try {
@@ -91,16 +118,26 @@ public class GetTariffService {
             Tariff tariff = tariffOpt.get();
             TariffDTO tariffDTO = convertToDTO(tariff);
 
-            // Navigation IDs
-            Long nextId = tariffRepository.findNextId(decodedId).orElse(null);
-            Long previousId = tariffRepository.findPreviousId(decodedId).orElse(null);
-            if (nextId == null) nextId = tariffRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = tariffRepository.findLastId().orElse(null);
+            /*
+             * Prev/next walks the SAME filtered, sorted set the list showed; the old
+             * pair walked raw id order over every tariff regardless of the filter.
+             */
+            Specification<Tariff> navSpec = buildSpec(name, slug, chargingBasis, isActive, isSystem, keyword);
+            String navSortBy = validateSortField(sortBy);
+            if (navSortBy == null) navSortBy = DEFAULT_SORT_FIELD;
+            boolean navAscending = sortDirection != null && sortDirection.equalsIgnoreCase("asc");
+            Map<String, Object> nav = recordNavigation.navigate(
+                Tariff.class, navSpec, navSortBy, navAscending, decodedId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("tariff", tariffDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok(
                 ApiResponse.success(
@@ -132,6 +169,7 @@ public class GetTariffService {
         Boolean isActive,
         Boolean isSystem,
         String keyword,
+        Boolean includeStats,
         Integer page,
         Integer size,
         String sortBy,
@@ -148,27 +186,7 @@ public class GetTariffService {
                     ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
                 );
             }
-            // Build specification
-            Specification<Tariff> spec = Specification.unrestricted();
-
-            if (name != null && !name.trim().isEmpty()) {
-                spec = spec.and(TariffSpecification.nameLike(name));
-            }
-            if (slug != null && !slug.trim().isEmpty()) {
-                spec = spec.and(TariffSpecification.hasSlugLike(slug));
-            }
-            if (chargingBasis != null) {
-                spec = spec.and(TariffSpecification.hasChargingBasis(chargingBasis));
-            }
-            if (isActive != null) {
-                spec = spec.and(TariffSpecification.isActive(isActive));
-            }
-            if (isSystem != null) {
-                spec = spec.and(TariffSpecification.isSystem(isSystem));
-            }
-            if (keyword != null && !keyword.trim().isEmpty()) {
-                spec = spec.and(TariffSpecification.searchKeyword(keyword));
-            }
+            Specification<Tariff> spec = buildSpec(name, slug, chargingBasis, isActive, isSystem, keyword);
 
             // Build sort - default to createdAt descending
             Sort.Direction direction = "desc".equalsIgnoreCase(sortDirection)
@@ -200,6 +218,10 @@ public class GetTariffService {
             responseData.put("validSortFields", VALID_SORT_FIELDS);
             responseData.put("currentSortBy", validatedSortBy);
             responseData.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            // counters share the rows' Specification, so cards and table agree
+            if (includeStats == null || includeStats) {
+                responseData.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok(
                 ApiResponse.success(
@@ -282,6 +304,38 @@ public class GetTariffService {
             .isSystem(tariff.getIsSystem())
             .createdAt(tariff.getCreatedAt())
             .updatedAt(tariff.getUpdatedAt())
+            .build();
+    }
+
+    /**
+     * The ONE place a tariff filter is expressed — rows, counters and prev/next all
+     * build from this, so a card can never disagree with the table and the arrows
+     * can never walk a different set from the one on screen.
+     */
+    private Specification<Tariff> buildSpec(
+        String name, String slug, ChargingBasis chargingBasis,
+        Boolean isActive, Boolean isSystem, String keyword
+    ) {
+        Specification<Tariff> spec = Specification.unrestricted();
+        if (name != null && !name.trim().isEmpty()) spec = spec.and(TariffSpecification.nameLike(name));
+        if (slug != null && !slug.trim().isEmpty()) spec = spec.and(TariffSpecification.hasSlugLike(slug));
+        if (chargingBasis != null) spec = spec.and(TariffSpecification.hasChargingBasis(chargingBasis));
+        if (isActive != null) spec = spec.and(TariffSpecification.isActive(isActive));
+        if (isSystem != null) spec = spec.and(TariffSpecification.isSystem(isSystem));
+        if (keyword != null && !keyword.trim().isEmpty()) spec = spec.and(TariffSpecification.searchKeyword(keyword));
+        return spec;
+    }
+
+    /** Counters built from the SAME Specification as the rows. */
+    private Map<String, Object> computeStats(Specification<Tariff> base) {
+        return listStats.of(Tariff.class, base)
+            .total()
+            .count("active", TariffSpecification.isActive(true))
+            .complement("inactive", "active")
+            .count("system", TariffSpecification.isSystem(true))
+            .count("requiresAgeCategory", TariffSpecification.requiresAgeCategory())
+            .breakdown("byChargingBasis", ChargingBasis.values(), TariffSpecification::hasChargingBasis)
+            .recency(TariffSpecification::createdAfter)
             .build();
     }
 }

@@ -214,4 +214,10 @@ public class TariffSpecification {
             return cb.not(root.get("id").in(subquery));
         };
     }
+
+    /** Rows created on or after `moment` — the recency counters. */
+    public static Specification<Tariff> createdAfter(java.time.LocalDateTime moment) {
+        return (root, query, cb) ->
+            moment == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), moment);
+    }
 }

@@ -36,8 +36,25 @@ public class DriverController {
 
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_DRIVER')")
-    public ResponseEntity<?> getDriverById(@PathVariable String idObfuscated) {
-        return driverGetService.getDriverById(idObfuscated);
+    public ResponseEntity<?> getDriverById(
+        @PathVariable String idObfuscated,
+        // the list's filters and sort, so prev/next stays inside the set on screen
+        @RequestParam(required = false) String firstName,
+        @RequestParam(required = false) String lastName,
+        @RequestParam(required = false) String phone,
+        @RequestParam(required = false) DriverStatus status,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) Boolean licenseExpired,
+        @RequestParam(required = false) Boolean talaExpired,
+        @RequestParam(required = false) Boolean tourGuideIdExpired,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
+    ) {
+        return driverGetService.getDriverById(
+            idObfuscated, firstName, lastName, phone, status, isActive,
+            licenseExpired, talaExpired, tourGuideIdExpired, keyword, sortBy, sortDirection
+        );
     }
 
     @GetMapping("/list")
@@ -58,6 +75,7 @@ public class DriverController {
         @RequestParam(required = false) Boolean talaExpired,
         @RequestParam(required = false) Boolean tourGuideIdExpired,
         @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(defaultValue = "0") Integer page,
         @RequestParam(defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
@@ -66,7 +84,7 @@ public class DriverController {
         return driverGetService.getAllDrivers(
             firstName, lastName, phone, status, isActive,
             licenseExpired, talaExpired, tourGuideIdExpired,
-            keyword, page, size, sortBy, sortDirection
+            keyword, includeStats, page, size, sortBy, sortDirection
         );
     }
 
@@ -83,5 +101,23 @@ public class DriverController {
     @PreAuthorize("hasAuthority('PERM_DELETE_DRIVER')")
     public ResponseEntity<?> deleteDrivers(@RequestBody List<String> idObfuscatedList) {
         return deleteDriverService.deleteDrivers(idObfuscatedList);
+    }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Driver.Repository.DriverRepository bulkFlagsRepository;
+
+    /** PATCH /bulk — activate or withdraw a whole selection in one request. */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_DRIVER')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("driver", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+        });
     }
 }

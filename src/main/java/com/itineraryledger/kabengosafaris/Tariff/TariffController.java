@@ -106,10 +106,21 @@ public class TariffController {
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_TARIFF')")
     public ResponseEntity<ApiResponse<?>> getTariffById(
-        @PathVariable String idObfuscated
+        @PathVariable String idObfuscated,
+        // the list's filters and sort, so prev/next stays inside the set on screen
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) String slug,
+        @RequestParam(required = false) ChargingBasis chargingBasis,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) Boolean isSystem,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/tariffs/{} - Fetching tariff by ID", idObfuscated);
-        return getTariffService.getTariffById(idObfuscated);
+        return getTariffService.getTariffById(
+            idObfuscated, name, slug, chargingBasis, isActive, isSystem, keyword, sortBy, sortDirection
+        );
     }
 
     /**
@@ -150,6 +161,7 @@ public class TariffController {
         @RequestParam(required = false) Boolean isActive,
         @RequestParam(required = false) Boolean isSystem,
         @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
@@ -163,10 +175,29 @@ public class TariffController {
             isActive,
             isSystem,
             keyword,
+            includeStats,
             page,
             size,
             sortBy,
             sortDirection
         );
+    }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Tariff.Repositories.TariffRepository bulkFlagsRepository;
+
+    /** PATCH /bulk — activate or withdraw a whole selection in one request. */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_TARIFF')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("tariff", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+        });
     }
 }

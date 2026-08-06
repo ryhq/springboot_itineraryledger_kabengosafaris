@@ -34,6 +34,13 @@ public class GetPaxNationCategoryService {
     private final PaxNationCategoryRepository paxNationCategoryRepository;
     private final IdObfuscator idObfuscator;
 
+    // filter-aware prev/next + the N of M readout, and declarative counters
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "name", "categoryType", "priorityFactor", "isActive", "createdAt", "updatedAt"
     );
@@ -64,6 +71,21 @@ public class GetPaxNationCategoryService {
      */
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<?>> getPaxNationCategoryById(String id) {
+        return getPaxNationCategoryById(id, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One record, plus where it sits in the set the caller was looking at.
+     *
+     * The list's filters and sort arrive here because paging out of a filtered list
+     * must stay inside that filter, and the N of M readout must count the same set.
+     */
+    public ResponseEntity<ApiResponse<?>> getPaxNationCategoryById(
+        String id,
+        String name, PaxNationCategory.CategoryType categoryType, Boolean isActive, Boolean isSystem, Integer priorityFactor, String keyword,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching pax nation category by ID: {}", id);
 
         try {
@@ -85,16 +107,26 @@ public class GetPaxNationCategoryService {
 
             PaxNationCategoryDTO categoryDTO = convertToDTO(categoryOpt.get());
 
-            // Navigation IDs
-            Long nextId = paxNationCategoryRepository.findNextId(decodedId).orElse(null);
-            Long previousId = paxNationCategoryRepository.findPreviousId(decodedId).orElse(null);
-            if (nextId == null) nextId = paxNationCategoryRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = paxNationCategoryRepository.findLastId().orElse(null);
+            /*
+             * Prev/next walks the SAME filtered, sorted set the list showed; the old
+             * pair walked raw id order over every record regardless of the filter.
+             */
+            Specification<PaxNationCategory> navSpec = buildSpec(name, categoryType, isActive, isSystem, priorityFactor, keyword);
+            String navSortBy = validateSortField(sortBy);
+            if (navSortBy == null) navSortBy = DEFAULT_SORT_FIELD;
+            boolean navAscending = sortDirection == null || sortDirection.equalsIgnoreCase("asc");
+            Map<String, Object> nav = recordNavigation.navigate(
+                PaxNationCategory.class, navSpec, navSortBy, navAscending, decodedId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> responseMap = new HashMap<>();
             responseMap.put("paxNationCategory", categoryDTO);
             responseMap.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             responseMap.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            responseMap.put("position", nav.get("position"));
+            responseMap.put("total", nav.get("total"));
 
             return ResponseEntity.ok(
                 ApiResponse.success(
@@ -138,6 +170,7 @@ public class GetPaxNationCategoryService {
         Boolean isSystem,
         Integer priorityFactor,
         String keyword,
+        Boolean includeStats,
         Integer page,
         Integer size,
         String sortBy,
@@ -154,27 +187,7 @@ public class GetPaxNationCategoryService {
                     ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
                 );
             }
-            // Build specification
-            Specification<PaxNationCategory> spec = Specification.unrestricted();
-
-            if (name != null && !name.trim().isEmpty()) {
-                spec = spec.and(PaxNationCategorySpecification.nameLike(name));
-            }
-            if (categoryType != null) {
-                spec = spec.and(PaxNationCategorySpecification.hasCategoryType(categoryType));
-            }
-            if (isActive != null) {
-                spec = spec.and(PaxNationCategorySpecification.isActive(isActive));
-            }
-            if (isSystem != null) {
-                spec = spec.and(PaxNationCategorySpecification.isSystem(isSystem));
-            }
-            if (priorityFactor != null) {
-                spec = spec.and(PaxNationCategorySpecification.hasPriorityFactor(priorityFactor));
-            }
-            if (keyword != null && !keyword.trim().isEmpty()) {
-                spec = spec.and(PaxNationCategorySpecification.searchKeyword(keyword));
-            }
+            Specification<PaxNationCategory> spec = buildSpec(name, categoryType, isActive, isSystem, priorityFactor, keyword);
 
             // Build pageable with sorting
             Sort sort = Sort.by(
@@ -238,6 +251,34 @@ public class GetPaxNationCategoryService {
             .isSystem(category.getIsSystem())
             .createdAt(category.getCreatedAt())
             .updatedAt(category.getUpdatedAt())
+            .build();
+    }
+
+    /**
+     * The ONE place this module's filter is expressed — rows, counters and prev/next
+     * all build from it, so a card can never disagree with the table and the arrows
+     * can never walk a different set from the one on screen.
+     */
+    private Specification<PaxNationCategory> buildSpec(String name, PaxNationCategory.CategoryType categoryType, Boolean isActive, Boolean isSystem, Integer priorityFactor, String keyword) {
+        Specification<PaxNationCategory> spec = Specification.unrestricted();
+        if (name != null && !name.trim().isEmpty()) spec = spec.and(PaxNationCategorySpecification.nameLike(name));
+        if (categoryType != null) spec = spec.and(PaxNationCategorySpecification.hasCategoryType(categoryType));
+        if (isActive != null) spec = spec.and(PaxNationCategorySpecification.isActive(isActive));
+        if (isSystem != null) spec = spec.and(PaxNationCategorySpecification.isSystem(isSystem));
+        if (priorityFactor != null) spec = spec.and(PaxNationCategorySpecification.hasPriorityFactor(priorityFactor));
+        if (keyword != null && !keyword.trim().isEmpty()) spec = spec.and(PaxNationCategorySpecification.searchKeyword(keyword));
+        return spec;
+    }
+
+    /** Counters built from the SAME Specification as the rows. */
+    private Map<String, Object> computeStats(Specification<PaxNationCategory> base) {
+        return listStats.of(PaxNationCategory.class, base)
+            .total()
+            .count("active", PaxNationCategorySpecification.isActive(true))
+            .complement("inactive", "active")
+            .count("system", PaxNationCategorySpecification.isSystem(true))
+            .breakdown("byType", PaxNationCategory.CategoryType.values(), PaxNationCategorySpecification::hasCategoryType)
+            .recency(PaxNationCategorySpecification::createdAfter)
             .build();
     }
 }

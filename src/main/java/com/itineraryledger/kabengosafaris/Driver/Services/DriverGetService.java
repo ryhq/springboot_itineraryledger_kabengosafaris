@@ -26,6 +26,13 @@ import java.util.stream.Collectors;
 public class DriverGetService {
 
     private final DriverRepository driverRepository;
+
+    // filter-aware prev/next + the N of M readout, and declarative counters
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -35,6 +42,22 @@ public class DriverGetService {
     private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     public ResponseEntity<ApiResponse<?>> getDriverById(String idObfuscated) {
+        return getDriverById(idObfuscated, null, null, null, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One driver, plus where it sits in the set the caller was looking at.
+     *
+     * The list's filters and sort arrive here because paging out of a filtered list
+     * must stay inside that filter, and the N of M readout must count the same set.
+     */
+    public ResponseEntity<ApiResponse<?>> getDriverById(
+        String idObfuscated,
+        String firstName, String lastName, String phone,
+        DriverStatus status, Boolean isActive,
+        Boolean licenseExpired, Boolean talaExpired, Boolean tourGuideIdExpired,
+        String keyword, String sortBy, String sortDirection
+    ) {
         log.info("Fetching driver with ID: {}", idObfuscated);
         try {
             Long id = idObfuscator.decodeId(idObfuscated);
@@ -48,15 +71,29 @@ public class DriverGetService {
 
             DriverDTO dto = convertToDTO(driver);
 
-            Long nextId = driverRepository.findNextId(id).orElse(null);
-            Long previousId = driverRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = driverRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = driverRepository.findLastId().orElse(null);
+            /*
+             * Prev/next walks the SAME filtered, sorted set the list showed; the old
+             * pair walked raw id order over every driver regardless of the filter.
+             */
+            Specification<Driver> navSpec = buildSpec(
+                firstName, lastName, phone, status, isActive,
+                licenseExpired, talaExpired, tourGuideIdExpired, keyword
+            );
+            String navSortBy = validateSortField(sortBy);
+            if (navSortBy == null) navSortBy = DEFAULT_SORT_FIELD;
+            boolean navAscending = sortDirection != null && sortDirection.equalsIgnoreCase("asc");
+            Map<String, Object> nav = recordNavigation.navigate(
+                Driver.class, navSpec, navSortBy, navAscending, id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("driver", dto);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok(ApiResponse.success(200, "Driver retrieved successfully", response));
 
@@ -73,6 +110,7 @@ public class DriverGetService {
         DriverStatus status, Boolean isActive,
         Boolean licenseExpired, Boolean talaExpired, Boolean tourGuideIdExpired,
         String keyword,
+        Boolean includeStats,
         Integer page, Integer size, String sortBy, String sortDirection
     ) {
         log.info("Fetching drivers - page: {}, size: {}", page, size);
@@ -94,16 +132,10 @@ public class DriverGetService {
                 sort
             );
 
-            Specification<Driver> spec = Specification.<Driver>unrestricted()
-                .and(DriverSpecification.firstNameLike(firstName))
-                .and(DriverSpecification.lastNameLike(lastName))
-                .and(DriverSpecification.phoneLike(phone))
-                .and(DriverSpecification.hasStatus(status))
-                .and(DriverSpecification.isActive(isActive))
-                .and(DriverSpecification.licenseExpired(licenseExpired))
-                .and(DriverSpecification.talaExpired(talaExpired))
-                .and(DriverSpecification.tourGuideIdExpired(tourGuideIdExpired))
-                .and(DriverSpecification.keyword(keyword));
+            Specification<Driver> spec = buildSpec(
+                firstName, lastName, phone, status, isActive,
+                licenseExpired, talaExpired, tourGuideIdExpired, keyword
+            );
 
             Page<Driver> driverPage = driverRepository.findAll(spec, pageRequest);
 
@@ -119,6 +151,10 @@ public class DriverGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            // counters share the rows' Specification, so cards and table agree
+            if (includeStats == null || includeStats) {
+                response.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok(ApiResponse.success(200, "Drivers retrieved successfully", response));
 
@@ -186,5 +222,43 @@ public class DriverGetService {
             if (field.equalsIgnoreCase(sortBy)) return field;
         }
         return null;
+    }
+
+    /**
+     * The ONE place a driver filter is expressed — rows, counters and prev/next all
+     * build from this, so a card can never disagree with the table and the arrows
+     * can never walk a different set from the one on screen.
+     */
+    private Specification<Driver> buildSpec(
+        String firstName, String lastName, String phone,
+        DriverStatus status, Boolean isActive,
+        Boolean licenseExpired, Boolean talaExpired, Boolean tourGuideIdExpired,
+        String keyword
+    ) {
+        return Specification.<Driver>unrestricted()
+            .and(DriverSpecification.firstNameLike(firstName))
+            .and(DriverSpecification.lastNameLike(lastName))
+            .and(DriverSpecification.phoneLike(phone))
+            .and(DriverSpecification.hasStatus(status))
+            .and(DriverSpecification.isActive(isActive))
+            .and(DriverSpecification.licenseExpired(licenseExpired))
+            .and(DriverSpecification.talaExpired(talaExpired))
+            .and(DriverSpecification.tourGuideIdExpired(tourGuideIdExpired))
+            .and(DriverSpecification.keyword(keyword));
+    }
+
+    /** Counters built from the SAME Specification as the rows. */
+    private Map<String, Object> computeStats(Specification<Driver> base) {
+        return listStats.of(Driver.class, base)
+            .total()
+            .count("active", DriverSpecification.isActive(true))
+            .complement("inactive", "active")
+            // the papers that stop a driver working: every one of these is actionable
+            .count("licenseExpired", DriverSpecification.licenseExpired(true))
+            .count("talaExpired", DriverSpecification.talaExpired(true))
+            .count("tourGuideIdExpired", DriverSpecification.tourGuideIdExpired(true))
+            .breakdown("byStatus", DriverStatus.values(), DriverSpecification::hasStatus)
+            .recency(DriverSpecification::createdAfter)
+            .build();
     }
 }

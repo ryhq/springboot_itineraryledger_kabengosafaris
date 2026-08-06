@@ -29,6 +29,13 @@ public class VehicleGetService {
     private final VehicleRepository vehicleRepository;
     private final IdObfuscator idObfuscator;
 
+    // filter-aware prev/next + the N of M readout, and declarative counters
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "name", "registrationNumber", "type", "make", "model", "year",
         "capacity", "fuelType", "mileage", "isActive", "createdAt", "updatedAt"
@@ -36,6 +43,23 @@ public class VehicleGetService {
     private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     public ResponseEntity<ApiResponse<?>> getVehicleById(String idObfuscated) {
+        return getVehicleById(idObfuscated, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One vehicle, plus where it sits in the set the caller was looking at.
+     *
+     * The list's filters and sort arrive here because paging out of a filtered list
+     * must stay inside that filter, and the N of M readout must count the same set.
+     */
+    public ResponseEntity<ApiResponse<?>> getVehicleById(
+        String idObfuscated,
+        String name, String registrationNumber, VehicleType type,
+        String make, String model, Integer year, FuelType fuelType,
+        Integer minCapacity, Integer maxCapacity, Boolean isActive,
+        Boolean insuranceExpired, Boolean inspectionExpired, String keyword,
+        String sortBy, String sortDirection
+    ) {
         log.info("Fetching vehicle with ID: {}", idObfuscated);
         try {
             Long id = idObfuscator.decodeId(idObfuscated);
@@ -49,15 +73,30 @@ public class VehicleGetService {
 
             VehicleDTO dto = convertToDTO(vehicle);
 
-            Long nextId = vehicleRepository.findNextId(id).orElse(null);
-            Long previousId = vehicleRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = vehicleRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = vehicleRepository.findLastId().orElse(null);
+            /*
+             * Prev/next walks the SAME filtered, sorted set the list showed. The old
+             * findNextId/findPreviousId pair walked raw id order over every vehicle,
+             * so paging out of a filtered list escaped the filter silently.
+             */
+            Specification<Vehicle> navSpec = buildSpec(
+                name, registrationNumber, type, make, model, year, fuelType,
+                minCapacity, maxCapacity, isActive, insuranceExpired, inspectionExpired, keyword
+            );
+            String navSortBy = validateSortField(sortBy);
+            if (navSortBy == null) navSortBy = DEFAULT_SORT_FIELD;
+            boolean navAscending = sortDirection != null && sortDirection.equalsIgnoreCase("asc");
+            Map<String, Object> nav = recordNavigation.navigate(
+                Vehicle.class, navSpec, navSortBy, navAscending, id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("vehicle", dto);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok(ApiResponse.success(200, "Vehicle retrieved successfully", response));
 
@@ -75,6 +114,7 @@ public class VehicleGetService {
         Integer minCapacity, Integer maxCapacity, Boolean isActive,
         Boolean insuranceExpired, Boolean inspectionExpired,
         String keyword,
+        Boolean includeStats,
         Integer page, Integer size, String sortBy, String sortDirection
     ) {
         log.info("Fetching vehicles - page: {}, size: {}", page, size);
@@ -96,20 +136,10 @@ public class VehicleGetService {
                 sort
             );
 
-            Specification<Vehicle> spec = Specification.<Vehicle>unrestricted()
-                .and(VehicleSpecification.nameLike(name))
-                .and(VehicleSpecification.registrationNumberLike(registrationNumber))
-                .and(VehicleSpecification.hasType(type))
-                .and(VehicleSpecification.makeLike(make))
-                .and(VehicleSpecification.modelLike(model))
-                .and(VehicleSpecification.hasYear(year))
-                .and(VehicleSpecification.hasFuelType(fuelType))
-                .and(VehicleSpecification.minCapacity(minCapacity))
-                .and(VehicleSpecification.maxCapacity(maxCapacity))
-                .and(VehicleSpecification.isActive(isActive))
-                .and(VehicleSpecification.insuranceExpired(insuranceExpired))
-                .and(VehicleSpecification.inspectionExpired(inspectionExpired))
-                .and(VehicleSpecification.keyword(keyword));
+            Specification<Vehicle> spec = buildSpec(
+                name, registrationNumber, type, make, model, year, fuelType,
+                minCapacity, maxCapacity, isActive, insuranceExpired, inspectionExpired, keyword
+            );
 
             Page<Vehicle> vehiclePage = vehicleRepository.findAll(spec, pageRequest);
 
@@ -125,6 +155,10 @@ public class VehicleGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            // counters share the rows' Specification, so cards and table agree
+            if (includeStats == null || includeStats) {
+                response.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok(ApiResponse.success(200, "Vehicles retrieved successfully", response));
 
@@ -193,5 +227,46 @@ public class VehicleGetService {
             if (field.equalsIgnoreCase(sortBy)) return field;
         }
         return null;
+    }
+
+    /**
+     * The ONE place a vehicle filter is expressed — rows, counters and prev/next all
+     * build from this, so a card can never disagree with the table and the arrows
+     * can never walk a different set from the one on screen.
+     */
+    private Specification<Vehicle> buildSpec(
+        String name, String registrationNumber, VehicleType type,
+        String make, String model, Integer year, FuelType fuelType,
+        Integer minCapacity, Integer maxCapacity, Boolean isActive,
+        Boolean insuranceExpired, Boolean inspectionExpired, String keyword
+    ) {
+        return Specification.<Vehicle>unrestricted()
+            .and(VehicleSpecification.nameLike(name))
+            .and(VehicleSpecification.registrationNumberLike(registrationNumber))
+            .and(VehicleSpecification.hasType(type))
+            .and(VehicleSpecification.makeLike(make))
+            .and(VehicleSpecification.modelLike(model))
+            .and(VehicleSpecification.hasYear(year))
+            .and(VehicleSpecification.hasFuelType(fuelType))
+            .and(VehicleSpecification.minCapacity(minCapacity))
+            .and(VehicleSpecification.maxCapacity(maxCapacity))
+            .and(VehicleSpecification.isActive(isActive))
+            .and(VehicleSpecification.insuranceExpired(insuranceExpired))
+            .and(VehicleSpecification.inspectionExpired(inspectionExpired))
+            .and(VehicleSpecification.keyword(keyword));
+    }
+
+    /** Counters built from the SAME Specification as the rows. */
+    private Map<String, Object> computeStats(Specification<Vehicle> base) {
+        return listStats.of(Vehicle.class, base)
+            .total()
+            .count("active", VehicleSpecification.isActive(true))
+            .complement("inactive", "active")
+            // actionable, not decorative: these are the vehicles that cannot go out
+            .count("insuranceExpired", VehicleSpecification.insuranceExpired(true))
+            .count("inspectionExpired", VehicleSpecification.inspectionExpired(true))
+            .breakdown("byType", VehicleType.values(), VehicleSpecification::hasType)
+            .recency(VehicleSpecification::createdAfter)
+            .build();
     }
 }

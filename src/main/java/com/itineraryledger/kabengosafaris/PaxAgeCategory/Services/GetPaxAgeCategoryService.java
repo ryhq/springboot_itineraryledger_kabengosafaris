@@ -34,6 +34,13 @@ public class GetPaxAgeCategoryService {
     private final PaxAgeCategoryRepository paxAgeCategoryRepository;
     private final IdObfuscator idObfuscator;
 
+    // filter-aware prev/next + the N of M readout, and declarative counters
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "name", "categoryType", "minAge", "maxAge", "isActive", "createdAt", "updatedAt"
     );
@@ -63,6 +70,21 @@ public class GetPaxAgeCategoryService {
      * @return ResponseEntity with ApiResponse containing the category
      */
     public ResponseEntity<ApiResponse<?>> getPaxAgeCategoryById(String idObfuscated) {
+        return getPaxAgeCategoryById(idObfuscated, null, null, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One record, plus where it sits in the set the caller was looking at.
+     *
+     * The list's filters and sort arrive here because paging out of a filtered list
+     * must stay inside that filter, and the N of M readout must count the same set.
+     */
+    public ResponseEntity<ApiResponse<?>> getPaxAgeCategoryById(
+        String idObfuscated,
+        String name, PaxAgeCategory.CategoryType categoryType, Boolean isActive, Boolean isSystem, Integer minAge, Integer maxAge, Integer age, String keyword,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching pax age category with ID: {}", idObfuscated);
 
         try {
@@ -96,16 +118,26 @@ public class GetPaxAgeCategoryService {
             // Convert to DTO
             PaxAgeCategoryDTO categoryDTO = convertToDTO(category);
 
-            // Navigation IDs
-            Long nextId = paxAgeCategoryRepository.findNextId(id).orElse(null);
-            Long previousId = paxAgeCategoryRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = paxAgeCategoryRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = paxAgeCategoryRepository.findLastId().orElse(null);
+            /*
+             * Prev/next walks the SAME filtered, sorted set the list showed; the old
+             * pair walked raw id order over every record regardless of the filter.
+             */
+            Specification<PaxAgeCategory> navSpec = buildSpec(name, categoryType, isActive, isSystem, minAge, maxAge, age, keyword);
+            String navSortBy = validateSortField(sortBy);
+            if (navSortBy == null) navSortBy = DEFAULT_SORT_FIELD;
+            boolean navAscending = sortDirection == null || sortDirection.equalsIgnoreCase("asc");
+            Map<String, Object> nav = recordNavigation.navigate(
+                PaxAgeCategory.class, navSpec, navSortBy, navAscending, id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("paxAgeCategory", categoryDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -152,6 +184,7 @@ public class GetPaxAgeCategoryService {
         Integer maxAge,
         Integer age,
         String keyword,
+        Boolean includeStats,
         Integer page,
         Integer size,
         String sortBy,
@@ -168,33 +201,7 @@ public class GetPaxAgeCategoryService {
                     ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
                 );
             }
-            // Build specification for filtering
-            Specification<PaxAgeCategory> spec = Specification.unrestricted();
-
-            if (name != null && !name.isEmpty()) {
-                spec = spec.and(PaxAgeCategorySpecification.nameLike(name));
-            }
-            if (categoryType != null) {
-                spec = spec.and(PaxAgeCategorySpecification.hasCategoryType(categoryType));
-            }
-            if (isActive != null) {
-                spec = spec.and(PaxAgeCategorySpecification.isActive(isActive));
-            }
-            if (isSystem != null) {
-                spec = spec.and(PaxAgeCategorySpecification.isSystem(isSystem));
-            }
-            if (minAge != null) {
-                spec = spec.and(PaxAgeCategorySpecification.hasMinAge(minAge));
-            }
-            if (maxAge != null) {
-                spec = spec.and(PaxAgeCategorySpecification.hasMaxAge(maxAge));
-            }
-            if (age != null) {
-                spec = spec.and(PaxAgeCategorySpecification.includesAge(age));
-            }
-            if (keyword != null && !keyword.isEmpty()) {
-                spec = spec.and(PaxAgeCategorySpecification.searchKeyword(keyword));
-            }
+            Specification<PaxAgeCategory> spec = buildSpec(name, categoryType, isActive, isSystem, minAge, maxAge, age, keyword);
 
             // Set default pagination values
             int pageNumber = (page != null && page >= 0) ? page : 0;
@@ -226,6 +233,10 @@ public class GetPaxAgeCategoryService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            // counters share the rows' Specification, so cards and table agree
+            if (includeStats == null || includeStats) {
+                response.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -265,6 +276,36 @@ public class GetPaxAgeCategoryService {
             .isSystem(category.getIsSystem())
             .createdAt(category.getCreatedAt())
             .updatedAt(category.getUpdatedAt())
+            .build();
+    }
+
+    /**
+     * The ONE place this module's filter is expressed — rows, counters and prev/next
+     * all build from it, so a card can never disagree with the table and the arrows
+     * can never walk a different set from the one on screen.
+     */
+    private Specification<PaxAgeCategory> buildSpec(String name, PaxAgeCategory.CategoryType categoryType, Boolean isActive, Boolean isSystem, Integer minAge, Integer maxAge, Integer age, String keyword) {
+        Specification<PaxAgeCategory> spec = Specification.unrestricted();
+        if (name != null && !name.isEmpty()) spec = spec.and(PaxAgeCategorySpecification.nameLike(name));
+        if (categoryType != null) spec = spec.and(PaxAgeCategorySpecification.hasCategoryType(categoryType));
+        if (isActive != null) spec = spec.and(PaxAgeCategorySpecification.isActive(isActive));
+        if (isSystem != null) spec = spec.and(PaxAgeCategorySpecification.isSystem(isSystem));
+        if (minAge != null) spec = spec.and(PaxAgeCategorySpecification.hasMinAge(minAge));
+        if (maxAge != null) spec = spec.and(PaxAgeCategorySpecification.hasMaxAge(maxAge));
+        if (age != null) spec = spec.and(PaxAgeCategorySpecification.includesAge(age));
+        if (keyword != null && !keyword.isEmpty()) spec = spec.and(PaxAgeCategorySpecification.searchKeyword(keyword));
+        return spec;
+    }
+
+    /** Counters built from the SAME Specification as the rows. */
+    private Map<String, Object> computeStats(Specification<PaxAgeCategory> base) {
+        return listStats.of(PaxAgeCategory.class, base)
+            .total()
+            .count("active", PaxAgeCategorySpecification.isActive(true))
+            .complement("inactive", "active")
+            .count("system", PaxAgeCategorySpecification.isSystem(true))
+            .breakdown("byType", PaxAgeCategory.CategoryType.values(), PaxAgeCategorySpecification::hasCategoryType)
+            .recency(PaxAgeCategorySpecification::createdAfter)
             .build();
     }
 }

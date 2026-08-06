@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.web.bind.annotation.PatchMapping;
+
 @RestController
 @RequestMapping("/api/vehicles")
 @Slf4j
@@ -42,8 +44,30 @@ public class VehicleController {
 
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_VEHICLE')")
-    public ResponseEntity<?> getVehicleById(@PathVariable String idObfuscated) {
-        return vehicleGetService.getVehicleById(idObfuscated);
+    public ResponseEntity<?> getVehicleById(
+        @PathVariable String idObfuscated,
+        // the list's filters and sort, so prev/next stays inside the set on screen
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) String registrationNumber,
+        @RequestParam(required = false) VehicleType type,
+        @RequestParam(required = false) String make,
+        @RequestParam(required = false) String model,
+        @RequestParam(required = false) Integer year,
+        @RequestParam(required = false) FuelType fuelType,
+        @RequestParam(required = false) Integer minCapacity,
+        @RequestParam(required = false) Integer maxCapacity,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) Boolean insuranceExpired,
+        @RequestParam(required = false) Boolean inspectionExpired,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
+    ) {
+        return vehicleGetService.getVehicleById(
+            idObfuscated, name, registrationNumber, type, make, model, year, fuelType,
+            minCapacity, maxCapacity, isActive, insuranceExpired, inspectionExpired, keyword,
+            sortBy, sortDirection
+        );
     }
 
     @GetMapping("/list")
@@ -68,6 +92,7 @@ public class VehicleController {
         @RequestParam(required = false) Boolean insuranceExpired,
         @RequestParam(required = false) Boolean inspectionExpired,
         @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(defaultValue = "0") Integer page,
         @RequestParam(defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
@@ -76,7 +101,7 @@ public class VehicleController {
         return vehicleGetService.getAllVehicles(
             name, registrationNumber, type, make, model, year, fuelType,
             minCapacity, maxCapacity, isActive, insuranceExpired, inspectionExpired,
-            keyword, page, size, sortBy, sortDirection
+            keyword, includeStats, page, size, sortBy, sortDirection
         );
     }
 
@@ -120,5 +145,23 @@ public class VehicleController {
         @RequestParam(required = false) Boolean excludeCancelled
     ) {
         return vehicleScheduleService.getScheduleOverview(startDate, endDate, entryType, safariStatus, hireStatus, excludeCancelled);
+    }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Vehicle.Repository.VehicleRepository bulkFlagsRepository;
+
+    /** PATCH /bulk — activate or withdraw a whole selection in one request. */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_VEHICLE')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("vehicle", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+        });
     }
 }

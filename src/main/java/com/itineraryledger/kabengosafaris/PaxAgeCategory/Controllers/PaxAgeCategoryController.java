@@ -87,10 +87,21 @@ public class PaxAgeCategoryController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_PAX_AGE_CATEGORY')")
     public ResponseEntity<ApiResponse<?>> getPaxAgeCategoryById(
-        @PathVariable String id
+        @PathVariable String id,
+        // the list's filters and sort, so prev/next stays inside the set on screen
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) PaxAgeCategory.CategoryType categoryType,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) Boolean isSystem,
+        @RequestParam(required = false) Integer minAge,
+        @RequestParam(required = false) Integer maxAge,
+        @RequestParam(required = false) Integer age,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/pax-age-categories/{} - Fetching pax age category by ID", id);
-        return getPaxAgeCategoryService.getPaxAgeCategoryById(id);
+        return getPaxAgeCategoryService.getPaxAgeCategoryById(id, name, categoryType, isActive, isSystem, minAge, maxAge, age, keyword, sortBy, sortDirection);
     }
 
     /**
@@ -120,6 +131,7 @@ public class PaxAgeCategoryController {
         @RequestParam(required = false) Integer maxAge,
         @RequestParam(required = false) Integer age,
         @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
@@ -135,6 +147,7 @@ public class PaxAgeCategoryController {
             maxAge,
             age,
             keyword,
+            includeStats,
             page,
             size,
             sortBy,
@@ -156,5 +169,23 @@ public class PaxAgeCategoryController {
     ) {
         log.info("DELETE /api/pax-age-categories - Deleting {} pax age categories", ids.size());
         return deletePaxAgeCategoryService.deletePaxAgeCategories(ids);
+    }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.PaxAgeCategory.Repositories.PaxAgeCategoryRepository bulkFlagsRepository;
+
+    /** PATCH /bulk — activate or withdraw a whole selection in one request. */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_PAX_AGE_CATEGORY')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("pax age category", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+        });
     }
 }

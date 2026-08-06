@@ -87,10 +87,19 @@ public class PaxNationCategoryController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_PAX_NATION_CATEGORY')")
     public ResponseEntity<ApiResponse<?>> getPaxNationCategoryById(
-        @PathVariable String id
+        @PathVariable String id,
+        // the list's filters and sort, so prev/next stays inside the set on screen
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) PaxNationCategory.CategoryType categoryType,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) Boolean isSystem,
+        @RequestParam(required = false) Integer priorityFactor,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/pax-nation-categories/{} - Fetching pax nation category by ID", id);
-        return getPaxNationCategoryService.getPaxNationCategoryById(id);
+        return getPaxNationCategoryService.getPaxNationCategoryById(id, name, categoryType, isActive, isSystem, priorityFactor, keyword, sortBy, sortDirection);
     }
 
     /**
@@ -116,6 +125,7 @@ public class PaxNationCategoryController {
         @RequestParam(required = false) Boolean isSystem,
         @RequestParam(required = false) Integer priorityFactor,
         @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
@@ -129,6 +139,7 @@ public class PaxNationCategoryController {
             isSystem,
             priorityFactor,
             keyword,
+            includeStats,
             page,
             size,
             sortBy,
@@ -150,5 +161,23 @@ public class PaxNationCategoryController {
     ) {
         log.info("DELETE /api/pax-nation-categories - Deleting {} pax nation categories", ids.size());
         return deletePaxNationCategoryService.deletePaxNationCategories(ids);
+    }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.PaxNationCategory.Repositories.PaxNationCategoryRepository bulkFlagsRepository;
+
+    /** PATCH /bulk — activate or withdraw a whole selection in one request. */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_PAX_NATION_CATEGORY')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("pax nation category", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+        });
     }
 }
