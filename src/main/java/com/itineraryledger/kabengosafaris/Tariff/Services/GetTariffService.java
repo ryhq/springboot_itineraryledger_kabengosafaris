@@ -47,6 +47,9 @@ public class GetTariffService {
     @org.springframework.beans.factory.annotation.Autowired
     private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.ParkTariff.ParkTariffRepository parkTariffRepository;
+
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "name", "slug", "chargingBasis", "isActive", "createdAt", "updatedAt"
     );
@@ -302,6 +305,9 @@ public class GetTariffService {
             .requiresAgeCategory(tariff.requiresAgeCategory())
             .isActive(tariff.getIsActive())
             .isSystem(tariff.getIsSystem())
+            // how many parks charge this tariff; the list column and the record both
+            // showed a dash because nothing ever filled it in
+            .parkCount(parkTariffRepository.countByTariffId(tariff.getId()))
             .createdAt(tariff.getCreatedAt())
             .updatedAt(tariff.getUpdatedAt())
             .build();
