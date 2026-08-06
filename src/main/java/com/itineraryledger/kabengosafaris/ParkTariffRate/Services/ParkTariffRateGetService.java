@@ -59,7 +59,7 @@ public class ParkTariffRateGetService {
      * Get rate by ID
      */
     public ResponseEntity<ApiResponse<?>> getRateById(String idObfuscated) {
-        return getRateById(idObfuscated, null, null, null, null, null, null, null);
+        return getRateById(idObfuscated, null, null, null, null, null, null, null, null);
     }
 
     /**
@@ -76,6 +76,7 @@ public class ParkTariffRateGetService {
         String nationCategoryIdObfuscated,
         String ageCategoryIdObfuscated,
         Boolean isActive,
+        String keyword,
         String sortBy
     ) {
         log.info("Fetching park tariff rate by ID: {}", idObfuscated);
@@ -102,7 +103,7 @@ public class ParkTariffRateGetService {
              * Prev/next walks the SAME filtered, sorted set the list showed; the old
              * pair walked raw id order over every rate regardless of the filter.
              */
-            Specification<ParkTariffRate> navSpec = buildSpec(decodeOrNull(parkIdObfuscated), decodeOrNull(tariffIdObfuscated), decodeOrNull(seasonIdObfuscated), decodeOrNull(nationCategoryIdObfuscated), decodeOrNull(ageCategoryIdObfuscated), isActive);
+            Specification<ParkTariffRate> navSpec = buildSpec(decodeOrNull(parkIdObfuscated), decodeOrNull(tariffIdObfuscated), decodeOrNull(seasonIdObfuscated), decodeOrNull(nationCategoryIdObfuscated), decodeOrNull(ageCategoryIdObfuscated), isActive, keyword);
             String navSortBy = validateSortField(sortBy);
             if (navSortBy == null) navSortBy = DEFAULT_SORT_FIELD;
             java.util.Map<String, Object> nav = recordNavigation.navigate(
@@ -138,6 +139,7 @@ public class ParkTariffRateGetService {
         String nationCategoryIdObfuscated,
         String ageCategoryIdObfuscated,
         Boolean isActive,
+        String keyword,
         Boolean includeStats,
         Integer page,
         Integer size,
@@ -152,7 +154,7 @@ public class ParkTariffRateGetService {
             Long decoded_seasonId = decodeOrNull(seasonIdObfuscated);
             Long decoded_nationCategoryId = decodeOrNull(nationCategoryIdObfuscated);
             Long decoded_ageCategoryId = decodeOrNull(ageCategoryIdObfuscated);
-            Specification<ParkTariffRate> spec = buildSpec(decoded_parkId, decoded_tariffId, decoded_seasonId, decoded_nationCategoryId, decoded_ageCategoryId, isActive);
+            Specification<ParkTariffRate> spec = buildSpec(decoded_parkId, decoded_tariffId, decoded_seasonId, decoded_nationCategoryId, decoded_ageCategoryId, isActive, keyword);
 
             // Sorting with validation
             String validatedSortBy = validateSortField(sortBy);
@@ -314,7 +316,8 @@ public class ParkTariffRateGetService {
         Long seasonId,
         Long nationCategoryId,
         Long ageCategoryId,
-        Boolean isActive
+        Boolean isActive,
+        String keyword
     ) {
         Specification<ParkTariffRate> spec = Specification.unrestricted();
         if (parkId != null) spec = spec.and(ParkTariffRateSpecification.byParkId(parkId));
@@ -323,6 +326,7 @@ public class ParkTariffRateGetService {
         if (nationCategoryId != null) spec = spec.and(ParkTariffRateSpecification.byNationCategoryId(nationCategoryId));
         if (ageCategoryId != null) spec = spec.and(ParkTariffRateSpecification.byAgeCategoryId(ageCategoryId));
         if (isActive != null) spec = spec.and(ParkTariffRateSpecification.isActive(isActive));
+        if (keyword != null && !keyword.isBlank()) spec = spec.and(ParkTariffRateSpecification.searchKeyword(keyword));
 
         return spec;
     }

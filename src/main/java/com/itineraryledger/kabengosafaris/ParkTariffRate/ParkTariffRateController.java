@@ -57,11 +57,12 @@ public class ParkTariffRateController {
         @RequestParam(required = false) String nationCategoryId,
         @RequestParam(required = false) String ageCategoryId,
         @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) String keyword,
         @RequestParam(required = false) String sortBy
     ) {
         log.info("GET /api/park-tariff-rates/{} - Fetching rate", idObfuscated);
         return getService.getRateById(
-            idObfuscated, parkId, tariffId, seasonId, nationCategoryId, ageCategoryId, isActive, sortBy
+            idObfuscated, parkId, tariffId, seasonId, nationCategoryId, ageCategoryId, isActive, keyword, sortBy
         );
     }
 
@@ -77,6 +78,8 @@ public class ParkTariffRateController {
         @RequestParam(required = false) String nationCategoryId,
         @RequestParam(required = false) String ageCategoryId,
         @RequestParam(required = false) Boolean isActive,
+        // the list's search box: the module had no keyword param, so it did nothing
+        @RequestParam(required = false) String keyword,
         @RequestParam(required = false) Boolean includeStats,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
@@ -84,7 +87,7 @@ public class ParkTariffRateController {
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/park-tariff-rates - Fetching all rates with filters");
-        return getService.getAllRates(parkId, tariffId, seasonId, nationCategoryId, ageCategoryId, isActive, includeStats, page, size, sortBy, sortDirection);
+        return getService.getAllRates(parkId, tariffId, seasonId, nationCategoryId, ageCategoryId, isActive, keyword, includeStats, page, size, sortBy, sortDirection);
     }
 
     /**

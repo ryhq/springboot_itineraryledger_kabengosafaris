@@ -231,4 +231,28 @@ public class ActivityTariffRateSpecification {
         return (root, query, cb) ->
             moment == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), moment);
     }
+
+    /**
+     * Free-text search across the records a rate is identified by.
+     *
+     * The list has always shown a search box; the endpoint had no keyword
+     * parameter, so every keystroke was discarded server side. LEFT joins because
+     * a rate may have no age band — and an activity rate may have no park — and
+     * those must still be findable by the names they do have.
+     */
+    public static Specification<ActivityTariffRate> searchKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) return cb.conjunction();
+            String like = "%" + keyword.toLowerCase().trim() + "%";
+            if (query != null) query.distinct(true);
+            return cb.or(
+                cb.like(cb.lower(root.join("activity", jakarta.persistence.criteria.JoinType.LEFT).get("name")), like),
+                cb.like(cb.lower(root.join("park", jakarta.persistence.criteria.JoinType.LEFT).get("name")), like),
+                cb.like(cb.lower(root.join("season", jakarta.persistence.criteria.JoinType.LEFT).get("name")), like),
+                cb.like(cb.lower(root.join("nationCategory", jakarta.persistence.criteria.JoinType.LEFT).get("name")), like),
+                cb.like(cb.lower(root.join("ageCategory", jakarta.persistence.criteria.JoinType.LEFT).get("name")), like),
+                cb.like(cb.lower(root.get("notes")), like)
+            );
+        };
+    }
 }
