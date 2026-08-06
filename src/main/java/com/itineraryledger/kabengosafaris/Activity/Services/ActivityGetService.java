@@ -39,6 +39,10 @@ public class ActivityGetService {
     private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final IdObfuscator idObfuscator;
 
+    // filter-aware prev/next + the N of M readout
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "name", "slug", "minimumAge", "maximumParticipants", "isActive", "createdAt", "updatedAt"
     );
@@ -62,6 +66,34 @@ public class ActivityGetService {
      * @return ResponseEntity with ApiResponse containing the activity
      */
     public ResponseEntity<ApiResponse<?>> getActivityById(String idObfuscated) {
+        return getActivityById(idObfuscated, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One activity, plus where it sits in the set the caller was looking at.
+     *
+     * The list's filters and sort arrive here because paging out of a filtered list
+     * must stay inside that filter, and the record page's N of M must count that
+     * same set — it had no readout at all while the walk was raw id order.
+     */
+    public ResponseEntity<ApiResponse<?>> getActivityById(
+        String idObfuscated,
+        String name,
+        String slug,
+        Boolean hasTariff,
+        Boolean isWebActive,
+        ChargingBasis chargingBasis,
+        Boolean isActive,
+        Boolean isStandalone,
+        String keyword,
+        java.util.List<ChargingBasis> chargingBases,
+        java.util.List<String> statuses,
+        java.util.List<String> visibilities,
+        java.util.List<String> qualities,
+        java.time.LocalDateTime createdAfter,
+        java.time.LocalDateTime createdBefore,
+        String sortBy
+    ) {
         log.info("Fetching activity with ID: {}", idObfuscated);
 
         try {
@@ -95,16 +127,28 @@ public class ActivityGetService {
             // Convert to DTO
             ActivityDTO activityDTO = convertToDTO(activity);
 
-            // Circular navigation
-            Long nextId = activityRepository.findNextId(id).orElse(null);
-            Long previousId = activityRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = activityRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = activityRepository.findLastId().orElse(null);
+            /*
+             * Prev/next walks the SAME filtered, sorted set the list showed, and
+             * reports the position so the record page can print 'N of M'.
+             */
+            Specification<Activity> navSpec = buildSpec(
+                name, slug, hasTariff, isWebActive, chargingBasis, isActive, isStandalone, keyword,
+                chargingBases, statuses, visibilities, qualities, createdAfter, createdBefore
+            );
+            String navSortBy = validateSortField(sortBy);
+            if (navSortBy == null) navSortBy = "createdAt";
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                Activity.class, navSpec, navSortBy, false, id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("activity", activityDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(

@@ -105,10 +105,29 @@ public class ActivityController {
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_ACTIVITY')")
     public ResponseEntity<ApiResponse<?>> getActivityById(
-        @Parameter(description = "Obfuscated activity ID") @PathVariable String idObfuscated
+        @Parameter(description = "Obfuscated activity ID") @PathVariable String idObfuscated,
+        // the list's filters and sort, so prev/next stays inside the set on screen
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) String slug,
+        @RequestParam(required = false) Boolean hasTariff,
+        @RequestParam(required = false) Boolean isWebActive,
+        @RequestParam(required = false) ChargingBasis chargingBasis,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) Boolean isStandalone,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) java.util.List<ChargingBasis> chargingBases,
+        @RequestParam(required = false) java.util.List<String> statuses,
+        @RequestParam(required = false) java.util.List<String> visibilities,
+        @RequestParam(required = false) java.util.List<String> qualities,
+        @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
+        @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdBefore,
+        @RequestParam(required = false) String sortBy
     ) {
         log.info("GET /api/activities/{} - Fetching activity by ID", idObfuscated);
-        return activityGetService.getActivityById(idObfuscated);
+        return activityGetService.getActivityById(
+            idObfuscated, name, slug, hasTariff, isWebActive, chargingBasis, isActive, isStandalone,
+            keyword, chargingBases, statuses, visibilities, qualities, createdAfter, createdBefore, sortBy
+        );
     }
 
     /**
