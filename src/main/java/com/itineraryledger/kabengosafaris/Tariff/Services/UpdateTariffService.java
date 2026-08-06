@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Tariff.Services;
 
+import com.itineraryledger.kabengosafaris.Activity.ChargingBasis;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -96,7 +97,9 @@ public class UpdateTariffService {
                 tariff.setSlug(updateDTO.getSlug().trim());
             }
             if (updateDTO.getChargingBasis() != null) {
-                tariff.setChargingBasis(updateDTO.getChargingBasis());
+                // blank clears it; anything else must be a real ChargingBasis
+                String rawBasis = updateDTO.getChargingBasis().trim();
+                tariff.setChargingBasis(rawBasis.isEmpty() ? null : ChargingBasis.valueOf(rawBasis));
             }
             if (updateDTO.getDescription() != null) {
                 tariff.setDescription(updateDTO.getDescription());

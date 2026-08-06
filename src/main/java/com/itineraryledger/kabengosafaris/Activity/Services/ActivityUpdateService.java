@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.itineraryledger.kabengosafaris.Activity.ChargingBasis;
 import com.itineraryledger.kabengosafaris.Activity.Activity;
 import com.itineraryledger.kabengosafaris.Activity.ActivityRepository;
 import com.itineraryledger.kabengosafaris.Activity.DTOs.ActivityDTO;
@@ -129,7 +130,9 @@ public class ActivityUpdateService {
             activity.setIsWebActive(updateActivityDTO.getIsWebActive());
         }
         if (updateActivityDTO.getChargingBasis() != null) {
-            activity.setChargingBasis(updateActivityDTO.getChargingBasis());
+            // blank clears it; anything else must be a real ChargingBasis
+            String raw = updateActivityDTO.getChargingBasis().trim();
+            activity.setChargingBasis(raw.isEmpty() ? null : ChargingBasis.valueOf(raw));
         }
         if (updateActivityDTO.getDescription() != null) {
             activity.setDescription(updateActivityDTO.getDescription());

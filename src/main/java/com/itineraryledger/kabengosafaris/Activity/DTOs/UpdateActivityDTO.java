@@ -16,7 +16,12 @@ public class UpdateActivityDTO {
     private String slug;
     private Boolean hasTariff;
     private Boolean isWebActive;
-    private ChargingBasis chargingBasis;
+    /**
+     * Sent as a String on purpose: blank CLEARS the charging basis, null leaves it
+     * alone. Bound as the enum itself, an empty value made Jackson reject the
+     * entire request body, so an activity's charging basis could never be unset.
+     */
+    private String chargingBasis;
     private String description;
     private String detailedDescription;
     private Integer minimumAge;
