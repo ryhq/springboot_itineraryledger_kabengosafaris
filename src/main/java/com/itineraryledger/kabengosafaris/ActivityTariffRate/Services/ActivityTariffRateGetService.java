@@ -43,6 +43,13 @@ public class ActivityTariffRateGetService {
     private final ActivityTariffRateRepository rateRepository;
     private final IdObfuscator idObfuscator;
 
+    // filter-aware prev/next + the N of M readout, and declarative counters
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "rackRate", "stoRate", "currency", "isActive", "createdAt", "updatedAt"
     );
@@ -52,6 +59,26 @@ public class ActivityTariffRateGetService {
      * Get rate by ID
      */
     public ResponseEntity<ApiResponse<?>> getRateById(String idObfuscated) {
+        return getRateById(idObfuscated, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One rate, plus where it sits in the set the caller was looking at.
+     *
+     * The list's filters and sort arrive here because paging out of a filtered list
+     * must stay inside that filter, and N of M must count the same set.
+     */
+    public ResponseEntity<ApiResponse<?>> getRateById(
+        String idObfuscated,
+        String activityIdObfuscated,
+        String parkIdObfuscated,
+        String seasonIdObfuscated,
+        String nationCategoryIdObfuscated,
+        String ageCategoryIdObfuscated,
+        Boolean isActive,
+        Boolean globalOnly,
+        String sortBy
+    ) {
         log.info("Fetching activity rate by ID: {}", idObfuscated);
 
         try {
@@ -72,15 +99,25 @@ public class ActivityTariffRateGetService {
             ActivityTariffRateDTO rateDTO = convertToDTO(rateOpt.get());
 
             // Circular navigation
-            Long nextId = rateRepository.findNextId(id).orElse(null);
-            Long previousId = rateRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = rateRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = rateRepository.findLastId().orElse(null);
+            /*
+             * Prev/next walks the SAME filtered, sorted set the list showed; the old
+             * pair walked raw id order over every rate regardless of the filter.
+             */
+            Specification<ActivityTariffRate> navSpec = buildSpec(decodeOrNull(activityIdObfuscated), decodeOrNull(parkIdObfuscated), decodeOrNull(seasonIdObfuscated), decodeOrNull(nationCategoryIdObfuscated), decodeOrNull(ageCategoryIdObfuscated), isActive, globalOnly);
+            String navSortBy = validateSortField(sortBy);
+            if (navSortBy == null) navSortBy = DEFAULT_SORT_FIELD;
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                ActivityTariffRate.class, navSpec, navSortBy, false, id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("rate", rateDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok(ApiResponse.success(200, "Rate retrieved successfully", response));
 
@@ -103,6 +140,7 @@ public class ActivityTariffRateGetService {
         String nationCategoryIdObfuscated,
         String ageCategoryIdObfuscated,
         Boolean isActive,
+        Boolean includeStats,
         Integer page,
         Integer size,
         String sortBy,
@@ -111,74 +149,12 @@ public class ActivityTariffRateGetService {
         log.info("Fetching activity rates with filters");
 
         try {
-            // Build specification
-            Specification<ActivityTariffRate> spec = Specification.unrestricted();
-
-            if (activityIdObfuscated != null) {
-                try {
-                    Long activityId = idObfuscator.decodeId(activityIdObfuscated);
-                    if (activityId != null) {
-                        spec = spec.and(ActivityTariffRateSpecification.byActivityId(activityId));
-                    }
-                } catch (Exception e) {
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400, "Invalid activity ID format", "INVALID_ACTIVITY_ID")
-                    );
-                }
-            }
-            if (globalOnly != null && globalOnly) {
-                spec = spec.and(ActivityTariffRateSpecification.globalRatesOnly());
-            } else if (parkIdObfuscated != null) {
-                try {
-                    Long parkId = idObfuscator.decodeId(parkIdObfuscated);
-                    if (parkId != null) {
-                        spec = spec.and(ActivityTariffRateSpecification.byParkId(parkId));
-                    }
-                } catch (Exception e) {
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400, "Invalid park ID format", "INVALID_PARK_ID")
-                    );
-                }
-            }
-            if (seasonIdObfuscated != null) {
-                try {
-                    Long seasonId = idObfuscator.decodeId(seasonIdObfuscated);
-                    if (seasonId != null) {
-                        spec = spec.and(ActivityTariffRateSpecification.bySeasonId(seasonId));
-                    }
-                } catch (Exception e) {
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400, "Invalid season ID format", "INVALID_SEASON_ID")
-                    );
-                }
-            }
-            if (nationCategoryIdObfuscated != null) {
-                try {
-                    Long nationCategoryId = idObfuscator.decodeId(nationCategoryIdObfuscated);
-                    if (nationCategoryId != null) {
-                        spec = spec.and(ActivityTariffRateSpecification.byNationCategoryId(nationCategoryId));
-                    }
-                } catch (Exception e) {
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400, "Invalid nation category ID format", "INVALID_NATION_CATEGORY_ID")
-                    );
-                }
-            }
-            if (ageCategoryIdObfuscated != null) {
-                try {
-                    Long ageCategoryId = idObfuscator.decodeId(ageCategoryIdObfuscated);
-                    if (ageCategoryId != null) {
-                        spec = spec.and(ActivityTariffRateSpecification.byAgeCategoryId(ageCategoryId));
-                    }
-                } catch (Exception e) {
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(400, "Invalid age category ID format", "INVALID_AGE_CATEGORY_ID")
-                    );
-                }
-            }
-            if (isActive != null) {
-                spec = spec.and(ActivityTariffRateSpecification.isActive(isActive));
-            }
+            Long decoded_activityId = decodeOrNull(activityIdObfuscated);
+            Long decoded_parkId = decodeOrNull(parkIdObfuscated);
+            Long decoded_seasonId = decodeOrNull(seasonIdObfuscated);
+            Long decoded_nationCategoryId = decodeOrNull(nationCategoryIdObfuscated);
+            Long decoded_ageCategoryId = decodeOrNull(ageCategoryIdObfuscated);
+            Specification<ActivityTariffRate> spec = buildSpec(decoded_activityId, decoded_parkId, decoded_seasonId, decoded_nationCategoryId, decoded_ageCategoryId, isActive, globalOnly);
 
             // Sorting with validation
             String validatedSortBy = validateSortField(sortBy);
@@ -213,6 +189,10 @@ public class ActivityTariffRateGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            // counters share the rows' Specification, so cards and table agree
+            if (includeStats == null || includeStats) {
+                response.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok(ApiResponse.success(200, "Rates retrieved successfully", response));
 
@@ -323,6 +303,57 @@ public class ActivityTariffRateGetService {
             .isActive(rate.getIsActive())
             .createdAt(rate.getCreatedAt())
             .updatedAt(rate.getUpdatedAt())
+            .build();
+    }
+
+    /**
+     * The ONE place a rate filter is expressed — rows, counters and prev/next all
+     * build from it, so a card can never disagree with the table and the arrows can
+     * never walk a different set from the one on screen.
+     */
+    private Specification<ActivityTariffRate> buildSpec(
+        Long activityId,
+        Long parkId,
+        Long seasonId,
+        Long nationCategoryId,
+        Long ageCategoryId,
+        Boolean isActive,
+        Boolean globalOnly
+    ) {
+        Specification<ActivityTariffRate> spec = Specification.unrestricted();
+        if (activityId != null) spec = spec.and(ActivityTariffRateSpecification.byActivityId(activityId));
+        if (parkId != null) spec = spec.and(ActivityTariffRateSpecification.byParkId(parkId));
+        if (seasonId != null) spec = spec.and(ActivityTariffRateSpecification.bySeasonId(seasonId));
+        if (nationCategoryId != null) spec = spec.and(ActivityTariffRateSpecification.byNationCategoryId(nationCategoryId));
+        if (ageCategoryId != null) spec = spec.and(ActivityTariffRateSpecification.byAgeCategoryId(ageCategoryId));
+        if (isActive != null) spec = spec.and(ActivityTariffRateSpecification.isActive(isActive));
+        if (globalOnly != null && globalOnly) spec = spec.and(ActivityTariffRateSpecification.globalRatesOnly());
+        return spec;
+    }
+
+    /** Decodes an obfuscated id, or null when absent or unreadable. */
+    private Long decodeOrNull(String obfuscated) {
+        if (obfuscated == null || obfuscated.isBlank()) return null;
+        try {
+            return idObfuscator.decodeId(obfuscated);
+        } catch (Exception e) {
+            log.warn("Unreadable id in filter: {}", obfuscated);
+            return null;
+        }
+    }
+
+    /** Counters built from the SAME Specification as the rows. */
+    private java.util.Map<String, Object> computeStats(Specification<ActivityTariffRate> base) {
+        return listStats.of(ActivityTariffRate.class, base)
+            .total()
+            .count("active", ActivityTariffRateSpecification.isActive(true))
+            .complement("inactive", "active")
+            .count("hasSto", ActivityTariffRateSpecification.hasStoRate())
+            .complement("missingSto", "hasSto")
+            .count("global", ActivityTariffRateSpecification.globalRatesOnly())
+            .complement("parkSpecific", "global")
+            .count("withAgeBand", ActivityTariffRateSpecification.hasAgeCategory())
+            .recency(ActivityTariffRateSpecification::createdAfter)
             .build();
     }
 }

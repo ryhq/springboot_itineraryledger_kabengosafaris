@@ -219,4 +219,10 @@ public class ParkTariffRateSpecification {
             .and(noAgeCategory())
             .and(activeOnly());
     }
+
+    /** Rows created on or after `moment` — the recency counters. */
+    public static Specification<ParkTariffRate> createdAfter(java.time.LocalDateTime moment) {
+        return (root, query, cb) ->
+            moment == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), moment);
+    }
 }

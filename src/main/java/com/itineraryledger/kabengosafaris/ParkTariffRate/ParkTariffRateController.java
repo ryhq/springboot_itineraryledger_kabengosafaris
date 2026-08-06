@@ -30,6 +30,8 @@ import java.util.List;
  * - Handles PER_PERSON tariffs (with age category) and non-PER_PERSON (without)
  * - Validates that tariffs can only have rates if chargingBasis is set
  */
+import org.springframework.web.bind.annotation.PatchMapping;
+
 @RestController
 @RequestMapping("/api/park-tariff-rates")
 @RequiredArgsConstructor
@@ -47,10 +49,20 @@ public class ParkTariffRateController {
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_PARK_TARIFF_RATE')")
     public ResponseEntity<ApiResponse<?>> getRateById(
-        @PathVariable String idObfuscated
+        @PathVariable String idObfuscated,
+        // the list's filters and sort, so prev/next stays inside the set on screen
+        @RequestParam(required = false) String parkId,
+        @RequestParam(required = false) String tariffId,
+        @RequestParam(required = false) String seasonId,
+        @RequestParam(required = false) String nationCategoryId,
+        @RequestParam(required = false) String ageCategoryId,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) String sortBy
     ) {
         log.info("GET /api/park-tariff-rates/{} - Fetching rate", idObfuscated);
-        return getService.getRateById(idObfuscated);
+        return getService.getRateById(
+            idObfuscated, parkId, tariffId, seasonId, nationCategoryId, ageCategoryId, isActive, sortBy
+        );
     }
 
     /**
@@ -65,13 +77,14 @@ public class ParkTariffRateController {
         @RequestParam(required = false) String nationCategoryId,
         @RequestParam(required = false) String ageCategoryId,
         @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/park-tariff-rates - Fetching all rates with filters");
-        return getService.getAllRates(parkId, tariffId, seasonId, nationCategoryId, ageCategoryId, isActive, page, size, sortBy, sortDirection);
+        return getService.getAllRates(parkId, tariffId, seasonId, nationCategoryId, ageCategoryId, isActive, includeStats, page, size, sortBy, sortDirection);
     }
 
     /**
@@ -138,5 +151,23 @@ public class ParkTariffRateController {
     ) {
         log.info("GET /api/park-tariff-rates/matrix - Fetching rate matrix for tariff: {}, park: {}", tariffId, parkId);
         return matrixService.getRateMatrix(tariffId, parkId, excludeSeasonIds, excludeNationCategoryIds, excludeAgeCategoryIds);
+    }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.ParkTariffRate.Repositories.ParkTariffRateRepository bulkFlagsRepository;
+
+    /** PATCH /bulk — activate or withdraw a whole selection in one request. */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_PARK_TARIFF_RATE')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("park tariff rate", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+        });
     }
 }
