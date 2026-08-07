@@ -95,4 +95,22 @@ public class RentalClientController {
     public ResponseEntity<?> deleteRentalClients(@RequestBody List<String> idObfuscatedList) {
         return deleteRentalClientService.deleteRentalClients(idObfuscatedList);
     }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.RentalClient.Repository.RentalClientRepository bulkFlagsRepository;
+
+    /** PATCH /bulk — activate or withdraw a whole selection in one request. */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_RENTAL_CLIENT')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("rental client", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+        });
+    }
 }
