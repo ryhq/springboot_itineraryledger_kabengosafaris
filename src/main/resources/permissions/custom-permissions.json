@@ -49,6 +49,12 @@
       "description": "Allows initiating refund process (PAID/PARTIALLY_PAID -> REFUNDED)"
     },
     {
+      "name": "DUPLICATE_ITINERARY",
+      "action": "CREATE",
+      "entity": "ITINERARY",
+      "description": "Allows copying a complete or published itinerary into a new draft, with its days, parks, tariffs, activities, stays and pax split"
+    },
+    {
       "name": "COMPLETE_ITINERARY",
       "action": "UPDATE",
       "entity": "ITINERARY",

@@ -11,10 +11,12 @@ import com.itineraryledger.kabengosafaris.Itinerary.Entity.BudgetCategory;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary.ItineraryStatus;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.CreateItineraryDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.DTOs.DuplicateItineraryDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.UpdateItineraryDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryCostEstimationService;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryCreateService;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryDeleteService;
+import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryDuplicateService;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryFullGetService;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryGetService;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryUpdateService;
@@ -41,6 +43,7 @@ public class ItineraryController {
     private final ItineraryFullGetService fullGetService;
     private final ItineraryStatusService statusService;
     private final ItineraryCostEstimationService costEstimationService;
+    private final ItineraryDuplicateService duplicateService;
 
     @Autowired
     public ItineraryController(
@@ -50,7 +53,8 @@ public class ItineraryController {
         ItineraryGetService getService,
         ItineraryFullGetService fullGetService,
         ItineraryStatusService statusService,
-        ItineraryCostEstimationService costEstimationService
+        ItineraryCostEstimationService costEstimationService,
+        ItineraryDuplicateService duplicateService
     ) {
         this.createService = createService;
         this.updateService = updateService;
@@ -59,6 +63,7 @@ public class ItineraryController {
         this.fullGetService = fullGetService;
         this.statusService = statusService;
         this.costEstimationService = costEstimationService;
+        this.duplicateService = duplicateService;
     }
 
     @PostMapping
@@ -154,6 +159,55 @@ public class ItineraryController {
     ) {
         log.info("GET /api/itineraries - Fetching all itineraries");
         return getService.getAllItineraries(name, code, status, tripType, budgetCategory, startLocation, endLocation, totalDays, isActive, isDayTrip, keyword, includeStats, page, size, sortBy, sortDirection);
+    }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @Autowired
+    private com.itineraryledger.kabengosafaris.Itinerary.Repository.ItineraryRepository bulkFlagsRepository;
+
+    /**
+     * PATCH /bulk — one request for a whole selection.
+     *
+     * Retiring last season's catalogue is one action, not fifty. Only the flags
+     * present in the body apply, and the response reports per-id outcomes rather
+     * than a bare 200 that hides what did not change.
+     *
+     * isActive is NOT the publishing status: a deactivated itinerary is out of
+     * use everywhere, while archiving is the status move. Both exist because
+     * they answer different questions.
+     */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_ITINERARY')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("itinerary", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+        });
+    }
+
+    /**
+     * Duplicate ONE finished itinerary into a fresh draft.
+     *
+     * The source must be COMPLETE or PUBLISHED — a draft has nothing settled
+     * worth copying and an archived one was deliberately retired. Exactly one
+     * per call: a copy is a decision about a specific template, and the response
+     * has to be able to say what the new record contains.
+     *
+     * The body is optional; without it everything except images and documents is
+     * copied. See {@link DuplicateItineraryDTO} for the per-part flags.
+     */
+    @PostMapping("/{id}/duplicate")
+    @PreAuthorize("hasAuthority('PERM_DUPLICATE_ITINERARY')")
+    public ResponseEntity<ApiResponse<?>> duplicateItinerary(
+        @PathVariable String id,
+        @RequestBody(required = false) DuplicateItineraryDTO duplicateDTO
+    ) {
+        log.info("POST /api/itineraries/{}/duplicate - Duplicating itinerary", id);
+        return duplicateService.duplicateItinerary(id, duplicateDTO);
     }
 
     // ========================
