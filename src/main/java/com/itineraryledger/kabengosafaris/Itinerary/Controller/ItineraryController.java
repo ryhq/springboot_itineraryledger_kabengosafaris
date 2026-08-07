@@ -92,10 +92,26 @@ public class ItineraryController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_ITINERARY')")
     public ResponseEntity<ApiResponse<?>> getItineraryById(
-        @PathVariable String id
+        @PathVariable String id,
+        // the list's filters and sort, so prev/next stays inside the set on screen
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) String code,
+        @RequestParam(required = false) ItineraryStatus status,
+        @RequestParam(required = false) TripType tripType,
+        @RequestParam(required = false) BudgetCategory budgetCategory,
+        @RequestParam(required = false) String startLocation,
+        @RequestParam(required = false) String endLocation,
+        @RequestParam(required = false) Integer totalDays,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) Boolean isDayTrip,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy
     ) {
         log.info("GET /api/itineraries/{} - Fetching itinerary", id);
-        return getService.getItineraryById(id);
+        return getService.getItineraryById(
+            id, name, code, status, tripType, budgetCategory, startLocation, endLocation,
+            totalDays, isActive, isDayTrip, keyword, sortBy
+        );
     }
 
     @GetMapping("/code/{code}")
@@ -130,13 +146,14 @@ public class ItineraryController {
         @RequestParam(required = false) Boolean isActive,
         @RequestParam(required = false) Boolean isDayTrip,
         @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/itineraries - Fetching all itineraries");
-        return getService.getAllItineraries(name, code, status, tripType, budgetCategory, startLocation, endLocation, totalDays, isActive, isDayTrip, keyword, page, size, sortBy, sortDirection);
+        return getService.getAllItineraries(name, code, status, tripType, budgetCategory, startLocation, endLocation, totalDays, isActive, isDayTrip, keyword, includeStats, page, size, sortBy, sortDirection);
     }
 
     // ========================

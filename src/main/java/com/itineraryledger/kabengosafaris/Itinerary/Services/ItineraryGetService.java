@@ -37,6 +37,13 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class ItineraryGetService {
 
+    // filter-aware prev/next + the N of M readout, and declarative counters
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "name", "code", "tripType", "budgetCategory", "totalDays", "totalNights", "status", "createdAt", "updatedAt"
     );
@@ -61,6 +68,28 @@ public class ItineraryGetService {
      * @return ResponseEntity with ApiResponse containing the itinerary
      */
     public ResponseEntity<ApiResponse<?>> getItineraryById(String idObfuscated) {
+        return getItineraryById(idObfuscated, null, null, null, null, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * One itinerary, plus where it sits in the set the caller was looking at — the
+     * list's filters and sort decide the walk, not raw id order.
+     */
+    public ResponseEntity<ApiResponse<?>> getItineraryById(
+        String idObfuscated,
+        String name,
+        String code,
+        ItineraryStatus status,
+        TripType tripType,
+        BudgetCategory budgetCategory,
+        String startLocation,
+        String endLocation,
+        Integer totalDays,
+        Boolean isActive,
+        Boolean isDayTrip,
+        String keyword,
+        String sortBy
+    ) {
         log.info("Fetching itinerary with ID: {}", idObfuscated);
 
         try {
@@ -95,15 +124,28 @@ public class ItineraryGetService {
             ItineraryDTO itineraryDTO = convertToDTO(itinerary);
 
             // Build navigation
-            Long nextId = itineraryRepository.findNextId(id).orElse(null);
-            Long previousId = itineraryRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = itineraryRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = itineraryRepository.findLastId().orElse(null);
+            /*
+             * Prev/next walks the SAME filtered, sorted set the list showed; the old
+             * pair walked raw id order over every itinerary regardless of the filter.
+             */
+            Specification<Itinerary> navSpec = buildSpec(
+                name, code, status, tripType, budgetCategory,
+                startLocation, endLocation, totalDays, isActive, isDayTrip, keyword
+            );
+            String navSortBy = validateSortField(sortBy);
+            if (navSortBy == null) navSortBy = "createdAt";
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                Itinerary.class, navSpec, navSortBy, false, id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("itinerary", itineraryDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -201,6 +243,7 @@ public class ItineraryGetService {
         Boolean isActive,
         Boolean isDayTrip,
         String keyword,
+        Boolean includeStats,
         Integer page,
         Integer size,
         String sortBy,
@@ -218,42 +261,10 @@ public class ItineraryGetService {
                 );
             }
 
-            // Build specification for filtering
-            Specification<Itinerary> spec = Specification.unrestricted();
-
-            if (name != null && !name.isEmpty()) {
-                spec = spec.and(ItinerarySpecification.nameLike(name));
-            }
-            if (code != null && !code.isEmpty()) {
-                spec = spec.and(ItinerarySpecification.codeLike(code));
-            }
-            if (status != null) {
-                spec = spec.and(ItinerarySpecification.hasStatus(status));
-            }
-            if (tripType != null) {
-                spec = spec.and(ItinerarySpecification.hasTripType(tripType));
-            }
-            if (budgetCategory != null) {
-                spec = spec.and(ItinerarySpecification.hasBudgetCategory(budgetCategory));
-            }
-            if (startLocation != null && !startLocation.isEmpty()) {
-                spec = spec.and(ItinerarySpecification.startLocationLike(startLocation));
-            }
-            if (endLocation != null && !endLocation.isEmpty()) {
-                spec = spec.and(ItinerarySpecification.endLocationLike(endLocation));
-            }
-            if (totalDays != null) {
-                spec = spec.and(ItinerarySpecification.hasTotalDays(totalDays));
-            }
-            if (isActive != null) {
-                spec = spec.and(ItinerarySpecification.isActive(isActive));
-            }
-            if (isDayTrip != null) {
-                spec = spec.and(ItinerarySpecification.isDayTrip(isDayTrip));
-            }
-            if (keyword != null && !keyword.isEmpty()) {
-                spec = spec.and(ItinerarySpecification.searchKeyword(keyword));
-            }
+            Specification<Itinerary> spec = buildSpec(
+                name, code, status, tripType, budgetCategory,
+                startLocation, endLocation, totalDays, isActive, isDayTrip, keyword
+            );
 
             // Set default pagination values
             int pageNumber = (page != null && page >= 0) ? page : 0;
@@ -285,6 +296,10 @@ public class ItineraryGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", direction.name().toLowerCase());
+            // counters share the rows' Specification, so cards and table agree
+            if (includeStats == null || includeStats) {
+                response.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -350,5 +365,42 @@ public class ItineraryGetService {
         dto.setCreatedAt(itinerary.getCreatedAt());
         dto.setUpdatedAt(itinerary.getUpdatedAt());
         return dto;
+    }
+
+    /**
+     * The ONE place an itinerary filter is expressed — rows, counters and prev/next
+     * all build from it, so a card can never disagree with the table.
+     */
+    private Specification<Itinerary> buildSpec(
+        String name, String code, ItineraryStatus status, TripType tripType,
+        BudgetCategory budgetCategory, String startLocation, String endLocation,
+        Integer totalDays, Boolean isActive, Boolean isDayTrip, String keyword
+    ) {
+        Specification<Itinerary> spec = Specification.unrestricted();
+        if (name != null && !name.isEmpty()) spec = spec.and(ItinerarySpecification.nameLike(name));
+        if (code != null && !code.isEmpty()) spec = spec.and(ItinerarySpecification.codeLike(code));
+        if (status != null) spec = spec.and(ItinerarySpecification.hasStatus(status));
+        if (tripType != null) spec = spec.and(ItinerarySpecification.hasTripType(tripType));
+        if (budgetCategory != null) spec = spec.and(ItinerarySpecification.hasBudgetCategory(budgetCategory));
+        if (startLocation != null && !startLocation.isEmpty()) spec = spec.and(ItinerarySpecification.startLocationLike(startLocation));
+        if (endLocation != null && !endLocation.isEmpty()) spec = spec.and(ItinerarySpecification.endLocationLike(endLocation));
+        if (totalDays != null) spec = spec.and(ItinerarySpecification.hasTotalDays(totalDays));
+        if (isActive != null) spec = spec.and(ItinerarySpecification.isActive(isActive));
+        if (isDayTrip != null) spec = spec.and(ItinerarySpecification.isDayTrip(isDayTrip));
+        if (keyword != null && !keyword.isEmpty()) spec = spec.and(ItinerarySpecification.searchKeyword(keyword));
+        return spec;
+    }
+
+    /** Counters built from the SAME Specification as the rows. */
+    private java.util.Map<String, Object> computeStats(Specification<Itinerary> base) {
+        return listStats.of(Itinerary.class, base)
+            .total()
+            .count("active", ItinerarySpecification.isActive(true))
+            .complement("inactive", "active")
+            .breakdown("byStatus", ItineraryStatus.values(), ItinerarySpecification::hasStatus)
+            .breakdown("byTripType", TripType.values(), ItinerarySpecification::hasTripType)
+            .count("dayTrips", ItinerarySpecification.isDayTrip(true))
+            .recency(ItinerarySpecification::createdAfter)
+            .build();
     }
 }

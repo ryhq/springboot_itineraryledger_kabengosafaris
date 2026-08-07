@@ -173,4 +173,10 @@ public class ItinerarySpecification {
         return (root, query, cb) ->
             cb.equal(root.get("budgetCategory"), budgetCategory);
     }
+
+    /** Rows created on or after `moment` — the recency counters. */
+    public static Specification<Itinerary> createdAfter(java.time.LocalDateTime moment) {
+        return (root, query, cb) ->
+            moment == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), moment);
+    }
 }
