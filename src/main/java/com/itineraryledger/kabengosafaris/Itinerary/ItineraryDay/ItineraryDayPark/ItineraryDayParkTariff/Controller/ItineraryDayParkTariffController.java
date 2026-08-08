@@ -11,6 +11,7 @@ import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPar
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.Services.ItineraryDayParkTariffCreateService;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.Services.ItineraryDayParkTariffDeleteService;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.Services.ItineraryDayParkTariffGetService;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.Services.ItineraryDayParkTariffSetService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 
 import jakarta.validation.Valid;
@@ -27,16 +28,40 @@ public class ItineraryDayParkTariffController {
     private final ItineraryDayParkTariffCreateService createService;
     private final ItineraryDayParkTariffGetService getService;
     private final ItineraryDayParkTariffDeleteService deleteService;
+    private final ItineraryDayParkTariffSetService setService;
 
     @Autowired
     public ItineraryDayParkTariffController(
         ItineraryDayParkTariffCreateService createService,
         ItineraryDayParkTariffGetService getService,
-        ItineraryDayParkTariffDeleteService deleteService
+        ItineraryDayParkTariffDeleteService deleteService,
+        ItineraryDayParkTariffSetService setService
     ) {
         this.createService = createService;
         this.getService = getService;
         this.deleteService = deleteService;
+        this.setService = setService;
+    }
+
+    /**
+     * PUT — the whole fee set for this park visit, in one call.
+     *
+     * The UI is a checklist, and a checklist is a set rather than a sequence of
+     * adds and removes: send the state you want and the server works out the
+     * difference, so ticking three boxes cannot half-succeed. Fees already on
+     * the visit keep their notes and pricing flag.
+     */
+    @PutMapping
+    @PreAuthorize("hasAuthority('PERM_UPDATE_ITINERARY_DAY_PARK_TARIFF')")
+    public ResponseEntity<ApiResponse<?>> setParkTariffs(
+        @PathVariable String itineraryId,
+        @PathVariable String dayId,
+        @PathVariable String parkVisitId,
+        @RequestBody List<String> tariffIds
+    ) {
+        log.info("PUT /api/itineraries/{}/days/{}/parks/{}/tariffs - Setting {} tariffs",
+            itineraryId, dayId, parkVisitId, tariffIds == null ? 0 : tariffIds.size());
+        return setService.setParkTariffs(parkVisitId, tariffIds);
     }
 
     @PostMapping

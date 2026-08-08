@@ -8,10 +8,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.DTOs.CreateItineraryDayDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.DTOs.DuplicateItineraryDayDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.DTOs.ReorderItineraryDaysDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.DTOs.UpdateItineraryDayDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Services.ItineraryDayCreateService;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Services.ItineraryDayDeleteService;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Services.ItineraryDayDuplicateService;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Services.ItineraryDayGetService;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Services.ItineraryDayReorderService;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Services.ItineraryDayUpdateService;
@@ -33,6 +35,7 @@ public class ItineraryDayController {
     private final ItineraryDayDeleteService deleteService;
     private final ItineraryDayGetService getService;
     private final ItineraryDayReorderService reorderService;
+    private final ItineraryDayDuplicateService duplicateService;
 
     @Autowired
     public ItineraryDayController(
@@ -40,13 +43,35 @@ public class ItineraryDayController {
         ItineraryDayUpdateService updateService,
         ItineraryDayDeleteService deleteService,
         ItineraryDayGetService getService,
-        ItineraryDayReorderService reorderService
+        ItineraryDayReorderService reorderService,
+        ItineraryDayDuplicateService duplicateService
     ) {
         this.createService = createService;
         this.updateService = updateService;
         this.deleteService = deleteService;
         this.getService = getService;
         this.reorderService = reorderService;
+        this.duplicateService = duplicateService;
+    }
+
+    /**
+     * Copy a day, with everything on it, one or more times.
+     *
+     * Three nights in the same park are three days that differ by a sentence.
+     * The copies land directly after the source and the rest are renumbered,
+     * because "another night here" means next, not last. The itinerary's day
+     * count is the ceiling — the refusal names it rather than making an
+     * itinerary that can never be completed.
+     */
+    @PostMapping("/{dayId}/duplicate")
+    @PreAuthorize("hasAuthority('PERM_CREATE_ITINERARY_DAY')")
+    public ResponseEntity<ApiResponse<?>> duplicateDay(
+        @PathVariable String itineraryId,
+        @PathVariable String dayId,
+        @RequestBody(required = false) DuplicateItineraryDayDTO duplicateDTO
+    ) {
+        log.info("POST /api/itineraries/{}/days/{}/duplicate - Duplicating day", itineraryId, dayId);
+        return duplicateService.duplicateDay(itineraryId, dayId, duplicateDTO);
     }
 
     @PostMapping
