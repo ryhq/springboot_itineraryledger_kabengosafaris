@@ -8,10 +8,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.DTOs.CreateItineraryDayParkTariffDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.DTOs.UpdateItineraryDayParkTariffDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.Services.ItineraryDayParkTariffCreateService;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.Services.ItineraryDayParkTariffDeleteService;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.Services.ItineraryDayParkTariffGetService;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.Services.ItineraryDayParkTariffSetService;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.Services.ItineraryDayParkTariffUpdateService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 
 import jakarta.validation.Valid;
@@ -29,18 +31,42 @@ public class ItineraryDayParkTariffController {
     private final ItineraryDayParkTariffGetService getService;
     private final ItineraryDayParkTariffDeleteService deleteService;
     private final ItineraryDayParkTariffSetService setService;
+    private final ItineraryDayParkTariffUpdateService updateService;
 
     @Autowired
     public ItineraryDayParkTariffController(
         ItineraryDayParkTariffCreateService createService,
         ItineraryDayParkTariffGetService getService,
         ItineraryDayParkTariffDeleteService deleteService,
-        ItineraryDayParkTariffSetService setService
+        ItineraryDayParkTariffSetService setService,
+        ItineraryDayParkTariffUpdateService updateService
     ) {
         this.createService = createService;
         this.getService = getService;
         this.deleteService = deleteService;
         this.setService = setService;
+        this.updateService = updateService;
+    }
+
+    /**
+     * PUT /{tariffEntryId} — what to say about ONE fee on this visit.
+     *
+     * Which fees apply is the set above; this is whether a fee sits inside the
+     * quoted price and what the office needs to know about it. A fee the client
+     * is not paying for could previously only be deleted, which loses the record
+     * that it was considered.
+     */
+    @PutMapping("/{tariffEntryId}")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_ITINERARY_DAY_PARK_TARIFF')")
+    public ResponseEntity<ApiResponse<?>> updateParkTariff(
+        @PathVariable String itineraryId,
+        @PathVariable String dayId,
+        @PathVariable String parkVisitId,
+        @PathVariable String tariffEntryId,
+        @RequestBody UpdateItineraryDayParkTariffDTO updateDTO
+    ) {
+        log.info("PUT /api/itineraries/{}/days/{}/parks/{}/tariffs/{}", itineraryId, dayId, parkVisitId, tariffEntryId);
+        return updateService.updateParkTariff(parkVisitId, tariffEntryId, updateDTO);
     }
 
     /**

@@ -171,9 +171,40 @@ public class PerPaxCostAggregator {
         for (CostLineItemDTO item : items) {
             String chargingBasis = item.getChargingBasis();
 
-            if (isPerPersonCharging(chargingBasis)) {
-                // Per-person items: distribute proportionally to each pax category
-                // Since the calculator already sums up all pax, we distribute based on count
+            if (item.getPaxShares() != null && !item.getPaxShares().isEmpty()) {
+                /*
+                 * A per-person item priced band by band. Each band gets what it
+                 * was actually charged — an adult park fee and a youth park fee
+                 * are different rates, and splitting their sum by headcount gave
+                 * every band the same number regardless of its own rate.
+                 */
+                for (CostLineItemDTO.PaxShareDTO share : item.getPaxShares()) {
+                    String key = share.getNationCategoryId() + "-" + share.getAgeCategoryId();
+                    PaxCategoryCostDTO paxCost = paxCostMap.get(key);
+                    if (paxCost == null) continue;
+
+                    paxCost.getLineItems().add(CostLineItemDTO.builder()
+                        .dayNumber(item.getDayNumber())
+                        .itemType(item.getItemType())
+                        .itemName(item.getItemName())
+                        .itemId(item.getItemId())
+                        .chargingBasis(item.getChargingBasis())
+                        .quantity(share.getCount())
+                        .stoUnitPrice(share.getStoUnitPrice())
+                        .rackUnitPrice(share.getRackUnitPrice())
+                        .stoTotalPrice(share.getStoTotalPrice())
+                        .rackTotalPrice(share.getRackTotalPrice())
+                        .currency(item.getCurrency())
+                        .paxCategory(share.getPaxCategory())
+                        .notes(item.getNotes())
+                        .build());
+                }
+            } else if (isPerPersonCharging(chargingBasis)) {
+                /*
+                 * Per-person, but with no band detail — an older payload, or an
+                 * item the calculator could not break down. Falling back to the
+                 * headcount split is the best that can be said about it.
+                 */
                 for (FullItineraryDTO.PaxDTO pax : paxList) {
                     String key = pax.getNationCategoryId() + "-" + pax.getAgeCategoryId();
                     PaxCategoryCostDTO paxCost = paxCostMap.get(key);
@@ -182,7 +213,6 @@ public class PerPaxCostAggregator {
                     int paxCount = pax.getCount() != null ? pax.getCount() : 0;
                     if (paxCount == 0 || totalPax == 0) continue;
 
-                    // Calculate proportional cost for this pax category
                     BigDecimal proportion = BigDecimal.valueOf(paxCount)
                         .divide(BigDecimal.valueOf(totalPax), 10, RoundingMode.HALF_UP);
 

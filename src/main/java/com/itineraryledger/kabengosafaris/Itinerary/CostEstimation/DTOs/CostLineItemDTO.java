@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * DTO for a single cost line item in cost estimation.
@@ -85,4 +86,34 @@ public class CostLineItemDTO {
      * Additional context or notes
      */
     private String notes;
+
+    /**
+     * For a per-person item, what each pax band actually pays.
+     *
+     * The line above is the sum across every band with an averaged unit price,
+     * which is what a day breakdown wants to read. It is NOT enough to answer
+     * "what does this itinerary cost per adult": an adult park fee and a youth
+     * park fee are different rates, and once summed they cannot be told apart.
+     * Per-pax mode used to split the sum by headcount, which handed every band
+     * the same number no matter what its own rate was.
+     *
+     * Empty for group, vehicle and per-room items — those genuinely are shared.
+     */
+    private List<PaxShareDTO> paxShares;
+
+    /** One band's share of a per-person line. */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PaxShareDTO {
+        private String nationCategoryId;
+        private String ageCategoryId;
+        private String paxCategory;
+        private Integer count;
+        private BigDecimal stoUnitPrice;
+        private BigDecimal rackUnitPrice;
+        private BigDecimal stoTotalPrice;
+        private BigDecimal rackTotalPrice;
+    }
 }

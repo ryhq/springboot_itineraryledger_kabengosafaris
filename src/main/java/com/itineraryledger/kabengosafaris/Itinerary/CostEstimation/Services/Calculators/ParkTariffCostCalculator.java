@@ -165,6 +165,8 @@ public class ParkTariffCostCalculator {
         String currency = DEFAULT_CURRENCY;
         int totalPaxCount = 0;
         boolean anyRateFound = false;
+        // kept alongside the sum so per-pax mode can attribute instead of averaging
+        List<CostLineItemDTO.PaxShareDTO> paxShares = new ArrayList<>();
 
         for (FullItineraryDTO.PaxDTO pax : paxList) {
             Long nationCategoryId = idObfuscator.decodeId(pax.getNationCategoryId());
@@ -188,11 +190,25 @@ public class ParkTariffCostCalculator {
                 BigDecimal stoUnit = rate.getStoRate() != null ? rate.getStoRate() : BigDecimal.ZERO;
                 BigDecimal rackUnit = rate.getRackRate() != null ? rate.getRackRate() : BigDecimal.ZERO;
 
-                stoTotal = stoTotal.add(stoUnit.multiply(BigDecimal.valueOf(count)));
-                rackTotal = rackTotal.add(rackUnit.multiply(BigDecimal.valueOf(count)));
+                BigDecimal shareSto = stoUnit.multiply(BigDecimal.valueOf(count));
+                BigDecimal shareRack = rackUnit.multiply(BigDecimal.valueOf(count));
+
+                stoTotal = stoTotal.add(shareSto);
+                rackTotal = rackTotal.add(shareRack);
                 totalPaxCount += count;
                 currency = rate.getCurrency() != null ? rate.getCurrency() : DEFAULT_CURRENCY;
                 anyRateFound = true;
+
+                paxShares.add(CostLineItemDTO.PaxShareDTO.builder()
+                    .nationCategoryId(pax.getNationCategoryId())
+                    .ageCategoryId(pax.getAgeCategoryId())
+                    .paxCategory(paxCategory)
+                    .count(count)
+                    .stoUnitPrice(stoUnit)
+                    .rackUnitPrice(rackUnit)
+                    .stoTotalPrice(shareSto)
+                    .rackTotalPrice(shareRack)
+                    .build());
             }
         }
 
@@ -221,6 +237,7 @@ public class ParkTariffCostCalculator {
             .rackTotalPrice(rackTotal)
             .currency(currency)
             .paxCategory("Per Person")
+            .paxShares(paxShares)
             .build();
     }
 
