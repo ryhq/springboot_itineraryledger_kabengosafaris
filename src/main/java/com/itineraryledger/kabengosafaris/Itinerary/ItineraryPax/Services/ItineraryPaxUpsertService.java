@@ -92,6 +92,24 @@ public class ItineraryPaxUpsertService {
             int createdCount = 0;
             int updatedCount = 0;
 
+            /*
+             * Bean validation does not cascade into a @RequestBody List, so @Min(1)
+             * on the DTO never runs and a zero reached the entity's @PrePersist —
+             * which throws, and an IllegalArgumentException reads to the caller as
+             * "an unexpected error occurred". Check it here, where the answer can
+             * name the band.
+             */
+            for (UpsertItineraryPaxDTO dto : upsertDTOs) {
+                if (dto.getCount() == null || dto.getCount() < 1) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                            "Every pax band needs at least one guest. Remove the band instead of setting it to "
+                                + (dto.getCount() == null ? "nothing" : dto.getCount()) + ".",
+                            "INVALID_PAX_COUNT")
+                    );
+                }
+            }
+
             for (UpsertItineraryPaxDTO dto : upsertDTOs) {
                 try {
                     // Decode category IDs

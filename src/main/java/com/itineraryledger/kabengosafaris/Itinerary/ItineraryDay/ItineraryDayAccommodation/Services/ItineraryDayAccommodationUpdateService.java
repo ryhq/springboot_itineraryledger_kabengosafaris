@@ -8,6 +8,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.itineraryledger.kabengosafaris.Accommodation.Entities.Accommodation;
+import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationBoardType;
+import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRoomStandard;
+import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRoomType;
+import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationBoardTypeRepository;
+import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRepository;
+import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRoomStandardRepository;
+import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRoomTypeRepository;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayAccommodation.Entity.ItineraryDayAccommodation;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayAccommodation.Repository.ItineraryDayAccommodationRepository;
@@ -33,16 +41,28 @@ public class ItineraryDayAccommodationUpdateService {
 
     private final ItineraryDayAccommodationRepository accommodationRepository;
     private final ItineraryPaxRepository paxRepository;
+    private final AccommodationRepository baseAccommodationRepository;
+    private final AccommodationRoomTypeRepository roomTypeRepository;
+    private final AccommodationRoomStandardRepository roomStandardRepository;
+    private final AccommodationBoardTypeRepository boardTypeRepository;
     private final IdObfuscator idObfuscator;
 
     @Autowired
     public ItineraryDayAccommodationUpdateService(
         ItineraryDayAccommodationRepository accommodationRepository,
         ItineraryPaxRepository paxRepository,
+        AccommodationRepository baseAccommodationRepository,
+        AccommodationRoomTypeRepository roomTypeRepository,
+        AccommodationRoomStandardRepository roomStandardRepository,
+        AccommodationBoardTypeRepository boardTypeRepository,
         IdObfuscator idObfuscator
     ) {
         this.accommodationRepository = accommodationRepository;
         this.paxRepository = paxRepository;
+        this.baseAccommodationRepository = baseAccommodationRepository;
+        this.roomTypeRepository = roomTypeRepository;
+        this.roomStandardRepository = roomStandardRepository;
+        this.boardTypeRepository = boardTypeRepository;
         this.idObfuscator = idObfuscator;
     }
 
@@ -102,6 +122,81 @@ public class ItineraryDayAccommodationUpdateService {
             }
 
             // Update fields if provided
+            /*
+             * The room configuration, which used to be fixed after creation.
+             * Order matters: the property is resolved first, because the room
+             * type, standard and board are then checked against whichever
+             * property the stay ends up on — a Bungalow from another lodge is
+             * not a valid choice here, and silently accepting it would price
+             * the night against a rate that does not exist.
+             */
+            if (updateDTO.getAccommodationId() != null && !updateDTO.getAccommodationId().isBlank()) {
+                Long newAccommodationId;
+                try {
+                    newAccommodationId = idObfuscator.decodeId(updateDTO.getAccommodationId());
+                } catch (Exception e) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Invalid accommodation ID", "INVALID_ACCOMMODATION_ID"));
+                }
+                Accommodation accommodation = baseAccommodationRepository.findById(newAccommodationId).orElse(null);
+                if (accommodation == null) {
+                    return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Accommodation not found", "ACCOMMODATION_NOT_FOUND"));
+                }
+                dayAccommodation.setAccommodation(accommodation);
+            }
+
+            Long owningAccommodationId = dayAccommodation.getAccommodation().getId();
+            String owningName = dayAccommodation.getAccommodation().getName();
+
+            if (updateDTO.getRoomTypeId() != null && !updateDTO.getRoomTypeId().isBlank()) {
+                AccommodationRoomType roomType = roomTypeRepository
+                    .findById(idObfuscator.decodeId(updateDTO.getRoomTypeId())).orElse(null);
+                if (roomType == null) {
+                    return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Room type not found", "ROOM_TYPE_NOT_FOUND"));
+                }
+                if (!roomType.getAccommodation().getId().equals(owningAccommodationId)) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                            "That room type belongs to another property, not " + owningName + ".",
+                            "ROOM_TYPE_MISMATCH"));
+                }
+                dayAccommodation.setRoomType(roomType);
+            }
+
+            if (updateDTO.getRoomStandardId() != null && !updateDTO.getRoomStandardId().isBlank()) {
+                AccommodationRoomStandard roomStandard = roomStandardRepository
+                    .findById(idObfuscator.decodeId(updateDTO.getRoomStandardId())).orElse(null);
+                if (roomStandard == null) {
+                    return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Room standard not found", "ROOM_STANDARD_NOT_FOUND"));
+                }
+                if (!roomStandard.getAccommodation().getId().equals(owningAccommodationId)) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                            "That room standard belongs to another property, not " + owningName + ".",
+                            "ROOM_STANDARD_MISMATCH"));
+                }
+                dayAccommodation.setRoomStandard(roomStandard);
+            }
+
+            if (updateDTO.getBoardTypeId() != null && !updateDTO.getBoardTypeId().isBlank()) {
+                AccommodationBoardType boardType = boardTypeRepository
+                    .findById(idObfuscator.decodeId(updateDTO.getBoardTypeId())).orElse(null);
+                if (boardType == null) {
+                    return ResponseEntity.status(404).body(
+                        ApiResponse.error(404, "Board type not found", "BOARD_TYPE_NOT_FOUND"));
+                }
+                if (!boardType.getAccommodation().getId().equals(owningAccommodationId)) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                            "That board type belongs to another property, not " + owningName + ".",
+                            "BOARD_TYPE_MISMATCH"));
+                }
+                dayAccommodation.setBoardType(boardType);
+            }
+
             if (updateDTO.getRoomCount() != null) {
                 dayAccommodation.setRoomCount(updateDTO.getRoomCount());
             }

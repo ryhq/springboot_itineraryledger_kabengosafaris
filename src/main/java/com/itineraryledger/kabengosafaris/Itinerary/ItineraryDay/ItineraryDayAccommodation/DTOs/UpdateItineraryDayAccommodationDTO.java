@@ -6,16 +6,29 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * UpdateItineraryDayAccommodationDTO - Data Transfer Object for updating an ItineraryDayAccommodation
+ * What can change about a night's stay.
  *
- * Only allows updating room count, alternative status, and notes.
- * The core accommodation configuration (accommodation, room type, room standard, board type)
- * cannot be changed - delete and recreate if different configuration is needed.
+ * The room configuration used to be fixed after creation — "delete and recreate
+ * if a different configuration is needed" — which meant moving a booking from a
+ * Superior Suite to a Bungalow destroyed the row and its notes, and any UI that
+ * offered the choice appeared to save and silently did nothing.
+ *
+ * All four are now updatable. Null still means "leave unchanged", so a request
+ * carrying only roomCount behaves exactly as before.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateItineraryDayAccommodationDTO {
+
+    /** Moving the night to a different property; its room lists come with it. */
+    private String accommodationId;
+
+    private String roomTypeId;
+
+    private String roomStandardId;
+
+    private String boardTypeId;
 
     @Min(value = 1, message = "Room count must be at least 1")
     private Integer roomCount;
