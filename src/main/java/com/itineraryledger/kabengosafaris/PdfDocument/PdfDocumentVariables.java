@@ -72,7 +72,7 @@ public class PdfDocumentVariables {
             case "FULL_INVOICE" -> "Complete invoice document with line items, multi-currency support, payment tracking (amounts paid, balances), tax and discount calculations, bank account details, and due dates. Ideal for billing and payment collection.";
             case "FULL_CREDIT_NOTE" -> "Complete credit note document with credited line items, multi-currency support, original invoice reference, credit reason, and customer details. Ideal for refund and credit documentation.";
             case "PAYMENT_RECEIPT" -> "Payment receipt document with payment amount, method, reference, invoice details, customer information, and remaining balance. Ideal for payment confirmation and record-keeping.";
-            case "FULL_COST_ESTIMATION" -> "Complete costing for an itinerary (later a safari): every chargeable line day by day AND grouped by passenger band, in both operator (STO) and published (rack) prices, with per-currency totals, gross profit and margin, per-head figures, the pricing gaps that could not be resolved, and the last saved summary for comparison. Ships an internal costing template and a client price sheet — the internal figures are marked INTERNAL in the schema so a client-facing template can be built without printing them.";
+            case "FULL_COST_ESTIMATION" -> "Complete costing for an itinerary: every chargeable line day by day and by passenger band, in operator (STO) and published (rack) prices, with per-currency totals, margin, per-head figures and any pricing gaps. Ships an internal costing sheet and a client price sheet.";
             default -> "";
         };
     }

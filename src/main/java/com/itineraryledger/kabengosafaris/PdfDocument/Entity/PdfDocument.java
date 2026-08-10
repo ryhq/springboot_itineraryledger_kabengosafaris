@@ -50,7 +50,14 @@ public class PdfDocument {
     /**
      * Human-readable description of the document type
      */
-    @Column(length = 500)
+    /*
+     * Deliberately roomy. A 500-char cap was reached by a document type whose
+     * description ran five characters over, and the failure surfaced not as a
+     * validation error but as a crash loop at boot — the seeding insert broke
+     * the startup transaction. Descriptions are prose written by people; give
+     * them room rather than trusting everyone to count.
+     */
+    @Column(length = 2000)
     private String description;
 
     /**

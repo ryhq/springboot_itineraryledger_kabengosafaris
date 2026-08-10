@@ -1,16 +1,12 @@
 package com.itineraryledger.kabengosafaris.Initializers;
 
-import com.itineraryledger.kabengosafaris.PdfDocument.Entity.PdfDocument;
 import com.itineraryledger.kabengosafaris.PdfDocument.PdfDocumentVariables;
-import com.itineraryledger.kabengosafaris.PdfDocument.Repository.PdfDocumentRepository;
-import com.itineraryledger.kabengosafaris.PdfDocument.Services.PdfTemplateCreateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Initializer for PDF Documents and their System Default Templates.
@@ -29,8 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class PdfDocumentInitializer implements ApplicationRunner, Ordered {
 
-    private final PdfDocumentRepository pdfDocumentRepository;
-    private final PdfTemplateCreateService pdfTemplateCreateService;
+    private final PdfDocumentSeeder seeder;
 
     /**
      * Run initialization at application startup
@@ -41,8 +36,14 @@ public class PdfDocumentInitializer implements ApplicationRunner, Ordered {
         return Ordered.HIGHEST_PRECEDENCE + 14;
     }
 
+    /*
+     * NOT @Transactional. Sharing one transaction across every document is what
+     * made a single failed insert fatal: the per-document catch swallowed the
+     * exception, the transaction was already rollback-only, and the commit threw
+     * afterwards — taking the context down and putting systemd in a restart
+     * loop. Each document now gets its own transaction via PdfDocumentSeeder.
+     */
     @Override
-    @Transactional
     public void run(ApplicationArguments args) {
         printStartBanner();
         boolean success = false;
@@ -95,75 +96,27 @@ public class PdfDocumentInitializer implements ApplicationRunner, Ordered {
     }
 
     /**
-     * Initialize predefined PDF document types
+     * Initialize predefined PDF document types.
+     *
+     * A failure is reported and stepped over. A document type that cannot be
+     * seeded is a missing option in a drawer; it is never a reason for the API
+     * to be unreachable.
      */
     private void initializePdfDocuments() {
-        // Initialize all supported document types
+        int seeded = 0;
+        int failed = 0;
+
         for (String documentName : PdfDocumentVariables.getSupportedDocuments()) {
-            initializeDocument(documentName);
-        }
-    }
-
-    /**
-     * Initialize a single PDF document type with system-defined schema and default template
-     */
-    private void initializeDocument(String documentName) {
-        try {
-            /*
-             * An existing document still gets its templates checked. A document
-             * created before a template shipped would otherwise never receive
-             * it, and the only way to notice would be a missing option in the
-             * generate drawer.
-             */
-            PdfDocument existing = pdfDocumentRepository.findByName(documentName).orElse(null);
-            if (existing != null) {
-                log.debug("⊘ PDF document already exists: {}", documentName);
-                ensureTemplates(existing, documentName);
-                return;
+            try {
+                seeder.seed(documentName);
+                seeded++;
+            } catch (Exception e) {
+                failed++;
+                log.error("✗ Could not seed PDF document '{}': {} — the application continues without it",
+                    documentName, e.getMessage());
             }
-
-            // Get metadata from PdfDocumentVariables
-            String displayName = PdfDocumentVariables.getDisplayName(documentName);
-            String description = PdfDocumentVariables.getDescription(documentName);
-            String dataSourceClass = PdfDocumentVariables.getDataSourceClass(documentName);
-            String rootVariableName = PdfDocumentVariables.getRootVariableName(documentName);
-            String variablesJson = PdfDocumentVariables.getVariablesForDocument(documentName);
-
-            // Create PDF document entity
-            PdfDocument document = PdfDocument.builder()
-                .name(documentName)
-                .displayName(displayName)
-                .description(description)
-                .dataSourceClass(dataSourceClass)
-                .rootVariableName(rootVariableName)
-                .enabled(true)
-                .variablesJson(variablesJson)
-                .build();
-
-            PdfDocument savedDocument = pdfDocumentRepository.save(document);
-            log.info("Created PDF document: {} ({})", documentName, displayName);
-
-            ensureTemplates(savedDocument, documentName);
-
-        } catch (Exception e) {
-            log.error("Failed to initialize PDF document: {}", documentName, e);
-        }
-    }
-
-    /**
-     * The default template, plus any extras the document type ships with.
-     *
-     * Both steps are idempotent, so this is safe to run on every start.
-     */
-    private void ensureTemplates(PdfDocument document, String documentName) {
-        if (pdfTemplateCreateService.createSystemDefaultTemplate(document)) {
-            log.debug("System default template present for: {}", documentName);
-        } else {
-            log.warn("Failed to create system default template for document: {}", documentName);
         }
 
-        for (String[] extra : PdfDocumentVariables.getExtraTemplates(documentName)) {
-            pdfTemplateCreateService.createSeededTemplate(document, extra[0], extra[1], extra[2]);
-        }
+        log.info("PDF documents: {} ready, {} failed", seeded, failed);
     }
 }
