@@ -81,13 +81,24 @@ public class ItineraryImageController {
             @RequestParam(value = "isActive", required = false) Boolean isActive,
             @RequestParam(value = "isWebActive", required = false) Boolean isWebActive,
             @RequestParam(value = "displayOrder", required = false) Integer displayOrder,
+            // multi-value facets: the list page joins them with commas
+            @RequestParam(value = "imageTypes", required = false) java.util.List<ImageType> imageTypes,
+            @RequestParam(value = "statuses", required = false) java.util.List<String> statuses,
+            @RequestParam(value = "visibilities", required = false) java.util.List<String> visibilities,
+            @RequestParam(value = "qualities", required = false) java.util.List<String> qualities,
+            @RequestParam(value = "createdAfter", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.LocalDateTime createdAfter,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "includeStats", required = false) Boolean includeStats,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size,
             @RequestParam(value = "sortBy", required = false) String sortBy,
             @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection
     ) {
         return getService.getAllImages(itineraryId, itineraryName, imageType, isPrimary, isActive,
-            isWebActive, displayOrder, page, size, sortBy, sortDirection);
+            isWebActive, displayOrder, imageTypes, statuses, visibilities, qualities, createdAfter,
+            keyword, includeStats, page, size, sortBy, sortDirection);
     }
 
     @GetMapping("/{id}")

@@ -42,6 +42,8 @@ public class ItineraryDocumentGetService {
     private final ItineraryDocumentRepository itineraryDocumentRepository;
     private final ItineraryDocumentStorageService storageService;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "title", "documentType", "fileName", "fileSize", "createdAt", "updatedAt"
@@ -73,6 +75,12 @@ public class ItineraryDocumentGetService {
             Boolean quotationDocumentsOnly,
             Boolean travelDocumentsOnly,
             Boolean voucherDocumentsOnly,
+            List<DocumentType> documentTypes,
+            List<String> statuses,
+            List<String> validity,
+            LocalDateTime createdAfter,
+            String keyword,
+            Boolean includeStats,
             String sortBy,
             String sortDirection,
             int page,
@@ -138,6 +146,41 @@ public class ItineraryDocumentGetService {
                 spec = spec.and(ItineraryDocumentSpecification.byVoucherDocuments());
             }
 
+            /*
+             * The multi-value facets. Every stat card on the list page is one of
+             * these, so a card that cannot be clicked would be decoration.
+             */
+            spec = spec.and(ItineraryDocumentSpecification.byDocumentTypes(documentTypes));
+
+            if (statuses != null && !statuses.isEmpty()) {
+                List<Boolean> states = new java.util.ArrayList<>();
+                if (statuses.contains("active")) states.add(true);
+                if (statuses.contains("inactive")) states.add(false);
+                // active + inactive is everything: contradictory pairs cancel out
+                if (states.size() == 1) {
+                    spec = spec.and(ItineraryDocumentSpecification.byIsActive(states.get(0)));
+                }
+            }
+
+            if (validity != null && !validity.isEmpty()) {
+                List<Specification<ItineraryDocument>> any = new java.util.ArrayList<>();
+                if (validity.contains("expired")) any.add(ItineraryDocumentSpecification.expired());
+                if (validity.contains("expiring")) any.add(ItineraryDocumentSpecification.expiringWithin(30));
+                if (validity.contains("no-expiry")) any.add(ItineraryDocumentSpecification.noExpiry());
+                if (!any.isEmpty()) {
+                    Specification<ItineraryDocument> combined = any.get(0);
+                    for (int i = 1; i < any.size(); i++) combined = combined.or(any.get(i));
+                    spec = spec.and(combined);
+                }
+            }
+
+            if (createdAfter != null) {
+                spec = spec.and(ItineraryDocumentSpecification.createdAfter(createdAfter));
+            }
+            if (keyword != null && !keyword.isBlank()) {
+                spec = spec.and(ItineraryDocumentSpecification.searchKeyword(keyword));
+            }
+
             Page<ItineraryDocument> documentPage = itineraryDocumentRepository.findAll(spec, pageable);
             Page<ItineraryDocumentDTO> dtoPage = documentPage.map(this::toDTO);
 
@@ -152,6 +195,16 @@ public class ItineraryDocumentGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            // the list page shows totalItems; totalElements stays for older callers
+            response.put("totalItems", dtoPage.getTotalElements());
+            /*
+             * Counters for the WHOLE filtered set, from the same specification as
+             * the rows — without them the page can only summarise what it loaded,
+             * and the "All filtered / This page" toggle has to stay hidden.
+             */
+            if (includeStats == null || includeStats) {
+                response.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Itinerary documents retrieved successfully", response)
@@ -165,7 +218,30 @@ public class ItineraryDocumentGetService {
         }
     }
 
+    /** Dashboard counters for the current filter set. */
+    private Map<String, Object> computeStats(Specification<ItineraryDocument> base) {
+        return listStats.of(ItineraryDocument.class, base)
+            .total()
+            .count("active", ItineraryDocumentSpecification.byIsActive(true))
+            .complement("inactive", "active")
+            .count("expired", ItineraryDocumentSpecification.expired())
+            .count("expiringSoon", ItineraryDocumentSpecification.expiringWithin(30))
+            .count("noExpiry", ItineraryDocumentSpecification.noExpiry())
+            .recency(ItineraryDocumentSpecification::createdAfter)
+            .build();
+    }
+
     public ResponseEntity<ApiResponse<?>> getDocumentById(String obfuscatedId) {
+        return getDocumentById(obfuscatedId, null);
+    }
+
+    /**
+     * One document, and where it sits in the set the caller came from.
+     *
+     * @param scopeParentId the itinerary, when opened from inside one — paging
+     *                      then stays among that itinerary's documents
+     */
+    public ResponseEntity<ApiResponse<?>> getDocumentById(String obfuscatedId, String scopeParentId) {
         log.info("Fetching itinerary document with ID: {}", obfuscatedId);
 
         try {
@@ -188,16 +264,36 @@ public class ItineraryDocumentGetService {
 
             ItineraryDocumentDTO documentDTO = toDTO(document);
 
-            // Circular navigation
-            Long nextId = itineraryDocumentRepository.findNextId(id).orElse(null);
-            Long previousId = itineraryDocumentRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = itineraryDocumentRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = itineraryDocumentRepository.findLastId().orElse(null);
+            /*
+             * Prev/next walks the SAME set the caller was looking at — this
+             * itinerary's documents when scoped, everything otherwise — and
+             * returns the position, so the record page can show 'N of M'. It used
+             * to walk a raw id-ordered query with no position at all.
+             */
+            Long scopedParentId = null;
+            if (scopeParentId != null && !scopeParentId.isBlank()) {
+                try {
+                    scopedParentId = idObfuscator.decodeId(scopeParentId);
+                } catch (Exception ex) {
+                    log.warn("Invalid scopeParentId {}, walking every document instead", scopeParentId);
+                }
+            }
+            Specification<ItineraryDocument> navSpec = scopedParentId != null
+                ? ItineraryDocumentSpecification.byItineraryId(scopedParentId)
+                : Specification.unrestricted();
+
+            Map<String, Object> nav = recordNavigation.navigate(
+                ItineraryDocument.class, navSpec, DEFAULT_SORT_FIELD, false, id);
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("document", documentDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
+            response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Itinerary document retrieved successfully", response)

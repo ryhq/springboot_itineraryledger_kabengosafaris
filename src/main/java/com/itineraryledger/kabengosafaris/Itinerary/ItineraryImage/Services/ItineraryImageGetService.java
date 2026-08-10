@@ -34,6 +34,8 @@ public class ItineraryImageGetService {
     private final ItineraryImageRepository itineraryImageRepository;
     private final ItineraryImageStorageService storageService;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "imageType", "isPrimary", "isActive", "displayOrder", "fileSize", "createdAt", "updatedAt"
@@ -44,11 +46,15 @@ public class ItineraryImageGetService {
     public ItineraryImageGetService(
         ItineraryImageRepository itineraryImageRepository,
         ItineraryImageStorageService storageService,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.itineraryImageRepository = itineraryImageRepository;
         this.storageService = storageService;
         this.idObfuscator = idObfuscator;
+        this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
     }
 
     public ItineraryImageDTO toDTO(ItineraryImage image) {
@@ -89,6 +95,13 @@ public class ItineraryImageGetService {
             Boolean isActive,
             Boolean isWebActive,
             Integer displayOrder,
+            List<ImageType> imageTypes,
+            List<String> statuses,
+            List<String> visibilities,
+            List<String> qualities,
+            java.time.LocalDateTime createdAfter,
+            String keyword,
+            Boolean includeStats,
             int page,
             int size,
             String sortBy,
@@ -123,6 +136,42 @@ public class ItineraryImageGetService {
             spec = spec.and(ItineraryImageSpecification.byDisplayOrder(displayOrder));
         }
 
+        /*
+         * The multi-value facets. Each one is also a stat card, and a card that
+         * cannot be clicked is decoration. Contradictory pairs (active plus
+         * inactive) cancel to no constraint, because that is what they mean.
+         */
+        spec = spec.and(ItineraryImageSpecification.byImageTypes(imageTypes));
+
+        if (statuses != null && !statuses.isEmpty()) {
+            List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            if (states.size() == 1) spec = spec.and(ItineraryImageSpecification.byIsActive(states.get(0)));
+        }
+        if (visibilities != null && !visibilities.isEmpty()) {
+            List<Boolean> states = new java.util.ArrayList<>();
+            if (visibilities.contains("live")) states.add(true);
+            if (visibilities.contains("hidden")) states.add(false);
+            if (states.size() == 1) spec = spec.and(ItineraryImageSpecification.isWebActive(states.get(0)));
+        }
+        if (qualities != null && !qualities.isEmpty()) {
+            List<Specification<ItineraryImage>> any = new java.util.ArrayList<>();
+            if (qualities.contains("no-caption")) any.add(ItineraryImageSpecification.missingCaption());
+            if (qualities.contains("no-alt")) any.add(ItineraryImageSpecification.missingAltText());
+            if (!any.isEmpty()) {
+                Specification<ItineraryImage> combined = any.get(0);
+                for (int i = 1; i < any.size(); i++) combined = combined.or(any.get(i));
+                spec = spec.and(combined);
+            }
+        }
+        if (createdAfter != null) {
+            spec = spec.and(ItineraryImageSpecification.createdAfter(createdAfter));
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(ItineraryImageSpecification.searchKeyword(keyword));
+        }
+
         String validatedSortBy = validateSortField(sortBy);
         if (validatedSortBy == null) {
             log.warn("Invalid sort field: {}", sortBy);
@@ -149,8 +198,31 @@ public class ItineraryImageGetService {
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("currentSortBy", validatedSortBy);
         response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+        /*
+         * Counters for the WHOLE filtered set, from the same specification as the
+         * rows. Without them the page can only summarise what it loaded, and the
+         * "All filtered / This page" toggle has to stay hidden.
+         */
+        if (includeStats == null || includeStats) {
+            response.put("stats", computeStats(spec));
+        }
 
         return ResponseEntity.ok(ApiResponse.success(200, "Itinerary images retrieved successfully", response));
+    }
+
+    /** Dashboard counters for the current filter set. */
+    private Map<String, Object> computeStats(Specification<ItineraryImage> base) {
+        return listStats.of(ItineraryImage.class, base)
+            .total()
+            .count("active", ItineraryImageSpecification.byIsActive(true))
+            .complement("inactive", "active")
+            .count("primary", ItineraryImageSpecification.byIsPrimary(true))
+            .count("webActive", ItineraryImageSpecification.isWebActive(true))
+            .complement("webHidden", "webActive")
+            .count("missingCaption", ItineraryImageSpecification.missingCaption())
+            .count("missingAltText", ItineraryImageSpecification.missingAltText())
+            .recency(ItineraryImageSpecification::createdAfter)
+            .build();
     }
 
     public ResponseEntity<?> getImageById(String obfuscatedId, String scopeParentId) {
@@ -175,23 +247,27 @@ public class ItineraryImageGetService {
                 }
             }
 
-            Long nextId, previousId;
-            if (decodedParentId != null) {
-                nextId = itineraryImageRepository.findNextIdByParent(id, decodedParentId).orElse(null);
-                previousId = itineraryImageRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
-                if (nextId == null) nextId = itineraryImageRepository.findFirstIdByParent(decodedParentId).orElse(null);
-                if (previousId == null) previousId = itineraryImageRepository.findLastIdByParent(decodedParentId).orElse(null);
-            } else {
-                nextId = itineraryImageRepository.findNextId(id).orElse(null);
-                previousId = itineraryImageRepository.findPreviousId(id).orElse(null);
-                if (nextId == null) nextId = itineraryImageRepository.findFirstId().orElse(null);
-                if (previousId == null) previousId = itineraryImageRepository.findLastId().orElse(null);
-            }
+            /*
+             * Prev/next walks the SAME set the caller came from — this itinerary's
+             * images when scoped, everything otherwise — and returns the position,
+             * so the record page can show 'N of M' and the wrap is visible. The id
+             * walk it replaced could not say where you were.
+             */
+            Specification<ItineraryImage> navSpec = decodedParentId != null
+                ? ItineraryImageSpecification.byItineraryId(decodedParentId)
+                : Specification.unrestricted();
+
+            Map<String, Object> nav = recordNavigation.navigate(
+                ItineraryImage.class, navSpec, "displayOrder", true, id);
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("image", imageDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok(ApiResponse.success(200, "Itinerary image retrieved successfully", response));

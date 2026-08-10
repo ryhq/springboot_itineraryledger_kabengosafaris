@@ -52,4 +52,45 @@ public class ItineraryImageSpecification {
             ? cb.conjunction()
             : cb.equal(root.get("displayOrder"), displayOrder);
     }
+
+    /**
+     * Any of these types — the list page's Type filter is multi-select, and a
+     * singular enum param cannot answer "hero or gallery".
+     */
+    public static Specification<ItineraryImage> byImageTypes(java.util.List<ImageType> types) {
+        return (root, query, cb) -> types == null || types.isEmpty()
+            ? cb.conjunction()
+            : root.get("imageType").in(types);
+    }
+
+    /* Data-quality counters: every stat card must also work as a filter. */
+
+    public static Specification<ItineraryImage> missingCaption() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("caption")), cb.equal(cb.trim(root.get("caption")), ""));
+    }
+
+    public static Specification<ItineraryImage> missingAltText() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("altText")), cb.equal(cb.trim(root.get("altText")), ""));
+    }
+
+    public static Specification<ItineraryImage> createdAfter(java.time.LocalDateTime since) {
+        return (root, query, cb) -> since == null
+            ? cb.conjunction()
+            : cb.greaterThanOrEqualTo(root.get("createdAt"), since);
+    }
+
+    /** The one search box: what an image is recognised by. */
+    public static Specification<ItineraryImage> searchKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) return cb.conjunction();
+            String like = "%" + keyword.toLowerCase().trim() + "%";
+            return cb.or(
+                cb.like(cb.lower(root.get("caption")), like),
+                cb.like(cb.lower(root.get("altText")), like),
+                cb.like(cb.lower(root.get("fileName")), like),
+                cb.like(cb.lower(root.get("originalFileName")), like));
+        };
+    }
 }

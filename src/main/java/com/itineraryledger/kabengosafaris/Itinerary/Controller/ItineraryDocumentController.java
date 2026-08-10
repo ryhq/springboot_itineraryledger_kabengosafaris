@@ -98,6 +98,15 @@ public class ItineraryDocumentController {
             @RequestParam(value = "quotationDocumentsOnly", required = false) Boolean quotationDocumentsOnly,
             @RequestParam(value = "travelDocumentsOnly", required = false) Boolean travelDocumentsOnly,
             @RequestParam(value = "voucherDocumentsOnly", required = false) Boolean voucherDocumentsOnly,
+            // multi-value facets: the list page joins them with commas
+            @RequestParam(value = "documentTypes", required = false) java.util.List<DocumentType> documentTypes,
+            @RequestParam(value = "statuses", required = false) java.util.List<String> statuses,
+            @RequestParam(value = "validity", required = false) java.util.List<String> validity,
+            @RequestParam(value = "createdAfter", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.LocalDateTime createdAfter,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "includeStats", required = false) Boolean includeStats,
             @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
             @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection,
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -120,6 +129,12 @@ public class ItineraryDocumentController {
             quotationDocumentsOnly,
             travelDocumentsOnly,
             voucherDocumentsOnly,
+            documentTypes,
+            statuses,
+            validity,
+            createdAfter,
+            keyword,
+            includeStats,
             sortBy,
             sortDirection,
             page,
@@ -133,8 +148,12 @@ public class ItineraryDocumentController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_ITINERARY_DOCUMENT')")
-    public ResponseEntity<?> getDocumentById(@PathVariable("id") String id) {
-        return getService.getDocumentById(id);
+    public ResponseEntity<?> getDocumentById(
+            @PathVariable("id") String id,
+            // the itinerary it was opened from, so prev/next stays inside it
+            @RequestParam(required = false) String scopeParentId
+    ) {
+        return getService.getDocumentById(id, scopeParentId);
     }
 
     /**

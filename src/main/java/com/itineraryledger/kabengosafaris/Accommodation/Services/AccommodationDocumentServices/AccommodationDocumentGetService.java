@@ -309,6 +309,10 @@ public class AccommodationDocumentGetService {
             responseMap.put("document", documentDTO);
             responseMap.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             responseMap.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            // navigate() already worked these out; without them the record page
+            // has arrows but cannot say 'N of M'
+            responseMap.put("position", nav.get("position"));
+            responseMap.put("total", nav.get("total"));
             responseMap.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok(ApiResponse.success(200, "Document retrieved successfully", responseMap));

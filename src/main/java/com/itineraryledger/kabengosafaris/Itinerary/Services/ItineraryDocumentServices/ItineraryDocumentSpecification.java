@@ -146,4 +146,55 @@ public class ItineraryDocumentSpecification {
             ? cb.conjunction()
             : cb.equal(root.get("itinerary").get("budgetCategory"), budgetCategory);
     }
+
+    /**
+     * Any of these types — the Type filter is multi-select, and a singular enum
+     * param cannot answer "quotation or invoice".
+     */
+    public static Specification<ItineraryDocument> byDocumentTypes(java.util.List<DocumentType> types) {
+        return (root, query, cb) -> types == null || types.isEmpty()
+            ? cb.conjunction()
+            : root.get("documentType").in(types);
+    }
+
+    /* Validity counters, each one clickable as a filter. */
+
+    public static Specification<ItineraryDocument> expired() {
+        return (root, query, cb) -> cb.and(
+            cb.isNotNull(root.get("validTo")),
+            cb.lessThan(root.get("validTo"), java.time.LocalDateTime.now()));
+    }
+
+    public static Specification<ItineraryDocument> expiringWithin(int days) {
+        return (root, query, cb) -> {
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            return cb.and(
+                cb.isNotNull(root.get("validTo")),
+                cb.greaterThanOrEqualTo(root.get("validTo"), now),
+                cb.lessThanOrEqualTo(root.get("validTo"), now.plusDays(days)));
+        };
+    }
+
+    public static Specification<ItineraryDocument> noExpiry() {
+        return (root, query, cb) -> cb.isNull(root.get("validTo"));
+    }
+
+    public static Specification<ItineraryDocument> createdAfter(java.time.LocalDateTime since) {
+        return (root, query, cb) -> since == null
+            ? cb.conjunction()
+            : cb.greaterThanOrEqualTo(root.get("createdAt"), since);
+    }
+
+    /** The one search box: title, notes and either filename. */
+    public static Specification<ItineraryDocument> searchKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) return cb.conjunction();
+            String like = "%" + keyword.toLowerCase().trim() + "%";
+            return cb.or(
+                cb.like(cb.lower(root.get("title")), like),
+                cb.like(cb.lower(root.get("description")), like),
+                cb.like(cb.lower(root.get("fileName")), like),
+                cb.like(cb.lower(root.get("originalFileName")), like));
+        };
+    }
 }
