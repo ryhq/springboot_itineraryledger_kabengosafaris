@@ -158,10 +158,10 @@
   </head>
   <body>
     <div class="footer-running">
-      <div class="footer-tagline">DREAM &middot; EXPLORE &middot; DISCOVER</div>
+      <div class="footer-tagline">DREAM · EXPLORE · DISCOVER</div>
       <div class="footer-contact">
-        P.O. Box 11271, Arusha, Tanzania &middot; +255 746 598 330 &middot;
-        info@kabengosafaris.com &middot; www.kabengosafaris.com
+        P.O. Box 11271, Arusha, Tanzania · +255 746 598 330 ·
+        info@kabengosafaris.com · www.kabengosafaris.com
       </div>
     </div>
 
@@ -298,14 +298,16 @@
     <!-- one currency: state it once and let the figures align.
          several: the ambiguity is real, so every figure carries its code. -->
     <th:block th:with="multi=${#lists.size(costing.totals) > 1},
-                       unit=${#lists.isEmpty(costing.totals) ? '' : costing.totals[0].currency}">
+                       unit=${#lists.isEmpty(costing.totals) ? '' : costing.totals[0].currency},
+                       unpriced=${costing.rateIssues == null ? 0 : #lists.size(costing.rateIssues.?[issueType.name() == 'MISSING' or issueType.name() == 'INACTIVE' or issueType.name() == 'NO_SEASON'])},
+                       fallbacks=${costing.rateIssues == null ? 0 : #lists.size(costing.rateIssues.?[issueType.name() == 'SEASON_NOT_FOUND'])}">
 
     <div class="subject">
       <p class="subject-name" th:text="${costing.subjectName}">Itinerary</p>
       <p class="subject-line">
         <span th:text="${costing.subjectKind == 'SAFARI' ? 'Safari' : 'Itinerary template'}">Itinerary template</span>
-        <span th:if="${costing.tripType != null}"> &middot; <span th:text="${costing.tripType}">Private</span></span>
-        <span th:if="${costing.budgetCategory != null}"> &middot; <span th:text="${costing.budgetCategory}">Mid-Range</span></span>
+        <span th:if="${costing.tripType != null}"> · <span th:text="${costing.tripType}">Private</span></span>
+        <span th:if="${costing.budgetCategory != null}"> · <span th:text="${costing.budgetCategory}">Mid-Range</span></span>
       </p>
       <table class="facts">
         <tr>
@@ -326,13 +328,26 @@
       </table>
     </div>
 
-    <div class="warn" th:if="${costing.hasIncompleteRates}">
+    <!-- a fallback season still prices the line; only some issues drop money -->
+    <div class="warn" th:if="${unpriced > 0}">
       <p class="warn-title">
-        <span th:text="${costing.rateIssueCount}">0</span> item(s) could not be priced
+        <span th:text="${unpriced}">0</span> item(s) could not be priced at all
       </p>
       <p class="warn-body">
-        Every total below EXCLUDES them. That is a gap in the rate cards, not a discount — treat these
-        figures as a floor, never as a quotable price. The detail is listed under Pricing gaps.
+        Every total below EXCLUDES them. That is a gap in the rate cards, not a discount — treat
+        these figures as a floor, never as a quotable price. The detail is under Pricing gaps.
+      </p>
+    </div>
+
+    <div class="warn" th:if="${unpriced == 0 and fallbacks > 0}"
+         style="border-color: #9fb89b; background: #f4f8f3">
+      <p class="warn-title" style="color: #274e22">
+        Fully priced, with <span th:text="${fallbacks}">0</span> line(s) on a fallback season
+      </p>
+      <p class="warn-body" style="color: #3e5b3a">
+        No season was configured for those dates, so the next season by priority was used. The totals
+        below are complete — but they rest on an assumption worth checking before quoting. The lines
+        are listed under Pricing gaps.
       </p>
     </div>
 
@@ -342,7 +357,7 @@
       <table class="grid">
         <caption>
           <span th:text="${total.currency}">USD</span>
-          <span class="unit">&mdash; all amounts in <span th:text="${total.currency}">USD</span></span>
+          <span class="unit">— all amounts in <span th:text="${total.currency}">USD</span></span>
         </caption>
         <thead>
           <tr>
@@ -375,7 +390,7 @@
             <td>
               Total
               <span style="font-weight: 400; color: #274e22">
-                &middot; margin <span th:text="${#numbers.formatDecimal(total.marginPercent, 1, 1)}">0.0</span>%
+                · margin <span th:text="${#numbers.formatDecimal(total.marginPercent, 1, 1)}">0.0</span>%
               </span>
             </td>
             <td class="num" th:text="${#numbers.formatDecimal(total.grandTotalSto, 1, 'COMMA', 2, 'POINT')}">0.00</td>
@@ -386,7 +401,7 @@
             <td style="color: #666">Per guest (<span th:text="${costing.totalPax}">0</span> pax)</td>
             <td class="num" th:text="${#numbers.formatDecimal(total.stoPerPax, 1, 'COMMA', 2, 'POINT')}">0.00</td>
             <td class="num" th:text="${#numbers.formatDecimal(total.rackPerPax, 1, 'COMMA', 2, 'POINT')}">0.00</td>
-            <td class="num">&mdash;</td>
+            <td class="num">—</td>
           </tr>
         </tbody>
       </table>
@@ -411,8 +426,8 @@
         <tbody>
           <tr th:each="saved : ${costing.savedSummary}">
             <td th:text="${saved.currency}">USD</td>
-            <td th:text="${saved.calculatedAt}">&mdash;</td>
-            <td th:text="${saved.startDateUsed}">&mdash;</td>
+            <td th:text="${saved.calculatedAt}">—</td>
+            <td th:text="${saved.startDateUsed}">—</td>
             <td class="num" th:text="${#numbers.formatDecimal(saved.grandTotalSto, 1, 'COMMA', 2, 'POINT')}">0.00</td>
             <td class="num" th:text="${#numbers.formatDecimal(saved.grandTotalRack, 1, 'COMMA', 2, 'POINT')}">0.00</td>
           </tr>
@@ -439,7 +454,7 @@
           </span>
         </span>
         Day <span th:text="${day.dayNumber}">1</span>
-        <span th:if="${day.dayTitle != null}"> &middot; <span th:text="${day.dayTitle}">Title</span></span>
+        <span th:if="${day.dayTitle != null}"> · <span th:text="${day.dayTitle}">Title</span></span>
         <span class="when">
           <span th:if="${day.date != null}" th:text="${' — ' + #temporals.format(day.date, 'EEE dd MMM')}"> — Mon 01 Jan</span>
           <span th:if="${day.seasonName != null}" th:text="${' · ' + day.seasonName}"> · High Season</span>
@@ -511,7 +526,7 @@
           </span>
           <span th:text="${band.nationCategoryName}">Non-Resident</span>
           <span th:text="${band.ageCategoryName}">Adult</span>
-          <span class="when">&middot; <span th:text="${band.paxCount}">0</span> guest(s)</span>
+          <span class="when">· <span th:text="${band.paxCount}">0</span> guest(s)</span>
         </div>
 
         <table class="grid">
@@ -560,8 +575,8 @@
               <span th:if="${issue.paxCategory != null}" style="color: #888"
                     th:text="${' · ' + issue.paxCategory}"> · band</span>
             </td>
-            <td th:text="${issue.seasonName}">&mdash;</td>
-            <td style="font-size: 7.5pt" th:text="${issue.message}">&mdash;</td>
+            <td th:text="${issue.seasonName}">—</td>
+            <td style="font-size: 7.5pt" th:text="${issue.message}">—</td>
           </tr>
         </tbody>
       </table>
