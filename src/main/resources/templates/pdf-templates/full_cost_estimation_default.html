@@ -6,13 +6,8 @@
     <style>
       /* ========================================
            KABENGO SAFARIS - COSTING DOCUMENTS
-           Brand Colors:
-           - Forest Green: #274e22
-           - Dark Chocolate Brown: #5a1e03
-           - Olive Brown: #3e3117
-
-           Note: CSS Variables (:root) are not supported by OpenHTMLToPDF —
-           colours are written out in full, as in the itinerary template.
+           Forest Green #274e22 · Chocolate #5a1e03 · Olive #3e3117
+           CSS variables are not supported by OpenHTMLToPDF.
            ======================================== */
 
       * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -26,39 +21,54 @@
         counter-reset: page;
       }
 
-      @page { size: A4 portrait; margin: 14mm 11mm 18mm 11mm; }
+      @page { size: A4 portrait; margin: 14mm 11mm 22mm 11mm; }
 
       @page {
         @bottom-right {
           content: counter(page) " of " counter(pages);
-          font-size: 8.5pt;
+          font-size: 8pt;
           color: #274e22;
         }
         @bottom-left { content: element(footer-running); }
       }
 
-      .footer-running {
-        position: running(footer-running);
-        font-size: 8pt;
-        color: #274e22;
+      /* the contact block lives here — on every page, out of the way of the
+         figures, which is where a letterhead keeps it */
+      .footer-running { position: running(footer-running); }
+      .footer-tagline {
+        font-size: 8.5pt;
+        font-weight: 700;
+        color: #5a1e03;
+        letter-spacing: 1.2pt;
       }
+      .footer-contact { font-size: 7.5pt; color: #6b6b6b; }
 
       /* ---------------- header ---------------- */
 
       .header { border-bottom: 2.5pt solid #274e22; padding-bottom: 8pt; margin-bottom: 12pt; }
       .header-table { width: 100%; border-collapse: collapse; }
       .header-table td { vertical-align: top; }
-      .company-name { font-size: 8.5pt; color: #5a1e03; font-weight: 700; letter-spacing: .4pt; }
-      .company-info { font-size: 7.5pt; color: #666; line-height: 1.35; }
+
       .doc-kind {
-        font-size: 17pt;
+        font-size: 19pt;
         font-weight: 700;
         color: #274e22;
-        letter-spacing: 1pt;
+        letter-spacing: 1.2pt;
         text-align: right;
+        line-height: 1.1;
+        margin-bottom: 5pt;
       }
-      .doc-meta { font-size: 8pt; color: #5a1e03; text-align: right; line-height: 1.5; }
-      .doc-meta strong { color: #2c2c2c; }
+      table.doc-meta { width: 100%; border-collapse: collapse; }
+      table.doc-meta td { font-size: 8.5pt; padding: 0.8pt 0; }
+      table.doc-meta td.k { color: #6b6b6b; text-align: right; padding-right: 6pt; }
+      table.doc-meta td.v { color: #2c2c2c; text-align: right; width: 52%; }
+      table.doc-meta td.v strong { color: #3e3117; }
+      .doc-code {
+        font-family: "Courier New", Courier, monospace;
+        font-size: 9pt;
+        font-weight: 700;
+        color: #5a1e03;
+      }
 
       /* ---------------- structure ---------------- */
 
@@ -84,6 +94,15 @@
       /* ---------------- tables ---------------- */
 
       table.grid { width: 100%; border-collapse: collapse; }
+      table.grid caption {
+        caption-side: top;
+        text-align: left;
+        font-size: 8pt;
+        color: #5a1e03;
+        font-weight: 700;
+        padding-bottom: 3pt;
+      }
+      table.grid caption .unit { font-weight: 400; color: #6b6b6b; }
       table.grid th {
         font-size: 7.5pt;
         text-transform: uppercase;
@@ -135,20 +154,22 @@
       .warn-body { font-size: 8pt; color: #6b5205; margin-top: 2pt; }
 
       .note { font-size: 7.5pt; color: #888; margin-top: 4pt; font-style: italic; }
-      .nowrap { white-space: nowrap; }
     </style>
   </head>
   <body>
     <div class="footer-running">
-      <span style="font-weight: 600; color: #5a1e03">Kabengo Safaris</span> |
-      www.kabengosafaris.com | INTERNAL COSTING — NOT FOR CLIENT CIRCULATION
+      <div class="footer-tagline">DREAM &middot; EXPLORE &middot; DISCOVER</div>
+      <div class="footer-contact">
+        P.O. Box 11271, Arusha, Tanzania &middot; +255 746 598 330 &middot;
+        info@kabengosafaris.com &middot; www.kabengosafaris.com
+      </div>
     </div>
 
     <header class="header">
       <table class="header-table">
         <tr>
-          <td style="width: 58%">
-            <svg
+          <!-- the mark alone; the contact block lives in the page footer -->
+          <td style="width: 52%"><svg
               xmlns="http://www.w3.org/2000/svg"
               xmlns:xlink="http://www.w3.org/1999/xlink"
               viewBox="0 0 1646.94 872.56"
@@ -248,34 +269,43 @@
                   </g>
                 </g>
               </g>
-            </svg>
-            <p class="company-name">KABENGO SAFARIS</p>
-            <p class="company-info">P.O. Box 11271, Arusha, Tanzania</p>
-            <p class="company-info">+255 746 598 330 | info@kabengosafaris.com</p>
-          </td>
-          <td style="width: 42%">
+            </svg></td>
+          <td style="width: 48%">
             <p class="doc-kind">COST ESTIMATION</p>
-            <p class="doc-meta">
-              <span th:text="${costing.subjectCode}">ITI-0000</span><br />
-              Priced for
-              <strong th:text="${#temporals.format(costing.startDate, 'dd MMM yyyy')}">01 Jan 2026</strong><br />
-              <span th:if="${costing.endDate != null}">
-                through <span th:text="${#temporals.format(costing.endDate, 'dd MMM yyyy')}">14 Jan 2026</span><br />
-              </span>
-              Worked out <span th:text="${costing.estimatedAt}">—</span>
-            </p>
+            <table class="doc-meta">
+              <tr>
+                <td class="k"></td>
+                <td class="v"><span class="doc-code" th:text="${costing.subjectCode}">ITI-0000</span></td>
+              </tr>
+              <tr>
+                <td class="k">Priced for:</td>
+                <td class="v"><strong th:text="${#temporals.format(costing.startDate, 'dd MMM yyyy')}">10 Aug 2026</strong></td>
+              </tr>
+              <tr th:if="${costing.endDate != null}">
+                <td class="k">Through:</td>
+                <td class="v"><strong th:text="${#temporals.format(costing.endDate, 'dd MMM yyyy')}">23 Aug 2026</strong></td>
+              </tr>
+              <tr>
+                <td class="k">Date:</td>
+                <td class="v" th:text="${costing.estimatedAt}">10 Aug 2026 at 10:19</td>
+              </tr>
+            </table>
           </td>
         </tr>
       </table>
     </header>
 
-    <!-- ============ what was costed ============ -->
+    <!-- one currency: state it once and let the figures align.
+         several: the ambiguity is real, so every figure carries its code. -->
+    <th:block th:with="multi=${#lists.size(costing.totals) > 1},
+                       unit=${#lists.isEmpty(costing.totals) ? '' : costing.totals[0].currency}">
+
     <div class="subject">
       <p class="subject-name" th:text="${costing.subjectName}">Itinerary</p>
       <p class="subject-line">
         <span th:text="${costing.subjectKind == 'SAFARI' ? 'Safari' : 'Itinerary template'}">Itinerary template</span>
-        <span th:if="${costing.tripType != null}"> · <span th:text="${costing.tripType}">Private</span></span>
-        <span th:if="${costing.budgetCategory != null}"> · <span th:text="${costing.budgetCategory}">Mid-Range</span></span>
+        <span th:if="${costing.tripType != null}"> &middot; <span th:text="${costing.tripType}">Private</span></span>
+        <span th:if="${costing.budgetCategory != null}"> &middot; <span th:text="${costing.budgetCategory}">Mid-Range</span></span>
       </p>
       <table class="facts">
         <tr>
@@ -296,7 +326,6 @@
       </table>
     </div>
 
-    <!-- ============ the gap warning, before any total ============ -->
     <div class="warn" th:if="${costing.hasIncompleteRates}">
       <p class="warn-title">
         <span th:text="${costing.rateIssueCount}">0</span> item(s) could not be priced
@@ -307,14 +336,17 @@
       </p>
     </div>
 
-    <!-- ============ totals, per currency ============ -->
     <h2 class="section">Totals</h2>
 
     <div th:each="total : ${costing.totals}" style="margin-bottom: 12pt">
       <table class="grid">
+        <caption>
+          <span th:text="${total.currency}">USD</span>
+          <span class="unit">&mdash; all amounts in <span th:text="${total.currency}">USD</span></span>
+        </caption>
         <thead>
           <tr>
-            <th th:text="${total.currency}">USD</th>
+            <th>Category</th>
             <th class="num">Operator (STO)</th>
             <th class="num">Sells for (rack)</th>
             <th class="num">Gross profit</th>
@@ -341,9 +373,9 @@
           </tr>
           <tr class="total">
             <td>
-              Total <span th:text="${total.currency}">USD</span>
+              Total
               <span style="font-weight: 400; color: #274e22">
-                · margin <span th:text="${#numbers.formatDecimal(total.marginPercent, 1, 1)}">0.0</span>%
+                &middot; margin <span th:text="${#numbers.formatDecimal(total.marginPercent, 1, 1)}">0.0</span>%
               </span>
             </td>
             <td class="num" th:text="${#numbers.formatDecimal(total.grandTotalSto, 1, 'COMMA', 2, 'POINT')}">0.00</td>
@@ -354,16 +386,16 @@
             <td style="color: #666">Per guest (<span th:text="${costing.totalPax}">0</span> pax)</td>
             <td class="num" th:text="${#numbers.formatDecimal(total.stoPerPax, 1, 'COMMA', 2, 'POINT')}">0.00</td>
             <td class="num" th:text="${#numbers.formatDecimal(total.rackPerPax, 1, 'COMMA', 2, 'POINT')}">0.00</td>
-            <td class="num">—</td>
+            <td class="num">&mdash;</td>
           </tr>
         </tbody>
       </table>
-      <p class="note">
-        Currencies are never added together — each block above stands on its own.
+      <p class="note" th:if="${multi}">
+        One block per currency. They are never added together — a total across currencies would be
+        a number that does not exist.
       </p>
     </div>
 
-    <!-- ============ what was last agreed ============ -->
     <div th:if="${!#lists.isEmpty(costing.savedSummary)}">
       <h2 class="section">Last saved figure</h2>
       <table class="grid">
@@ -379,8 +411,8 @@
         <tbody>
           <tr th:each="saved : ${costing.savedSummary}">
             <td th:text="${saved.currency}">USD</td>
-            <td th:text="${saved.calculatedAt}">—</td>
-            <td th:text="${saved.startDateUsed}">—</td>
+            <td th:text="${saved.calculatedAt}">&mdash;</td>
+            <td th:text="${saved.startDateUsed}">&mdash;</td>
             <td class="num" th:text="${#numbers.formatDecimal(saved.grandTotalSto, 1, 'COMMA', 2, 'POINT')}">0.00</td>
             <td class="num" th:text="${#numbers.formatDecimal(saved.grandTotalRack, 1, 'COMMA', 2, 'POINT')}">0.00</td>
           </tr>
@@ -392,20 +424,22 @@
       </p>
     </div>
 
-    <!-- ============ day by day ============ -->
     <h2 class="section" style="page-break-before: always">Day by day</h2>
+    <p class="note" th:unless="${multi}" style="margin-bottom: 6pt">
+      All amounts in <span th:text="${unit}">USD</span>.
+    </p>
 
     <div class="day-block" th:each="day : ${costing.dayCostDetails}">
       <div class="day-head">
-        <span th:each="t,ts : ${day.totalsByCurrency}" class="amount">
-          <span th:text="${t.currency}">USD</span>
+        <span th:each="t : ${day.totalsByCurrency}" class="amount">
+          <span th:if="${multi}" th:text="${t.currency}">USD</span>
           <span th:text="${#numbers.formatDecimal(t.grandTotalSto, 1, 'COMMA', 2, 'POINT')}">0.00</span>
           <span style="font-weight: 400; color: #d7e3d4">
             / rack <span th:text="${#numbers.formatDecimal(t.grandTotalRack, 1, 'COMMA', 2, 'POINT')}">0.00</span>
           </span>
         </span>
         Day <span th:text="${day.dayNumber}">1</span>
-        <span th:if="${day.dayTitle != null}"> · <span th:text="${day.dayTitle}">Title</span></span>
+        <span th:if="${day.dayTitle != null}"> &middot; <span th:text="${day.dayTitle}">Title</span></span>
         <span class="when">
           <span th:if="${day.date != null}" th:text="${' — ' + #temporals.format(day.date, 'EEE dd MMM')}"> — Mon 01 Jan</span>
           <span th:if="${day.seasonName != null}" th:text="${' · ' + day.seasonName}"> · High Season</span>
@@ -430,18 +464,17 @@
               <td>
                 <span th:text="${item.itemName}">Item</span>
                 <span th:if="${item.paxCategory != null and item.paxCategory != 'Per Person'}"
-                      style="color: #888"
-                      th:text="${' · ' + item.paxCategory}"> · band</span>
+                      style="color: #888" th:text="${' · ' + item.paxCategory}"> · band</span>
               </td>
               <td th:text="${item.chargingBasis}">Per Person</td>
               <td class="num" th:text="${item.quantity}">0</td>
-              <td class="num" th:text="${#numbers.formatDecimal(item.stoUnitPrice, 1, 'COMMA', 2, 'POINT')}">0.00</td>
-              <td class="num" th:text="${#numbers.formatDecimal(item.stoTotalPrice, 1, 'COMMA', 2, 'POINT')}">0.00</td>
-              <td class="num" th:text="${#numbers.formatDecimal(item.rackUnitPrice, 1, 'COMMA', 2, 'POINT')}">0.00</td>
-              <td class="num" th:text="${#numbers.formatDecimal(item.rackTotalPrice, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+              <td class="num" th:text="${(multi ? item.currency + ' ' : '') + #numbers.formatDecimal(item.stoUnitPrice, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+              <td class="num" th:text="${(multi ? item.currency + ' ' : '') + #numbers.formatDecimal(item.stoTotalPrice, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+              <td class="num" th:text="${(multi ? item.currency + ' ' : '') + #numbers.formatDecimal(item.rackUnitPrice, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+              <td class="num" th:text="${(multi ? item.currency + ' ' : '') + #numbers.formatDecimal(item.rackTotalPrice, 1, 'COMMA', 2, 'POINT')}">0.00</td>
             </tr>
-            <!-- the bands behind a per-person line: this is where an adult rate
-                 and a youth rate stop looking like the same number -->
+            <!-- the bands behind a per-person line: where an adult rate and a
+                 youth rate stop looking like the same number -->
             <tr class="sub" th:if="${item.paxShares != null and #lists.size(item.paxShares) > 1}"
                 th:each="share : ${item.paxShares}">
               <td style="padding-left: 14pt" th:text="${share.paxCategory}">Band</td>
@@ -460,7 +493,6 @@
       </table>
     </div>
 
-    <!-- ============ by pax band ============ -->
     <div th:if="${!#lists.isEmpty(costing.paxCostDetails)}">
       <h2 class="section" style="page-break-before: always">By passenger band</h2>
       <p class="note" style="margin-bottom: 6pt">
@@ -471,7 +503,7 @@
       <div class="day-block" th:each="band : ${costing.paxCostDetails}">
         <div class="day-head">
           <span th:each="t : ${band.totalsByCurrency}" class="amount">
-            <span th:text="${t.currency}">USD</span>
+            <span th:if="${multi}" th:text="${t.currency}">USD</span>
             <span th:text="${#numbers.formatDecimal(t.grandTotalSto, 1, 'COMMA', 2, 'POINT')}">0.00</span>
             <span style="font-weight: 400; color: #d7e3d4">
               / rack <span th:text="${#numbers.formatDecimal(t.grandTotalRack, 1, 'COMMA', 2, 'POINT')}">0.00</span>
@@ -479,15 +511,13 @@
           </span>
           <span th:text="${band.nationCategoryName}">Non-Resident</span>
           <span th:text="${band.ageCategoryName}">Adult</span>
-          <span class="when">
-            · <span th:text="${band.paxCount}">0</span> guest(s)
-          </span>
+          <span class="when">&middot; <span th:text="${band.paxCount}">0</span> guest(s)</span>
         </div>
 
         <table class="grid">
           <thead>
             <tr>
-              <th style="width: 8%" class="num">Day</th>
+              <th class="num" style="width: 8%">Day</th>
               <th style="width: 38%">Item</th>
               <th style="width: 16%">Basis</th>
               <th class="num" style="width: 8%">Qty</th>
@@ -501,15 +531,14 @@
               <td th:text="${item.itemName}">Item</td>
               <td th:text="${item.chargingBasis}">Per Person</td>
               <td class="num" th:text="${item.quantity}">0</td>
-              <td class="num" th:text="${#numbers.formatDecimal(item.stoTotalPrice, 1, 'COMMA', 2, 'POINT')}">0.00</td>
-              <td class="num" th:text="${#numbers.formatDecimal(item.rackTotalPrice, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+              <td class="num" th:text="${(multi ? item.currency + ' ' : '') + #numbers.formatDecimal(item.stoTotalPrice, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+              <td class="num" th:text="${(multi ? item.currency + ' ' : '') + #numbers.formatDecimal(item.rackTotalPrice, 1, 'COMMA', 2, 'POINT')}">0.00</td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- ============ the gaps, in full ============ -->
     <div th:if="${!#lists.isEmpty(costing.rateIssues)}">
       <h2 class="section">Pricing gaps</h2>
       <table class="grid">
@@ -531,8 +560,8 @@
               <span th:if="${issue.paxCategory != null}" style="color: #888"
                     th:text="${' · ' + issue.paxCategory}"> · band</span>
             </td>
-            <td th:text="${issue.seasonName}">—</td>
-            <td style="font-size: 7.5pt" th:text="${issue.message}">—</td>
+            <td th:text="${issue.seasonName}">&mdash;</td>
+            <td style="font-size: 7.5pt" th:text="${issue.message}">&mdash;</td>
           </tr>
         </tbody>
       </table>
@@ -547,5 +576,7 @@
       to a client. The client-facing version is the Price Sheet template, which prints published
       prices only.
     </p>
+
+    </th:block>
   </body>
 </html>

@@ -80,7 +80,7 @@ public class CostEstimationDocumentService {
             .carCount(byDay.getCarCount())
             .startDate(byDay.getStartDate() != null ? byDay.getStartDate() : pricingDate)
             .endDate(byDay.getEndDate())
-            .estimatedAt(byDay.getEstimatedAt())
+            .estimatedAt(readable(byDay.getEstimatedAt()))
             .totalPax(totalPax)
             .dayCostDetails(byDay.getDayCostDetails() != null ? byDay.getDayCostDetails() : new ArrayList<>())
             .paxCostDetails(byPax != null && byPax.getPaxCostDetails() != null
@@ -91,6 +91,24 @@ public class CostEstimationDocumentService {
             .rateIssueCount(byDay.getRateIssues() != null ? byDay.getRateIssues().size() : 0)
             .savedSummary(persistenceService.getSavedCostSummary(itineraryIdObfuscated))
             .build();
+    }
+
+    /**
+     * '10 Aug 2026 at 10:19' rather than '2026-08-10T10:19:58.769306794'.
+     *
+     * The raw value is a machine timestamp down to the nanosecond. Printed on a
+     * document it reads as a fault, and nobody needs the nanoseconds to know
+     * when a price was worked out. Falls back to the original if it will not
+     * parse, because a strange date beats no date.
+     */
+    private String readable(String isoTimestamp) {
+        if (isoTimestamp == null || isoTimestamp.isBlank()) return null;
+        try {
+            return java.time.LocalDateTime.parse(isoTimestamp)
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy 'at' HH:mm"));
+        } catch (Exception e) {
+            return isoTimestamp;
+        }
     }
 
     /** One pass of the estimator, unwrapped, or null if it refused. */
