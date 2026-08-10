@@ -170,6 +170,60 @@ public class PdfTemplateCreateService {
     }
 
     /**
+     * Registers a shipped template that is NOT the default.
+     *
+     * Idempotent by name, so a restart does not accumulate copies, and silent
+     * when the file is absent — an extra template that never shipped should
+     * simply not exist, not break startup.
+     */
+    public boolean createSeededTemplate(PdfDocument document, String suffix, String name, String description) {
+        try {
+            boolean exists = pdfTemplateRepository.findByPdfDocumentId(document.getId()).stream()
+                .anyMatch(t -> name.equalsIgnoreCase(t.getName()));
+            if (exists) {
+                log.debug("Seeded template already present: {} / {}", document.getName(), name);
+                return true;
+            }
+
+            String content = storageService.loadSeedTemplate(document.getName(), suffix);
+            if (content == null) return false;
+
+            String fileName = storageService.generateFileName(document.getName(), suffix);
+            if (!storageService.saveTemplateFile(content, fileName)
+                    && !storageService.templateFileExists(fileName)) {
+                log.error("Failed to save seeded template file: {}", fileName);
+                return false;
+            }
+
+            pdfTemplateRepository.save(PdfTemplate.builder()
+                .pdfDocument(document)
+                .name(name)
+                .description(description)
+                .fileName(fileName)
+                .paperSize(PaperSize.A4)
+                .orientation(Orientation.PORTRAIT)
+                .marginTop(20)
+                .marginBottom(20)
+                .marginLeft(15)
+                .marginRight(15)
+                // never the default: the default is what an unqualified request gets
+                .isDefault(false)
+                .isSystemDefault(false)
+                .enabled(true)
+                .fileSize((long) content.getBytes().length)
+                .version("1.0")
+                .build());
+
+            log.info("Created seeded template '{}' for: {}", name, document.getName());
+            return true;
+
+        } catch (Exception e) {
+            log.error("Error creating seeded template '{}' for: {}", name, document.getName(), e);
+            return false;
+        }
+    }
+
+    /**
      * Unset default flag on other templates for the same document type
      */
     private void unsetOtherDefaults(Long documentId) {

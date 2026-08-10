@@ -109,9 +109,16 @@ public class PdfDocumentInitializer implements ApplicationRunner, Ordered {
      */
     private void initializeDocument(String documentName) {
         try {
-            // Check if document already exists
-            if (pdfDocumentRepository.existsByName(documentName)) {
+            /*
+             * An existing document still gets its templates checked. A document
+             * created before a template shipped would otherwise never receive
+             * it, and the only way to notice would be a missing option in the
+             * generate drawer.
+             */
+            PdfDocument existing = pdfDocumentRepository.findByName(documentName).orElse(null);
+            if (existing != null) {
                 log.debug("⊘ PDF document already exists: {}", documentName);
+                ensureTemplates(existing, documentName);
                 return;
             }
 
@@ -136,16 +143,27 @@ public class PdfDocumentInitializer implements ApplicationRunner, Ordered {
             PdfDocument savedDocument = pdfDocumentRepository.save(document);
             log.info("Created PDF document: {} ({})", documentName, displayName);
 
-            // Create system default template for this document type
-            boolean templateCreated = pdfTemplateCreateService.createSystemDefaultTemplate(savedDocument);
-            if (templateCreated) {
-                log.info("Created system default template for document: {}", documentName);
-            } else {
-                log.warn("Failed to create system default template for document: {}", documentName);
-            }
+            ensureTemplates(savedDocument, documentName);
 
         } catch (Exception e) {
             log.error("Failed to initialize PDF document: {}", documentName, e);
+        }
+    }
+
+    /**
+     * The default template, plus any extras the document type ships with.
+     *
+     * Both steps are idempotent, so this is safe to run on every start.
+     */
+    private void ensureTemplates(PdfDocument document, String documentName) {
+        if (pdfTemplateCreateService.createSystemDefaultTemplate(document)) {
+            log.debug("System default template present for: {}", documentName);
+        } else {
+            log.warn("Failed to create system default template for document: {}", documentName);
+        }
+
+        for (String[] extra : PdfDocumentVariables.getExtraTemplates(documentName)) {
+            pdfTemplateCreateService.createSeededTemplate(document, extra[0], extra[1], extra[2]);
         }
     }
 }

@@ -40,6 +40,7 @@ public class PdfDocumentVariables {
             case "FULL_INVOICE" -> loadSchema("full-invoice-schema.json");
             case "FULL_CREDIT_NOTE" -> loadSchema("full-credit-note-schema.json");
             case "PAYMENT_RECEIPT" -> loadSchema("payment-receipt-schema.json");
+            case "FULL_COST_ESTIMATION" -> loadSchema("full-cost-estimation-schema.json");
             default -> "[]";
         };
     }
@@ -55,6 +56,7 @@ public class PdfDocumentVariables {
             case "FULL_INVOICE" -> "Full Safari Invoice";
             case "FULL_CREDIT_NOTE" -> "Full Credit Note";
             case "PAYMENT_RECEIPT" -> "Payment Receipt";
+            case "FULL_COST_ESTIMATION" -> "Full Cost Estimation";
             default -> documentName;
         };
     }
@@ -70,6 +72,7 @@ public class PdfDocumentVariables {
             case "FULL_INVOICE" -> "Complete invoice document with line items, multi-currency support, payment tracking (amounts paid, balances), tax and discount calculations, bank account details, and due dates. Ideal for billing and payment collection.";
             case "FULL_CREDIT_NOTE" -> "Complete credit note document with credited line items, multi-currency support, original invoice reference, credit reason, and customer details. Ideal for refund and credit documentation.";
             case "PAYMENT_RECEIPT" -> "Payment receipt document with payment amount, method, reference, invoice details, customer information, and remaining balance. Ideal for payment confirmation and record-keeping.";
+            case "FULL_COST_ESTIMATION" -> "Complete costing for an itinerary (later a safari): every chargeable line day by day AND grouped by passenger band, in both operator (STO) and published (rack) prices, with per-currency totals, gross profit and margin, per-head figures, the pricing gaps that could not be resolved, and the last saved summary for comparison. Ships an internal costing template and a client price sheet — the internal figures are marked INTERNAL in the schema so a client-facing template can be built without printing them.";
             default -> "";
         };
     }
@@ -85,6 +88,7 @@ public class PdfDocumentVariables {
             case "FULL_INVOICE" -> "com.itineraryledger.kabengosafaris.Invoice.DTOs.FullInvoiceDTO";
             case "FULL_CREDIT_NOTE" -> "com.itineraryledger.kabengosafaris.CreditNote.DTOs.CreditNoteDTO";
             case "PAYMENT_RECEIPT" -> "com.itineraryledger.kabengosafaris.Invoice.DTOs.PaymentReceiptDTO";
+            case "FULL_COST_ESTIMATION" -> "com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.FullCostEstimationDTO";
             default -> "";
         };
     }
@@ -104,6 +108,8 @@ public class PdfDocumentVariables {
             case "FULL_INVOICE" -> "invoice";
             case "FULL_CREDIT_NOTE" -> "creditNote";
             case "PAYMENT_RECEIPT" -> "receipt";
+            // deliberately not "itinerary": a safari costing fills the same document
+            case "FULL_COST_ESTIMATION" -> "costing";
             default -> "data";
         };
     }
@@ -113,6 +119,29 @@ public class PdfDocumentVariables {
      *
      * @return Array of PDF document type names that have defined variables
      */
+    /**
+     * Extra templates shipped with a document type, beyond its system default.
+     *
+     * Each row is {resource suffix, name, description}. The file is expected at
+     * {@code templates/pdf-templates/<document>_<suffix>.html}. Seeding these
+     * matters when a document type is useless with one template — a costing has
+     * two audiences, and the difference between them is which figures are
+     * printed, not how they are laid out.
+     */
+    public static String[][] getExtraTemplates(String documentName) {
+        return switch (documentName) {
+            case "FULL_COST_ESTIMATION" -> new String[][]{
+                {
+                    "client_price_sheet",
+                    "Client Price Sheet",
+                    "Published (rack) prices only — no operator cost, no margin, no pricing gaps. "
+                        + "Safe to send to a client. States no total while anything is unpriced."
+                }
+            };
+            default -> new String[0][];
+        };
+    }
+
     public static String[] getSupportedDocuments() {
         return new String[]{
             "FULL_ITINERARY",
@@ -120,7 +149,8 @@ public class PdfDocumentVariables {
             "FULL_SAFARI",
             "FULL_INVOICE",
             "FULL_CREDIT_NOTE",
-            "PAYMENT_RECEIPT"
+            "PAYMENT_RECEIPT",
+            "FULL_COST_ESTIMATION"
         };
     }
 

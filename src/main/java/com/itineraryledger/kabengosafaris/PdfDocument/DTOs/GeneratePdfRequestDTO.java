@@ -107,4 +107,13 @@ public class GeneratePdfRequestDTO {
      * null, the global {@code docx.engine} property decides.
      */
     private String engine;
+
+    /**
+     * FULL_COST_ESTIMATION only: the trip start date to price for.
+     *
+     * Not presentation — it changes the figures. Rates are seasonal, so the same
+     * itinerary priced for February and for June are two correct and different
+     * documents. Null prices for today.
+     */
+    private java.time.LocalDate startDate;
 }

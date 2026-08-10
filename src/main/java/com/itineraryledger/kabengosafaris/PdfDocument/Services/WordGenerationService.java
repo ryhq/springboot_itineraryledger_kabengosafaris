@@ -28,6 +28,7 @@ public class WordGenerationService {
     private final QuoteWordGenerationService quoteWordService;
     private final SafariWordGenerationService safariWordService;
     private final InvoiceWordGenerationService invoiceWordService;
+    private final CostEstimationWordGenerationService costEstimationWordService;
 
     // =====================================================================
     // GENERIC DOCX GENERATION (delegates to specialized services)
@@ -45,7 +46,25 @@ public class WordGenerationService {
 
     @Transactional(readOnly = true)
     public ResponseEntity<?> generateDocx(String documentName, String dataId, String templateIdObfuscated, String language, String engine) {
+        return generateDocx(documentName, dataId, templateIdObfuscated, language, engine, null);
+    }
+
+    /**
+     * As above, with the pricing date the costing document needs — the one type
+     * whose FIGURES depend on a parameter rather than its layout.
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> generateDocx(
+            String documentName,
+            String dataId,
+            String templateIdObfuscated,
+            String language,
+            String engine,
+            java.time.LocalDate startDate
+    ) {
         return switch (documentName) {
+            case "FULL_COST_ESTIMATION" ->
+                costEstimationWordService.generateCostEstimationDocx(dataId, templateIdObfuscated, language, engine, startDate);
             case "FULL_ITINERARY" -> itineraryWordService.generateItineraryDocx(dataId, templateIdObfuscated, language, engine);
             case "FULL_QUOTE" -> quoteWordService.generateQuoteDocx(dataId, templateIdObfuscated, language, engine);
             case "FULL_SAFARI" -> safariWordService.generateSafariDocx(dataId, templateIdObfuscated, language, engine);

@@ -1,0 +1,261 @@
+[
+    {
+        "path": "subjectId",
+        "type": "String",
+        "description": "Obfuscated ID of whatever was costed (itinerary today, safari later)",
+        "isRequired": true
+    },
+    {
+        "path": "subjectKind",
+        "type": "String",
+        "description": "What kind of thing this costing is for: 'ITINERARY' or 'SAFARI'",
+        "isRequired": true
+    },
+    {
+        "path": "subjectCode",
+        "type": "String",
+        "description": "Its code, e.g. 'ITI-14D13N-1053'",
+        "isRequired": true
+    },
+    {
+        "path": "subjectName",
+        "type": "String",
+        "description": "Its name, e.g. 'Ultimate Northern Tanzania, Culture & Zanzibar Beach'",
+        "isRequired": true
+    },
+    {
+        "path": "tripType",
+        "type": "String",
+        "description": "Trip type for the header, e.g. 'Private', 'Group', 'Honeymoon'",
+        "isRequired": false
+    },
+    {
+        "path": "budgetCategory",
+        "type": "String",
+        "description": "Budget tier, e.g. 'Mid-Range', 'Luxury'",
+        "isRequired": false
+    },
+    {
+        "path": "totalDays",
+        "type": "Integer",
+        "description": "Number of days costed",
+        "isRequired": true
+    },
+    {
+        "path": "totalNights",
+        "type": "Integer",
+        "description": "Number of nights costed",
+        "isRequired": true
+    },
+    {
+        "path": "carCount",
+        "type": "Integer",
+        "description": "Vehicles assumed when splitting per-vehicle charges",
+        "isRequired": false
+    },
+    {
+        "path": "startDate",
+        "type": "LocalDate",
+        "description": "The date the pricing was run for. Rates are seasonal, so this decides every figure below — print it.",
+        "isRequired": true
+    },
+    {
+        "path": "endDate",
+        "type": "LocalDate",
+        "description": "Last day of the priced window",
+        "isRequired": false
+    },
+    {
+        "path": "estimatedAt",
+        "type": "String",
+        "description": "When these figures were worked out, so a printed sheet is attributable",
+        "isRequired": true
+    },
+    {
+        "path": "totalPax",
+        "type": "Integer",
+        "description": "Total guests across every band",
+        "isRequired": true
+    },
+    {
+        "path": "hasIncompleteRates",
+        "type": "Boolean",
+        "description": "True when something could not be priced. The totals are then PARTIAL — a client-facing template should refuse to print a total while this is true.",
+        "isRequired": true
+    },
+    {
+        "path": "rateIssueCount",
+        "type": "Integer",
+        "description": "How many items could not be priced, so a template can say so without counting a list",
+        "isRequired": false
+    },
+    {
+        "path": "totals",
+        "type": "List<CostTotalsDTO>",
+        "description": "One block per currency — never summed across currencies. Access with: th:each='total : ${costing.totals}'",
+        "isRequired": true,
+        "children": [
+            {"path": "currency", "type": "String", "description": "Currency code, e.g. 'USD'"},
+            {"path": "accommodationSto", "type": "BigDecimal", "description": "Accommodation, operator cost"},
+            {"path": "accommodationRack", "type": "BigDecimal", "description": "Accommodation, published price"},
+            {"path": "parkFeesSto", "type": "BigDecimal", "description": "Park fees, operator cost"},
+            {"path": "parkFeesRack", "type": "BigDecimal", "description": "Park fees, published price"},
+            {"path": "activitiesSto", "type": "BigDecimal", "description": "Activities, operator cost"},
+            {"path": "activitiesRack", "type": "BigDecimal", "description": "Activities, published price"},
+            {"path": "grandTotalSto", "type": "BigDecimal", "description": "INTERNAL — total operator cost. Never print on a client-facing template."},
+            {"path": "grandTotalRack", "type": "BigDecimal", "description": "Total published price — this is the client-facing number"},
+            {"path": "grossProfit", "type": "BigDecimal", "description": "INTERNAL — rack minus STO. Never print on a client-facing template."},
+            {"path": "marginPercent", "type": "BigDecimal", "description": "INTERNAL — gross profit as a percentage of rack, one decimal"},
+            {"path": "stoPerPax", "type": "BigDecimal", "description": "INTERNAL — operator cost per guest"},
+            {"path": "rackPerPax", "type": "BigDecimal", "description": "Published price per guest — safe to print"}
+        ]
+    },
+    {
+        "path": "dayCostDetails",
+        "type": "List<DayCostDetailDTO>",
+        "description": "The costing day by day, in order. Access with: th:each='day : ${costing.dayCostDetails}'",
+        "isRequired": false,
+        "children": [
+            {"path": "dayNumber", "type": "Integer", "description": "Sequential day number (1, 2, 3...)"},
+            {"path": "dayTitle", "type": "String", "description": "Day title, e.g. 'Arusha to Tarangire National Park'"},
+            {"path": "date", "type": "LocalDate", "description": "Calendar date this day falls on, derived from startDate"},
+            {"path": "seasonName", "type": "String", "description": "Season the day priced in, e.g. 'High Season'"},
+            {"path": "isOvernight", "type": "Boolean", "description": "Whether guests sleep somewhere this night"},
+            {
+                "path": "lineItems",
+                "type": "List<CostLineItemDTO>",
+                "description": "Every chargeable line on this day. Access: th:each='item : ${day.lineItems}'",
+                "children": [
+                    {"path": "dayNumber", "type": "Integer", "description": "Day this line belongs to"},
+                    {"path": "itemType", "type": "Enum", "description": "ACCOMMODATION, PARK_FEE or ACTIVITY"},
+                    {"path": "itemName", "type": "String", "description": "What was charged, e.g. 'Conservation Fee - Tarangire National Park'"},
+                    {"path": "itemId", "type": "String", "description": "Obfuscated ID of the underlying item"},
+                    {"path": "chargingBasis", "type": "String", "description": "How it is charged: Per Person, Per Room, Per Vehicle, Per Group, Per Day"},
+                    {"path": "quantity", "type": "Integer", "description": "Units charged — guests, rooms, vehicles or days"},
+                    {"path": "stoUnitPrice", "type": "BigDecimal", "description": "INTERNAL — operator cost per unit. For a per-person line this is the average across bands; the exact rates are in paxShares."},
+                    {"path": "rackUnitPrice", "type": "BigDecimal", "description": "Published price per unit"},
+                    {"path": "stoTotalPrice", "type": "BigDecimal", "description": "INTERNAL — operator cost for this line"},
+                    {"path": "rackTotalPrice", "type": "BigDecimal", "description": "Published price for this line"},
+                    {"path": "currency", "type": "String", "description": "Currency of this line"},
+                    {"path": "paxCategory", "type": "String", "description": "Which band this line is for, or 'Per Person' / the charging description for shared lines"},
+                    {"path": "notes", "type": "String", "description": "Anything the calculator recorded about this line"},
+                    {
+                        "path": "paxShares",
+                        "type": "List<PaxShareDTO>",
+                        "description": "Per-person lines only: what each band was actually charged. An adult park fee and a youth park fee are different rates, and the line above is their sum. Access: th:each='share : ${item.paxShares}'",
+                        "children": [
+                            {"path": "nationCategoryId", "type": "String", "description": "Obfuscated nationality band ID"},
+                            {"path": "ageCategoryId", "type": "String", "description": "Obfuscated age band ID"},
+                            {"path": "paxCategory", "type": "String", "description": "e.g. 'Non-Resident Adult'"},
+                            {"path": "count", "type": "Integer", "description": "Guests in this band"},
+                            {"path": "stoUnitPrice", "type": "BigDecimal", "description": "INTERNAL — this band's operator rate"},
+                            {"path": "rackUnitPrice", "type": "BigDecimal", "description": "This band's published rate"},
+                            {"path": "stoTotalPrice", "type": "BigDecimal", "description": "INTERNAL — rate × count"},
+                            {"path": "rackTotalPrice", "type": "BigDecimal", "description": "Published rate × count"}
+                        ]
+                    }
+                ]
+            },
+            {
+                "path": "totalsByCurrency",
+                "type": "List<CurrencyGroupedCostDTO>",
+                "description": "This day's subtotals, one per currency. Access: th:each='total : ${day.totalsByCurrency}'",
+                "children": [
+                    {"path": "currency", "type": "String", "description": "Currency code"},
+                    {"path": "accommodationSto", "type": "BigDecimal", "description": "INTERNAL — accommodation cost this day"},
+                    {"path": "accommodationRack", "type": "BigDecimal", "description": "Accommodation price this day"},
+                    {"path": "parkFeesSto", "type": "BigDecimal", "description": "INTERNAL — park fees this day"},
+                    {"path": "parkFeesRack", "type": "BigDecimal", "description": "Park fees price this day"},
+                    {"path": "activitiesSto", "type": "BigDecimal", "description": "INTERNAL — activities this day"},
+                    {"path": "activitiesRack", "type": "BigDecimal", "description": "Activities price this day"},
+                    {"path": "grandTotalSto", "type": "BigDecimal", "description": "INTERNAL — day total, operator cost"},
+                    {"path": "grandTotalRack", "type": "BigDecimal", "description": "Day total, published price"}
+                ]
+            }
+        ]
+    },
+    {
+        "path": "paxCostDetails",
+        "type": "List<PaxCategoryCostDTO>",
+        "description": "The same costing grouped by pax band instead of by day — what each kind of guest costs. Access with: th:each='band : ${costing.paxCostDetails}'",
+        "isRequired": false,
+        "children": [
+            {"path": "nationCategoryId", "type": "String", "description": "Obfuscated nationality band ID"},
+            {"path": "nationCategoryName", "type": "String", "description": "e.g. 'Non-Resident', 'East African Resident'"},
+            {"path": "ageCategoryId", "type": "String", "description": "Obfuscated age band ID"},
+            {"path": "ageCategoryName", "type": "String", "description": "e.g. 'Adult', 'Youth', 'Child'"},
+            {"path": "paxCount", "type": "Integer", "description": "Guests in this band"},
+            {
+                "path": "lineItems",
+                "type": "List<CostLineItemDTO>",
+                "description": "Every line attributed to this band. Per-person lines carry the band's own rate; shared lines carry its share. Access: th:each='item : ${band.lineItems}'",
+                "children": [
+                    {"path": "dayNumber", "type": "Integer", "description": "Day this line belongs to"},
+                    {"path": "itemType", "type": "Enum", "description": "ACCOMMODATION, PARK_FEE or ACTIVITY"},
+                    {"path": "itemName", "type": "String", "description": "What was charged"},
+                    {"path": "chargingBasis", "type": "String", "description": "How it is charged"},
+                    {"path": "quantity", "type": "Integer", "description": "Units charged for this band"},
+                    {"path": "stoUnitPrice", "type": "BigDecimal", "description": "INTERNAL — operator rate for this band"},
+                    {"path": "rackUnitPrice", "type": "BigDecimal", "description": "Published rate for this band"},
+                    {"path": "stoTotalPrice", "type": "BigDecimal", "description": "INTERNAL — line cost for this band"},
+                    {"path": "rackTotalPrice", "type": "BigDecimal", "description": "Line price for this band"},
+                    {"path": "currency", "type": "String", "description": "Currency of this line"},
+                    {"path": "paxCategory", "type": "String", "description": "Band label carried on the line"},
+                    {"path": "notes", "type": "String", "description": "Anything recorded about this line, including share workings"}
+                ]
+            },
+            {
+                "path": "totalsByCurrency",
+                "type": "List<CurrencyGroupedCostDTO>",
+                "description": "What this band totals, one block per currency. Access: th:each='total : ${band.totalsByCurrency}'",
+                "children": [
+                    {"path": "currency", "type": "String", "description": "Currency code"},
+                    {"path": "accommodationSto", "type": "BigDecimal", "description": "INTERNAL — accommodation for this band"},
+                    {"path": "accommodationRack", "type": "BigDecimal", "description": "Accommodation price for this band"},
+                    {"path": "parkFeesSto", "type": "BigDecimal", "description": "INTERNAL — park fees for this band"},
+                    {"path": "parkFeesRack", "type": "BigDecimal", "description": "Park fees price for this band"},
+                    {"path": "activitiesSto", "type": "BigDecimal", "description": "INTERNAL — activities for this band"},
+                    {"path": "activitiesRack", "type": "BigDecimal", "description": "Activities price for this band"},
+                    {"path": "grandTotalSto", "type": "BigDecimal", "description": "INTERNAL — band total, operator cost"},
+                    {"path": "grandTotalRack", "type": "BigDecimal", "description": "Band total, published price"}
+                ]
+            }
+        ]
+    },
+    {
+        "path": "rateIssues",
+        "type": "List<RateIssueLogDTO>",
+        "description": "INTERNAL — everything that could not be priced, and why. A client-facing template must not print these; an operations template should. Access: th:each='issue : ${costing.rateIssues}'",
+        "isRequired": false,
+        "children": [
+            {"path": "issueType", "type": "Enum", "description": "MISSING, INACTIVE, NO_STO_RATE, NO_SEASON or SEASON_NOT_FOUND"},
+            {"path": "itemType", "type": "Enum", "description": "ACCOMMODATION, PARK_FEE or ACTIVITY"},
+            {"path": "itemName", "type": "String", "description": "What could not be priced, e.g. 'Amani Boutique Hotel'"},
+            {"path": "itemId", "type": "String", "description": "Obfuscated ID of that item"},
+            {"path": "dayNumber", "type": "Integer", "description": "Which day it happened on"},
+            {"path": "paxCategory", "type": "String", "description": "Which band, when the gap is band-specific"},
+            {"path": "seasonName", "type": "String", "description": "Season looked for, or the fallback used instead"},
+            {"path": "message", "type": "String", "description": "The full explanation, e.g. \"No season found for accommodation 'Amani Boutique Hotel' on 2026-08-19 - using fallback 'High Season 2026/27'\""}
+        ]
+    },
+    {
+        "path": "savedSummary",
+        "type": "List<ItineraryCostSummaryDTO>",
+        "description": "What was last stored for this subject, so a document can show today's figure beside the one that was agreed. Empty when it has never been saved. Access: th:each='saved : ${costing.savedSummary}'",
+        "isRequired": false,
+        "children": [
+            {"path": "currency", "type": "String", "description": "Currency code"},
+            {"path": "accommodationSto", "type": "BigDecimal", "description": "INTERNAL — stored accommodation cost"},
+            {"path": "accommodationRack", "type": "BigDecimal", "description": "Stored accommodation price"},
+            {"path": "parkFeesSto", "type": "BigDecimal", "description": "INTERNAL — stored park fees"},
+            {"path": "parkFeesRack", "type": "BigDecimal", "description": "Stored park fees price"},
+            {"path": "activitiesSto", "type": "BigDecimal", "description": "INTERNAL — stored activities cost"},
+            {"path": "activitiesRack", "type": "BigDecimal", "description": "Stored activities price"},
+            {"path": "grandTotalSto", "type": "BigDecimal", "description": "INTERNAL — stored total operator cost"},
+            {"path": "grandTotalRack", "type": "BigDecimal", "description": "Stored total published price"},
+            {"path": "hasIncompleteRates", "type": "Boolean", "description": "Whether the stored figure was saved with rates missing"},
+            {"path": "calculatedAt", "type": "String", "description": "When the stored figure was worked out"},
+            {"path": "startDateUsed", "type": "String", "description": "The trip start date the stored figure assumed"}
+        ]
+    }
+]

@@ -115,7 +115,8 @@ public class WordGenerationController {
             request.getDataId(),
             request.getTemplateId(),
             request.getLanguage(),
-            request.getEngine()
+            request.getEngine(),
+            request.getStartDate()
         );
     }
 

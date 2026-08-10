@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class PdfGenerationService {
 
     private final ItineraryPdfGenerationService itineraryPdfService;
+    private final CostEstimationPdfGenerationService costEstimationPdfService;
     private final QuotePdfGenerationService quotePdfService;
     private final SafariPdfGenerationService safariPdfService;
     private final InvoicePdfGenerationService invoicePdfService;
@@ -61,7 +62,24 @@ public class PdfGenerationService {
      */
     @Transactional(readOnly = true)
     public ResponseEntity<?> generatePdf(String documentName, String dataId, String templateIdObfuscated, String language) {
+        return generatePdf(documentName, dataId, templateIdObfuscated, language, null);
+    }
+
+    /**
+     * As above, with a pricing date for the one document type whose FIGURES
+     * depend on it rather than its layout.
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> generatePdf(
+            String documentName,
+            String dataId,
+            String templateIdObfuscated,
+            String language,
+            java.time.LocalDate startDate
+    ) {
         return switch (documentName) {
+            case "FULL_COST_ESTIMATION" ->
+                costEstimationPdfService.generateCostEstimationPdf(dataId, templateIdObfuscated, language, startDate);
             case "FULL_ITINERARY" -> itineraryPdfService.generateItineraryPdf(dataId, templateIdObfuscated, language);
             case "FULL_QUOTE" -> quotePdfService.generateQuotePdf(dataId, templateIdObfuscated, language);
             case "FULL_SAFARI" -> safariPdfService.generateSafariPdf(dataId, templateIdObfuscated, language);
@@ -88,7 +106,20 @@ public class PdfGenerationService {
      */
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<?>> previewPdf(String documentName, String dataId, String templateIdObfuscated, String language) {
+        return previewPdf(documentName, dataId, templateIdObfuscated, language, null);
+    }
+
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<?>> previewPdf(
+            String documentName,
+            String dataId,
+            String templateIdObfuscated,
+            String language,
+            java.time.LocalDate startDate
+    ) {
         return switch (documentName) {
+            case "FULL_COST_ESTIMATION" ->
+                costEstimationPdfService.previewCostEstimationPdf(dataId, templateIdObfuscated, language, startDate);
             case "FULL_ITINERARY" -> itineraryPdfService.previewItineraryPdf(dataId, templateIdObfuscated, language);
             case "FULL_QUOTE" -> quotePdfService.previewQuotePdf(dataId, templateIdObfuscated, language);
             case "FULL_SAFARI" -> safariPdfService.previewSafariPdf(dataId, templateIdObfuscated, language);
@@ -109,6 +140,27 @@ public class PdfGenerationService {
     @Transactional(readOnly = true)
     public ResponseEntity<?> generateItineraryPdf(String itineraryIdObfuscated, String templateIdObfuscated, String language) {
         return itineraryPdfService.generateItineraryPdf(itineraryIdObfuscated, templateIdObfuscated, language);
+    }
+
+    /**
+     * A costing, generated and filed against the itinerary it prices.
+     *
+     * Same shape as the itinerary save path — a costing belongs to the itinerary
+     * and that is where anyone would look for it.
+     */
+    @Transactional
+    public ResponseEntity<?> generateAndSaveCostEstimationPdf(
+            String itineraryId,
+            String templateId,
+            String language,
+            java.time.LocalDate startDate,
+            com.itineraryledger.kabengosafaris.Itinerary.Entity.ItineraryDocument.DocumentType documentType,
+            String title,
+            String version,
+            String notes
+    ) {
+        return costEstimationPdfService.generateAndSaveCostEstimationPdf(
+            itineraryId, templateId, language, startDate, documentType, title, version, notes);
     }
 
     @Transactional

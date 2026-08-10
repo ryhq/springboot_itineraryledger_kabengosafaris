@@ -197,16 +197,40 @@ public class PdfTemplateStorageService {
     }
 
     /**
+     * Load a shipped template other than the default, by its resource suffix.
+     *
+     * Returns null rather than a fallback: an extra template that is missing
+     * should simply not be registered, where a missing DEFAULT still has to
+     * leave the document usable.
+     */
+    public String loadSeedTemplate(String documentName, String suffix) {
+        String resourcePath = "templates/pdf-templates/" + documentName.toLowerCase() + "_" + suffix + ".html";
+        try (var resource = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
+            if (resource == null) {
+                log.warn("Seed template not found: {}", resourcePath);
+                return null;
+            }
+            return new String(resource.readAllBytes());
+        } catch (Exception e) {
+            log.error("Failed to read seed template: {}", resourcePath, e);
+            return null;
+        }
+    }
+
+    /**
      * Generate a fallback template when system default cannot be loaded
      *
      * @param documentName The name of the PDF document type
      * @return Basic HTML template
      */
     private String generateFallbackTemplate(String documentName) {
-        String rootVar = switch (documentName) {
-            case "FULL_ITINERARY" -> "itinerary";
-            default -> "data";
-        };
+        /*
+         * The stub has to bind to the SAME root variable the real templates use,
+         * or the placeholder renders empty and looks like a data problem rather
+         * than a missing template. Kept in step with PdfDocumentVariables.
+         */
+        String rootVar = com.itineraryledger.kabengosafaris.PdfDocument.PdfDocumentVariables
+            .getRootVariableName(documentName);
 
         return String.format("""
             <!DOCTYPE html>

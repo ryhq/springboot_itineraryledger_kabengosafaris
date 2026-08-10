@@ -46,6 +46,21 @@ public class PdfGenerationController {
             request.getLanguage() != null ? ", language: " + request.getLanguage() : "",
             Boolean.TRUE.equals(request.getSaveToDocuments()) ? ", saving to documents" : "");
 
+        // A costing files against the itinerary it prices, and carries its date
+        if (Boolean.TRUE.equals(request.getSaveToDocuments())
+                && "FULL_COST_ESTIMATION".equals(request.getDocumentType())) {
+            return generationService.generateAndSaveCostEstimationPdf(
+                request.getDataId(),
+                request.getTemplateId(),
+                request.getLanguage(),
+                request.getStartDate(),
+                request.getItineraryDocumentType(),
+                request.getDocumentTitle(),
+                request.getDocumentVersion(),
+                request.getDocumentNotes()
+            );
+        }
+
         // If saveToDocuments is true and this is an itinerary-related PDF, use the save method
         if (Boolean.TRUE.equals(request.getSaveToDocuments()) && "FULL_ITINERARY".equals(request.getDocumentType())) {
             return generationService.generateAndSaveItineraryPdf(
@@ -102,7 +117,8 @@ public class PdfGenerationController {
             request.getDocumentType(),
             request.getDataId(),
             request.getTemplateId(),
-            request.getLanguage()
+            request.getLanguage(),
+            request.getStartDate()
         );
     }
 
@@ -120,7 +136,8 @@ public class PdfGenerationController {
             request.getDocumentType(),
             request.getDataId(),
             request.getTemplateId(),
-            request.getLanguage()
+            request.getLanguage(),
+            request.getStartDate()
         );
     }
 
