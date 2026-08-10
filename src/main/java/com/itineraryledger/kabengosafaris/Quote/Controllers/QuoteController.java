@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,6 +25,7 @@ import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteCrea
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteDeleteService;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteFromItineraryGenerationService;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteFullGetService;
+import com.itineraryledger.kabengosafaris.Quote.Specifications.QuoteFilter;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteGetService;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteUpdateService;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteVersionService;
@@ -171,10 +173,14 @@ public class QuoteController {
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_QUOTE')")
     public ResponseEntity<ApiResponse<?>> getQuoteById(
-        @PathVariable String idObfuscated
+        @PathVariable String idObfuscated,
+        // the list's filters and sort, so prev/next walks that same set
+        @ModelAttribute QuoteFilter filter,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/quotes/{} - Fetching quote by ID", idObfuscated);
-        return quoteGetService.getQuoteById(idObfuscated);
+        return quoteGetService.getQuoteById(idObfuscated, filter, sortBy, sortDirection);
     }
 
     /**
@@ -310,50 +316,15 @@ public class QuoteController {
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_QUOTE')")
     public ResponseEntity<ApiResponse<?>> getAllQuotes(
-        @RequestParam(required = false) String quoteCode,
-        @RequestParam(required = false) String title,
-        @RequestParam(required = false) QuoteStatus status,
-        @RequestParam(required = false) String itineraryId,
-        @RequestParam(required = false) String customerId,
-        @RequestParam(required = false) String approverId,
-        @RequestParam(required = false) String approvedById,
-        @RequestParam(required = false) String createdById,
-        @RequestParam(required = false) String updatedById,
-        @RequestParam(required = false) Boolean isStoRate,
-        @RequestParam(required = false) Boolean isActive,
-        @RequestParam(required = false) LocalDate validOn,
-        @RequestParam(required = false) LocalDate sentAfter,
-        @RequestParam(required = false) LocalDate sentBefore,
-        @RequestParam(required = false) Integer version,
-        @RequestParam(required = false) String statusGroup,
+        @ModelAttribute QuoteFilter filter,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/quotes - Fetching all quotes with filters");
-        return quoteGetService.getAllQuotes(
-            quoteCode,
-            title,
-            status,
-            itineraryId,
-            customerId,
-            approverId,
-            approvedById,
-            createdById,
-            updatedById,
-            isStoRate,
-            isActive,
-            validOn,
-            sentAfter,
-            sentBefore,
-            version,
-            statusGroup,
-            page,
-            size,
-            sortBy,
-            sortDirection
-        );
+        return quoteGetService.getAllQuotes(filter, includeStats, page, size, sortBy, sortDirection);
     }
 
     // ========================

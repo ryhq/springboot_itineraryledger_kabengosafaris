@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
+import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
+import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerRepository;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.QuoteDTO;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.UpdateQuoteDTO;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
@@ -36,6 +38,7 @@ public class QuoteUpdateService {
 
     private final QuoteRepository quoteRepository;
     private final UserRepository userRepository;
+    private final CustomerRepository customerRepository;
     private final IdObfuscator idObfuscator;
     private final QuoteTotalsCalculationService totalsCalculationService;
     private final QuoteCostEstimationService quoteCostEstimationService;
@@ -183,6 +186,55 @@ public class QuoteUpdateService {
                         "DIRECT_STATUS_CHANGE_BLOCKED"
                     )
                 );
+            }
+
+            /*
+             * Re-addressing the quote. Only while it is still ours to change:
+             * once it has been sent, who it was sent to is part of the record.
+             */
+            if (updateDTO.getCustomerId() != null && !updateDTO.getCustomerId().isBlank()) {
+                if (status != QuoteStatus.DRAFT && status != QuoteStatus.READY) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                            "Cannot change the customer on a " + status.getDisplayName()
+                                + " quote. Revert to draft, or raise a new version.",
+                            "CUSTOMER_CHANGE_BLOCKED")
+                    );
+                }
+                Customer customer;
+                try {
+                    customer = customerRepository.findById(idObfuscator.decodeId(updateDTO.getCustomerId()))
+                        .orElse(null);
+                } catch (Exception e) {
+                    customer = null;
+                }
+                if (customer == null) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Customer not found", "CUSTOMER_NOT_FOUND")
+                    );
+                }
+                quote.setCustomer(customer);
+            }
+
+            // Who has to sign this off. Blank clears the assignment.
+            if (updateDTO.getApproverId() != null) {
+                if (updateDTO.getApproverId().isBlank()) {
+                    quote.setApprover(null);
+                } else {
+                    User approver;
+                    try {
+                        approver = userRepository.findById(idObfuscator.decodeId(updateDTO.getApproverId()))
+                            .orElse(null);
+                    } catch (Exception e) {
+                        approver = null;
+                    }
+                    if (approver == null) {
+                        return ResponseEntity.badRequest().body(
+                            ApiResponse.error(400, "Approver not found", "APPROVER_NOT_FOUND")
+                        );
+                    }
+                    quote.setApprover(approver);
+                }
             }
 
             // Update title

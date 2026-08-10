@@ -21,6 +21,7 @@ import com.itineraryledger.kabengosafaris.Quote.DTOs.QuoteDTO;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
 import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteStatus;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
+import com.itineraryledger.kabengosafaris.Quote.Specifications.QuoteFilter;
 import com.itineraryledger.kabengosafaris.Quote.Specifications.QuoteSpecification;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -43,6 +44,8 @@ public class QuoteGetService {
     private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     private final QuoteRepository quoteRepository;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final IdObfuscator idObfuscator;
 
     /**
@@ -52,10 +55,26 @@ public class QuoteGetService {
      * @return ResponseEntity with ApiResponse containing the quote
      */
     public ResponseEntity<ApiResponse<?>> getQuoteById(String idObfuscated) {
+        // no filters supplied: the walk is over every quote
+        return getQuoteById(idObfuscated, new QuoteFilter(), null, null);
+    }
+
+    /**
+     * One quote, plus where it sits in the set the caller was looking at.
+     *
+     * The filters and sort come from the list page so prev/next stays inside
+     * that set — see buildSpec.
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<?>> getQuoteById(
+        String idObfuscated,
+        QuoteFilter filter,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching quote with ID: {}", idObfuscated);
 
         try {
-            // Decode ID
             Long id;
             try {
                 id = idObfuscator.decodeId(idObfuscated);
@@ -66,7 +85,6 @@ public class QuoteGetService {
                 );
             }
 
-            // Find quote
             Quote quote = quoteRepository.findById(id).orElse(null);
             if (quote == null) {
                 return ResponseEntity.status(404).body(
@@ -74,19 +92,30 @@ public class QuoteGetService {
                 );
             }
 
-            // Convert to DTO
             QuoteDTO quoteDTO = convertToDTO(quote);
 
-            // Build navigation
-            Long nextId = quoteRepository.findNextId(id).orElse(null);
-            Long previousId = quoteRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = quoteRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = quoteRepository.findLastId().orElse(null);
+            /*
+             * Prev/next walks the SAME filtered, sorted set the list was showing.
+             * It used to walk a raw id-ordered query, so paging out of a "Sent"
+             * list landed in a draft — arrows that traverse a different set than
+             * the one on screen are worse than no arrows.
+             */
+            Specification<Quote> navSpec = buildSpec(filter != null ? filter : new QuoteFilter());
+            String navSortBy = validateSortField(sortBy) != null ? validateSortField(sortBy) : DEFAULT_SORT_FIELD;
+            boolean ascending = "asc".equalsIgnoreCase(sortDirection);
+
+            Map<String, Object> nav = recordNavigation.navigate(
+                Quote.class, navSpec, navSortBy, ascending, id);
+
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("quote", quoteDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Quote retrieved successfully", response)
@@ -134,46 +163,14 @@ public class QuoteGetService {
     }
 
     /**
-     * Get all quotes with pagination, sorting, and filtering
+     * A page of quotes, plus the counters for the whole filtered set.
      *
-     * @param quoteCode Filter by quote code (partial match)
-     * @param title Filter by title (partial match)
-     * @param status Filter by status
-     * @param itineraryId Filter by itinerary ID (obfuscated)
-     * @param customerId Filter by customer ID (obfuscated)
-     * @param approverId Filter by approver ID (obfuscated)
-     * @param approvedById Filter by approved by ID (obfuscated)
-     * @param createdById Filter by created by ID (obfuscated)
-     * @param updatedById Filter by updated by ID (obfuscated)
-     * @param isStoRate Filter by STO rate flag
-     * @param isActive Filter by active status
-     * @param validOn Filter by valid on date
-     * @param sentAfter Filter by sent after date
-     * @param sentBefore Filter by sent before date
-     * @param version Filter by version number
-     * @param statusGroup Filter by status group (draft, pending, active, closed)
-     * @param page Page number (0-indexed)
-     * @param size Page size
-     * @param sortDirection Sort direction (asc/desc)
-     * @return ResponseEntity with ApiResponse containing paginated quotes
+     * @param filter what to narrow by; every field optional
+     * @param includeStats false to skip the counters (the rows alone are cheaper)
      */
     public ResponseEntity<ApiResponse<?>> getAllQuotes(
-        String quoteCode,
-        String title,
-        QuoteStatus status,
-        String itineraryId,
-        String customerId,
-        String approverId,
-        String approvedById,
-        String createdById,
-        String updatedById,
-        Boolean isStoRate,
-        Boolean isActive,
-        LocalDate validOn,
-        LocalDate sentAfter,
-        LocalDate sentBefore,
-        Integer version,
-        String statusGroup,
+        QuoteFilter filter,
+        Boolean includeStats,
         Integer page,
         Integer size,
         String sortBy,
@@ -182,7 +179,6 @@ public class QuoteGetService {
         log.info("Fetching all quotes with filters");
 
         try {
-            // Validate sort field
             String validatedSortBy = validateSortField(sortBy);
             if (validatedSortBy == null) {
                 log.warn("Invalid sort field: {}", sortBy);
@@ -191,106 +187,7 @@ public class QuoteGetService {
                 );
             }
 
-            // Build specification for filtering
-            Specification<Quote> spec = Specification.unrestricted();
-
-            if (quoteCode != null && !quoteCode.isEmpty()) {
-                spec = spec.and(QuoteSpecification.byQuoteCode(quoteCode));
-            }
-            if (title != null && !title.isEmpty()) {
-                spec = spec.and(QuoteSpecification.byTitle(title));
-            }
-            if (status != null) {
-                spec = spec.and(QuoteSpecification.byStatus(status));
-            }
-            if (isStoRate != null) {
-                spec = spec.and(QuoteSpecification.byIsStoRate(isStoRate));
-            }
-            if (isActive != null) {
-                spec = spec.and(QuoteSpecification.byIsActive(isActive));
-            }
-            if (validOn != null) {
-                spec = spec.and(QuoteSpecification.byValidOn(validOn));
-            }
-            if (sentAfter != null) {
-                spec = spec.and(QuoteSpecification.bySentAfter(sentAfter));
-            }
-            if (sentBefore != null) {
-                spec = spec.and(QuoteSpecification.bySentBefore(sentBefore));
-            }
-            if (version != null) {
-                spec = spec.and(QuoteSpecification.byVersion(version));
-            }
-
-            // Apply relationship filters (decode IDs)
-            if (itineraryId != null && !itineraryId.isEmpty()) {
-                try {
-                    Long decodedId = idObfuscator.decodeId(itineraryId);
-                    spec = spec.and(QuoteSpecification.byItineraryId(decodedId));
-                } catch (Exception e) {
-                    log.warn("Failed to decode itinerary ID: {}", itineraryId, e);
-                }
-            }
-            if (customerId != null && !customerId.isEmpty()) {
-                try {
-                    Long decodedId = idObfuscator.decodeId(customerId);
-                    spec = spec.and(QuoteSpecification.byCustomerId(decodedId));
-                } catch (Exception e) {
-                    log.warn("Failed to decode customer ID: {}", customerId, e);
-                }
-            }
-            if (approverId != null && !approverId.isEmpty()) {
-                try {
-                    Long decodedId = idObfuscator.decodeId(approverId);
-                    spec = spec.and(QuoteSpecification.byApproverId(decodedId));
-                } catch (Exception e) {
-                    log.warn("Failed to decode approver ID: {}", approverId, e);
-                }
-            }
-            if (approvedById != null && !approvedById.isEmpty()) {
-                try {
-                    Long decodedId = idObfuscator.decodeId(approvedById);
-                    spec = spec.and(QuoteSpecification.byApprovedById(decodedId));
-                } catch (Exception e) {
-                    log.warn("Failed to decode approved by ID: {}", approvedById, e);
-                }
-            }
-            if (createdById != null && !createdById.isEmpty()) {
-                try {
-                    Long decodedId = idObfuscator.decodeId(createdById);
-                    spec = spec.and(QuoteSpecification.byCreatedById(decodedId));
-                } catch (Exception e) {
-                    log.warn("Failed to decode created by ID: {}", createdById, e);
-                }
-            }
-            if (updatedById != null && !updatedById.isEmpty()) {
-                try {
-                    Long decodedId = idObfuscator.decodeId(updatedById);
-                    spec = spec.and(QuoteSpecification.byUpdatedById(decodedId));
-                } catch (Exception e) {
-                    log.warn("Failed to decode updated by ID: {}", updatedById, e);
-                }
-            }
-
-            // Apply status group filter
-            if (statusGroup != null && !statusGroup.isEmpty()) {
-                switch (statusGroup.toLowerCase()) {
-                    case "draft":
-                        spec = spec.and(QuoteSpecification.byDraftStatus());
-                        break;
-                    case "pending":
-                        spec = spec.and(QuoteSpecification.byPendingStatuses());
-                        break;
-                    case "active":
-                        spec = spec.and(QuoteSpecification.byActiveStatuses());
-                        break;
-                    case "closed":
-                        spec = spec.and(QuoteSpecification.byClosedStatuses());
-                        break;
-                    default:
-                        log.warn("Unknown status group: {}", statusGroup);
-                }
-            }
+            Specification<Quote> spec = buildSpec(filter != null ? filter : new QuoteFilter());
 
             // Set default pagination values
             int pageNumber = (page != null && page >= 0) ? page : 0;
@@ -322,6 +219,15 @@ public class QuoteGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", direction.name().toLowerCase());
+
+            /*
+             * Counters for the whole filtered set, not this page. Opt-out rather
+             * than opt-in: a list page without them shows a scope toggle it
+             * cannot honour.
+             */
+            if (!Boolean.FALSE.equals(includeStats)) {
+                response.put("stats", buildStats(spec));
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Quotes retrieved successfully", response)
@@ -376,6 +282,9 @@ public class QuoteGetService {
             .condenseItems(quote.getCondenseItems())
             .version(quote.getVersion())
             .status(quote.getStatus())
+            // the DTO promised a readable status and never filled it, so every
+            // client fell back to printing the enum constant
+            .statusDisplayName(quote.getStatus() != null ? quote.getStatus().getDisplayName() : null)
             .safariStartDate(quote.getSafariStartDate())
             .sentDate(quote.getSentDate())
             .validFrom(quote.getValidFrom())
@@ -433,5 +342,105 @@ public class QuoteGetService {
         }
 
         return dto;
+    }
+
+    /**
+     * ONE specification, shared by the rows, the counters and the record walk.
+     *
+     * The three used to be able to disagree: the list filtered, the stat cards
+     * did not exist, and prev/next walked a raw id-ordered query — so paging out
+     * of a "Sent" list landed you in a draft. Anything built from this cannot
+     * drift from what is on screen.
+     */
+    private Specification<Quote> buildSpec(QuoteFilter filter) {
+        Specification<Quote> spec = Specification.unrestricted();
+
+        // the search box: one param, several columns, joins included
+        spec = spec.and(QuoteSpecification.byKeyword(filter.getKeyword()));
+
+        if (filter.getQuoteCode() != null && !filter.getQuoteCode().isEmpty()) {
+            spec = spec.and(QuoteSpecification.byQuoteCode(filter.getQuoteCode()));
+        }
+        if (filter.getTitle() != null && !filter.getTitle().isEmpty()) {
+            spec = spec.and(QuoteSpecification.byTitle(filter.getTitle()));
+        }
+        // OR inside the dimension, AND across dimensions
+        spec = spec.and(QuoteSpecification.byStatuses(filter.allStatuses()));
+        spec = spec.and(QuoteSpecification.byStatusGroups(filter.allStatusGroups()));
+
+        if (filter.getIsStoRate() != null) {
+            spec = spec.and(QuoteSpecification.byIsStoRate(filter.getIsStoRate()));
+        }
+        if (filter.getIsActive() != null) {
+            spec = spec.and(QuoteSpecification.byIsActive(filter.getIsActive()));
+        }
+        if (filter.getValidOn() != null) {
+            spec = spec.and(QuoteSpecification.byValidOn(filter.getValidOn()));
+        }
+        if (filter.getSentAfter() != null) {
+            spec = spec.and(QuoteSpecification.bySentAfter(filter.getSentAfter()));
+        }
+        if (filter.getSentBefore() != null) {
+            spec = spec.and(QuoteSpecification.bySentBefore(filter.getSentBefore()));
+        }
+        if (filter.getVersion() != null) {
+            spec = spec.and(QuoteSpecification.byVersion(filter.getVersion()));
+        }
+
+        spec = and(spec, filter.getItineraryId(), QuoteSpecification::byItineraryId, "itinerary");
+        spec = and(spec, filter.getCustomerId(), QuoteSpecification::byCustomerId, "customer");
+        spec = and(spec, filter.getApproverId(), QuoteSpecification::byApproverId, "approver");
+        spec = and(spec, filter.getApprovedById(), QuoteSpecification::byApprovedById, "approved by");
+        spec = and(spec, filter.getCreatedById(), QuoteSpecification::byCreatedById, "created by");
+        spec = and(spec, filter.getUpdatedById(), QuoteSpecification::byUpdatedById, "updated by");
+
+        return spec;
+    }
+
+    /**
+     * Narrows by an obfuscated id, or narrows to nothing if it will not decode.
+     *
+     * A id that cannot be read used to be logged and dropped, which silently
+     * widened the result to every quote — the opposite of what was asked for.
+     */
+    private Specification<Quote> and(
+        Specification<Quote> spec,
+        String obfuscatedId,
+        java.util.function.Function<Long, Specification<Quote>> by,
+        String what
+    ) {
+        if (obfuscatedId == null || obfuscatedId.isEmpty()) return spec;
+        try {
+            return spec.and(by.apply(idObfuscator.decodeId(obfuscatedId)));
+        } catch (Exception e) {
+            log.warn("Failed to decode {} ID: {}", what, obfuscatedId);
+            return spec.and((root, query, cb) -> cb.disjunction());
+        }
+    }
+
+    /**
+     * Counters for the whole filtered set, built from the SAME specification.
+     *
+     * Every figure here is reachable as a filter, and every filter has a figure —
+     * a card that cannot be clicked is decoration, and a filter with no counter
+     * is a question the page refuses to answer.
+     */
+    private Map<String, Object> buildStats(Specification<Quote> base) {
+        return listStats.of(Quote.class, base)
+            .total()
+            .count("active", QuoteSpecification.byIsActive(true))
+            .complement("inactive", "active")
+            .breakdown("byStatus", QuoteStatus.values(), QuoteSpecification::byStatus)
+            .count("draftGroup", QuoteSpecification.byDraftStatus())
+            .count("pendingGroup", QuoteSpecification.byPendingStatuses())
+            .count("activeGroup", QuoteSpecification.byActiveStatuses())
+            .count("closedGroup", QuoteSpecification.byClosedStatuses())
+            // priced at operator rates rather than published ones
+            .count("stoRate", QuoteSpecification.byIsStoRate(true))
+            .complement("rackRate", "stoRate")
+            // valid today: the ones that can still be accepted as they stand
+            .count("validNow", QuoteSpecification.byValidOn(java.time.LocalDate.now()))
+            .recency(QuoteSpecification::createdAfter)
+            .build();
     }
 }

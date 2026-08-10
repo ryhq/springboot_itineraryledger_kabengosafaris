@@ -24,6 +24,16 @@ public class UpdateQuoteDTO {
     private String description;
 
     /*
+     * Who the quote is addressed to, and who has to approve it.
+     *
+     * The itinerary is deliberately NOT here: it is the basis of every line
+     * item, so re-pointing it would leave prices belonging to another trip.
+     * That change is a new quote, generated from the itinerary you want.
+     */
+    private String customerId;
+    private String approverId;
+
+    /*
      * Enums arrive as Strings so a blank can CLEAR the field; null still means
      * "leave unchanged". Bound as the enum itself, an empty value makes Jackson
      * reject the whole request body, which is how a set value became impossible
