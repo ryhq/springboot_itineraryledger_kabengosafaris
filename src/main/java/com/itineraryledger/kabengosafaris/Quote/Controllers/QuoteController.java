@@ -52,6 +52,7 @@ public class QuoteController {
     private final QuoteUpdateService quoteUpdateService;
     private final QuoteDeleteService quoteDeleteService;
     private final QuoteGetService quoteGetService;
+    private final com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteActivationService quoteActivationService;
     private final QuoteFullGetService quoteFullGetService;
     private final QuoteFromItineraryGenerationService quoteFromItineraryGenerationService;
     private final QuoteTotalsCalculationService totalsCalculationService;
@@ -495,5 +496,47 @@ public class QuoteController {
             id, startDate, currency, useStoRate);
         return quoteVersionService.createNewVersion(id, versionNotes, startDate, currency, useStoRate,
             validityDays, taxPercentage, discountPercentage, discountReason);
+    }
+
+    // ========================
+    // ACTIVATION
+    // ========================
+
+    /*
+     * Withdrawing a quote is not the same as cancelling it. Cancelled is an
+     * outcome the customer is part of; inactive just takes the row out of the
+     * working lists, which is why it lives here and not in the status service.
+     */
+
+    @PostMapping("/{id}/deactivate")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE')")
+    public ResponseEntity<ApiResponse<?>> deactivate(@PathVariable String id) {
+        log.info("POST /api/quotes/{}/deactivate", id);
+        return quoteActivationService.setActive(id, false);
+    }
+
+    @PostMapping("/{id}/reactivate")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE')")
+    public ResponseEntity<ApiResponse<?>> reactivate(@PathVariable String id) {
+        log.info("POST /api/quotes/{}/reactivate", id);
+        return quoteActivationService.setActive(id, true);
+    }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository bulkFlagsRepository;
+
+    /** PATCH /bulk — activate or withdraw a whole selection in one request. */
+    @org.springframework.web.bind.annotation.PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("quote", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+        });
     }
 }
