@@ -131,4 +131,30 @@ public class QuoteItemController {
         log.info("POST /api/quotes/{}/items/reorder - Reordering {} items", quoteId, reorderDTO.getItemOrder().size());
         return reorderService.reorderQuoteItems(quoteId, reorderDTO);
     }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Quote.Repository.QuoteItemRepository bulkFlagsRepository;
+
+    /**
+     * PATCH /bulk — take a whole selection of lines in or out of the totals.
+     *
+     * One request rather than one per line: leaving a selection half-applied,
+     * with nobody told which half, is how a quote goes out with a line the office
+     * thought it had removed.
+     */
+    @org.springframework.web.bind.annotation.PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE_ITEM')")
+    public ResponseEntity<?> bulkFlags(
+        @PathVariable String quoteId,
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        log.info("PATCH /api/quotes/{}/items/bulk", quoteId);
+        return bulkFlags.apply("quote line", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+        });
+    }
 }

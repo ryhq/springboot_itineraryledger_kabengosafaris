@@ -216,17 +216,39 @@ public class QuoteItemReorderService {
             // ========================
             // VALIDATION: Expected display orders (if provided)
             // ========================
+            /*
+             * `expectedDisplayOrder` is what the CALLER believes the item's order
+             * is right now — an optimistic-concurrency check, so a reorder built
+             * from a stale list is refused instead of silently reshuffling
+             * somebody else's arrangement.
+             *
+             * It used to be compared against the item's index in the submitted
+             * list, which is a tautology: it could only fail if the caller
+             * miscounted the list it had just built. Every honest client failed
+             * it, because a caller numbering positions from 1 was told
+             * "expected 1, but position is 0".
+             */
             List<String> expectedOrderMismatches = new ArrayList<>();
-            int position = 0;
+            Map<Long, QuoteItem> byId = existingItems.stream()
+                .collect(Collectors.toMap(QuoteItem::getId, item -> item));
 
             for (QuoteItemOrderItem item : itemOrder) {
-                if (item.getExpectedDisplayOrder() != null && !item.getExpectedDisplayOrder().equals(position)) {
+                if (item.getExpectedDisplayOrder() == null) continue;
+                Long rawId;
+                try {
+                    rawId = idObfuscator.decodeId(item.getItemId());
+                } catch (Exception e) {
+                    continue; // the id checks below report this properly
+                }
+                QuoteItem existing = byId.get(rawId);
+                if (existing == null) continue;
+                Integer stored = existing.getDisplayOrder();
+                if (stored != null && !item.getExpectedDisplayOrder().equals(stored)) {
                     expectedOrderMismatches.add(
-                        String.format("Item %s: expected display order %d, but position is %d",
-                            item.getItemId(), item.getExpectedDisplayOrder(), position)
+                        String.format("Item %s: caller expected it at %d, but it is at %d — the list has moved on",
+                            item.getItemId(), item.getExpectedDisplayOrder(), stored)
                     );
                 }
-                position++;
             }
 
             if (!expectedOrderMismatches.isEmpty()) {
@@ -250,7 +272,8 @@ public class QuoteItemReorderService {
             // CHECK IF REORDER IS ACTUALLY NEEDED
             // ========================
             boolean orderChanged = false;
-            int newDisplayOrder = 0;
+            // 1-based, matching what create and the estimator write
+            int newDisplayOrder = 1;
 
             for (Long itemId : decodedItemIds.keySet()) {
                 QuoteItem item = itemLookup.get(itemId);
@@ -291,7 +314,7 @@ public class QuoteItemReorderService {
 
             // Pass 2: Set final display orders based on new order
             List<QuoteItem> reorderedItems = new ArrayList<>();
-            newDisplayOrder = 0;
+            newDisplayOrder = 1;
 
             for (Long itemId : decodedItemIds.keySet()) {
                 QuoteItem item = itemLookup.get(itemId);

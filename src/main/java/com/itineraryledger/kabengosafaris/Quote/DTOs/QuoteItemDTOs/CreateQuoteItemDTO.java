@@ -26,7 +26,12 @@ import lombok.NoArgsConstructor;
 @Builder
 public class CreateQuoteItemDTO {
 
-    @NotBlank(message = "Quote ID is required")
+    /*
+     * Set from the path by the controller. It is deliberately NOT @NotBlank:
+     * validation runs before the controller body, so requiring it here meant a
+     * nested create that did not repeat the quote id in the body was refused
+     * with a bare "Validation failed" naming nothing.
+     */
     private String quoteId;
 
     @NotNull(message = "Item type is required")

@@ -398,6 +398,13 @@ public class QuoteCostEstimationService {
     private int persistItems(Quote quote, ItineraryCostEstimationDTO estimation) {
         BigDecimal multiplier = computeMarkupMultiplier(quote);
         boolean condense = Boolean.TRUE.equals(quote.getCondenseItems());
+        /*
+         * displayOrder is 1-based and unique within a quote, which is what the
+         * create endpoint has always assumed (max + 1) and what the reorder
+         * endpoint now writes. It used to restart at 0 per type here, and every
+         * condensed row was written as 0 — so three rows shared one position and
+         * "sort by displayOrder" answered arbitrarily.
+         */
         int written = 0;
         List<CostLineItem> accommodation = estimation.getAccommodationCosts() != null
                 ? estimation.getAccommodationCosts().getItems() : null;
@@ -407,13 +414,13 @@ public class QuoteCostEstimationService {
                 ? estimation.getActivityCosts().getItems() : null;
 
         if (condense) {
-            written += writeCondensed(quote, accommodation, QuoteItemType.ACCOMMODATION, "Accommodation", multiplier);
-            written += writeCondensed(quote, parkFees, QuoteItemType.PARK_FEE, "Park Fees", multiplier);
-            written += writeCondensed(quote, activities, QuoteItemType.ACTIVITY, "Activities", multiplier);
+            written += writeCondensed(quote, accommodation, QuoteItemType.ACCOMMODATION, "Accommodation", multiplier, written + 1);
+            written += writeCondensed(quote, parkFees, QuoteItemType.PARK_FEE, "Park Fees", multiplier, written + 1);
+            written += writeCondensed(quote, activities, QuoteItemType.ACTIVITY, "Activities", multiplier, written + 1);
         } else {
-            written += writePerLine(quote, accommodation, QuoteItemType.ACCOMMODATION, multiplier);
-            written += writePerLine(quote, parkFees, QuoteItemType.PARK_FEE, multiplier);
-            written += writePerLine(quote, activities, QuoteItemType.ACTIVITY, multiplier);
+            written += writePerLine(quote, accommodation, QuoteItemType.ACCOMMODATION, multiplier, written + 1);
+            written += writePerLine(quote, parkFees, QuoteItemType.PARK_FEE, multiplier, written + 1);
+            written += writePerLine(quote, activities, QuoteItemType.ACTIVITY, multiplier, written + 1);
         }
         return written;
     }
@@ -425,9 +432,9 @@ public class QuoteCostEstimationService {
      * full breakdown rather than a per-type roll-up.
      */
     private int writePerLine(Quote quote, List<CostLineItem> lineItems,
-                             QuoteItemType type, BigDecimal multiplier) {
+                             QuoteItemType type, BigDecimal multiplier, int firstOrder) {
         if (lineItems == null || lineItems.isEmpty()) return 0;
-        int displayOrder = 0;
+        int displayOrder = firstOrder;
         int written = 0;
         for (CostLineItem li : lineItems) {
             if (li.getCurrency() == null) continue;
@@ -512,7 +519,8 @@ public class QuoteCostEstimationService {
     }
 
     private int writeCondensed(Quote quote, List<CostLineItem> lineItems,
-                               QuoteItemType type, String displayName, BigDecimal multiplier) {
+                               QuoteItemType type, String displayName, BigDecimal multiplier,
+                               int order) {
         if (lineItems == null || lineItems.isEmpty()) return 0;
 
         Map<String, BigDecimal> totalsByCurrency = new LinkedHashMap<>();
@@ -553,7 +561,7 @@ public class QuoteCostEstimationService {
                 .itemType(type)
                 .itemName(displayName)
                 .description(names.isEmpty() ? null : String.join(", ", names))
-                .displayOrder(0)
+                .displayOrder(order)
                 .prices(prices)
                 .isActive(true)
                 .build();
