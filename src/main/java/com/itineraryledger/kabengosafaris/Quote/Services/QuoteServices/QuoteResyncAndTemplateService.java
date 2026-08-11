@@ -20,6 +20,7 @@ import com.itineraryledger.kabengosafaris.Quote.QuotePax.Entity.QuotePax;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -85,27 +86,70 @@ public class QuoteResyncAndTemplateService {
             }
 
             Itinerary source = quote.getItinerary();
-            int totalDays = quote.getDays().size();
-            int totalNights = Math.max(0, totalDays - 1);
+
+            /*
+             * The new template describes THIS QUOTE, not the itinerary the quote
+             * was priced from. The quote has been negotiated — a day dropped, a
+             * lodge changed, a different pax split — and copying the source's
+             * header would produce a template whose summary contradicted its own
+             * days.
+             *
+             * So every field is taken from the quote where the quote has an
+             * answer, and from the source only where it does not: trip type,
+             * budget category and highlights live on an itinerary alone, and the
+             * car count is the one the quote was actually priced with.
+             */
+            List<QuoteDay> orderedDays = quote.getDays().stream()
+                    .sorted(java.util.Comparator.comparing(
+                            QuoteDay::getDayNumber,
+                            java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+                    .collect(java.util.stream.Collectors.toList());
+
+            int totalDays = orderedDays.size();
+            // the days say where the guests sleep; a trip that ends with a
+            // fly-out has one fewer night than days-minus-one would claim
+            int totalNights = (int) orderedDays.stream()
+                    .filter(d -> Boolean.TRUE.equals(d.getIsOvernight()))
+                    .count();
+
+            String startLocation = orderedDays.stream()
+                    .map(QuoteDay::getStartLocation)
+                    .filter(v -> v != null && !v.isBlank())
+                    .findFirst()
+                    .orElse(source != null ? source.getStartLocation() : null);
+
+            String endLocation = orderedDays.stream()
+                    .map(QuoteDay::getEndLocation)
+                    .filter(v -> v != null && !v.isBlank())
+                    .reduce((first, second) -> second)
+                    .orElse(source != null ? source.getEndLocation() : null);
 
             String name = newName != null && !newName.isBlank()
                     ? newName.trim()
-                    : (source != null ? source.getName() + " (from " + quote.getQuoteCode() + ")" : "Quote " + quote.getQuoteCode());
+                    : (quote.getTitle() != null && !quote.getTitle().isBlank()
+                            ? quote.getTitle()
+                            : "Quote " + quote.getQuoteCode());
+
+            String description = newDescription != null && !newDescription.isBlank()
+                    ? newDescription
+                    : (quote.getDescription() != null && !quote.getDescription().isBlank()
+                            ? quote.getDescription()
+                            : (source != null ? source.getDescription() : null));
 
             Itinerary fresh = Itinerary.builder()
                     .name(name)
                     .status(Itinerary.ItineraryStatus.DRAFT)
+                    // an itinerary-only classification; the quote inherited it
                     .tripType(source != null ? source.getTripType() : null)
                     .budgetCategory(source != null ? source.getBudgetCategory() : null)
                     .totalDays(totalDays)
                     .totalNights(totalNights)
+                    // the vehicle count the quote's own prices were worked out on
                     .carCount(source != null && source.getCarCount() != null ? source.getCarCount() : 1)
-                    .description(newDescription != null && !newDescription.isBlank()
-                            ? newDescription
-                            : (source != null ? source.getDescription() : null))
+                    .description(description)
                     .highlights(source != null ? source.getHighlights() : null)
-                    .startLocation(source != null ? source.getStartLocation() : null)
-                    .endLocation(source != null ? source.getEndLocation() : null)
+                    .startLocation(startLocation)
+                    .endLocation(endLocation)
                     .isActive(true)
                     .build();
 
