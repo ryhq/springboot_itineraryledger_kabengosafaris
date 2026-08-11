@@ -39,10 +39,15 @@ public class QuoteItemGetService {
     private final QuoteItemRepository quoteItemRepository;
     private final IdObfuscator idObfuscator;
 
+    /*
+     * displayOrder belongs here: the lines of a quote are a document, printed in
+     * the order the reorder endpoint maintains, so it is the one order a caller
+     * most needs — and asking for it was answered with 400.
+     */
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
-        "itemType", "itemName", "createdAt", "updatedAt"
+        "displayOrder", "itemType", "itemName", "isActive", "createdAt", "updatedAt"
     );
-    private static final String DEFAULT_SORT_FIELD = "createdAt";
+    private static final String DEFAULT_SORT_FIELD = "displayOrder";
 
     /**
      * Get a single quote item by obfuscated ID
