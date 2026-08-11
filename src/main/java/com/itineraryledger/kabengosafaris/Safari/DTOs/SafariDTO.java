@@ -33,6 +33,9 @@ public class SafariDTO {
     private String customerId;
     private String customerName;
     private String customerCode;
+    /** so "send details" can say where it is going, and refuse when it cannot */
+    private String customerEmail;
+    private String customerPhone;
 
     // State information (booking/operational - manually managed)
     private SafariState state;
@@ -67,6 +70,13 @@ public class SafariDTO {
     private String specialRequests;
     private String dietaryRequirements;
     private String emergencyContact;
+
+    /**
+     * For the office. The entity has always had it and the update endpoint has
+     * always taken it — it just never came back, so the field read "—" however
+     * often it was filled in and the note looked lost.
+     */
+    private String internalNotes;
 
     // Status flags
     private Boolean isActive;

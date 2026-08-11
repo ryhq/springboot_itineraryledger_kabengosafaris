@@ -347,6 +347,8 @@ public class SafariGetService {
         if (safari.getCustomer() != null) {
             dto.setCustomerId(idObfuscator.encodeId(safari.getCustomer().getId()));
             dto.setCustomerCode(safari.getCustomer().getCode());
+            dto.setCustomerEmail(safari.getCustomer().getPrimaryEmail());
+            dto.setCustomerPhone(safari.getCustomer().getPrimaryPhone());
 
             // Build customer name based on customer type
             String customerName = switch (safari.getCustomer().getCustomerType()) {
@@ -390,6 +392,7 @@ public class SafariGetService {
         dto.setSpecialRequests(safari.getSpecialRequests());
         dto.setDietaryRequirements(safari.getDietaryRequirements());
         dto.setEmergencyContact(safari.getEmergencyContact());
+        dto.setInternalNotes(safari.getInternalNotes());
 
         dto.setIsActive(safari.getIsActive());
         dto.setIsEditable(safari.isEditable());
