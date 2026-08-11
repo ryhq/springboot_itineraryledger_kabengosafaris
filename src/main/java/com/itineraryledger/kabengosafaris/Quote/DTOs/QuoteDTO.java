@@ -94,6 +94,17 @@ public class QuoteDTO {
 
     // Counts
     private Long itemCount;
+
+    /*
+     * Plural counts, named the way the record page's tabs read them
+     * ({child}Count), so a tab can say "Items (3)" and a panel can tell an empty
+     * collection from one it has not loaded. itemCount/documentCount stay for
+     * the callers that already use them.
+     */
+    private Long itemsCount;
+    private Long documentsCount;
+    private Long daysCount;
+    private Long paxCount;
     private Long documentCount;
 
     // Audit

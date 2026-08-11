@@ -299,6 +299,10 @@ public class QuoteGetService {
             .isActive(quote.getIsActive())
             .itemCount(quote.getItems() != null ? (long) quote.getItems().size() : 0L)
             .documentCount(quote.getDocuments() != null ? (long) quote.getDocuments().size() : 0L)
+            .itemsCount(quote.getItems() != null ? (long) quote.getItems().size() : 0L)
+            .documentsCount(quote.getDocuments() != null ? (long) quote.getDocuments().size() : 0L)
+            .daysCount(quote.getDays() != null ? (long) quote.getDays().size() : 0L)
+            .paxCount(quote.getPaxList() != null ? (long) quote.getPaxList().size() : 0L)
             .createdAt(quote.getCreatedAt())
             .updatedAt(quote.getUpdatedAt())
             .build();
