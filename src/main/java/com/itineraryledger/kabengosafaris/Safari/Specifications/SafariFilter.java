@@ -39,6 +39,16 @@ public class SafariFilter {
 
     private Boolean isActive;
 
+    /**
+     * Obfuscated ids, as the list page sends them.
+     *
+     * They were missing, so the Customer and Itinerary filters posted a
+     * parameter nothing read: the drawer showed "Customer: Claire Bagnols" as an
+     * active filter while the list went on showing everybody's safaris.
+     */
+    private String customerId;
+    private String itineraryId;
+
     /** The states asked for, however they were spelled. */
     public List<SafariState> allStates() {
         List<SafariState> out = new java.util.ArrayList<>();

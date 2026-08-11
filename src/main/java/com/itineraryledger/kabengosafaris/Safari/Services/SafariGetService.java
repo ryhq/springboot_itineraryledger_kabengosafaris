@@ -273,7 +273,30 @@ public class SafariGetService {
         if (filter.getKeyword() != null && !filter.getKeyword().isEmpty()) {
             spec = spec.and(SafariSpecification.searchKeyword(filter.getKeyword()));
         }
+        spec = and(spec, filter.getCustomerId(), SafariSpecification::hasCustomer, "customer");
+        spec = and(spec, filter.getItineraryId(), SafariSpecification::hasItinerary, "itinerary");
         return spec;
+    }
+
+    /**
+     * Narrows by an obfuscated id, or narrows to nothing if it will not decode.
+     *
+     * An id that cannot be read must not quietly widen the result to every
+     * safari — that is the opposite of what was asked for.
+     */
+    private Specification<Safari> and(
+            Specification<Safari> spec,
+            String obfuscatedId,
+            java.util.function.Function<Long, Specification<Safari>> by,
+            String what
+    ) {
+        if (obfuscatedId == null || obfuscatedId.isEmpty()) return spec;
+        try {
+            return spec.and(by.apply(idObfuscator.decodeId(obfuscatedId)));
+        } catch (Exception e) {
+            log.warn("Failed to decode {} ID: {}", what, obfuscatedId);
+            return spec.and((root, query, cb) -> cb.disjunction());
+        }
     }
 
     /**

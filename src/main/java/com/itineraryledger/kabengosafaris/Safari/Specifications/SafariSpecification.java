@@ -58,6 +58,12 @@ public class SafariSpecification {
         );
     }
 
+    public static Specification<Safari> hasCustomer(Long customerId) {
+        return (root, query, cb) -> customerId == null
+            ? cb.conjunction()
+            : cb.equal(root.get("customer").get("id"), customerId);
+    }
+
     public static Specification<Safari> hasItinerary(Long itineraryId) {
         return (root, query, cb) -> cb.equal(root.get("itinerary").get("id"), itineraryId);
     }
