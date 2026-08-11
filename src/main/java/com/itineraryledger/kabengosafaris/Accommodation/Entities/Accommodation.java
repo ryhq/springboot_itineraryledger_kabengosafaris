@@ -86,6 +86,19 @@ public class Accommodation {
     @JoinColumn(name = "parent_accommodation_id")
     private Accommodation parentAccommodation; // Reference to headquarters if this is a branch
 
+    /**
+     * Who we pay for a stay here.
+     *
+     * A property is a place guests sleep; a vendor is an account we settle. They
+     * are usually the same organisation, but not always — a group bills centrally
+     * for several camps — so the link is optional and set once. With it, a stay on
+     * a safari's day can raise its own bill; without it, somebody has to remember
+     * who to invoice-chase.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vendor_id")
+    private com.itineraryledger.kabengosafaris.Vendor.Entity.Vendor vendor;
+
     // Location Information
     @Column(length = 100)
     private String region; // e.g., "Arusha", "Serengeti", etc.

@@ -3,6 +3,7 @@ package com.itineraryledger.kabengosafaris.Safari.Services;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Safari.DTOs.SafariDTO;
 import com.itineraryledger.kabengosafaris.Safari.DTOs.SafariBillingDTO;
+import com.itineraryledger.kabengosafaris.Safari.DTOs.SafariCostingDTO;
 import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
 import com.itineraryledger.kabengosafaris.Safari.Enums.SafariPhase;
 import com.itineraryledger.kabengosafaris.Safari.Enums.SafariState;
@@ -47,6 +48,7 @@ public class SafariGetService {
     private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final SafariBillingService billingService;
+    private final SafariCostingService costingService;
 
     @Autowired
     public SafariGetService(
@@ -54,13 +56,15 @@ public class SafariGetService {
             IdObfuscator idObfuscator,
             com.itineraryledger.kabengosafaris.Response.ListStats listStats,
             com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation,
-            SafariBillingService billingService
+            SafariBillingService billingService,
+            SafariCostingService costingService
     ) {
         this.safariRepository = safariRepository;
         this.idObfuscator = idObfuscator;
         this.listStats = listStats;
         this.recordNavigation = recordNavigation;
         this.billingService = billingService;
+        this.costingService = costingService;
     }
 
     /**
@@ -429,8 +433,10 @@ public class SafariGetService {
         dto.setCreatedAt(safari.getCreatedAt());
         dto.setUpdatedAt(safari.getUpdatedAt());
 
-        // the money, asked of the invoices rather than remembered here
-        dto.setBilling(billingService.forSafari(safari.getId()));
+        // the money, asked of the invoices and the bills rather than remembered here
+        var billing = billingService.forSafari(safari.getId());
+        dto.setBilling(billing);
+        dto.setCosting(costingService.forSafari(safari.getId(), billing));
 
         return dto;
     }

@@ -47,6 +47,10 @@ public class AccommodationDTO {
     private String parentAccommodationId; // Encoded ID
     private String parentAccommodationName;
 
+    /** Who we pay for a stay here; absent until somebody links it. */
+    private String vendorId;
+    private String vendorName;
+
     // Location Information
     private String region;
     private String district;

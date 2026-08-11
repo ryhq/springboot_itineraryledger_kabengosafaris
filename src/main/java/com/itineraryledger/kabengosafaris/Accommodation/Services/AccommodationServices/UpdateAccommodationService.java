@@ -24,6 +24,9 @@ import java.util.Optional;
 @Transactional
 public class UpdateAccommodationService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Vendor.Repository.VendorRepository vendorRepository;
+
     private final AccommodationRepository accommodationRepository;
     private final IdObfuscator idObfuscator;
 
@@ -220,6 +223,33 @@ public class UpdateAccommodationService {
                 }
             }
         }
+
+        /*
+         * Who we pay for a stay here. Blank clears it: a property that changes
+         * hands should not go on billing to the previous owner because nobody
+         * could unset the link.
+         */
+        if (updateAccommodationDTO.getVendorId() != null) {
+            if (updateAccommodationDTO.getVendorId().isBlank()) {
+                accommodation.setVendor(null);
+            } else {
+                try {
+                    Long vendorId = idObfuscator.decodeId(updateAccommodationDTO.getVendorId());
+                    var vendor = vendorRepository.findById(vendorId).orElse(null);
+                    if (vendor == null) {
+                        return ResponseEntity.badRequest().body(
+                            ApiResponse.error(400, "Vendor not found", "VENDOR_NOT_FOUND")
+                        );
+                    }
+                    accommodation.setVendor(vendor);
+                } catch (Exception e) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Invalid vendor ID", "INVALID_VENDOR_ID")
+                    );
+                }
+            }
+        }
+
 
         // Update location information
         if (updateAccommodationDTO.getRegion() != null) {
@@ -419,6 +449,10 @@ public class UpdateAccommodationService {
                 idObfuscator.encodeId(accommodation.getParentAccommodation().getId()) : null)
             .parentAccommodationName(accommodation.getParentAccommodation() != null ?
                 accommodation.getParentAccommodation().getName() : null)
+            .vendorId(accommodation.getVendor() != null
+                ? idObfuscator.encodeId(accommodation.getVendor().getId()) : null)
+            .vendorName(accommodation.getVendor() != null
+                ? accommodation.getVendor().getName() : null)
             .region(accommodation.getRegion())
             .district(accommodation.getDistrict())
             .location(accommodation.getLocation())

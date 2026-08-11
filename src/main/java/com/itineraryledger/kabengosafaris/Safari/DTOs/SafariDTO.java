@@ -103,6 +103,12 @@ public class SafariDTO {
      * with it.
      */
     private SafariBillingDTO billing;
+
+    /**
+     * What the trip cost us, read from its expenses, and the margin against what
+     * we invoiced. Derived like billing — nothing here is stored on the safari.
+     */
+    private SafariCostingDTO costing;
     private Integer totalDaysCount;
 
     // Audit information

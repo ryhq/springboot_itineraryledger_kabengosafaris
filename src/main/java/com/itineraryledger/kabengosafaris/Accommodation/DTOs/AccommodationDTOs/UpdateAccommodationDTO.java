@@ -40,6 +40,9 @@ public class UpdateAccommodationDTO {
     private Boolean isHeadquarters;
     private String parentAccommodationId; // Encoded ID
 
+    /** Who we pay for a stay here. Blank clears the link. */
+    private String vendorId;
+
     // Location Information
     private String region;
     private String district;

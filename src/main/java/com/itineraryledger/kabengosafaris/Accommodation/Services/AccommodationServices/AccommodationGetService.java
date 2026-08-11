@@ -496,6 +496,10 @@ public class AccommodationGetService {
                 idObfuscator.encodeId(accommodation.getParentAccommodation().getId()) : null)
             .parentAccommodationName(accommodation.getParentAccommodation() != null ?
                 accommodation.getParentAccommodation().getName() : null)
+            .vendorId(accommodation.getVendor() != null
+                ? idObfuscator.encodeId(accommodation.getVendor().getId()) : null)
+            .vendorName(accommodation.getVendor() != null
+                ? accommodation.getVendor().getName() : null)
             .region(accommodation.getRegion())
             .district(accommodation.getDistrict())
             .location(accommodation.getLocation())

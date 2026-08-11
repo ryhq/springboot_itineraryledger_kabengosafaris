@@ -31,6 +31,9 @@ import java.util.Optional;
 @Slf4j
 public class CreateAccommodationService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Vendor.Repository.VendorRepository vendorRepository;
+
     private final AccommodationRepository accommodationRepository;
     private final IdObfuscator idObfuscator;
 
@@ -94,6 +97,24 @@ public class CreateAccommodationService {
 
             // Validate parent accommodation if this is a branch
             Accommodation parentAccommodation = null;
+
+            /* Who we pay for a stay here. Optional: often not known on day one. */
+            com.itineraryledger.kabengosafaris.Vendor.Entity.Vendor vendor = null;
+            if (createDTO.getVendorId() != null
+                    && !createDTO.getVendorId().isBlank()) {
+                try {
+                    vendor = vendorRepository
+                        .findById(idObfuscator.decodeId(createDTO.getVendorId()))
+                        .orElse(null);
+                } catch (Exception e) {
+                    vendor = null;
+                }
+                if (vendor == null) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "Vendor not found", "VENDOR_NOT_FOUND")
+                    );
+                }
+            }
             if (createDTO.getParentAccommodationId() != null && !createDTO.getParentAccommodationId().isBlank()) {
                 try {
                     // Decode the parent accommodation ID
@@ -154,6 +175,8 @@ public class CreateAccommodationService {
                 .hasBranch(createDTO.getHasBranch() != null ? createDTO.getHasBranch() : false)
                 .isHeadquarters(createDTO.getIsHeadquarters() != null ? createDTO.getIsHeadquarters() : true)
                 .parentAccommodation(parentAccommodation)
+                // who we pay for a stay here; optional, and set later if unknown
+                .vendor(vendor)
                 .region(createDTO.getRegion())
                 .district(createDTO.getDistrict())
                 .location(createDTO.getLocation())
@@ -318,6 +341,10 @@ public class CreateAccommodationService {
                 idObfuscator.encodeId(accommodation.getParentAccommodation().getId()) : null)
             .parentAccommodationName(accommodation.getParentAccommodation() != null ?
                 accommodation.getParentAccommodation().getName() : null)
+            .vendorId(accommodation.getVendor() != null
+                ? idObfuscator.encodeId(accommodation.getVendor().getId()) : null)
+            .vendorName(accommodation.getVendor() != null
+                ? accommodation.getVendor().getName() : null)
             .region(accommodation.getRegion())
             .district(accommodation.getDistrict())
             .location(accommodation.getLocation())

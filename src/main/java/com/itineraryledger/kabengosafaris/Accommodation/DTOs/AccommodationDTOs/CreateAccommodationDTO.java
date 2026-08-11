@@ -64,6 +64,9 @@ public class CreateAccommodationDTO {
 
     private String parentAccommodationId; // Encoded ID of parent accommodation if this is a branch
 
+    /** Who we pay for a stay here. Blank clears the link. */
+    private String vendorId;
+
     // Location Information
     @Size(max = 100, message = "Region must not exceed 100 characters")
     private String region;
