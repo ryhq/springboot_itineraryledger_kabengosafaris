@@ -52,9 +52,21 @@ public class SafariVehicleCreateService {
                 );
             }
 
-            if (!safari.isEditable()) {
+            /*
+             * Assigning a vehicle is operations, not editing.
+             *
+             * isEditable() excludes FULLY_PAID and IN_PROGRESS — which is exactly
+             * when the fleet is arranged. A trip that is paid for and about to
+             * start could not be given a Land Cruiser, and one that lost a
+             * vehicle mid-safari could not be given another. Only a finished or
+             * abandoned booking is closed to it.
+             */
+            if (safari.getState().isTerminal()) {
                 return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Safari is not in an editable state", "SAFARI_NOT_EDITABLE")
+                    ApiResponse.error(400,
+                        "This safari is " + safari.getState().getDisplayName().toLowerCase()
+                            + ", so its vehicles are a record rather than a plan.",
+                        "SAFARI_NOT_EDITABLE")
                 );
             }
 
