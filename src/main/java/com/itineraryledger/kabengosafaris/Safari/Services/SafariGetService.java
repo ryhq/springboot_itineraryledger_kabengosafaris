@@ -6,6 +6,7 @@ import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
 import com.itineraryledger.kabengosafaris.Safari.Enums.SafariPhase;
 import com.itineraryledger.kabengosafaris.Safari.Enums.SafariState;
 import com.itineraryledger.kabengosafaris.Safari.Repository.SafariRepository;
+import com.itineraryledger.kabengosafaris.Safari.Specifications.SafariFilter;
 import com.itineraryledger.kabengosafaris.Safari.Specifications.SafariSpecification;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.extern.slf4j.Slf4j;
@@ -42,20 +43,42 @@ public class SafariGetService {
 
     private final SafariRepository safariRepository;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     @Autowired
     public SafariGetService(
             SafariRepository safariRepository,
-            IdObfuscator idObfuscator
+            IdObfuscator idObfuscator,
+            com.itineraryledger.kabengosafaris.Response.ListStats listStats,
+            com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.safariRepository = safariRepository;
         this.idObfuscator = idObfuscator;
+        this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
     }
 
     /**
      * Get a single safari by obfuscated ID
      */
     public ResponseEntity<ApiResponse<?>> getSafariById(String idObfuscated) {
+        // no filters supplied: the walk is over every safari
+        return getSafariById(idObfuscated, new SafariFilter(), null);
+    }
+
+    /**
+     * One safari, and where it sits in the set the caller was looking at.
+     *
+     * The filters come from the list page, so prev/next stays inside it. It used
+     * to walk a raw id-ordered query, so paging out of "in progress" landed in a
+     * safari that finished last year.
+     */
+    public ResponseEntity<ApiResponse<?>> getSafariById(
+            String idObfuscated,
+            SafariFilter filter,
+            String sortBy
+    ) {
         log.info("Fetching safari with ID: {}", idObfuscated);
 
         try {
@@ -78,16 +101,21 @@ public class SafariGetService {
 
             SafariDTO safariDTO = convertToDTO(safari);
 
-            // Build navigation
-            Long nextId = safariRepository.findNextId(id).orElse(null);
-            Long previousId = safariRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = safariRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = safariRepository.findLastId().orElse(null);
+            Specification<Safari> navSpec = buildSpec(filter != null ? filter : new SafariFilter());
+            String navSortBy = validateSortField(sortBy) != null
+                    ? validateSortField(sortBy) : DEFAULT_SORT_FIELD;
+
+            Map<String, Object> nav = recordNavigation.navigate(
+                    Safari.class, navSpec, navSortBy, false, id);
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("safari", safariDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                     ApiResponse.success(200, "Safari retrieved successfully", response)
@@ -133,16 +161,8 @@ public class SafariGetService {
      * Get all safaris with pagination, sorting, and filtering
      */
     public ResponseEntity<ApiResponse<?>> getAllSafaris(
-            String name,
-            String code,
-            SafariState state,
-            SafariPhase phase,
-            String startLocation,
-            String endLocation,
-            LocalDate startDateFrom,
-            LocalDate startDateTo,
-            Boolean isActive,
-            String keyword,
+            SafariFilter filter,
+            Boolean includeStats,
             Integer page,
             Integer size,
             String sortBy,
@@ -160,35 +180,7 @@ public class SafariGetService {
                 );
             }
 
-            Specification<Safari> spec = Specification.unrestricted();
-
-            if (name != null && !name.isEmpty()) {
-                spec = spec.and(SafariSpecification.nameLike(name));
-            }
-            if (code != null && !code.isEmpty()) {
-                spec = spec.and(SafariSpecification.codeLike(code));
-            }
-            if (state != null) {
-                spec = spec.and(SafariSpecification.hasState(state));
-            }
-            if (startLocation != null && !startLocation.isEmpty()) {
-                spec = spec.and(SafariSpecification.startLocationLike(startLocation));
-            }
-            if (endLocation != null && !endLocation.isEmpty()) {
-                spec = spec.and(SafariSpecification.endLocationLike(endLocation));
-            }
-            if (startDateFrom != null) {
-                spec = spec.and(SafariSpecification.startDateAfter(startDateFrom));
-            }
-            if (startDateTo != null) {
-                spec = spec.and(SafariSpecification.startDateBefore(startDateTo));
-            }
-            if (isActive != null) {
-                spec = spec.and(SafariSpecification.isActive(isActive));
-            }
-            if (keyword != null && !keyword.isEmpty()) {
-                spec = spec.and(SafariSpecification.searchKeyword(keyword));
-            }
+            Specification<Safari> spec = buildSpec(filter != null ? filter : new SafariFilter());
 
             int pageNumber = (page != null && page >= 0) ? page : 0;
             int pageSize = (size != null && size > 0) ? size : 10;
@@ -202,34 +194,24 @@ public class SafariGetService {
 
             Page<Safari> safariPage = safariRepository.findAll(spec, pageable);
 
-            // Filter by phase if specified (phase is calculated, not stored in DB)
-            List<SafariDTO> safariDTOs;
-            long totalFiltered;
-            if (phase != null) {
-                List<Safari> filteredSafaris = safariPage.getContent().stream()
-                        .filter(safari -> safari.getCurrentPhase() == phase)
-                        .collect(Collectors.toList());
-                safariDTOs = filteredSafaris.stream()
-                        .map(this::convertToDTO)
-                        .collect(Collectors.toList());
-                totalFiltered = filteredSafaris.size();
-            } else {
-                safariDTOs = safariPage.getContent().stream()
-                        .map(this::convertToDTO)
-                        .collect(Collectors.toList());
-                totalFiltered = safariPage.getTotalElements();
-            }
+            List<SafariDTO> safariDTOs = safariPage.getContent().stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
 
             Map<String, Object> response = new HashMap<>();
             response.put("safaris", safariDTOs);
             response.put("currentPage", safariPage.getNumber());
-            response.put("totalItems", phase != null ? totalFiltered : safariPage.getTotalElements());
+            response.put("totalItems", safariPage.getTotalElements());
             response.put("totalPages", safariPage.getTotalPages());
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", direction.name().toLowerCase());
-            if (phase != null) {
-                response.put("filteredByPhase", phase.name());
+            /*
+             * Counters for the whole filtered set, from the same specification
+             * as the rows, so the cards and the table cannot disagree.
+             */
+            if (!Boolean.FALSE.equals(includeStats)) {
+                response.put("stats", buildStats(spec));
             }
 
             return ResponseEntity.ok().body(
@@ -247,6 +229,69 @@ public class SafariGetService {
     /**
      * Validate and return the sort field, or null if invalid
      */
+    /**
+     * ONE specification, shared by the rows, the counters and the record walk.
+     *
+     * Phase is part of it. It used to be applied to the page after it had been
+     * fetched: asking for IN_PROGRESS filtered ten rows out of page one and
+     * reported that as the total, so the filter answered a different question on
+     * every page and the number under it was never right.
+     */
+    private Specification<Safari> buildSpec(SafariFilter filter) {
+        Specification<Safari> spec = Specification.unrestricted();
+
+        if (filter.getName() != null && !filter.getName().isEmpty()) {
+            spec = spec.and(SafariSpecification.nameLike(filter.getName()));
+        }
+        if (filter.getCode() != null && !filter.getCode().isEmpty()) {
+            spec = spec.and(SafariSpecification.codeLike(filter.getCode()));
+        }
+        // OR inside the dimension, AND across dimensions
+        spec = spec.and(SafariSpecification.byStates(filter.allStates()));
+        if (filter.getPhase() != null) {
+            spec = spec.and(SafariSpecification.inPhase(filter.getPhase(), LocalDate.now()));
+        }
+        if (filter.getStartLocation() != null && !filter.getStartLocation().isEmpty()) {
+            spec = spec.and(SafariSpecification.startLocationLike(filter.getStartLocation()));
+        }
+        if (filter.getEndLocation() != null && !filter.getEndLocation().isEmpty()) {
+            spec = spec.and(SafariSpecification.endLocationLike(filter.getEndLocation()));
+        }
+        if (filter.getStartDateFrom() != null) {
+            spec = spec.and(SafariSpecification.startDateAfter(filter.getStartDateFrom()));
+        }
+        if (filter.getStartDateTo() != null) {
+            spec = spec.and(SafariSpecification.startDateBefore(filter.getStartDateTo()));
+        }
+        if (filter.getIsActive() != null) {
+            spec = spec.and(SafariSpecification.isActive(filter.getIsActive()));
+        }
+        if (filter.getKeyword() != null && !filter.getKeyword().isEmpty()) {
+            spec = spec.and(SafariSpecification.searchKeyword(filter.getKeyword()));
+        }
+        return spec;
+    }
+
+    /**
+     * Dashboard counters for the current filter set.
+     *
+     * The three time groups are what an office plans around: what is running
+     * now, what is still to come, and what is over.
+     */
+    private Map<String, Object> buildStats(Specification<Safari> base) {
+        LocalDate today = LocalDate.now();
+        return listStats.of(Safari.class, base)
+                .total()
+                .count("active", SafariSpecification.isActive(true))
+                .complement("inactive", "active")
+                .breakdown("byState", SafariState.values(), SafariSpecification::hasState)
+                .count("running", SafariSpecification.running(today))
+                .count("upcoming", SafariSpecification.notStarted(today))
+                .count("finished", SafariSpecification.finished(today))
+                .recency(SafariSpecification::createdAfter)
+                .build();
+    }
+
     private String validateSortField(String sortBy) {
         if (sortBy == null || sortBy.isBlank()) return DEFAULT_SORT_FIELD;
         for (String field : VALID_SORT_FIELDS) {

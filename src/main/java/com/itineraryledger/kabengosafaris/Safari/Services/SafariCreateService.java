@@ -47,6 +47,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * SafariCreateService - Service for creating Safari bookings from Itinerary templates
@@ -501,9 +502,36 @@ public class SafariCreateService {
             }
 
             Itinerary itinerary = quote.getItinerary();
-            int totalDays = quote.getDays().size();
-            int totalNights = Math.max(0, totalDays - 1);
+            /*
+             * The safari describes the QUOTE it was sold from, not the itinerary
+             * the quote was priced from. The quote has been negotiated — a day
+             * dropped, a route changed — and a booking whose header disagreed
+             * with its own days is one the office operates from and gets wrong.
+             */
+            List<QuoteDay> orderedDays = quote.getDays().stream()
+                    .sorted(java.util.Comparator.comparing(
+                            QuoteDay::getDayNumber,
+                            java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+                    .collect(java.util.stream.Collectors.toList());
+
+            int totalDays = orderedDays.size();
+            // the days say where the guests sleep; a fly-out ending is not a night
+            int totalNights = (int) orderedDays.stream()
+                    .filter(d -> Boolean.TRUE.equals(d.getIsOvernight()))
+                    .count();
             LocalDate endDate = startDate.plusDays(totalDays - 1);
+
+            String quoteStartLocation = orderedDays.stream()
+                    .map(QuoteDay::getStartLocation)
+                    .filter(v -> v != null && !v.isBlank())
+                    .findFirst()
+                    .orElse(itinerary != null ? itinerary.getStartLocation() : null);
+
+            String quoteEndLocation = orderedDays.stream()
+                    .map(QuoteDay::getEndLocation)
+                    .filter(v -> v != null && !v.isBlank())
+                    .reduce((first, second) -> second)
+                    .orElse(itinerary != null ? itinerary.getEndLocation() : null);
 
             User currentUser = null;
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -531,8 +559,8 @@ public class SafariCreateService {
                             ? quote.getDescription()
                             : (itinerary != null ? itinerary.getDescription() : null))
                     .highlights(itinerary != null ? itinerary.getHighlights() : null)
-                    .startLocation(itinerary != null ? itinerary.getStartLocation() : null)
-                    .endLocation(itinerary != null ? itinerary.getEndLocation() : null)
+                    .startLocation(quoteStartLocation)
+                    .endLocation(quoteEndLocation)
                     .createdBy(currentUser)
                     .isActive(true)
                     .build();

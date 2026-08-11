@@ -96,9 +96,12 @@ public class SafariController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_SAFARI')")
     public ResponseEntity<ApiResponse<?>> getSafariById(
-            @PathVariable String id
+            @PathVariable String id,
+            // the list's filters and sort, so prev/next walks that same set
+            @ModelAttribute com.itineraryledger.kabengosafaris.Safari.Specifications.SafariFilter filter,
+            @RequestParam(required = false) String sortBy
     ) {
-        return safariGetService.getSafariById(id);
+        return safariGetService.getSafariById(id, filter, sortBy);
     }
 
     /**
@@ -150,26 +153,14 @@ public class SafariController {
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_SAFARI')")
     public ResponseEntity<ApiResponse<?>> getAllSafaris(
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String code,
-            @RequestParam(required = false) SafariState state,
-            @RequestParam(required = false) SafariPhase phase,
-            @RequestParam(required = false) String startLocation,
-            @RequestParam(required = false) String endLocation,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDateFrom,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDateTo,
-            @RequestParam(required = false) Boolean isActive,
-            @RequestParam(required = false) String keyword,
+            @ModelAttribute com.itineraryledger.kabengosafaris.Safari.Specifications.SafariFilter filter,
+            @RequestParam(required = false) Boolean includeStats,
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "10") Integer size,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
-        return safariGetService.getAllSafaris(
-                name, code, state, phase, startLocation, endLocation,
-                startDateFrom, startDateTo, isActive, keyword,
-                page, size, sortBy, sortDirection
-        );
+        return safariGetService.getAllSafaris(filter, includeStats, page, size, sortBy, sortDirection);
     }
 
     // ========================
