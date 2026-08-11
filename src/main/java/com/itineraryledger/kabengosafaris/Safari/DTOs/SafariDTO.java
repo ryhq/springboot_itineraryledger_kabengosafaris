@@ -84,6 +84,15 @@ public class SafariDTO {
 
     // Counts
     private Integer totalPaxCount;
+
+    /**
+     * Money, read from this safari's invoices rather than held here.
+     *
+     * The safari used to carry payment as two states of its own, set by hand and
+     * joined to nothing. This is the invoice's answer, so it cannot disagree
+     * with it.
+     */
+    private SafariBillingDTO billing;
     private Integer totalDaysCount;
 
     // Audit information

@@ -142,6 +142,28 @@ public class QuoteFromItineraryGenerationService {
                 );
             }
 
+            /*
+             * The gate belongs here, not at conversion.
+             *
+             * It used to sit on convert: you could quote a draft itinerary, the
+             * customer could accept it, and only then were you told the product
+             * was not published — an accepted quote that could not be fulfilled.
+             * Worse, archiving an old itinerary broke every accepted quote
+             * against it, months after anyone touched either record.
+             *
+             * Stopping it here stops it before the customer is involved. A quote
+             * already carries its own copy of the days, so once it exists it
+             * needs nothing further from the itinerary.
+             */
+            if (itinerary.getStatus() != Itinerary.ItineraryStatus.PUBLISHED) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "This itinerary is " + itinerary.getStatus().name().toLowerCase()
+                                        + ". Publish it before quoting it to a customer.",
+                                "ITINERARY_NOT_PUBLISHED")
+                );
+            }
+
             if (!customerRepository.existsById(customerId)) {
                 return ResponseEntity.status(404).body(
                         ApiResponse.error(404, "Customer not found", "CUSTOMER_NOT_FOUND")

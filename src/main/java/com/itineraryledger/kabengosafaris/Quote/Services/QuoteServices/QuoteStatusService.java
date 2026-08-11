@@ -607,11 +607,13 @@ public class QuoteStatusService {
                     ApiResponse.error(400, "Cannot convert quote - no itinerary linked", "NO_ITINERARY")
                 );
             }
-            if (quote.getItinerary().getStatus() != ItineraryStatus.PUBLISHED) {
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Cannot convert quote - itinerary is not PUBLISHED", "ITINERARY_NOT_PUBLISHED")
-                );
-            }
+            /*
+             * No PUBLISHED check here any more. It is asked when the quote is
+             * generated, which is before the customer is involved; asking again
+             * now meant an accepted quote could become unfulfillable because
+             * somebody archived the itinerary it was priced from. The quote
+             * carries its own days, so conversion needs nothing from it.
+             */
 
             // Validate customer exists
             if (quote.getCustomer() == null) {

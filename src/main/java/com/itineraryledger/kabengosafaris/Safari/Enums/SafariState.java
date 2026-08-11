@@ -66,9 +66,15 @@ public enum SafariState {
      * Check if the safari can be cancelled in this state
      */
     public boolean isCancellable() {
+        /*
+         * IN_PROGRESS belongs here. A trip can be abandoned after it starts —
+         * illness, an evacuation, a road closed — and without this the worst
+         * real case was the one with no honest move: a running safari could only
+         * be "completed", which is a lie recorded as fact.
+         */
         return this == DRAFT || this == PENDING_APPROVAL || this == APPROVED ||
                this == CONFIRMED || this == PENDING_PAYMENT || this == FULLY_PAID ||
-               this == ON_HOLD;
+               this == ON_HOLD || this == IN_PROGRESS;
     }
 
     /**

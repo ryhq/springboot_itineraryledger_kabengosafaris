@@ -408,10 +408,18 @@ public class SafariStateTransitionService {
                 );
             }
 
-            if (safari.getState() != SafariState.FULLY_PAID) {
+            /*
+             * Money is the invoice's business, not the safari's. Deposit now,
+             * balance on arrival is ordinary here, and gating the start on
+             * FULLY_PAID meant the only way to run such a trip was to record a
+             * payment that had not happened. The office decides whether to let
+             * guests travel; the invoice records what they owe.
+             */
+            if (!Set.of(SafariState.CONFIRMED, SafariState.PENDING_PAYMENT, SafariState.FULLY_PAID)
+                    .contains(safari.getState())) {
                 return ResponseEntity.badRequest().body(
                         ApiResponse.error(400,
-                                "Can only start safaris in FULLY_PAID state. Current state: " + safari.getState().getDisplayName(),
+                                "A safari can only start once it is confirmed. Current state: " + safari.getState().getDisplayName(),
                                 "INVALID_STATE_TRANSITION")
                 );
             }
@@ -559,7 +567,10 @@ public class SafariStateTransitionService {
 
             Set<SafariState> allowedStates = Set.of(
                     SafariState.DRAFT, SafariState.PENDING_APPROVAL, SafariState.APPROVED,
-                    SafariState.CONFIRMED, SafariState.PENDING_PAYMENT, SafariState.FULLY_PAID
+                    SafariState.CONFIRMED, SafariState.PENDING_PAYMENT, SafariState.FULLY_PAID,
+                    // a trip already under way can be paused: a road closes, a
+                    // camp floods, and the booking has to wait somewhere real
+                    SafariState.IN_PROGRESS
             );
 
             if (!allowedStates.contains(safari.getState())) {
@@ -625,10 +636,27 @@ public class SafariStateTransitionService {
                 );
             }
 
-            // Determine target state: specified in DTO or default to CONFIRMED
+            /*
+             * Back to a state a hold can be entered from, and nowhere else. The
+             * target used to be taken from the request unchecked, so a hold
+             * could be released into any state at all — a back door in an
+             * otherwise careful state machine.
+             */
+            Set<SafariState> resumable = Set.of(
+                    SafariState.DRAFT, SafariState.PENDING_APPROVAL, SafariState.APPROVED,
+                    SafariState.CONFIRMED, SafariState.PENDING_PAYMENT, SafariState.FULLY_PAID,
+                    SafariState.IN_PROGRESS);
             SafariState targetState = dto != null && dto.getTargetState() != null
                     ? dto.getTargetState()
                     : SafariState.CONFIRMED;
+            if (!resumable.contains(targetState)) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "A hold cannot be released into " + targetState.getDisplayName()
+                                        + ". Choose the state the booking was in before it was held.",
+                                "INVALID_STATE_TRANSITION")
+                );
+            }
 
             String reason = dto != null && dto.getReason() != null ? dto.getReason() : "Hold released";
 
@@ -860,6 +888,25 @@ public class SafariStateTransitionService {
             }
 
             // Determine target state: specified in DTO or default to CLOSED
+            /*
+             * A dispute is raised against a finished booking, so resolving it
+             * puts the booking back into one of those states — not into DRAFT,
+             * which is what an unchecked target allowed.
+             */
+            Set<SafariState> resolvable = Set.of(
+                    SafariState.COMPLETED, SafariState.CLOSED, SafariState.CANCELLED,
+                    SafariState.REFUND_PENDING, SafariState.REFUND_COMPLETE);
+            SafariState resolvedTo = dto.getTargetState() != null
+                    ? dto.getTargetState()
+                    : SafariState.COMPLETED;
+            if (!resolvable.contains(resolvedTo)) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "A dispute cannot be resolved into " + resolvedTo.getDisplayName()
+                                        + ". It returns to the state it was raised against.",
+                                "INVALID_STATE_TRANSITION")
+                );
+            }
             SafariState targetState = dto.getTargetState() != null
                     ? dto.getTargetState()
                     : SafariState.CLOSED;

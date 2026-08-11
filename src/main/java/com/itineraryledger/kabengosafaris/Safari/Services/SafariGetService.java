@@ -2,6 +2,7 @@ package com.itineraryledger.kabengosafaris.Safari.Services;
 
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Safari.DTOs.SafariDTO;
+import com.itineraryledger.kabengosafaris.Safari.DTOs.SafariBillingDTO;
 import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
 import com.itineraryledger.kabengosafaris.Safari.Enums.SafariPhase;
 import com.itineraryledger.kabengosafaris.Safari.Enums.SafariState;
@@ -45,18 +46,21 @@ public class SafariGetService {
     private final IdObfuscator idObfuscator;
     private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+    private final SafariBillingService billingService;
 
     @Autowired
     public SafariGetService(
             SafariRepository safariRepository,
             IdObfuscator idObfuscator,
             com.itineraryledger.kabengosafaris.Response.ListStats listStats,
-            com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
+            com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation,
+            SafariBillingService billingService
     ) {
         this.safariRepository = safariRepository;
         this.idObfuscator = idObfuscator;
         this.listStats = listStats;
         this.recordNavigation = recordNavigation;
+        this.billingService = billingService;
     }
 
     /**
@@ -398,6 +402,9 @@ public class SafariGetService {
 
         dto.setCreatedAt(safari.getCreatedAt());
         dto.setUpdatedAt(safari.getUpdatedAt());
+
+        // the money, asked of the invoices rather than remembered here
+        dto.setBilling(billingService.forSafari(safari.getId()));
 
         return dto;
     }
