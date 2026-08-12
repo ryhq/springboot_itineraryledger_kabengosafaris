@@ -78,6 +78,21 @@ public class Invoice {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    /**
+     * A second demand against a safari that already had one.
+     *
+     * Stored rather than inferred from the description, because the question the
+     * office asks a year later — why was this customer billed twice — has to be
+     * answerable by a query, not by reading prose.
+     */
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean isSupplement = false;
+
+    /** What changed. Required when isSupplement; the answer to that question. */
+    @Column(columnDefinition = "TEXT")
+    private String supplementReason;
+
     // =====================================================================
     // RELATIONSHIPS
     // =====================================================================

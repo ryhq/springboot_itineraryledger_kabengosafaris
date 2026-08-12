@@ -111,6 +111,38 @@ public class SafariBillingService {
             .invoiced(toPrices(invoiced))
             .paid(toPrices(paid))
             .balance(balance)
+            .invoices(invoices.stream().map(this::line).toList())
+            .build();
+    }
+
+    /** One invoice, stated in its own right so the page can say which is which. */
+    private SafariBillingDTO.InvoiceLine line(Invoice invoice) {
+        List<Price> total = invoice.getGrandTotals() != null
+            ? invoice.getGrandTotals() : List.<Price>of();
+        List<Price> settled = paymentAggregation.computeAmountsPaid(invoice);
+
+        Map<String, BigDecimal> owing = new LinkedHashMap<>();
+        for (Price price : total) add(owing, price.getCurrency(), price.getTotalPrice());
+        for (Price price : settled) {
+            if (price.getCurrency() == null) continue;
+            owing.merge(price.getCurrency(),
+                price.getTotalPrice() != null ? price.getTotalPrice().negate() : BigDecimal.ZERO,
+                BigDecimal::add);
+        }
+
+        return SafariBillingDTO.InvoiceLine.builder()
+            .id(idObfuscator.encodeId(invoice.getId()))
+            .invoiceCode(invoice.getInvoiceCode())
+            .title(invoice.getTitle())
+            .status(invoice.getStatus() != null ? invoice.getStatus().name() : null)
+            .statusDisplayName(invoice.getStatus() != null ? invoice.getStatus().getDisplayName() : null)
+            .issueDate(invoice.getIssueDate())
+            .dueDate(invoice.getDueDate())
+            .isSupplement(Boolean.TRUE.equals(invoice.getIsSupplement()))
+            .supplementReason(invoice.getSupplementReason())
+            .total(new ArrayList<>(total))
+            .paid(new ArrayList<>(settled))
+            .balance(toPrices(owing))
             .build();
     }
 

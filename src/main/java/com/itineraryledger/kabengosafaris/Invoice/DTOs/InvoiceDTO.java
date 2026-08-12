@@ -26,6 +26,10 @@ public class InvoiceDTO {
     private String invoiceCode;
     private String title;
     private String description;
+    /** true when this is a second invoice for a change made after the first */
+    private Boolean isSupplement;
+    /** what changed, on a supplement */
+    private String supplementReason;
 
     // Relationships
     private String customerId;

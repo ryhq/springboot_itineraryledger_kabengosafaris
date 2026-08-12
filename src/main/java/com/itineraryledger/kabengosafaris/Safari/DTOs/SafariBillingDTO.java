@@ -40,4 +40,34 @@ public class SafariBillingDTO {
     private List<Price> invoiced;
     private List<Price> paid;
     private List<Price> balance;
+
+    /**
+     * Every live invoice against this safari, oldest first.
+     *
+     * A safari with two invoices is the ordinary case once a trip changes after
+     * it was billed, and a page that showed only a count could not say which was
+     * the original and which the supplement, or why the second exists.
+     */
+    private List<InvoiceLine> invoices;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class InvoiceLine {
+        private String id;
+        private String invoiceCode;
+        private String title;
+        private String status;
+        private String statusDisplayName;
+        private LocalDate issueDate;
+        private LocalDate dueDate;
+        private Boolean isSupplement;
+        /** why this second invoice exists — the answer to the customer's question */
+        private String supplementReason;
+        private List<Price> total;
+        private List<Price> paid;
+        private List<Price> balance;
+    }
 }

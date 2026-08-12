@@ -347,6 +347,8 @@ public class InvoiceGetService {
             .invoiceCode(invoice.getInvoiceCode())
             .title(invoice.getTitle())
             .description(invoice.getDescription())
+            .isSupplement(Boolean.TRUE.equals(invoice.getIsSupplement()))
+            .supplementReason(invoice.getSupplementReason())
             .subtotals(invoice.getSubtotals())
             .taxes(invoice.getTaxes())
             .discounts(invoice.getDiscounts())

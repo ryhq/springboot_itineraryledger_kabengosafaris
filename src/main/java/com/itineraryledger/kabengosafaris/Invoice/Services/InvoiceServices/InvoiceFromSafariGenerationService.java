@@ -6,6 +6,8 @@ import com.itineraryledger.kabengosafaris.Invoice.DTOs.CreateInvoiceFromSafariDT
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.CreateInvoiceLineItemDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.InvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceItemType;
+import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
+import com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceRepository;
 import com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceLineItemServices.InvoiceLineItemCreateService;
 import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
@@ -49,6 +51,7 @@ import java.util.stream.Collectors;
 public class InvoiceFromSafariGenerationService {
 
     private final SafariCostEstimationService costEstimationService;
+    private final InvoiceRepository invoiceRepository;
     private final InvoiceCreateService invoiceCreateService;
     private final InvoiceLineItemCreateService invoiceLineItemCreateService;
     private final SafariRepository safariRepository;
@@ -59,6 +62,7 @@ public class InvoiceFromSafariGenerationService {
     @Autowired
     public InvoiceFromSafariGenerationService(
             SafariCostEstimationService costEstimationService,
+            InvoiceRepository invoiceRepository,
             InvoiceCreateService invoiceCreateService,
             InvoiceLineItemCreateService invoiceLineItemCreateService,
             SafariRepository safariRepository,
@@ -67,6 +71,7 @@ public class InvoiceFromSafariGenerationService {
             IdObfuscator idObfuscator
     ) {
         this.costEstimationService = costEstimationService;
+        this.invoiceRepository = invoiceRepository;
         this.invoiceCreateService = invoiceCreateService;
         this.invoiceLineItemCreateService = invoiceLineItemCreateService;
         this.safariRepository = safariRepository;
@@ -130,6 +135,25 @@ public class InvoiceFromSafariGenerationService {
                         ApiResponse.error(400,
                                 "Cannot create invoice: Safari has no customer linked. Please link a customer to the safari first.",
                                 "SAFARI_NO_CUSTOMER")
+                );
+            }
+
+            /*
+             * One live invoice per safari, same rule as the direct create path.
+             *
+             * This endpoint re-derives every line from the costing, so running it
+             * twice bills the whole trip twice — and the second one looks exactly
+             * as legitimate as the first. Raising a supplement is a different act
+             * with a different instrument: POST /api/invoices with isSupplement
+             * and a reason, carrying only what changed.
+             */
+            if (invoiceRepository.existsBySafariIdAndStatusNot(safari.getId(), InvoiceStatus.CANCELLED)) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "An active invoice already exists for this safari. If the trip has "
+                                    + "changed and the customer owes more, raise a supplementary "
+                                    + "invoice for the difference instead of billing the trip again.",
+                                "INVOICE_ALREADY_EXISTS")
                 );
             }
 
