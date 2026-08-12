@@ -29,6 +29,24 @@ public class CreateInvoiceDTO {
     @NotBlank(message = "Safari ID is required")
     private String safariId;
 
+    /**
+     * A second demand against a safari that already has one.
+     *
+     * A trip changes after it has been invoiced and part-paid — a lodge is
+     * swapped, a night is added — and the customer owes the difference. The
+     * original invoice cannot answer for it: they hold a copy of it and have
+     * paid against it, so it is read-only by design. The honest instrument is a
+     * separate invoice carrying only the difference.
+     *
+     * <p>It is explicit rather than inferred so that the ordinary mistake — the
+     * same trip invoiced twice by two people — is still refused. Saying
+     * "supplement" is saying "I know there is already one".
+     */
+    private Boolean isSupplement;
+
+    /** Required with isSupplement: what changed, and why the customer owes more. */
+    private String supplementReason;
+
     private BigDecimal taxPercentage;
     private BigDecimal discountPercentage;
     private String discountReason;

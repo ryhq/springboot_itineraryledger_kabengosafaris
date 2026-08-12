@@ -75,14 +75,37 @@ public class InvoiceCreateService {
                 );
             }
 
-            // One LIVE invoice per safari — reject only if a non-cancelled invoice
-            // already exists. Cancelled invoices are retained for audit but must
-            // not block generating a fresh one.
-            if (invoiceRepository.existsBySafariIdAndStatusNot(safari.getId(), InvoiceStatus.CANCELLED)) {
+            /*
+             * One LIVE invoice per safari, unless this one says it is a
+             * supplement.
+             *
+             * The rule exists to stop the same trip being invoiced twice by two
+             * people. It must not stop the legitimate second demand: a trip that
+             * changes after it has been part-paid leaves the customer owing the
+             * difference, and the original invoice cannot be amended to say so —
+             * they hold a copy of it and have paid against it.
+             *
+             * So the caller declares the intent. A supplement must also say what
+             * changed: an unexplained second bill is the kind a customer disputes.
+             */
+            boolean isSupplement = Boolean.TRUE.equals(createDTO.getIsSupplement());
+            if (invoiceRepository.existsBySafariIdAndStatusNot(safari.getId(), InvoiceStatus.CANCELLED)
+                    && !isSupplement) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400,
-                        "An active invoice already exists for this safari. Cancel it first, then create a new one.",
+                        "An active invoice already exists for this safari. Raise a supplement if the "
+                            + "trip has changed and the customer owes more, or cancel the original first.",
                         "INVOICE_ALREADY_EXISTS")
+                );
+            }
+            if (isSupplement
+                    && (createDTO.getSupplementReason() == null
+                        || createDTO.getSupplementReason().isBlank())) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400,
+                        "A supplementary invoice must say what changed. It is the answer to the "
+                            + "customer's first question.",
+                        "SUPPLEMENT_REASON_REQUIRED")
                 );
             }
 
@@ -112,7 +135,11 @@ public class InvoiceCreateService {
             Invoice invoice = Invoice.builder()
                 .invoiceCode("TEMP") // Temporary code, will be updated after save
                 .title(createDTO.getTitle())
-                .description(createDTO.getDescription())
+                .description(isSupplement
+                    ? "Supplement — " + createDTO.getSupplementReason()
+                        + (createDTO.getDescription() != null && !createDTO.getDescription().isBlank()
+                            ? ". " + createDTO.getDescription() : "")
+                    : createDTO.getDescription())
                 .customer(customer)
                 .safari(safari)
                 .lineItems(new ArrayList<>())
