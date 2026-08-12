@@ -43,4 +43,8 @@ public class ParkDTO {
     private Boolean isWebActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    /** who charges to enter, when anybody has said */
+    private String vendorId;
+    private String vendorName;
 }

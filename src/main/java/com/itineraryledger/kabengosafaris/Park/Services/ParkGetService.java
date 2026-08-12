@@ -358,6 +358,10 @@ public class ParkGetService {
         dto.setAccessInformation(park.getAccessInformation());
         dto.setTags(park.getTags());
         dto.setIsActive(park.getIsActive());
+        if (park.getVendor() != null) {
+            dto.setVendorId(idObfuscator.encodeId(park.getVendor().getId()));
+            dto.setVendorName(park.getVendor().getName());
+        }
         dto.setIsWebActive(park.getIsWebActive());
         dto.setCreatedAt(park.getCreatedAt());
         dto.setUpdatedAt(park.getUpdatedAt());

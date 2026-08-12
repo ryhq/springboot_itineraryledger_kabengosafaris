@@ -42,4 +42,7 @@ public class CreateParkDTO {
     private String tags;
     private Boolean isActive;
     private Boolean isWebActive;
+
+    /** obfuscated vendor id — who charges to enter */
+    private String vendorId;
 }

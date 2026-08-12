@@ -26,14 +26,17 @@ public class ParkUpdateService {
 
     private final ParkRepository parkRepository;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Vendor.Repository.VendorRepository vendorRepository;
 
     @Autowired
     public ParkUpdateService(
         ParkRepository parkRepository,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        com.itineraryledger.kabengosafaris.Vendor.Repository.VendorRepository vendorRepository
     ) {
         this.parkRepository = parkRepository;
         this.idObfuscator = idObfuscator;
+        this.vendorRepository = vendorRepository;
     }
 
     /**
@@ -179,6 +182,25 @@ public class ParkUpdateService {
         if (updateParkDTO.getTags() != null) {
             park.setTags(updateParkDTO.getTags());
         }
+        /*
+         * Who charges to enter. Set once — usually the first time a park fee is
+         * billed — and remembered from then on, so nobody is asked twice.
+         *
+         * An empty string clears it; null leaves it alone, as everywhere else.
+         */
+        if (updateParkDTO.getVendorId() != null) {
+            if (updateParkDTO.getVendorId().isBlank()) {
+                park.setVendor(null);
+            } else {
+                try {
+                    Long vendorId = idObfuscator.decodeId(updateParkDTO.getVendorId());
+                    park.setVendor(vendorRepository.findById(vendorId).orElse(null));
+                } catch (Exception e) {
+                    log.warn("Unreadable vendor id on park update: {}", updateParkDTO.getVendorId());
+                }
+            }
+        }
+
         if (updateParkDTO.getIsActive() != null) {
             park.setIsActive(updateParkDTO.getIsActive());
         }
@@ -231,6 +253,10 @@ public class ParkUpdateService {
         dto.setAccessInformation(park.getAccessInformation());
         dto.setTags(park.getTags());
         dto.setIsActive(park.getIsActive());
+        if (park.getVendor() != null) {
+            dto.setVendorId(idObfuscator.encodeId(park.getVendor().getId()));
+            dto.setVendorName(park.getVendor().getName());
+        }
         dto.setIsWebActive(park.getIsWebActive());
         dto.setCreatedAt(park.getCreatedAt());
         dto.setUpdatedAt(park.getUpdatedAt());

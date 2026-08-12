@@ -113,6 +113,21 @@ public class Park {
     private String tags; // JSON array: ["Big Five", "Great Migration", "Bird Watching", "Climbing"]
 
     // Status and Visibility
+    /**
+     * Who charges to enter, when anybody has said.
+     *
+     * A park is a place; a vendor is an account we settle. TANAPA issues the
+     * invoice for most of the national parks and the NCAA for Ngorongoro, so one
+     * vendor covers many parks — which is why this points out of the park rather
+     * than the park owning it.
+     *
+     * Optional by design, and remembered once set: the first time a park fee is
+     * billed somebody says who the authority is, and no one is asked again.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vendor_id")
+    private com.itineraryledger.kabengosafaris.Vendor.Entity.Vendor vendor;
+
     @Builder.Default
     @Column(nullable = false)
     private Boolean isActive = true;
