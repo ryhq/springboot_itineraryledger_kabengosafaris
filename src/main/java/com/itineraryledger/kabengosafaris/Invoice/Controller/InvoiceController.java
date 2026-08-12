@@ -11,11 +11,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.CreateInvoiceDTO;
+import com.itineraryledger.kabengosafaris.Invoice.Specifications.InvoiceFilter;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.CreateInvoiceFromSafariDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.UpdateInvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
@@ -81,9 +83,15 @@ public class InvoiceController {
 
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_INVOICE')")
-    public ResponseEntity<ApiResponse<?>> getInvoiceById(@PathVariable String idObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getInvoiceById(
+        @PathVariable String idObfuscated,
+        // the list's filters and sort, so prev/next walks that same set
+        @ModelAttribute InvoiceFilter filter,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
+    ) {
         log.info("GET /api/invoices/{} - Fetching invoice by ID", idObfuscated);
-        return invoiceGetService.getInvoiceById(idObfuscated);
+        return invoiceGetService.getInvoiceById(idObfuscated, filter, sortBy, sortDirection);
     }
 
     @GetMapping("/code/{invoiceCode}")
@@ -103,34 +111,15 @@ public class InvoiceController {
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_INVOICE')")
     public ResponseEntity<ApiResponse<?>> getAllInvoices(
-        @RequestParam(required = false) String invoiceCode,
-        @RequestParam(required = false) String title,
-        @RequestParam(required = false) InvoiceStatus status,
-        @RequestParam(required = false) String customerId,
-        @RequestParam(required = false) String safariId,
-        @RequestParam(required = false) String createdById,
-        @RequestParam(required = false) String updatedById,
-        @RequestParam(required = false) Boolean isActive,
-        @RequestParam(required = false) LocalDate issueDateAfter,
-        @RequestParam(required = false) LocalDate issueDateBefore,
-        @RequestParam(required = false) LocalDate dueDateAfter,
-        @RequestParam(required = false) LocalDate dueDateBefore,
-        @RequestParam(required = false) LocalDate sentAfter,
-        @RequestParam(required = false) LocalDate sentBefore,
-        @RequestParam(required = false) Boolean isOverdue,
-        @RequestParam(required = false) String statusGroup,
+        @ModelAttribute InvoiceFilter filter,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/invoices - Fetching all invoices with filters");
-        return invoiceGetService.getAllInvoices(
-            invoiceCode, title, status, customerId, safariId,
-            createdById, updatedById, isActive, issueDateAfter, issueDateBefore,
-            dueDateAfter, dueDateBefore, sentAfter, sentBefore, isOverdue,
-            statusGroup, page, size, sortBy, sortDirection
-        );
+        return invoiceGetService.getAllInvoices(filter, includeStats, page, size, sortBy, sortDirection);
     }
 
     @PostMapping("/{idObfuscated}/recalculate-totals")

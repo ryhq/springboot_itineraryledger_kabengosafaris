@@ -21,8 +21,11 @@ import com.itineraryledger.kabengosafaris.Invoice.DTOs.InvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
 import com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceRepository;
+import com.itineraryledger.kabengosafaris.Invoice.Specifications.InvoiceFilter;
 import com.itineraryledger.kabengosafaris.Invoice.Specifications.InvoiceSpecification;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Response.ListStats;
+import com.itineraryledger.kabengosafaris.Response.RecordNavigation;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 
 import lombok.RequiredArgsConstructor;
@@ -45,6 +48,8 @@ public class InvoiceGetService {
     private final InvoiceRepository invoiceRepository;
     private final IdObfuscator idObfuscator;
     private final InvoicePaymentAggregationService paymentAggregationService;
+    private final ListStats listStats;
+    private final RecordNavigation recordNavigation;
 
     /**
      * Get a single invoice by obfuscated ID
@@ -52,7 +57,12 @@ public class InvoiceGetService {
      * @param idObfuscated The obfuscated invoice ID
      * @return ResponseEntity with ApiResponse containing the invoice
      */
-    public ResponseEntity<ApiResponse<?>> getInvoiceById(String idObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getInvoiceById(
+        String idObfuscated,
+        InvoiceFilter filter,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching invoice with ID: {}", idObfuscated);
 
         try {
@@ -78,16 +88,29 @@ public class InvoiceGetService {
             // Convert to DTO
             InvoiceDTO invoiceDTO = convertToDTO(invoice);
 
-            // Build navigation
-            Long nextId = invoiceRepository.findNextId(id).orElse(null);
-            Long previousId = invoiceRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = invoiceRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = invoiceRepository.findLastId().orElse(null);
+            /*
+             * Prev/next walks the SAME set the list was showing.
+             *
+             * It used to walk every invoice in id order, so paging out of an
+             * "Overdue" list landed on a paid one — arrows that traverse a
+             * different set from the one on screen are worse than no arrows.
+             */
+            Specification<Invoice> navSpec = buildSpec(filter != null ? filter : new InvoiceFilter());
+            String navSortBy = validateSortField(sortBy) != null
+                ? validateSortField(sortBy) : DEFAULT_SORT_FIELD;
+            boolean ascending = "asc".equalsIgnoreCase(sortDirection);
+
+            Map<String, Object> nav = recordNavigation.navigate(
+                Invoice.class, navSpec, navSortBy, ascending, id);
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("invoice", invoiceDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Invoice retrieved successfully", response)
@@ -160,22 +183,8 @@ public class InvoiceGetService {
      * @return ResponseEntity with ApiResponse containing paginated invoices
      */
     public ResponseEntity<ApiResponse<?>> getAllInvoices(
-        String invoiceCode,
-        String title,
-        InvoiceStatus status,
-        String customerId,
-        String safariId,
-        String createdById,
-        String updatedById,
-        Boolean isActive,
-        LocalDate issueDateAfter,
-        LocalDate issueDateBefore,
-        LocalDate dueDateAfter,
-        LocalDate dueDateBefore,
-        LocalDate sentAfter,
-        LocalDate sentBefore,
-        Boolean isOverdue,
-        String statusGroup,
+        InvoiceFilter filter,
+        Boolean includeStats,
         Integer page,
         Integer size,
         String sortBy,
@@ -193,100 +202,12 @@ public class InvoiceGetService {
                 );
             }
 
-            // Build specification for filtering
-            Specification<Invoice> spec = Specification.unrestricted();
-
-            if (invoiceCode != null && !invoiceCode.isEmpty()) {
-                spec = spec.and(InvoiceSpecification.byInvoiceCode(invoiceCode));
-            }
-            if (title != null && !title.isEmpty()) {
-                spec = spec.and(InvoiceSpecification.byTitle(title));
-            }
-            if (status != null) {
-                spec = spec.and(InvoiceSpecification.byStatus(status));
-            }
-            if (isActive != null) {
-                spec = spec.and(InvoiceSpecification.byIsActive(isActive));
-            }
-            if (issueDateAfter != null) {
-                spec = spec.and(InvoiceSpecification.byIssueDateAfter(issueDateAfter));
-            }
-            if (issueDateBefore != null) {
-                spec = spec.and(InvoiceSpecification.byIssueDateBefore(issueDateBefore));
-            }
-            if (dueDateAfter != null) {
-                spec = spec.and(InvoiceSpecification.byDueDateAfter(dueDateAfter));
-            }
-            if (dueDateBefore != null) {
-                spec = spec.and(InvoiceSpecification.byDueDateBefore(dueDateBefore));
-            }
-            if (sentAfter != null) {
-                spec = spec.and(InvoiceSpecification.bySentAfter(sentAfter));
-            }
-            if (sentBefore != null) {
-                spec = spec.and(InvoiceSpecification.bySentBefore(sentBefore));
-            }
-            if (Boolean.TRUE.equals(isOverdue)) {
-                spec = spec.and(InvoiceSpecification.byOverdue());
-            }
-
-            // Apply relationship filters (decode IDs)
-            if (customerId != null && !customerId.isEmpty()) {
-                try {
-                    Long decodedId = idObfuscator.decodeId(customerId);
-                    spec = spec.and(InvoiceSpecification.byCustomerId(decodedId));
-                } catch (Exception e) {
-                    log.warn("Failed to decode customer ID: {}", customerId, e);
-                }
-            }
-            if (safariId != null && !safariId.isEmpty()) {
-                try {
-                    Long decodedId = idObfuscator.decodeId(safariId);
-                    spec = spec.and(InvoiceSpecification.bySafariId(decodedId));
-                } catch (Exception e) {
-                    log.warn("Failed to decode safari ID: {}", safariId, e);
-                }
-            }
-            if (createdById != null && !createdById.isEmpty()) {
-                try {
-                    Long decodedId = idObfuscator.decodeId(createdById);
-                    spec = spec.and(InvoiceSpecification.byCreatedById(decodedId));
-                } catch (Exception e) {
-                    log.warn("Failed to decode created by ID: {}", createdById, e);
-                }
-            }
-            if (updatedById != null && !updatedById.isEmpty()) {
-                try {
-                    Long decodedId = idObfuscator.decodeId(updatedById);
-                    spec = spec.and(InvoiceSpecification.byUpdatedById(decodedId));
-                } catch (Exception e) {
-                    log.warn("Failed to decode updated by ID: {}", updatedById, e);
-                }
-            }
-
-            // Apply status group filter
-            if (statusGroup != null && !statusGroup.isEmpty()) {
-                switch (statusGroup.toLowerCase()) {
-                    case "draft":
-                        spec = spec.and(InvoiceSpecification.byDraftStatus());
-                        break;
-                    case "unpaid":
-                        spec = spec.and(InvoiceSpecification.byUnpaidStatuses());
-                        break;
-                    case "paid":
-                        spec = spec.and(InvoiceSpecification.byPaidStatuses());
-                        break;
-                    case "closed":
-                        spec = spec.and(InvoiceSpecification.byClosedStatuses());
-                        break;
-                    default:
-                        log.warn("Unknown status group: {}", statusGroup);
-                }
-            }
+            Specification<Invoice> spec = buildSpec(filter != null ? filter : new InvoiceFilter());
 
             // Set default pagination values
             int pageNumber = (page != null && page >= 0) ? page : 0;
-            int pageSize = (size != null && size > 0) ? size : 10;
+            // clamp: an unbounded size is a way to ask for the whole table by accident
+            int pageSize = (size != null && size > 0) ? Math.min(size, 100) : 10;
 
             // Set sorting (always sort by createdAt)
             Sort.Direction direction = Sort.Direction.DESC;
@@ -314,6 +235,14 @@ public class InvoiceGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", direction.name().toLowerCase());
+            /*
+             * The counters ride inside the list response and are built from the
+             * SAME specification as the rows, so a card and the table under it
+             * can never disagree.
+             */
+            if (!Boolean.FALSE.equals(includeStats)) {
+                response.put("stats", buildStats(spec));
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Invoices retrieved successfully", response)
@@ -325,6 +254,118 @@ public class InvoiceGetService {
                 ApiResponse.error(500, "Failed to fetch invoices", "INVOICES_FETCH_FAILED")
             );
         }
+    }
+
+    /**
+     * ONE specification, shared by the rows, the counters and the record walk.
+     *
+     * Every dimension ORs inside itself and ANDs across — asking for "sent or
+     * overdue, for this customer" is one question, not two lists intersected by
+     * hand afterwards.
+     */
+    private Specification<Invoice> buildSpec(InvoiceFilter filter) {
+        Specification<Invoice> spec = Specification.unrestricted();
+
+        if (filter.getInvoiceCode() != null && !filter.getInvoiceCode().isEmpty()) {
+            spec = spec.and(InvoiceSpecification.byInvoiceCode(filter.getInvoiceCode()));
+        }
+        if (filter.getTitle() != null && !filter.getTitle().isEmpty()) {
+            spec = spec.and(InvoiceSpecification.byTitle(filter.getTitle()));
+        }
+        if (filter.getKeyword() != null && !filter.getKeyword().isEmpty()) {
+            spec = spec.and(InvoiceSpecification.searchKeyword(filter.getKeyword()));
+        }
+        spec = spec.and(InvoiceSpecification.byStatuses(filter.allStatuses()));
+        spec = spec.and(InvoiceSpecification.byStatusGroups(filter.allStatusGroups()));
+        if (filter.getIsActive() != null) {
+            spec = spec.and(InvoiceSpecification.byIsActive(filter.getIsActive()));
+        }
+        if (Boolean.TRUE.equals(filter.getIsOverdue())) {
+            spec = spec.and(InvoiceSpecification.byOverdue());
+        }
+        if (filter.getIsSupplement() != null) {
+            spec = spec.and(InvoiceSpecification.bySupplement(filter.getIsSupplement()));
+        }
+        if (filter.getIssueDateAfter() != null) {
+            spec = spec.and(InvoiceSpecification.byIssueDateAfter(filter.getIssueDateAfter()));
+        }
+        if (filter.getIssueDateBefore() != null) {
+            spec = spec.and(InvoiceSpecification.byIssueDateBefore(filter.getIssueDateBefore()));
+        }
+        if (filter.getDueDateAfter() != null) {
+            spec = spec.and(InvoiceSpecification.byDueDateAfter(filter.getDueDateAfter()));
+        }
+        if (filter.getDueDateBefore() != null) {
+            spec = spec.and(InvoiceSpecification.byDueDateBefore(filter.getDueDateBefore()));
+        }
+        if (filter.getSentAfter() != null) {
+            spec = spec.and(InvoiceSpecification.bySentAfter(filter.getSentAfter()));
+        }
+        if (filter.getSentBefore() != null) {
+            spec = spec.and(InvoiceSpecification.bySentBefore(filter.getSentBefore()));
+        }
+
+        // data-quality asks, OR'd: "show me what needs chasing"
+        Specification<Invoice> quality = null;
+        if (filter.wants("dueSoon")) quality = or(quality, InvoiceSpecification.dueWithin(7));
+        if (filter.wants("unsent")) quality = or(quality, InvoiceSpecification.unsent());
+        if (filter.wants("unpaid")) quality = or(quality, InvoiceSpecification.unpaid());
+        if (filter.wants("overdue")) quality = or(quality, InvoiceSpecification.byOverdue());
+        if (quality != null) spec = spec.and(quality);
+
+        spec = and(spec, filter.getCustomerId(), InvoiceSpecification::byCustomerId, "customer");
+        spec = and(spec, filter.getSafariId(), InvoiceSpecification::bySafariId, "safari");
+        spec = and(spec, filter.getCreatedById(), InvoiceSpecification::byCreatedById, "createdBy");
+        spec = and(spec, filter.getUpdatedById(), InvoiceSpecification::byUpdatedById, "updatedBy");
+        return spec;
+    }
+
+    private Specification<Invoice> or(Specification<Invoice> spec, Specification<Invoice> extra) {
+        return spec == null ? extra : spec.or(extra);
+    }
+
+    /**
+     * Narrows by an obfuscated id, or narrows to nothing if it will not decode.
+     *
+     * An unreadable id must not quietly widen the list to every invoice — that is
+     * the opposite of what was asked for.
+     */
+    private Specification<Invoice> and(
+        Specification<Invoice> spec,
+        String obfuscatedId,
+        java.util.function.Function<Long, Specification<Invoice>> by,
+        String what
+    ) {
+        if (obfuscatedId == null || obfuscatedId.isEmpty()) return spec;
+        try {
+            return spec.and(by.apply(idObfuscator.decodeId(obfuscatedId)));
+        } catch (Exception e) {
+            log.warn("Unreadable {} id on the invoice filter: {}", what, obfuscatedId);
+            return spec.and((root, query, cb) -> cb.disjunction());
+        }
+    }
+
+    /**
+     * The cards that head the list, every one of them reachable as a filter.
+     *
+     * Nothing here is a figure the rows cannot support: the money is deliberately
+     * absent, because an invoice's total is a list of amounts per currency and a
+     * single number across them would be an invented exchange rate.
+     */
+    private Map<String, Object> buildStats(Specification<Invoice> spec) {
+        return listStats.of(Invoice.class, spec)
+            .total()
+            .count("active", InvoiceSpecification.byIsActive(true))
+            .complement("inactive", "active")
+            .breakdown("byStatus", InvoiceStatus.values(), InvoiceSpecification::byStatus)
+            .count("draft", InvoiceSpecification.byDraftStatus())
+            .count("unpaid", InvoiceSpecification.unpaid())
+            .count("overdue", InvoiceSpecification.byOverdue())
+            .count("dueSoon", InvoiceSpecification.dueWithin(7))
+            .count("unsent", InvoiceSpecification.unsent())
+            .count("supplements", InvoiceSpecification.bySupplement(true))
+            .recency(InvoiceSpecification::createdAfter)
+            .build();
     }
 
     /**

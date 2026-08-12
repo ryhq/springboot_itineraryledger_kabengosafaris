@@ -1,7 +1,9 @@
 package com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceServices;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,77 +84,68 @@ public class InvoiceDeleteService {
     /**
      * Delete invoices by list of IDs (internal method)
      */
+    /**
+     * Deletes what it can and reports every id it did not, one by one.
+     *
+     * The house contract: {deletedCount, deletedIds, skipped:[{id, code, reason}]}
+     * and a 200 even when nothing went — a caller that asked about six invoices
+     * needs to know which four survived and why, not a sentence with the reasons
+     * glued into it.
+     */
     private ResponseEntity<ApiResponse<?>> deleteInvoicesInternal(List<Long> ids) {
-        int deletedCount = 0;
-        int skippedCount = 0;
-        List<String> skippedReasons = new ArrayList<>();
+        List<String> deletedIds = new ArrayList<>();
+        List<Map<String, Object>> skipped = new ArrayList<>();
 
         for (Long id : ids) {
+            String obfuscated = idObfuscator.encodeId(id);
             try {
                 Invoice invoice = invoiceRepository.findById(id).orElse(null);
 
                 if (invoice == null) {
-                    log.warn("Invoice not found: {}", id);
-                    skippedCount++;
-                    skippedReasons.add(String.format("Invoice ID %d not found", id));
+                    skipped.add(skip(obfuscated, null, "No longer exists"));
                     continue;
                 }
 
-                // Only allow deletion of DRAFT invoices
+                /*
+                 * Only a draft. Once an invoice has been sent, somebody outside
+                 * this office is holding a copy of it, and deleting our half
+                 * leaves a demand with no record behind it. Cancel instead.
+                 */
                 if (invoice.getStatus() != InvoiceStatus.DRAFT) {
-                    log.warn("Cannot delete invoice {} - status is {} (only DRAFT invoices can be deleted)",
-                             invoice.getInvoiceCode(), invoice.getStatus().getDisplayName());
-                    skippedCount++;
-                    skippedReasons.add(String.format("Invoice %s cannot be deleted - status is %s (only DRAFT invoices can be deleted)",
-                                                     invoice.getInvoiceCode(), invoice.getStatus().getDisplayName()));
+                    skipped.add(skip(obfuscated, invoice.getInvoiceCode(),
+                        "It is " + invoice.getStatus().getDisplayName().toLowerCase()
+                            + ". Only a draft can be deleted — cancel it instead."));
                     continue;
                 }
 
                 // Use AopContext to get proxy and trigger AOP aspect
                 ((InvoiceDeleteService) AopContext.currentProxy()).deleteInvoice(id);
-                deletedCount++;
+                deletedIds.add(obfuscated);
                 log.info("Invoice deleted successfully: {} ({})", invoice.getInvoiceCode(), id);
 
             } catch (Exception e) {
                 log.error("Error deleting invoice: {}", id, e);
-                skippedCount++;
-                skippedReasons.add(String.format("Error deleting invoice ID %d: %s", id, e.getMessage()));
+                skipped.add(skip(obfuscated, null, "Could not be deleted: " + e.getMessage()));
             }
         }
 
-        // Build response message
-        StringBuilder message = new StringBuilder();
-        if (deletedCount > 0) {
-            message.append(deletedCount)
-                   .append(deletedCount > 1 ? " invoices deleted successfully" : " invoice deleted successfully");
-        }
+        Map<String, Object> report = new HashMap<>();
+        report.put("deletedCount", deletedIds.size());
+        report.put("deletedIds", deletedIds);
+        report.put("skipped", skipped);
 
-        if (skippedCount > 0) {
-            if (deletedCount > 0) {
-                message.append(". ");
-            }
-            message.append(skippedCount)
-                   .append(skippedCount > 1 ? " invoices skipped" : " invoice skipped");
-        }
+        String message = deletedIds.size() + (deletedIds.size() == 1 ? " invoice deleted" : " invoices deleted")
+            + (skipped.isEmpty() ? "" : ", " + skipped.size() + " skipped");
 
-        // Return appropriate response
-        if (deletedCount == 0 && skippedCount > 0) {
-            return ResponseEntity.badRequest().body(
-                ApiResponse.error(
-                    400,
-                    message.toString() + ": " + String.join("; ", skippedReasons),
-                    "NO_INVOICES_DELETED"
-                )
-            );
-        }
+        return ResponseEntity.ok().body(ApiResponse.success(200, message, report));
+    }
 
-        return ResponseEntity.ok().body(
-            ApiResponse.success(
-                200,
-                message.toString(),
-                skippedCount > 0 ? skippedReasons : null
-            )
-        );
+    private Map<String, Object> skip(String id, String code, String reason) {
+        Map<String, Object> entry = new HashMap<>();
+        entry.put("id", id);
+        entry.put("code", code);
+        entry.put("reason", reason);
+        return entry;
     }
 
     /**
