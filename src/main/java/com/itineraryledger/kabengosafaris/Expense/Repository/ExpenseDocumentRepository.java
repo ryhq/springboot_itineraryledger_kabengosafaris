@@ -10,7 +10,8 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ExpenseDocumentRepository extends JpaRepository<ExpenseDocument, Long> {
+public interface ExpenseDocumentRepository extends JpaRepository<ExpenseDocument, Long>,
+        org.springframework.data.jpa.repository.JpaSpecificationExecutor<ExpenseDocument> {
 
     List<ExpenseDocument> findByExpenseIdOrderByCreatedAtDesc(Long expenseId);
     List<ExpenseDocument> findByExpensePaymentIdOrderByCreatedAtDesc(Long expensePaymentId);

@@ -136,4 +136,46 @@ public class ExpenseController {
             if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
         });
     }
+
+    // =====================================================================
+    // WHAT THIS BILL COVERS
+    // =====================================================================
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Expense.Services.ExpenseServices.ExpenseAllocationService allocationService;
+
+    /**
+     * GET /{id}/allocations — the days and things this bill is paying for.
+     */
+    @GetMapping("/{id}/allocations")
+    @PreAuthorize("hasAuthority('PERM_READ_EXPENSE')")
+    public ResponseEntity<ApiResponse<?>> allocations(@PathVariable String id) {
+        return allocationService.forExpense(id);
+    }
+
+    /**
+     * POST /{id}/allocations — say what it covers, all at once.
+     *
+     * A list because that is the ordinary case: the lodge invoices both nights
+     * together, so both are attached in one gesture and nobody has to remember to
+     * come back for the second.
+     */
+    @PostMapping("/{id}/allocations")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EXPENSE')")
+    public ResponseEntity<ApiResponse<?>> attachAllocations(
+        @PathVariable String id,
+        @Valid @RequestBody com.itineraryledger.kabengosafaris.Expense.DTOs.CreateExpenseAllocationsDTO dto
+    ) {
+        return allocationService.attach(id, dto);
+    }
+
+    /** DELETE /{id}/allocations — a bare array of allocation ids. */
+    @DeleteMapping("/{id}/allocations")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EXPENSE')")
+    public ResponseEntity<ApiResponse<?>> detachAllocations(
+        @PathVariable String id,
+        @RequestBody List<String> ids
+    ) {
+        return allocationService.detach(id, ids);
+    }
 }

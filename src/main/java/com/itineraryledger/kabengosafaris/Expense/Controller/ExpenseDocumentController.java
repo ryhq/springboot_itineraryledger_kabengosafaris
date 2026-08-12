@@ -59,10 +59,34 @@ public class ExpenseDocumentController {
     // browser ended up navigating).
     // ---------------------------------------------------------------------
 
+    /**
+     * GET /api/expense-documents — every expense document, filtered.
+     *
+     * The per-bill endpoint above answers "what is on this bill". This answers
+     * "where is the slip for that transfer", which is asked without knowing which
+     * bill it hangs off.
+     */
+    @GetMapping("/api/expense-documents")
+    @PreAuthorize("hasAuthority('PERM_READ_EXPENSE')")
+    public ResponseEntity<ApiResponse<?>> getAllDocuments(
+            @ModelAttribute com.itineraryledger.kabengosafaris.Expense.Specifications.ExpenseDocumentFilter filter,
+            @RequestParam(required = false) Boolean includeStats,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
+            @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection
+    ) {
+        return getService.getAllDocuments(filter, includeStats, sortBy, sortDirection, page, size);
+    }
+
     @GetMapping("/api/expense-documents/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_EXPENSE_DOCUMENT') or hasAuthority('PERM_READ_EXPENSE')")
-    public ResponseEntity<ApiResponse<?>> getDocument(@PathVariable String id) {
-        return getService.getById(id);
+    public ResponseEntity<ApiResponse<?>> getDocument(
+            @PathVariable String id,
+            // the bill it was opened from, so prev/next stays inside it
+            @RequestParam(required = false) String scopeParentId
+    ) {
+        return getService.getById(id, scopeParentId);
     }
 
     @GetMapping("/api/expense-documents/{id}/file")

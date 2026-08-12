@@ -286,4 +286,25 @@ public class SafariController {
 
         return customerEmailService.sendCustomerMessage(id, messageSubject, messageBody, language, decodedEmailTemplateId);
     }
+
+    // =====================================================================
+    // WHAT IS ALREADY BILLED ON THIS SAFARI
+    // =====================================================================
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Expense.Services.ExpenseServices.ExpenseAllocationService expenseAllocationService;
+
+    /**
+     * GET /{id}/expense-allocations — every billed thing on this trip.
+     *
+     * One request for the whole day tree. It draws dozens of billable rows on a
+     * fourteen-day trip and each needs to know whether it is already covered and
+     * by which invoice, so asking per row would be dozens of round trips for a
+     * question with one answer.
+     */
+    @GetMapping("/{id}/expense-allocations")
+    @PreAuthorize("hasAuthority('PERM_READ_SAFARI')")
+    public ResponseEntity<ApiResponse<?>> expenseAllocations(@PathVariable String id) {
+        return expenseAllocationService.forSafari(id);
+    }
 }

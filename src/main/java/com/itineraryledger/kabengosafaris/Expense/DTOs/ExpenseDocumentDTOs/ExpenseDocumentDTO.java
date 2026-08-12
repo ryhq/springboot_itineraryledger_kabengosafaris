@@ -18,6 +18,13 @@ public class ExpenseDocumentDTO {
     private String expenseId;
     private String expenseCode;
     private String expensePaymentId;        // nullable
+    /* who the bill was from and which trip it was for — a global list is
+       unreadable without them */
+    private String vendorId;
+    private String vendorName;
+    private String safariId;
+    private String safariName;
+    private String expenseTitle;
 
     private String title;
     private ExpenseDocument.DocumentType documentType;
