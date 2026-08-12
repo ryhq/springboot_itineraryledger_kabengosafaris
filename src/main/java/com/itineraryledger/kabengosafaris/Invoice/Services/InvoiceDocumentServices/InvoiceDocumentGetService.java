@@ -39,6 +39,8 @@ public class InvoiceDocumentGetService {
     private final InvoiceDocumentRepository invoiceDocumentRepository;
     private final InvoiceDocumentStorageService storageService;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "title", "documentType", "fileName", "fileSize", "createdAt", "updatedAt"
@@ -62,6 +64,12 @@ public class InvoiceDocumentGetService {
             String version,
             Boolean currentlyValid,
             String invoiceCode,
+            List<DocumentType> documentTypes,
+            List<String> statuses,
+            List<String> validity,
+            LocalDateTime createdAfter,
+            String keyword,
+            Boolean includeStats,
             String sortBy,
             String sortDirection,
             int page,
@@ -110,6 +118,45 @@ public class InvoiceDocumentGetService {
                 spec = spec.and(InvoiceDocumentSpecification.byCurrentlyValid(LocalDateTime.now()));
             }
 
+            /*
+             * The list page's facets. Each ORs inside its own dimension and ANDs
+             * across — asking for "receipt or invoice PDF, expiring this month"
+             * is one question, not two lists intersected by hand.
+             */
+            spec = spec.and(InvoiceDocumentSpecification.byDocumentTypes(documentTypes));
+
+            if (statuses != null && !statuses.isEmpty()) {
+                List<Boolean> states = statuses.stream()
+                    .map(state -> "active".equalsIgnoreCase(state) ? Boolean.TRUE
+                        : "inactive".equalsIgnoreCase(state) ? Boolean.FALSE : null)
+                    .filter(java.util.Objects::nonNull)
+                    .distinct()
+                    .toList();
+                // active AND inactive is every document: a contradiction cancels
+                if (states.size() == 1) {
+                    spec = spec.and(InvoiceDocumentSpecification.byIsActive(states.get(0)));
+                }
+            }
+
+            if (validity != null && !validity.isEmpty()) {
+                List<Specification<InvoiceDocument>> any = new java.util.ArrayList<>();
+                if (validity.contains("expired")) any.add(InvoiceDocumentSpecification.expired());
+                if (validity.contains("expiring")) any.add(InvoiceDocumentSpecification.expiringWithin(30));
+                if (validity.contains("no-expiry")) any.add(InvoiceDocumentSpecification.noExpiry());
+                if (!any.isEmpty()) {
+                    Specification<InvoiceDocument> combined = any.get(0);
+                    for (int i = 1; i < any.size(); i++) combined = combined.or(any.get(i));
+                    spec = spec.and(combined);
+                }
+            }
+
+            if (createdAfter != null) {
+                spec = spec.and(InvoiceDocumentSpecification.createdAfter(createdAfter));
+            }
+            if (keyword != null && !keyword.isBlank()) {
+                spec = spec.and(InvoiceDocumentSpecification.searchKeyword(keyword));
+            }
+
             Page<InvoiceDocument> documentPage = invoiceDocumentRepository.findAll(spec, pageable);
             Page<InvoiceDocumentDTO> dtoPage = documentPage.map(this::toDTO);
 
@@ -124,6 +171,16 @@ public class InvoiceDocumentGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+            // the list page shows totalItems; totalElements stays for older callers
+            response.put("totalItems", dtoPage.getTotalElements());
+            /*
+             * Counters for the WHOLE filtered set, from the same specification as
+             * the rows — without them the page can only summarise what it loaded,
+             * and the "All filtered / This page" toggle has to stay hidden.
+             */
+            if (includeStats == null || includeStats) {
+                response.put("stats", computeStats(spec));
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Invoice documents retrieved successfully", response)
@@ -137,7 +194,29 @@ public class InvoiceDocumentGetService {
         }
     }
 
+    private Map<String, Object> computeStats(Specification<InvoiceDocument> base) {
+        return listStats.of(InvoiceDocument.class, base)
+            .total()
+            .count("active", InvoiceDocumentSpecification.byIsActive(true))
+            .complement("inactive", "active")
+            .count("expired", InvoiceDocumentSpecification.expired())
+            .count("expiringSoon", InvoiceDocumentSpecification.expiringWithin(30))
+            .count("noExpiry", InvoiceDocumentSpecification.noExpiry())
+            .recency(InvoiceDocumentSpecification::createdAfter)
+            .build();
+    }
+
     public ResponseEntity<ApiResponse<?>> getDocumentById(String obfuscatedId) {
+        return getDocumentById(obfuscatedId, null);
+    }
+
+    /**
+     * One document, and where it sits in the set the caller came from.
+     *
+     * @param scopeParentId the invoice, when opened from inside one — paging then
+     *                      stays among that invoice's documents
+     */
+    public ResponseEntity<ApiResponse<?>> getDocumentById(String obfuscatedId, String scopeParentId) {
         log.info("Fetching invoice document with ID: {}", obfuscatedId);
 
         try {
@@ -160,16 +239,36 @@ public class InvoiceDocumentGetService {
 
             InvoiceDocumentDTO documentDTO = toDTO(document);
 
-            // Circular navigation
-            Long nextId = invoiceDocumentRepository.findNextId(id).orElse(null);
-            Long previousId = invoiceDocumentRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = invoiceDocumentRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = invoiceDocumentRepository.findLastId().orElse(null);
+            /*
+             * Prev/next walks the SAME set the caller was looking at — this
+             * invoice's documents when scoped, everything otherwise — and returns
+             * the position, so the record page can show 'N of M'. It used to walk
+             * a raw id-ordered query with no position at all.
+             */
+            Long scopedParentId = null;
+            if (scopeParentId != null && !scopeParentId.isBlank()) {
+                try {
+                    scopedParentId = idObfuscator.decodeId(scopeParentId);
+                } catch (Exception ex) {
+                    log.warn("Invalid scopeParentId {}, walking every document instead", scopeParentId);
+                }
+            }
+            Specification<InvoiceDocument> navSpec = scopedParentId != null
+                ? InvoiceDocumentSpecification.byInvoiceId(scopedParentId)
+                : Specification.unrestricted();
+
+            Map<String, Object> nav = recordNavigation.navigate(
+                InvoiceDocument.class, navSpec, DEFAULT_SORT_FIELD, false, id);
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("document", documentDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
+            response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Invoice document retrieved successfully", response)

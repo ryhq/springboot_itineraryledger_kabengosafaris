@@ -88,6 +88,15 @@ public class InvoiceDocumentController {
             @RequestParam(value = "isActive", required = false) Boolean isActive,
             @RequestParam(value = "isGenerated", required = false) Boolean isGenerated,
             @RequestParam(value = "currentlyValid", required = false) Boolean currentlyValid,
+            // multi-value facets: the list page joins them with commas
+            @RequestParam(value = "documentTypes", required = false) java.util.List<DocumentType> documentTypes,
+            @RequestParam(value = "statuses", required = false) java.util.List<String> statuses,
+            @RequestParam(value = "validity", required = false) java.util.List<String> validity,
+            @RequestParam(value = "createdAfter", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.LocalDateTime createdAfter,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "includeStats", required = false) Boolean includeStats,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size,
             @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
@@ -102,6 +111,12 @@ public class InvoiceDocumentController {
             version,
             currentlyValid,
             invoiceCode,
+            documentTypes,
+            statuses,
+            validity,
+            createdAfter,
+            keyword,
+            includeStats,
             sortBy,
             sortDirection,
             page,
@@ -115,8 +130,12 @@ public class InvoiceDocumentController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_INVOICE_DOCUMENT')")
-    public ResponseEntity<?> getDocumentById(@PathVariable("id") String id) {
-        return getService.getDocumentById(id);
+    public ResponseEntity<?> getDocumentById(
+            @PathVariable("id") String id,
+            // the invoice it was opened from, so prev/next stays inside it
+            @RequestParam(required = false) String scopeParentId
+    ) {
+        return getService.getDocumentById(id, scopeParentId);
     }
 
     /**
