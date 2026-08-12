@@ -134,11 +134,17 @@ public class InvoiceLineItemReorderService {
             invoiceLineItemRepository.saveAll(existingItems);
             invoiceLineItemRepository.flush();
 
-            // Second pass: set final display orders
+            /*
+             * Second pass: final positions, 1-based.
+             *
+             * Creation numbers from 1 (max + 1, or 1 for the first line), so a
+             * 0-based reorder left the same list numbered two different ways
+             * depending on whether it had ever been dragged.
+             */
             for (int i = 0; i < itemOrders.size(); i++) {
                 Long itemId = decodedItemIds.get(i);
                 InvoiceLineItem item = itemMap.get(itemId);
-                item.setDisplayOrder(i);
+                item.setDisplayOrder(i + 1);
             }
             invoiceLineItemRepository.saveAll(existingItems);
 

@@ -36,9 +36,10 @@ public class InvoiceLineItemGetService {
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
-        "itemType", "itemName", "createdAt", "updatedAt"
+        // displayOrder IS the invoice: the order the lines print in
+        "displayOrder", "itemType", "itemName", "createdAt", "updatedAt"
     );
-    private static final String DEFAULT_SORT_FIELD = "createdAt";
+    private static final String DEFAULT_SORT_FIELD = "displayOrder";
 
     public ResponseEntity<ApiResponse<?>> getInvoiceLineItemById(String invoiceId, String itemId) {
         log.info("Fetching invoice line item with ID: {}", itemId);
