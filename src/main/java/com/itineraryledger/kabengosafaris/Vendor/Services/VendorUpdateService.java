@@ -34,6 +34,38 @@ public class VendorUpdateService {
         entityIdParamName = "idObfuscated",
         description = "Update an existing vendor"
     )
+    /**
+     * Retire a vendor, or bring one back.
+     *
+     * Its own action rather than a field on the edit form: a vendor with bills
+     * against it must stay on the record, so "inactive" is how it leaves the
+     * pickers without the history going with it.
+     */
+    public ResponseEntity<ApiResponse<?>> setActive(String idObfuscated, boolean active) {
+        try {
+            Long id = idObfuscator.decodeId(idObfuscated);
+            Vendor vendor = vendorRepository.findById(id).orElse(null);
+            if (vendor == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Vendor not found", "VENDOR_NOT_FOUND"));
+            }
+            if (Boolean.valueOf(active).equals(vendor.getIsActive())) {
+                return ResponseEntity.ok(ApiResponse.success(200,
+                    "Vendor is already " + (active ? "active" : "inactive"),
+                    vendorGetService.toDTO(vendor)));
+            }
+            vendor.setIsActive(active);
+            vendor = vendorRepository.save(vendor);
+            return ResponseEntity.ok(ApiResponse.success(200,
+                active ? "Vendor reactivated" : "Vendor deactivated",
+                vendorGetService.toDTO(vendor)));
+        } catch (Exception e) {
+            log.error("Error changing vendor active state", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to change the vendor's state", "VENDOR_UPDATE_FAILED"));
+        }
+    }
+
     public ResponseEntity<ApiResponse<?>> updateVendor(String idObfuscated, UpdateVendorDTO dto) {
         try {
             Long id = idObfuscator.decodeId(idObfuscated);

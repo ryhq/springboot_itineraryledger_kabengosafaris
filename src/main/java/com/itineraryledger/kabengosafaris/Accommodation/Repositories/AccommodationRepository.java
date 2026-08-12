@@ -47,4 +47,7 @@ public interface AccommodationRepository extends JpaRepository<Accommodation, Lo
 
     @Query("SELECT e.id FROM Accommodation e ORDER BY e.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    /** Properties pointing at this vendor — checked before a vendor is deleted. */
+    long countByVendorId(Long vendorId);
 }

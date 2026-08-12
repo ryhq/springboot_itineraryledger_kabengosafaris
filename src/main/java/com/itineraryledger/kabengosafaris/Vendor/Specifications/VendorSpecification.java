@@ -60,4 +60,62 @@ public class VendorSpecification {
             return cb.or(name, code, contact, email);
         };
     }
+
+    /**
+     * Any of these types — the Type filter is multi-select, and a singular enum
+     * param cannot answer "lodge or park authority".
+     */
+    public static Specification<Vendor> byTypes(java.util.List<VendorType> types) {
+        return (root, query, cb) -> types == null || types.isEmpty()
+            ? cb.conjunction()
+            : root.get("type").in(types);
+    }
+
+    public static Specification<Vendor> byCities(java.util.List<String> cities) {
+        return (root, query, cb) -> cities == null || cities.isEmpty()
+            ? cb.conjunction()
+            : cb.lower(root.get("city")).in(cities.stream().map(String::toLowerCase).toList());
+    }
+
+    public static Specification<Vendor> byCountries(java.util.List<String> countries) {
+        return (root, query, cb) -> countries == null || countries.isEmpty()
+            ? cb.conjunction()
+            : cb.lower(root.get("country")).in(countries.stream().map(String::toLowerCase).toList());
+    }
+
+    public static Specification<Vendor> byCurrencies(java.util.List<String> currencies) {
+        return (root, query, cb) -> currencies == null || currencies.isEmpty()
+            ? cb.conjunction()
+            : cb.upper(root.get("preferredCurrency")).in(
+                currencies.stream().map(String::toUpperCase).toList());
+    }
+
+    /* Data-quality counters, each one clickable as a filter. */
+
+    /** No email: nothing can be sent to them in writing. */
+    public static Specification<Vendor> missingEmail() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("email")),
+            cb.equal(cb.trim(root.get("email")), ""));
+    }
+
+    /** No phone: they cannot be reached when a booking changes today. */
+    public static Specification<Vendor> missingPhone() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("phone")),
+            cb.equal(cb.trim(root.get("phone")), ""));
+    }
+
+    /** No tax id: their invoices cannot be filed against a TIN. */
+    public static Specification<Vendor> missingTaxId() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("taxId")),
+            cb.equal(cb.trim(root.get("taxId")), ""));
+    }
+
+    public static Specification<Vendor> createdAfter(java.time.LocalDateTime since) {
+        return (root, query, cb) -> since == null
+            ? cb.conjunction()
+            : cb.greaterThanOrEqualTo(root.get("createdAt"), since);
+    }
 }
