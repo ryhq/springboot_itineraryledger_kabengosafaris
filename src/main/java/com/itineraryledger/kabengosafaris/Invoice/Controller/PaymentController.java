@@ -218,6 +218,58 @@ public class PaymentController {
     }
 
     /**
+     * Generate the payment receipt and FILE it against the invoice.
+     * POST /api/invoices/{invoiceId}/payments/{paymentId}/receipt-document
+     *
+     * The download endpoint above hands the bytes to the browser and keeps
+     * nothing. This one keeps a copy, so the invoice's Documents tab can answer
+     * "what receipt did this customer get, and for which payment".
+     */
+    @PostMapping("/{paymentId}/receipt-document")
+    @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
+    public ResponseEntity<ApiResponse<?>> savePaymentReceiptDocument(
+        @PathVariable String invoiceId,
+        @PathVariable String paymentId,
+        @RequestParam(required = false) String language,
+        @RequestParam(required = false) String pdfTemplateId,
+        @RequestParam(required = false) String documentTitle,
+        @RequestParam(required = false) String documentNotes
+    ) {
+        log.info("POST /api/invoices/{}/payments/{}/receipt-document", invoiceId, paymentId);
+
+        try {
+            Long decodedPaymentId = idObfuscator.decodeId(paymentId);
+            Payment payment = paymentRepository.findById(decodedPaymentId).orElse(null);
+
+            if (payment == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Payment not found", "PAYMENT_NOT_FOUND")
+                );
+            }
+
+            var saved = paymentReceiptPdfGenerationService.generateAndSaveReceiptDocument(
+                payment, language, pdfTemplateId, documentTitle, documentNotes);
+
+            if (saved == null) {
+                return ResponseEntity.internalServerError().body(
+                    ApiResponse.error(500, "The receipt was generated but could not be filed",
+                        "RECEIPT_SAVE_FAILED")
+                );
+            }
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, "Receipt filed on the invoice", saved)
+            );
+
+        } catch (Exception e) {
+            log.error("Error filing payment receipt", e);
+            return ResponseEntity.internalServerError().body(
+                ApiResponse.error(500, "Failed to file the payment receipt", "RECEIPT_SAVE_FAILED")
+            );
+        }
+    }
+
+    /**
      * Delete a payment
      * DELETE /api/invoices/{invoiceId}/payments/{paymentId}
      *

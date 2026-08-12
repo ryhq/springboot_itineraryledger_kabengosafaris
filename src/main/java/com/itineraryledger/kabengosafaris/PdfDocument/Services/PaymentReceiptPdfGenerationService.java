@@ -4,7 +4,9 @@ import com.itineraryledger.kabengosafaris.AuditLog.AuditLogService;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.PaymentReceiptDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Payment;
+import com.itineraryledger.kabengosafaris.Invoice.DTOs.InvoiceDocumentDTOs.InvoiceDocumentDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Repository.PaymentRepository;
+import com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceDocumentServices.InvoiceDocumentCreateService;
 import com.itineraryledger.kabengosafaris.PdfDocument.Repository.PdfDocumentRepository;
 import com.itineraryledger.kabengosafaris.PdfDocument.Repository.PdfTemplateRepository;
 import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
@@ -31,6 +33,7 @@ import java.util.Locale;
 public class PaymentReceiptPdfGenerationService extends PdfGenerationBaseService {
 
     private final PaymentRepository paymentRepository;
+    private final InvoiceDocumentCreateService invoiceDocumentCreateService;
 
     public PaymentReceiptPdfGenerationService(
             PdfDocumentRepository pdfDocumentRepository,
@@ -41,11 +44,13 @@ public class PaymentReceiptPdfGenerationService extends PdfGenerationBaseService
             IdObfuscator idObfuscator,
             AuditLogService auditLogService,
             TranslationService translationService,
-            PaymentRepository paymentRepository
+            PaymentRepository paymentRepository,
+            InvoiceDocumentCreateService invoiceDocumentCreateService
     ) {
         super(pdfDocumentRepository, pdfTemplateRepository, renderer, generator, validationService,
               idObfuscator, auditLogService, translationService);
         this.paymentRepository = paymentRepository;
+        this.invoiceDocumentCreateService = invoiceDocumentCreateService;
     }
 
     /**
@@ -88,6 +93,58 @@ public class PaymentReceiptPdfGenerationService extends PdfGenerationBaseService
                 ApiResponse.error(500, "Failed to generate payment receipt PDF: " + e.getMessage(), "PDF_GENERATION_FAILED")
             );
         }
+    }
+
+    /**
+     * Generate the receipt AND file it against the invoice.
+     *
+     * A downloaded receipt lives in somebody's downloads folder; a filed one
+     * answers "what did we send this customer" from the invoice itself, months
+     * later, without anyone having to remember. It is the same PDF either way —
+     * this only decides whether a copy stays.
+     */
+    @Transactional
+    public InvoiceDocumentDTO generateAndSaveReceiptDocument(
+            Payment payment,
+            String language,
+            String pdfTemplateId,
+            String title,
+            String notes
+    ) {
+        ResponseEntity<?> pdfResponse = generatePaymentReceiptPdf(payment, language, pdfTemplateId);
+        if (!pdfResponse.getStatusCode().is2xxSuccessful()) return null;
+
+        byte[] pdfBytes = (byte[]) pdfResponse.getBody();
+        if (pdfBytes == null || pdfBytes.length == 0) return null;
+
+        Invoice invoice = payment.getInvoice();
+        if (invoice == null) return null;
+
+        String invoiceCode = invoice.getInvoiceCode() != null ? invoice.getInvoiceCode() : "INV";
+        String languageSuffix = (language != null && !language.isBlank() && !"en".equalsIgnoreCase(language))
+            ? "_" + language.toLowerCase()
+            : "";
+        String timestamp = java.time.LocalDateTime.now()
+            .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String fileName = String.format("payment_receipt_%s%s_%s.pdf", invoiceCode, languageSuffix, timestamp);
+
+        String documentTitle = title != null && !title.isBlank()
+            ? title
+            : String.format("Payment receipt — %s %s, %s",
+                payment.getCurrency(),
+                payment.getAmount() != null ? payment.getAmount().toPlainString() : "",
+                payment.getPaymentDate() != null ? payment.getPaymentDate().toString() : invoiceCode);
+
+        return invoiceDocumentCreateService.saveGeneratedDocument(
+            invoice.getId(),
+            pdfBytes,
+            fileName,
+            com.itineraryledger.kabengosafaris.Invoice.Entity.InvoiceDocument.DocumentType.PAYMENT_RECEIPT,
+            documentTitle,
+            null,
+            null,
+            notes
+        );
     }
 
     /**
