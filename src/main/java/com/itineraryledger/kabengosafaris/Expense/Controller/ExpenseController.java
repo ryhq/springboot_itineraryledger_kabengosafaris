@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Expense.Controller;
 
 import com.itineraryledger.kabengosafaris.Expense.DTOs.CreateExpenseDTO;
+import com.itineraryledger.kabengosafaris.Expense.Specifications.ExpenseFilter;
 import com.itineraryledger.kabengosafaris.Expense.DTOs.UpdateExpenseDTO;
 import com.itineraryledger.kabengosafaris.Expense.Enums.ExpenseStatus;
 import com.itineraryledger.kabengosafaris.Expense.Services.ExpenseServices.*;
@@ -40,8 +41,14 @@ public class ExpenseController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_EXPENSE')")
-    public ResponseEntity<ApiResponse<?>> getExpenseById(@PathVariable String id) {
-        return expenseGetService.getExpenseById(id);
+    public ResponseEntity<ApiResponse<?>> getExpenseById(
+            @PathVariable String id,
+            // the list's filters and sort, so prev/next walks that same set
+            @ModelAttribute ExpenseFilter filter,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection
+    ) {
+        return expenseGetService.getExpenseById(id, filter, sortBy, sortDirection);
     }
 
     @GetMapping("/{id}/full")
@@ -53,28 +60,14 @@ public class ExpenseController {
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_EXPENSE')")
     public ResponseEntity<ApiResponse<?>> getAllExpenses(
-            @RequestParam(required = false) String expenseCode,
-            @RequestParam(required = false) String title,
-            @RequestParam(required = false) ExpenseStatus status,
-            @RequestParam(required = false) String vendorId,
-            @RequestParam(required = false) String safariId,
-            @RequestParam(required = false) Boolean operationalOnly,
-            @RequestParam(required = false) Boolean isActive,
-            @RequestParam(required = false) Boolean isOverdue,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate expenseDateAfter,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate expenseDateBefore,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dueDateAfter,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dueDateBefore,
-            @RequestParam(required = false) String referenceNumber,
+            @ModelAttribute ExpenseFilter filter,
+            @RequestParam(required = false) Boolean includeStats,
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "10") Integer size,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
-        return expenseGetService.getAllExpenses(expenseCode, title, status, vendorId, safariId,
-                operationalOnly, isActive, isOverdue,
-                expenseDateAfter, expenseDateBefore, dueDateAfter, dueDateBefore,
-                referenceNumber, page, size, sortBy, sortDirection);
+        return expenseGetService.getAllExpenses(filter, includeStats, page, size, sortBy, sortDirection);
     }
 
     @PutMapping("/{id}")
@@ -104,5 +97,43 @@ public class ExpenseController {
                 ApiResponse.error(500, "Failed to recalculate totals: " + e.getMessage(),
                         "RECALC_FAILED"));
         }
+    }
+
+    /**
+     * POST /{id}/cancel — we do not owe this after all.
+     *
+     * Refused once money has been paid against it: that is a refund, not a
+     * cancellation, and the two are different facts.
+     */
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EXPENSE')")
+    public ResponseEntity<ApiResponse<?>> cancel(@PathVariable String id) {
+        log.info("POST /api/expenses/{}/cancel", id);
+        return expenseUpdateService.setCancelled(id, true);
+    }
+
+    @PostMapping("/{id}/reopen")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EXPENSE')")
+    public ResponseEntity<ApiResponse<?>> reopen(@PathVariable String id) {
+        log.info("POST /api/expenses/{}/reopen", id);
+        return expenseUpdateService.setCancelled(id, false);
+    }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Expense.Repository.ExpenseRepository bulkFlagsRepository;
+
+    /** PATCH /bulk — one request for a whole selection, with per-id outcomes. */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EXPENSE')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("bill", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+        });
     }
 }

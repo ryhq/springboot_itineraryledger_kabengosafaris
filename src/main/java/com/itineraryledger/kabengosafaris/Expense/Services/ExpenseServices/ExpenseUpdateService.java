@@ -35,6 +35,7 @@ public class ExpenseUpdateService {
     private final IdObfuscator idObfuscator;
     private final ExpenseGetService expenseGetService;
     private final ExpenseTotalsCalculationService totalsService;
+    private final ExpenseStateTransitionService stateTransitionService;
 
     @AuditLogAnnotation(
         action = "UPDATE_EXPENSE",
@@ -141,5 +142,55 @@ public class ExpenseUpdateService {
             }
         }
         return null;
+    }
+
+    /**
+     * Withdrawing a bill, and bringing one back.
+     *
+     * Its own act rather than a status field on the form: cancelling says "we do
+     * not owe this after all", which is a decision, and a bill with money already
+     * paid against it is not one you can simply un-owe.
+     */
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> setCancelled(String idObfuscated, boolean cancelled) {
+        try {
+            Long id = idObfuscator.decodeId(idObfuscated);
+            Expense expense = expenseRepository.findById(id).orElse(null);
+            if (expense == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Expense not found", "EXPENSE_NOT_FOUND"));
+            }
+
+            if (cancelled) {
+                boolean paidAnything = expense.getStatus() == ExpenseStatus.PARTIALLY_PAID
+                    || expense.getStatus() == ExpenseStatus.PAID;
+                if (paidAnything) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                            "Money has already been paid against this bill, so it cannot be "
+                                + "cancelled. Remove the payments first if they were recorded in "
+                                + "error, or record a refund from the vendor.",
+                            "EXPENSE_ALREADY_PAID"));
+                }
+                expense.setStatus(ExpenseStatus.CANCELLED);
+            } else {
+                if (expense.getStatus() != ExpenseStatus.CANCELLED) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400, "This bill is not cancelled", "EXPENSE_NOT_CANCELLED"));
+                }
+                // back to where it was: payments decide the rest from here
+                expense.setStatus(ExpenseStatus.RECORDED);
+            }
+
+            expense = expenseRepository.save(expense);
+            stateTransitionService.recomputeStatus(expense.getId());
+
+            return ResponseEntity.ok(ApiResponse.success(200,
+                cancelled ? "Bill cancelled" : "Bill reopened", null));
+        } catch (Exception e) {
+            log.error("Error changing expense cancellation", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to change the bill", "EXPENSE_UPDATE_FAILED"));
+        }
     }
 }

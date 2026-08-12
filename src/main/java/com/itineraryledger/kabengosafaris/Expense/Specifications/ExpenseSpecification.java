@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Expense.Specifications;
 
 import com.itineraryledger.kabengosafaris.Expense.Entity.Expense;
+import com.itineraryledger.kabengosafaris.Expense.Enums.ExpenseCategory;
 import com.itineraryledger.kabengosafaris.Expense.Enums.ExpenseStatus;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
@@ -95,5 +96,66 @@ public class ExpenseSpecification {
             if (reference == null || reference.isBlank()) return cb.conjunction();
             return cb.like(cb.lower(root.get("referenceNumber")), "%" + reference.toLowerCase().trim() + "%");
         };
+    }
+
+    /**
+     * Any of these categories, asked of the LINE ITEMS.
+     *
+     * Category is a property of a line, not of a bill: one lodge invoice can
+     * carry a room charge and a park fee. So this means "has at least one line of
+     * that kind", and it joins — hence distinct, or a two-line bill would be
+     * returned twice.
+     */
+    public static Specification<Expense> byCategories(java.util.List<ExpenseCategory> categories) {
+        return (root, query, cb) -> {
+            if (categories == null || categories.isEmpty()) return cb.conjunction();
+            if (query != null) query.distinct(true);
+            var lines = root.join("lineItems", jakarta.persistence.criteria.JoinType.LEFT);
+            return lines.get("category").in(categories);
+        };
+    }
+
+    public static Specification<Expense> byStatuses(java.util.List<ExpenseStatus> statuses) {
+        return (root, query, cb) -> statuses == null || statuses.isEmpty()
+            ? cb.conjunction()
+            : root.get("status").in(statuses);
+    }
+
+    /** Falls due within the window and is not settled — the pay-this-week list. */
+    public static Specification<Expense> dueWithin(int days) {
+        return (root, query, cb) -> {
+            LocalDate today = LocalDate.now();
+            return cb.and(
+                cb.isNotNull(root.get("dueDate")),
+                cb.between(root.get("dueDate"), today, today.plusDays(days)),
+                cb.not(root.get("status").in(ExpenseStatus.PAID, ExpenseStatus.CANCELLED)));
+        };
+    }
+
+    /**
+     * Free text over the code, the title, the reference and the vendor's name.
+     *
+     * The vendor is joined because that is how a bill is looked up — by who sent
+     * it. LEFT join: a bill with no vendor yet must still be findable.
+     */
+    public static Specification<Expense> searchKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) return cb.conjunction();
+            String like = "%" + keyword.toLowerCase().trim() + "%";
+            if (query != null) query.distinct(true);
+            var vendor = root.join("vendor", jakarta.persistence.criteria.JoinType.LEFT);
+            return cb.or(
+                cb.like(cb.lower(root.get("expenseCode")), like),
+                cb.like(cb.lower(root.get("title")), like),
+                cb.like(cb.lower(root.get("referenceNumber")), like),
+                cb.like(cb.lower(vendor.get("name")), like),
+                cb.like(cb.lower(vendor.get("code")), like));
+        };
+    }
+
+    public static Specification<Expense> createdAfter(java.time.LocalDateTime since) {
+        return (root, query, cb) -> since == null
+            ? cb.conjunction()
+            : cb.greaterThanOrEqualTo(root.get("createdAt"), since);
     }
 }
