@@ -33,8 +33,9 @@ import lombok.extern.slf4j.Slf4j;
  *
  * Two things are refused:
  *
- *   · A built-in role. The initializer recreates it on the next restart, so deleting it
- *     achieves nothing and loses whatever was customised on it in the meantime.
+ *   · A built-in role. SUPERADMIN, ADMIN, USER and GUEST are read-only: the initializer
+ *     owns their definition and rewrites it on every startup, so any change here is either
+ *     undone overnight or, for a delete, loses every assignment to it in the meantime.
  *   · A role somebody still holds. Deleting it would strip their access silently, and
  *     nothing would record that it had happened; switching the role off is the reversible
  *     way to suspend a group, and reassigning people first is the deliberate way.
@@ -95,7 +96,8 @@ public class RoleDeleteService {
 
             if (Boolean.TRUE.equals(role.getIsSystemRole())) {
                 skipped.add(reason(obfuscated, role.getName(),
-                    "A built-in role — the system recreates it on every restart. Switch it off instead"));
+                    "A built-in role. These are read-only — switch off a custom role instead, "
+                        + "or remove people from this one"));
                 continue;
             }
 

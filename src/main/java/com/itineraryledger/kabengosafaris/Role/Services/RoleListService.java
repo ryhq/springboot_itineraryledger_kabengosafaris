@@ -145,6 +145,9 @@ public class RoleListService {
             .and(RoleSpecification.createdAfter(atStartOfDay(filter.getCreatedAfter())))
             .and(RoleSpecification.createdBefore(atEndOfDay(filter.getCreatedBefore())));
 
+        spec = narrowById(spec, filter.getPermissionId(), RoleSpecification::hasPermission, "permission");
+        spec = narrowById(spec, filter.getUserId(), RoleSpecification::hasUser, "user");
+
         // contradictory pairs cancel to no constraint, as everywhere else
         boolean wantsActive = filter.hasStatus("active");
         boolean wantsInactive = filter.hasStatus("inactive");
@@ -168,6 +171,27 @@ public class RoleListService {
         if (quality != null) spec = spec.and(quality);
 
         return spec;
+    }
+
+    /**
+     * Narrows by an obfuscated id, or narrows to nothing if it will not decode.
+     *
+     * An unreadable id must not quietly widen the list to every role — that is the opposite
+     * of what was asked for, and on this screen the list is who can do something.
+     */
+    private Specification<Role> narrowById(
+        Specification<Role> spec,
+        String obfuscated,
+        java.util.function.Function<Long, Specification<Role>> by,
+        String what
+    ) {
+        if (obfuscated == null || obfuscated.isBlank()) return spec;
+        try {
+            return spec.and(by.apply(idObfuscator.decodeId(obfuscated)));
+        } catch (Exception e) {
+            log.warn("Unreadable {} id on the roles filter: {}", what, obfuscated);
+            return spec.and((root, query, cb) -> cb.disjunction());
+        }
     }
 
     private Specification<Role> or(Specification<Role> spec, Specification<Role> extra) {

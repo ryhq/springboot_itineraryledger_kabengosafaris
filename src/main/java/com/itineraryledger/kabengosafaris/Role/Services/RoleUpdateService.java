@@ -30,6 +30,9 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional
 public class RoleUpdateService {
 
+    /** The one role that must never be switched off; see the guard in updateRole. */
+    private static final String SUPERADMIN = "SUPERADMIN";
+
     private final RoleRepository roleRepository;
     private final RoleGetService roleGetService;
     private final IdObfuscator idObfuscator;
@@ -89,29 +92,55 @@ public class RoleUpdateService {
         }
 
         /*
-         * A built-in role's KEY is protected, and only its key.
+         * Built-in roles are read-only apart from the one switch that is genuinely useful.
          *
-         * RoleInitializer looks these roles up by name on every startup. Rename
-         * SUPERADMIN and the next restart finds no SUPERADMIN, creates a second one, and
-         * the original drifts on as an orphan holding whatever it held — so the name is
-         * genuinely not ours to change.
+         * SUPERADMIN, ADMIN, USER and GUEST have their definition owned by RoleInitializer,
+         * which rewrites it on every startup — so editing a name, a description or a
+         * permission here is undone the next time the application restarts, and accepting a
+         * write that will quietly vanish is worse than refusing it, because the person who
+         * made it believes it held.
          *
-         * Everything else is fair game. Rewording ADMIN's description is harmless, and
-         * switching a built-in role off is a legitimate (if drastic) act that was already
-         * possible through PATCH /bulk — refusing it here only made the inline switch
-         * disagree with the bulk one, which is worse than either answer.
+         * The active flag is different: it is not part of the definition the initializer
+         * rewrites, so switching a built-in role off sticks, and it is the fastest legitimate
+         * way to suspend a whole group's access without unpicking assignments.
          */
-        if (Boolean.TRUE.equals(existing.getIsSystemRole())
-            && updateDTO.getName() != null
-            && !updateDTO.getName().isBlank()
-            && !existing.getName().equalsIgnoreCase(updateDTO.getName().trim())) {
-            log.warn("Attempted to rename system role: {}", existing.getName());
+        if (Boolean.TRUE.equals(existing.getIsSystemRole())) {
+            boolean editsDefinition =
+                (updateDTO.getName() != null && !updateDTO.getName().isBlank())
+                    || (updateDTO.getDisplayName() != null && !updateDTO.getDisplayName().isBlank())
+                    || updateDTO.getDescription() != null;
+
+            if (editsDefinition) {
+                log.warn("Attempted to edit the definition of system role: {}", existing.getName());
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        "A built-in role's name, description and permissions are read-only — the system "
+                            + "rewrites them on every restart, so the change would be undone. It can be "
+                            + "switched off, or you can create your own role.",
+                        "SYSTEM_ROLE_PROTECTED"
+                    )
+                );
+            }
+        }
+
+        /*
+         * SUPERADMIN is always active.
+         *
+         * Switching it off drops every permission from everybody holding it, which includes
+         * whoever is doing the switching — and the endpoint that would switch it back on is
+         * one of the permissions just lost. There is no route back from inside the
+         * application, so this is refused rather than confirmed.
+         */
+        if (SUPERADMIN.equalsIgnoreCase(existing.getName()) && Boolean.FALSE.equals(updateDTO.getActive())) {
+            log.warn("Refused an attempt to deactivate {}", SUPERADMIN);
             return ResponseEntity.badRequest().body(
                 ApiResponse.error(
                     400,
-                    "A built-in role's key cannot be changed — the system looks it up by name on every "
-                        + "startup. Its name on screen and its description can be edited.",
-                    "SYSTEM_ROLE_KEY_PROTECTED"
+                    "Super Administrator is always active. Switching it off would remove every "
+                        + "permission from everybody holding it, including the one needed to switch it "
+                        + "back on — there would be no way back in.",
+                    "SUPERADMIN_ALWAYS_ACTIVE"
                 )
             );
         }

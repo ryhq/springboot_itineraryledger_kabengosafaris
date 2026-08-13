@@ -179,11 +179,21 @@ public class RoleController {
      * An inactive role grants nothing — the authorities of everybody holding it drop
      * the permissions immediately — so this is the switch that suspends access without
      * unpicking assignments.
+     *
+     * Allowed on built-in roles, because the active flag is not part of the definition the
+     * initializer rewrites — but never for SUPERADMIN, which is the one switch with no way
+     * back. The single-record endpoint refuses the same thing, so a bulk call of one cannot
+     * be used to get a different answer.
      */
     @PatchMapping("/bulk")
     @PreAuthorize("hasAuthority('PERM_UPDATE_ROLE')")
     public ResponseEntity<?> bulkUpdate(@RequestBody BulkFlags.Request request) {
         return bulkFlags.apply("role", roleRepository, request, role -> {
+            if (Boolean.FALSE.equals(request.getIsActive())
+                && "SUPERADMIN".equalsIgnoreCase(role.getName())) {
+                throw new IllegalStateException(
+                    "Super Administrator is always active — switching it off would leave no way back in");
+            }
             if (request.getIsActive() != null) role.setActive(request.getIsActive());
         });
     }

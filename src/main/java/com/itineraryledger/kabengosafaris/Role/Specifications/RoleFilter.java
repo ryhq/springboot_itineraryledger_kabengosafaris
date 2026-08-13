@@ -31,6 +31,18 @@ public class RoleFilter {
     private List<String> statuses;
 
     /**
+     * Only roles that grant this permission, by obfuscated id.
+     *
+     * What the permission's own record page asks: who can actually do this. Answered by the
+     * roles list rather than a second endpoint, so the tab inherits its columns, counters,
+     * sort and paging instead of being a half-featured table of its own.
+     */
+    private String permissionId;
+
+    /** Only roles held by this user, by obfuscated id. */
+    private String userId;
+
+    /**
      * built-in / custom.
      *
      * Worth its own dimension because the two behave differently: a system role cannot

@@ -72,16 +72,25 @@ public class PermissionCatalogueRepairInitializer implements ApplicationRunner {
         if (misspelt.isEmpty()) return;
 
         int renamed = 0;
+        int removed = 0;
         for (Permission permission : misspelt) {
             String corrected = permission.getName().replace(WRONG_ENTITY, RIGHT_ENTITY);
 
             /*
-             * If the corrected name somehow already exists, renaming would break the
-             * unique constraint. Leave the stray one alone and say so — a duplicate
-             * is untidy, a failed startup is not.
+             * The corrected name already exists.
+             *
+             * This is the normal case on any database that started up between the JSON
+             * being fixed and this repair landing: the seeder created the four correct
+             * permissions, and the four misspelt ones stayed behind — still granted to
+             * every role, still listed in the catalogue under a section called
+             * "Taccommodation rate", and checked by nothing at all.
+             *
+             * Renaming is impossible (the name is unique) and leaving them is what put
+             * a phantom section in front of the reader, so they go. Unlinked from their
+             * roles first, because role_permissions has no cascade.
              */
             if (permissionRepository.existsByName(corrected)) {
-                log.warn("Cannot rename {} — {} already exists; leaving it", permission.getName(), corrected);
+                removed += unlinkAndDelete(permission) ? 1 : 0;
                 continue;
             }
 
@@ -99,21 +108,38 @@ public class PermissionCatalogueRepairInitializer implements ApplicationRunner {
             log.info("Permission catalogue repair: renamed {} {} permission(s) to {}",
                 renamed, WRONG_ENTITY, RIGHT_ENTITY);
         }
+        if (removed > 0) {
+            log.info("Permission catalogue repair: removed {} orphaned {} permission(s) — "
+                + "the correctly spelt ones already exist", removed, WRONG_ENTITY);
+        }
+    }
+
+    /**
+     * Drops a permission and every role's grant of it.
+     *
+     * Returns false rather than throwing: one stubborn row must not stop the application
+     * from starting, and the next restart will try again.
+     */
+    private boolean unlinkAndDelete(Permission permission) {
+        try {
+            List<Role> holders = roleRepository.findRolesByPermissionName(permission.getName());
+            for (Role role : holders) {
+                role.removePermission(permission);
+                roleRepository.save(role);
+            }
+            permissionRepository.delete(permission);
+            log.info("Removed orphaned permission {} (was granted by {} role(s))",
+                permission.getName(), holders.size());
+            return true;
+        } catch (Exception e) {
+            log.error("Could not remove orphaned permission {}", permission.getName(), e);
+            return false;
+        }
     }
 
     private void deleteJunkPermission() {
         Permission junk = permissionRepository.findByName(JUNK_PERMISSION).orElse(null);
         if (junk == null) return;
-
-        // Unlink first: role_permissions has no cascade, so a delete would fail on the FK.
-        List<Role> holders = roleRepository.findRolesByPermissionName(JUNK_PERMISSION);
-        for (Role role : holders) {
-            role.removePermission(junk);
-            roleRepository.save(role);
-        }
-
-        permissionRepository.delete(junk);
-        log.info("Permission catalogue repair: removed {} (granted PERM_{}, which nothing checks) from {} role(s)",
-            JUNK_PERMISSION, JUNK_PERMISSION, holders.size());
+        unlinkAndDelete(junk);
     }
 }
