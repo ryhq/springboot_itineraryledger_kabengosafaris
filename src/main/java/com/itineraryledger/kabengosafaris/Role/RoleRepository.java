@@ -94,6 +94,18 @@ public interface RoleRepository extends JpaRepository<Role, Long>, JpaSpecificat
      */
     List<Role> findByIdIn(Set<Long> ids);
 
+    /**
+     * How many roles grant each of the given permissions, in one query.
+     *
+     * The catalogue needs a grant count per row; asking per row is a query per
+     * permission across a page of twenty. Permissions no role grants are simply absent
+     * from the result, so the caller defaults them to zero.
+     *
+     * @return rows of [permissionId, count]
+     */
+    @Query("select p.id, count(r.id) from Role r join r.permissions p where p.id in :permissionIds group by p.id")
+    List<Object[]> countRolesByPermissionIds(@Param("permissionIds") java.util.Collection<Long> permissionIds);
+
     // ========================
     // NAVIGATION QUERIES (circular next/previous)
     // ========================

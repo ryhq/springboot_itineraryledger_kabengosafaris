@@ -46,7 +46,26 @@ public class UserDTO {
 
     private boolean mfaEnabled;
     private LocalDateTime mfaEnabledAt;
-    private Boolean mfaConfirmed = false; 
+    private Boolean mfaConfirmed = false;
     private LocalDateTime lastMfaVerification;
+
+    /**
+     * NEVER populate this on any list or admin response.
+     *
+     * It is the TOTP seed. Anyone holding it can generate that account's codes
+     * indefinitely, so handing it out alongside READ_USER would turn a read
+     * permission into the ability to sign in as anybody. It stays on the DTO only
+     * because MFA setup needs it for the enrolment QR, and @JsonInclude(NON_NULL)
+     * keeps it off the wire everywhere it is left unset.
+     */
     private String mfaSecret;
+
+    /**
+     * Access — which roles this account holds.
+     *
+     * The whole reason to look at a user is to answer "what can they do", and the
+     * answer is their roles; a user list without them is a staff directory.
+     */
+    private java.util.List<UserRoleRefDTO> roles;
+    private Integer roleCount;
 }

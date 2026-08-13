@@ -5,6 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Response.BulkFlags;
 import com.itineraryledger.kabengosafaris.Role.DTOs.CreateRoleDTO;
 import com.itineraryledger.kabengosafaris.Role.DTOs.RoleUserAssignmentDTO;
 import com.itineraryledger.kabengosafaris.Role.DTOs.UpdateRoleDTO;
@@ -21,9 +24,11 @@ import com.itineraryledger.kabengosafaris.Role.DTOs.UpdateRolePermissionsDTO;
 import com.itineraryledger.kabengosafaris.Role.Services.CreateRoleService;
 import com.itineraryledger.kabengosafaris.Role.Services.RoleDeleteService;
 import com.itineraryledger.kabengosafaris.Role.Services.RoleGetService;
+import com.itineraryledger.kabengosafaris.Role.Services.RoleListService;
 import com.itineraryledger.kabengosafaris.Role.Services.RolePermissionService;
 import com.itineraryledger.kabengosafaris.Role.Services.RoleUpdateService;
 import com.itineraryledger.kabengosafaris.Role.Services.RoleUserAssignmentService;
+import com.itineraryledger.kabengosafaris.Role.Specifications.RoleFilter;
 
 import jakarta.validation.Valid;
 import java.util.ArrayList;
@@ -60,6 +65,15 @@ public class RoleController {
 
     @Autowired
     private RoleUserAssignmentService roleUserAssignmentService;
+
+    @Autowired
+    private RoleListService roleListService;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private BulkFlags bulkFlags;
 
     /**
      * Create a new role
@@ -112,55 +126,66 @@ public class RoleController {
     }
 
     /**
-     * Get all roles with optional filtering and pagination
+     * Get all roles: the rows, the counters and the sort, in one response.
      *
-     * @param page Page number (0-based), default: 0
-     * @param size Page size, default: 10
-     * @param name Filter by role name partial match (optional)
-     * @param displayName Filter by display name partial match (optional)
-     * @param active Filter by active status (optional)
-     * @param isSystemRole Filter by system role status (optional)
-     * @param sortDirection Sort direction: "asc" or "desc", default: "desc"
-     * @return ResponseEntity with paginated roles or validation error
+     * The filter arrives as a @ModelAttribute so every dimension is a query param and
+     * the list's whole state lives in the URL. The older discrete params (name,
+     * displayName, active, isSystemRole) still bind, so existing callers are unaffected.
      *
-     * Example: GET /api/roles?page=0&size=10&active=true&sortDirection=desc
+     * Example: GET /api/roles?statuses=active&kinds=custom&qualities=noUsers
      */
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_ROLE')")
     public ResponseEntity<?> getAllRoles(
-        @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size,
-        @RequestParam(required = false) String name,
-        @RequestParam(required = false) String displayName,
-        @RequestParam(required = false) Boolean active,
-        @RequestParam(required = false) Boolean isSystemRole,
+        @ModelAttribute RoleFilter filter,
+        @RequestParam(required = false) Boolean includeStats,
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false) String sortDirection
     ) {
-        return roleGetService.getAllRoles(
-            page,
-            size,
-            name,
-            displayName,
-            active,
-            isSystemRole,
-            sortBy,
-            sortDirection
-        );
+        return roleListService.list(filter, includeStats, page, size, sortBy, sortDirection);
     }
 
     /**
-     * Get a single role by ID
+     * Get a single role, plus where it sits in the caller's filtered set.
      *
-     * @param id The obfuscated role ID
-     * @return ResponseEntity with ApiResponse containing role details
+     * The filter comes along so prev/next walks the same list the user was looking at
+     * rather than every role in id order.
      *
-     * Example: GET /api/roles/{id}
+     * Example: GET /api/roles/{id}?kinds=custom
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_ROLE')")
-    public ResponseEntity<ApiResponse<?>> getRole(@PathVariable String id) {
-        return roleGetService.getRole(id);
+    public ResponseEntity<ApiResponse<?>> getRole(
+        @PathVariable String id,
+        @ModelAttribute RoleFilter filter,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
+    ) {
+        return roleListService.getOne(id, filter, sortBy, sortDirection);
+    }
+
+    /** Whether this role can be deleted, and what is stopping it. */
+    @GetMapping("/{id}/deletable")
+    @PreAuthorize("hasAuthority('PERM_DELETE_ROLE')")
+    public ResponseEntity<ApiResponse<?>> deletable(@PathVariable String id) {
+        return roleDeleteService.checkDeletable(id);
+    }
+
+    /**
+     * Activating or deactivating a selection in one request.
+     *
+     * An inactive role grants nothing — the authorities of everybody holding it drop
+     * the permissions immediately — so this is the switch that suspends access without
+     * unpicking assignments.
+     */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_ROLE')")
+    public ResponseEntity<?> bulkUpdate(@RequestBody BulkFlags.Request request) {
+        return bulkFlags.apply("role", roleRepository, request, role -> {
+            if (request.getIsActive() != null) role.setActive(request.getIsActive());
+        });
     }
 
     /**

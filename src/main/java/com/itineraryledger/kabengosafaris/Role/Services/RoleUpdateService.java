@@ -88,14 +88,30 @@ public class RoleUpdateService {
             );
         }
 
-        // Prevent modification of system roles
-        if (existing.getIsSystemRole()) {
-            log.warn("Attempted to update system role: {}", existing.getName());
+        /*
+         * A built-in role's KEY is protected, and only its key.
+         *
+         * RoleInitializer looks these roles up by name on every startup. Rename
+         * SUPERADMIN and the next restart finds no SUPERADMIN, creates a second one, and
+         * the original drifts on as an orphan holding whatever it held — so the name is
+         * genuinely not ours to change.
+         *
+         * Everything else is fair game. Rewording ADMIN's description is harmless, and
+         * switching a built-in role off is a legitimate (if drastic) act that was already
+         * possible through PATCH /bulk — refusing it here only made the inline switch
+         * disagree with the bulk one, which is worse than either answer.
+         */
+        if (Boolean.TRUE.equals(existing.getIsSystemRole())
+            && updateDTO.getName() != null
+            && !updateDTO.getName().isBlank()
+            && !existing.getName().equalsIgnoreCase(updateDTO.getName().trim())) {
+            log.warn("Attempted to rename system role: {}", existing.getName());
             return ResponseEntity.badRequest().body(
                 ApiResponse.error(
                     400,
-                    "Cannot modify system roles",
-                    "SYSTEM_ROLE_PROTECTED"
+                    "A built-in role's key cannot be changed — the system looks it up by name on every "
+                        + "startup. Its name on screen and its description can be edited.",
+                    "SYSTEM_ROLE_KEY_PROTECTED"
                 )
             );
         }

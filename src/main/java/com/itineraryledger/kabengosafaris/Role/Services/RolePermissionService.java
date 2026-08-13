@@ -35,6 +35,16 @@ import java.util.stream.Collectors;
 @Slf4j
 public class RolePermissionService {
 
+    /**
+     * The entities ADMIN may delete in, mirroring RoleInitializer.
+     *
+     * Deleting a customer or an invoice destroys history; withdrawing an account or a
+     * role destroys none, and it is the one thing an administrator must not have to wait
+     * for a superadmin to do.
+     */
+    private static final java.util.Set<String> ADMINISTRATION_ENTITIES =
+        java.util.Set.of("USER", "ROLE", "PERMISSION");
+
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
     private final IdObfuscator idObfuscator;
@@ -451,9 +461,17 @@ public class RolePermissionService {
                 targetPermissions.addAll(entityPermissions);
                 break;
             case "ADMIN":
-                // CREATE, READ, UPDATE (no DELETE)
+                /*
+                 * CREATE, READ, UPDATE — plus DELETE over users, roles and permissions.
+                 *
+                 * Must match RoleInitializer.ADMINISTRATION_ENTITIES exactly. If it does
+                 * not, restoring defaults here strips a permission that the next restart
+                 * grants back, and the role appears to change on its own overnight.
+                 */
                 for (Permission permission : entityPermissions) {
-                    if (permission.getAction() != PermissionAction.DELETE) {
+                    boolean isDelete = permission.getAction() == PermissionAction.DELETE;
+                    boolean administration = ADMINISTRATION_ENTITIES.contains(permission.getEntity());
+                    if (!isDelete || administration) {
                         targetPermissions.add(permission);
                     }
                 }

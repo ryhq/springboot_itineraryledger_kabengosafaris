@@ -325,12 +325,6 @@
       "description": "Allows downloading backup files for off-site storage or recovery"
     },
     {
-      "name": "PERM_READ_LOG",
-      "action": "READ",
-      "entity": "LOG",
-      "description": "Allows viewing access logs, analytics, security analysis, and real-time log streams"
-    },
-    {
       "name": "RECORD_EXPENSE_PAYMENT",
       "action": "UPDATE",
       "entity": "EXPENSE",
@@ -341,6 +335,24 @@
       "action": "CANCEL",
       "entity": "EXPENSE",
       "description": "Allows cancelling an expense (-> CANCELLED)"
+    },
+    {
+      "name": "CONFIRM_CREDIT_NOTE",
+      "action": "UPDATE",
+      "entity": "CREDIT_NOTE",
+      "description": "Confirm a credit note, making it available to apply"
+    },
+    {
+      "name": "SEND_CREDIT_NOTE",
+      "action": "UPDATE",
+      "entity": "CREDIT_NOTE",
+      "description": "Send a credit note to the customer"
+    },
+    {
+      "name": "CONSUME_CREDIT_NOTE",
+      "action": "UPDATE",
+      "entity": "CREDIT_NOTE",
+      "description": "Apply a credit note against an invoice"
     }
   ]
 }

@@ -49,108 +49,16 @@ public class RoleGetService {
         this.idObfuscator = idObfuscator;
     }
 
-    /**
-     * Get all roles with pagination, filtering, and sorting
-     * Controller-style method for API endpoints
+    /*
+     * The list itself now lives in RoleListService, on the house contract: counters
+     * from the same specification as the rows, and record paging that walks the
+     * filtered set. The method that used to be here was replaced rather than kept
+     * alongside it — two list paths over one table drift, and then the counters and
+     * the rows disagree.
      *
-     * @param page Page number (0-based)
-     * @param size Page size
-     * @param name Filter by role name (partial match)
-     * @param displayName Filter by display name (partial match)
-     * @param active Filter by active status
-     * @param isSystemRole Filter by system role status
-     * @param sortDirection Sort direction ("asc" or "desc")
-     * @return ResponseEntity with paginated results or validation error
+     * What stays here are the two narrow questions the older screens ask: which roles
+     * does this user hold, and which roles hold this permission.
      */
-    public ResponseEntity<?> getAllRoles(
-        int page,
-        int size,
-        String name,
-        String displayName,
-        Boolean active,
-        Boolean isSystemRole,
-        String sortBy,
-        String sortDirection
-    ) {
-
-        log.debug("Fetching roles with filters - page: {}, size: {}, name: {}, displayName: {}, " +
-                "active: {}, isSystemRole: {}, sortBy: {}, sortDirection: {}",
-                page, size, name, displayName, active, isSystemRole, sortBy, sortDirection);
-
-        // Validate pagination parameters
-        if (page < 0) {
-            log.warn("Invalid page number: {}", page);
-            return ResponseEntity.badRequest().body("Page number cannot be negative");
-        }
-        if (size <= 0) {
-            log.warn("Invalid page size: {}", size);
-            return ResponseEntity.badRequest().body("Page size must be greater than 0");
-        }
-
-        // Sorting with validation
-        String validatedSortBy = validateSortField(sortBy);
-        if (validatedSortBy == null) {
-            log.warn("Invalid sort field: {}", sortBy);
-            return ResponseEntity.badRequest().body(
-                ApiResponse.error(400, "Invalid sort field: " + sortBy + ". Valid fields are: " + VALID_SORT_FIELDS, "INVALID_SORT_FIELD")
-            );
-        }
-
-        Sort.Direction direction = Sort.Direction.DESC;
-        if ("asc".equalsIgnoreCase(sortDirection)) {
-            direction = Sort.Direction.ASC;
-        }
-
-        Pageable paging = PageRequest.of(
-            page,
-            size,
-            Sort.by(direction, validatedSortBy)
-        );
-
-        // Build dynamic specification
-        Specification<Role> specification = Specification.unrestricted();
-
-        if (name != null && !name.isBlank()) {
-            specification = specification.and(RoleSpecification.nameLike(name));
-        }
-
-        if (displayName != null && !displayName.isBlank()) {
-            specification = specification.and(RoleSpecification.displayNameLike(displayName));
-        }
-
-        if (active != null) {
-            specification = specification.and(RoleSpecification.isActive(active));
-        }
-
-        if (isSystemRole != null) {
-            specification = specification.and(RoleSpecification.isSystemRole(isSystemRole));
-        }
-
-        // Execute query with specifications
-        Page<Role> pagedRoles = roleRepository.findAll(specification, paging);
-
-        // Convert to DTOs
-        List<RoleDTO> roleDTOs = getRoleDTOs(pagedRoles.getContent());
-
-        // Build response
-        Map<String, Object> response = new HashMap<>();
-        response.put("roles", roleDTOs);
-        response.put("currentPage", pagedRoles.getNumber());
-        response.put("totalItems", pagedRoles.getTotalElements());
-        response.put("totalPages", pagedRoles.getTotalPages());
-        response.put("validSortFields", VALID_SORT_FIELDS);
-        response.put("currentSortBy", validatedSortBy);
-        response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
-
-        log.info("Successfully fetched {} roles on page {}", roleDTOs.size(), page);
-        return ResponseEntity.ok(
-            ApiResponse.success(
-                200,
-                "Successfully retrieved roles.",
-                response
-            )
-        );
-    }
 
     /**
      * Get all roles for a specific user with pagination, filtering, and sorting

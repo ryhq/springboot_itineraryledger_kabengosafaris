@@ -91,6 +91,60 @@ public class RoleSpecification {
     }
 
     /**
+     * The one search box: the name, the display name and the description.
+     *
+     * A role is looked for by what it is called on screen ("Finance Officer") as often
+     * as by its key ("finance_officer"), so both have to hit.
+     */
+    public static Specification<Role> searchKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) return cb.conjunction();
+            String like = "%" + keyword.toLowerCase().trim() + "%";
+            return cb.or(
+                cb.like(cb.lower(root.get("name")), like),
+                cb.like(cb.lower(root.get("displayName")), like),
+                cb.like(cb.lower(root.get("description")), like));
+        };
+    }
+
+    /** Grants nothing — anybody holding it can sign in and do nothing. */
+    public static Specification<Role> hasNoPermissions() {
+        return (root, query, cb) -> cb.isEmpty(root.get("permissions"));
+    }
+
+    public static Specification<Role> hasAnyPermission() {
+        return (root, query, cb) -> cb.isNotEmpty(root.get("permissions"));
+    }
+
+    /**
+     * Nobody holds it.
+     *
+     * The join runs from User, because the many-to-many is owned there — a role has no
+     * `users` collection to test for emptiness.
+     */
+    public static Specification<Role> hasNoUsers() {
+        return (root, query, cb) -> {
+            var subquery = query.subquery(Long.class);
+            var userRoot = subquery.from(User.class);
+            var rolesJoin = userRoot.join("roles", JoinType.INNER);
+            subquery.select(rolesJoin.get("id"));
+            return cb.not(root.get("id").in(subquery));
+        };
+    }
+
+    public static Specification<Role> createdAfter(java.time.LocalDateTime since) {
+        return (root, query, cb) -> since == null
+            ? cb.conjunction()
+            : cb.greaterThanOrEqualTo(root.get("createdAt"), since);
+    }
+
+    public static Specification<Role> createdBefore(java.time.LocalDateTime until) {
+        return (root, query, cb) -> until == null
+            ? cb.conjunction()
+            : cb.lessThanOrEqualTo(root.get("createdAt"), until);
+    }
+
+    /**
      * Filter roles that have a specific permission
      *
      * This joins the role_permissions table to find roles that contain

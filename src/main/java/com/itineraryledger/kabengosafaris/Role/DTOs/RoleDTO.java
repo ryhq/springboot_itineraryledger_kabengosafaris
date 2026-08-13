@@ -67,4 +67,14 @@ public class RoleDTO {
      */
     private LocalDateTime updatedAt;
 
+    /**
+     * How much this role grants, and who holds it.
+     *
+     * Both are the questions the list is opened to answer. Without them the only way to
+     * find out whether "Reservations Assistant" means anything is to open it, and the
+     * two rot cases — grants nothing, nobody holds it — stay invisible.
+     */
+    private Integer permissionCount;
+    private Integer userCount;
+
 }

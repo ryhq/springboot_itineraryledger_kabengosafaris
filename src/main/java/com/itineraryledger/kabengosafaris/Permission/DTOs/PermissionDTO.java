@@ -68,4 +68,12 @@ public class PermissionDTO {
      * Timestamp when this permission was last updated
      */
     private LocalDateTime updatedAt;
+
+    /**
+     * How many roles grant this permission.
+     *
+     * Zero is the finding: nobody in the company can do the thing, and the endpoint
+     * behind it refuses every person who tries.
+     */
+    private Integer roleCount;
 }

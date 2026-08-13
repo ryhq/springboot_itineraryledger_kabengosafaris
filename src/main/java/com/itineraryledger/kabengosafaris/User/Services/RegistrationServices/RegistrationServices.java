@@ -67,6 +67,22 @@ public class RegistrationServices {
      * @throws RegistrationException if validation fails or user already exists
      */
     public User registerUser(RegistrationRequest request) {
+        return registerUser(request, true);
+    }
+
+    /**
+     * Register a new user, choosing whether to email the activation link.
+     *
+     * An administrator creating an account for a colleague goes through exactly this
+     * path — same uniqueness checks, same password policy, same expiry calculation —
+     * but occasionally wants the account in place without a mail going out yet (the
+     * person starts next month, or the invite will be resent later). Only that one
+     * decision differs, so it is a parameter rather than a second copy of the method.
+     *
+     * @param sendActivationEmail false to create the account silently; it stays
+     *                            disabled either way until somebody activates it
+     */
+    public User registerUser(RegistrationRequest request, boolean sendActivationEmail) {
         // Validate all required fields
         validateRegistrationRequest(request);
 
@@ -125,7 +141,11 @@ public class RegistrationServices {
         // Send registration email with activation link (asynchronously)
         // Note: This runs in the background and won't block the registration response
         // Any email sending errors will be logged but won't fail the registration
-        sendRegistrationEmail(savedUser);
+        if (sendActivationEmail) {
+            sendRegistrationEmail(savedUser);
+        } else {
+            log.info("Account {} created without an activation email, as requested", savedUser.getUsername());
+        }
 
         return savedUser;
     }

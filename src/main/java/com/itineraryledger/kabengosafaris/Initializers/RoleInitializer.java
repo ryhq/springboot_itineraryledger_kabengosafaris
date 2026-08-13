@@ -25,7 +25,8 @@ import java.util.Set;
  * This initializer creates default system roles with predefined permissions:
  *
  * 1. SUPERADMIN - Has ALL permissions (CREATE, READ, UPDATE, DELETE) on all entities
- * 2. ADMIN - Has all permissions EXCEPT DELETE on all entities
+ * 2. ADMIN - Has all permissions EXCEPT DELETE, plus full control of users, roles and
+ *    permissions including DELETE (see ADMINISTRATION_ENTITIES)
  * 3. USER - Has CREATE and READ permissions only (no UPDATE, no DELETE)
  * 4. GUEST - Has READ permission only on all entities
  *
@@ -223,14 +224,29 @@ public class RoleInitializer implements ApplicationRunner {
     }
 
     /**
-     * Get ADMIN permissions (all except DELETE)
+     * The entities an administrator runs the system through, rather than works in.
+     *
+     * Deleting a customer or an invoice destroys history somebody may need to answer
+     * for, which is why ADMIN is denied DELETE everywhere else. Deleting an account
+     * or a role destroys no history — it withdraws access — and it is the one thing
+     * an administrator must be able to do without waiting for a superadmin. Somebody
+     * leaves the company on a Friday; the person who can turn off their login has to
+     * be the person who is there.
+     */
+    private static final Set<String> ADMINISTRATION_ENTITIES = Set.of("USER", "ROLE", "PERMISSION");
+
+    /**
+     * Get ADMIN permissions (all except DELETE, which is still granted over
+     * users, roles and permissions — see ADMINISTRATION_ENTITIES)
      */
     private Set<Permission> getAdminPermissions() {
         List<Permission> allPermissions = permissionRepository.findByActiveTrue();
         Set<Permission> adminPermissions = new HashSet<>();
 
         for (Permission permission : allPermissions) {
-            if (permission.getAction() != PermissionAction.DELETE) {
+            boolean isDelete = permission.getAction() == PermissionAction.DELETE;
+            boolean administration = ADMINISTRATION_ENTITIES.contains(permission.getEntity());
+            if (!isDelete || administration) {
                 adminPermissions.add(permission);
             }
         }
@@ -301,7 +317,7 @@ public class RoleInitializer implements ApplicationRunner {
         Role admin = Role.builder()
                 .name("ADMIN")
                 .displayName("Administrator")
-                .description("Administrative access with create, read, and update permissions. Cannot delete entities.")
+                .description("Administrative access with create, read, and update permissions. Cannot delete business records, but has full control of users, roles and permissions.")
                 .active(true)
                 .isSystemRole(true)
                 .permissions(adminPermissions)
