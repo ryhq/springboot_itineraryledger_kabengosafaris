@@ -23,6 +23,7 @@ import com.itineraryledger.kabengosafaris.BookingInquiry.DTOs.BookingInquiryList
 import com.itineraryledger.kabengosafaris.BookingInquiry.Entity.BookingInquiry;
 import com.itineraryledger.kabengosafaris.BookingInquiry.Entity.InquiryStatus;
 import com.itineraryledger.kabengosafaris.BookingInquiry.Repository.BookingInquiryRepository;
+import com.itineraryledger.kabengosafaris.BookingInquiry.Specifications.BookingInquiryFilter;
 import com.itineraryledger.kabengosafaris.BookingInquiry.Specifications.BookingInquirySpecification;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.BudgetCategory;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripInterest;
@@ -39,6 +40,8 @@ public class BookingInquiryGetService {
 
     private final BookingInquiryRepository repository;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "code", "firstName", "lastName", "email", "country", "status",
@@ -47,12 +50,34 @@ public class BookingInquiryGetService {
     private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
-    public BookingInquiryGetService(BookingInquiryRepository repository, IdObfuscator idObfuscator) {
+    public BookingInquiryGetService(
+        BookingInquiryRepository repository,
+        IdObfuscator idObfuscator,
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
+    ) {
         this.repository = repository;
         this.idObfuscator = idObfuscator;
+        this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
     }
 
     public ResponseEntity<ApiResponse<?>> getInquiryById(String idObfuscated) {
+        return getInquiryById(idObfuscated, null, null, null);
+    }
+
+    /**
+     * One inquiry, plus where it sits in the set the caller was looking at.
+     *
+     * Paging out of an "unanswered" list must stay among unanswered ones — arrows
+     * that traverse a different set from the one on screen are worse than none.
+     */
+    public ResponseEntity<ApiResponse<?>> getInquiryById(
+        String idObfuscated,
+        BookingInquiryFilter filter,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching booking inquiry with ID: {}", idObfuscated);
         try {
             Long id;
@@ -74,6 +99,15 @@ public class BookingInquiryGetService {
 
             BookingInquiryDTO dto = convertToDTO(inquiry);
 
+            Specification<BookingInquiry> navSpec = buildSpec(
+                filter != null ? filter : new BookingInquiryFilter());
+            String navSortBy = validateSortField(sortBy) != null
+                ? validateSortField(sortBy) : "createdAt";
+            Map<String, Object> nav = recordNavigation.navigate(
+                BookingInquiry.class, navSpec, navSortBy, "asc".equalsIgnoreCase(sortDirection), id);
+            Long navNext = (Long) nav.get("nextRawId");
+            Long navPrevious = (Long) nav.get("previousRawId");
+
             Long nextId = repository.findNextId(id).orElse(null);
             Long previousId = repository.findPreviousId(id).orElse(null);
             if (nextId == null) nextId = repository.findFirstId().orElse(null);
@@ -81,8 +115,10 @@ public class BookingInquiryGetService {
 
             Map<String, Object> response = new HashMap<>();
             response.put("inquiry", dto);
-            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
-            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("nextId", navNext != null ? idObfuscator.encodeId(navNext) : null);
+            response.put("previousId", navPrevious != null ? idObfuscator.encodeId(navPrevious) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(ApiResponse.success(200, "Booking inquiry retrieved successfully", response));
         } catch (Exception e) {
@@ -94,15 +130,15 @@ public class BookingInquiryGetService {
     }
 
     public ResponseEntity<ApiResponse<?>> listInquiries(
-        Integer pageNumber, Integer pageSize, String sortBy, String sortDirection,
-        InquiryStatus status, BudgetCategory budgetCategory, TripType tripType,
-        String email, String country, LocalDateTime createdAfter, LocalDateTime createdBefore,
-        String keyword
+        BookingInquiryFilter filter,
+        Boolean includeStats,
+        Integer pageNumber, Integer pageSize, String sortBy, String sortDirection
     ) {
         log.info("Listing booking inquiries with filters");
         try {
             pageNumber = (pageNumber != null) ? pageNumber : 0;
-            pageSize = (pageSize != null) ? pageSize : 20;
+            // clamp: an unbounded size is a way to ask for the whole table by accident
+            pageSize = (pageSize != null && pageSize > 0) ? Math.min(pageSize, 100) : 20;
             sortDirection = (sortDirection != null && !sortDirection.isEmpty()) ? sortDirection : "desc";
 
             String validatedSortBy = validateSortField(sortBy);
@@ -117,15 +153,8 @@ public class BookingInquiryGetService {
                 : Sort.by(validatedSortBy).ascending();
             Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
 
-            Specification<BookingInquiry> spec = Specification.unrestricted();
-            if (status != null) spec = spec.and(BookingInquirySpecification.byStatus(status));
-            if (budgetCategory != null) spec = spec.and(BookingInquirySpecification.byBudgetCategory(budgetCategory));
-            if (tripType != null) spec = spec.and(BookingInquirySpecification.byTripType(tripType));
-            if (email != null && !email.isEmpty()) spec = spec.and(BookingInquirySpecification.byEmail(email));
-            if (country != null && !country.isEmpty()) spec = spec.and(BookingInquirySpecification.byCountry(country));
-            if (createdAfter != null) spec = spec.and(BookingInquirySpecification.createdAfter(createdAfter));
-            if (createdBefore != null) spec = spec.and(BookingInquirySpecification.createdBefore(createdBefore));
-            if (keyword != null && !keyword.isEmpty()) spec = spec.and(BookingInquirySpecification.searchKeyword(keyword));
+            Specification<BookingInquiry> spec = buildSpec(
+                filter != null ? filter : new BookingInquiryFilter());
 
             Page<BookingInquiry> page = repository.findAll(spec, pageable);
 
@@ -142,6 +171,13 @@ public class BookingInquiryGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection);
+            /*
+             * Counters for the WHOLE filtered set, from the same specification as
+             * the rows, so a card and the table under it cannot disagree.
+             */
+            if (!Boolean.FALSE.equals(includeStats)) {
+                response.put("stats", buildStats(spec));
+            }
 
             return ResponseEntity.ok().body(ApiResponse.success(200, "Booking inquiries retrieved successfully", response));
         } catch (Exception e) {
@@ -150,6 +186,85 @@ public class BookingInquiryGetService {
                 ApiResponse.error(500, "Failed to list booking inquiries", "INQUIRIES_LIST_FAILED")
             );
         }
+    }
+
+    /**
+     * ONE specification, shared by the rows, the counters and the record walk.
+     *
+     * Every dimension ORs inside itself and ANDs across — "luxury or mid-range,
+     * from Germany, still unanswered" is one question.
+     */
+    private Specification<BookingInquiry> buildSpec(BookingInquiryFilter filter) {
+        Specification<BookingInquiry> spec = Specification.<BookingInquiry>unrestricted()
+            .and(BookingInquirySpecification.byStatuses(filter.allStatuses()))
+            .and(BookingInquirySpecification.byBudgetCategories(filter.allBudgetCategories()))
+            .and(BookingInquirySpecification.byTripTypes(filter.allTripTypes()))
+            .and(BookingInquirySpecification.byCountries(filter.allCountries()))
+            .and(BookingInquirySpecification.startingAfter(filter.getStartingAfter()))
+            .and(BookingInquirySpecification.startingBefore(filter.getStartingBefore()));
+
+        if (filter.getEmail() != null && !filter.getEmail().isEmpty()) {
+            spec = spec.and(BookingInquirySpecification.byEmail(filter.getEmail()));
+        }
+        if (filter.getCreatedAfter() != null) {
+            spec = spec.and(BookingInquirySpecification.createdAfter(filter.getCreatedAfter()));
+        }
+        if (filter.getCreatedBefore() != null) {
+            spec = spec.and(BookingInquirySpecification.createdBefore(filter.getCreatedBefore()));
+        }
+        if (filter.getKeyword() != null && !filter.getKeyword().isEmpty()) {
+            spec = spec.and(BookingInquirySpecification.searchKeyword(filter.getKeyword()));
+        }
+        if (filter.getItineraryId() != null && !filter.getItineraryId().isBlank()) {
+            spec = spec.and(BookingInquirySpecification.byItineraryId(decode(filter.getItineraryId())));
+        }
+        if (filter.getCustomerId() != null && !filter.getCustomerId().isBlank()) {
+            spec = spec.and(BookingInquirySpecification.byCustomerId(decode(filter.getCustomerId())));
+        }
+
+        // the work queues, OR'd: "show me what needs doing"
+        Specification<BookingInquiry> queue = null;
+        if (filter.wants("unanswered")) queue = or(queue, BookingInquirySpecification.unanswered());
+        if (filter.wants("stale")) queue = or(queue, BookingInquirySpecification.staleFor(3));
+        if (filter.wants("noPhone")) queue = or(queue, BookingInquirySpecification.missingPhone());
+        if (filter.wants("travellingSoon")) queue = or(queue, BookingInquirySpecification.travellingWithin(30));
+        if (filter.wants("converted")) queue = or(queue, BookingInquirySpecification.converted(true));
+        if (queue != null) spec = spec.and(queue);
+
+        return spec;
+    }
+
+    private Specification<BookingInquiry> or(
+            Specification<BookingInquiry> spec, Specification<BookingInquiry> extra) {
+        return spec == null ? extra : spec.or(extra);
+    }
+
+    private Long decode(String obfuscated) {
+        try {
+            return idObfuscator.decodeId(obfuscated);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * The cards that head the list, every one of them reachable as a filter.
+     *
+     * They are all about what needs doing, because that is what an inquiry list
+     * is for: somebody asked for a safari and the only question is whether we
+     * have answered.
+     */
+    private Map<String, Object> buildStats(Specification<BookingInquiry> spec) {
+        return listStats.of(BookingInquiry.class, spec)
+            .total()
+            .breakdown("byStatus", InquiryStatus.values(), BookingInquirySpecification::byStatus)
+            .count("unanswered", BookingInquirySpecification.unanswered())
+            .count("stale", BookingInquirySpecification.staleFor(3))
+            .count("travellingSoon", BookingInquirySpecification.travellingWithin(30))
+            .count("noPhone", BookingInquirySpecification.missingPhone())
+            .count("converted", BookingInquirySpecification.converted(true))
+            .recency(BookingInquirySpecification::createdAfter)
+            .build();
     }
 
     private String validateSortField(String sortBy) {

@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.itineraryledger.kabengosafaris.ContactMessage.DTOs.UpdateContactMessageDTO;
+import com.itineraryledger.kabengosafaris.ContactMessage.Specifications.ContactMessageFilter;
 import com.itineraryledger.kabengosafaris.ContactMessage.Entity.ContactMessageStatus;
 import com.itineraryledger.kabengosafaris.ContactMessage.Services.ContactMessageDeleteService;
 import com.itineraryledger.kabengosafaris.ContactMessage.Services.ContactMessageGetService;
@@ -42,31 +43,28 @@ public class ContactMessageController {
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_CONTACT_MESSAGE')")
     public ResponseEntity<ApiResponse<?>> listMessages(
+        @ModelAttribute ContactMessageFilter filter,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
         @RequestParam(required = false, defaultValue = "20") Integer pageSize,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false, defaultValue = "desc") String sortDirection,
-        @RequestParam(required = false) ContactMessageStatus status,
-        @RequestParam(required = false) String email,
-        @RequestParam(required = false) String subject,
-        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAfter,
-        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdBefore,
-        @RequestParam(required = false) String keyword
+        @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/contact-messages - Listing messages with filters");
-        return getService.listMessages(
-            pageNumber, pageSize, sortBy, sortDirection,
-            status, email, subject, createdAfter, createdBefore, keyword
-        );
+        return getService.listMessages(filter, includeStats, pageNumber, pageSize, sortBy, sortDirection);
     }
 
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_CONTACT_MESSAGE')")
     public ResponseEntity<ApiResponse<?>> getMessageById(
-        @PathVariable String idObfuscated
+        @PathVariable String idObfuscated,
+        // the list's filters and sort, so prev/next walks that same set
+        @ModelAttribute ContactMessageFilter filter,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/contact-messages/{} - Fetching message by ID", idObfuscated);
-        return getService.getMessageById(idObfuscated);
+        return getService.getMessageById(idObfuscated, filter, sortBy, sortDirection);
     }
 
     @PutMapping("/{idObfuscated}")

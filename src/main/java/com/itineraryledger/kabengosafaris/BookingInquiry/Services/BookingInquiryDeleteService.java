@@ -1,6 +1,8 @@
 package com.itineraryledger.kabengosafaris.BookingInquiry.Services;
 
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.List;
 
 import org.springframework.aop.framework.AopContext;
@@ -35,34 +37,43 @@ public class BookingInquiryDeleteService {
         log.info("Deleting {} booking inquiries", idObfuscatedList.size());
 
         try {
-            List<Long> ids = new ArrayList<>();
-            for (String idObfuscated : idObfuscatedList) {
+            List<String> deletedIds = new ArrayList<>();
+            List<Map<String, Object>> skipped = new ArrayList<>();
+
+            for (String obfuscated : idObfuscatedList) {
+                Long id;
                 try {
-                    Long id = idObfuscator.decodeId(idObfuscated);
-                    ids.add(id);
+                    id = idObfuscator.decodeId(obfuscated);
                 } catch (Exception e) {
-                    log.warn("Failed to decode ID: {}", idObfuscated, e);
+                    skipped.add(skip(obfuscated, "Unreadable id"));
+                    continue;
+                }
+
+                if (!repository.existsById(id)) {
+                    skipped.add(skip(obfuscated, "No longer exists"));
+                    continue;
+                }
+
+                try {
+                    ((BookingInquiryDeleteService) AopContext.currentProxy()).deleteInquiry(id);
+                    deletedIds.add(obfuscated);
+                } catch (Exception e) {
+                    log.error("Error deleting inquiry: {}", id, e);
+                    skipped.add(skip(obfuscated,
+                        e.getMessage() != null ? e.getMessage() : "Could not be deleted"));
                 }
             }
 
-            int deletedCount = 0;
-            for (Long id : ids) {
-                try {
-                    if (repository.existsById(id)) {
-                        ((BookingInquiryDeleteService) AopContext.currentProxy()).deleteInquiry(id);
-                        deletedCount++;
-                        log.info("Booking inquiry deleted successfully: {}", id);
-                    } else {
-                        log.warn("Booking inquiry not found: {}", id);
-                    }
-                } catch (Exception e) {
-                    log.error("Error deleting booking inquiry: {}", id, e);
-                }
-            }
+            Map<String, Object> report = new HashMap<>();
+            report.put("deletedCount", deletedIds.size());
+            report.put("deletedIds", deletedIds);
+            report.put("skipped", skipped);
 
-            return ResponseEntity.ok().body(
-                ApiResponse.success(200, deletedCount + " inquiry(ies) deleted successfully", null)
-            );
+            String message = deletedIds.size()
+                + (deletedIds.size() == 1 ? " inquiry deleted" : " inquiries deleted")
+                + (skipped.isEmpty() ? "" : ", " + skipped.size() + " skipped");
+
+            return ResponseEntity.ok().body(ApiResponse.success(200, message, report));
 
         } catch (Exception e) {
             log.error("Error deleting booking inquiries", e);
@@ -75,5 +86,19 @@ public class BookingInquiryDeleteService {
     @AuditLogAnnotation(action = "DELETE_BOOKING_INQUIRY", description = "Deleting booking inquiry", entityType = "BookingInquiry", entityIdParamName = "id")
     public void deleteInquiry(Long id) {
         repository.deleteById(id);
+    }
+
+    /**
+     * Why one id did not go.
+     *
+     * A caller that asked about six needs to know which four survived and why —
+     * a bare count leaves them guessing, and guessing about deletions is worse
+     * than being told.
+     */
+    private Map<String, Object> skip(String id, String reason) {
+        Map<String, Object> entry = new HashMap<>();
+        entry.put("id", id);
+        entry.put("reason", reason);
+        return entry;
     }
 }

@@ -23,6 +23,7 @@ import com.itineraryledger.kabengosafaris.ContactMessage.DTOs.ContactMessageList
 import com.itineraryledger.kabengosafaris.ContactMessage.Entity.ContactMessage;
 import com.itineraryledger.kabengosafaris.ContactMessage.Entity.ContactMessageStatus;
 import com.itineraryledger.kabengosafaris.ContactMessage.Repository.ContactMessageRepository;
+import com.itineraryledger.kabengosafaris.ContactMessage.Specifications.ContactMessageFilter;
 import com.itineraryledger.kabengosafaris.ContactMessage.Specifications.ContactMessageSpecification;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -36,6 +37,8 @@ public class ContactMessageGetService {
 
     private final ContactMessageRepository repository;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "code", "name", "email", "subject", "status", "createdAt", "updatedAt"
@@ -43,12 +46,33 @@ public class ContactMessageGetService {
     private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
-    public ContactMessageGetService(ContactMessageRepository repository, IdObfuscator idObfuscator) {
+    public ContactMessageGetService(
+        ContactMessageRepository repository,
+        IdObfuscator idObfuscator,
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
+    ) {
+        this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
         this.repository = repository;
         this.idObfuscator = idObfuscator;
     }
 
     public ResponseEntity<ApiResponse<?>> getMessageById(String idObfuscated) {
+        return getMessageById(idObfuscated, null, null, null);
+    }
+
+    /**
+     * One message, plus where it sits in the set the caller was looking at.
+     *
+     * Paging out of an "unanswered" list must stay among unanswered ones.
+     */
+    public ResponseEntity<ApiResponse<?>> getMessageById(
+        String idObfuscated,
+        ContactMessageFilter filter,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching contact message with ID: {}", idObfuscated);
         try {
             Long id;
@@ -70,6 +94,15 @@ public class ContactMessageGetService {
 
             ContactMessageDTO dto = convertToDTO(message);
 
+            Specification<ContactMessage> navSpec = buildSpec(
+                filter != null ? filter : new ContactMessageFilter());
+            String navSortBy = validateSortField(sortBy) != null
+                ? validateSortField(sortBy) : "createdAt";
+            Map<String, Object> nav = recordNavigation.navigate(
+                ContactMessage.class, navSpec, navSortBy, "asc".equalsIgnoreCase(sortDirection), id);
+            Long navNext = (Long) nav.get("nextRawId");
+            Long navPrevious = (Long) nav.get("previousRawId");
+
             Long nextId = repository.findNextId(id).orElse(null);
             Long previousId = repository.findPreviousId(id).orElse(null);
             if (nextId == null) nextId = repository.findFirstId().orElse(null);
@@ -77,8 +110,10 @@ public class ContactMessageGetService {
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", dto);
-            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
-            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("nextId", navNext != null ? idObfuscator.encodeId(navNext) : null);
+            response.put("previousId", navPrevious != null ? idObfuscator.encodeId(navPrevious) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(ApiResponse.success(200, "Contact message retrieved successfully", response));
         } catch (Exception e) {
@@ -90,14 +125,15 @@ public class ContactMessageGetService {
     }
 
     public ResponseEntity<ApiResponse<?>> listMessages(
-        Integer pageNumber, Integer pageSize, String sortBy, String sortDirection,
-        ContactMessageStatus status, String email, String subject,
-        LocalDateTime createdAfter, LocalDateTime createdBefore, String keyword
+        ContactMessageFilter filter,
+        Boolean includeStats,
+        Integer pageNumber, Integer pageSize, String sortBy, String sortDirection
     ) {
         log.info("Listing contact messages with filters");
         try {
             pageNumber = (pageNumber != null) ? pageNumber : 0;
-            pageSize = (pageSize != null) ? pageSize : 20;
+            // clamp: an unbounded size is a way to ask for the whole table by accident
+            pageSize = (pageSize != null && pageSize > 0) ? Math.min(pageSize, 100) : 20;
             sortDirection = (sortDirection != null && !sortDirection.isEmpty()) ? sortDirection : "desc";
 
             String validatedSortBy = validateSortField(sortBy);
@@ -112,13 +148,8 @@ public class ContactMessageGetService {
                 : Sort.by(validatedSortBy).ascending();
             Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
 
-            Specification<ContactMessage> spec = Specification.unrestricted();
-            if (status != null) spec = spec.and(ContactMessageSpecification.byStatus(status));
-            if (email != null && !email.isEmpty()) spec = spec.and(ContactMessageSpecification.byEmail(email));
-            if (subject != null && !subject.isEmpty()) spec = spec.and(ContactMessageSpecification.bySubject(subject));
-            if (createdAfter != null) spec = spec.and(ContactMessageSpecification.createdAfter(createdAfter));
-            if (createdBefore != null) spec = spec.and(ContactMessageSpecification.createdBefore(createdBefore));
-            if (keyword != null && !keyword.isEmpty()) spec = spec.and(ContactMessageSpecification.searchKeyword(keyword));
+            Specification<ContactMessage> spec = buildSpec(
+                filter != null ? filter : new ContactMessageFilter());
 
             Page<ContactMessage> page = repository.findAll(spec, pageable);
 
@@ -135,6 +166,13 @@ public class ContactMessageGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection);
+            /*
+             * Counters for the WHOLE filtered set, from the same specification as
+             * the rows, so a card and the table under it cannot disagree.
+             */
+            if (!Boolean.FALSE.equals(includeStats)) {
+                response.put("stats", buildStats(spec));
+            }
 
             return ResponseEntity.ok().body(ApiResponse.success(200, "Contact messages retrieved successfully", response));
         } catch (Exception e) {
@@ -143,6 +181,68 @@ public class ContactMessageGetService {
                 ApiResponse.error(500, "Failed to list contact messages", "MESSAGES_LIST_FAILED")
             );
         }
+    }
+
+    /** ONE specification, shared by the rows, the counters and the record walk. */
+    private Specification<ContactMessage> buildSpec(ContactMessageFilter filter) {
+        Specification<ContactMessage> spec = Specification.<ContactMessage>unrestricted()
+            .and(ContactMessageSpecification.byStatuses(filter.allStatuses()));
+
+        if (filter.getEmail() != null && !filter.getEmail().isEmpty()) {
+            spec = spec.and(ContactMessageSpecification.byEmail(filter.getEmail()));
+        }
+        if (filter.getSubject() != null && !filter.getSubject().isEmpty()) {
+            spec = spec.and(ContactMessageSpecification.bySubject(filter.getSubject()));
+        }
+        if (filter.getCreatedAfter() != null) {
+            spec = spec.and(ContactMessageSpecification.createdAfter(filter.getCreatedAfter()));
+        }
+        if (filter.getCreatedBefore() != null) {
+            spec = spec.and(ContactMessageSpecification.createdBefore(filter.getCreatedBefore()));
+        }
+        if (filter.getKeyword() != null && !filter.getKeyword().isEmpty()) {
+            spec = spec.and(ContactMessageSpecification.searchKeyword(filter.getKeyword()));
+        }
+        if (filter.getCustomerId() != null && !filter.getCustomerId().isBlank()) {
+            try {
+                spec = spec.and(ContactMessageSpecification.byCustomerId(
+                    idObfuscator.decodeId(filter.getCustomerId())));
+            } catch (Exception e) {
+                log.warn("Unreadable customer id on the message filter");
+            }
+        }
+
+        // the work queues, OR'd
+        Specification<ContactMessage> queue = null;
+        if (filter.wants("unread")) queue = or(queue, ContactMessageSpecification.unread());
+        if (filter.wants("unanswered")) queue = or(queue, ContactMessageSpecification.unanswered());
+        if (filter.wants("stale")) queue = or(queue, ContactMessageSpecification.staleFor(2));
+        if (filter.wants("known")) queue = or(queue, ContactMessageSpecification.fromKnownCustomer(true));
+        if (queue != null) spec = spec.and(queue);
+
+        return spec;
+    }
+
+    private Specification<ContactMessage> or(
+            Specification<ContactMessage> spec, Specification<ContactMessage> extra) {
+        return spec == null ? extra : spec.or(extra);
+    }
+
+    /**
+     * The cards that head the list, every one of them reachable as a filter.
+     *
+     * All about what needs answering, because that is what a message list is for.
+     */
+    private Map<String, Object> buildStats(Specification<ContactMessage> spec) {
+        return listStats.of(ContactMessage.class, spec)
+            .total()
+            .breakdown("byStatus", ContactMessageStatus.values(), ContactMessageSpecification::byStatus)
+            .count("unread", ContactMessageSpecification.unread())
+            .count("unanswered", ContactMessageSpecification.unanswered())
+            .count("stale", ContactMessageSpecification.staleFor(2))
+            .count("known", ContactMessageSpecification.fromKnownCustomer(true))
+            .recency(ContactMessageSpecification::createdAfter)
+            .build();
     }
 
     private String validateSortField(String sortBy) {
