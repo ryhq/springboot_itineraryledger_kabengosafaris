@@ -75,4 +75,10 @@ public class BankAccountSpecification {
             cb.isNull(root.get("iban")),
             cb.equal(cb.trim(root.get("iban")), ""));
     }
+
+    public static Specification<BankAccount> byBankNames(java.util.List<String> bankNames) {
+        return (root, query, cb) -> bankNames == null || bankNames.isEmpty()
+            ? cb.conjunction()
+            : cb.lower(root.get("bankName")).in(bankNames.stream().map(String::toLowerCase).toList());
+    }
 }

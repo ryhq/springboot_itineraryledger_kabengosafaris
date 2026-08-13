@@ -24,6 +24,10 @@ public class BankAccountFilter {
     private String currency;
     private List<String> currencies;
 
+    /** Which bank holds it — the one dimension a row genuinely shares. */
+    private String bankName;
+    private List<String> bankNames;
+
     private Boolean isActive;
     private List<String> statuses;
 
@@ -36,6 +40,13 @@ public class BankAccountFilter {
      * Europe. Both are worth a card because a customer asked to pay and could not.
      */
     private List<String> qualities;
+
+    public List<String> allBankNames() {
+        List<String> out = new ArrayList<>();
+        if (bankNames != null) bankNames.stream().filter(b -> b != null && !b.isBlank()).forEach(out::add);
+        if (bankName != null && !bankName.isBlank() && !out.contains(bankName)) out.add(bankName);
+        return out;
+    }
 
     public List<String> allCurrencies() {
         List<String> out = new ArrayList<>();

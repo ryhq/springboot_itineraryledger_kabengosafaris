@@ -63,7 +63,8 @@ public class BankAccountGetService {
     /** ONE specification, shared by the rows, the counters and the record walk. */
     private Specification<BankAccount> buildSpec(BankAccountFilter filter) {
         Specification<BankAccount> spec = Specification.<BankAccount>unrestricted()
-            .and(BankAccountSpecification.byCurrencies(filter.allCurrencies()));
+            .and(BankAccountSpecification.byCurrencies(filter.allCurrencies()))
+            .and(BankAccountSpecification.byBankNames(filter.allBankNames()));
 
         if (filter.getIsActive() != null) {
             spec = spec.and(BankAccountSpecification.byIsActive(filter.getIsActive()));

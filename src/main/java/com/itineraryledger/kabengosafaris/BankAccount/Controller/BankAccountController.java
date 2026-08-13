@@ -93,4 +93,28 @@ public class BankAccountController {
         return bankAccountGetService.getAllBankAccounts(
             filter, includeStats, page, size, sortBy, sortDirection);
     }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.BankAccount.Repository.BankAccountRepository bulkFlagsRepository;
+
+    /**
+     * PATCH /bulk — one request for a whole selection.
+     *
+     * Retiring several accounts at once is the ordinary case when a bank is
+     * changed; doing it one at a time leaves the set half-changed with nobody the
+     * wiser. Reports per-id outcomes rather than a bare 200.
+     */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_BANK_ACCOUNT')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("bank account", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+        });
+    }
 }
