@@ -181,26 +181,6 @@ public class RolePermissionService {
 
         Role role = roleOpt.get();
 
-        /*
-         * A built-in role's permissions are read-only.
-         *
-         * RoleInitializer rewrites them on every startup, so a grant made here survives only
-         * until the next restart and a revocation does not survive at all — the initializer
-         * only ever adds. Accepting the write would show the switches in the state the caller
-         * chose while the system quietly disagreed, which is the worst outcome for a screen
-         * whose entire job is saying who can do what.
-         */
-        if (Boolean.TRUE.equals(role.getIsSystemRole())) {
-            log.warn("Attempted to edit permissions of system role: {}", role.getName());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                ApiResponse.error(
-                    HttpStatus.BAD_REQUEST.value(),
-                    "A built-in role's permissions are read-only — the system rewrites them on every "
-                        + "restart. Create your own role to grant a different set.",
-                    ErrorCode.OPERATION_NOT_ALLOWED.getCode()
-                )
-            );
-        }
 
         // Get all permissions for this entity
         List<Permission> entityPermissions = permissionRepository.findByEntity(entity.toUpperCase());
@@ -317,6 +297,27 @@ public class RolePermissionService {
         }
 
         Role role = roleOpt.get();
+
+        /*
+         * A built-in role's permissions are read-only.
+         *
+         * RoleInitializer rewrites them on every startup, so a grant made here survives only
+         * until the next restart and a revocation does not survive at all — the initializer
+         * only ever adds. Accepting the write would show the switches in the state the caller
+         * chose while the system quietly disagreed, which is the worst outcome for a screen
+         * whose entire job is saying who can do what.
+         */
+        if (Boolean.TRUE.equals(role.getIsSystemRole())) {
+            log.warn("Attempted to edit permissions of system role: {}", role.getName());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                ApiResponse.error(
+                    HttpStatus.BAD_REQUEST.value(),
+                    "A built-in role's permissions are read-only — the system rewrites them on every "
+                        + "restart. Create your own role to grant a different set.",
+                    ErrorCode.OPERATION_NOT_ALLOWED.getCode()
+                )
+            );
+        }
 
         // Get all permissions for this entity
         List<Permission> entityPermissions = permissionRepository.findByEntity(entity.toUpperCase());
