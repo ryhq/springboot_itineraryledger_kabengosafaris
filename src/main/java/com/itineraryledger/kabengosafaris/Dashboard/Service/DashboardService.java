@@ -261,13 +261,33 @@ public class DashboardService {
     // HELPER METHODS
     // ========================
 
+    /**
+     * What share of the quotes we actually sent came to something, as a percentage.
+     *
+     * The denominator is every quote that ever left the building — still out, accepted,
+     * converted, rejected or expired — not the ones sitting in SENT right now. Status is a
+     * position, not a history: a quote that is accepted is no longer SENT, so dividing by
+     * SENT alone measured winners against the dwindling pile of undecided ones. With eight
+     * accepted and two still out it reported 400%, and a rate above 100% is a number nobody
+     * can act on.
+     *
+     * DRAFT, READY and CANCELLED are excluded because the customer never saw them, and a
+     * quote nobody was shown says nothing about how persuasive we are.
+     *
+     * Returns null rather than 0.0 when nothing has been sent: "none of our quotes convert"
+     * and "we have not sent any" are opposite statements, and only one of them is bad.
+     */
     private Double calculateQuoteConversionRate() {
-        long totalSent = quoteRepository.countByStatus(QuoteStatus.SENT);
         long accepted = quoteRepository.countByStatus(QuoteStatus.ACCEPTED);
         long converted = quoteRepository.countByStatus(QuoteStatus.CONVERTED);
+        long everSent = accepted
+            + converted
+            + quoteRepository.countByStatus(QuoteStatus.SENT)
+            + quoteRepository.countByStatus(QuoteStatus.REJECTED)
+            + quoteRepository.countByStatus(QuoteStatus.EXPIRED);
 
-        if (totalSent == 0) return 0.0;
-        return ((double) (accepted + converted) / totalSent) * 100;
+        if (everSent == 0) return null;
+        return ((double) (accepted + converted) / everSent) * 100;
     }
 
     private Map<String, Long> getQuotesByStatus() {
@@ -1130,12 +1150,25 @@ public class DashboardService {
 
     public ResponseEntity<ApiResponse<?>> getSafariPnL(String safariIdObfuscated) {
         try {
-            // Build invoice index by safari id once (one query)
+            /*
+             * Build the invoice index by safari id once (one query).
+             *
+             * Cancelled invoices are excluded, because SafariBillingService excludes them and
+             * that is the figure the safari's own Money tab shows. When the two disagreed, the
+             * dashboard reported USD 50,030.48 against a safari whose record page said
+             * 26,304.76 — the difference being one cancelled invoice — and of the two numbers
+             * the one on the record is the one people trust. A dashboard that contradicts the
+             * record it summarises is worse than no dashboard.
+             *
+             * Note it is only CANCELLED that goes: a draft invoice still counts here, exactly
+             * as it counts there. The rule is copied deliberately rather than improved on,
+             * because the point is that the two agree.
+             */
             Map<Long, List<Invoice>> invoicesBySafari = new HashMap<>();
             for (Invoice inv : invoiceRepository.findAll()) {
-                if (inv.getSafari() != null) {
-                    invoicesBySafari.computeIfAbsent(inv.getSafari().getId(), k -> new ArrayList<>()).add(inv);
-                }
+                if (inv.getSafari() == null) continue;
+                if (inv.getStatus() == InvoiceStatus.CANCELLED) continue;
+                invoicesBySafari.computeIfAbsent(inv.getSafari().getId(), k -> new ArrayList<>()).add(inv);
             }
             // Same for expenses (only those linked to a safari — operational expenses excluded)
             Map<Long, List<Expense>> expensesBySafari = new HashMap<>();
