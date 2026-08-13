@@ -19,6 +19,7 @@ import com.itineraryledger.kabengosafaris.Permission.DTOs.PermissionDTO;
 import com.itineraryledger.kabengosafaris.Permission.Specifications.PermissionFilter;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Response.ListStats;
+import com.itineraryledger.kabengosafaris.Response.RecordNavigation;
 import com.itineraryledger.kabengosafaris.Role.RoleRepository;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 
@@ -40,18 +41,21 @@ public class PermissionService {
     private final IdObfuscator idObfuscator;
     private final RoleRepository roleRepository;
     private final ListStats listStats;
+    private final RecordNavigation recordNavigation;
 
     @Autowired
     public PermissionService(
         PermissionRepository permissionRepository,
         IdObfuscator idObfuscator,
         RoleRepository roleRepository,
-        ListStats listStats
+        ListStats listStats,
+        RecordNavigation recordNavigation
     ) {
         this.permissionRepository = permissionRepository;
         this.idObfuscator = idObfuscator;
         this.roleRepository = roleRepository;
         this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
     }
 
     private static final List<String> VALID_SORT_FIELDS = java.util.Arrays.asList(
@@ -207,58 +211,54 @@ public class PermissionService {
     }
 
     /**
-     * Get a single permission by obfuscated ID
+     * One permission, and where it sits in the set the caller came from.
      *
-     * @param idObfuscated The obfuscated permission ID
-     * @return ResponseEntity with ApiResponse containing permission or error
+     * The filter and sort ride along so prev/next walks the SAME rows the list was
+     * showing, and so the readout can say "3 of 12". It used to page by raw id over the
+     * whole table, which meant arrows on a filtered list quietly traversed a different
+     * set from the one on screen — and with nearly five hundred rows in id order, the
+     * next arrow landed somewhere unrelated. `position` and `total` were absent
+     * entirely, so the header had arrows and nothing to say where they were going.
      */
-    public ResponseEntity<ApiResponse<?>> getPermission(String idObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getPermission(
+        String idObfuscated,
+        PermissionFilter filter,
+        String sortBy,
+        String sortDirection
+    ) {
         try {
-            // Decode obfuscated ID
             Long id = idObfuscator.decodeId(idObfuscated);
-
             Permission permission = permissionRepository.findById(id).orElse(null);
 
             if (permission == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    ApiResponse.error(
-                        404,
-                        "Permission not found",
-                        "RESOURCE_NOT_FOUND"
-                    )
-                );
+                    ApiResponse.error(404, "Permission not found", "RESOURCE_NOT_FOUND"));
             }
 
-            PermissionDTO permissionDTO = convertToDTO(permission);
+            Specification<Permission> navSpec =
+                buildSpec(filter != null ? filter : new PermissionFilter());
+            String navSortBy = sortBy != null && VALID_SORT_FIELDS.contains(sortBy)
+                ? sortBy : DEFAULT_SORT_FIELD;
+            Map<String, Object> nav = recordNavigation.navigate(
+                Permission.class, navSpec, navSortBy, !"desc".equalsIgnoreCase(sortDirection), id);
 
-            // Circular navigation
-            Long nextId = permissionRepository.findNextId(id).orElse(null);
-            Long previousId = permissionRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = permissionRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = permissionRepository.findLastId().orElse(null);
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
-            response.put("permission", permissionDTO);
+            response.put("permission", withRoleCounts(List.of(permission)).get(0));
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok(
-                ApiResponse.success(
-                    200,
-                    "Successfully retrieved permission.",
-                    response
-                )
-            );
+                ApiResponse.success(200, "Successfully retrieved permission.", response));
 
         } catch (Exception e) {
             log.error("Error getting permission", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                ApiResponse.error(
-                    500,
-                    "Failed to get permission",
-                    "GET_PERMISSION_FAILED"
-                )
-            );
+                ApiResponse.error(500, "Failed to get permission", "GET_PERMISSION_FAILED"));
         }
     }
 

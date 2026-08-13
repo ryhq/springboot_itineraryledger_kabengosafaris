@@ -108,9 +108,14 @@ public class PermissionController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_PERMISSION')")
-    public ResponseEntity<ApiResponse<?>> getPermission(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<?>> getPermission(
+        @PathVariable String id,
+        @ModelAttribute PermissionFilter filter,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
+    ) {
         log.info("GET /api/permissions/{} - Fetching permission", id);
-        return permissionService.getPermission(id);
+        return permissionService.getPermission(id, filter, sortBy, sortDirection);
     }
 
     /**
