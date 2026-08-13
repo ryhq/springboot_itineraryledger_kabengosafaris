@@ -53,4 +53,26 @@ public class BankAccountSpecification {
             );
         };
     }
+
+    public static Specification<BankAccount> byCurrencies(java.util.List<String> currencies) {
+        return (root, query, cb) -> currencies == null || currencies.isEmpty()
+            ? cb.conjunction()
+            : cb.upper(root.get("currency")).in(currencies.stream().map(String::toUpperCase).toList());
+    }
+
+    /* What a transfer needs, and what stops one arriving. */
+
+    /** No SWIFT/BIC: an international transfer cannot be addressed to it. */
+    public static Specification<BankAccount> missingSwift() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("swiftBicCode")),
+            cb.equal(cb.trim(root.get("swiftBicCode")), ""));
+    }
+
+    /** No IBAN: a European transfer cannot be addressed to it. */
+    public static Specification<BankAccount> missingIban() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("iban")),
+            cb.equal(cb.trim(root.get("iban")), ""));
+    }
 }

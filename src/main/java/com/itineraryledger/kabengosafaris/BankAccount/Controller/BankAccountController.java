@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.itineraryledger.kabengosafaris.BankAccount.DTOs.CreateBankAccountDTO;
+import com.itineraryledger.kabengosafaris.BankAccount.Specifications.BankAccountFilter;
 import com.itineraryledger.kabengosafaris.BankAccount.DTOs.UpdateBankAccountDTO;
 import com.itineraryledger.kabengosafaris.BankAccount.Services.BankAccountCreateService;
 import com.itineraryledger.kabengosafaris.BankAccount.Services.BankAccountDeleteService;
@@ -81,16 +82,15 @@ public class BankAccountController {
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_BANK_ACCOUNT')")
     public ResponseEntity<?> getAllBankAccounts(
-        @RequestParam(required = false) String currency,
-        @RequestParam(required = false) Boolean isActive,
-        @RequestParam(required = false) Boolean isDefault,
-        @RequestParam(required = false) String search,
+        @ModelAttribute BankAccountFilter filter,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size,
         @RequestParam(required = false) String sortBy,
         @RequestParam(defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/bank-accounts - Fetching all bank accounts with filters");
-        return bankAccountGetService.getAllBankAccounts(page, size, currency, isActive, isDefault, search, sortBy, sortDirection);
+        return bankAccountGetService.getAllBankAccounts(
+            filter, includeStats, page, size, sortBy, sortDirection);
     }
 }

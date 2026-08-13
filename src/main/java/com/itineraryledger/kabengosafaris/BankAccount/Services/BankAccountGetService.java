@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import com.itineraryledger.kabengosafaris.BankAccount.DTOs.BankAccountDTO;
 import com.itineraryledger.kabengosafaris.BankAccount.Entity.BankAccount;
 import com.itineraryledger.kabengosafaris.BankAccount.Repository.BankAccountRepository;
+import com.itineraryledger.kabengosafaris.BankAccount.Specifications.BankAccountFilter;
 import com.itineraryledger.kabengosafaris.BankAccount.Specifications.BankAccountSpecification;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
@@ -38,6 +39,8 @@ public class BankAccountGetService {
 
     private final BankAccountRepository bankAccountRepository;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "accountCode", "accountName", "bankName", "currency", "isActive", "isDefault", "createdAt", "updatedAt"
@@ -45,9 +48,74 @@ public class BankAccountGetService {
     private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
-    public BankAccountGetService(BankAccountRepository bankAccountRepository, IdObfuscator idObfuscator) {
+    public BankAccountGetService(
+        BankAccountRepository bankAccountRepository,
+        IdObfuscator idObfuscator,
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
+    ) {
+        this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
         this.bankAccountRepository = bankAccountRepository;
         this.idObfuscator = idObfuscator;
+    }
+
+    /** ONE specification, shared by the rows, the counters and the record walk. */
+    private Specification<BankAccount> buildSpec(BankAccountFilter filter) {
+        Specification<BankAccount> spec = Specification.<BankAccount>unrestricted()
+            .and(BankAccountSpecification.byCurrencies(filter.allCurrencies()));
+
+        if (filter.getIsActive() != null) {
+            spec = spec.and(BankAccountSpecification.byIsActive(filter.getIsActive()));
+        }
+        if (filter.getStatuses() != null && !filter.getStatuses().isEmpty()) {
+            java.util.List<Boolean> states = filter.getStatuses().stream()
+                .map(state -> "active".equalsIgnoreCase(state) ? Boolean.TRUE
+                    : "inactive".equalsIgnoreCase(state) ? Boolean.FALSE : null)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+            // active AND inactive is every account: a contradiction cancels
+            if (states.size() == 1) {
+                spec = spec.and(BankAccountSpecification.byIsActive(states.get(0)));
+            }
+        }
+        if (filter.getIsDefault() != null) {
+            spec = spec.and(BankAccountSpecification.byIsDefault(filter.getIsDefault()));
+        }
+
+        String keyword = filter.effectiveKeyword();
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(BankAccountSpecification.searchByKeyword(keyword));
+        }
+
+        Specification<BankAccount> quality = null;
+        if (filter.wants("noSwift")) quality = or(quality, BankAccountSpecification.missingSwift());
+        if (filter.wants("noIban")) quality = or(quality, BankAccountSpecification.missingIban());
+        if (quality != null) spec = spec.and(quality);
+
+        return spec;
+    }
+
+    private Specification<BankAccount> or(
+            Specification<BankAccount> spec, Specification<BankAccount> extra) {
+        return spec == null ? extra : spec.or(extra);
+    }
+
+    /**
+     * The cards that head the list.
+     *
+     * No balances: this app records which account money moved through, never what
+     * is in one. A figure here would be a bank statement we have not seen.
+     */
+    private Map<String, Object> buildStats(Specification<BankAccount> spec) {
+        return listStats.of(BankAccount.class, spec)
+            .total()
+            .count("active", BankAccountSpecification.byIsActive(true))
+            .complement("inactive", "active")
+            .count("noSwift", BankAccountSpecification.missingSwift())
+            .count("noIban", BankAccountSpecification.missingIban())
+            .build();
     }
 
     private String validateSortField(String sortBy) {
@@ -72,19 +140,15 @@ public class BankAccountGetService {
      * @return ResponseEntity with paginated results or validation error
      */
     public ResponseEntity<?> getAllBankAccounts(
+        BankAccountFilter filter,
+        Boolean includeStats,
         int page,
         int size,
-        String currency,
-        Boolean isActive,
-        Boolean isDefault,
-        String search,
         String sortBy,
         String sortDirection
     ) {
 
-        log.debug("Fetching bank accounts with filters - page: {}, size: {}, currency: {}, isActive: {}, " +
-                "isDefault: {}, search: {}, sortBy: {}, sortDirection: {}",
-                page, size, currency, isActive, isDefault, search, sortBy, sortDirection);
+        log.debug("Fetching bank accounts - page: {}, size: {}, sortBy: {}", page, size, sortBy);
 
         // Validate sort field
         String validatedSortBy = validateSortField(sortBy);
@@ -117,24 +181,8 @@ public class BankAccountGetService {
             Sort.by(direction, validatedSortBy)
         );
 
-        // Build dynamic specification
-        Specification<BankAccount> specification = Specification.unrestricted();
-
-        if (currency != null && !currency.isBlank()) {
-            specification = specification.and(BankAccountSpecification.byCurrency(currency));
-        }
-
-        if (isActive != null) {
-            specification = specification.and(BankAccountSpecification.byIsActive(isActive));
-        }
-
-        if (isDefault != null) {
-            specification = specification.and(BankAccountSpecification.byIsDefault(isDefault));
-        }
-
-        if (search != null && !search.isBlank()) {
-            specification = specification.and(BankAccountSpecification.searchByKeyword(search));
-        }
+        Specification<BankAccount> specification =
+            buildSpec(filter != null ? filter : new BankAccountFilter());
 
         // Execute query with specifications
         Page<BankAccount> pagedBankAccounts = bankAccountRepository.findAll(specification, paging);
@@ -151,6 +199,14 @@ public class BankAccountGetService {
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("currentSortBy", validatedSortBy);
         response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+        response.put("pageSize", pagedBankAccounts.getSize());
+        /*
+         * Counters for the WHOLE filtered set, from the same specification as the
+         * rows, so a card and the table under it cannot disagree.
+         */
+        if (!Boolean.FALSE.equals(includeStats)) {
+            response.put("stats", buildStats(specification));
+        }
 
         log.info("Successfully fetched {} bank accounts on page {}", bankAccountDTOs.size(), page);
         return ResponseEntity.ok(
@@ -169,6 +225,20 @@ public class BankAccountGetService {
      * @return ResponseEntity with bank account or error
      */
     public ResponseEntity<ApiResponse<?>> getBankAccount(String idObfuscated) {
+        return getBankAccountById(idObfuscated, null, null, null);
+    }
+
+    /**
+     * One account, and where it sits in the set the caller was looking at.
+     *
+     * Paging out of a "no SWIFT" list must stay among accounts missing one.
+     */
+    public ResponseEntity<ApiResponse<?>> getBankAccountById(
+        String idObfuscated,
+        BankAccountFilter filter,
+        String sortBy,
+        String sortDirection
+    ) {
         try {
             // Decode obfuscated ID
             Long id = idObfuscator.decodeId(idObfuscated);
@@ -185,16 +255,21 @@ public class BankAccountGetService {
                 );
             }
 
-            // Navigation IDs
-            Long nextId = bankAccountRepository.findNextId(id).orElse(null);
-            Long previousId = bankAccountRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = bankAccountRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = bankAccountRepository.findLastId().orElse(null);
+            Specification<BankAccount> navSpec =
+                buildSpec(filter != null ? filter : new BankAccountFilter());
+            String navSortBy = validateSortField(sortBy) != null
+                ? validateSortField(sortBy) : "createdAt";
+            Map<String, Object> nav = recordNavigation.navigate(
+                BankAccount.class, navSpec, navSortBy, "asc".equalsIgnoreCase(sortDirection), id);
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("bankAccount", convertToDTO(bankAccount));
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok(
                 ApiResponse.success(
