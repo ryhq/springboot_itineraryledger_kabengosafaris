@@ -127,7 +127,21 @@ public class PermissionCatalogueRepairInitializer implements ApplicationRunner {
                 role.removePermission(permission);
                 roleRepository.save(role);
             }
+
+            /*
+             * Flush the unlinks before deleting the permission itself.
+             *
+             * Not for ordering — Hibernate already runs collection updates before entity
+             * deletes — but for containment. Without a flush, a foreign key that still
+             * refused would blow up at COMMIT, which is outside the try below and outside
+             * run()'s catch: one stubborn row would roll back the whole repair and the log
+             * would carry a transaction error rather than the name of the row that caused
+             * it. Flushing here makes each permission fail on its own, with its own message.
+             */
+            roleRepository.flush();
             permissionRepository.delete(permission);
+            permissionRepository.flush();
+
             log.info("Removed orphaned permission {} (was granted by {} role(s))",
                 permission.getName(), holders.size());
             return true;
