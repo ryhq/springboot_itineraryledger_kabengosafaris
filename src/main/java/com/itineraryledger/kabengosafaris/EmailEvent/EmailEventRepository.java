@@ -12,7 +12,8 @@ import java.util.Optional;
  * Repository for EmailEvent entity operations
  */
 @Repository
-public interface EmailEventRepository extends JpaRepository<EmailEvent, Long> {
+public interface EmailEventRepository extends JpaRepository<EmailEvent, Long>,
+        org.springframework.data.jpa.repository.JpaSpecificationExecutor<EmailEvent> {
 
     /**
      * Find an email event by its name

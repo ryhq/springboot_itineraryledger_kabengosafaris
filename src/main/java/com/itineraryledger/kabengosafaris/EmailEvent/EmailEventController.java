@@ -3,6 +3,7 @@ package com.itineraryledger.kabengosafaris.EmailEvent;
 import com.itineraryledger.kabengosafaris.EmailEvent.DTOs.UpdateEmailEventDTO;
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailEventGetService;
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailEventUpdateService;
+import com.itineraryledger.kabengosafaris.EmailEvent.Specifications.EmailEventFilter;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -56,10 +57,14 @@ public class EmailEventController {
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_EMAIL_EVENT')")
     public ResponseEntity<ApiResponse<?>> getAllEmailEvents(
+        @ModelAttribute EmailEventFilter filter,
+        @RequestParam(required = false) Boolean includeStats,
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false, defaultValue = "desc") String sortDirection
+        @RequestParam(required = false) String sortDirection
     ) {
-        return emailEventGetService.getAllEmailEvents(sortBy, sortDirection);
+        return emailEventGetService.getAllEmailEvents(filter, includeStats, page, size, sortBy, sortDirection);
     }
 
     /**
@@ -89,8 +94,13 @@ public class EmailEventController {
      */
     @GetMapping("/{eventId}")
     @PreAuthorize("hasAuthority('PERM_READ_EMAIL_EVENT')")
-    public ResponseEntity<ApiResponse<?>> getEmailEventById(@PathVariable String eventId) {
-        return emailEventGetService.getEmailEventById(eventId);
+    public ResponseEntity<ApiResponse<?>> getEmailEventById(
+        @PathVariable String eventId,
+        @ModelAttribute EmailEventFilter filter,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
+    ) {
+        return emailEventGetService.getEmailEventById(eventId, filter, sortBy, sortDirection);
     }
 
     /**
