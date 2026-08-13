@@ -25,6 +25,13 @@ public class PaymentDTO {
     // Invoice relationship
     private String invoiceId;
     private String invoiceCode;
+    private String invoiceTitle;
+    /* whose money it was and which trip it paid for — a cross-invoice list is
+       unreadable without them */
+    private String customerId;
+    private String customerName;
+    private String safariId;
+    private String safariName;
 
     // Payment details
     private BigDecimal amount;

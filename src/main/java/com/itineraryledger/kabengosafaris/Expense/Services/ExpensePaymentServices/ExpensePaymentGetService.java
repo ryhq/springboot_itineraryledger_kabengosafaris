@@ -64,6 +64,16 @@ public class ExpensePaymentGetService {
             .id(idObfuscator.encodeId(p.getId()))
             .expenseId(p.getExpense() != null ? idObfuscator.encodeId(p.getExpense().getId()) : null)
             .expenseCode(p.getExpense() != null ? p.getExpense().getExpenseCode() : null)
+            .expenseTitle(p.getExpense() != null ? p.getExpense().getTitle() : null)
+            // who we paid and which trip it was for
+            .vendorId(p.getExpense() != null && p.getExpense().getVendor() != null
+                ? idObfuscator.encodeId(p.getExpense().getVendor().getId()) : null)
+            .vendorName(p.getExpense() != null && p.getExpense().getVendor() != null
+                ? p.getExpense().getVendor().getName() : null)
+            .safariId(p.getExpense() != null && p.getExpense().getSafari() != null
+                ? idObfuscator.encodeId(p.getExpense().getSafari().getId()) : null)
+            .safariName(p.getExpense() != null && p.getExpense().getSafari() != null
+                ? p.getExpense().getSafari().getName() : null)
             .amount(p.getAmount())
             .currency(p.getCurrency())
             .paymentDate(p.getPaymentDate())

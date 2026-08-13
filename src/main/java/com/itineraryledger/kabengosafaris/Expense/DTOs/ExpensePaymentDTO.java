@@ -20,6 +20,12 @@ public class ExpensePaymentDTO {
 
     private String expenseId;
     private String expenseCode;
+    private String expenseTitle;
+    /* who we paid and which trip it was for */
+    private String vendorId;
+    private String vendorName;
+    private String safariId;
+    private String safariName;
 
     private BigDecimal amount;
     private String currency;

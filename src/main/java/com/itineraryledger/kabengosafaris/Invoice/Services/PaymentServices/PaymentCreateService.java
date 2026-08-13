@@ -372,10 +372,20 @@ public class PaymentCreateService {
             .createdAt(payment.getCreatedAt())
             .build();
 
-        // Set invoice relationship
+        // Set invoice relationship, and the context a cross-invoice list needs
         if (payment.getInvoice() != null) {
             dto.setInvoiceId(idObfuscator.encodeId(payment.getInvoice().getId()));
             dto.setInvoiceCode(payment.getInvoice().getInvoiceCode());
+            dto.setInvoiceTitle(payment.getInvoice().getTitle());
+
+            if (payment.getInvoice().getCustomer() != null) {
+                dto.setCustomerId(idObfuscator.encodeId(payment.getInvoice().getCustomer().getId()));
+                dto.setCustomerName(payment.getInvoice().getCustomer().getDisplayName());
+            }
+            if (payment.getInvoice().getSafari() != null) {
+                dto.setSafariId(idObfuscator.encodeId(payment.getInvoice().getSafari().getId()));
+                dto.setSafariName(payment.getInvoice().getSafari().getName());
+            }
         }
 
         // Set bank account
