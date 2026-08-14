@@ -73,9 +73,13 @@ public class TestimonySpecification {
      * work queue rather than a statistic.
      */
     public static Specification<Testimony> hasNoAdminResponse() {
-        return (root, query, cb) -> cb.or(
-            cb.isNull(root.get("adminResponse")),
-            cb.equal(cb.trim(root.get("adminResponse")), ""));
+        /*
+         * IS NULL only. adminResponse is @Lob, and TRIM()/comparison over a CLOB blows up in
+         * Hibernate 6 — this counter runs on every list call, so it took the whole listing
+         * down with it. A saved-but-empty reply therefore counts as answered, which is the
+         * lesser wrong: nobody saves a blank reply on purpose.
+         */
+        return (root, query, cb) -> cb.isNull(root.get("adminResponse"));
     }
 
     /** Praise that never made it onto the site — approval pending at 4 stars or better. */

@@ -166,4 +166,28 @@ public class HeroController {
         log.info("POST /api/heroes/reorder - Reordering heroes for page: {}", reorderDTO.getPage());
         return heroReorderService.reorderHeroes(reorderDTO);
     }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Hero.Repository.HeroRepository bulkFlagsRepository;
+
+    /**
+     * PATCH /bulk — show or hide a whole selection of banners at once.
+     *
+     * Only the flags present in the body apply, and it reports per-id outcomes rather than a
+     * bare 200 that hides what did not change. Without this, taking six banners off the site
+     * meant opening six records.
+     */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_HERO')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("banner", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+        });
+    }
 }

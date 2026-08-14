@@ -147,4 +147,30 @@ public class TestimonyController {
         log.info("DELETE /api/testimonies - Deleting {} testimonies", idObfuscatedList.size());
         return testimonyDeleteService.deleteTestimonies(idObfuscatedList);
     }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Testimony.Repository.TestimonyRepository bulkFlagsRepository;
+
+    /**
+     * PATCH /bulk — approve, feature or archive a whole selection at once.
+     *
+     * Reviews arrive in batches and are read in batches; approving twenty of them one record
+     * at a time is the kind of work nobody does, so they sit unpublished instead. Only the
+     * flags present in the body apply, and it reports per-id outcomes.
+     */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_TESTIMONY')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("review", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) entity.setIsActive(request.getIsActive());
+            if (request.getIsApproved() != null) entity.setIsApproved(request.getIsApproved());
+            if (request.getIsFeatured() != null) entity.setIsFeatured(request.getIsFeatured());
+        });
+    }
 }

@@ -41,6 +41,9 @@ public class BulkFlags {
         private Boolean isWebActive;
         private Boolean isBlacklisted;
         private Boolean isVip;
+        /** reviews: approved puts one on the site, featured picks it out */
+        private Boolean isApproved;
+        private Boolean isFeatured;
     }
 
     /**

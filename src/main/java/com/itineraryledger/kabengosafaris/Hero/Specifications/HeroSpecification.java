@@ -89,9 +89,13 @@ public class HeroSpecification {
     /**
      * The one search box: the words a banner actually shows.
      *
-     * Title, subtitle, description and the button's own text — somebody looking for the
-     * banner that says "Book your safari" is as likely to remember the button as the
-     * heading.
+     * Title, subtitle and the button's own text — somebody hunting for the banner that says
+     * "Book your safari" is as likely to remember the button as the heading.
+     *
+     * NOT the description, which is @Lob: LOWER() over a CLOB blows up in Hibernate 6, and
+     * every keystroke came back a 500. Testimony's search carries the same note for the
+     * same reason. If the body text ever has to be searchable, drop @Lob from the mapping
+     * rather than reaching for it here.
      */
     public static Specification<Hero> searchKeyword(String keyword) {
         return (root, query, cb) -> {
@@ -100,7 +104,6 @@ public class HeroSpecification {
             return cb.or(
                 cb.like(cb.lower(root.get("title")), like),
                 cb.like(cb.lower(root.get("subtitle")), like),
-                cb.like(cb.lower(root.get("description")), like),
                 cb.like(cb.lower(root.get("ctaText")), like));
         };
     }
