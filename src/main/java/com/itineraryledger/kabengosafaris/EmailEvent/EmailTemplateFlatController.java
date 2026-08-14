@@ -25,6 +25,7 @@ import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailTemplateTestS
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailTemplateUpdateService;
 import com.itineraryledger.kabengosafaris.EmailEvent.Specifications.EmailTemplateFilter;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Response.BulkFlags;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +54,8 @@ public class EmailTemplateFlatController {
     private final EmailTemplateUpdateService updateService;
     private final EmailTemplateDeleteService deleteService;
     private final EmailTemplateTestService testService;
+    private final EmailTemplateRepository templateRepository;
+    private final BulkFlags bulkFlags;
 
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_EMAIL_TEMPLATE')")
@@ -98,6 +101,21 @@ public class EmailTemplateFlatController {
         dto.setIsDefault(request.getIsDefault());
         dto.setEnabled(request.getEnabled());
         return createService.createTemplate(request.getEventId(), dto);
+    }
+
+    /**
+     * Enabling or disabling a selection in one request.
+     *
+     * Only `enabled` is offered. Which template an email sends is a choice between siblings
+     * — turning several on at once cannot express it, and a bulk control that silently
+     * picked a winner would be worse than not having one.
+     */
+    @org.springframework.web.bind.annotation.PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_TEMPLATE')")
+    public ResponseEntity<?> bulkUpdate(@RequestBody BulkFlags.Request request) {
+        return bulkFlags.apply("template", templateRepository, request, template -> {
+            if (request.getIsActive() != null) template.setEnabled(request.getIsActive());
+        });
     }
 
     @PutMapping("/{id}")

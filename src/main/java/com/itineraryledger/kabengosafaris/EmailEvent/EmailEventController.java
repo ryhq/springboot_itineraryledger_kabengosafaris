@@ -25,6 +25,13 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class EmailEventController {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private EmailEventRepository emailEventRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+
     private final EmailEventGetService emailEventGetService;
     private final EmailEventUpdateService emailEventUpdateService;
 
@@ -54,6 +61,24 @@ public class EmailEventController {
      *   ]
      * }
      */
+    /**
+     * Switching a selection on or off in one request.
+     *
+     * The only thing about an email event anybody here owns. Off means nothing is sent when
+     * it fires and nobody is told — not the customer, not the office — so it is worth being
+     * able to do deliberately across several at once rather than one at a time.
+     */
+    @org.springframework.web.bind.annotation.PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_EVENT')")
+    public ResponseEntity<?> bulkUpdate(
+        @org.springframework.web.bind.annotation.RequestBody
+        com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("email", emailEventRepository, request, event -> {
+            if (request.getIsActive() != null) event.setEnabled(request.getIsActive());
+        });
+    }
+
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_EMAIL_EVENT')")
     public ResponseEntity<ApiResponse<?>> getAllEmailEvents(
