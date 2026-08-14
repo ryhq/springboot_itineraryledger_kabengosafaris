@@ -185,7 +185,16 @@ public class PdfTemplateGetService {
                 );
             }
 
+            /*
+             * The record carries its layout.
+             *
+             * The list deliberately does not — a layout is a whole HTML document and twenty of
+             * them is megabytes for a table of names — but the record IS the layout, and
+             * fetching it separately meant the editor opened on a blank page while the record
+             * claimed to have loaded.
+             */
             PdfTemplateDTO dto = mapToDTO(template);
+            dto.setContent(storageService.readTemplateFile(template.getFileName()));
 
             // Circular navigation
             Long nextId = pdfTemplateRepository.findNextId(id).orElse(null);
