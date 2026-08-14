@@ -18,11 +18,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Response.ListStats;
+import com.itineraryledger.kabengosafaris.Response.RecordNavigation;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import com.itineraryledger.kabengosafaris.Testimony.Entity.Testimony;
 import com.itineraryledger.kabengosafaris.Testimony.Entity.TestimonyImage;
 import com.itineraryledger.kabengosafaris.Testimony.Enums.TestimonySource;
 import com.itineraryledger.kabengosafaris.Testimony.Repository.TestimonyRepository;
+import com.itineraryledger.kabengosafaris.Testimony.Specifications.TestimonyFilter;
 import com.itineraryledger.kabengosafaris.Testimony.Specifications.TestimonySpecification;
 import com.itineraryledger.kabengosafaris.Testimony.DTOs.TestimonyDTO;
 import com.itineraryledger.kabengosafaris.Testimony.DTOs.TestimonyListItemDTO;
@@ -40,6 +43,8 @@ public class TestimonyGetService {
     private final IdObfuscator idObfuscator;
     private final TestimonyImageStorageService storageService;
     private final PublicTranslationService publicTranslationService;
+    private final ListStats listStats;
+    private final RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "authorName", "rating", "source", "reviewDate", "isApproved", "isFeatured",
@@ -52,15 +57,34 @@ public class TestimonyGetService {
         TestimonyRepository testimonyRepository,
         IdObfuscator idObfuscator,
         TestimonyImageStorageService storageService,
-        PublicTranslationService publicTranslationService
+        PublicTranslationService publicTranslationService,
+        ListStats listStats,
+        RecordNavigation recordNavigation
     ) {
         this.testimonyRepository = testimonyRepository;
         this.idObfuscator = idObfuscator;
         this.storageService = storageService;
         this.publicTranslationService = publicTranslationService;
+        this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
     }
 
     public ResponseEntity<ApiResponse<?>> getTestimonyById(String idObfuscated) {
+        return getTestimonyById(idObfuscated, null, null, null);
+    }
+
+    /**
+     * One review, plus where it sits in the set the caller was looking at.
+     *
+     * The filter and sort come from the list page, so working through the pending queue
+     * with the arrows stays inside the pending queue.
+     */
+    public ResponseEntity<ApiResponse<?>> getTestimonyById(
+        String idObfuscated,
+        TestimonyFilter filter,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching testimony with ID: {}", idObfuscated);
         try {
             Long id;
@@ -82,15 +106,26 @@ public class TestimonyGetService {
 
             TestimonyDTO dto = convertToDTO(testimony);
 
-            Long nextId = testimonyRepository.findNextId(id).orElse(null);
-            Long previousId = testimonyRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = testimonyRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = testimonyRepository.findLastId().orElse(null);
+            /*
+             * The walk runs over the SAME specification the list used, in the same order.
+             * It used to page over every review by id, so the arrows left the filtered set
+             * the moment anybody used a filter.
+             */
+            Specification<Testimony> navSpec = buildSpec(filter != null ? filter : new TestimonyFilter());
+            String navSortBy = validateSortField(sortBy) != null ? validateSortField(sortBy) : DEFAULT_SORT_FIELD;
+            boolean ascending = "asc".equalsIgnoreCase(sortDirection);
+
+            Map<String, Object> nav = recordNavigation.navigate(
+                Testimony.class, navSpec, navSortBy, ascending, id);
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("testimony", dto);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(ApiResponse.success(200, "Testimony retrieved successfully", response));
         } catch (Exception e) {
@@ -229,13 +264,37 @@ public class TestimonyGetService {
         }
     }
 
+    /** Kept so any caller still passing loose parameters keeps working. */
     public ResponseEntity<ApiResponse<?>> listTestimonies(
         Integer pageNumber, Integer pageSize, String sortBy, String sortDirection,
         String authorName, TestimonySource source, Integer rating, Integer minRating, Integer maxRating,
         Boolean isApproved, Boolean isFeatured, Boolean isVerifiedBooking, Boolean isActive,
         String sentimentTag, String customerId, String safariId, String keyword
     ) {
+        TestimonyFilter filter = new TestimonyFilter();
+        filter.setAuthorName(authorName);
+        filter.setSource(source);
+        filter.setRating(rating);
+        filter.setMinRating(minRating);
+        filter.setMaxRating(maxRating);
+        filter.setIsApproved(isApproved);
+        filter.setIsFeatured(isFeatured);
+        filter.setIsVerifiedBooking(isVerifiedBooking);
+        filter.setIsActive(isActive);
+        filter.setSentimentTag(sentimentTag);
+        filter.setCustomerId(customerId);
+        filter.setSafariId(safariId);
+        filter.setKeyword(keyword);
+        return listTestimonies(filter, null, pageNumber, pageSize, sortBy, sortDirection);
+    }
+
+    public ResponseEntity<ApiResponse<?>> listTestimonies(
+        TestimonyFilter filter,
+        Boolean includeStats,
+        Integer pageNumber, Integer pageSize, String sortBy, String sortDirection
+    ) {
         log.info("Listing testimonies with filters");
+        TestimonyFilter active = filter != null ? filter : new TestimonyFilter();
         try {
             pageNumber = (pageNumber != null) ? pageNumber : 0;
             pageSize = (pageSize != null) ? pageSize : 20;
@@ -254,26 +313,7 @@ public class TestimonyGetService {
                 : Sort.by(validatedSortBy).ascending();
             Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
 
-            Specification<Testimony> spec = Specification.unrestricted();
-            if (authorName != null && !authorName.isEmpty()) spec = spec.and(TestimonySpecification.byAuthorName(authorName));
-            if (source != null) spec = spec.and(TestimonySpecification.bySource(source));
-            if (rating != null) spec = spec.and(TestimonySpecification.byRating(rating));
-            if (minRating != null) spec = spec.and(TestimonySpecification.byMinRating(minRating));
-            if (maxRating != null) spec = spec.and(TestimonySpecification.byMaxRating(maxRating));
-            if (isApproved != null) spec = spec.and(TestimonySpecification.isApproved(isApproved));
-            if (isFeatured != null) spec = spec.and(TestimonySpecification.isFeatured(isFeatured));
-            if (isVerifiedBooking != null) spec = spec.and(TestimonySpecification.isVerifiedBooking(isVerifiedBooking));
-            if (isActive != null) spec = spec.and(TestimonySpecification.isActive(isActive));
-            if (sentimentTag != null && !sentimentTag.isEmpty()) spec = spec.and(TestimonySpecification.bySentimentTag(sentimentTag));
-            if (keyword != null && !keyword.isEmpty()) spec = spec.and(TestimonySpecification.searchKeyword(keyword));
-            if (customerId != null && !customerId.isEmpty()) {
-                try { spec = spec.and(TestimonySpecification.byCustomerId(idObfuscator.decodeId(customerId))); }
-                catch (Exception e) { log.warn("Invalid customerId: {}", customerId); }
-            }
-            if (safariId != null && !safariId.isEmpty()) {
-                try { spec = spec.and(TestimonySpecification.bySafariId(idObfuscator.decodeId(safariId))); }
-                catch (Exception e) { log.warn("Invalid safariId: {}", safariId); }
-            }
+            Specification<Testimony> spec = buildSpec(active);
 
             Page<Testimony> testimonyPage = testimonyRepository.findAll(spec, pageable);
 
@@ -290,6 +330,13 @@ public class TestimonyGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection);
+            /*
+             * Counters for the WHOLE filtered set, from the same specification as the rows,
+             * so a card and the table under it cannot disagree.
+             */
+            if (!Boolean.FALSE.equals(includeStats)) {
+                response.put("stats", buildStats(spec));
+            }
 
             return ResponseEntity.ok().body(ApiResponse.success(200, "Testimonies retrieved successfully", response));
         } catch (Exception e) {
@@ -298,6 +345,95 @@ public class TestimonyGetService {
                 ApiResponse.error(500, "Failed to list testimonies", "TESTIMONIES_LIST_FAILED")
             );
         }
+    }
+
+    /**
+     * One specification, used by the rows, the cards and the record walk.
+     *
+     * OR inside a dimension, AND across dimensions — so "Google or TripAdvisor, pending,
+     * one or two stars" reads the way somebody means it.
+     */
+    private Specification<Testimony> buildSpec(TestimonyFilter filter) {
+        Specification<Testimony> spec = Specification.unrestricted();
+
+        if (filter.getKeyword() != null && !filter.getKeyword().isBlank()) {
+            spec = spec.and(TestimonySpecification.searchKeyword(filter.getKeyword()));
+        }
+        if (filter.getAuthorName() != null && !filter.getAuthorName().isBlank()) {
+            spec = spec.and(TestimonySpecification.byAuthorName(filter.getAuthorName()));
+        }
+        if (!filter.allSources().isEmpty()) {
+            spec = spec.and(TestimonySpecification.sourceIn(filter.allSources()));
+        }
+        if (!filter.allRatings().isEmpty()) {
+            spec = spec.and(TestimonySpecification.ratingIn(filter.allRatings()));
+        }
+        if (filter.getMinRating() != null) spec = spec.and(TestimonySpecification.byMinRating(filter.getMinRating()));
+        if (filter.getMaxRating() != null) spec = spec.and(TestimonySpecification.byMaxRating(filter.getMaxRating()));
+
+        Boolean approved = filter.resolvedApproved();
+        if (approved != null) spec = spec.and(TestimonySpecification.isApproved(approved));
+        Boolean active = filter.resolvedActive();
+        if (active != null) spec = spec.and(TestimonySpecification.isActive(active));
+
+        // flags are additive: asking for featured AND verified means both
+        if (filter.hasFlag("featured") || Boolean.TRUE.equals(filter.getIsFeatured())) {
+            spec = spec.and(TestimonySpecification.isFeatured(true));
+        } else if (Boolean.FALSE.equals(filter.getIsFeatured())) {
+            spec = spec.and(TestimonySpecification.isFeatured(false));
+        }
+        if (filter.hasFlag("verified") || Boolean.TRUE.equals(filter.getIsVerifiedBooking())) {
+            spec = spec.and(TestimonySpecification.isVerifiedBooking(true));
+        } else if (Boolean.FALSE.equals(filter.getIsVerifiedBooking())) {
+            spec = spec.and(TestimonySpecification.isVerifiedBooking(false));
+        }
+        if (filter.hasFlag("answered")) spec = spec.and(TestimonySpecification.hasAdminResponse());
+
+        if (filter.wants("unanswered")) spec = spec.and(TestimonySpecification.hasNoAdminResponse());
+        if (filter.wants("unpublishedPraise")) spec = spec.and(TestimonySpecification.isUnpublishedPraise());
+        if (filter.wants("critical")) spec = spec.and(TestimonySpecification.isCritical());
+
+        if (filter.getSentimentTag() != null && !filter.getSentimentTag().isBlank()) {
+            spec = spec.and(TestimonySpecification.bySentimentTag(filter.getSentimentTag()));
+        }
+        if (filter.getCreatedAfter() != null) spec = spec.and(TestimonySpecification.createdAfter(filter.getCreatedAfter()));
+        if (filter.getCreatedBefore() != null) spec = spec.and(TestimonySpecification.createdBefore(filter.getCreatedBefore()));
+
+        // an id that will not decode is a filter nobody asked for, not a 500
+        if (filter.getCustomerId() != null && !filter.getCustomerId().isBlank()) {
+            try { spec = spec.and(TestimonySpecification.byCustomerId(idObfuscator.decodeId(filter.getCustomerId()))); }
+            catch (Exception e) { log.warn("Invalid customerId: {}", filter.getCustomerId()); }
+        }
+        if (filter.getSafariId() != null && !filter.getSafariId().isBlank()) {
+            try { spec = spec.and(TestimonySpecification.bySafariId(idObfuscator.decodeId(filter.getSafariId()))); }
+            catch (Exception e) { log.warn("Invalid safariId: {}", filter.getSafariId()); }
+        }
+        return spec;
+    }
+
+    /**
+     * The cards over the review list.
+     *
+     * Two of these are work queues rather than statistics: praise waiting on approval is
+     * money left on the table, and an unanswered complaint is what a prospective customer
+     * reads next.
+     */
+    private Map<String, Object> buildStats(Specification<Testimony> spec) {
+        return listStats.of(Testimony.class, spec)
+            .total()
+            .count("approved", TestimonySpecification.isApproved(true))
+            .complement("pending", "approved")
+            .count("featured", TestimonySpecification.isFeatured(true))
+            .count("verified", TestimonySpecification.isVerifiedBooking(true))
+            .count("active", TestimonySpecification.isActive(true))
+            .complement("inactive", "active")
+            .count("unanswered", TestimonySpecification.hasNoAdminResponse())
+            .count("unpublishedPraise", TestimonySpecification.isUnpublishedPraise())
+            .count("critical", TestimonySpecification.isCritical())
+            .breakdown("bySource", TestimonySource.values(), src -> TestimonySpecification.sourceIn(List.of(src)))
+            .breakdown("byRating", new Integer[] {1, 2, 3, 4, 5}, r -> TestimonySpecification.ratingIn(List.of(r)))
+            .recency(TestimonySpecification::createdAfter)
+            .build();
     }
 
     private String validateSortField(String sortBy) {

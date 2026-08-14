@@ -2,6 +2,7 @@ package com.itineraryledger.kabengosafaris.Newsletter.Services;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,37 +32,60 @@ public class NewsletterDeleteService {
         this.idObfuscator = idObfuscator;
     }
 
+    /** One skipped row, named the way the caller can show it. */
+    private Map<String, Object> skip(String idObfuscated, String reason) {
+        Map<String, Object> row = new java.util.HashMap<>();
+        row.put("id", idObfuscated);
+        row.put("reason", reason);
+        return row;
+    }
+
     public ResponseEntity<ApiResponse<?>> deleteSubscriptions(List<String> idObfuscatedList) {
         log.info("Deleting {} newsletter subscriptions", idObfuscatedList.size());
 
         try {
-            List<Long> ids = new ArrayList<>();
+            /*
+             * Per-row outcomes, because this used to answer "200, none deleted" in the same
+             * words as "200, all deleted" — an id that would not decode, a row already
+             * gone, or a row that threw was logged here and never mentioned to the caller.
+             */
+            int deletedCount = 0;
+            List<String> deletedIds = new ArrayList<>();
+            List<Map<String, Object>> skipped = new ArrayList<>();
+
             for (String idObfuscated : idObfuscatedList) {
+                Long id;
                 try {
-                    Long id = idObfuscator.decodeId(idObfuscated);
-                    ids.add(id);
+                    id = idObfuscator.decodeId(idObfuscated);
                 } catch (Exception e) {
                     log.warn("Failed to decode ID: {}", idObfuscated, e);
+                    skipped.add(skip(idObfuscated, "Not a valid subscriber reference"));
+                    continue;
                 }
-            }
 
-            int deletedCount = 0;
-            for (Long id : ids) {
                 try {
                     if (repository.existsById(id)) {
                         ((NewsletterDeleteService) AopContext.currentProxy()).deleteSubscription(id);
                         deletedCount++;
+                        deletedIds.add(idObfuscated);
                         log.info("Newsletter subscription deleted successfully: {}", id);
                     } else {
                         log.warn("Newsletter subscription not found: {}", id);
+                        skipped.add(skip(idObfuscated, "No such subscriber — it may already have been deleted"));
                     }
                 } catch (Exception e) {
                     log.error("Error deleting newsletter subscription: {}", id, e);
+                    skipped.add(skip(idObfuscated, e.getMessage() != null ? e.getMessage() : "Could not be deleted"));
                 }
             }
 
+            Map<String, Object> report = new java.util.HashMap<>();
+            report.put("deletedCount", deletedCount);
+            report.put("deletedIds", deletedIds);
+            report.put("skipped", skipped);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, deletedCount + " subscription(s) deleted successfully", null)
+                ApiResponse.success(200, deletedCount + " subscription(s) deleted successfully", report)
             );
 
         } catch (Exception e) {

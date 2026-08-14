@@ -21,10 +21,13 @@ import com.itineraryledger.kabengosafaris.Hero.Entity.Hero;
 import com.itineraryledger.kabengosafaris.Hero.Entity.HeroImage;
 import com.itineraryledger.kabengosafaris.Hero.Enums.HeroPage;
 import com.itineraryledger.kabengosafaris.Hero.Repository.HeroRepository;
+import com.itineraryledger.kabengosafaris.Hero.Specifications.HeroFilter;
 import com.itineraryledger.kabengosafaris.Hero.Specifications.HeroSpecification;
 import com.itineraryledger.kabengosafaris.Hero.DTOs.HeroDTO;
 import com.itineraryledger.kabengosafaris.Hero.Services.HeroImageServices.HeroImageStorageService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Response.ListStats;
+import com.itineraryledger.kabengosafaris.Response.RecordNavigation;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +43,8 @@ public class HeroGetService {
     private final HeroRepository heroRepository;
     private final IdObfuscator idObfuscator;
     private final HeroImageStorageService storageService;
+    private final ListStats listStats;
+    private final RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "displayOrder", "title", "page", "createdAt", "updatedAt"
@@ -50,11 +55,15 @@ public class HeroGetService {
     public HeroGetService(
         HeroRepository heroRepository,
         IdObfuscator idObfuscator,
-        HeroImageStorageService storageService
+        HeroImageStorageService storageService,
+        ListStats listStats,
+        RecordNavigation recordNavigation
     ) {
         this.heroRepository = heroRepository;
         this.idObfuscator = idObfuscator;
         this.storageService = storageService;
+        this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
     }
 
     /**
@@ -64,6 +73,22 @@ public class HeroGetService {
      * @return ResponseEntity with ApiResponse containing the hero
      */
     public ResponseEntity<ApiResponse<?>> getHeroById(String idObfuscated) {
+        return getHeroById(idObfuscated, null, null, null);
+    }
+
+    /**
+     * One hero, plus where it sits in the set the caller was looking at.
+     *
+     * The filter and sort come from the list page, so prev/next walks the same rows that
+     * were on screen — page into a banner from the Home-page list and the arrows stay
+     * among Home-page banners instead of wandering the whole table.
+     */
+    public ResponseEntity<ApiResponse<?>> getHeroById(
+        String idObfuscated,
+        HeroFilter filter,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching hero with ID: {}", idObfuscated);
 
         try {
@@ -97,16 +122,25 @@ public class HeroGetService {
             // Convert to DTO
             HeroDTO heroDTO = convertToDTO(hero);
 
-            // Circular navigation
-            Long nextId = heroRepository.findNextId(id).orElse(null);
-            Long previousId = heroRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = heroRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = heroRepository.findLastId().orElse(null);
+            /*
+             * The walk runs over the SAME specification the list used, in the same order.
+             * It used to page over every hero by id, so the arrows left the filtered set
+             * the moment anybody used a filter.
+             */
+            Specification<Hero> navSpec = buildSpec(filter != null ? filter : new HeroFilter());
+            String navSortBy = validateSortField(sortBy) != null ? validateSortField(sortBy) : DEFAULT_SORT_FIELD;
+            boolean ascending = !"desc".equalsIgnoreCase(sortDirection);
+
+            Map<String, Object> nav = recordNavigation.navigate(Hero.class, navSpec, navSortBy, ascending, id);
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("hero", heroDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -143,6 +177,7 @@ public class HeroGetService {
      * @param updatedById Filter by updater
      * @return ResponseEntity with ApiResponse containing paginated heroes
      */
+    /** Kept so any caller still passing loose parameters keeps working. */
     public ResponseEntity<ApiResponse<?>> listHeroes(
         Integer pageNumber,
         Integer pageSize,
@@ -155,6 +190,25 @@ public class HeroGetService {
         String createdById,
         String updatedById
     ) {
+        HeroFilter filter = new HeroFilter();
+        filter.setTitle(title);
+        filter.setHeroPage(page);
+        filter.setIsActive(isActive);
+        filter.setTextAlignment(textAlignment);
+        filter.setCreatedById(createdById);
+        filter.setUpdatedById(updatedById);
+        return listHeroes(filter, null, pageNumber, pageSize, sortBy, sortDirection);
+    }
+
+    public ResponseEntity<ApiResponse<?>> listHeroes(
+        HeroFilter filter,
+        Boolean includeStats,
+        Integer pageNumber,
+        Integer pageSize,
+        String sortBy,
+        String sortDirection
+    ) {
+        HeroFilter active = filter != null ? filter : new HeroFilter();
         log.info("Listing heroes with filters");
 
         try {
@@ -180,37 +234,7 @@ public class HeroGetService {
             // Create pageable
             Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
 
-            // Build specification
-            Specification<Hero> spec = Specification.unrestricted();
-
-            if (title != null && !title.isEmpty()) {
-                spec = spec.and(HeroSpecification.byTitle(title));
-            }
-            if (page != null) {
-                spec = spec.and(HeroSpecification.byPage(page));
-            }
-            if (isActive != null) {
-                spec = spec.and(HeroSpecification.byIsActive(isActive));
-            }
-            if (textAlignment != null && !textAlignment.isEmpty()) {
-                spec = spec.and(HeroSpecification.byTextAlignment(textAlignment));
-            }
-            if (createdById != null && !createdById.isEmpty()) {
-                try {
-                    Long decodedCreatedById = idObfuscator.decodeId(createdById);
-                    spec = spec.and(HeroSpecification.byCreatedById(decodedCreatedById));
-                } catch (Exception e) {
-                    log.warn("Invalid createdById: {}", createdById);
-                }
-            }
-            if (updatedById != null && !updatedById.isEmpty()) {
-                try {
-                    Long decodedUpdatedById = idObfuscator.decodeId(updatedById);
-                    spec = spec.and(HeroSpecification.byUpdatedById(decodedUpdatedById));
-                } catch (Exception e) {
-                    log.warn("Invalid updatedById: {}", updatedById);
-                }
-            }
+            Specification<Hero> spec = buildSpec(active);
 
             // Execute query
             Page<Hero> heroPage = heroRepository.findAll(spec, pageable);
@@ -230,6 +254,13 @@ public class HeroGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection);
+            /*
+             * Counters for the WHOLE filtered set, from the same specification as the rows,
+             * so a card and the table under it cannot disagree.
+             */
+            if (!Boolean.FALSE.equals(includeStats)) {
+                response.put("stats", buildStats(spec));
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(
@@ -249,6 +280,77 @@ public class HeroGetService {
                 )
             );
         }
+    }
+
+    /**
+     * One specification, used by the rows, the cards and the record walk.
+     *
+     * Sharing it is the whole point: a card counts what the table would show, and prev/next
+     * stays inside the same set. OR inside a dimension, AND across dimensions.
+     */
+    private Specification<Hero> buildSpec(HeroFilter filter) {
+        Specification<Hero> spec = Specification.unrestricted();
+
+        if (filter.getKeyword() != null && !filter.getKeyword().isBlank()) {
+            spec = spec.and(HeroSpecification.searchKeyword(filter.getKeyword()));
+        }
+        if (filter.getTitle() != null && !filter.getTitle().isBlank()) {
+            spec = spec.and(HeroSpecification.byTitle(filter.getTitle()));
+        }
+        if (!filter.allPages().isEmpty()) {
+            spec = spec.and(HeroSpecification.pageIn(filter.allPages()));
+        }
+        if (!filter.allAlignments().isEmpty()) {
+            spec = spec.and(HeroSpecification.textAlignmentIn(filter.allAlignments()));
+        }
+        Boolean active = filter.resolvedActive();
+        if (active != null) {
+            spec = spec.and(HeroSpecification.byIsActive(active));
+        }
+        if (filter.wants("noImage")) {
+            spec = spec.and(HeroSpecification.hasNoImages());
+        }
+        if (filter.wants("brokenCta")) {
+            spec = spec.and(HeroSpecification.hasBrokenCta());
+        }
+        if (filter.getCreatedAfter() != null) {
+            spec = spec.and(HeroSpecification.createdAfter(filter.getCreatedAfter()));
+        }
+        // an id that will not decode is a filter nobody asked for, not a 500
+        if (filter.getCreatedById() != null && !filter.getCreatedById().isBlank()) {
+            try {
+                spec = spec.and(HeroSpecification.byCreatedById(idObfuscator.decodeId(filter.getCreatedById())));
+            } catch (Exception e) {
+                log.warn("Invalid createdById: {}", filter.getCreatedById());
+            }
+        }
+        if (filter.getUpdatedById() != null && !filter.getUpdatedById().isBlank()) {
+            try {
+                spec = spec.and(HeroSpecification.byUpdatedById(idObfuscator.decodeId(filter.getUpdatedById())));
+            } catch (Exception e) {
+                log.warn("Invalid updatedById: {}", filter.getUpdatedById());
+            }
+        }
+        return spec;
+    }
+
+    /**
+     * The cards over the hero list.
+     *
+     * Every figure here is reachable as a filter and every filter has a figure — the two
+     * data-quality counters especially, because a banner with no image and a button with no
+     * link are the failures that look perfectly healthy in every other column.
+     */
+    private Map<String, Object> buildStats(Specification<Hero> spec) {
+        return listStats.of(Hero.class, spec)
+            .total()
+            .count("active", HeroSpecification.byIsActive(true))
+            .complement("inactive", "active")
+            .count("noImage", HeroSpecification.hasNoImages())
+            .count("brokenCta", HeroSpecification.hasBrokenCta())
+            .breakdown("byPage", HeroPage.values(), page -> HeroSpecification.pageIn(List.of(page)))
+            .recency(HeroSpecification::createdAfter)
+            .build();
     }
 
     private String validateSortField(String sortBy) {

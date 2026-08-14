@@ -10,7 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.itineraryledger.kabengosafaris.Newsletter.DTOs.UpdateNewsletterSubscriptionDTO;
-import com.itineraryledger.kabengosafaris.Newsletter.Entity.SubscriptionStatus;
+import com.itineraryledger.kabengosafaris.Newsletter.Specifications.NewsletterFilter;
 import com.itineraryledger.kabengosafaris.Newsletter.Services.NewsletterDeleteService;
 import com.itineraryledger.kabengosafaris.Newsletter.Services.NewsletterGetService;
 import com.itineraryledger.kabengosafaris.Newsletter.Services.NewsletterUpdateService;
@@ -42,32 +42,46 @@ public class NewsletterController {
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_NEWSLETTER_SUBSCRIPTION')")
     public ResponseEntity<ApiResponse<?>> listSubscriptions(
-        @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
-        @RequestParam(required = false, defaultValue = "20") Integer pageSize,
+        /*
+         * Every parameter the old signature took is still spelled the same on the wire —
+         * @ModelAttribute binds them onto the filter — plus the multi-value forms
+         * (statuses, sources, qualities).
+         */
+        @ModelAttribute NewsletterFilter filter,
+        @RequestParam(required = false) Boolean includeStats,
+        @RequestParam(required = false) Integer pageNumber,
+        @RequestParam(required = false) Integer pageSize,
+        /*
+         * page/size are what every other list in this API is paged by. pageNumber/pageSize
+         * stay because the v1 panel sends them; whichever arrives wins, house names first.
+         */
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false, defaultValue = "desc") String sortDirection,
-        @RequestParam(required = false) SubscriptionStatus status,
-        @RequestParam(required = false) String email,
-        @RequestParam(required = false) String name,
-        @RequestParam(required = false) String source,
-        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime subscribedAfter,
-        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime subscribedBefore,
-        @RequestParam(required = false) String keyword
+        @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/newsletter-subscriptions - Listing subscriptions with filters");
         return getService.listSubscriptions(
-            pageNumber, pageSize, sortBy, sortDirection,
-            status, email, name, source, subscribedAfter, subscribedBefore, keyword
+            filter,
+            includeStats,
+            page != null ? page : pageNumber,
+            size != null ? size : pageSize,
+            sortBy,
+            sortDirection
         );
     }
 
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_NEWSLETTER_SUBSCRIPTION')")
     public ResponseEntity<ApiResponse<?>> getSubscriptionById(
-        @PathVariable String idObfuscated
+        @PathVariable String idObfuscated,
+        // the list's filter and sort, so prev/next stays inside the set on screen
+        @ModelAttribute NewsletterFilter filter,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/newsletter-subscriptions/{} - Fetching subscription by ID", idObfuscated);
-        return getService.getSubscriptionById(idObfuscated);
+        return getService.getSubscriptionById(idObfuscated, filter, sortBy, sortDirection);
     }
 
     @PutMapping("/{idObfuscated}")

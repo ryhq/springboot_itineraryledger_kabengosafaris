@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Newsletter.Specifications;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.jpa.domain.Specification;
 
@@ -32,6 +33,34 @@ public class NewsletterSubscriptionSpecification {
             if (source == null || source.trim().isEmpty()) return cb.conjunction();
             return cb.equal(root.get("source"), source.trim());
         };
+    }
+
+    /** Any of these statuses. An empty list is no constraint, never "nothing". */
+    public static Specification<NewsletterSubscription> statusIn(List<SubscriptionStatus> statuses) {
+        return (root, query, cb) -> statuses == null || statuses.isEmpty()
+            ? cb.conjunction()
+            : root.get("status").in(statuses);
+    }
+
+    public static Specification<NewsletterSubscription> sourceIn(List<String> sources) {
+        return (root, query, cb) -> {
+            if (sources == null || sources.isEmpty()) return cb.conjunction();
+            return cb.lower(root.get("source")).in(
+                sources.stream().filter(v -> v != null && !v.isBlank())
+                    .map(v -> v.toLowerCase().trim()).toList());
+        };
+    }
+
+    /** Signed up, but not anybody we have as a customer. */
+    public static Specification<NewsletterSubscription> hasNoCustomer() {
+        return (root, query, cb) -> cb.isNull(root.get("customer"));
+    }
+
+    /** Nothing but an address — a name makes the mail-out address somebody. */
+    public static Specification<NewsletterSubscription> hasNoName() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("name")),
+            cb.equal(cb.trim(root.get("name")), ""));
     }
 
     public static Specification<NewsletterSubscription> subscribedAfter(LocalDateTime dateTime) {

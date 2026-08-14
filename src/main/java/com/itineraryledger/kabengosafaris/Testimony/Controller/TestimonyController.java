@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Testimony.DTOs.CreateTestimonyDTO;
 import com.itineraryledger.kabengosafaris.Testimony.DTOs.UpdateTestimonyDTO;
-import com.itineraryledger.kabengosafaris.Testimony.Enums.TestimonySource;
+import com.itineraryledger.kabengosafaris.Testimony.Specifications.TestimonyFilter;
 import com.itineraryledger.kabengosafaris.Testimony.Services.TestimonyServices.TestimonyCreateService;
 import com.itineraryledger.kabengosafaris.Testimony.Services.TestimonyServices.TestimonyDeleteService;
 import com.itineraryledger.kabengosafaris.Testimony.Services.TestimonyServices.TestimonyGetService;
@@ -55,39 +55,45 @@ public class TestimonyController {
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_TESTIMONY')")
     public ResponseEntity<ApiResponse<?>> getTestimonyById(
-        @PathVariable String idObfuscated
+        @PathVariable String idObfuscated,
+        // the list's filter and sort, so prev/next stays inside the set on screen
+        @ModelAttribute TestimonyFilter filter,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/testimonies/{} - Fetching testimony by ID", idObfuscated);
-        return testimonyGetService.getTestimonyById(idObfuscated);
+        return testimonyGetService.getTestimonyById(idObfuscated, filter, sortBy, sortDirection);
     }
 
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_TESTIMONY')")
     public ResponseEntity<ApiResponse<?>> listTestimonies(
-        @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
-        @RequestParam(required = false, defaultValue = "20") Integer pageSize,
+        /*
+         * Every parameter the old signature took is still spelled the same on the wire —
+         * @ModelAttribute binds them onto the filter — plus the multi-value forms
+         * (sources, ratings, statuses, flags, qualities).
+         */
+        @ModelAttribute TestimonyFilter filter,
+        @RequestParam(required = false) Boolean includeStats,
+        @RequestParam(required = false) Integer pageNumber,
+        @RequestParam(required = false) Integer pageSize,
+        /*
+         * page/size are what every other list in this API is paged by. pageNumber/pageSize
+         * stay because the v1 panel sends them; whichever arrives wins, house names first.
+         */
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false, defaultValue = "desc") String sortDirection,
-        @RequestParam(required = false) String authorName,
-        @RequestParam(required = false) TestimonySource source,
-        @RequestParam(required = false) Integer rating,
-        @RequestParam(required = false) Integer minRating,
-        @RequestParam(required = false) Integer maxRating,
-        @RequestParam(required = false) Boolean isApproved,
-        @RequestParam(required = false) Boolean isFeatured,
-        @RequestParam(required = false) Boolean isVerifiedBooking,
-        @RequestParam(required = false) Boolean isActive,
-        @RequestParam(required = false) String sentimentTag,
-        @RequestParam(required = false) String customerId,
-        @RequestParam(required = false) String safariId,
-        @RequestParam(required = false) String keyword
+        @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/testimonies - Listing testimonies with filters");
         return testimonyGetService.listTestimonies(
-            pageNumber, pageSize, sortBy, sortDirection,
-            authorName, source, rating, minRating, maxRating,
-            isApproved, isFeatured, isVerifiedBooking, isActive,
-            sentimentTag, customerId, safariId, keyword
+            filter,
+            includeStats,
+            page != null ? page : pageNumber,
+            size != null ? size : pageSize,
+            sortBy,
+            sortDirection
         );
     }
 

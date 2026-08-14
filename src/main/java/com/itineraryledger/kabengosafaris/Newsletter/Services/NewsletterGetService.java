@@ -23,8 +23,11 @@ import com.itineraryledger.kabengosafaris.Newsletter.DTOs.NewsletterSubscription
 import com.itineraryledger.kabengosafaris.Newsletter.Entity.NewsletterSubscription;
 import com.itineraryledger.kabengosafaris.Newsletter.Entity.SubscriptionStatus;
 import com.itineraryledger.kabengosafaris.Newsletter.Repository.NewsletterSubscriptionRepository;
+import com.itineraryledger.kabengosafaris.Newsletter.Specifications.NewsletterFilter;
 import com.itineraryledger.kabengosafaris.Newsletter.Specifications.NewsletterSubscriptionSpecification;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Response.ListStats;
+import com.itineraryledger.kabengosafaris.Response.RecordNavigation;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +39,8 @@ public class NewsletterGetService {
 
     private final NewsletterSubscriptionRepository repository;
     private final IdObfuscator idObfuscator;
+    private final ListStats listStats;
+    private final RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "email", "name", "status", "source", "subscribedAt", "updatedAt"
@@ -43,12 +48,34 @@ public class NewsletterGetService {
     private static final String DEFAULT_SORT_FIELD = "subscribedAt";
 
     @Autowired
-    public NewsletterGetService(NewsletterSubscriptionRepository repository, IdObfuscator idObfuscator) {
+    public NewsletterGetService(
+        NewsletterSubscriptionRepository repository,
+        IdObfuscator idObfuscator,
+        ListStats listStats,
+        RecordNavigation recordNavigation
+    ) {
         this.repository = repository;
         this.idObfuscator = idObfuscator;
+        this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
     }
 
     public ResponseEntity<ApiResponse<?>> getSubscriptionById(String idObfuscated) {
+        return getSubscriptionById(idObfuscated, null, null, null);
+    }
+
+    /**
+     * One subscriber, plus where they sit in the set the caller was looking at.
+     *
+     * The filter and sort come from the list page, so paging through bounced addresses
+     * stays among bounced addresses.
+     */
+    public ResponseEntity<ApiResponse<?>> getSubscriptionById(
+        String idObfuscated,
+        NewsletterFilter filter,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching newsletter subscription with ID: {}", idObfuscated);
         try {
             Long id;
@@ -70,15 +97,27 @@ public class NewsletterGetService {
 
             NewsletterSubscriptionDTO dto = convertToDTO(subscription);
 
-            Long nextId = repository.findNextId(id).orElse(null);
-            Long previousId = repository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = repository.findFirstId().orElse(null);
-            if (previousId == null) previousId = repository.findLastId().orElse(null);
+            /*
+             * The walk runs over the SAME specification the list used, in the same order.
+             * It used to page over every subscriber by id, so the arrows left the filtered
+             * set the moment anybody used a filter.
+             */
+            Specification<NewsletterSubscription> navSpec =
+                buildSpec(filter != null ? filter : new NewsletterFilter());
+            String navSortBy = validateSortField(sortBy) != null ? validateSortField(sortBy) : DEFAULT_SORT_FIELD;
+            boolean ascending = "asc".equalsIgnoreCase(sortDirection);
+
+            Map<String, Object> nav = recordNavigation.navigate(
+                NewsletterSubscription.class, navSpec, navSortBy, ascending, id);
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("subscription", dto);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(ApiResponse.success(200, "Subscription retrieved successfully", response));
         } catch (Exception e) {
@@ -89,12 +128,30 @@ public class NewsletterGetService {
         }
     }
 
+    /** Kept so any caller still passing loose parameters keeps working. */
     public ResponseEntity<ApiResponse<?>> listSubscriptions(
         Integer pageNumber, Integer pageSize, String sortBy, String sortDirection,
         SubscriptionStatus status, String email, String name, String source,
         LocalDateTime subscribedAfter, LocalDateTime subscribedBefore, String keyword
     ) {
+        NewsletterFilter filter = new NewsletterFilter();
+        filter.setStatus(status);
+        filter.setEmail(email);
+        filter.setName(name);
+        filter.setSource(source);
+        filter.setSubscribedAfter(subscribedAfter);
+        filter.setSubscribedBefore(subscribedBefore);
+        filter.setKeyword(keyword);
+        return listSubscriptions(filter, null, pageNumber, pageSize, sortBy, sortDirection);
+    }
+
+    public ResponseEntity<ApiResponse<?>> listSubscriptions(
+        NewsletterFilter filter,
+        Boolean includeStats,
+        Integer pageNumber, Integer pageSize, String sortBy, String sortDirection
+    ) {
         log.info("Listing newsletter subscriptions with filters");
+        NewsletterFilter active = filter != null ? filter : new NewsletterFilter();
         try {
             pageNumber = (pageNumber != null) ? pageNumber : 0;
             pageSize = (pageSize != null) ? pageSize : 20;
@@ -112,14 +169,7 @@ public class NewsletterGetService {
                 : Sort.by(validatedSortBy).ascending();
             Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
 
-            Specification<NewsletterSubscription> spec = Specification.unrestricted();
-            if (status != null) spec = spec.and(NewsletterSubscriptionSpecification.byStatus(status));
-            if (email != null && !email.isEmpty()) spec = spec.and(NewsletterSubscriptionSpecification.byEmail(email));
-            if (name != null && !name.isEmpty()) spec = spec.and(NewsletterSubscriptionSpecification.byName(name));
-            if (source != null && !source.isEmpty()) spec = spec.and(NewsletterSubscriptionSpecification.bySource(source));
-            if (subscribedAfter != null) spec = spec.and(NewsletterSubscriptionSpecification.subscribedAfter(subscribedAfter));
-            if (subscribedBefore != null) spec = spec.and(NewsletterSubscriptionSpecification.subscribedBefore(subscribedBefore));
-            if (keyword != null && !keyword.isEmpty()) spec = spec.and(NewsletterSubscriptionSpecification.searchKeyword(keyword));
+            Specification<NewsletterSubscription> spec = buildSpec(active);
 
             Page<NewsletterSubscription> page = repository.findAll(spec, pageable);
 
@@ -136,6 +186,13 @@ public class NewsletterGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection);
+            /*
+             * Counters for the WHOLE filtered set, from the same specification as the rows,
+             * so a card and the table under it cannot disagree.
+             */
+            if (!Boolean.FALSE.equals(includeStats)) {
+                response.put("stats", buildStats(spec));
+            }
 
             return ResponseEntity.ok().body(ApiResponse.success(200, "Subscriptions retrieved successfully", response));
         } catch (Exception e) {
@@ -144,6 +201,61 @@ public class NewsletterGetService {
                 ApiResponse.error(500, "Failed to list subscriptions", "SUBSCRIPTIONS_LIST_FAILED")
             );
         }
+    }
+
+    /** One specification, used by the rows, the cards and the record walk. */
+    private Specification<NewsletterSubscription> buildSpec(NewsletterFilter filter) {
+        Specification<NewsletterSubscription> spec = Specification.unrestricted();
+
+        if (filter.getKeyword() != null && !filter.getKeyword().isBlank()) {
+            spec = spec.and(NewsletterSubscriptionSpecification.searchKeyword(filter.getKeyword()));
+        }
+        if (filter.getEmail() != null && !filter.getEmail().isBlank()) {
+            spec = spec.and(NewsletterSubscriptionSpecification.byEmail(filter.getEmail()));
+        }
+        if (filter.getName() != null && !filter.getName().isBlank()) {
+            spec = spec.and(NewsletterSubscriptionSpecification.byName(filter.getName()));
+        }
+        if (!filter.allStatuses().isEmpty()) {
+            spec = spec.and(NewsletterSubscriptionSpecification.statusIn(filter.allStatuses()));
+        }
+        if (!filter.allSources().isEmpty()) {
+            spec = spec.and(NewsletterSubscriptionSpecification.sourceIn(filter.allSources()));
+        }
+        if (filter.wants("noCustomer")) spec = spec.and(NewsletterSubscriptionSpecification.hasNoCustomer());
+        if (filter.wants("noName")) spec = spec.and(NewsletterSubscriptionSpecification.hasNoName());
+        if (filter.getSubscribedAfter() != null) {
+            spec = spec.and(NewsletterSubscriptionSpecification.subscribedAfter(filter.getSubscribedAfter()));
+        }
+        if (filter.getSubscribedBefore() != null) {
+            spec = spec.and(NewsletterSubscriptionSpecification.subscribedBefore(filter.getSubscribedBefore()));
+        }
+        return spec;
+    }
+
+    /**
+     * The cards over the subscriber list.
+     *
+     * Bounced is the one worth acting on: those addresses cost money to mail and will never
+     * arrive, and nothing else on the row says so.
+     */
+    private Map<String, Object> buildStats(Specification<NewsletterSubscription> spec) {
+        return listStats.of(NewsletterSubscription.class, spec)
+            .total()
+            .breakdown("byStatus", SubscriptionStatus.values(),
+                st -> NewsletterSubscriptionSpecification.statusIn(List.of(st)))
+            .count("active", NewsletterSubscriptionSpecification.statusIn(List.of(SubscriptionStatus.ACTIVE)))
+            .count("unsubscribed", NewsletterSubscriptionSpecification.statusIn(List.of(SubscriptionStatus.UNSUBSCRIBED)))
+            .count("bounced", NewsletterSubscriptionSpecification.statusIn(List.of(SubscriptionStatus.BOUNCED)))
+            .count("noCustomer", NewsletterSubscriptionSpecification.hasNoCustomer())
+            .count("noName", NewsletterSubscriptionSpecification.hasNoName())
+            /*
+             * Recency is measured by when they signed up, not by a createdAt — that is the
+             * date this table actually keeps, and the one anybody means by "new".
+             */
+            .window("newLast7Days", 7, NewsletterSubscriptionSpecification::subscribedAfter)
+            .window("newLast30Days", 30, NewsletterSubscriptionSpecification::subscribedAfter)
+            .build();
     }
 
     private String validateSortField(String sortBy) {

@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import com.itineraryledger.kabengosafaris.Hero.DTOs.CreateHeroDTO;
 import com.itineraryledger.kabengosafaris.Hero.DTOs.ReorderHeroDTO;
 import com.itineraryledger.kabengosafaris.Hero.DTOs.UpdateHeroDTO;
-import com.itineraryledger.kabengosafaris.Hero.Enums.HeroPage;
+import com.itineraryledger.kabengosafaris.Hero.Specifications.HeroFilter;
 import com.itineraryledger.kabengosafaris.Hero.Services.HeroServices.HeroCreateService;
 import com.itineraryledger.kabengosafaris.Hero.Services.HeroServices.HeroDeleteService;
 import com.itineraryledger.kabengosafaris.Hero.Services.HeroServices.HeroGetService;
@@ -108,10 +108,14 @@ public class HeroController {
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_HERO')")
     public ResponseEntity<ApiResponse<?>> getHeroById(
-        @PathVariable String idObfuscated
+        @PathVariable String idObfuscated,
+        // the list's filter and sort, so prev/next stays inside the set on screen
+        @ModelAttribute HeroFilter filter,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/heroes/{} - Fetching hero by ID", idObfuscated);
-        return heroGetService.getHeroById(idObfuscated);
+        return heroGetService.getHeroById(idObfuscated, filter, sortBy, sortDirection);
     }
 
     /**
@@ -132,30 +136,20 @@ public class HeroController {
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_HERO')")
     public ResponseEntity<ApiResponse<?>> getAllHeroes(
-        @RequestParam(required = false) String title,
-        @RequestParam(required = false) HeroPage heroPage,
-        @RequestParam(required = false) Boolean isActive,
-        @RequestParam(required = false) String textAlignment,
-        @RequestParam(required = false) String createdById,
-        @RequestParam(required = false) String updatedById,
+        /*
+         * Every parameter the old signature took is still spelled the same on the wire —
+         * @ModelAttribute binds them onto the filter — plus the multi-value forms
+         * (heroPages, statuses, qualities) and a keyword.
+         */
+        @ModelAttribute HeroFilter filter,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "20") Integer size,
         @RequestParam(required = false, defaultValue = "displayOrder") String sortBy,
         @RequestParam(required = false, defaultValue = "asc") String sortDirection
     ) {
         log.info("GET /api/heroes - Fetching all heroes with filters");
-        return heroGetService.listHeroes(
-            page,
-            size,
-            sortBy,
-            sortDirection,
-            title,
-            heroPage,
-            isActive,
-            textAlignment,
-            createdById,
-            updatedById
-        );
+        return heroGetService.listHeroes(filter, includeStats, page, size, sortBy, sortDirection);
     }
 
     /**

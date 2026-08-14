@@ -70,6 +70,13 @@ public class TestimonyDeleteService {
 
     private ResponseEntity<ApiResponse<?>> deleteTestimoniesInternal(List<Long> ids) {
         int deletedCount = 0;
+        /*
+         * Per-row outcomes, because this used to answer "200, none deleted" in the same
+         * words as "200, all deleted" — a row that was missing or that threw was logged
+         * here and never mentioned to the caller.
+         */
+        List<String> deletedIds = new java.util.ArrayList<>();
+        List<java.util.Map<String, Object>> skipped = new java.util.ArrayList<>();
 
         for (Long id : ids) {
             try {
@@ -77,6 +84,7 @@ public class TestimonyDeleteService {
 
                 if (testimony == null) {
                     log.warn("Testimony not found: {}", id);
+                    skipped.add(skip(id, null, "No such review — it may already have been deleted"));
                     continue;
                 }
 
@@ -88,18 +96,35 @@ public class TestimonyDeleteService {
                     }
                 }
 
+                String author = testimony.getAuthorName();
                 ((TestimonyDeleteService) AopContext.currentProxy()).deleteTestimony(id);
                 deletedCount++;
-                log.info("Testimony deleted successfully: {}", id);
+                deletedIds.add(idObfuscator.encodeId(id));
+                log.info("Testimony deleted successfully: {} ({})", id, author);
 
             } catch (Exception e) {
                 log.error("Error deleting testimony: {}", id, e);
+                skipped.add(skip(id, null, e.getMessage() != null ? e.getMessage() : "Could not be deleted"));
             }
         }
 
+        java.util.Map<String, Object> report = new java.util.HashMap<>();
+        report.put("deletedCount", deletedCount);
+        report.put("deletedIds", deletedIds);
+        report.put("skipped", skipped);
+
         return ResponseEntity.ok().body(
-            ApiResponse.success(200, deletedCount + " testimony(ies) deleted successfully", null)
+            ApiResponse.success(200, deletedCount + " testimony(ies) deleted successfully", report)
         );
+    }
+
+    /** One skipped row, named the way the caller can show it. */
+    private java.util.Map<String, Object> skip(Long id, String label, String reason) {
+        java.util.Map<String, Object> row = new java.util.HashMap<>();
+        row.put("id", idObfuscator.encodeId(id));
+        row.put("code", label);
+        row.put("reason", reason);
+        return row;
     }
 
     @AuditLogAnnotation(action = "DELETE_TESTIMONY", description = "Deleting testimony", entityType = "Testimony", entityIdParamName = "id")

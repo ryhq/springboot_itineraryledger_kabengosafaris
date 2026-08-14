@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Testimony.Specifications;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.jpa.domain.Specification;
 
@@ -46,6 +47,47 @@ public class TestimonySpecification {
 
     public static Specification<Testimony> isVerifiedBooking(Boolean verified) {
         return (root, query, cb) -> verified == null ? cb.conjunction() : cb.equal(root.get("isVerifiedBooking"), verified);
+    }
+
+    // ========================
+    // MULTI-VALUE FACETS (OR inside a dimension, AND across dimensions)
+    // ========================
+
+    /** Any of these sources. An empty list is no constraint, never "nothing". */
+    public static Specification<Testimony> sourceIn(List<TestimonySource> sources) {
+        return (root, query, cb) -> sources == null || sources.isEmpty()
+            ? cb.conjunction()
+            : root.get("source").in(sources);
+    }
+
+    public static Specification<Testimony> ratingIn(List<Integer> ratings) {
+        return (root, query, cb) -> ratings == null || ratings.isEmpty()
+            ? cb.conjunction()
+            : root.get("rating").in(ratings);
+    }
+
+    /**
+     * A review nobody has replied to.
+     *
+     * The unanswered one-star review is the one a prospective customer reads, so this is a
+     * work queue rather than a statistic.
+     */
+    public static Specification<Testimony> hasNoAdminResponse() {
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("adminResponse")),
+            cb.equal(cb.trim(root.get("adminResponse")), ""));
+    }
+
+    /** Praise that never made it onto the site — approval pending at 4 stars or better. */
+    public static Specification<Testimony> isUnpublishedPraise() {
+        return (root, query, cb) -> cb.and(
+            cb.greaterThanOrEqualTo(root.get("rating"), 4),
+            cb.or(cb.isNull(root.get("isApproved")), cb.isFalse(root.get("isApproved"))));
+    }
+
+    /** Complaints, by the usual reading of a five-point scale. */
+    public static Specification<Testimony> isCritical() {
+        return (root, query, cb) -> cb.lessThanOrEqualTo(root.get("rating"), 2);
     }
 
     public static Specification<Testimony> hasAdminResponse() {
