@@ -29,6 +29,8 @@ public class PdfTemplateController {
     private final PdfTemplateUpdateService updateService;
     private final PdfTemplateDeleteService deleteService;
     private final PdfGenerationService generationService;
+    private final com.itineraryledger.kabengosafaris.PdfDocument.Repository.PdfTemplateRepository templateRepository;
+    private final com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
 
     // ========================
     // CREATE
@@ -82,15 +84,33 @@ public class PdfTemplateController {
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
-        @RequestParam(required = false, defaultValue = "desc") String sortDirection
+        @RequestParam(required = false, defaultValue = "desc") String sortDirection,
+        @RequestParam(required = false) Boolean includeStats
     ) {
         log.info("GET /api/pdf-templates - Fetching templates with filters");
-        return getService.getAllTemplates(documentId, documentType, rootVariableName, enabled, isDefault, isSystemDefault, name, paperSize, orientation, page, size, sortBy, sortDirection);
+        return getService.getAllTemplates(documentId, documentType, rootVariableName, enabled, isDefault, isSystemDefault, name, paperSize, orientation, page, size, sortBy, sortDirection, includeStats);
     }
 
     /**
      * Get a template by ID
      */
+    /**
+     * Enabling or disabling a selection in one request.
+     *
+     * Only `enabled` is offered. Which template a document is rendered WITH is a choice
+     * between siblings — turning several on at once cannot express it, and a bulk control
+     * that silently picked a winner would be worse than not having one.
+     */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_PDF_TEMPLATE')")
+    public ResponseEntity<?> bulkUpdate(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("template", templateRepository, request, template -> {
+            if (request.getIsActive() != null) template.setEnabled(request.getIsActive());
+        });
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_PDF_TEMPLATE')")
     public ResponseEntity<ApiResponse<?>> getTemplateById(@PathVariable String id) {

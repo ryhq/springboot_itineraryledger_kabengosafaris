@@ -5,6 +5,7 @@ import com.itineraryledger.kabengosafaris.PdfDocument.Entity.PdfTemplate;
 import com.itineraryledger.kabengosafaris.PdfDocument.Repository.PdfTemplateRepository;
 import com.itineraryledger.kabengosafaris.PdfDocument.Specification.PdfTemplateSpecification;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Response.ListStats;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,7 @@ public class PdfTemplateGetService {
     private final PdfTemplateRepository pdfTemplateRepository;
     private final PdfTemplateStorageService storageService;
     private final IdObfuscator idObfuscator;
+    private final ListStats listStats;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "name", "version", "createdAt", "updatedAt"
@@ -43,6 +45,24 @@ public class PdfTemplateGetService {
     /**
      * Get all templates with filtering and pagination
      */
+    /**
+     * The cards that head the list.
+     *
+     * "Not the one used" is the counter worth having: several templates can exist for a
+     * document while exactly one renders it, so a carefully edited template that is not the
+     * default has changed nothing anybody will ever receive.
+     */
+    private java.util.Map<String, Object> buildStats(Specification<PdfTemplate> spec) {
+        return listStats.of(PdfTemplate.class, spec)
+            .total()
+            .count("enabled", PdfTemplateSpecification.enabled(true))
+            .complement("disabled", "enabled")
+            .count("used", PdfTemplateSpecification.isDefault(true))
+            .count("original", PdfTemplateSpecification.isSystemDefault(true))
+            .count("custom", PdfTemplateSpecification.isSystemDefault(false))
+            .build();
+    }
+
     public ResponseEntity<ApiResponse<?>> getAllTemplates(
         String documentIdObfuscated,
         String documentType,
@@ -56,7 +76,8 @@ public class PdfTemplateGetService {
         Integer page,
         Integer size,
         String sortBy,
-        String sortDirection
+        String sortDirection,
+        Boolean includeStats
     ) {
         try {
             // Build specification
@@ -115,6 +136,13 @@ public class PdfTemplateGetService {
 
             // Build response with pagination info
             Map<String, Object> response = new HashMap<>();
+            /*
+             * `templates` and `totalItems` are the house names; `content`, `totalElements`
+             * and `size` stay beside them so nothing already reading this response breaks.
+             */
+            response.put("templates", dtos);
+            response.put("totalItems", templatePage.getTotalElements());
+            response.put("pageSize", templatePage.getSize());
             response.put("content", dtos);
             response.put("totalElements", templatePage.getTotalElements());
             response.put("totalPages", templatePage.getTotalPages());
@@ -123,6 +151,10 @@ public class PdfTemplateGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+
+            if (!Boolean.FALSE.equals(includeStats)) {
+                response.put("stats", buildStats(spec));
+            }
 
             return ResponseEntity.ok(ApiResponse.success(200, "Templates retrieved successfully", response));
 
