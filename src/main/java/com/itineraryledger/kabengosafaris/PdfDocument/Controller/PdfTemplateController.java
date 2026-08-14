@@ -31,6 +31,8 @@ public class PdfTemplateController {
     private final PdfGenerationService generationService;
     private final com.itineraryledger.kabengosafaris.PdfDocument.Repository.PdfTemplateRepository templateRepository;
     private final com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+    private final com.itineraryledger.kabengosafaris.Security.IdObfuscator idObfuscator;
+    private final PdfTemplateStorageService storageService;
 
     // ========================
     // CREATE
@@ -39,6 +41,100 @@ public class PdfTemplateController {
     /**
      * Create a new PDF template for a document type
      */
+    /**
+     * Create a template, with the document named in the body.
+     *
+     * The nested path stays exactly as it was; this exists so a template can be created
+     * from the flat list as well as from inside a document, and so the generic create form
+     * has one endpoint it can post to.
+     *
+     * `content` may be left out, and usually should be. A PDF layout is a whole HTML
+     * document — asking somebody to paste one into a create form is not a feature — so an
+     * empty one starts as a copy of whatever that document renders with today. You get a
+     * working layout to edit rather than a blank page, which is what "add a template"
+     * actually means to the person asking.
+     */
+    @PostMapping
+    @PreAuthorize("hasAuthority('PERM_CREATE_PDF_TEMPLATE')")
+    public ResponseEntity<ApiResponse<?>> createTemplateFlat(@RequestBody CreateTemplateRequest request) {
+        if (request == null || request.getDocumentId() == null || request.getDocumentId().isBlank()) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Which document is this template for? documentId is required",
+                    "DOCUMENT_ID_REQUIRED"));
+        }
+
+        CreatePdfTemplateDTO dto = new CreatePdfTemplateDTO();
+        dto.setName(request.getName());
+        dto.setDescription(request.getDescription());
+        dto.setVersion(request.getVersion());
+        dto.setIsDefault(request.getIsDefault());
+        dto.setEnabled(request.getEnabled());
+        dto.setMarginTop(request.getMarginTop());
+        dto.setMarginBottom(request.getMarginBottom());
+        dto.setMarginLeft(request.getMarginLeft());
+        dto.setMarginRight(request.getMarginRight());
+        if (request.getPaperSize() != null && !request.getPaperSize().isBlank()) {
+            dto.setPaperSize(com.itineraryledger.kabengosafaris.PdfDocument.Entity.PaperSize
+                .valueOf(request.getPaperSize().toUpperCase()));
+        }
+        if (request.getOrientation() != null && !request.getOrientation().isBlank()) {
+            dto.setOrientation(com.itineraryledger.kabengosafaris.PdfDocument.Entity.Orientation
+                .valueOf(request.getOrientation().toUpperCase()));
+        }
+
+        String content = request.getContent();
+        if (content == null || content.isBlank()) {
+            content = startingContentFor(request.getDocumentId());
+            if (content == null) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400,
+                        "This document has no existing layout to copy, so a new template needs its "
+                            + "content supplied",
+                        "NO_STARTING_CONTENT"));
+            }
+        }
+        dto.setContent(content);
+
+        return createService.createTemplate(request.getDocumentId(), dto);
+    }
+
+    /**
+     * The layout a new template starts from: whatever this document renders with today,
+     * falling back to the version that shipped.
+     */
+    private String startingContentFor(String documentIdObfuscated) {
+        try {
+            Long documentId = idObfuscator.decodeId(documentIdObfuscated);
+            var source = templateRepository
+                .findByPdfDocumentIdAndIsDefaultAndEnabled(documentId, true, true)
+                .or(() -> templateRepository.findByPdfDocumentIdAndIsSystemDefault(documentId, true))
+                .orElse(null);
+            if (source == null) return null;
+            return storageService.readTemplateFile(source.getFileName());
+        } catch (Exception e) {
+            log.warn("Could not read a starting layout for document {}", documentIdObfuscated, e);
+            return null;
+        }
+    }
+
+    /** CreatePdfTemplateDTO plus the document it belongs to, with enums as plain strings. */
+    @lombok.Data
+    public static class CreateTemplateRequest {
+        private String documentId;
+        private String name;
+        private String description;
+        private String content;
+        private String paperSize;
+        private String orientation;
+        private Integer marginTop;
+        private Integer marginBottom;
+        private Integer marginLeft;
+        private Integer marginRight;
+        private Boolean isDefault;
+        private Boolean enabled;
+        private String version;
+    }
+
     @PostMapping("/document/{documentId}")
     @PreAuthorize("hasAuthority('PERM_CREATE_PDF_TEMPLATE')")
     public ResponseEntity<ApiResponse<?>> createTemplate(
