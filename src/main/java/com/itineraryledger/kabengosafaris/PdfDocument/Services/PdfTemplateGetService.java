@@ -6,6 +6,7 @@ import com.itineraryledger.kabengosafaris.PdfDocument.Repository.PdfTemplateRepo
 import com.itineraryledger.kabengosafaris.PdfDocument.Specification.PdfTemplateSpecification;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Response.ListStats;
+import com.itineraryledger.kabengosafaris.Response.RecordNavigation;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class PdfTemplateGetService {
     private final PdfTemplateStorageService storageService;
     private final IdObfuscator idObfuscator;
     private final ListStats listStats;
+    private final RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "name", "version", "createdAt", "updatedAt"
@@ -169,7 +171,12 @@ public class PdfTemplateGetService {
     /**
      * Get a template by ID
      */
-    public ResponseEntity<ApiResponse<?>> getTemplateById(String idObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getTemplateById(
+        String idObfuscated,
+        String documentIdObfuscated,
+        String sortBy,
+        String sortDirection
+    ) {
         try {
             Long id = idObfuscator.decodeId(idObfuscated);
             if (id == null) {
@@ -196,16 +203,37 @@ public class PdfTemplateGetService {
             PdfTemplateDTO dto = mapToDTO(template);
             dto.setContent(storageService.readTemplateFile(template.getFileName()));
 
-            // Circular navigation
-            Long nextId = pdfTemplateRepository.findNextId(id).orElse(null);
-            Long previousId = pdfTemplateRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = pdfTemplateRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = pdfTemplateRepository.findLastId().orElse(null);
+            /*
+             * Walk the same set the caller came from, and say where in it we are.
+             *
+             * Scoped to one document when the caller says so, which is what opening a layout
+             * from inside its document means: the arrows stay among that document's layouts
+             * instead of wandering into another document's. Paging by raw id did neither, and
+             * carried no position at all — so the header had arrows and nothing to say where
+             * they were going.
+             */
+            Specification<PdfTemplate> navSpec = Specification.unrestricted();
+            if (documentIdObfuscated != null && !documentIdObfuscated.isBlank()) {
+                try {
+                    Long documentId = idObfuscator.decodeId(documentIdObfuscated);
+                    navSpec = navSpec.and(PdfTemplateSpecification.pdfDocumentId(documentId));
+                } catch (Exception e) {
+                    log.warn("Unreadable document id on the template walk: {}", documentIdObfuscated);
+                }
+            }
+            String navSortBy = sortBy != null && VALID_SORT_FIELDS.contains(sortBy) ? sortBy : "name";
+            Map<String, Object> nav = recordNavigation.navigate(
+                PdfTemplate.class, navSpec, navSortBy, !"desc".equalsIgnoreCase(sortDirection), id);
+
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("template", dto);
             responseData.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             responseData.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            responseData.put("position", nav.get("position"));
+            responseData.put("total", nav.get("total"));
 
             return ResponseEntity.ok(ApiResponse.success(200, "Template retrieved successfully", responseData));
 

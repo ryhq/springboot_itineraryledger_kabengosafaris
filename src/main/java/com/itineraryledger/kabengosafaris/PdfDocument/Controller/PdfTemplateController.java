@@ -209,9 +209,14 @@ public class PdfTemplateController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_PDF_TEMPLATE')")
-    public ResponseEntity<ApiResponse<?>> getTemplateById(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<?>> getTemplateById(
+        @PathVariable String id,
+        @RequestParam(required = false) String documentId,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
+    ) {
         log.info("GET /api/pdf-templates/{} - Fetching template", id);
-        return getService.getTemplateById(id);
+        return getService.getTemplateById(id, documentId, sortBy, sortDirection);
     }
 
     /**
