@@ -277,6 +277,8 @@ public class EmailAccountSignatureGetService {
             EmailAccountSignatureDTO signatureDTO = EmailAccountSignatureDTO.builder()
                     .id(idObfuscator.encodeId(signature.getId()))
                     .emailAccountId(idObfuscator.encodeId(signature.getEmailAccount().getId()))
+                .emailAccountName(signature.getEmailAccount().getName())
+                .emailAccountEmail(signature.getEmailAccount().getEmail())
                     .name(signature.getName())
                     .description(signature.getDescription())
                     .content(content)
