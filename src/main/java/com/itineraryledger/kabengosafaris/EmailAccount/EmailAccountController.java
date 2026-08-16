@@ -5,6 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -176,49 +178,31 @@ public class EmailAccountController {
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_EMAIL_ACCOUNT')")
     public ResponseEntity<?> getAllEmailAccounts(
+        /*
+         * Every parameter the old signature took is still spelled the same on the wire —
+         * @ModelAttribute binds them onto the filter — plus the multi-value forms
+         * (providerTypes, statuses, qualities) and a keyword.
+         */
+        @ModelAttribute com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices.EmailAccountFilter filter,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size,
-        @RequestParam(required = false) Boolean enabled,
-        @RequestParam(required = false) Boolean isDefault,
-        @RequestParam(required = false) String email,
-        @RequestParam(required = false) String name,
-        @RequestParam(required = false) Integer providerType,
-        @RequestParam(required = false) String smtpHost,
-        @RequestParam(required = false) Integer smtpPort,
-        @RequestParam(required = false) Boolean hasErrors,
-        @RequestParam(required = false) String description,
-        @RequestParam(required = false) Boolean useTls,
-        @RequestParam(required = false) Boolean useSsl,
-        @RequestParam(required = false) String smtpUsername,
-        @RequestParam(required = false) String errorMessage,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false) String sortDirection
     ) {
-        return emailAccountGetService.getAllEmailAccounts(
-            page,
-            size,
-            enabled,
-            isDefault,
-            email,
-            name,
-            providerType != null ? providerType : 0,
-            smtpHost,
-            smtpPort,
-            hasErrors,
-            description,
-            useTls,
-            useSsl,
-            smtpUsername,
-            errorMessage,
-            sortBy,
-            sortDirection
-        );
+        return emailAccountGetService.getAllEmailAccounts(filter, includeStats, page, size, sortBy, sortDirection);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_EMAIL_ACCOUNT')")
-    public ResponseEntity<ApiResponse<?>> getEmailAccount(@PathVariable String id) {
-        return emailAccountGetService.getEmailAccount(id);
+    public ResponseEntity<ApiResponse<?>> getEmailAccount(
+        @PathVariable String id,
+        // the list's filter and sort, so prev/next stays inside the set on screen
+        @ModelAttribute com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices.EmailAccountFilter filter,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
+    ) {
+        return emailAccountGetService.getEmailAccount(id, filter, sortBy, sortDirection);
     }
 
     /**
@@ -302,5 +286,31 @@ public class EmailAccountController {
     @PreAuthorize("hasAuthority('PERM_DELETE_EMAIL_ACCOUNT')")
     public ResponseEntity<ApiResponse<?>> deleteEmailAccountsBatch(@RequestBody List<String> idList) {
         return emailAccountDeleteService.deleteEmailAccounts(idList);
+    }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountRepository bulkFlagsRepository;
+
+    /**
+     * PATCH /bulk — switch a selection of accounts off (or on) at once.
+     *
+     * Switching one off also clears its default: a disabled account cannot go on being the
+     * one every invoice is sent from.
+     */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_ACCOUNT')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        return bulkFlags.apply("email account", bulkFlagsRepository, request, entity -> {
+            if (request.getIsActive() != null) {
+                entity.setEnabled(request.getIsActive());
+                if (Boolean.FALSE.equals(request.getIsActive())) entity.setIsDefault(false);
+            }
+        });
     }
 }

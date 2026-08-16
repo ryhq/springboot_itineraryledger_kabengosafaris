@@ -38,6 +38,8 @@ public class EmailAccountGetService {
 
     private final EmailAccountRepository emailAccountRepository;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "email", "name", "providerType", "enabled", "isDefault", "createdAt", "updatedAt"
@@ -45,9 +47,104 @@ public class EmailAccountGetService {
     private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
-    public EmailAccountGetService(EmailAccountRepository emailAccountRepository, IdObfuscator idObfuscator) {
+    public EmailAccountGetService(
+        EmailAccountRepository emailAccountRepository,
+        IdObfuscator idObfuscator,
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
+    ) {
         this.emailAccountRepository = emailAccountRepository;
         this.idObfuscator = idObfuscator;
+        this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
+    }
+
+    /** 1..7 on the wire, because that is what this module chose. */
+    private EmailAccountProvider providerFromInt(int value) {
+        return switch (value) {
+            case 1 -> EmailAccountProvider.GMAIL;
+            case 2 -> EmailAccountProvider.OUTLOOK;
+            case 3 -> EmailAccountProvider.SENDGRID;
+            case 4 -> EmailAccountProvider.MAILGUN;
+            case 5 -> EmailAccountProvider.AWS_SES;
+            case 6 -> EmailAccountProvider.CUSTOM;
+            case 7 -> EmailAccountProvider.RESEND;
+            default -> null;
+        };
+    }
+
+    /** One specification, used by the rows, the cards and the record walk. */
+    private Specification<EmailAccount> buildSpec(EmailAccountFilter filter) {
+        Specification<EmailAccount> spec = Specification.unrestricted();
+
+        if (filter.getKeyword() != null && !filter.getKeyword().isBlank()) {
+            spec = spec.and(EmailAccountSpecification.searchKeyword(filter.getKeyword()));
+        }
+        if (filter.getEmail() != null && !filter.getEmail().isBlank()) {
+            spec = spec.and(EmailAccountSpecification.emailLike(filter.getEmail()));
+        }
+        if (filter.getName() != null && !filter.getName().isBlank()) {
+            spec = spec.and(EmailAccountSpecification.nameLike(filter.getName()));
+        }
+        if (filter.getDescription() != null && !filter.getDescription().isBlank()) {
+            spec = spec.and(EmailAccountSpecification.descriptionLike(filter.getDescription()));
+        }
+        if (filter.getSmtpHost() != null && !filter.getSmtpHost().isBlank()) {
+            spec = spec.and(EmailAccountSpecification.smtpHostLike(filter.getSmtpHost()));
+        }
+        if (filter.getSmtpUsername() != null && !filter.getSmtpUsername().isBlank()) {
+            spec = spec.and(EmailAccountSpecification.smtpUsernameLike(filter.getSmtpUsername()));
+        }
+        if (filter.getErrorMessage() != null && !filter.getErrorMessage().isBlank()) {
+            spec = spec.and(EmailAccountSpecification.errorMessageLike(filter.getErrorMessage()));
+        }
+        if (filter.getSmtpPort() != null) {
+            spec = spec.and(EmailAccountSpecification.smtpPort(filter.getSmtpPort()));
+        }
+        if (!filter.allProviderTypes().isEmpty()) {
+            spec = spec.and(EmailAccountSpecification.providerTypeIn(filter.allProviderTypes()));
+        }
+        Boolean enabled = filter.resolvedEnabled();
+        if (enabled != null) spec = spec.and(EmailAccountSpecification.isEnabled(enabled));
+        if (filter.getIsDefault() != null) spec = spec.and(EmailAccountSpecification.isDefault(filter.getIsDefault()));
+        if (filter.getUseTls() != null) spec = spec.and(EmailAccountSpecification.useTls(filter.getUseTls()));
+        if (filter.getUseSsl() != null) spec = spec.and(EmailAccountSpecification.useSsl(filter.getUseSsl()));
+
+        if (Boolean.TRUE.equals(filter.getHasErrors()) || filter.wants("failing")) {
+            spec = spec.and(EmailAccountSpecification.hasErrors());
+        }
+        if (filter.wants("neverTested")) spec = spec.and(EmailAccountSpecification.neverTested());
+        if (filter.wants("receiving")) spec = spec.and(EmailAccountSpecification.isReceiving(true));
+        if (filter.wants("fetchFailing")) spec = spec.and(EmailAccountSpecification.fetchFailing());
+        if (filter.wants("neverFetched")) spec = spec.and(EmailAccountSpecification.neverFetched());
+        if (filter.getCreatedAfter() != null) {
+            spec = spec.and(EmailAccountSpecification.createdAfter(filter.getCreatedAfter()));
+        }
+        return spec;
+    }
+
+    /**
+     * The cards over the accounts.
+     *
+     * Sending mail is the one thing this system does that a customer sees directly, and it
+     * fails quietly: a broken account produces no error anybody here reads, only an invoice
+     * that never arrives. So the figures are the silent failures — last send failed, never
+     * tested, and on the receiving side, fetching that has stopped.
+     */
+    private Map<String, Object> buildStats(Specification<EmailAccount> spec) {
+        return listStats.of(EmailAccount.class, spec)
+            .total()
+            .count("enabled", EmailAccountSpecification.isEnabled(true))
+            .complement("disabled", "enabled")
+            .count("failing", EmailAccountSpecification.hasErrors())
+            .count("neverTested", EmailAccountSpecification.neverTested())
+            .count("receiving", EmailAccountSpecification.isReceiving(true))
+            .count("fetchFailing", EmailAccountSpecification.fetchFailing())
+            .count("neverFetched", EmailAccountSpecification.neverFetched())
+            .breakdown("byProvider", EmailAccountProvider.values(),
+                type -> EmailAccountSpecification.providerTypeIn(List.of(type)))
+            .recency(EmailAccountSpecification::createdAfter)
+            .build();
     }
 
     private String validateSortField(String sortBy) {
@@ -80,6 +177,7 @@ public class EmailAccountGetService {
      * @param sortDirection Sort direction ("asc" or "desc")
      * @return ResponseEntity with paginated results or validation error
      */
+    /** Kept so any caller still passing loose parameters keeps working. */
     public ResponseEntity<?> getAllEmailAccounts(
         int page,
         int size,
@@ -99,12 +197,32 @@ public class EmailAccountGetService {
         String sortBy,
         String sortDirection
     ) {
+        EmailAccountFilter filter = new EmailAccountFilter();
+        filter.setEnabled(enabled);
+        filter.setIsDefault(isDefault);
+        filter.setEmail(email);
+        filter.setName(name);
+        filter.setProviderType(providerFromInt(providerTypeLong));
+        filter.setSmtpHost(smtpHost);
+        filter.setSmtpPort(smtpPort);
+        filter.setHasErrors(hasErrors);
+        filter.setDescription(description);
+        filter.setUseTls(useTls);
+        filter.setUseSsl(useSsl);
+        filter.setSmtpUsername(smtpUsername);
+        filter.setErrorMessage(errorMessage);
+        return getAllEmailAccounts(filter, null, page, size, sortBy, sortDirection);
+    }
 
-        log.debug("Fetching email accounts with filters - page: {}, size: {}, enabled: {}, isDefault: {}, " +
-                "email: {}, name: {}, providerType: {}, smtpHost: {}, smtpPort: {}, hasErrors: {}, description: {}, " +
-                "useTls: {}, useSsl: {}, smtpUsername: {}, errorMessage: {}, sortBy: {}, sortDirection: {}",
-                page, size, enabled, isDefault, email, name, providerTypeLong, smtpHost, smtpPort, hasErrors,
-                description, useTls, useSsl, smtpUsername, errorMessage, sortBy, sortDirection);
+    public ResponseEntity<?> getAllEmailAccounts(
+        EmailAccountFilter filter,
+        Boolean includeStats,
+        int page,
+        int size,
+        String sortBy,
+        String sortDirection
+    ) {
+        EmailAccountFilter active = filter != null ? filter : new EmailAccountFilter();
 
         // Validate sort field
         String validatedSortBy = validateSortField(sortBy);
@@ -125,104 +243,16 @@ public class EmailAccountGetService {
             return ResponseEntity.badRequest().body("Page size must be greater than 0");
         }
 
-        // Parse provider type enum if provided
-        EmailAccountProvider providerType = null;
-
-        switch (providerTypeLong) {
-            case 1:
-                providerType = EmailAccountProvider.GMAIL;
-                break;
-            case 2:
-                providerType = EmailAccountProvider.OUTLOOK;
-                break;
-            case 3:
-                providerType = EmailAccountProvider.SENDGRID;
-                break;
-            case 4:
-                providerType = EmailAccountProvider.MAILGUN;
-                break;
-            case 5:
-                providerType = EmailAccountProvider.AWS_SES;
-                break;
-            case 6:
-                providerType = EmailAccountProvider.CUSTOM;
-                break;
-            case 7:
-                providerType = EmailAccountProvider.RESEND;
-                break;
-            default:
-                providerType = null;
-                break;
-        }
-
         // Setup sorting
         Sort.Direction direction = Sort.Direction.DESC;
         if ("asc".equalsIgnoreCase(sortDirection)) {
             direction = Sort.Direction.ASC;
         }
+        // clamp: an unbounded size is a way to ask for the whole table by accident
+        Pageable paging = PageRequest.of(page, Math.min(size, 100), Sort.by(direction, validatedSortBy));
 
-        Pageable paging = PageRequest.of(
-            page,
-            size,
-            Sort.by(direction, validatedSortBy)
-        );
+        Specification<EmailAccount> specification = buildSpec(active);
 
-        // Build dynamic specification
-        Specification<EmailAccount> specification = Specification.unrestricted();
-
-        if (enabled != null) {
-            specification = specification.and(EmailAccountSpecification.isEnabled(enabled));
-        }
-
-        if (isDefault != null) {
-            specification = specification.and(EmailAccountSpecification.isDefault(isDefault));
-        }
-
-        if (email != null && !email.isBlank()) {
-            specification = specification.and(EmailAccountSpecification.emailLike(email));
-        }
-
-        if (name != null && !name.isBlank()) {
-            specification = specification.and(EmailAccountSpecification.nameLike(name));
-        }
-
-        if (providerType != null) {
-            specification = specification.and(EmailAccountSpecification.providerType(providerType));
-        }
-
-        if (smtpHost != null && !smtpHost.isBlank()) {
-            specification = specification.and(EmailAccountSpecification.smtpHostLike(smtpHost));
-        }
-
-        if (smtpPort != null) {
-            specification = specification.and(EmailAccountSpecification.smtpPort(smtpPort));
-        }
-
-        if (hasErrors != null && hasErrors) {
-            specification = specification.and(EmailAccountSpecification.hasErrors());
-        }
-
-        if (description != null && !description.isBlank()) {
-            specification = specification.and(EmailAccountSpecification.descriptionLike(description));
-        }
-
-        if (useTls != null) {
-            specification = specification.and(EmailAccountSpecification.useTls(useTls));
-        }
-
-        if (useSsl != null) {
-            specification = specification.and(EmailAccountSpecification.useSsl(useSsl));
-        }
-
-        if (smtpUsername != null && !smtpUsername.isBlank()) {
-            specification = specification.and(EmailAccountSpecification.smtpUsernameLike(smtpUsername));
-        }
-
-        if (errorMessage != null && !errorMessage.isBlank()) {
-            specification = specification.and(EmailAccountSpecification.errorMessageLike(errorMessage));
-        }
-
-        // Execute query with specifications
         Page<EmailAccount> pagedEmailAccounts = emailAccountRepository.findAll(specification, paging);
 
         // Convert to DTOs
@@ -236,7 +266,15 @@ public class EmailAccountGetService {
         response.put("totalPages", pagedEmailAccounts.getTotalPages());
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("currentSortBy", validatedSortBy);
+        response.put("pageSize", pagedEmailAccounts.getSize());
         response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+        /*
+         * Counters for the WHOLE filtered set, from the same specification as the rows, so a
+         * card and the table under it cannot disagree.
+         */
+        if (!Boolean.FALSE.equals(includeStats)) {
+            response.put("stats", buildStats(specification));
+        }
 
         log.info("Successfully fetched {} email accounts on page {}", emailAccountDTOs.size(), page);
         return ResponseEntity.ok(
@@ -249,6 +287,16 @@ public class EmailAccountGetService {
     }
 
     public ResponseEntity<ApiResponse<?>> getEmailAccount(String idObfuscated) {
+        return getEmailAccount(idObfuscated, null, null, null);
+    }
+
+    /** One account, plus where it sits in the set the caller was looking at. */
+    public ResponseEntity<ApiResponse<?>> getEmailAccount(
+        String idObfuscated,
+        EmailAccountFilter filter,
+        String sortBy,
+        String sortDirection
+    ) {
         try {
             // Decode obfuscated ID
             Long id = idObfuscator.decodeId(idObfuscated);
@@ -266,15 +314,23 @@ public class EmailAccountGetService {
             }
 
             // Navigation IDs
-            Long nextId = emailAccountRepository.findNextId(id).orElse(null);
-            Long previousId = emailAccountRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = emailAccountRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = emailAccountRepository.findLastId().orElse(null);
+            // the same specification and order the list used, so prev/next stays in that set
+            Specification<EmailAccount> navSpec =
+                buildSpec(filter != null ? filter : new EmailAccountFilter());
+            String navSortBy = validateSortField(sortBy) != null ? validateSortField(sortBy) : DEFAULT_SORT_FIELD;
+            boolean ascending = "asc".equalsIgnoreCase(sortDirection);
+
+            Map<String, Object> nav = recordNavigation.navigate(
+                EmailAccount.class, navSpec, navSortBy, ascending, id);
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("emailAccount", convertToDTO(emailAccount));
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok(
                 ApiResponse.success(
