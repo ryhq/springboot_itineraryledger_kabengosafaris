@@ -62,6 +62,9 @@ public class BackupController {
     @PreAuthorize("hasAuthority('PERM_VIEW_BACKUP_HISTORY')")
     public ResponseEntity<ApiResponse<?>> listBackups(
             @RequestParam(required = false) String filename,
+            /* the house name for the search box */
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Boolean includeStats,
             @RequestParam(required = false) LocalDateTime startDate,
             @RequestParam(required = false) LocalDateTime endDate,
             @RequestParam(required = false) Long minSize,
@@ -73,18 +76,8 @@ public class BackupController {
             @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/backups - Fetching backup list with pagination");
-        return backupGetService.getAllBackups(
-            filename,
-            startDate,
-            endDate,
-            minSize,
-            maxSize,
-            isCompressed,
-            page,
-            size,
-            sortBy,
-            sortDirection
-        );
+        return backupGetService.getAllBackups(filename, keyword, startDate, endDate, minSize, maxSize,
+                isCompressed, includeStats, page, size, sortBy, sortDirection);
     }
 
     /**
@@ -97,9 +90,20 @@ public class BackupController {
      */
     @GetMapping("/{filename}")
     @PreAuthorize("hasAuthority('PERM_VIEW_BACKUP_HISTORY')")
-    public ResponseEntity<ApiResponse<?>> getBackupByFilename(@PathVariable String filename) {
+    public ResponseEntity<ApiResponse<?>> getBackupByFilename(
+            @PathVariable String filename,
+            // the list's filter and sort, so prev/next stays inside the set on screen
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) LocalDateTime startDate,
+            @RequestParam(required = false) LocalDateTime endDate,
+            @RequestParam(required = false) Long minSize,
+            @RequestParam(required = false) Long maxSize,
+            @RequestParam(required = false) Boolean isCompressed,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection) {
         log.info("GET /api/backups/{} - Fetching backup details", filename);
-        return backupGetService.getBackupByFilename(filename);
+        return backupGetService.getBackupByFilename(filename, keyword, startDate, endDate, minSize,
+                maxSize, isCompressed, sortBy, sortDirection);
     }
 
     /**
