@@ -29,6 +29,19 @@ public class AuditLogService {
     private final AuditLogRepository auditLogRepository;
     private final AuditLogSettingGetterServices auditLogSettingGetterServices;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+
+    /**
+     * What may be sorted on.
+     *
+     * `createdAt` is the only order an audit log is ever read in by default — it is a
+     * chronology — but who and what are worth sorting by when hunting.
+     */
+    private static final java.util.List<String> VALID_SORT_FIELDS = java.util.Arrays.asList(
+        "createdAt", "username", "action", "entityType", "status"
+    );
+    private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     /**
      * Log an action asynchronously to avoid blocking the main request
@@ -264,6 +277,7 @@ public class AuditLogService {
      * @param sortDirection Sort direction ("asc" or "desc")
      * @return ResponseEntity with paginated results or validation error
      */
+    /** Kept so any caller still passing loose parameters keeps working. */
     public ResponseEntity<?> getAllAuditLogs(
         int page,
         int size,
@@ -280,110 +294,72 @@ public class AuditLogService {
         String errorMessage,
         String sortDirection
     ) {
-        log.debug("Fetching audit logs with filters - page: {}, size: {}, name: {}, userId: {}, username: {}, " +
-                "action: {}, entityType: {}, entityId: {}, description: {}, ipAddress: {}, userAgent: {}, " +
-                "status: {}, errorMessage: {}, sortDirection: {}",
-                page, size, name, userIdObfuscated, username, action, entityType, entityIdObfuscated, description,
-                ipAddress, userAgent, status, errorMessage, sortDirection);
-        
-        // Decode obfuscated IDs
-        Long userId = null;
-        if (userIdObfuscated != null && !userIdObfuscated.isBlank()) {
-            try {
-                userId = idObfuscator.decodeId(userIdObfuscated);
-            } catch (Exception e) {
-                log.warn("Invalid user ID format: {}", userIdObfuscated);
-                return ResponseEntity.badRequest().body("Invalid user ID format");
-            }
-        }
+        AuditLogFilter filter = new AuditLogFilter();
+        filter.setName(name);
+        filter.setUserId(userIdObfuscated);
+        filter.setUsername(username);
+        filter.setAction(action);
+        filter.setEntityType(entityType);
+        filter.setEntityId(entityIdObfuscated);
+        filter.setDescription(description);
+        filter.setIpAddress(ipAddress);
+        filter.setUserAgent(userAgent);
+        filter.setStatus(status);
+        filter.setErrorMessage(errorMessage);
+        return getAllAuditLogs(filter, null, page, size, null, sortDirection);
+    }
 
-        Long entityId = null;
-        if (entityIdObfuscated != null && !entityIdObfuscated.isBlank()) {
-            try {
-                entityId = idObfuscator.decodeId(entityIdObfuscated);
-            } catch (Exception e) {
-                log.warn("Invalid entity ID format: {}", entityIdObfuscated);
-                return ResponseEntity.badRequest().body("Invalid entity ID format");
-            }
-        }
-
-        // Validate pagination parameters
+    /**
+     * The log, filtered, counted and paged.
+     *
+     * The rows, the cards and prev/next all come off ONE specification, so a card cannot
+     * report a figure the table would contradict.
+     */
+    public ResponseEntity<?> getAllAuditLogs(
+        AuditLogFilter filter,
+        Boolean includeStats,
+        int page,
+        int size,
+        String sortBy,
+        String sortDirection
+    ) {
+        AuditLogFilter active = filter != null ? filter : new AuditLogFilter();
         if (page < 0) {
-            log.warn("Invalid page number: {}", page);
-            return ResponseEntity.badRequest().body("Page number cannot be negative");
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Page number cannot be negative", "INVALID_PAGE"));
         }
-        if (size <= 0) {
-            log.warn("Invalid page size: {}", size);
-            return ResponseEntity.badRequest().body("Page size must be greater than 0");
-        }
+        // clamp: an unbounded size over a table this long is a way to hang the server
+        int pageSize = size <= 0 ? 10 : Math.min(size, 100);
 
-        // Setup sorting
-        Sort.Direction direction = Sort.Direction.DESC;
-        if ("asc".equalsIgnoreCase(sortDirection)) {
-            direction = Sort.Direction.ASC;
-        }
+        String resolvedSort = (sortBy != null && VALID_SORT_FIELDS.contains(sortBy))
+            ? sortBy : DEFAULT_SORT_FIELD;
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection)
+            ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable paging = PageRequest.of(page, pageSize, Sort.by(direction, resolvedSort));
 
-        Pageable paging = PageRequest.of(page, size, Sort.by(direction, "createdAt"));
-
-        // Build dynamic specification
-        Specification<AuditLog> specification = Specification.unrestricted();
-
-        if (name != null && !name.isBlank()) {
-            specification = specification.and(AuditLogSpecification.nameLike(name));
+        Specification<AuditLog> specification;
+        try {
+            specification = buildSpec(active);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, e.getMessage(), "INVALID_FILTER"));
         }
 
-        if (userId != null) {
-            specification = specification.and(AuditLogSpecification.hasUserId(userId));
-        }
-
-        if (username != null && !username.isBlank()) {
-            specification = specification.and(AuditLogSpecification.usernameLike(username));
-        }
-
-        if (action != null && !action.isBlank()) {
-            specification = specification.and(AuditLogSpecification.actionLike(action));
-        }
-
-        if (entityType != null && !entityType.isBlank()) {
-            specification = specification.and(AuditLogSpecification.entityTypeLike(entityType));
-        }
-
-        if (entityId != null) {
-            specification = specification.and(AuditLogSpecification.hasEntityId(entityId));
-        }
-
-        if (description != null && !description.isBlank()) {
-            specification = specification.and(AuditLogSpecification.descriptionLike(description));
-        }
-
-        if (ipAddress != null && !ipAddress.isBlank()) {
-            specification = specification.and(AuditLogSpecification.hasIpAddress(ipAddress));
-        }
-
-        if (userAgent != null && !userAgent.isBlank()) {
-            specification = specification.and(AuditLogSpecification.userAgentLike(userAgent));
-        }
-
-        if (status != null && !status.isBlank()) {
-            specification = specification.and(AuditLogSpecification.statusLike(status));
-        }
-
-        if (errorMessage != null && !errorMessage.isBlank()) {
-            specification = specification.and(AuditLogSpecification.errorMessageLike(errorMessage));
-        }
-
-        // Execute query with specifications
         Page<AuditLog> pagedAuditLogs = auditLogRepository.findAll(specification, paging);
-
-        // Convert to DTOs
         List<AuditLogDTO> auditLogDTOs = getAuditLogDTOs(pagedAuditLogs.getContent());
 
-        // Build response
         Map<String, Object> response = new HashMap<>();
         response.put("auditLogs", auditLogDTOs);
         response.put("currentPage", pagedAuditLogs.getNumber());
         response.put("totalItems", pagedAuditLogs.getTotalElements());
         response.put("totalPages", pagedAuditLogs.getTotalPages());
+        response.put("pageSize", pagedAuditLogs.getSize());
+        response.put("validSortFields", VALID_SORT_FIELDS);
+        response.put("currentSortBy", resolvedSort);
+        response.put("currentSortDirection", direction.name().toLowerCase());
+        if (!Boolean.FALSE.equals(includeStats)) {
+            response.put("stats", buildStats(specification));
+        }
 
         log.info("Successfully fetched {} audit logs on page {}", auditLogDTOs.size(), page);
         return ResponseEntity.ok(
@@ -402,6 +378,16 @@ public class AuditLogService {
      * @return ResponseEntity with ApiResponse containing audit log or error
      */
     public ResponseEntity<ApiResponse<?>> getAuditLog(String idObfuscated) {
+        return getAuditLog(idObfuscated, null, null, null);
+    }
+
+    /** One entry, plus where it sits in the set the caller was looking at. */
+    public ResponseEntity<ApiResponse<?>> getAuditLog(
+        String idObfuscated,
+        AuditLogFilter filter,
+        String sortBy,
+        String sortDirection
+    ) {
         try {
             // Decode obfuscated ID
             Long id = idObfuscator.decodeId(idObfuscated);
@@ -415,16 +401,27 @@ public class AuditLogService {
                 );
             }
 
-            // Circular navigation
-            Long nextId = auditLogRepository.findNextId(id).orElse(null);
-            Long previousId = auditLogRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = auditLogRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = auditLogRepository.findLastId().orElse(null);
+            /*
+             * The walk runs over the SAME specification the list used, in the same order —
+             * so stepping through failures stays among failures. It used to page over the
+             * whole table by id, which on a log this long is a walk to nowhere.
+             */
+            Specification<AuditLog> navSpec = buildSpec(filter != null ? filter : new AuditLogFilter());
+            String navSortBy = (sortBy != null && VALID_SORT_FIELDS.contains(sortBy))
+                ? sortBy : DEFAULT_SORT_FIELD;
+            boolean ascending = "asc".equalsIgnoreCase(sortDirection);
+
+            Map<String, Object> nav = recordNavigation.navigate(
+                AuditLog.class, navSpec, navSortBy, ascending, id);
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("auditLog", convertToDTO(auditLog));
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             log.info("Successfully retrieved audit log {}", id);
             return ResponseEntity.ok(
@@ -540,4 +537,108 @@ public class AuditLogService {
         return String.format("AUD_LOG_%s%s%s", countFormatted, month, year);
     }
 
+    /**
+     * One specification, used by the rows, the cards and the record walk.
+     *
+     * OR inside a dimension, AND across dimensions — so "deletes or updates, by Ricksy, on
+     * Customers, since Monday" reads the way somebody means it.
+     */
+    private Specification<AuditLog> buildSpec(AuditLogFilter filter) {
+        Specification<AuditLog> spec = Specification.unrestricted();
+
+        if (filter.getKeyword() != null && !filter.getKeyword().isBlank()) {
+            spec = spec.and(AuditLogSpecification.searchKeyword(filter.getKeyword()));
+        }
+        if (filter.getName() != null && !filter.getName().isBlank()) {
+            spec = spec.and(AuditLogSpecification.nameLike(filter.getName()));
+        }
+        if (filter.getUsername() != null && !filter.getUsername().isBlank()) {
+            spec = spec.and(AuditLogSpecification.usernameLike(filter.getUsername()));
+        }
+        if (!filter.allActions().isEmpty()) {
+            spec = spec.and(AuditLogSpecification.actionIn(filter.allActions()));
+        }
+        if (!filter.allEntityTypes().isEmpty()) {
+            spec = spec.and(AuditLogSpecification.entityTypeIn(filter.allEntityTypes()));
+        }
+        if (!filter.allStatuses().isEmpty()) {
+            spec = spec.and(AuditLogSpecification.statusIn(filter.allStatuses()));
+        }
+        if (filter.getDescription() != null && !filter.getDescription().isBlank()) {
+            spec = spec.and(AuditLogSpecification.descriptionLike(filter.getDescription()));
+        }
+        if (filter.getIpAddress() != null && !filter.getIpAddress().isBlank()) {
+            spec = spec.and(AuditLogSpecification.hasIpAddress(filter.getIpAddress()));
+        }
+        if (filter.getUserAgent() != null && !filter.getUserAgent().isBlank()) {
+            spec = spec.and(AuditLogSpecification.userAgentLike(filter.getUserAgent()));
+        }
+        if (filter.getErrorMessage() != null && !filter.getErrorMessage().isBlank()) {
+            spec = spec.and(AuditLogSpecification.errorMessageLike(filter.getErrorMessage()));
+        }
+        if (filter.wants("failed")) spec = spec.and(AuditLogSpecification.isFailure());
+        if (filter.wants("deletions")) spec = spec.and(AuditLogSpecification.isDeletion());
+        if (filter.getCreatedAfter() != null) {
+            spec = spec.and(AuditLogSpecification.createdAfter(filter.getCreatedAfter()));
+        }
+        if (filter.getCreatedBefore() != null) {
+            spec = spec.and(AuditLogSpecification.createdBefore(filter.getCreatedBefore()));
+        }
+
+        /*
+         * An id that will not decode is a 400, not a silently ignored filter: "everything
+         * this user did" answered with everything everybody did would be a dangerous lie on
+         * this particular list.
+         */
+        if (filter.getUserId() != null && !filter.getUserId().isBlank()) {
+            spec = spec.and(AuditLogSpecification.hasUserId(decodeOrFail(filter.getUserId(), "user")));
+        }
+        if (filter.getEntityId() != null && !filter.getEntityId().isBlank()) {
+            spec = spec.and(AuditLogSpecification.hasEntityId(decodeOrFail(filter.getEntityId(), "record")));
+        }
+        return spec;
+    }
+
+    private Long decodeOrFail(String obfuscated, String what) {
+        try {
+            return idObfuscator.decodeId(obfuscated);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid " + what + " id: " + obfuscated);
+        }
+    }
+
+    /**
+     * The cards over the log.
+     *
+     * Two of these are the reason anybody opens it: something failed, or something was
+     * deleted. Both are invisible among thousands of ordinary rows, and both are reachable
+     * as filters.
+     */
+    private Map<String, Object> buildStats(Specification<AuditLog> spec) {
+        return listStats.of(AuditLog.class, spec)
+            .total()
+            .count("failed", AuditLogSpecification.isFailure())
+            .complement("succeeded", "failed")
+            .count("deletions", AuditLogSpecification.isDeletion())
+            .window("last24Hours", 1, AuditLogSpecification::createdAfter)
+            .recency(AuditLogSpecification::createdAfter)
+            .build();
+    }
+
+    /**
+     * The values this log actually holds, for the filter dropdowns.
+     *
+     * There are 330 action names and 87 entity types in the code, and a hard-coded list of
+     * them would drift the moment somebody adds a module. DISTINCT over the table can only
+     * ever offer a value that matches something — which is the whole rule about filters
+     * here — and it also says what this installation has really done.
+     */
+    public ResponseEntity<ApiResponse<?>> getFacetValues() {
+        Map<String, Object> data = new HashMap<>();
+        data.put("actions", auditLogRepository.distinctActions());
+        data.put("entityTypes", auditLogRepository.distinctEntityTypes());
+        data.put("statuses", auditLogRepository.distinctStatuses());
+        data.put("usernames", auditLogRepository.distinctUsernames());
+        return ResponseEntity.ok(ApiResponse.success(200, "Audit log filter values", data));
+    }
 }

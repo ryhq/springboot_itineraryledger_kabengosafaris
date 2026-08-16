@@ -141,4 +141,81 @@ public class AuditLogSpecification {
             return cb.like(cb.lower(root.get("errorMessage")), "%" + errorMessage.toLowerCase() + "%");
         };
     }
+
+    // ========================
+    // MULTI-VALUE FACETS (OR inside a dimension, AND across dimensions)
+    // ========================
+
+    /** Any of these actions. An empty list is no constraint, never "nothing". */
+    public static Specification<AuditLog> actionIn(java.util.List<String> actions) {
+        return (root, query, cb) -> actions == null || actions.isEmpty()
+            ? cb.conjunction()
+            : root.get("action").in(actions);
+    }
+
+    public static Specification<AuditLog> entityTypeIn(java.util.List<String> entityTypes) {
+        return (root, query, cb) -> entityTypes == null || entityTypes.isEmpty()
+            ? cb.conjunction()
+            : root.get("entityType").in(entityTypes);
+    }
+
+    public static Specification<AuditLog> statusIn(java.util.List<String> statuses) {
+        return (root, query, cb) -> statuses == null || statuses.isEmpty()
+            ? cb.conjunction()
+            : root.get("status").in(statuses);
+    }
+
+    /**
+     * The one search box: who did it, what they did, to which kind of record, and the
+     * sentence describing it.
+     *
+     * Deliberately NOT oldValues/newValues. Those are @Lob LONGTEXT holding whole records as
+     * JSON — LOWER() over a CLOB throws, and scanning every version of every row ever saved
+     * is not a search anybody wants to wait for.
+     */
+    public static Specification<AuditLog> searchKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) return cb.conjunction();
+            String like = "%" + keyword.toLowerCase().trim() + "%";
+            return cb.or(
+                cb.like(cb.lower(root.get("username")), like),
+                cb.like(cb.lower(root.get("action")), like),
+                cb.like(cb.lower(root.get("entityType")), like),
+                cb.like(cb.lower(root.get("description")), like),
+                cb.like(cb.lower(root.get("name")), like));
+        };
+    }
+
+    // ========================
+    // WORTH LOOKING AT — each of these is a card AND a filter
+    // ========================
+
+    /** Somebody tried to do something and did not get it. */
+    public static Specification<AuditLog> isFailure() {
+        return (root, query, cb) -> cb.or(
+            cb.notEqual(root.get("status"), "SUCCESS"),
+            cb.isNull(root.get("status")));
+    }
+
+    /**
+     * The successes that cannot be undone.
+     *
+     * Every delete action is named DELETE_<ENTITY> by the annotation, so the prefix is a
+     * reliable read rather than a guess.
+     */
+    public static Specification<AuditLog> isDeletion() {
+        return (root, query, cb) -> cb.like(cb.upper(root.get("action")), "DELETE%");
+    }
+
+    public static Specification<AuditLog> createdAfter(java.time.LocalDateTime when) {
+        return (root, query, cb) -> when == null
+            ? cb.conjunction()
+            : cb.greaterThanOrEqualTo(root.get("createdAt"), when);
+    }
+
+    public static Specification<AuditLog> createdBefore(java.time.LocalDateTime when) {
+        return (root, query, cb) -> when == null
+            ? cb.conjunction()
+            : cb.lessThanOrEqualTo(root.get("createdAt"), when);
+    }
 }

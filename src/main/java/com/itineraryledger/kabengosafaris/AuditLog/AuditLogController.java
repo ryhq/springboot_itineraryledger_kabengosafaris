@@ -48,26 +48,33 @@ public class AuditLogController {
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_AUDIT_LOG')")
     public ResponseEntity<?> getAllAuditLogs(
+        /*
+         * Every parameter the old signature took is still spelled the same on the wire —
+         * @ModelAttribute binds them onto the filter — plus the multi-value forms (actions,
+         * entityTypes, statuses), a keyword, and the date range an audit log is actually
+         * read by.
+         */
+        @ModelAttribute AuditLogFilter filter,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size,
-        @RequestParam(required = false) String name,
-        @RequestParam(required = false) String userId,
-        @RequestParam(required = false) String username,
-        @RequestParam(required = false) String action,
-        @RequestParam(required = false) String entityType,
-        @RequestParam(required = false) String entityId,
-        @RequestParam(required = false) String description,
-        @RequestParam(required = false) String ipAddress,
-        @RequestParam(required = false) String userAgent,
-        @RequestParam(required = false) String status,
-        @RequestParam(required = false) String errorMessage,
+        @RequestParam(required = false) String sortBy,
         @RequestParam(defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/audit-logs - Fetching audit logs with filters");
-        return auditLogService.getAllAuditLogs(
-            page, size, name, userId, username, action, entityType, entityId,
-            description, ipAddress, userAgent, status, errorMessage, sortDirection
-        );
+        return auditLogService.getAllAuditLogs(filter, includeStats, page, size, sortBy, sortDirection);
+    }
+
+    /**
+     * The values this log actually holds, for the filter dropdowns.
+     *
+     * A hard-coded list of 330 action names would drift the moment somebody adds a module,
+     * and a filter offering a value that matches nothing is worse than no filter.
+     */
+    @GetMapping("/facets")
+    @PreAuthorize("hasAuthority('PERM_READ_AUDIT_LOG')")
+    public ResponseEntity<ApiResponse<?>> getFacetValues() {
+        return auditLogService.getFacetValues();
     }
 
     /**
@@ -80,8 +87,14 @@ public class AuditLogController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_AUDIT_LOG')")
-    public ResponseEntity<ApiResponse<?>> getAuditLog(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<?>> getAuditLog(
+        @PathVariable String id,
+        // the list's filter and sort, so prev/next stays inside the set on screen
+        @ModelAttribute AuditLogFilter filter,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
+    ) {
         log.info("GET /api/audit-logs/{} - Fetching audit log", id);
-        return auditLogService.getAuditLog(id);
+        return auditLogService.getAuditLog(id, filter, sortBy, sortDirection);
     }
 }
