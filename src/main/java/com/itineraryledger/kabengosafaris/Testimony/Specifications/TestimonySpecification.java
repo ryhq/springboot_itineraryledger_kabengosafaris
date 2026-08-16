@@ -74,12 +74,13 @@ public class TestimonySpecification {
      */
     public static Specification<Testimony> hasNoAdminResponse() {
         /*
-         * IS NULL only. adminResponse is @Lob, and TRIM()/comparison over a CLOB blows up in
-         * Hibernate 6 — this counter runs on every list call, so it took the whole listing
-         * down with it. A saved-but-empty reply therefore counts as answered, which is the
-         * lesser wrong: nobody saves a blank reply on purpose.
+         * Null OR blank. This ran as IS NULL alone while adminResponse was @Lob, because
+         * TRIM over a CLOB threw and took the whole listing with it — so a saved-but-empty
+         * reply counted as answered. The mapping is fixed, so the counter can be exact.
          */
-        return (root, query, cb) -> cb.isNull(root.get("adminResponse"));
+        return (root, query, cb) -> cb.or(
+            cb.isNull(root.get("adminResponse")),
+            cb.equal(cb.trim(root.get("adminResponse")), ""));
     }
 
     /** Praise that never made it onto the site — approval pending at 4 stars or better. */
@@ -117,9 +118,18 @@ public class TestimonySpecification {
         return (root, query, cb) -> {
             if (keyword == null || keyword.trim().isEmpty()) return cb.conjunction();
             String pattern = "%" + keyword.toLowerCase().trim() + "%";
-            // Note: message is @Lob — LOWER() on CLOB types causes errors in Hibernate 6
+            /*
+             * The review itself, which is what anybody actually remembers — "the couple who
+             * mentioned the balloon". The body was left out while `message` was @Lob, and
+             * the TITLE was never in here at all, which was an oversight rather than a
+             * limitation: it is a plain varchar and always was.
+             */
             return cb.or(
                 cb.like(cb.lower(root.get("authorName")), pattern),
+                cb.like(cb.lower(root.get("reviewTitle")), pattern),
+                cb.like(cb.lower(root.get("message")), pattern),
+                cb.like(cb.lower(root.get("authorTitle")), pattern),
+                cb.like(cb.lower(root.get("authorCountry")), pattern),
                 cb.like(cb.lower(root.get("sentimentTags")), pattern)
             );
         };
