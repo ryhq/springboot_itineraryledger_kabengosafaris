@@ -16,6 +16,7 @@ import com.itineraryledger.kabengosafaris.Translation.Account.DTOs.UpdateTransla
 import com.itineraryledger.kabengosafaris.Translation.Account.Entity.TranslationProviderType;
 import com.itineraryledger.kabengosafaris.Translation.Account.Services.TranslationAccountCreateService;
 import com.itineraryledger.kabengosafaris.Translation.Account.Services.TranslationAccountDeleteService;
+import com.itineraryledger.kabengosafaris.Translation.Account.Services.TranslationAccountFilter;
 import com.itineraryledger.kabengosafaris.Translation.Account.Services.TranslationAccountGetService;
 import com.itineraryledger.kabengosafaris.Translation.Account.Services.TranslationAccountTestService;
 import com.itineraryledger.kabengosafaris.Translation.Account.Services.TranslationAccountUpdateService;
@@ -52,29 +53,32 @@ public class TranslationAccountController {
     @GetMapping
     @PreAuthorize("hasAuthority('PERM_READ_TRANSLATION_ACCOUNT')")
     public ResponseEntity<?> getAllTranslationAccounts(
+        /*
+         * Every parameter the old signature took is still spelled the same on the wire —
+         * @ModelAttribute binds them onto the filter — plus the multi-value forms
+         * (providerTypes, statuses, qualities) and a keyword.
+         */
+        @ModelAttribute TranslationAccountFilter filter,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size,
-        @RequestParam(required = false) Boolean enabled,
-        @RequestParam(required = false) Boolean isDefault,
-        @RequestParam(required = false) String name,
-        @RequestParam(required = false) Integer providerType,
-        @RequestParam(required = false) Boolean hasErrors,
-        @RequestParam(required = false) String description,
-        @RequestParam(required = false) String baseUrl,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false) String sortDirection
     ) {
         return translationAccountGetService.getAllTranslationAccounts(
-            page, size, enabled, isDefault, name,
-            providerType != null ? providerType : 0,
-            hasErrors, description, baseUrl, sortBy, sortDirection
-        );
+            filter, includeStats, page, size, sortBy, sortDirection);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_TRANSLATION_ACCOUNT')")
-    public ResponseEntity<ApiResponse<?>> getTranslationAccount(@PathVariable String id) {
-        return translationAccountGetService.getTranslationAccount(id);
+    public ResponseEntity<ApiResponse<?>> getTranslationAccount(
+        @PathVariable String id,
+        // the list's filter and sort, so prev/next stays inside the set on screen
+        @ModelAttribute TranslationAccountFilter filter,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
+    ) {
+        return translationAccountGetService.getTranslationAccount(id, filter, sortBy, sortDirection);
     }
 
     @PutMapping("/{id}")

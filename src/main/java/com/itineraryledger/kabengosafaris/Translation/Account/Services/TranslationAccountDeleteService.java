@@ -38,53 +38,72 @@ public class TranslationAccountDeleteService {
         this.idObfuscator = idObfuscator;
     }
 
+    /** One skipped row, named the way the caller can show it. */
+    private java.util.Map<String, Object> skip(String id, String name, String reason) {
+        java.util.Map<String, Object> row = new java.util.HashMap<>();
+        row.put("id", id);
+        row.put("code", name);
+        row.put("reason", reason);
+        return row;
+    }
+
     public ResponseEntity<ApiResponse<?>> deleteTranslationAccounts(List<String> idObfuscatedList) {
         log.info("Deleting {} translation accounts", idObfuscatedList.size());
 
         try {
-            List<Long> ids = new ArrayList<>();
+            /*
+             * Per-row outcomes. This used to refuse the WHOLE batch when any row was the
+             * default account, and to answer "200, deleted successfully" whether it removed
+             * everything or nothing. Skipping the default one by name and deleting the rest
+             * is what somebody selecting five accounts actually meant.
+             */
+            int deletedCount = 0;
+            List<String> deletedIds = new ArrayList<>();
+            List<java.util.Map<String, Object>> skipped = new ArrayList<>();
+
             for (String idObfuscated : idObfuscatedList) {
+                Long id;
                 try {
-                    ids.add(idObfuscator.decodeId(idObfuscated));
+                    id = idObfuscator.decodeId(idObfuscated);
                 } catch (Exception e) {
-                    log.warn("Failed to decode ID: {}", idObfuscated);
+                    skipped.add(skip(idObfuscated, null, "Not a valid account reference"));
+                    continue;
                 }
-            }
 
-            // Validate no default accounts
-            List<Long> defaultAccountIds = new ArrayList<>();
-            for (Long id : ids) {
                 TranslationAccount account = translationAccountRepository.findById(id).orElse(null);
-                if (account != null && Boolean.TRUE.equals(account.getIsDefault())) {
-                    defaultAccountIds.add(id);
+                if (account == null) {
+                    skipped.add(skip(idObfuscated, null, "No such account — it may already have been deleted"));
+                    continue;
                 }
-            }
+                if (Boolean.TRUE.equals(account.getIsDefault())) {
+                    skipped.add(skip(idObfuscated, account.getName(),
+                        "This is the default account — make another one default first"));
+                    continue;
+                }
 
-            if (!defaultAccountIds.isEmpty()) {
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400,
-                        "Cannot delete accounts: " + defaultAccountIds.size() + " account(s) are set as default. Change the default account first.",
-                        "CANNOT_DELETE_DEFAULT_ACCOUNTS")
-                );
-            }
-
-            for (Long id : ids) {
                 try {
-                    if (!translationAccountRepository.existsById(id)) {
-                        log.warn("Translation account not found: {}", id);
-                        continue;
-                    }
                     ((TranslationAccountDeleteService) AopContext.currentProxy()).deleteTranslationAccount(id);
+                    deletedCount++;
+                    deletedIds.add(idObfuscated);
                     log.info("Translation account deleted: {}", id);
                 } catch (Exception e) {
                     log.error("Error deleting translation account: {}", id, e);
+                    skipped.add(skip(idObfuscated, account.getName(),
+                        e.getMessage() != null ? e.getMessage() : "Could not be deleted"));
                 }
             }
 
             providerFactory.invalidateCache();
 
+            java.util.Map<String, Object> report = new java.util.HashMap<>();
+            report.put("deletedCount", deletedCount);
+            report.put("deletedIds", deletedIds);
+            report.put("skipped", skipped);
+
             return ResponseEntity.ok().body(
-                ApiResponse.success(200, "Translation accounts deleted successfully", null)
+                ApiResponse.success(200,
+                    deletedCount + " translation account" + (deletedCount == 1 ? "" : "s") + " deleted",
+                    report)
             );
 
         } catch (Exception e) {

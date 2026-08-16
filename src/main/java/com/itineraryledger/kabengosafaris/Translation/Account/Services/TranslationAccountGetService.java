@@ -30,6 +30,8 @@ public class TranslationAccountGetService {
 
     private final TranslationAccountRepository translationAccountRepository;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "name", "providerType", "enabled", "isDefault", "createdAt", "updatedAt"
@@ -37,9 +39,75 @@ public class TranslationAccountGetService {
     private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     @Autowired
-    public TranslationAccountGetService(TranslationAccountRepository translationAccountRepository, IdObfuscator idObfuscator) {
+    public TranslationAccountGetService(
+        TranslationAccountRepository translationAccountRepository,
+        IdObfuscator idObfuscator,
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
+    ) {
         this.translationAccountRepository = translationAccountRepository;
         this.idObfuscator = idObfuscator;
+        this.listStats = listStats;
+        this.recordNavigation = recordNavigation;
+    }
+
+    /** One specification, used by the rows, the cards and the record walk. */
+    private Specification<TranslationAccount> buildSpec(TranslationAccountFilter filter) {
+        Specification<TranslationAccount> spec = Specification.unrestricted();
+
+        if (filter.getKeyword() != null && !filter.getKeyword().isBlank()) {
+            spec = spec.and(TranslationAccountSpecification.searchKeyword(filter.getKeyword()));
+        }
+        if (filter.getName() != null && !filter.getName().isBlank()) {
+            spec = spec.and(TranslationAccountSpecification.nameLike(filter.getName()));
+        }
+        if (filter.getDescription() != null && !filter.getDescription().isBlank()) {
+            spec = spec.and(TranslationAccountSpecification.descriptionLike(filter.getDescription()));
+        }
+        if (filter.getBaseUrl() != null && !filter.getBaseUrl().isBlank()) {
+            spec = spec.and(TranslationAccountSpecification.baseUrlLike(filter.getBaseUrl()));
+        }
+        if (!filter.allProviderTypes().isEmpty()) {
+            spec = spec.and(TranslationAccountSpecification.providerTypeIn(filter.allProviderTypes()));
+        }
+        Boolean enabled = filter.resolvedEnabled();
+        if (enabled != null) {
+            spec = spec.and(TranslationAccountSpecification.isEnabled(enabled));
+        }
+        if (filter.getIsDefault() != null) {
+            spec = spec.and(TranslationAccountSpecification.isDefault(filter.getIsDefault()));
+        }
+        if (Boolean.TRUE.equals(filter.getHasErrors()) || filter.wants("failing")) {
+            spec = spec.and(TranslationAccountSpecification.hasErrors());
+        }
+        if (filter.wants("neverTested")) {
+            spec = spec.and(TranslationAccountSpecification.neverTested());
+        }
+        if (filter.getCreatedAfter() != null) {
+            spec = spec.and(TranslationAccountSpecification.createdAfter(filter.getCreatedAfter()));
+        }
+        return spec;
+    }
+
+    /**
+     * The cards over the accounts.
+     *
+     * A translation provider fails quietly — the text just comes back in English — so the
+     * two figures that matter are the ones nobody would otherwise notice: which accounts
+     * last failed, and which have never been proved to work at all.
+     */
+    private Map<String, Object> buildStats(Specification<TranslationAccount> spec) {
+        return listStats.of(TranslationAccount.class, spec)
+            .total()
+            .count("enabled", TranslationAccountSpecification.isEnabled(true))
+            .complement("disabled", "enabled")
+            .count("failing", TranslationAccountSpecification.hasErrors())
+            .count("neverTested", TranslationAccountSpecification.neverTested())
+            .count("isDefault", TranslationAccountSpecification.isDefault(true))
+            .breakdown("byProvider", TranslationProviderType.values(),
+                type -> TranslationAccountSpecification.providerTypeIn(List.of(type)))
+            .recency(TranslationAccountSpecification::createdAfter)
+            .build();
     }
 
     private String validateSortField(String sortBy) {
@@ -50,6 +118,7 @@ public class TranslationAccountGetService {
         return null;
     }
 
+    /** Kept so any caller still passing loose parameters keeps working. */
     public ResponseEntity<?> getAllTranslationAccounts(
         int page,
         int size,
@@ -63,6 +132,26 @@ public class TranslationAccountGetService {
         String sortBy,
         String sortDirection
     ) {
+        TranslationAccountFilter filter = new TranslationAccountFilter();
+        filter.setEnabled(enabled);
+        filter.setIsDefault(isDefault);
+        filter.setName(name);
+        if (providerTypeInt > 0) filter.setProviderType(providerTypeInt);
+        filter.setHasErrors(hasErrors);
+        filter.setDescription(description);
+        filter.setBaseUrl(baseUrl);
+        return getAllTranslationAccounts(filter, null, page, size, sortBy, sortDirection);
+    }
+
+    public ResponseEntity<?> getAllTranslationAccounts(
+        TranslationAccountFilter filter,
+        Boolean includeStats,
+        int page,
+        int size,
+        String sortBy,
+        String sortDirection
+    ) {
+        TranslationAccountFilter active = filter != null ? filter : new TranslationAccountFilter();
         // Validate sort field
         String validatedSortBy = validateSortField(sortBy);
         if (validatedSortBy == null) {
@@ -78,48 +167,15 @@ public class TranslationAccountGetService {
             return ResponseEntity.badRequest().body(ApiResponse.error(400, "Page size must be greater than 0", "INVALID_SIZE"));
         }
 
-        // Parse provider type
-        TranslationProviderType providerType = null;
-        if (providerTypeInt > 0) {
-            try {
-                providerType = TranslationProviderType.fromInteger(providerTypeInt);
-            } catch (IllegalArgumentException e) {
-                // Invalid provider type filter, ignore
-            }
-        }
-
         // Setup sorting
         Sort.Direction direction = Sort.Direction.DESC;
         if ("asc".equalsIgnoreCase(sortDirection)) {
             direction = Sort.Direction.ASC;
         }
+        // clamp: an unbounded size is a way to ask for the whole table by accident
+        Pageable paging = PageRequest.of(page, Math.min(size, 100), Sort.by(direction, validatedSortBy));
 
-        Pageable paging = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
-
-        // Build specification
-        Specification<TranslationAccount> specification = Specification.unrestricted();
-
-        if (enabled != null) {
-            specification = specification.and(TranslationAccountSpecification.isEnabled(enabled));
-        }
-        if (isDefault != null) {
-            specification = specification.and(TranslationAccountSpecification.isDefault(isDefault));
-        }
-        if (name != null && !name.isBlank()) {
-            specification = specification.and(TranslationAccountSpecification.nameLike(name));
-        }
-        if (providerType != null) {
-            specification = specification.and(TranslationAccountSpecification.providerType(providerType));
-        }
-        if (hasErrors != null && hasErrors) {
-            specification = specification.and(TranslationAccountSpecification.hasErrors());
-        }
-        if (description != null && !description.isBlank()) {
-            specification = specification.and(TranslationAccountSpecification.descriptionLike(description));
-        }
-        if (baseUrl != null && !baseUrl.isBlank()) {
-            specification = specification.and(TranslationAccountSpecification.baseUrlLike(baseUrl));
-        }
+        Specification<TranslationAccount> specification = buildSpec(active);
 
         Page<TranslationAccount> pagedAccounts = translationAccountRepository.findAll(specification, paging);
 
@@ -133,7 +189,15 @@ public class TranslationAccountGetService {
         response.put("totalPages", pagedAccounts.getTotalPages());
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("currentSortBy", validatedSortBy);
+        response.put("pageSize", pagedAccounts.getSize());
         response.put("currentSortDirection", sortDirection != null ? sortDirection : "desc");
+        /*
+         * Counters for the WHOLE filtered set, from the same specification as the rows, so a
+         * card and the table under it cannot disagree.
+         */
+        if (!Boolean.FALSE.equals(includeStats)) {
+            response.put("stats", buildStats(specification));
+        }
 
         return ResponseEntity.ok(
             ApiResponse.success(200, "Successfully retrieved translation accounts.", response)
@@ -141,6 +205,16 @@ public class TranslationAccountGetService {
     }
 
     public ResponseEntity<ApiResponse<?>> getTranslationAccount(String idObfuscated) {
+        return getTranslationAccount(idObfuscated, null, null, null);
+    }
+
+    /** One account, plus where it sits in the set the caller was looking at. */
+    public ResponseEntity<ApiResponse<?>> getTranslationAccount(
+        String idObfuscated,
+        TranslationAccountFilter filter,
+        String sortBy,
+        String sortDirection
+    ) {
         try {
             Long id = idObfuscator.decodeId(idObfuscated);
 
@@ -151,16 +225,23 @@ public class TranslationAccountGetService {
                 );
             }
 
-            // Navigation IDs
-            Long nextId = translationAccountRepository.findNextId(id).orElse(null);
-            Long previousId = translationAccountRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = translationAccountRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = translationAccountRepository.findLastId().orElse(null);
+            // the same specification and order the list used, so prev/next stays in that set
+            Specification<TranslationAccount> navSpec =
+                buildSpec(filter != null ? filter : new TranslationAccountFilter());
+            String navSortBy = validateSortField(sortBy) != null ? validateSortField(sortBy) : DEFAULT_SORT_FIELD;
+            boolean ascending = "asc".equalsIgnoreCase(sortDirection);
+
+            Map<String, Object> nav = recordNavigation.navigate(
+                TranslationAccount.class, navSpec, navSortBy, ascending, id);
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("translationAccount", convertToDTO(account));
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok(
                 ApiResponse.success(200, "Successfully retrieved translation account.", response)
