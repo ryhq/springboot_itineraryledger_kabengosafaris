@@ -162,4 +162,14 @@ public interface TranslationCacheRepository extends JpaRepository<TranslationCac
      */
     @Query("SELECT tc.id FROM TranslationCache tc ORDER BY tc.id DESC LIMIT 1")
     Optional<Long> findLastId();
+
+    /*
+     * The languages this cache actually holds, for the filter dropdown. DISTINCT over the
+     * rows rather than a list written into the client: the provider offers 101 languages and
+     * this installation has used a handful, so offering all 101 would be 95 filters that
+     * match nothing.
+     */
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT DISTINCT c.targetLanguage FROM TranslationCache c WHERE c.targetLanguage IS NOT NULL ORDER BY c.targetLanguage ASC")
+    java.util.List<String> distinctTargetLanguages();
 }

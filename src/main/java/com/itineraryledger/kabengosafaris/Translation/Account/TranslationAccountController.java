@@ -125,4 +125,42 @@ public class TranslationAccountController {
             ApiResponse.success(200, "Available translation provider types", providers)
         );
     }
+
+    // shared bulk-flag endpoint (see Response/BulkFlags)
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Response.BulkFlags bulkFlags;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.Translation.Account.TranslationAccountRepository bulkFlagsRepository;
+
+    /**
+     * PATCH /bulk — switch a whole selection off at once.
+     *
+     * DISABLING only, and that is not an oversight. An account is enabled by passing a test
+     * (TranslationAccountTestService sets the flag on success) precisely so that nothing can
+     * be marked usable without something having proved it works. A bulk "enable" would route
+     * around the one check that makes the flag mean anything, so a request to enable is
+     * reported back as skipped with the reason rather than silently obeyed or silently
+     * dropped.
+     */
+    @PatchMapping("/bulk")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_TRANSLATION_ACCOUNT')")
+    public ResponseEntity<?> bulkFlags(
+        @RequestBody com.itineraryledger.kabengosafaris.Response.BulkFlags.Request request
+    ) {
+        if (Boolean.TRUE.equals(request.getIsActive())) {
+            return ResponseEntity.badRequest().body(
+                com.itineraryledger.kabengosafaris.Response.ApiResponse.error(400,
+                    "An account is enabled by testing it, not by switching it on. Run the connection test instead.",
+                    "ENABLE_REQUIRES_TEST")
+            );
+        }
+        return bulkFlags.apply("translation account", bulkFlagsRepository, request, entity -> {
+            if (Boolean.FALSE.equals(request.getIsActive())) {
+                entity.setEnabled(false);
+                // a disabled account cannot remain the one everything routes through
+                entity.setIsDefault(false);
+            }
+        });
+    }
 }

@@ -355,6 +355,7 @@ public class TranslationController {
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdBefore,
         @RequestParam(required = false) Boolean expired,
         @RequestParam(required = false) Boolean accessed,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(defaultValue = "createdAt") String sortBy,
         @RequestParam(defaultValue = "desc") String sortDirection
     ) {
@@ -362,7 +363,7 @@ public class TranslationController {
         return cacheGetterService.getAllCacheEntries(
             page, size, name, sourceLanguage, targetLanguage, contentHash, originalContent, translatedContent,
             minHitCount, maxHitCount, minCharCount, maxCharCount, createdAfter, createdBefore,
-            expired, accessed, sortBy, sortDirection
+            expired, accessed, includeStats, sortBy, sortDirection
         );
     }
 

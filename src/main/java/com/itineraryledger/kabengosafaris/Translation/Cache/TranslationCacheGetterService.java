@@ -31,6 +31,8 @@ public class TranslationCacheGetterService {
 
     private final TranslationCacheRepository cacheRepository;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
 
     /**
      * Maximum content length to include in DTO responses.
@@ -86,6 +88,7 @@ public class TranslationCacheGetterService {
             LocalDateTime createdBefore,
             Boolean expired,
             Boolean accessed,
+            Boolean includeStats,
             String sortBy,
             String sortDirection
     ) {
@@ -203,6 +206,19 @@ public class TranslationCacheGetterService {
         response.put("validSortFields", VALID_SORT_FIELDS);
         response.put("hasNext", pagedCacheEntries.hasNext());
         response.put("hasPrevious", pagedCacheEntries.hasPrevious());
+        response.put("pageSize", pagedCacheEntries.getSize());
+        response.put("currentSortBy", effectiveSortBy);
+        response.put("currentSortDirection", direction.name().toLowerCase());
+        /*
+         * Counters for the WHOLE filtered set, from the same specification as the rows. This
+         * list is 15,000 rows long, so a page-scope-only summary was answering questions
+         * about ten of them and saying so — true, but almost never what was asked.
+         */
+        if (!Boolean.FALSE.equals(includeStats)) {
+            response.put("stats", buildStats(specification));
+        }
+        // the languages actually present, so the filter can only offer values that match
+        response.put("targetLanguages", cacheRepository.distinctTargetLanguages());
 
         log.info("Successfully fetched {} translation cache entries on page {}", cacheDTOs.size(), page);
         return ResponseEntity.ok(
@@ -220,6 +236,33 @@ public class TranslationCacheGetterService {
      * @param idObfuscated The obfuscated cache entry ID
      * @return ResponseEntity with ApiResponse containing cache entry or error
      */
+    /**
+     * The cards over the cache.
+     *
+     * Every one of them answers "is this cache earning its keep": what has lapsed and will
+     * be paid for again, what was translated once and never reused, and what is carrying the
+     * load. All reachable as filters, all from the same specification as the rows.
+     */
+    private Map<String, Object> buildStats(Specification<TranslationCache> spec) {
+        return listStats.of(TranslationCache.class, spec)
+            .total()
+            .count("expired", TranslationCacheSpecification.isExpired(true))
+            .complement("valid", "expired")
+            .count("neverReused", TranslationCacheSpecification.hitCountLessThanOrEqual(0L))
+            .count("reusedOnce", TranslationCacheSpecification.hitCountGreaterThanOrEqual(1L))
+            .count("reused10Plus", TranslationCacheSpecification.hitCountGreaterThanOrEqual(10L))
+            .count("reused100Plus", TranslationCacheSpecification.hitCountGreaterThanOrEqual(100L))
+            /*
+             * Long entries are where the money is: providers bill per character, so one
+             * 1,000-character paragraph reused ten times saves more than a hundred one-word
+             * labels.
+             */
+            .count("longEntries", TranslationCacheSpecification.characterCountGreaterThanOrEqual(500))
+            .count("neverAccessed", TranslationCacheSpecification.hasBeenAccessed(false))
+            .recency(TranslationCacheSpecification::createdAfter)
+            .build();
+    }
+
     public ResponseEntity<ApiResponse<?>> getCacheEntry(String idObfuscated) {
         try {
             // Decode obfuscated ID
@@ -234,16 +277,22 @@ public class TranslationCacheGetterService {
                 );
             }
 
-            // Circular navigation — wrap around at boundaries
-            Long nextId = cacheRepository.findNextId(id).orElse(null);
-            Long previousId = cacheRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = cacheRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = cacheRepository.findLastId().orElse(null);
+            /*
+             * Ordered newest-first like the list, and reporting the position — arrows with no
+             * "3 of 40" between them leave somebody paging through 15,000 entries with no
+             * idea where they are or when it ends.
+             */
+            Map<String, Object> nav = recordNavigation.navigate(
+                TranslationCache.class, Specification.unrestricted(), "createdAt", false, id);
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("cacheEntry", convertToDTO(cacheEntry, false));
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             log.info("Successfully retrieved translation cache entry {}", id);
             return ResponseEntity.ok(
