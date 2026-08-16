@@ -87,6 +87,8 @@ public class LogController {
         @RequestParam(required = false) String remoteHost,
         @RequestParam(required = false) String requestMethod,
         @RequestParam(required = false) String requestUri,
+        /* the house name for the search box */
+        @RequestParam(required = false) String keyword,
         @RequestParam(required = false) Integer status,
         @RequestParam(required = false) String statusCategory,
         @RequestParam(required = false) Long responseSizeBytes,
@@ -115,7 +117,7 @@ public class LogController {
         return accessLogService.getLogs(
             page, size, date,
             remoteAddress, localAddress, localPort, remoteHost,
-            requestMethod, requestUri, status, statusCategory,
+            requestMethod, requestUri, keyword, status, statusCategory,
             responseSizeBytes, responseSizeBytesArgument,
             timeTakenMillis, timeTakenMillisArgument,
             userAgent, referer, xForwardedFor, host,

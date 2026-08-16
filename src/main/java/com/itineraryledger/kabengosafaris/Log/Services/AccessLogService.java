@@ -66,6 +66,7 @@ public class AccessLogService {
         String remoteHost,
         String requestMethod,
         String requestUri,
+        String keyword,
         Integer status,
         String statusCategory,
         Long responseSizeBytes,
@@ -185,6 +186,19 @@ public class AccessLogService {
                 .filter(dto -> remoteHost == null || remoteHost.equals(dto.getRemoteHost()))
                 .filter(dto -> requestMethod == null || requestMethod.equalsIgnoreCase(dto.getRequestMethod()))
                 .filter(dto -> requestUri == null || (dto.getRequestUri() != null && dto.getRequestUri().contains(requestUri)))
+                /*
+                 * The one search box: the path, the caller's address and the browser string.
+                 * Those are the three things anybody has in hand when they come to this page
+                 * — a URL somebody reported, an IP from an alert, or a bot's user agent.
+                 */
+                .filter(dto -> {
+                    if (keyword == null || keyword.isBlank()) return true;
+                    String needle = keyword.toLowerCase();
+                    return (dto.getRequestUri() != null && dto.getRequestUri().toLowerCase().contains(needle))
+                        || (dto.getRemoteAddress() != null && dto.getRemoteAddress().toLowerCase().contains(needle))
+                        || (dto.getUserAgent() != null && dto.getUserAgent().toLowerCase().contains(needle))
+                        || (dto.getRequestLine() != null && dto.getRequestLine().toLowerCase().contains(needle));
+                })
                 .filter(dto -> status == null || status.equals(dto.getStatus()))
                 .filter(dto -> statusCategory == null || statusCategory.equals(dto.getStatusCategory()))
                 .filter(dto -> responseSizeBytes == null || compare(dto.getResponseSizeBytes(), responseSizeBytes, responseSizeBytesArgument))
@@ -223,11 +237,11 @@ public class AccessLogService {
 
             Page<AccessLogDTO> pageLogs = new PageImpl<>(pageContent, pageRequest, filteredLogs.size());
 
-            if (pageLogs.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NO_CONTENT).body(
-                    ApiResponse.success(204, "No logs found matching the criteria", null)
-                );
-            }
+            /*
+             * An empty result is still a result. This used to answer 204 with a null body,
+             * which every generic list client reads as "no data at all" rather than "no rows
+             * matched" — the table went blank instead of saying nothing matched the filter.
+             */
 
             // Prepare response with summary
             Map<String, Object> response = new HashMap<>();
@@ -239,6 +253,13 @@ public class AccessLogService {
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection.toLowerCase());
             response.put("summary", generateSummary(pageLogs.getContent()));
+            /*
+             * `summary` counts the PAGE, which is what the old panel showed. `stats` counts
+             * the whole filtered set — the honest answer to "how many errors are there",
+             * and free here because the filtering already happened in memory.
+             */
+            response.put("pageSize", pageLogs.getSize());
+            response.put("stats", generateSummary(filteredLogs));
 
             return ResponseEntity.ok(
                 ApiResponse.success(200, "Logs retrieved successfully", response)
