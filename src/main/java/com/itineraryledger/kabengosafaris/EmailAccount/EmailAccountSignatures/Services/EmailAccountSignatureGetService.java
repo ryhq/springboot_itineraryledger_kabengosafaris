@@ -505,6 +505,13 @@ public class EmailAccountSignatureGetService {
         return EmailAccountSignatureDTO.builder()
                 .id(idObfuscator.encodeId(signature.getId()))
                 .emailAccountId(idObfuscator.encodeId(signature.getEmailAccount().getId()))
+                /*
+                 * The mailbox in words. THIS is the mapper the list and the record use — the
+                 * name went onto a different builder first, which is why the Mailbox column
+                 * was empty and the breadcrumb said "Record".
+                 */
+                .emailAccountName(signature.getEmailAccount().getName())
+                .emailAccountEmail(signature.getEmailAccount().getEmail())
                 .name(signature.getName())
                 .description(signature.getDescription())
                 .fileName(signature.getFileName())

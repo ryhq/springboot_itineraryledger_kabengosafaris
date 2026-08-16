@@ -28,6 +28,8 @@ public class ResendWebhookEventGetService {
 
     private final ResendWebhookEventRepository webhookEventRepository;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final Set<String> VALID_SORT_FIELDS = Set.of(
             "receivedAt", "eventTimestamp", "eventType", "fromEmail", "toEmail", "subject"
@@ -36,6 +38,13 @@ public class ResendWebhookEventGetService {
     public ResponseEntity<ApiResponse<?>> listEvents(
             Integer pageNumber, Integer pageSize, String sortBy, String sortDirection,
             String eventType, String fromEmail, String toEmail, String keyword) {
+        return listEvents(pageNumber, pageSize, sortBy, sortDirection, eventType, fromEmail, toEmail,
+                keyword, null);
+    }
+
+    public ResponseEntity<ApiResponse<?>> listEvents(
+            Integer pageNumber, Integer pageSize, String sortBy, String sortDirection,
+            String eventType, String fromEmail, String toEmail, String keyword, Boolean includeStats) {
         try {
             pageNumber = (pageNumber != null) ? pageNumber : 0;
             pageSize = (pageSize != null) ? pageSize : 25;
@@ -54,26 +63,7 @@ public class ResendWebhookEventGetService {
                     : Sort.by(validatedSortBy).ascending();
             Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
 
-            Specification<ResendWebhookEvent> spec = Specification.unrestricted();
-            if (eventType != null && !eventType.isEmpty()) {
-                spec = spec.and((root, query, cb) -> cb.equal(root.get("eventType"), eventType));
-            }
-            if (fromEmail != null && !fromEmail.isEmpty()) {
-                spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("fromEmail")), "%" + fromEmail.toLowerCase() + "%"));
-            }
-            if (toEmail != null && !toEmail.isEmpty()) {
-                spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("toEmail")), "%" + toEmail.toLowerCase() + "%"));
-            }
-            if (keyword != null && !keyword.isEmpty()) {
-                String kw = "%" + keyword.toLowerCase() + "%";
-                spec = spec.and((root, query, cb) -> cb.or(
-                        cb.like(cb.lower(root.get("fromEmail")), kw),
-                        cb.like(cb.lower(root.get("toEmail")), kw),
-                        cb.like(cb.lower(root.get("subject")), kw),
-                        cb.like(cb.lower(root.get("emailId")), kw),
-                        cb.like(cb.lower(root.get("eventType")), kw)
-                ));
-            }
+            Specification<ResendWebhookEvent> spec = buildSpec(eventType, fromEmail, toEmail, keyword);
 
             Page<ResendWebhookEvent> page = webhookEventRepository.findAll(spec, pageable);
 
@@ -89,6 +79,16 @@ public class ResendWebhookEventGetService {
             response.put("pageSize", page.getSize());
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
+            response.put("currentSortDirection", sortDirection.toLowerCase());
+            /*
+             * Counters over the WHOLE filtered set. Page scope answered "3 bounced" about the
+             * twenty-five rows on screen out of 2,279 — true, and read by everybody as the
+             * number of bounces there have ever been.
+             */
+            if (!Boolean.FALSE.equals(includeStats)) {
+                response.put("stats", buildStats(spec));
+            }
+            response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", sortDirection);
 
             return ResponseEntity.ok(ApiResponse.success(200, "Webhook events retrieved successfully", response));
@@ -101,6 +101,24 @@ public class ResendWebhookEventGetService {
     }
 
     public ResponseEntity<ApiResponse<?>> getEvent(String obfuscatedId) {
+        return getEvent(obfuscatedId, null, null, null, null, null, null);
+    }
+
+    /**
+     * One event, plus where it sits in the set the caller was looking at.
+     *
+     * The filter comes from the list, so stepping through bounces stays among bounces. It
+     * used to walk by timestamp across the whole table, with no position at all.
+     */
+    public ResponseEntity<ApiResponse<?>> getEvent(
+        String obfuscatedId,
+        String eventType,
+        String fromEmail,
+        String toEmail,
+        String keyword,
+        String sortBy,
+        String sortDirection
+    ) {
         try {
             Long id = idObfuscator.decodeId(obfuscatedId);
             ResendWebhookEvent event = webhookEventRepository.findById(id).orElse(null);
@@ -113,20 +131,20 @@ public class ResendWebhookEventGetService {
             ResendWebhookEventDTO dto = convertToDTO(event);
 
             // Circular navigation — find previous and next by receivedAt desc order
-            String previousId = webhookEventRepository
-                    .findFirstByReceivedAtGreaterThanOrderByReceivedAtAsc(event.getReceivedAt())
-                    .map(e -> idObfuscator.encodeId(e.getId()))
-                    .orElse(null);
-            String nextId = webhookEventRepository
-                    .findFirstByReceivedAtLessThanOrderByReceivedAtDesc(event.getReceivedAt())
-                    .map(e -> idObfuscator.encodeId(e.getId()))
-                    .orElse(null);
+            Specification<ResendWebhookEvent> navSpec = buildSpec(eventType, fromEmail, toEmail, keyword);
+            String navSortBy = validateSortField(sortBy) != null ? validateSortField(sortBy) : "receivedAt";
+            Map<String, Object> nav = recordNavigation.navigate(
+                ResendWebhookEvent.class, navSpec, navSortBy, "asc".equalsIgnoreCase(sortDirection), id);
+            Long nextRaw = (Long) nav.get("nextRawId");
+            Long previousRaw = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("event", dto);
             response.put("rawPayload", event.getRawPayload());
-            response.put("previousId", previousId);
-            response.put("nextId", nextId);
+            response.put("previousId", previousRaw != null ? idObfuscator.encodeId(previousRaw) : null);
+            response.put("nextId", nextRaw != null ? idObfuscator.encodeId(nextRaw) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok(ApiResponse.success(200, "Webhook event retrieved successfully", response));
         } catch (Exception e) {
@@ -149,6 +167,52 @@ public class ResendWebhookEventGetService {
                 .eventTimestamp(event.getEventTimestamp())
                 .receivedAt(event.getReceivedAt())
                 .build();
+    }
+
+    /** ONE specification, shared by the rows, the counters and the record walk. */
+    private Specification<ResendWebhookEvent> buildSpec(
+        String eventType, String fromEmail, String toEmail, String keyword
+    ) {
+        Specification<ResendWebhookEvent> spec = Specification.unrestricted();
+        if (eventType != null && !eventType.isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("eventType"), eventType));
+        }
+        if (fromEmail != null && !fromEmail.isEmpty()) {
+            spec = spec.and((root, query, cb) ->
+                cb.like(cb.lower(root.get("fromEmail")), "%" + fromEmail.toLowerCase() + "%"));
+        }
+        if (toEmail != null && !toEmail.isEmpty()) {
+            spec = spec.and((root, query, cb) ->
+                cb.like(cb.lower(root.get("toEmail")), "%" + toEmail.toLowerCase() + "%"));
+        }
+        if (keyword != null && !keyword.isEmpty()) {
+            String kw = "%" + keyword.toLowerCase() + "%";
+            spec = spec.and((root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("fromEmail")), kw),
+                cb.like(cb.lower(root.get("toEmail")), kw),
+                cb.like(cb.lower(root.get("subject")), kw),
+                cb.like(cb.lower(root.get("emailId")), kw),
+                cb.like(cb.lower(root.get("eventType")), kw)));
+        }
+        return spec;
+    }
+
+    /** One counter per outcome, and the two that are bad news lead the cards. */
+    private Map<String, Object> buildStats(Specification<ResendWebhookEvent> spec) {
+        return listStats.of(ResendWebhookEvent.class, spec)
+            .total()
+            .count("bounced", ofType("email.bounced"))
+            .count("complained", ofType("email.complained"))
+            .count("delivered", ofType("email.delivered"))
+            .count("sent", ofType("email.sent"))
+            .count("opened", ofType("email.opened"))
+            .count("clicked", ofType("email.clicked"))
+            .count("delayed", ofType("email.delivery_delayed"))
+            .build();
+    }
+
+    private Specification<ResendWebhookEvent> ofType(String type) {
+        return (root, query, cb) -> cb.equal(root.get("eventType"), type);
     }
 
     private String validateSortField(String sortBy) {

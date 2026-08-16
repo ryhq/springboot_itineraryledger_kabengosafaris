@@ -383,8 +383,15 @@ public class TranslationController {
      */
     @GetMapping("/cache/entries/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_TRANSLATION_CACHE')")
-    public ResponseEntity<ApiResponse<?>> getCacheEntry(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<?>> getCacheEntry(
+        @PathVariable String id,
+        // the list's search and sort, so prev/next stays inside the set on screen
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String targetLanguage,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
+    ) {
         log.info("GET /api/translation/cache/entries/{} - Fetching cache entry", id);
-        return cacheGetterService.getCacheEntry(id);
+        return cacheGetterService.getCacheEntry(id, keyword, targetLanguage, sortBy, sortDirection);
     }
 }

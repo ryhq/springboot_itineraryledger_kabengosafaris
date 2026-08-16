@@ -269,6 +269,23 @@ public class TranslationCacheGetterService {
     }
 
     public ResponseEntity<ApiResponse<?>> getCacheEntry(String idObfuscated) {
+        return getCacheEntry(idObfuscated, null, null, null, null);
+    }
+
+    /**
+     * One entry, plus where it sits in the set the caller was looking at.
+     *
+     * The keyword and language come from the list, so paging through a search stays inside
+     * that search — "7 of 15,917" while looking at one match was the arrows walking a
+     * different set from the one on screen.
+     */
+    public ResponseEntity<ApiResponse<?>> getCacheEntry(
+        String idObfuscated,
+        String keyword,
+        String targetLanguage,
+        String sortBy,
+        String sortDirection
+    ) {
         try {
             // Decode obfuscated ID
             Long id = idObfuscator.decodeId(idObfuscated);
@@ -287,8 +304,16 @@ public class TranslationCacheGetterService {
              * "3 of 40" between them leave somebody paging through 15,000 entries with no
              * idea where they are or when it ends.
              */
+            Specification<TranslationCache> navSpec = Specification.unrestricted();
+            if (keyword != null && !keyword.isBlank()) {
+                navSpec = navSpec.and(TranslationCacheSpecification.searchKeyword(keyword));
+            }
+            if (targetLanguage != null && !targetLanguage.isBlank()) {
+                navSpec = navSpec.and(TranslationCacheSpecification.hasTargetLanguage(targetLanguage));
+            }
+            String navSortBy = sortBy != null && VALID_SORT_FIELDS.contains(sortBy) ? sortBy : "createdAt";
             Map<String, Object> nav = recordNavigation.navigate(
-                TranslationCache.class, Specification.unrestricted(), "createdAt", false, id);
+                TranslationCache.class, navSpec, navSortBy, "asc".equalsIgnoreCase(sortDirection), id);
             Long nextId = (Long) nav.get("nextRawId");
             Long previousId = (Long) nav.get("previousRawId");
 
