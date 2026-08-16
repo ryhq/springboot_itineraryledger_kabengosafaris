@@ -85,6 +85,25 @@ public class TranslationCacheSpecification {
     }
 
     /**
+     * The one search box: the phrase, in either language.
+     *
+     * Both sides on purpose — somebody hunting for a cached entry knows either the English
+     * they wrote or the German they saw on the site, and which one they remember is not
+     * something the box can ask. Safe to LOWER() because these are plain MEDIUMTEXT columns
+     * rather than @Lob, which is what breaks the same query elsewhere in this codebase.
+     */
+    public static Specification<TranslationCache> searchKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) return cb.conjunction();
+            String like = "%" + keyword.toLowerCase().trim() + "%";
+            return cb.or(
+                cb.like(cb.lower(root.get("originalContent")), like),
+                cb.like(cb.lower(root.get("translatedContent")), like),
+                cb.like(cb.lower(root.get("name")), like));
+        };
+    }
+
+    /**
      * Filter by minimum hit count
      */
     public static Specification<TranslationCache> hitCountGreaterThanOrEqual(Long minHitCount) {

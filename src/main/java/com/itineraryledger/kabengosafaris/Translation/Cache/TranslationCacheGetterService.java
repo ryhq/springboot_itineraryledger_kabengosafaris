@@ -88,6 +88,7 @@ public class TranslationCacheGetterService {
             LocalDateTime createdBefore,
             Boolean expired,
             Boolean accessed,
+            String keyword,
             Boolean includeStats,
             String sortBy,
             String sortDirection
@@ -147,6 +148,10 @@ public class TranslationCacheGetterService {
 
         if (contentHash != null && !contentHash.isBlank()) {
             specification = specification.and(TranslationCacheSpecification.hasContentHash(contentHash));
+        }
+
+        if (keyword != null && !keyword.isBlank()) {
+            specification = specification.and(TranslationCacheSpecification.searchKeyword(keyword));
         }
 
         if (originalContent != null && !originalContent.isBlank()) {

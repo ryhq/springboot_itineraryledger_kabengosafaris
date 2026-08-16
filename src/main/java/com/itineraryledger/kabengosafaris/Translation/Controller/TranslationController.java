@@ -355,6 +355,12 @@ public class TranslationController {
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdBefore,
         @RequestParam(required = false) Boolean expired,
         @RequestParam(required = false) Boolean accessed,
+        /*
+         * The house name for the one search box. Without it the list page's search sent
+         * `keyword`, Spring dropped it on the floor, and every row came back as if nothing
+         * had been typed — a search that silently returns everything.
+         */
+        @RequestParam(required = false) String keyword,
         @RequestParam(required = false) Boolean includeStats,
         @RequestParam(defaultValue = "createdAt") String sortBy,
         @RequestParam(defaultValue = "desc") String sortDirection
@@ -363,7 +369,7 @@ public class TranslationController {
         return cacheGetterService.getAllCacheEntries(
             page, size, name, sourceLanguage, targetLanguage, contentHash, originalContent, translatedContent,
             minHitCount, maxHitCount, minCharCount, maxCharCount, createdAfter, createdBefore,
-            expired, accessed, includeStats, sortBy, sortDirection
+            expired, accessed, keyword, includeStats, sortBy, sortDirection
         );
     }
 
