@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 public class SafariVehicleGetService {
 
     private final SafariVehicleRepository safariVehicleRepository;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final SafariRepository safariRepository;
     private final IdObfuscator idObfuscator;
 
@@ -66,15 +67,27 @@ public class SafariVehicleGetService {
 
             SafariVehicleDTO dto = convertToDTO(safariVehicle);
 
-            Long nextId = safariVehicleRepository.findNextIdBySafariId(safariId, id).orElse(null);
-            Long previousId = safariVehicleRepository.findPreviousIdBySafariId(safariId, id).orElse(null);
-            if (nextId == null) nextId = safariVehicleRepository.findFirstIdBySafariId(safariId).orElse(null);
-            if (previousId == null) previousId = safariVehicleRepository.findLastIdBySafariId(safariId).orElse(null);
+            /*
+             * This list takes no sort, so the walk stays in id order as it was — what it gains
+             * is the ability to say where in the safari's vehicles you are.
+             */
+            Long parentId = safariId;
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                SafariVehicle.class,
+                (root, query, cb) -> cb.equal(root.get("safari").get("id"), parentId),
+                "id",
+                true,
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("safariVehicle", dto);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok(ApiResponse.success(200, "Safari vehicle retrieved successfully", response));
 

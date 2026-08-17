@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ItineraryDayGetService {
 
     private final ItineraryRepository itineraryRepository;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final ItineraryDayRepository itineraryDayRepository;
     private final IdObfuscator idObfuscator;
 
@@ -44,10 +45,13 @@ public class ItineraryDayGetService {
         ItineraryRepository itineraryRepository,
         ItineraryDayRepository itineraryDayRepository,
         IdObfuscator idObfuscator
+    ,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.itineraryRepository = itineraryRepository;
         this.itineraryDayRepository = itineraryDayRepository;
         this.idObfuscator = idObfuscator;
+        this.recordNavigation = recordNavigation;
     }
 
     /**
@@ -126,7 +130,11 @@ public class ItineraryDayGetService {
      * @param dayIdObfuscated The obfuscated day ID
      * @return ResponseEntity with ApiResponse containing the day
      */
-    public ResponseEntity<ApiResponse<?>> getItineraryDay(String itineraryIdObfuscated, String dayIdObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getItineraryDay(String itineraryIdObfuscated, String dayIdObfuscated,
+        /* the sort travels with the record so its arrows keep the list's order */
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching day {} for itinerary: {}", dayIdObfuscated, itineraryIdObfuscated);
 
         try {
@@ -160,17 +168,30 @@ public class ItineraryDayGetService {
             // Convert to DTO
             ItineraryDayDTO dayDTO = convertToDTO(day);
 
-            // Parent-scoped circular navigation
+            /*
+             * Parent-scoped circular navigation, in the ORDER THE LIST USED. The repository
+             * walk this replaces stepped by id whatever the sort was, so the arrows moved
+             * through a different sequence from the one on screen — and could not say where
+             * in it you were.
+             */
             Long parentId = day.getItinerary().getId();
-            Long nextId = itineraryDayRepository.findNextIdInParent(parentId, dayId).orElse(null);
-            Long previousId = itineraryDayRepository.findPreviousIdInParent(parentId, dayId).orElse(null);
-            if (nextId == null) nextId = itineraryDayRepository.findFirstIdInParent(parentId).orElse(null);
-            if (previousId == null) previousId = itineraryDayRepository.findLastIdInParent(parentId).orElse(null);
+            String validatedSortBy = validateSortField(sortBy);
+            Map<String, Object> nav = recordNavigation.navigate(
+                ItineraryDay.class,
+                (root, query, cb) -> cb.equal(root.get("itinerary").get("id"), parentId),
+                validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
+                !"desc".equalsIgnoreCase(sortDirection),
+                dayId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("itineraryDay", dayDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Itinerary day retrieved successfully", response)

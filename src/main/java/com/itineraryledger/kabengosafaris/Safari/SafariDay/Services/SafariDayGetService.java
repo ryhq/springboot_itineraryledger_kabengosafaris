@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 public class SafariDayGetService {
 
     private final SafariRepository safariRepository;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final SafariDayRepository safariDayRepository;
     private final IdObfuscator idObfuscator;
 
@@ -44,10 +45,13 @@ public class SafariDayGetService {
         SafariRepository safariRepository,
         SafariDayRepository safariDayRepository,
         IdObfuscator idObfuscator
+    ,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.safariRepository = safariRepository;
         this.safariDayRepository = safariDayRepository;
         this.idObfuscator = idObfuscator;
+        this.recordNavigation = recordNavigation;
     }
 
     /**
@@ -120,7 +124,11 @@ public class SafariDayGetService {
      * @param dayIdObfuscated The obfuscated day ID
      * @return ResponseEntity with ApiResponse containing the day
      */
-    public ResponseEntity<ApiResponse<?>> getSafariDay(String safariIdObfuscated, String dayIdObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getSafariDay(String safariIdObfuscated, String dayIdObfuscated,
+        /* the sort travels with the record so its arrows keep the list's order */
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching day {} for safari: {}", dayIdObfuscated, safariIdObfuscated);
 
         try {
@@ -154,17 +162,30 @@ public class SafariDayGetService {
             // Convert to DTO
             SafariDayDTO dayDTO = convertToDTO(day);
 
-            // Parent-scoped circular navigation
+            /*
+             * Parent-scoped circular navigation, in the ORDER THE LIST USED. The repository
+             * walk this replaces stepped by id whatever the sort was, so the arrows moved
+             * through a different sequence from the one on screen — and could not say where
+             * in it you were.
+             */
             Long parentId = day.getSafari().getId();
-            Long nextId = safariDayRepository.findNextIdInParent(parentId, dayId).orElse(null);
-            Long previousId = safariDayRepository.findPreviousIdInParent(parentId, dayId).orElse(null);
-            if (nextId == null) nextId = safariDayRepository.findFirstIdInParent(parentId).orElse(null);
-            if (previousId == null) previousId = safariDayRepository.findLastIdInParent(parentId).orElse(null);
+            String validatedSortBy = validateSortField(sortBy);
+            Map<String, Object> nav = recordNavigation.navigate(
+                SafariDay.class,
+                (root, query, cb) -> cb.equal(root.get("safari").get("id"), parentId),
+                validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
+                !"desc".equalsIgnoreCase(sortDirection),
+                dayId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("safariDay", dayDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Safari day retrieved successfully", response)

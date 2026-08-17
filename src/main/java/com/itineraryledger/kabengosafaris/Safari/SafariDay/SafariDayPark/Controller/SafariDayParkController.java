@@ -107,9 +107,13 @@ public class SafariDayParkController {
         @PathVariable String safariId,
         @PathVariable String dayId,
         @PathVariable String parkVisitId
+    ,
+        /* the sort travels with the record so its arrows keep the list's order */
+        @RequestParam(required = false) String sortBy
+        , @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/safaris/{}/days/{}/parks/{} - Fetching park visit", safariId, dayId, parkVisitId);
-        return getService.getSafariDayPark(safariId, dayId, parkVisitId);
+        return getService.getSafariDayPark(safariId, dayId, parkVisitId, sortBy, sortDirection);
     }
 
     /**

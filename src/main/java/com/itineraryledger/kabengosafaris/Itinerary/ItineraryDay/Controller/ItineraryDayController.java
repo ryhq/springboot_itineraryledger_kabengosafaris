@@ -121,9 +121,13 @@ public class ItineraryDayController {
     public ResponseEntity<ApiResponse<?>> getDay(
         @PathVariable String itineraryId,
         @PathVariable String dayId
+    ,
+        /* the sort travels with the record so its arrows keep the list's order */
+        @RequestParam(required = false) String sortBy
+        , @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/itineraries/{}/days/{} - Fetching day", itineraryId, dayId);
-        return getService.getItineraryDay(itineraryId, dayId);
+        return getService.getItineraryDay(itineraryId, dayId, sortBy, sortDirection);
     }
 
     @PostMapping("/reorder")

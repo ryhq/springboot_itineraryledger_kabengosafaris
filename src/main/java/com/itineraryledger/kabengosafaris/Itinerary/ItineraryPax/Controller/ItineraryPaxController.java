@@ -65,9 +65,13 @@ public class ItineraryPaxController {
     public ResponseEntity<ApiResponse<?>> getPaxById(
         @PathVariable String itineraryId,
         @PathVariable String paxId
+    ,
+        /* the sort travels with the record so its arrows keep the list's order */
+        @RequestParam(required = false) String sortBy
+        , @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/itineraries/{}/pax/{} - Fetching pax entry", itineraryId, paxId);
-        return getService.getItineraryPaxById(itineraryId, paxId);
+        return getService.getItineraryPaxById(itineraryId, paxId, sortBy, sortDirection);
     }
 
     @DeleteMapping

@@ -23,6 +23,7 @@ import java.util.Map;
 public class ExpenseLineItemGetService {
 
     private final ExpenseLineItemRepository repository;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final IdObfuscator idObfuscator;
 
     public ResponseEntity<ApiResponse<?>> getAllForExpense(String expenseIdObfuscated) {
@@ -49,15 +50,28 @@ public class ExpenseLineItemGetService {
                     ApiResponse.error(404, "Line item not found", "EXPENSE_LINE_ITEM_NOT_FOUND"));
             }
 
-            Long nextId = repository.findNextIdInExpense(expenseId, itemId).orElse(null);
-            Long previousId = repository.findPreviousIdInExpense(expenseId, itemId).orElse(null);
-            if (nextId == null) nextId = repository.findFirstIdInExpense(expenseId).orElse(null);
-            if (previousId == null) previousId = repository.findLastIdInExpense(expenseId).orElse(null);
+            /*
+             * The list comes back ordered by displayOrder, so the arrows follow displayOrder
+             * too — the id-ordered walk this replaces moved through a different sequence from
+             * the one on screen, and could not say where in it you were.
+             */
+            Long parentId = expenseId;
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                ExpenseLineItem.class,
+                (root, query, cb) -> cb.equal(root.get("expense").get("id"), parentId),
+                "displayOrder",
+                true,
+                itemId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("lineItem", toDTO(item));
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok(ApiResponse.success(200, "Line item retrieved", response));
         } catch (Exception e) {

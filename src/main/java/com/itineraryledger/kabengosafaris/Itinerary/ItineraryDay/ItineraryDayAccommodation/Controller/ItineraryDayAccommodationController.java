@@ -73,9 +73,13 @@ public class ItineraryDayAccommodationController {
         @PathVariable String itineraryId,
         @PathVariable String dayId,
         @PathVariable String accommodationId
+    ,
+        /* the sort travels with the record so its arrows keep the list's order */
+        @RequestParam(required = false) String sortBy
+        , @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/itineraries/{}/days/{}/accommodations/{} - Fetching accommodation", itineraryId, dayId, accommodationId);
-        return getService.getItineraryDayAccommodation(itineraryId, dayId, accommodationId);
+        return getService.getItineraryDayAccommodation(itineraryId, dayId, accommodationId, sortBy, sortDirection);
     }
 
     @PutMapping("/{accommodationId}")

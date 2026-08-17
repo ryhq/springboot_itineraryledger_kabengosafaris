@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 public class SafariPaxGetService {
 
     private final SafariRepository safariRepository;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final SafariPaxRepository safariPaxRepository;
     private final IdObfuscator idObfuscator;
 
@@ -43,10 +44,13 @@ public class SafariPaxGetService {
         SafariRepository safariRepository,
         SafariPaxRepository safariPaxRepository,
         IdObfuscator idObfuscator
+    ,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.safariRepository = safariRepository;
         this.safariPaxRepository = safariPaxRepository;
         this.idObfuscator = idObfuscator;
+        this.recordNavigation = recordNavigation;
     }
 
     /**
@@ -131,7 +135,10 @@ public class SafariPaxGetService {
      */
     public ResponseEntity<ApiResponse<?>> getSafariPaxById(
             String safariIdObfuscated,
-            String paxIdObfuscated
+            String paxIdObfuscated,
+        /* the sort travels with the record so its arrows keep the list's order */
+        String sortBy,
+        String sortDirection
     ) {
         log.info("Fetching pax entry: {} for safari: {}", paxIdObfuscated, safariIdObfuscated);
 
@@ -171,17 +178,30 @@ public class SafariPaxGetService {
             // Convert to DTO
             SafariPaxDTO dto = convertToDTO(pax);
 
-            // Parent-scoped circular navigation
+            /*
+             * Parent-scoped circular navigation, in the ORDER THE LIST USED. The repository
+             * walk this replaces stepped by id whatever the sort was, so the arrows moved
+             * through a different sequence from the one on screen — and could not say where
+             * in it you were.
+             */
             Long parentId = pax.getSafari().getId();
-            Long nextId = safariPaxRepository.findNextIdInParent(parentId, paxId).orElse(null);
-            Long previousId = safariPaxRepository.findPreviousIdInParent(parentId, paxId).orElse(null);
-            if (nextId == null) nextId = safariPaxRepository.findFirstIdInParent(parentId).orElse(null);
-            if (previousId == null) previousId = safariPaxRepository.findLastIdInParent(parentId).orElse(null);
+            String validatedSortBy = validateSortField(sortBy);
+            Map<String, Object> nav = recordNavigation.navigate(
+                SafariPax.class,
+                (root, query, cb) -> cb.equal(root.get("safari").get("id"), parentId),
+                validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
+                !"desc".equalsIgnoreCase(sortDirection),
+                paxId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("paxEntry", dto);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Pax entry retrieved successfully", response)

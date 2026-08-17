@@ -65,9 +65,13 @@ public class SafariPaxController {
     public ResponseEntity<ApiResponse<?>> getPaxById(
         @PathVariable String safariId,
         @PathVariable String paxId
+    ,
+        /* the sort travels with the record so its arrows keep the list's order */
+        @RequestParam(required = false) String sortBy
+        , @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/safaris/{}/pax/{} - Fetching pax entry", safariId, paxId);
-        return getService.getSafariPaxById(safariId, paxId);
+        return getService.getSafariPaxById(safariId, paxId, sortBy, sortDirection);
     }
 
     @DeleteMapping

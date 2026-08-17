@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ItineraryDayParkActivityGetService {
 
     private final ItineraryDayParkActivityRepository parkActivityRepository;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -41,9 +42,12 @@ public class ItineraryDayParkActivityGetService {
     public ItineraryDayParkActivityGetService(
         ItineraryDayParkActivityRepository parkActivityRepository,
         IdObfuscator idObfuscator
+    ,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.parkActivityRepository = parkActivityRepository;
         this.idObfuscator = idObfuscator;
+        this.recordNavigation = recordNavigation;
     }
 
     /**
@@ -113,7 +117,10 @@ public class ItineraryDayParkActivityGetService {
      */
     public ResponseEntity<ApiResponse<?>> getParkActivity(
         String parkVisitIdObfuscated,
-        String activityIdObfuscated
+        String activityIdObfuscated,
+        /* the sort travels with the record so its arrows keep the list's order */
+        String sortBy,
+        String sortDirection
     ) {
         log.info("Fetching activity {} for park visit: {}", activityIdObfuscated, parkVisitIdObfuscated);
 
@@ -146,17 +153,30 @@ public class ItineraryDayParkActivityGetService {
             // Convert to DTO
             ItineraryDayParkActivityDTO activityDTO = convertToDTO(activity);
 
-            // Parent-scoped circular navigation (scoped to park visit)
+            /*
+             * Parent-scoped circular navigation, in the ORDER THE LIST USED. The repository
+             * walk this replaces stepped by id whatever the sort was, so the arrows moved
+             * through a different sequence from the one on screen — and could not say where
+             * in it you were.
+             */
             Long parentId = activity.getItineraryDayPark().getId();
-            Long nextId = parkActivityRepository.findNextIdInParent(parentId, activityId).orElse(null);
-            Long previousId = parkActivityRepository.findPreviousIdInParent(parentId, activityId).orElse(null);
-            if (nextId == null) nextId = parkActivityRepository.findFirstIdInParent(parentId).orElse(null);
-            if (previousId == null) previousId = parkActivityRepository.findLastIdInParent(parentId).orElse(null);
+            String validatedSortBy = validateSortField(sortBy);
+            Map<String, Object> nav = recordNavigation.navigate(
+                ItineraryDayParkActivity.class,
+                (root, query, cb) -> cb.equal(root.get("itineraryDayPark").get("id"), parentId),
+                validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
+                !"desc".equalsIgnoreCase(sortDirection),
+                activityId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("parkActivity", activityDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Park activity retrieved", response)

@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ItineraryDayParkGetService {
 
     private final ItineraryDayRepository itineraryDayRepository;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final ItineraryDayParkRepository itineraryDayParkRepository;
     private final IdObfuscator idObfuscator;
 
@@ -43,10 +44,13 @@ public class ItineraryDayParkGetService {
         ItineraryDayRepository itineraryDayRepository,
         ItineraryDayParkRepository itineraryDayParkRepository,
         IdObfuscator idObfuscator
+    ,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.itineraryDayRepository = itineraryDayRepository;
         this.itineraryDayParkRepository = itineraryDayParkRepository;
         this.idObfuscator = idObfuscator;
+        this.recordNavigation = recordNavigation;
     }
 
     /**
@@ -139,7 +143,10 @@ public class ItineraryDayParkGetService {
     public ResponseEntity<ApiResponse<?>> getItineraryDayPark(
         String itineraryIdObfuscated,
         String dayIdObfuscated,
-        String parkVisitIdObfuscated
+        String parkVisitIdObfuscated,
+        /* the sort travels with the record so its arrows keep the list's order */
+        String sortBy,
+        String sortDirection
     ) {
         log.info("Fetching park visit: {}", parkVisitIdObfuscated);
 
@@ -181,17 +188,30 @@ public class ItineraryDayParkGetService {
             // Convert to DTO
             ItineraryDayParkDTO parkVisitDTO = convertToDTO(parkVisit);
 
-            // Parent-scoped circular navigation (scoped to itinerary day)
+            /*
+             * Parent-scoped circular navigation, in the ORDER THE LIST USED. The repository
+             * walk this replaces stepped by id whatever the sort was, so the arrows moved
+             * through a different sequence from the one on screen — and could not say where
+             * in it you were.
+             */
             Long parentId = parkVisit.getItineraryDay().getId();
-            Long nextId = itineraryDayParkRepository.findNextIdInParent(parentId, parkVisitId).orElse(null);
-            Long previousId = itineraryDayParkRepository.findPreviousIdInParent(parentId, parkVisitId).orElse(null);
-            if (nextId == null) nextId = itineraryDayParkRepository.findFirstIdInParent(parentId).orElse(null);
-            if (previousId == null) previousId = itineraryDayParkRepository.findLastIdInParent(parentId).orElse(null);
+            String validatedSortBy = validateSortField(sortBy);
+            Map<String, Object> nav = recordNavigation.navigate(
+                ItineraryDayPark.class,
+                (root, query, cb) -> cb.equal(root.get("itineraryDay").get("id"), parentId),
+                validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
+                !"desc".equalsIgnoreCase(sortDirection),
+                parkVisitId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("parkVisit", parkVisitDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Park visit retrieved successfully", response)

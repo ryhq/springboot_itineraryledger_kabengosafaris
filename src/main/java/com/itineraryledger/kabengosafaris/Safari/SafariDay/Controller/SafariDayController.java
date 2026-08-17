@@ -75,9 +75,13 @@ public class SafariDayController {
     public ResponseEntity<ApiResponse<?>> getDay(
         @PathVariable String safariId,
         @PathVariable String dayId
+    ,
+        /* the sort travels with the record so its arrows keep the list's order */
+        @RequestParam(required = false) String sortBy
+        , @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/safaris/{}/days/{} - Fetching day", safariId, dayId);
-        return getService.getSafariDay(safariId, dayId);
+        return getService.getSafariDay(safariId, dayId, sortBy, sortDirection);
     }
 
     /**

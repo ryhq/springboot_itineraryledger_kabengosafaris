@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 public class SafariDayParkGetService {
 
     private final SafariDayRepository safariDayRepository;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final SafariDayParkRepository safariDayParkRepository;
     private final IdObfuscator idObfuscator;
 
@@ -44,10 +45,13 @@ public class SafariDayParkGetService {
         SafariDayRepository safariDayRepository,
         SafariDayParkRepository safariDayParkRepository,
         IdObfuscator idObfuscator
+    ,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.safariDayRepository = safariDayRepository;
         this.safariDayParkRepository = safariDayParkRepository;
         this.idObfuscator = idObfuscator;
+        this.recordNavigation = recordNavigation;
     }
 
     /**
@@ -130,7 +134,11 @@ public class SafariDayParkGetService {
      * @param parkVisitIdObfuscated The obfuscated park visit ID
      * @return ResponseEntity with ApiResponse containing the park visit
      */
-    public ResponseEntity<ApiResponse<?>> getSafariDayPark(String safariIdObfuscated, String dayIdObfuscated, String parkVisitIdObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getSafariDayPark(String safariIdObfuscated, String dayIdObfuscated, String parkVisitIdObfuscated,
+        /* the sort travels with the record so its arrows keep the list's order */
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching park visit {} for safari day: {}", parkVisitIdObfuscated, dayIdObfuscated);
 
         try {
@@ -173,17 +181,30 @@ public class SafariDayParkGetService {
             // Convert to DTO
             SafariDayParkDTO parkDTO = convertToDTO(parkVisit);
 
-            // Parent-scoped circular navigation
+            /*
+             * Parent-scoped circular navigation, in the ORDER THE LIST USED. The repository
+             * walk this replaces stepped by id whatever the sort was, so the arrows moved
+             * through a different sequence from the one on screen — and could not say where
+             * in it you were.
+             */
             Long parentId = parkVisit.getSafariDay().getId();
-            Long nextId = safariDayParkRepository.findNextIdInParent(parentId, parkVisitId).orElse(null);
-            Long previousId = safariDayParkRepository.findPreviousIdInParent(parentId, parkVisitId).orElse(null);
-            if (nextId == null) nextId = safariDayParkRepository.findFirstIdInParent(parentId).orElse(null);
-            if (previousId == null) previousId = safariDayParkRepository.findLastIdInParent(parentId).orElse(null);
+            String validatedSortBy = validateSortField(sortBy);
+            Map<String, Object> nav = recordNavigation.navigate(
+                SafariDayPark.class,
+                (root, query, cb) -> cb.equal(root.get("safariDay").get("id"), parentId),
+                validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
+                !"desc".equalsIgnoreCase(sortDirection),
+                parkVisitId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("parkVisit", parkDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Park visit retrieved successfully", response)

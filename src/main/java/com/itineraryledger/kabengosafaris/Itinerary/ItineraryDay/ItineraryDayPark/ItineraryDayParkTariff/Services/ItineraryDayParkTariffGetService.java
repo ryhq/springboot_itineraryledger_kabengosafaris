@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ItineraryDayParkTariffGetService {
 
     private final ItineraryDayParkTariffRepository parkTariffRepository;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final IdObfuscator idObfuscator;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -40,9 +41,12 @@ public class ItineraryDayParkTariffGetService {
     public ItineraryDayParkTariffGetService(
         ItineraryDayParkTariffRepository parkTariffRepository,
         IdObfuscator idObfuscator
+    ,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.parkTariffRepository = parkTariffRepository;
         this.idObfuscator = idObfuscator;
+        this.recordNavigation = recordNavigation;
     }
 
     /**
@@ -112,7 +116,10 @@ public class ItineraryDayParkTariffGetService {
      */
     public ResponseEntity<ApiResponse<?>> getParkTariff(
         String parkVisitIdObfuscated,
-        String tariffIdObfuscated
+        String tariffIdObfuscated,
+        /* the sort travels with the record so its arrows keep the list's order */
+        String sortBy,
+        String sortDirection
     ) {
         log.info("Fetching tariff {} for park visit: {}", tariffIdObfuscated, parkVisitIdObfuscated);
 
@@ -145,17 +152,30 @@ public class ItineraryDayParkTariffGetService {
             // Convert to DTO
             ItineraryDayParkTariffDTO tariffDTO = convertToDTO(tariff);
 
-            // Parent-scoped circular navigation (scoped to park visit)
+            /*
+             * Parent-scoped circular navigation, in the ORDER THE LIST USED. The repository
+             * walk this replaces stepped by id whatever the sort was, so the arrows moved
+             * through a different sequence from the one on screen — and could not say where
+             * in it you were.
+             */
             Long parentId = tariff.getItineraryDayPark().getId();
-            Long nextId = parkTariffRepository.findNextIdInParent(parentId, tariffId).orElse(null);
-            Long previousId = parkTariffRepository.findPreviousIdInParent(parentId, tariffId).orElse(null);
-            if (nextId == null) nextId = parkTariffRepository.findFirstIdInParent(parentId).orElse(null);
-            if (previousId == null) previousId = parkTariffRepository.findLastIdInParent(parentId).orElse(null);
+            String validatedSortBy = validateSortField(sortBy);
+            Map<String, Object> nav = recordNavigation.navigate(
+                ItineraryDayParkTariff.class,
+                (root, query, cb) -> cb.equal(root.get("itineraryDayPark").get("id"), parentId),
+                validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
+                !"desc".equalsIgnoreCase(sortDirection),
+                tariffId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("parkTariff", tariffDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Park tariff retrieved", response)

@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 public class SafariDayAccommodationGetService {
 
     private final SafariDayRepository safariDayRepository;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final SafariDayAccommodationRepository accommodationRepository;
     private final IdObfuscator idObfuscator;
 
@@ -44,10 +45,13 @@ public class SafariDayAccommodationGetService {
         SafariDayRepository safariDayRepository,
         SafariDayAccommodationRepository accommodationRepository,
         IdObfuscator idObfuscator
+    ,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.safariDayRepository = safariDayRepository;
         this.accommodationRepository = accommodationRepository;
         this.idObfuscator = idObfuscator;
+        this.recordNavigation = recordNavigation;
     }
 
     /**
@@ -133,7 +137,10 @@ public class SafariDayAccommodationGetService {
     public ResponseEntity<ApiResponse<?>> getSafariDayAccommodation(
         String safariIdObfuscated,
         String dayIdObfuscated,
-        String accommodationIdObfuscated
+        String accommodationIdObfuscated,
+        /* the sort travels with the record so its arrows keep the list's order */
+        String sortBy,
+        String sortDirection
     ) {
         log.info("Fetching accommodation: {} for day: {}", accommodationIdObfuscated, dayIdObfuscated);
 
@@ -177,17 +184,30 @@ public class SafariDayAccommodationGetService {
 
             var dto = convertToDTO(accommodation);
 
-            // Parent-scoped circular navigation
+            /*
+             * Parent-scoped circular navigation, in the ORDER THE LIST USED. The repository
+             * walk this replaces stepped by id whatever the sort was, so the arrows moved
+             * through a different sequence from the one on screen — and could not say where
+             * in it you were.
+             */
             Long parentId = accommodation.getSafariDay().getId();
-            Long nextId = accommodationRepository.findNextIdInParent(parentId, accommodationId).orElse(null);
-            Long previousId = accommodationRepository.findPreviousIdInParent(parentId, accommodationId).orElse(null);
-            if (nextId == null) nextId = accommodationRepository.findFirstIdInParent(parentId).orElse(null);
-            if (previousId == null) previousId = accommodationRepository.findLastIdInParent(parentId).orElse(null);
+            String validatedSortBy = validateSortField(sortBy);
+            Map<String, Object> nav = recordNavigation.navigate(
+                SafariDayAccommodation.class,
+                (root, query, cb) -> cb.equal(root.get("safariDay").get("id"), parentId),
+                validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
+                !"desc".equalsIgnoreCase(sortDirection),
+                accommodationId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("accommodation", dto);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Accommodation retrieved successfully", response)

@@ -101,9 +101,13 @@ public class ItineraryDayActivityController {
         @PathVariable String itineraryId,
         @PathVariable String dayId,
         @PathVariable String activityId
+    ,
+        /* the sort travels with the record so its arrows keep the list's order */
+        @RequestParam(required = false) String sortBy
+        , @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/itineraries/{}/days/{}/activities/{} - Fetching activity", itineraryId, dayId, activityId);
-        return getService.getItineraryDayActivity(itineraryId, dayId, activityId);
+        return getService.getItineraryDayActivity(itineraryId, dayId, activityId, sortBy, sortDirection);
     }
 
     @PostMapping("/reorder")

@@ -101,9 +101,13 @@ public class SafariDayActivityController {
         @PathVariable String safariId,
         @PathVariable String dayId,
         @PathVariable String activityId
+    ,
+        /* the sort travels with the record so its arrows keep the list's order */
+        @RequestParam(required = false) String sortBy
+        , @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/safaris/{}/days/{}/activities/{} - Fetching activity", safariId, dayId, activityId);
-        return getService.getSafariDayActivity(safariId, dayId, activityId);
+        return getService.getSafariDayActivity(safariId, dayId, activityId, sortBy, sortDirection);
     }
 
     @PostMapping("/reorder")

@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ItineraryPaxGetService {
 
     private final ItineraryRepository itineraryRepository;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final ItineraryPaxRepository itineraryPaxRepository;
     private final IdObfuscator idObfuscator;
 
@@ -43,10 +44,13 @@ public class ItineraryPaxGetService {
         ItineraryRepository itineraryRepository,
         ItineraryPaxRepository itineraryPaxRepository,
         IdObfuscator idObfuscator
+    ,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.itineraryRepository = itineraryRepository;
         this.itineraryPaxRepository = itineraryPaxRepository;
         this.idObfuscator = idObfuscator;
+        this.recordNavigation = recordNavigation;
     }
 
     /**
@@ -137,7 +141,10 @@ public class ItineraryPaxGetService {
      */
     public ResponseEntity<ApiResponse<?>> getItineraryPaxById(
             String itineraryIdObfuscated,
-            String paxIdObfuscated
+            String paxIdObfuscated,
+        /* the sort travels with the record so its arrows keep the list's order */
+        String sortBy,
+        String sortDirection
     ) {
         log.info("Fetching pax entry: {} for itinerary: {}", paxIdObfuscated, itineraryIdObfuscated);
 
@@ -177,17 +184,30 @@ public class ItineraryPaxGetService {
             // Convert to DTO
             ItineraryPaxDTO dto = convertToDTO(pax);
 
-            // Parent-scoped circular navigation
+            /*
+             * Parent-scoped circular navigation, in the ORDER THE LIST USED. The repository
+             * walk this replaces stepped by id whatever the sort was, so the arrows moved
+             * through a different sequence from the one on screen — and could not say where
+             * in it you were.
+             */
             Long parentId = pax.getItinerary().getId();
-            Long nextId = itineraryPaxRepository.findNextIdInParent(parentId, paxId).orElse(null);
-            Long previousId = itineraryPaxRepository.findPreviousIdInParent(parentId, paxId).orElse(null);
-            if (nextId == null) nextId = itineraryPaxRepository.findFirstIdInParent(parentId).orElse(null);
-            if (previousId == null) previousId = itineraryPaxRepository.findLastIdInParent(parentId).orElse(null);
+            String validatedSortBy = validateSortField(sortBy);
+            Map<String, Object> nav = recordNavigation.navigate(
+                ItineraryPax.class,
+                (root, query, cb) -> cb.equal(root.get("itinerary").get("id"), parentId),
+                validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
+                !"desc".equalsIgnoreCase(sortDirection),
+                paxId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("paxEntry", dto);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Pax entry retrieved successfully", response)
