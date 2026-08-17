@@ -37,6 +37,16 @@ public class SafariFilter {
     private LocalDate startDateFrom;
     private LocalDate startDateTo;
 
+    /**
+     * Safaris RUNNING in a window, which is not the same question as starting in it.
+     *
+     * A calendar asks "what is on in August" and a safari that began on 28 July and ends on
+     * 4 August is on in August — filtering by start date alone drops it from the month it is
+     * visibly in. Overlap: startDate <= runningTo AND endDate >= runningFrom.
+     */
+    private LocalDate runningFrom;
+    private LocalDate runningTo;
+
     private Boolean isActive;
 
     /**

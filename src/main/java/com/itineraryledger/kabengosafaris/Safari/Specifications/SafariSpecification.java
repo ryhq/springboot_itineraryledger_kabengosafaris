@@ -40,6 +40,22 @@ public class SafariSpecification {
         return (root, query, cb) -> cb.lessThanOrEqualTo(root.get("startDate"), date);
     }
 
+    /**
+     * Overlaps a window: on at some point between from and to, inclusive.
+     *
+     * Either end may be null, which makes it open in that direction.
+     */
+    public static Specification<Safari> runningBetween(LocalDate from, LocalDate to) {
+        return (root, query, cb) -> {
+            var predicates = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
+            // it must have started by the end of the window...
+            if (to != null) predicates.add(cb.lessThanOrEqualTo(root.get("startDate"), to));
+            // ...and not have finished before the window began
+            if (from != null) predicates.add(cb.greaterThanOrEqualTo(root.get("endDate"), from));
+            return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+    }
+
     public static Specification<Safari> isActive(Boolean isActive) {
         return (root, query, cb) -> {
             query.distinct(true);

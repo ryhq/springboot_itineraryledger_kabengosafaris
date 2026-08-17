@@ -271,6 +271,10 @@ public class SafariGetService {
         if (filter.getStartDateTo() != null) {
             spec = spec.and(SafariSpecification.startDateBefore(filter.getStartDateTo()));
         }
+        if (filter.getRunningFrom() != null || filter.getRunningTo() != null) {
+            // the calendar's window: on at any point in it, not starting in it
+            spec = spec.and(SafariSpecification.runningBetween(filter.getRunningFrom(), filter.getRunningTo()));
+        }
         if (filter.getIsActive() != null) {
             spec = spec.and(SafariSpecification.isActive(filter.getIsActive()));
         }
