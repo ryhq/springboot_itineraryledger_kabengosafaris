@@ -98,7 +98,9 @@ public class EmailLabelService {
             EmailLabel saved = emailLabelRepository.save(EmailLabel.builder()
                 .emailAccount(account)
                 .name(dto.getName().trim())
-                .color(dto.getColor())
+                /* absent family means the neutral one — see CreateEmailLabelDTO */
+                .color(dto.getColor() != null ? dto.getColor() : EmailLabelColor.INTERNAL)
+                .colorHex(dto.getColorHex())
                 .isSystem(false)
                 .build());
             return ResponseEntity.status(HttpStatus.CREATED).body(
@@ -120,10 +122,13 @@ public class EmailLabelService {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                     ApiResponse.error(404, "Label not found", "LABEL_NOT_FOUND"));
             }
-            if (Boolean.TRUE.equals(label.getIsSystem())) {
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "System labels cannot be renamed or recoloured", "LABEL_IS_SYSTEM"));
-            }
+            /*
+             * The four seeded labels used to be locked. They are not special: EmailLabelInitializer
+             * seeds them only when an account has NO labels at all, so a rename or a new colour
+             * sticks across restarts. Refusing the edit protected nothing and left "Quote" yellow
+             * forever, so the guard is gone — `isSystem` now records where a label came from
+             * rather than forbidding anything.
+             */
             if (dto.getName() != null && !dto.getName().isBlank()) {
                 String newName = dto.getName().trim();
                 if (!newName.equals(label.getName())
@@ -133,7 +138,31 @@ public class EmailLabelService {
                 }
                 label.setName(newName);
             }
-            if (dto.getColor() != null) label.setColor(dto.getColor().isBlank() ? null : com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailLabelColor.valueOf(dto.getColor().trim()));
+            if (dto.getColor() != null && !dto.getColor().isBlank()) {
+                /*
+                 * Checked rather than thrown: valueOf on a bad value gave a 400 whose message was
+                 * the exception's, and the column is NOT NULL so clearing it would have been a 500.
+                 */
+                try {
+                    label.setColor(EmailLabelColor.valueOf(dto.getColor().trim().toUpperCase()));
+                } catch (IllegalArgumentException bad) {
+                    return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                        "A label's colour family must be one of QUOTE, BOOKING, VENDOR, INTERNAL",
+                        "LABEL_COLOR_INVALID"));
+                }
+            }
+            if (dto.getColorHex() != null) {
+                String hex = dto.getColorHex().trim();
+                if (hex.isEmpty()) {
+                    /* back to the family's colour */
+                    label.setColorHex(null);
+                } else if (!hex.matches("^#[0-9a-fA-F]{6}$")) {
+                    return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                        "A colour must look like #1f2421", "LABEL_COLOR_HEX_INVALID"));
+                } else {
+                    label.setColorHex(hex);
+                }
+            }
             emailLabelRepository.save(label);
             return ResponseEntity.ok(ApiResponse.success(200, "Label updated", toDTO(label, null)));
         } catch (Exception e) {
@@ -153,10 +182,11 @@ public class EmailLabelService {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                     ApiResponse.error(404, "Label not found", "LABEL_NOT_FOUND"));
             }
-            if (Boolean.TRUE.equals(label.getIsSystem())) {
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "System labels cannot be deleted", "LABEL_IS_SYSTEM"));
-            }
+            /*
+             * Deletable, like any other label. If an account ends up with NO labels the seeder puts
+             * the four back on the next restart — that is worth knowing, not worth blocking, and
+             * the UI says so before you agree to it.
+             */
             // Detach from all messages — orphanRemoval isn't on the inverse
             // side, so we wipe the join rows explicitly via the JPQL bridge.
             List<EmailMessage> tagged = emailMessageRepository.findAllByLabelsId(labelId);
@@ -237,6 +267,7 @@ public class EmailLabelService {
             .id(idObfuscator.encodeId(l.getId()))
             .name(l.getName())
             .color(l.getColor())
+            .colorHex(l.getColorHex())
             .isSystem(l.getIsSystem())
             .count(count)
             .build();

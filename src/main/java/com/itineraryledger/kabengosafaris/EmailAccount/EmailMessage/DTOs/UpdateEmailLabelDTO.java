@@ -18,4 +18,7 @@ public class UpdateEmailLabelDTO {
      * to unset (see the charging-basis fix).
      */
     private String color;
+
+    /** #rrggbb to recolour, "" to go back to whatever the family paints, null to leave alone. */
+    private String colorHex;
 }

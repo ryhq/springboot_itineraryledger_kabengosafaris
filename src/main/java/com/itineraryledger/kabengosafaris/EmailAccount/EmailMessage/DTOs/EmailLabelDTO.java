@@ -17,6 +17,8 @@ public class EmailLabelDTO {
     private String id;
     private String name;
     private EmailLabelColor color;
+    /** the exact colour if one was chosen; null means the family's colour */
+    private String colorHex;
     private Boolean isSystem;
     private Long count;
 }
