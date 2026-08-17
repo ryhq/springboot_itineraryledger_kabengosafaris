@@ -51,6 +51,7 @@ public class EmailMessageGetService {
     private final EmailStorageService emailStorageService;
     private final IdObfuscator idObfuscator;
     private final MuteRuleService muteRuleService;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "sentAt", "receivedAt", "subject", "fromAddress", "isRead", "isStarred", "createdAt"
@@ -107,80 +108,7 @@ public class EmailMessageGetService {
             // once EmailSnoozeService.wakeDueSnoozes clears the field.
             // §7 — also exclude anything matching an active mute rule;
             // those are reported separately via /folders/{id}/muted-summary.
-            Specification<EmailMessage> spec = Specification.<EmailMessage>unrestricted()
-                .and(EmailMessageSpecification.forAccount(accountId))
-                .and(EmailMessageSpecification.notSnoozed())
-                .and(EmailMessageSpecification.notMatchingMuteRules(muteRuleService.getActiveRules(accountId)));
-
-            if (folderId != null && !folderId.isBlank()) {
-                Long decodedFolderId = idObfuscator.decodeId(folderId);
-                spec = spec.and(EmailMessageSpecification.inFolder(decodedFolderId));
-            }
-            if (isRead != null) {
-                spec = spec.and(EmailMessageSpecification.isRead(isRead));
-            }
-            if (isStarred != null) {
-                spec = spec.and(EmailMessageSpecification.isStarred(isStarred));
-            }
-            if (isFlagged != null) {
-                spec = spec.and(EmailMessageSpecification.isFlagged(isFlagged));
-            }
-            if (hasAttachments != null) {
-                spec = spec.and(EmailMessageSpecification.hasAttachments(hasAttachments));
-            }
-            if (labelIds != null && !labelIds.isEmpty()) {
-                List<Long> decoded = labelIds.stream()
-                    .map(idObfuscator::decodeId)
-                    .filter(java.util.Objects::nonNull)
-                    .toList();
-                if (!decoded.isEmpty()) {
-                    spec = spec.and(EmailMessageSpecification.hasAnyLabel(decoded));
-                }
-            }
-            if (search != null && !search.isBlank()) {
-                // §8 — parse operator syntax (from:, to:, label:, has:,
-                // is:, before:, after:) out of the search bar input.
-                SearchQueryParser.Parsed parsed = SearchQueryParser.parse(search);
-                for (String f : parsed.getFrom()) spec = spec.and(EmailMessageSpecification.fromAddressLike(f));
-                for (String t : parsed.getTo()) spec = spec.and(EmailMessageSpecification.toAddressLike(t));
-                for (String s : parsed.getSubject()) spec = spec.and(EmailMessageSpecification.subjectLike(s));
-                if (parsed.getHasAttachment() != null) spec = spec.and(EmailMessageSpecification.hasAttachments(parsed.getHasAttachment()));
-                if (parsed.getIsUnread() != null) spec = spec.and(EmailMessageSpecification.isRead(!parsed.getIsUnread()));
-                if (parsed.getIsStarred() != null) spec = spec.and(EmailMessageSpecification.isStarred(parsed.getIsStarred()));
-                if (parsed.getIsFlagged() != null) spec = spec.and(EmailMessageSpecification.isFlagged(parsed.getIsFlagged()));
-                if (parsed.getBefore() != null) spec = spec.and(EmailMessageSpecification.sentBefore(parsed.getBefore()));
-                if (parsed.getAfter() != null) spec = spec.and(EmailMessageSpecification.sentAfter(parsed.getAfter()));
-                if (!parsed.getLabel().isEmpty()) {
-                    // label:foo resolves on label name substring — convert to ids and use hasAnyLabel.
-                    // (Substring match against EmailLabel.name would need an extra spec; keep it
-                    // simple here and let the explicit `labelIds` query param do exact filtering.)
-                    spec = spec.and((root, query, cb) -> {
-                        if (query != null) query.distinct(true);
-                        var join = root.<EmailMessage, com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailLabel>join("labels");
-                        var disjunction = cb.disjunction();
-                        for (String name : parsed.getLabel()) {
-                            disjunction = cb.or(disjunction,
-                                cb.like(cb.lower(join.<String>get("name")), "%" + name.toLowerCase() + "%"));
-                        }
-                        return disjunction;
-                    });
-                }
-                if (parsed.getFreeText() != null && !parsed.getFreeText().isBlank()) {
-                    spec = spec.and(EmailMessageSpecification.searchAll(parsed.getFreeText()));
-                }
-            }
-            if (fromAddress != null && !fromAddress.isBlank()) {
-                spec = spec.and(EmailMessageSpecification.fromAddressLike(fromAddress));
-            }
-            if (subject != null && !subject.isBlank()) {
-                spec = spec.and(EmailMessageSpecification.subjectLike(subject));
-            }
-            if (sentAfter != null) {
-                spec = spec.and(EmailMessageSpecification.sentAfter(sentAfter));
-            }
-            if (sentBefore != null) {
-                spec = spec.and(EmailMessageSpecification.sentBefore(sentBefore));
-            }
+            Specification<EmailMessage> spec = buildSpec(accountIdObfuscated, folderId, isRead, isStarred, isFlagged, hasAttachments, search, fromAddress, subject, labelIds, sentAfter, sentBefore);
 
             Page<EmailMessage> pagedMessages = emailMessageRepository.findAll(spec, paging);
 
@@ -242,7 +170,23 @@ public class EmailMessageGetService {
      * Get a single email message with full body parsed from .eml file
      */
     @Transactional
-    public ResponseEntity<ApiResponse<?>> getMessage(String accountIdObfuscated, String messageIdObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getMessage(
+        String accountIdObfuscated,
+        String messageIdObfuscated,
+        String folderId,
+        Boolean isRead,
+        Boolean isStarred,
+        Boolean isFlagged,
+        Boolean hasAttachments,
+        String search,
+        String fromAddress,
+        String subject,
+        List<String> labelIds,
+        LocalDateTime sentAfter,
+        LocalDateTime sentBefore,
+        String sortBy,
+        String sortDirection
+    ) {
         try {
             Long accountId = idObfuscator.decodeId(accountIdObfuscated);
             Long messageId = idObfuscator.decodeId(messageIdObfuscated);
@@ -269,17 +213,28 @@ public class EmailMessageGetService {
 
             EmailMessageDTO dto = toFullDTO(message, htmlBody, attachmentDTOs);
 
-            // Circular navigation within folder
-            Long folderId = message.getFolder().getId();
-            Long nextId = emailMessageRepository.findNextIdInFolder(accountId, folderId, messageId).orElse(null);
-            Long previousId = emailMessageRepository.findPreviousIdInFolder(accountId, folderId, messageId).orElse(null);
-            if (nextId == null) nextId = emailMessageRepository.findFirstIdInFolder(accountId, folderId).orElse(null);
-            if (previousId == null) previousId = emailMessageRepository.findLastIdInFolder(accountId, folderId).orElse(null);
+            /*
+             * Circular navigation over the caller's filtered, sorted set — scoped to the
+             * parent when one is given. The id-ordered walk this replaces stepped through a
+             * different set from the one on screen and could not say where you were in it.
+             */
+            String validatedSortBy = validateSortField(sortBy);
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                EmailMessage.class,
+                buildSpec(accountIdObfuscated, folderId, isRead, isStarred, isFlagged, hasAttachments, search, fromAddress, subject, labelIds, sentAfter, sentBefore),
+                validatedSortBy != null ? validatedSortBy : "sentAt",
+                "asc".equalsIgnoreCase(sortDirection),
+                messageId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", dto);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok(ApiResponse.success(200, "Message retrieved successfully", response));
         } catch (Exception e) {
@@ -569,5 +524,112 @@ public class EmailMessageGetService {
             .fileSize(attachment.getFileSize())
             .isInline(attachment.getIsInline())
             .build();
+    }
+
+    /**
+     * The ONE description of the filtered set, shared by the rows and by the record
+     * arrows — paging that walked a different set from the one on screen would be
+     * worse than no arrows (see CLAUDE.md).
+     */
+    private Specification<EmailMessage> buildSpec(
+        String accountIdObfuscated,
+        String folderId,
+        Boolean isRead,
+        Boolean isStarred,
+        Boolean isFlagged,
+        Boolean hasAttachments,
+        String search,
+        String fromAddress,
+        String subject,
+        List<String> labelIds,
+        LocalDateTime sentAfter,
+        LocalDateTime sentBefore
+    ) {
+        Long accountId = idObfuscator.decodeId(accountIdObfuscated);
+
+        Long decodedFolderId = null;
+        if (folderId != null && !folderId.isBlank()) {
+            try {
+                decodedFolderId = idObfuscator.decodeId(folderId);
+            } catch (Exception e) {
+                log.warn("Failed to decode folderId: {}", folderId);
+            }
+        }
+
+        Specification<EmailMessage> spec = Specification.<EmailMessage>unrestricted()
+                .and(EmailMessageSpecification.forAccount(accountId))
+                .and(EmailMessageSpecification.notSnoozed())
+                .and(EmailMessageSpecification.notMatchingMuteRules(muteRuleService.getActiveRules(accountId)));
+
+            if (decodedFolderId != null) {
+                spec = spec.and(EmailMessageSpecification.inFolder(decodedFolderId));
+            }
+            if (isRead != null) {
+                spec = spec.and(EmailMessageSpecification.isRead(isRead));
+            }
+            if (isStarred != null) {
+                spec = spec.and(EmailMessageSpecification.isStarred(isStarred));
+            }
+            if (isFlagged != null) {
+                spec = spec.and(EmailMessageSpecification.isFlagged(isFlagged));
+            }
+            if (hasAttachments != null) {
+                spec = spec.and(EmailMessageSpecification.hasAttachments(hasAttachments));
+            }
+            if (labelIds != null && !labelIds.isEmpty()) {
+                List<Long> decoded = labelIds.stream()
+                    .map(idObfuscator::decodeId)
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
+                if (!decoded.isEmpty()) {
+                    spec = spec.and(EmailMessageSpecification.hasAnyLabel(decoded));
+                }
+            }
+            if (search != null && !search.isBlank()) {
+                // §8 — parse operator syntax (from:, to:, label:, has:,
+                // is:, before:, after:) out of the search bar input.
+                SearchQueryParser.Parsed parsed = SearchQueryParser.parse(search);
+                for (String f : parsed.getFrom()) spec = spec.and(EmailMessageSpecification.fromAddressLike(f));
+                for (String t : parsed.getTo()) spec = spec.and(EmailMessageSpecification.toAddressLike(t));
+                for (String s : parsed.getSubject()) spec = spec.and(EmailMessageSpecification.subjectLike(s));
+                if (parsed.getHasAttachment() != null) spec = spec.and(EmailMessageSpecification.hasAttachments(parsed.getHasAttachment()));
+                if (parsed.getIsUnread() != null) spec = spec.and(EmailMessageSpecification.isRead(!parsed.getIsUnread()));
+                if (parsed.getIsStarred() != null) spec = spec.and(EmailMessageSpecification.isStarred(parsed.getIsStarred()));
+                if (parsed.getIsFlagged() != null) spec = spec.and(EmailMessageSpecification.isFlagged(parsed.getIsFlagged()));
+                if (parsed.getBefore() != null) spec = spec.and(EmailMessageSpecification.sentBefore(parsed.getBefore()));
+                if (parsed.getAfter() != null) spec = spec.and(EmailMessageSpecification.sentAfter(parsed.getAfter()));
+                if (!parsed.getLabel().isEmpty()) {
+                    // label:foo resolves on label name substring — convert to ids and use hasAnyLabel.
+                    // (Substring match against EmailLabel.name would need an extra spec; keep it
+                    // simple here and let the explicit `labelIds` query param do exact filtering.)
+                    spec = spec.and((root, query, cb) -> {
+                        if (query != null) query.distinct(true);
+                        var join = root.<EmailMessage, com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailLabel>join("labels");
+                        var disjunction = cb.disjunction();
+                        for (String name : parsed.getLabel()) {
+                            disjunction = cb.or(disjunction,
+                                cb.like(cb.lower(join.<String>get("name")), "%" + name.toLowerCase() + "%"));
+                        }
+                        return disjunction;
+                    });
+                }
+                if (parsed.getFreeText() != null && !parsed.getFreeText().isBlank()) {
+                    spec = spec.and(EmailMessageSpecification.searchAll(parsed.getFreeText()));
+                }
+            }
+            if (fromAddress != null && !fromAddress.isBlank()) {
+                spec = spec.and(EmailMessageSpecification.fromAddressLike(fromAddress));
+            }
+            if (subject != null && !subject.isBlank()) {
+                spec = spec.and(EmailMessageSpecification.subjectLike(subject));
+            }
+            if (sentAfter != null) {
+                spec = spec.and(EmailMessageSpecification.sentAfter(sentAfter));
+            }
+            if (sentBefore != null) {
+                spec = spec.and(EmailMessageSpecification.sentBefore(sentBefore));
+            }
+
+        return spec;
     }
 }

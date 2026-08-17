@@ -38,6 +38,7 @@ public class QuoteItemGetService {
 
     private final QuoteItemRepository quoteItemRepository;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     /*
      * displayOrder belongs here: the lines of a quote are a document, printed in
@@ -55,7 +56,17 @@ public class QuoteItemGetService {
      * @param idObfuscated The obfuscated quote item ID
      * @return ResponseEntity with ApiResponse containing the quote item
      */
-    public ResponseEntity<ApiResponse<?>> getQuoteItemById(String idObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getQuoteItemById(
+        String idObfuscated,
+        String quoteId,
+        QuoteItemType itemType,
+        String itemName,
+        String description,
+        Boolean isActive,
+        String itemTypeGroup,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching quote item with ID: {}", idObfuscated);
 
         try {
@@ -81,22 +92,28 @@ public class QuoteItemGetService {
             // Convert to DTO
             QuoteItemDTO quoteItemDTO = convertToDTO(quoteItem);
 
-            // Circular navigation, scoped to the parent quote so we don't leak
-            // into items from a different quote when reaching the boundary.
-            Long parentQuoteId = quoteItem.getQuote() != null ? quoteItem.getQuote().getId() : null;
-            Long nextId = null;
-            Long previousId = null;
-            if (parentQuoteId != null) {
-                nextId = quoteItemRepository.findNextIdInQuote(parentQuoteId, id).orElse(null);
-                previousId = quoteItemRepository.findPreviousIdInQuote(parentQuoteId, id).orElse(null);
-                if (nextId == null) nextId = quoteItemRepository.findFirstIdInQuote(parentQuoteId).orElse(null);
-                if (previousId == null) previousId = quoteItemRepository.findLastIdInQuote(parentQuoteId).orElse(null);
-            }
+            /*
+             * Circular navigation over the caller's filtered, sorted set — scoped to the
+             * parent when one is given. The id-ordered walk this replaces stepped through a
+             * different set from the one on screen and could not say where you were in it.
+             */
+            String validatedSortBy = validateSortField(sortBy);
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                QuoteItem.class,
+                buildSpec(quoteId, itemType, itemName, description, isActive, itemTypeGroup),
+                validatedSortBy != null ? validatedSortBy : "displayOrder",
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("quoteItem", quoteItemDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Quote item retrieved successfully", response)
@@ -152,24 +169,7 @@ public class QuoteItemGetService {
             }
 
             // Build specification for filtering
-            Specification<QuoteItem> spec = QuoteItemSpecification.byQuoteId(decodedQuoteId);
-
-            // Apply additional filters
-            if (itemType != null) {
-                spec = spec.and(QuoteItemSpecification.byItemType(itemType));
-            }
-            if (itemName != null && !itemName.isEmpty()) {
-                spec = spec.and(QuoteItemSpecification.byItemNameContaining(itemName));
-            }
-            if (description != null && !description.isEmpty()) {
-                spec = spec.and(QuoteItemSpecification.byDescriptionContaining(description));
-            }
-            if (isActive != null) {
-                spec = spec.and(QuoteItemSpecification.byIsActive(isActive));
-            }
-            if (itemTypeGroup != null && !itemTypeGroup.isEmpty()) {
-                spec = spec.and(QuoteItemSpecification.byItemTypeGroup(itemTypeGroup));
-            }
+            Specification<QuoteItem> spec = buildSpec(quoteId, itemType, itemName, description, isActive, itemTypeGroup);
 
             // Set default pagination values
             int pageNumber = (page != null && page >= 0) ? page : 0;
@@ -381,5 +381,49 @@ public class QuoteItemGetService {
             .createdAt(quoteItem.getCreatedAt())
             .updatedAt(quoteItem.getUpdatedAt())
             .build();
+    }
+
+    /**
+     * The ONE description of the filtered set, shared by the rows and by the record
+     * arrows — paging that walked a different set from the one on screen would be
+     * worse than no arrows (see CLAUDE.md).
+     */
+    private Specification<QuoteItem> buildSpec(
+        String quoteId,
+        QuoteItemType itemType,
+        String itemName,
+        String description,
+        Boolean isActive,
+        String itemTypeGroup
+    ) {
+        Long decodedQuoteId = null;
+        if (quoteId != null && !quoteId.isBlank()) {
+            try {
+                decodedQuoteId = idObfuscator.decodeId(quoteId);
+            } catch (Exception e) {
+                log.warn("Failed to decode quoteId: {}", quoteId);
+            }
+        }
+
+        Specification<QuoteItem> spec = QuoteItemSpecification.byQuoteId(decodedQuoteId);
+
+            // Apply additional filters
+            if (itemType != null) {
+                spec = spec.and(QuoteItemSpecification.byItemType(itemType));
+            }
+            if (itemName != null && !itemName.isEmpty()) {
+                spec = spec.and(QuoteItemSpecification.byItemNameContaining(itemName));
+            }
+            if (description != null && !description.isEmpty()) {
+                spec = spec.and(QuoteItemSpecification.byDescriptionContaining(description));
+            }
+            if (isActive != null) {
+                spec = spec.and(QuoteItemSpecification.byIsActive(isActive));
+            }
+            if (itemTypeGroup != null && !itemTypeGroup.isEmpty()) {
+                spec = spec.and(QuoteItemSpecification.byItemTypeGroup(itemTypeGroup));
+            }
+
+        return spec;
     }
 }

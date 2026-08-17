@@ -29,6 +29,7 @@ public class EmailContactGetService {
 
     private final EmailContactRepository emailContactRepository;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "emailAddress", "displayName", "frequency", "lastContactedAt", "source", "isStarred", "createdAt"
@@ -83,16 +84,7 @@ public class EmailContactGetService {
             PageRequest pageRequest = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
             // Build specification
-            Specification<EmailContact> spec = Specification.<EmailContact>unrestricted().and(EmailContactSpecification.forAccount(accountId));
-
-            Specification<EmailContact> starredSpec = EmailContactSpecification.isStarred(isStarred);
-            if (starredSpec != null) spec = spec.and(starredSpec);
-
-            Specification<EmailContact> sourceSpec = EmailContactSpecification.hasSource(source);
-            if (sourceSpec != null) spec = spec.and(sourceSpec);
-
-            Specification<EmailContact> searchSpec = EmailContactSpecification.searchTerm(search);
-            if (searchSpec != null) spec = spec.and(searchSpec);
+            Specification<EmailContact> spec = buildSpec(accountIdObfuscated, isStarred, source, search);
 
             Page<EmailContact> pagedContacts = emailContactRepository.findAll(spec, pageRequest);
             List<EmailContactDTO> dtos = pagedContacts.getContent().stream().map(this::toDTO).toList();
@@ -117,7 +109,15 @@ public class EmailContactGetService {
     /**
      * Get single contact with circular navigation
      */
-    public ResponseEntity<ApiResponse<?>> getContact(String accountIdObfuscated, String contactIdObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getContact(
+        String accountIdObfuscated,
+        String contactIdObfuscated,
+        Boolean isStarred,
+        String source,
+        String search,
+        String sortBy,
+        String sortDirection
+    ) {
         try {
             Long accountId = idObfuscator.decodeId(accountIdObfuscated);
             Long contactId = idObfuscator.decodeId(contactIdObfuscated);
@@ -128,16 +128,28 @@ public class EmailContactGetService {
                     ApiResponse.error(404, "Contact not found", "CONTACT_NOT_FOUND"));
             }
 
-            // Circular navigation
-            Long nextId = emailContactRepository.findNextIdInAccount(accountId, contactId).orElse(null);
-            Long previousId = emailContactRepository.findPreviousIdInAccount(accountId, contactId).orElse(null);
-            if (nextId == null) nextId = emailContactRepository.findFirstIdInAccount(accountId).orElse(null);
-            if (previousId == null) previousId = emailContactRepository.findLastIdInAccount(accountId).orElse(null);
+            /*
+             * Circular navigation over the caller's filtered, sorted set — scoped to the
+             * parent when one is given. The id-ordered walk this replaces stepped through a
+             * different set from the one on screen and could not say where you were in it.
+             */
+            String validatedSortBy = validateSortField(sortBy);
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                EmailContact.class,
+                buildSpec(accountIdObfuscated, isStarred, source, search),
+                validatedSortBy != null ? validatedSortBy : "frequency",
+                "asc".equalsIgnoreCase(sortDirection),
+                contactId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("contact", toDTO(contact));
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok(ApiResponse.success(200, "Contact retrieved successfully", response));
         } catch (Exception e) {
@@ -170,5 +182,32 @@ public class EmailContactGetService {
             .isStarred(contact.getIsStarred())
             .createdAt(contact.getCreatedAt())
             .build();
+    }
+
+    /**
+     * The ONE description of the filtered set, shared by the rows and by the record
+     * arrows — paging that walked a different set from the one on screen would be
+     * worse than no arrows (see CLAUDE.md).
+     */
+    private Specification<EmailContact> buildSpec(
+        String accountIdObfuscated,
+        Boolean isStarred,
+        String source,
+        String search
+    ) {
+        Long accountId = idObfuscator.decodeId(accountIdObfuscated);
+
+        Specification<EmailContact> spec = Specification.<EmailContact>unrestricted().and(EmailContactSpecification.forAccount(accountId));
+
+            Specification<EmailContact> starredSpec = EmailContactSpecification.isStarred(isStarred);
+            if (starredSpec != null) spec = spec.and(starredSpec);
+
+            Specification<EmailContact> sourceSpec = EmailContactSpecification.hasSource(source);
+            if (sourceSpec != null) spec = spec.and(sourceSpec);
+
+            Specification<EmailContact> searchSpec = EmailContactSpecification.searchTerm(search);
+            if (searchSpec != null) spec = spec.and(searchSpec);
+
+        return spec;
     }
 }

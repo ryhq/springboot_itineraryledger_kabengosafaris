@@ -116,10 +116,18 @@ public class QuoteItemController {
     @PreAuthorize("hasAuthority('PERM_READ_QUOTE_ITEM')")
     public ResponseEntity<ApiResponse<?>> getItem(
         @PathVariable String quoteId,
-        @PathVariable String itemId
+        @PathVariable String itemId,
+        /* the list's filters travel with the record so its arrows stay in that set */
+        @RequestParam(required = false) QuoteItemType itemType,
+        @RequestParam(required = false) String itemName,
+        @RequestParam(required = false) String description,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) String itemTypeGroup,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/quotes/{}/items/{} - Fetching item", quoteId, itemId);
-        return getService.getQuoteItemById(itemId);
+        return getService.getQuoteItemById(itemId, quoteId, itemType, itemName, description, isActive, itemTypeGroup, sortBy, sortDirection);
     }
 
     @PostMapping("/reorder")

@@ -68,9 +68,24 @@ public class EmailMessageController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_EMAIL_MESSAGE')")
     public ResponseEntity<ApiResponse<?>> getMessage(
-            @PathVariable("accountId") String accountId,
-            @PathVariable("id") String id) {
-        return emailMessageGetService.getMessage(accountId, id);
+        @PathVariable("accountId") String accountId,
+        @PathVariable("id") String id,
+        /* the list's filters travel with the record so its arrows stay in that set */
+        @RequestParam(required = false) String folderId,
+        @RequestParam(required = false) Boolean isRead,
+        @RequestParam(required = false) Boolean isStarred,
+        @RequestParam(required = false) Boolean isFlagged,
+        @RequestParam(required = false) Boolean hasAttachments,
+        @RequestParam(required = false) String search,
+        @RequestParam(required = false) String fromAddress,
+        @RequestParam(required = false) String subject,
+        @RequestParam(required = false) List<String> labelIds,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime sentAfter,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime sentBefore,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
+    ) {
+        return emailMessageGetService.getMessage(accountId, id, folderId, isRead, isStarred, isFlagged, hasAttachments, search, fromAddress, subject, labelIds, sentAfter, sentBefore, sortBy, sortDirection);
     }
 
     @GetMapping("/{id}/thread")

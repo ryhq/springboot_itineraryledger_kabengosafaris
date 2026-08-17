@@ -72,10 +72,16 @@ public class InvoiceLineItemController {
     @PreAuthorize("hasAuthority('PERM_READ_INVOICE_LINE_ITEM')")
     public ResponseEntity<ApiResponse<?>> getInvoiceLineItemById(
         @PathVariable String invoiceId,
-        @PathVariable String itemId
+        @PathVariable String itemId,
+        /* the list's filters travel with the record so its arrows stay in that set */
+        @RequestParam(required = false) String itemName,
+        @RequestParam(required = false) String description,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/invoices/{}/line-items/{} - Fetching invoice line item by ID", invoiceId, itemId);
-        return invoiceLineItemGetService.getInvoiceLineItemById(invoiceId, itemId);
+        return invoiceLineItemGetService.getInvoiceLineItemById(invoiceId, itemId, itemName, description, isActive, sortBy, sortDirection);
     }
 
     @PutMapping("/{itemId}")

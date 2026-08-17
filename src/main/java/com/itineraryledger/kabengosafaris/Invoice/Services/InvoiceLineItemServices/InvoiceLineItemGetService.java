@@ -34,6 +34,7 @@ public class InvoiceLineItemGetService {
 
     private final InvoiceLineItemRepository invoiceLineItemRepository;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         // displayOrder IS the invoice: the order the lines print in
@@ -41,7 +42,15 @@ public class InvoiceLineItemGetService {
     );
     private static final String DEFAULT_SORT_FIELD = "displayOrder";
 
-    public ResponseEntity<ApiResponse<?>> getInvoiceLineItemById(String invoiceId, String itemId) {
+    public ResponseEntity<ApiResponse<?>> getInvoiceLineItemById(
+        String invoiceId,
+        String itemId,
+        String itemName,
+        String description,
+        Boolean isActive,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching invoice line item with ID: {}", itemId);
 
         try {
@@ -64,16 +73,28 @@ public class InvoiceLineItemGetService {
 
             InvoiceLineItemDTO lineItemDTO = convertToDTO(lineItem);
 
-            // Circular navigation
-            Long nextId = invoiceLineItemRepository.findNextId(id).orElse(null);
-            Long previousId = invoiceLineItemRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = invoiceLineItemRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = invoiceLineItemRepository.findLastId().orElse(null);
+            /*
+             * Circular navigation over the caller's filtered, sorted set — scoped to the
+             * parent when one is given. The id-ordered walk this replaces stepped through a
+             * different set from the one on screen and could not say where you were in it.
+             */
+            String validatedSortBy = validateSortField(sortBy);
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                InvoiceLineItem.class,
+                buildSpec(invoiceId, itemName, description, isActive),
+                validatedSortBy != null ? validatedSortBy : "displayOrder",
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("lineItem", lineItemDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Invoice line item retrieved successfully", response)
@@ -110,17 +131,7 @@ public class InvoiceLineItemGetService {
                 );
             }
 
-            Specification<InvoiceLineItem> spec = InvoiceLineItemSpecification.byInvoiceId(decodedInvoiceId);
-
-            if (itemName != null && !itemName.isEmpty()) {
-                spec = spec.and(InvoiceLineItemSpecification.byItemName(itemName));
-            }
-            if (description != null && !description.isEmpty()) {
-                spec = spec.and(InvoiceLineItemSpecification.byDescription(description));
-            }
-            if (isActive != null) {
-                spec = spec.and(InvoiceLineItemSpecification.byIsActive(isActive));
-            }
+            Specification<InvoiceLineItem> spec = buildSpec(invoiceId, itemName, description, isActive);
 
             int pageNumber = (page != null && page >= 0) ? page : 0;
             int pageSize = (size != null && size > 0) ? size : 10;
@@ -190,5 +201,40 @@ public class InvoiceLineItemGetService {
             .createdAt(lineItem.getCreatedAt())
             .updatedAt(lineItem.getUpdatedAt())
             .build();
+    }
+
+    /**
+     * The ONE description of the filtered set, shared by the rows and by the record
+     * arrows — paging that walked a different set from the one on screen would be
+     * worse than no arrows (see CLAUDE.md).
+     */
+    private Specification<InvoiceLineItem> buildSpec(
+        String invoiceId,
+        String itemName,
+        String description,
+        Boolean isActive
+    ) {
+        Long decodedInvoiceId = null;
+        if (invoiceId != null && !invoiceId.isBlank()) {
+            try {
+                decodedInvoiceId = idObfuscator.decodeId(invoiceId);
+            } catch (Exception e) {
+                log.warn("Failed to decode invoiceId: {}", invoiceId);
+            }
+        }
+
+        Specification<InvoiceLineItem> spec = InvoiceLineItemSpecification.byInvoiceId(decodedInvoiceId);
+
+            if (itemName != null && !itemName.isEmpty()) {
+                spec = spec.and(InvoiceLineItemSpecification.byItemName(itemName));
+            }
+            if (description != null && !description.isEmpty()) {
+                spec = spec.and(InvoiceLineItemSpecification.byDescription(description));
+            }
+            if (isActive != null) {
+                spec = spec.and(InvoiceLineItemSpecification.byIsActive(isActive));
+            }
+
+        return spec;
     }
 }

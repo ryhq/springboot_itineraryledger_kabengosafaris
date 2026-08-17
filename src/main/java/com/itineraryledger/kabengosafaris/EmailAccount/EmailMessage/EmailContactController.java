@@ -61,9 +61,16 @@ public class EmailContactController {
     @GetMapping("/{contactId}")
     @PreAuthorize("hasAuthority('PERM_READ_EMAIL_CONTACT')")
     public ResponseEntity<ApiResponse<?>> getContact(
-            @PathVariable("accountId") String accountId,
-            @PathVariable("contactId") String contactId) {
-        return emailContactGetService.getContact(accountId, contactId);
+        @PathVariable("accountId") String accountId,
+        @PathVariable("contactId") String contactId,
+        /* the list's filters travel with the record so its arrows stay in that set */
+        @RequestParam(value = "isStarred", required = false) Boolean isStarred,
+        @RequestParam(value = "source", required = false) String source,
+        @RequestParam(value = "search", required = false) String search,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
+    ) {
+        return emailContactGetService.getContact(accountId, contactId, isStarred, source, search, sortBy, sortDirection);
     }
 
     /**
