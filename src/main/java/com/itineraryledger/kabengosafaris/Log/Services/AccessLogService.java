@@ -184,7 +184,7 @@ public class AccessLogService {
                 .filter(dto -> localAddress == null || localAddress.equals(dto.getLocalAddress()))
                 .filter(dto -> localPort == null || localPort.equals(dto.getLocalPort()))
                 .filter(dto -> remoteHost == null || remoteHost.equals(dto.getRemoteHost()))
-                .filter(dto -> requestMethod == null || requestMethod.equalsIgnoreCase(dto.getRequestMethod()))
+                .filter(dto -> anyOf(requestMethod, dto.getRequestMethod()))
                 .filter(dto -> requestUri == null || (dto.getRequestUri() != null && dto.getRequestUri().contains(requestUri)))
                 /*
                  * The one search box: the path, the caller's address and the browser string.
@@ -200,7 +200,7 @@ public class AccessLogService {
                         || (dto.getRequestLine() != null && dto.getRequestLine().toLowerCase().contains(needle));
                 })
                 .filter(dto -> status == null || status.equals(dto.getStatus()))
-                .filter(dto -> statusCategory == null || statusCategory.equals(dto.getStatusCategory()))
+                .filter(dto -> anyOf(statusCategory, dto.getStatusCategory()))
                 .filter(dto -> responseSizeBytes == null || compare(dto.getResponseSizeBytes(), responseSizeBytes, responseSizeBytesArgument))
                 .filter(dto -> timeTakenMillis == null || compare(dto.getTimeTakenMillis(), timeTakenMillis, timeTakenMillisArgument))
                 .filter(dto -> userAgent == null || (dto.getUserAgent() != null && dto.getUserAgent().contains(userAgent)))
@@ -211,12 +211,12 @@ public class AccessLogService {
                 .filter(dto -> threatType == null || (dto.getThreatType() != null && dto.getThreatType().contains(threatType)))
                 .filter(dto -> minThreatScore == null || (dto.getThreatScore() != null && dto.getThreatScore() >= minThreatScore))
                 .filter(dto -> isBot == null || (dto.getIsBot() != null && dto.getIsBot().equals(isBot)))
-                .filter(dto -> botType == null || (dto.getBotType() != null && dto.getBotType().equals(botType)))
+                .filter(dto -> anyOf(botType, dto.getBotType()))
                 .filter(dto -> isSlowRequest == null || (dto.getIsSlowRequest() != null && dto.getIsSlowRequest().equals(isSlowRequest)))
-                .filter(dto -> performanceGrade == null || performanceGrade.equals(dto.getPerformanceGrade()))
+                .filter(dto -> anyOf(performanceGrade, dto.getPerformanceGrade()))
                 .filter(dto -> browserName == null || (dto.getBrowserName() != null && dto.getBrowserName().contains(browserName)))
                 .filter(dto -> operatingSystem == null || (dto.getOperatingSystem() != null && dto.getOperatingSystem().contains(operatingSystem)))
-                .filter(dto -> deviceType == null || deviceType.equals(dto.getDeviceType()))
+                .filter(dto -> anyOf(deviceType, dto.getDeviceType()))
                 .collect(Collectors.toList());
 
             // Sort
@@ -398,6 +398,23 @@ public class AccessLogService {
     /**
      * Compare numeric values with operator
      */
+    /**
+     * Does the value match ANY of a comma-separated list of accepted values?
+     *
+     * The panel's facets are multi-select everywhere else in the app, so a user picking two
+     * methods sends `requestMethod=GET,POST`. Compared with equals() that matched nothing at
+     * all — a filter that silently empties the table, which is worse than having no filter.
+     * OR inside the dimension, AND across dimensions, exactly as the list contract says.
+     */
+    private boolean anyOf(String accepted, String value) {
+        if (accepted == null || accepted.isBlank()) return true;
+        if (value == null) return false;
+        for (String one : accepted.split(",")) {
+            if (one.trim().equalsIgnoreCase(value.trim())) return true;
+        }
+        return false;
+    }
+
     private boolean compare(Long actual, Long target, String argument) {
         if (actual == null || target == null || argument == null) return true;
 
