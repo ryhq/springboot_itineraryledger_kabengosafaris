@@ -39,6 +39,7 @@ public class QuoteDocumentGetService {
     private final QuoteDocumentRepository quoteDocumentRepository;
     private final QuoteDocumentStorageService storageService;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "title", "documentType", "fileName", "fileSize", "createdAt", "updatedAt"
@@ -98,17 +99,7 @@ public class QuoteDocumentGetService {
 
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
-            Specification<QuoteDocument> spec = QuoteDocumentSpecification.byQuoteId(decodedQuoteId)
-                .and(QuoteDocumentSpecification.byDocumentType(documentType))
-                .and(QuoteDocumentSpecification.byIsActive(isActive))
-                .and(QuoteDocumentSpecification.byIsGenerated(isGenerated))
-                .and(QuoteDocumentSpecification.byTitleContains(title))
-                .and(QuoteDocumentSpecification.byVersion(version))
-                .and(QuoteDocumentSpecification.byQuoteCode(quoteCode));
-
-            if (Boolean.TRUE.equals(currentlyValid)) {
-                spec = spec.and(QuoteDocumentSpecification.byCurrentlyValid(LocalDateTime.now()));
-            }
+            Specification<QuoteDocument> spec = buildSpec(quoteId, documentType, isActive, isGenerated, title, version, currentlyValid, quoteCode);
 
             Page<QuoteDocument> documentPage = quoteDocumentRepository.findAll(spec, pageable);
             Page<QuoteDocumentDTO> dtoPage = documentPage.map(this::toDTO);
@@ -137,7 +128,19 @@ public class QuoteDocumentGetService {
         }
     }
 
-    public ResponseEntity<ApiResponse<?>> getDocumentById(String obfuscatedId) {
+    public ResponseEntity<ApiResponse<?>> getDocumentById(
+        String obfuscatedId,
+        String quoteId,
+        DocumentType documentType,
+        Boolean isActive,
+        Boolean isGenerated,
+        String title,
+        String version,
+        Boolean currentlyValid,
+        String quoteCode,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching quote document with ID: {}", obfuscatedId);
 
         try {
@@ -160,16 +163,28 @@ public class QuoteDocumentGetService {
 
             QuoteDocumentDTO documentDTO = toDTO(document);
 
-            // Circular navigation
-            Long nextId = quoteDocumentRepository.findNextId(id).orElse(null);
-            Long previousId = quoteDocumentRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = quoteDocumentRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = quoteDocumentRepository.findLastId().orElse(null);
+            /*
+             * Circular navigation over the caller's filtered, sorted set — scoped to the
+             * parent when one is given. The id-ordered walk this replaces stepped through a
+             * different set from the one on screen and could not say where you were in it.
+             */
+            String validatedSortBy = validateSortField(sortBy);
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                QuoteDocument.class,
+                buildSpec(quoteId, documentType, isActive, isGenerated, title, version, currentlyValid, quoteCode),
+                validatedSortBy != null ? validatedSortBy : "createdAt",
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("document", documentDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Quote document retrieved successfully", response)
@@ -269,5 +284,45 @@ public class QuoteDocumentGetService {
             .createdAt(document.getCreatedAt())
             .updatedAt(document.getUpdatedAt())
             .build();
+    }
+
+    /**
+     * The ONE description of the filtered set, shared by the rows and by the record
+     * arrows — paging that walked a different set from the one on screen would be
+     * worse than no arrows (see CLAUDE.md).
+     */
+    private Specification<QuoteDocument> buildSpec(
+        String quoteId,
+        DocumentType documentType,
+        Boolean isActive,
+        Boolean isGenerated,
+        String title,
+        String version,
+        Boolean currentlyValid,
+        String quoteCode
+    ) {
+        /* the parent arrives obfuscated; an unreadable one simply means "not scoped" */
+        Long decodedQuoteId = null;
+        if (quoteId != null && !quoteId.isBlank()) {
+            try {
+                decodedQuoteId = idObfuscator.decodeId(quoteId);
+            } catch (Exception e) {
+                log.warn("Failed to decode quoteId: {}", quoteId);
+            }
+        }
+
+        Specification<QuoteDocument> spec = QuoteDocumentSpecification.byQuoteId(decodedQuoteId)
+                .and(QuoteDocumentSpecification.byDocumentType(documentType))
+                .and(QuoteDocumentSpecification.byIsActive(isActive))
+                .and(QuoteDocumentSpecification.byIsGenerated(isGenerated))
+                .and(QuoteDocumentSpecification.byTitleContains(title))
+                .and(QuoteDocumentSpecification.byVersion(version))
+                .and(QuoteDocumentSpecification.byQuoteCode(quoteCode));
+
+            if (Boolean.TRUE.equals(currentlyValid)) {
+                spec = spec.and(QuoteDocumentSpecification.byCurrentlyValid(LocalDateTime.now()));
+            }
+
+        return spec;
     }
 }

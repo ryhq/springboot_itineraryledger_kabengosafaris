@@ -38,6 +38,7 @@ public class HeroImageGetService {
     private final HeroImageRepository heroImageRepository;
     private final HeroImageStorageService storageService;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "isPrimary", "isActive", "fileSize", "createdAt", "updatedAt"
@@ -49,10 +50,13 @@ public class HeroImageGetService {
         HeroImageRepository heroImageRepository,
         HeroImageStorageService storageService,
         IdObfuscator idObfuscator
+    ,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.heroImageRepository = heroImageRepository;
         this.storageService = storageService;
         this.idObfuscator = idObfuscator;
+        this.recordNavigation = recordNavigation;
     }
 
     /**
@@ -128,31 +132,8 @@ public class HeroImageGetService {
             String sortBy,
             String sortDirection
     ) {
-        Specification<HeroImage> spec = Specification.unrestricted();
+        Specification<HeroImage> spec = buildSpec(obfuscatedHeroId, heroTitle, heroPage, isPrimary, isActive);
 
-        if (obfuscatedHeroId != null && !obfuscatedHeroId.isBlank()) {
-            try {
-                Long heroId = idObfuscator.decodeId(obfuscatedHeroId);
-                spec = spec.and(HeroImageSpecification.byHeroId(heroId));
-            } catch (Exception e) {
-                log.warn("Failed to decode hero ID: {}", obfuscatedHeroId);
-            }
-        }
-
-        if (heroTitle != null && !heroTitle.isBlank()) {
-            spec = spec.and(HeroImageSpecification.byHeroTitle(heroTitle));
-        }
-        if (heroPage != null) {
-            spec = spec.and(HeroImageSpecification.byHeroPage(heroPage));
-        }
-        if (isPrimary != null) {
-            spec = spec.and(HeroImageSpecification.byIsPrimary(isPrimary));
-        }
-        if (isActive != null) {
-            spec = spec.and(HeroImageSpecification.byIsActive(isActive));
-        }
-
-        // Sorting with validation
         String validatedSortBy = validateSortField(sortBy);
         if (validatedSortBy == null) {
             log.warn("Invalid sort field: {}", sortBy);
@@ -194,7 +175,17 @@ public class HeroImageGetService {
      * @param obfuscatedId The obfuscated image ID
      * @return ResponseEntity with ApiResponse containing the image
      */
-    public ResponseEntity<?> getImageById(String obfuscatedId, String scopeParentId) {
+    public ResponseEntity<?> getImageById(
+        String obfuscatedId,
+        String scopeParentId,
+        String obfuscatedHeroId,
+        String heroTitle,
+        HeroPage heroPage,
+        Boolean isPrimary,
+        Boolean isActive,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Getting hero image with ID: {}", obfuscatedId);
 
         try {
@@ -219,24 +210,28 @@ public class HeroImageGetService {
                 }
             }
 
-            // Circular navigation (scoped if parent provided, global otherwise)
-            Long nextId, previousId;
-            if (decodedParentId != null) {
-                nextId = heroImageRepository.findNextIdByParent(id, decodedParentId).orElse(null);
-                previousId = heroImageRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
-                if (nextId == null) nextId = heroImageRepository.findFirstIdByParent(decodedParentId).orElse(null);
-                if (previousId == null) previousId = heroImageRepository.findLastIdByParent(decodedParentId).orElse(null);
-            } else {
-                nextId = heroImageRepository.findNextId(id).orElse(null);
-                previousId = heroImageRepository.findPreviousId(id).orElse(null);
-                if (nextId == null) nextId = heroImageRepository.findFirstId().orElse(null);
-                if (previousId == null) previousId = heroImageRepository.findLastId().orElse(null);
-            }
+            /*
+             * Circular navigation over the caller's filtered, sorted set — scoped to the
+             * parent when one is given. The id-ordered walk this replaces stepped through a
+             * different set from the one on screen and could not say where you were in it.
+             */
+            String validatedSortBy = validateSortField(sortBy);
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                HeroImage.class,
+                buildSpec(decodedParentId != null ? scopeParentId : obfuscatedHeroId, heroTitle, heroPage, isPrimary, isActive),
+                validatedSortBy != null ? validatedSortBy : "createdAt",
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("image", imageDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok(ApiResponse.success(200, "Hero image retrieved successfully", response));
@@ -298,5 +293,46 @@ public class HeroImageGetService {
             .createdAt(image.getCreatedAt())
             .updatedAt(image.getUpdatedAt())
             .build();
+    }
+
+    /**
+     * The ONE description of the filtered set, shared by the rows and by the record
+     * arrows — paging that walked a different set from the one on screen would be
+     * worse than no arrows (see CLAUDE.md).
+     */
+    private Specification<HeroImage> buildSpec(
+        String obfuscatedHeroId,
+        String heroTitle,
+        HeroPage heroPage,
+        Boolean isPrimary,
+        Boolean isActive
+    ) {
+        Specification<HeroImage> spec = Specification.unrestricted();
+
+        if (obfuscatedHeroId != null && !obfuscatedHeroId.isBlank()) {
+            try {
+                Long heroId = idObfuscator.decodeId(obfuscatedHeroId);
+                spec = spec.and(HeroImageSpecification.byHeroId(heroId));
+            } catch (Exception e) {
+                log.warn("Failed to decode hero ID: {}", obfuscatedHeroId);
+            }
+        }
+
+        if (heroTitle != null && !heroTitle.isBlank()) {
+            spec = spec.and(HeroImageSpecification.byHeroTitle(heroTitle));
+        }
+        if (heroPage != null) {
+            spec = spec.and(HeroImageSpecification.byHeroPage(heroPage));
+        }
+        if (isPrimary != null) {
+            spec = spec.and(HeroImageSpecification.byIsPrimary(isPrimary));
+        }
+        if (isActive != null) {
+            spec = spec.and(HeroImageSpecification.byIsActive(isActive));
+        }
+
+        // Sorting with validation
+
+        return spec;
     }
 }

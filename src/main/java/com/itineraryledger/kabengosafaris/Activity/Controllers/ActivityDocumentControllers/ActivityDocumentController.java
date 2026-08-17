@@ -130,10 +130,29 @@ public class ActivityDocumentController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_ACTIVITY_DOCUMENT')")
     public ResponseEntity<?> getDocumentById(
-            @PathVariable("id") String id,
-            @RequestParam(required = false) String scopeParentId
+        @PathVariable("id") String id,
+        @RequestParam(required = false) String scopeParentId,
+        /* the list's filters travel with the record so its arrows stay in that set */
+        @RequestParam(value = "activityId", required = false) String activityId,
+        @RequestParam(value = "documentType", required = false) DocumentType documentType,
+        @RequestParam(value = "isActive", required = false) Boolean isActive,
+        @RequestParam(value = "title", required = false) String title,
+        @RequestParam(value = "version", required = false) String version,
+        @RequestParam(value = "currentlyValid", required = false) Boolean currentlyValid,
+        @RequestParam(value = "activityName", required = false) String activityName,
+        @RequestParam(value = "activityIsActive", required = false) Boolean activityIsActive,
+        @RequestParam(value = "hasTariff", required = false) Boolean hasTariff,
+        @RequestParam(value = "safetyDocumentsOnly", required = false) Boolean safetyDocumentsOnly,
+        @RequestParam(value = "documentTypes", required = false) java.util.List<ActivityDocument.DocumentType> documentTypes,
+        @RequestParam(value = "statuses", required = false) java.util.List<String> statuses,
+        @RequestParam(value = "validity", required = false) java.util.List<String> validity,
+        @RequestParam(value = "createdAfter", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
+        @RequestParam(value = "createdBefore", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdBefore,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
-        return getService.getDocumentById(id, scopeParentId);
+        return getService.getDocumentById(id, scopeParentId, activityId, documentType, isActive, title, version, currentlyValid, activityName, activityIsActive, hasTariff, safetyDocumentsOnly, documentTypes, statuses, validity, createdAfter, createdBefore, keyword, sortBy, sortDirection);
     }
 
     /**

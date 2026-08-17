@@ -127,8 +127,27 @@ public class SafariDocumentController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_SAFARI_DOCUMENT')")
-    public ResponseEntity<?> getDocumentById(@PathVariable("id") String id) {
-        return getService.getDocumentById(id);
+    public ResponseEntity<?> getDocumentById(
+        @PathVariable("id") String id,
+        /* the list's filters travel with the record so its arrows stay in that set */
+        @RequestParam(value = "safariId", required = false) String safariId,
+        @RequestParam(value = "documentType", required = false) DocumentType documentType,
+        @RequestParam(value = "isActive", required = false) Boolean isActive,
+        @RequestParam(value = "isGenerated", required = false) Boolean isGenerated,
+        @RequestParam(value = "title", required = false) String title,
+        @RequestParam(value = "version", required = false) String version,
+        @RequestParam(value = "currentlyValid", required = false) Boolean currentlyValid,
+        @RequestParam(value = "safariName", required = false) String safariName,
+        @RequestParam(value = "safariCode", required = false) String safariCode,
+        @RequestParam(value = "safariIsActive", required = false) Boolean safariIsActive,
+        @RequestParam(value = "safariState", required = false) SafariState safariState,
+        @RequestParam(value = "quotationDocumentsOnly", required = false) Boolean quotationDocumentsOnly,
+        @RequestParam(value = "travelDocumentsOnly", required = false) Boolean travelDocumentsOnly,
+        @RequestParam(value = "voucherDocumentsOnly", required = false) Boolean voucherDocumentsOnly,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
+    ) {
+        return getService.getDocumentById(id, safariId, documentType, isActive, isGenerated, title, version, currentlyValid, safariName, safariCode, safariIsActive, safariState, quotationDocumentsOnly, travelDocumentsOnly, voucherDocumentsOnly, sortBy, sortDirection);
     }
 
     /**

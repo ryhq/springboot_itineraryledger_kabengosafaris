@@ -36,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ActivityDocumentGetService {
 
     private final ActivityDocumentRepository activityDocumentRepository;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     @org.springframework.beans.factory.annotation.Autowired
     private com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final ActivityDocumentStorageService storageService;
@@ -109,43 +110,7 @@ public class ActivityDocumentGetService {
 
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
-            Specification<ActivityDocument> spec = ActivityDocumentSpecification.byActivityId(decodedActivityId)
-                .and(ActivityDocumentSpecification.byDocumentType(documentType))
-                .and(ActivityDocumentSpecification.byIsActive(isActive))
-                .and(ActivityDocumentSpecification.byTitleContains(title))
-                .and(ActivityDocumentSpecification.byVersion(version))
-                .and(ActivityDocumentSpecification.byActivityName(activityName))
-                .and(ActivityDocumentSpecification.byActivityIsActive(activityIsActive))
-                .and(ActivityDocumentSpecification.byActivityHasTariff(hasTariff));
-
-            if (Boolean.TRUE.equals(currentlyValid)) {
-                spec = spec.and(ActivityDocumentSpecification.byCurrentlyValid(LocalDateTime.now()));
-            }
-
-            if (Boolean.TRUE.equals(safetyDocumentsOnly)) {
-                spec = spec.and(ActivityDocumentSpecification.bySafetyDocument());
-            }
-            // multi-value + validity facets: every stat card must be filterable
-            if (documentTypes != null && !documentTypes.isEmpty()) {
-                spec = spec.and(ActivityDocumentSpecification.documentTypeIn(documentTypes));
-            }
-            if (statuses != null && !statuses.isEmpty()) {
-                java.util.List<Boolean> states = new java.util.ArrayList<>();
-                if (statuses.contains("active")) states.add(true);
-                if (statuses.contains("inactive")) states.add(false);
-                if (states.size() == 1) spec = spec.and(ActivityDocumentSpecification.byIsActive(states.get(0)));
-            }
-            if (validity != null && !validity.isEmpty()) {
-                spec = spec.and(ActivityDocumentSpecification.anyValidityState(
-                    validity.contains("expired"),
-                    validity.contains("expiring"),
-                    validity.contains("no-expiry")
-                ));
-            }
-            if (createdAfter != null) spec = spec.and(ActivityDocumentSpecification.createdAfter(createdAfter));
-            if (createdBefore != null) spec = spec.and(ActivityDocumentSpecification.createdBefore(createdBefore));
-
-            if (keyword != null && !keyword.isBlank()) spec = spec.and(ActivityDocumentSpecification.searchKeyword(keyword));
+            Specification<ActivityDocument> spec = buildSpec(activityId, documentType, isActive, title, version, currentlyValid, activityName, activityIsActive, hasTariff, safetyDocumentsOnly, documentTypes, statuses, validity, createdAfter, createdBefore, keyword);
 
 
             Page<ActivityDocument> documentPage = activityDocumentRepository.findAll(spec, pageable);
@@ -177,7 +142,28 @@ public class ActivityDocumentGetService {
         }
     }
 
-    public ResponseEntity<ApiResponse<?>> getDocumentById(String obfuscatedId, String scopeParentId) {
+    public ResponseEntity<ApiResponse<?>> getDocumentById(
+        String obfuscatedId,
+        String scopeParentId,
+        String activityId,
+        DocumentType documentType,
+        Boolean isActive,
+        String title,
+        String version,
+        Boolean currentlyValid,
+        String activityName,
+        Boolean activityIsActive,
+        Boolean hasTariff,
+        Boolean safetyDocumentsOnly,
+        java.util.List<ActivityDocument.DocumentType> documentTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> validity,
+        java.time.LocalDateTime createdAfter,
+        java.time.LocalDateTime createdBefore,
+        String keyword,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching activity document with ID: {}", obfuscatedId);
 
         try {
@@ -210,24 +196,28 @@ public class ActivityDocumentGetService {
                 }
             }
 
-            // Circular navigation (scoped if parent provided, global otherwise)
-            Long nextId, previousId;
-            if (decodedParentId != null) {
-                nextId = activityDocumentRepository.findNextIdByParent(id, decodedParentId).orElse(null);
-                previousId = activityDocumentRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
-                if (nextId == null) nextId = activityDocumentRepository.findFirstIdByParent(decodedParentId).orElse(null);
-                if (previousId == null) previousId = activityDocumentRepository.findLastIdByParent(decodedParentId).orElse(null);
-            } else {
-                nextId = activityDocumentRepository.findNextId(id).orElse(null);
-                previousId = activityDocumentRepository.findPreviousId(id).orElse(null);
-                if (nextId == null) nextId = activityDocumentRepository.findFirstId().orElse(null);
-                if (previousId == null) previousId = activityDocumentRepository.findLastId().orElse(null);
-            }
+            /*
+             * Circular navigation over the caller's filtered, sorted set — scoped to the
+             * parent when one is given. The id-ordered walk this replaces stepped through a
+             * different set from the one on screen and could not say where you were in it.
+             */
+            String validatedSortBy = validateSortField(sortBy);
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                ActivityDocument.class,
+                buildSpec(decodedParentId != null ? scopeParentId : activityId, documentType, isActive, title, version, currentlyValid, activityName, activityIsActive, hasTariff, safetyDocumentsOnly, documentTypes, statuses, validity, createdAfter, createdBefore, keyword),
+                validatedSortBy != null ? validatedSortBy : "createdAt",
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("document", documentDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok().body(
@@ -340,5 +330,79 @@ public class ActivityDocumentGetService {
             .count("noExpiry", ActivityDocumentSpecification.noExpiry())
             .recency(ActivityDocumentSpecification::createdAfter)
             .build();
+    }
+
+    /**
+     * The ONE description of the filtered set, shared by the rows and by the record
+     * arrows — paging that walked a different set from the one on screen would be
+     * worse than no arrows (see CLAUDE.md).
+     */
+    private Specification<ActivityDocument> buildSpec(
+        String activityId,
+        DocumentType documentType,
+        Boolean isActive,
+        String title,
+        String version,
+        Boolean currentlyValid,
+        String activityName,
+        Boolean activityIsActive,
+        Boolean hasTariff,
+        Boolean safetyDocumentsOnly,
+        java.util.List<ActivityDocument.DocumentType> documentTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> validity,
+        java.time.LocalDateTime createdAfter,
+        java.time.LocalDateTime createdBefore,
+        String keyword
+    ) {
+        /* the parent arrives obfuscated; an unreadable one simply means "not scoped" */
+        Long decodedActivityId = null;
+        if (activityId != null && !activityId.isBlank()) {
+            try {
+                decodedActivityId = idObfuscator.decodeId(activityId);
+            } catch (Exception e) {
+                log.warn("Failed to decode activity ID: {}", activityId);
+            }
+        }
+
+        Specification<ActivityDocument> spec = ActivityDocumentSpecification.byActivityId(decodedActivityId)
+                .and(ActivityDocumentSpecification.byDocumentType(documentType))
+                .and(ActivityDocumentSpecification.byIsActive(isActive))
+                .and(ActivityDocumentSpecification.byTitleContains(title))
+                .and(ActivityDocumentSpecification.byVersion(version))
+                .and(ActivityDocumentSpecification.byActivityName(activityName))
+                .and(ActivityDocumentSpecification.byActivityIsActive(activityIsActive))
+                .and(ActivityDocumentSpecification.byActivityHasTariff(hasTariff));
+
+            if (Boolean.TRUE.equals(currentlyValid)) {
+                spec = spec.and(ActivityDocumentSpecification.byCurrentlyValid(LocalDateTime.now()));
+            }
+
+            if (Boolean.TRUE.equals(safetyDocumentsOnly)) {
+                spec = spec.and(ActivityDocumentSpecification.bySafetyDocument());
+            }
+            // multi-value + validity facets: every stat card must be filterable
+            if (documentTypes != null && !documentTypes.isEmpty()) {
+                spec = spec.and(ActivityDocumentSpecification.documentTypeIn(documentTypes));
+            }
+            if (statuses != null && !statuses.isEmpty()) {
+                java.util.List<Boolean> states = new java.util.ArrayList<>();
+                if (statuses.contains("active")) states.add(true);
+                if (statuses.contains("inactive")) states.add(false);
+                if (states.size() == 1) spec = spec.and(ActivityDocumentSpecification.byIsActive(states.get(0)));
+            }
+            if (validity != null && !validity.isEmpty()) {
+                spec = spec.and(ActivityDocumentSpecification.anyValidityState(
+                    validity.contains("expired"),
+                    validity.contains("expiring"),
+                    validity.contains("no-expiry")
+                ));
+            }
+            if (createdAfter != null) spec = spec.and(ActivityDocumentSpecification.createdAfter(createdAfter));
+            if (createdBefore != null) spec = spec.and(ActivityDocumentSpecification.createdBefore(createdBefore));
+
+            if (keyword != null && !keyword.isBlank()) spec = spec.and(ActivityDocumentSpecification.searchKeyword(keyword));
+
+        return spec;
     }
 }

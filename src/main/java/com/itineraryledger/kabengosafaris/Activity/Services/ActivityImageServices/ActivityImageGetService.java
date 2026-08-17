@@ -35,6 +35,7 @@ public class ActivityImageGetService {
     private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final ActivityImageStorageService storageService;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "isPrimary", "isActive", "displayOrder", "fileSize", "createdAt", "updatedAt"
@@ -46,11 +47,13 @@ public class ActivityImageGetService {
         ActivityImageRepository activityImageRepository,
         ActivityImageStorageService storageService,
         IdObfuscator idObfuscator,
-        com.itineraryledger.kabengosafaris.Response.ListStats listStats
+        com.itineraryledger.kabengosafaris.Response.ListStats listStats,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.activityImageRepository = activityImageRepository;
         this.storageService = storageService;
         this.idObfuscator = idObfuscator;
+        this.recordNavigation = recordNavigation;
         this.listStats = listStats;
     }
 
@@ -105,66 +108,7 @@ public class ActivityImageGetService {
             String sortBy,
             String sortDirection
     ) {
-        Specification<ActivityImage> spec = Specification.unrestricted();
-
-        if (obfuscatedActivityId != null && !obfuscatedActivityId.isBlank()) {
-            try {
-                Long activityId = idObfuscator.decodeId(obfuscatedActivityId);
-                spec = spec.and(ActivityImageSpecification.byActivityId(activityId));
-            } catch (Exception e) {
-                log.warn("Failed to decode activity ID: {}", obfuscatedActivityId);
-            }
-        }
-
-        if (activityName != null && !activityName.isBlank()) {
-            spec = spec.and(ActivityImageSpecification.byActivityName(activityName));
-        }
-        if (activityIsActive != null) {
-            spec = spec.and(ActivityImageSpecification.byActivityIsActive(activityIsActive));
-        }
-        if (hasTariff != null) {
-            spec = spec.and(ActivityImageSpecification.byActivityHasTariff(hasTariff));
-        }
-        if (imageType != null) {
-            spec = spec.and(ActivityImageSpecification.byImageType(imageType));
-        }
-        if (isPrimary != null) {
-            spec = spec.and(ActivityImageSpecification.byIsPrimary(isPrimary));
-        }
-        if (isActive != null) {
-            spec = spec.and(ActivityImageSpecification.byIsActive(isActive));
-        }
-        if (displayOrder != null) {
-            spec = spec.and(ActivityImageSpecification.byDisplayOrder(displayOrder));
-        }
-
-        // Sorting with validation
-
-        // multi-value + data-quality facets: every stat card must be filterable
-        if (imageTypes != null && !imageTypes.isEmpty()) {
-            spec = spec.and(ActivityImageSpecification.imageTypeIn(imageTypes));
-        }
-        if (statuses != null && !statuses.isEmpty()) {
-            java.util.List<Boolean> states = new java.util.ArrayList<>();
-            if (statuses.contains("active")) states.add(true);
-            if (statuses.contains("inactive")) states.add(false);
-            if (states.size() == 1) spec = spec.and(ActivityImageSpecification.byIsActive(states.get(0)));
-        }
-        if (visibilities != null && !visibilities.isEmpty()) {
-            java.util.List<Boolean> live = new java.util.ArrayList<>();
-            if (visibilities.contains("live")) live.add(true);
-            if (visibilities.contains("hidden")) live.add(false);
-            // both at once is every row, so it cancels to no constraint
-            if (live.size() == 1) spec = spec.and(ActivityImageSpecification.isWebActive(live.get(0)));
-        }
-        if (qualities != null && !qualities.isEmpty()) {
-            spec = spec.and(ActivityImageSpecification.anyQualityIssue(
-                qualities.contains("no-caption"),
-                qualities.contains("no-alt")
-            ));
-        }
-        if (createdAfter != null) spec = spec.and(ActivityImageSpecification.createdAfter(createdAfter));
-        if (createdBefore != null) spec = spec.and(ActivityImageSpecification.createdBefore(createdBefore));
+        Specification<ActivityImage> spec = buildSpec(obfuscatedActivityId, activityName, activityIsActive, hasTariff, imageType, isPrimary, isActive, displayOrder, imageTypes, statuses, visibilities, qualities, createdAfter, createdBefore, keyword);
 
         String validatedSortBy = validateSortField(sortBy);
         if (validatedSortBy == null) {
@@ -206,7 +150,27 @@ public class ActivityImageGetService {
         return ResponseEntity.ok(ApiResponse.success(200, "Activity images retrieved successfully", response));
     }
 
-    public ResponseEntity<?> getImageById(String obfuscatedId, String scopeParentId) {
+    public ResponseEntity<?> getImageById(
+        String obfuscatedId,
+        String scopeParentId,
+        String obfuscatedActivityId,
+        String activityName,
+        Boolean activityIsActive,
+        Boolean hasTariff,
+        ImageType imageType,
+        Boolean isPrimary,
+        Boolean isActive,
+        Integer displayOrder,
+        java.util.List<ActivityImage.ImageType> imageTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> visibilities,
+        java.util.List<String> qualities,
+        java.time.LocalDateTime createdAfter,
+        java.time.LocalDateTime createdBefore,
+        String keyword,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Getting activity image with ID: {}", obfuscatedId);
 
         try {
@@ -231,24 +195,28 @@ public class ActivityImageGetService {
                 }
             }
 
-            // Circular navigation (scoped if parent provided, global otherwise)
-            Long nextId, previousId;
-            if (decodedParentId != null) {
-                nextId = activityImageRepository.findNextIdByParent(id, decodedParentId).orElse(null);
-                previousId = activityImageRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
-                if (nextId == null) nextId = activityImageRepository.findFirstIdByParent(decodedParentId).orElse(null);
-                if (previousId == null) previousId = activityImageRepository.findLastIdByParent(decodedParentId).orElse(null);
-            } else {
-                nextId = activityImageRepository.findNextId(id).orElse(null);
-                previousId = activityImageRepository.findPreviousId(id).orElse(null);
-                if (nextId == null) nextId = activityImageRepository.findFirstId().orElse(null);
-                if (previousId == null) previousId = activityImageRepository.findLastId().orElse(null);
-            }
+            /*
+             * Circular navigation over the caller's filtered, sorted set — scoped to the
+             * parent when one is given. The id-ordered walk this replaces stepped through a
+             * different set from the one on screen and could not say where you were in it.
+             */
+            String validatedSortBy = validateSortField(sortBy);
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                ActivityImage.class,
+                buildSpec(decodedParentId != null ? scopeParentId : obfuscatedActivityId, activityName, activityIsActive, hasTariff, imageType, isPrimary, isActive, displayOrder, imageTypes, statuses, visibilities, qualities, createdAfter, createdBefore, keyword),
+                validatedSortBy != null ? validatedSortBy : "createdAt",
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("image", imageDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok(ApiResponse.success(200, "Activity image retrieved successfully", response));
@@ -311,5 +279,91 @@ public class ActivityImageGetService {
             .breakdown("byImageType", ImageType.values(), ActivityImageSpecification::byImageType)
             .recency(ActivityImageSpecification::createdAfter)
             .build();
+    }
+
+    /**
+     * The ONE description of the filtered set, shared by the rows and by the record
+     * arrows — paging that walked a different set from the one on screen would be
+     * worse than no arrows (see CLAUDE.md).
+     */
+    private Specification<ActivityImage> buildSpec(
+        String obfuscatedActivityId,
+        String activityName,
+        Boolean activityIsActive,
+        Boolean hasTariff,
+        ImageType imageType,
+        Boolean isPrimary,
+        Boolean isActive,
+        Integer displayOrder,
+        java.util.List<ActivityImage.ImageType> imageTypes,
+        java.util.List<String> statuses,
+        java.util.List<String> visibilities,
+        java.util.List<String> qualities,
+        java.time.LocalDateTime createdAfter,
+        java.time.LocalDateTime createdBefore,
+        String keyword
+    ) {
+        Specification<ActivityImage> spec = Specification.unrestricted();
+
+        if (obfuscatedActivityId != null && !obfuscatedActivityId.isBlank()) {
+            try {
+                Long activityId = idObfuscator.decodeId(obfuscatedActivityId);
+                spec = spec.and(ActivityImageSpecification.byActivityId(activityId));
+            } catch (Exception e) {
+                log.warn("Failed to decode activity ID: {}", obfuscatedActivityId);
+            }
+        }
+
+        if (activityName != null && !activityName.isBlank()) {
+            spec = spec.and(ActivityImageSpecification.byActivityName(activityName));
+        }
+        if (activityIsActive != null) {
+            spec = spec.and(ActivityImageSpecification.byActivityIsActive(activityIsActive));
+        }
+        if (hasTariff != null) {
+            spec = spec.and(ActivityImageSpecification.byActivityHasTariff(hasTariff));
+        }
+        if (imageType != null) {
+            spec = spec.and(ActivityImageSpecification.byImageType(imageType));
+        }
+        if (isPrimary != null) {
+            spec = spec.and(ActivityImageSpecification.byIsPrimary(isPrimary));
+        }
+        if (isActive != null) {
+            spec = spec.and(ActivityImageSpecification.byIsActive(isActive));
+        }
+        if (displayOrder != null) {
+            spec = spec.and(ActivityImageSpecification.byDisplayOrder(displayOrder));
+        }
+
+        // Sorting with validation
+
+        // multi-value + data-quality facets: every stat card must be filterable
+        if (imageTypes != null && !imageTypes.isEmpty()) {
+            spec = spec.and(ActivityImageSpecification.imageTypeIn(imageTypes));
+        }
+        if (statuses != null && !statuses.isEmpty()) {
+            java.util.List<Boolean> states = new java.util.ArrayList<>();
+            if (statuses.contains("active")) states.add(true);
+            if (statuses.contains("inactive")) states.add(false);
+            if (states.size() == 1) spec = spec.and(ActivityImageSpecification.byIsActive(states.get(0)));
+        }
+        if (visibilities != null && !visibilities.isEmpty()) {
+            java.util.List<Boolean> live = new java.util.ArrayList<>();
+            if (visibilities.contains("live")) live.add(true);
+            if (visibilities.contains("hidden")) live.add(false);
+            // both at once is every row, so it cancels to no constraint
+            if (live.size() == 1) spec = spec.and(ActivityImageSpecification.isWebActive(live.get(0)));
+        }
+        if (qualities != null && !qualities.isEmpty()) {
+            spec = spec.and(ActivityImageSpecification.anyQualityIssue(
+                qualities.contains("no-caption"),
+                qualities.contains("no-alt")
+            ));
+        }
+        if (createdAfter != null) spec = spec.and(ActivityImageSpecification.createdAfter(createdAfter));
+        if (createdBefore != null) spec = spec.and(ActivityImageSpecification.createdBefore(createdBefore));
+
+        return spec;
     }
 }

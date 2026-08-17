@@ -136,10 +136,28 @@ public class ActivityImageController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_ACTIVITY_IMAGE')")
     public ResponseEntity<?> getImageById(
-            @PathVariable("id") String id,
-            @RequestParam(required = false) String scopeParentId
+        @PathVariable("id") String id,
+        @RequestParam(required = false) String scopeParentId,
+        /* the list's filters travel with the record so its arrows stay in that set */
+        @RequestParam(value = "activityId", required = false) String activityId,
+        @RequestParam(value = "activityName", required = false) String activityName,
+        @RequestParam(value = "activityIsActive", required = false) Boolean activityIsActive,
+        @RequestParam(value = "hasTariff", required = false) Boolean hasTariff,
+        @RequestParam(value = "imageType", required = false) ImageType imageType,
+        @RequestParam(value = "isPrimary", required = false) Boolean isPrimary,
+        @RequestParam(value = "isActive", required = false) Boolean isActive,
+        @RequestParam(value = "displayOrder", required = false) Integer displayOrder,
+        @RequestParam(value = "imageTypes", required = false) java.util.List<ActivityImage.ImageType> imageTypes,
+        @RequestParam(value = "statuses", required = false) java.util.List<String> statuses,
+        @RequestParam(value = "visibilities", required = false) java.util.List<String> visibilities,
+        @RequestParam(value = "qualities", required = false) java.util.List<String> qualities,
+        @RequestParam(value = "createdAfter", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdAfter,
+        @RequestParam(value = "createdBefore", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime createdBefore,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
-        return getService.getImageById(id, scopeParentId);
+        return getService.getImageById(id, scopeParentId, activityId, activityName, activityIsActive, hasTariff, imageType, isPrimary, isActive, displayOrder, imageTypes, statuses, visibilities, qualities, createdAfter, createdBefore, keyword, sortBy, sortDirection);
     }
 
     /**

@@ -34,6 +34,7 @@ public class TestimonyImageGetService {
     private final TestimonyImageRepository testimonyImageRepository;
     private final TestimonyImageStorageService storageService;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "isPrimary", "isActive", "displayOrder", "fileSize", "createdAt", "updatedAt"
@@ -44,11 +45,13 @@ public class TestimonyImageGetService {
     public TestimonyImageGetService(
         TestimonyImageRepository testimonyImageRepository,
         TestimonyImageStorageService storageService,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
     ) {
         this.testimonyImageRepository = testimonyImageRepository;
         this.storageService = storageService;
         this.idObfuscator = idObfuscator;
+        this.recordNavigation = recordNavigation;
     }
 
     public ResponseEntity<ApiResponse<?>> getTestimonyImages(String testimonyId) {
@@ -93,20 +96,7 @@ public class TestimonyImageGetService {
             String sortBy,
             String sortDirection
     ) {
-        Specification<TestimonyImage> spec = Specification.unrestricted();
-
-        if (obfuscatedTestimonyId != null && !obfuscatedTestimonyId.isBlank()) {
-            try {
-                Long testimonyId = idObfuscator.decodeId(obfuscatedTestimonyId);
-                spec = spec.and(TestimonyImageSpecification.byTestimonyId(testimonyId));
-            } catch (Exception e) {
-                log.warn("Failed to decode testimony ID: {}", obfuscatedTestimonyId);
-            }
-        }
-
-        if (isPrimary != null) spec = spec.and(TestimonyImageSpecification.byIsPrimary(isPrimary));
-        if (isActive != null) spec = spec.and(TestimonyImageSpecification.byIsActive(isActive));
-        if (keyword != null && !keyword.isBlank()) spec = spec.and(TestimonyImageSpecification.searchKeyword(keyword));
+        Specification<TestimonyImage> spec = buildSpec(obfuscatedTestimonyId, isPrimary, isActive, keyword);
 
         String validatedSortBy = validateSortField(sortBy);
         if (validatedSortBy == null) {
@@ -143,7 +133,43 @@ public class TestimonyImageGetService {
         return ResponseEntity.ok(ApiResponse.success(200, "Testimony images retrieved successfully", response));
     }
 
-    public ResponseEntity<?> getImageById(String obfuscatedId, String scopeParentId) {
+    /**
+     * The ONE place the filter set is described, so the rows and the record arrows cannot
+     * walk different sets (see CLAUDE.md: record paging must respect the list's filters).
+     */
+    private Specification<TestimonyImage> buildSpec(
+        String obfuscatedTestimonyId,
+        Boolean isPrimary,
+        Boolean isActive,
+        String keyword
+    ) {
+        Specification<TestimonyImage> spec = Specification.unrestricted();
+
+        if (obfuscatedTestimonyId != null && !obfuscatedTestimonyId.isBlank()) {
+            try {
+                Long testimonyId = idObfuscator.decodeId(obfuscatedTestimonyId);
+                spec = spec.and(TestimonyImageSpecification.byTestimonyId(testimonyId));
+            } catch (Exception e) {
+                log.warn("Failed to decode testimony ID: {}", obfuscatedTestimonyId);
+            }
+        }
+
+        if (isPrimary != null) spec = spec.and(TestimonyImageSpecification.byIsPrimary(isPrimary));
+        if (isActive != null) spec = spec.and(TestimonyImageSpecification.byIsActive(isActive));
+        if (keyword != null && !keyword.isBlank()) spec = spec.and(TestimonyImageSpecification.searchKeyword(keyword));
+
+        return spec;
+    }
+
+    public ResponseEntity<?> getImageById(
+        String obfuscatedId,
+        String scopeParentId,
+        Boolean isPrimary,
+        Boolean isActive,
+        String keyword,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Getting testimony image with ID: {}", obfuscatedId);
 
         try {
@@ -168,24 +194,33 @@ public class TestimonyImageGetService {
                 }
             }
 
-            // Circular navigation (scoped if parent provided, global otherwise)
-            Long nextId, previousId;
-            if (decodedParentId != null) {
-                nextId = testimonyImageRepository.findNextIdByParent(id, decodedParentId).orElse(null);
-                previousId = testimonyImageRepository.findPreviousIdByParent(id, decodedParentId).orElse(null);
-                if (nextId == null) nextId = testimonyImageRepository.findFirstIdByParent(decodedParentId).orElse(null);
-                if (previousId == null) previousId = testimonyImageRepository.findLastIdByParent(decodedParentId).orElse(null);
-            } else {
-                nextId = testimonyImageRepository.findNextId(id).orElse(null);
-                previousId = testimonyImageRepository.findPreviousId(id).orElse(null);
-                if (nextId == null) nextId = testimonyImageRepository.findFirstId().orElse(null);
-                if (previousId == null) previousId = testimonyImageRepository.findLastId().orElse(null);
-            }
+            /*
+             * Circular navigation over the caller's filtered, sorted set — scoped to the
+             * parent when one is given. The id-ordered repository walk this replaces stepped
+             * through a different set from the one on screen and could not say where you were.
+             */
+            String validatedSortBy = validateSortField(sortBy);
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                TestimonyImage.class,
+                buildSpec(
+                    decodedParentId != null ? scopeParentId : null,
+                    isPrimary,
+                    isActive,
+                    keyword
+                ),
+                validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("image", imageDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
             response.put("scopeParentId", scopeParentId);
 
             return ResponseEntity.ok(ApiResponse.success(200, "Testimony image retrieved successfully", response));

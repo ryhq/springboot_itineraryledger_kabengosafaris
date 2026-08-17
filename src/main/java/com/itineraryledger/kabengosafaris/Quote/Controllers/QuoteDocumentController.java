@@ -115,8 +115,21 @@ public class QuoteDocumentController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_QUOTE_DOCUMENT')")
-    public ResponseEntity<?> getDocumentById(@PathVariable("id") String id) {
-        return getService.getDocumentById(id);
+    public ResponseEntity<?> getDocumentById(
+        @PathVariable("id") String id,
+        /* the list's filters travel with the record so its arrows stay in that set */
+        @RequestParam(value = "quoteId", required = false) String quoteId,
+        @RequestParam(value = "documentType", required = false) DocumentType documentType,
+        @RequestParam(value = "isActive", required = false) Boolean isActive,
+        @RequestParam(value = "isGenerated", required = false) Boolean isGenerated,
+        @RequestParam(value = "title", required = false) String title,
+        @RequestParam(value = "version", required = false) String version,
+        @RequestParam(value = "currentlyValid", required = false) Boolean currentlyValid,
+        @RequestParam(value = "quoteCode", required = false) String quoteCode,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
+    ) {
+        return getService.getDocumentById(id, quoteId, documentType, isActive, isGenerated, title, version, currentlyValid, quoteCode, sortBy, sortDirection);
     }
 
     /**

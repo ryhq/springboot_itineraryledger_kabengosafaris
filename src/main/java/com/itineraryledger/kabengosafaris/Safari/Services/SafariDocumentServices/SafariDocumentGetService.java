@@ -40,6 +40,7 @@ public class SafariDocumentGetService {
     private final SafariDocumentRepository safariDocumentRepository;
     private final SafariDocumentStorageService storageService;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "title", "documentType", "fileName", "fileSize", "createdAt", "updatedAt"
@@ -105,32 +106,7 @@ public class SafariDocumentGetService {
 
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
-            Specification<SafariDocument> spec = SafariDocumentSpecification.bySafariId(decodedSafariId)
-                .and(SafariDocumentSpecification.byDocumentType(documentType))
-                .and(SafariDocumentSpecification.byIsActive(isActive))
-                .and(SafariDocumentSpecification.byIsGenerated(isGenerated))
-                .and(SafariDocumentSpecification.byTitleContains(title))
-                .and(SafariDocumentSpecification.byVersion(version))
-                .and(SafariDocumentSpecification.bySafariName(safariName))
-                .and(SafariDocumentSpecification.bySafariCode(safariCode))
-                .and(SafariDocumentSpecification.bySafariIsActive(safariIsActive))
-                .and(SafariDocumentSpecification.bySafariState(safariState));
-
-            if (Boolean.TRUE.equals(currentlyValid)) {
-                spec = spec.and(SafariDocumentSpecification.byCurrentlyValid(LocalDateTime.now()));
-            }
-
-            if (Boolean.TRUE.equals(quotationDocumentsOnly)) {
-                spec = spec.and(SafariDocumentSpecification.byQuotationDocuments());
-            }
-
-            if (Boolean.TRUE.equals(travelDocumentsOnly)) {
-                spec = spec.and(SafariDocumentSpecification.byTravelDocuments());
-            }
-
-            if (Boolean.TRUE.equals(voucherDocumentsOnly)) {
-                spec = spec.and(SafariDocumentSpecification.byVoucherDocuments());
-            }
+            Specification<SafariDocument> spec = buildSpec(safariId, documentType, isActive, isGenerated, title, version, currentlyValid, safariName, safariCode, safariIsActive, safariState, quotationDocumentsOnly, travelDocumentsOnly, voucherDocumentsOnly);
 
             Page<SafariDocument> documentPage = safariDocumentRepository.findAll(spec, pageable);
             Page<SafariDocumentDTO> dtoPage = documentPage.map(this::toDTO);
@@ -159,7 +135,25 @@ public class SafariDocumentGetService {
         }
     }
 
-    public ResponseEntity<ApiResponse<?>> getDocumentById(String obfuscatedId) {
+    public ResponseEntity<ApiResponse<?>> getDocumentById(
+        String obfuscatedId,
+        String safariId,
+        DocumentType documentType,
+        Boolean isActive,
+        Boolean isGenerated,
+        String title,
+        String version,
+        Boolean currentlyValid,
+        String safariName,
+        String safariCode,
+        Boolean safariIsActive,
+        SafariState safariState,
+        Boolean quotationDocumentsOnly,
+        Boolean travelDocumentsOnly,
+        Boolean voucherDocumentsOnly,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching safari document with ID: {}", obfuscatedId);
 
         try {
@@ -182,16 +176,28 @@ public class SafariDocumentGetService {
 
             SafariDocumentDTO documentDTO = toDTO(document);
 
-            // Circular navigation
-            Long nextId = safariDocumentRepository.findNextId(id).orElse(null);
-            Long previousId = safariDocumentRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = safariDocumentRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = safariDocumentRepository.findLastId().orElse(null);
+            /*
+             * Circular navigation over the caller's filtered, sorted set — scoped to the
+             * parent when one is given. The id-ordered walk this replaces stepped through a
+             * different set from the one on screen and could not say where you were in it.
+             */
+            String validatedSortBy = validateSortField(sortBy);
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                SafariDocument.class,
+                buildSpec(safariId, documentType, isActive, isGenerated, title, version, currentlyValid, safariName, safariCode, safariIsActive, safariState, quotationDocumentsOnly, travelDocumentsOnly, voucherDocumentsOnly),
+                validatedSortBy != null ? validatedSortBy : "createdAt",
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("document", documentDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Safari document retrieved successfully", response)
@@ -293,5 +299,66 @@ public class SafariDocumentGetService {
             .createdAt(document.getCreatedAt())
             .updatedAt(document.getUpdatedAt())
             .build();
+    }
+
+    /**
+     * The ONE description of the filtered set, shared by the rows and by the record
+     * arrows — paging that walked a different set from the one on screen would be
+     * worse than no arrows (see CLAUDE.md).
+     */
+    private Specification<SafariDocument> buildSpec(
+        String safariId,
+        DocumentType documentType,
+        Boolean isActive,
+        Boolean isGenerated,
+        String title,
+        String version,
+        Boolean currentlyValid,
+        String safariName,
+        String safariCode,
+        Boolean safariIsActive,
+        SafariState safariState,
+        Boolean quotationDocumentsOnly,
+        Boolean travelDocumentsOnly,
+        Boolean voucherDocumentsOnly
+    ) {
+        /* the parent arrives obfuscated; an unreadable one simply means "not scoped" */
+        Long decodedSafariId = null;
+        if (safariId != null && !safariId.isBlank()) {
+            try {
+                decodedSafariId = idObfuscator.decodeId(safariId);
+            } catch (Exception e) {
+                log.warn("Failed to decode safariId: {}", safariId);
+            }
+        }
+
+        Specification<SafariDocument> spec = SafariDocumentSpecification.bySafariId(decodedSafariId)
+                .and(SafariDocumentSpecification.byDocumentType(documentType))
+                .and(SafariDocumentSpecification.byIsActive(isActive))
+                .and(SafariDocumentSpecification.byIsGenerated(isGenerated))
+                .and(SafariDocumentSpecification.byTitleContains(title))
+                .and(SafariDocumentSpecification.byVersion(version))
+                .and(SafariDocumentSpecification.bySafariName(safariName))
+                .and(SafariDocumentSpecification.bySafariCode(safariCode))
+                .and(SafariDocumentSpecification.bySafariIsActive(safariIsActive))
+                .and(SafariDocumentSpecification.bySafariState(safariState));
+
+            if (Boolean.TRUE.equals(currentlyValid)) {
+                spec = spec.and(SafariDocumentSpecification.byCurrentlyValid(LocalDateTime.now()));
+            }
+
+            if (Boolean.TRUE.equals(quotationDocumentsOnly)) {
+                spec = spec.and(SafariDocumentSpecification.byQuotationDocuments());
+            }
+
+            if (Boolean.TRUE.equals(travelDocumentsOnly)) {
+                spec = spec.and(SafariDocumentSpecification.byTravelDocuments());
+            }
+
+            if (Boolean.TRUE.equals(voucherDocumentsOnly)) {
+                spec = spec.and(SafariDocumentSpecification.byVoucherDocuments());
+            }
+
+        return spec;
     }
 }

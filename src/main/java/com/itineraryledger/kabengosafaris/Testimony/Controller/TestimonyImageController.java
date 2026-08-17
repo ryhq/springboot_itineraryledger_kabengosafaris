@@ -82,10 +82,16 @@ public class TestimonyImageController {
     @PreAuthorize("hasAuthority('PERM_READ_TESTIMONY_IMAGE')")
     public ResponseEntity<?> getImageById(
         @PathVariable("id") String id,
-        @RequestParam(required = false) String scopeParentId
+        @RequestParam(required = false) String scopeParentId,
+        /* the list's filters travel with the record so its arrows stay in that set */
+        @RequestParam(required = false) Boolean isPrimary,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/testimony-images/{} - Fetching image by ID", id);
-        return getService.getImageById(id, scopeParentId);
+        return getService.getImageById(id, scopeParentId, isPrimary, isActive, keyword, sortBy, sortDirection);
     }
 
     @GetMapping("/testimony/{testimonyId}")

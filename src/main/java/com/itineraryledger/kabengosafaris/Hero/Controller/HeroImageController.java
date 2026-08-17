@@ -116,10 +116,18 @@ public class HeroImageController {
     @PreAuthorize("hasAuthority('PERM_READ_HERO_IMAGE')")
     public ResponseEntity<?> getImageById(
         @PathVariable("id") String id,
-        @RequestParam(required = false) String scopeParentId
+        @RequestParam(required = false) String scopeParentId,
+        /* the list's filters travel with the record so its arrows stay in that set */
+        @RequestParam(value = "heroId", required = false) String heroId,
+        @RequestParam(value = "heroTitle", required = false) String heroTitle,
+        @RequestParam(value = "heroPage", required = false) HeroPage heroPage,
+        @RequestParam(value = "isPrimary", required = false) Boolean isPrimary,
+        @RequestParam(value = "isActive", required = false) Boolean isActive,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/hero-images/{} - Fetching image by ID", id);
-        return getService.getImageById(id, scopeParentId);
+        return getService.getImageById(id, scopeParentId, heroId, heroTitle, heroPage, isPrimary, isActive, sortBy, sortDirection);
     }
 
     /**
