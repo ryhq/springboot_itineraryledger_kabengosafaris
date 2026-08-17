@@ -58,12 +58,14 @@ public class EmailMessageController {
             @RequestParam(required = false) List<String> labelIds,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime sentAfter,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime sentBefore,
+            /* snoozed=true lists what the ordinary view hides: mail put away until later */
+            @RequestParam(required = false) Boolean snoozed,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortDirection
     ) {
         return emailMessageGetService.getMessages(accountId, page, size, folderId,
             isRead, isStarred, isFlagged, hasAttachments, search, fromAddress, subject, labelIds,
-            sentAfter, sentBefore, sortBy, sortDirection);
+            sentAfter, sentBefore, snoozed, sortBy, sortDirection);
     }
 
     @GetMapping("/{id}")
@@ -83,10 +85,11 @@ public class EmailMessageController {
         @RequestParam(required = false) List<String> labelIds,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime sentAfter,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime sentBefore,
+        @RequestParam(required = false) Boolean snoozed,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false) String sortDirection
     ) {
-        return emailMessageGetService.getMessage(accountId, id, folderId, isRead, isStarred, isFlagged, hasAttachments, search, fromAddress, subject, labelIds, sentAfter, sentBefore, sortBy, sortDirection);
+        return emailMessageGetService.getMessage(accountId, id, folderId, isRead, isStarred, isFlagged, hasAttachments, search, fromAddress, subject, labelIds, sentAfter, sentBefore, snoozed, sortBy, sortDirection);
     }
 
     @GetMapping("/{id}/thread")

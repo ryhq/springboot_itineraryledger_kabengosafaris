@@ -84,6 +84,7 @@ public class EmailMessageGetService {
         List<String> labelIds,
         LocalDateTime sentAfter,
         LocalDateTime sentBefore,
+        Boolean snoozed,
         String sortBy,
         String sortDirection
     ) {
@@ -108,7 +109,7 @@ public class EmailMessageGetService {
             // once EmailSnoozeService.wakeDueSnoozes clears the field.
             // §7 — also exclude anything matching an active mute rule;
             // those are reported separately via /folders/{id}/muted-summary.
-            Specification<EmailMessage> spec = buildSpec(accountIdObfuscated, folderId, isRead, isStarred, isFlagged, hasAttachments, search, fromAddress, subject, labelIds, sentAfter, sentBefore);
+            Specification<EmailMessage> spec = buildSpec(accountIdObfuscated, folderId, isRead, isStarred, isFlagged, hasAttachments, search, fromAddress, subject, labelIds, sentAfter, sentBefore, snoozed);
 
             Page<EmailMessage> pagedMessages = emailMessageRepository.findAll(spec, paging);
 
@@ -184,6 +185,8 @@ public class EmailMessageGetService {
         List<String> labelIds,
         LocalDateTime sentAfter,
         LocalDateTime sentBefore,
+        /* the record walks the same set the list did — including the snoozed view */
+        Boolean snoozed,
         String sortBy,
         String sortDirection
     ) {
@@ -221,7 +224,7 @@ public class EmailMessageGetService {
             String validatedSortBy = validateSortField(sortBy);
             java.util.Map<String, Object> nav = recordNavigation.navigate(
                 EmailMessage.class,
-                buildSpec(accountIdObfuscated, folderId, isRead, isStarred, isFlagged, hasAttachments, search, fromAddress, subject, labelIds, sentAfter, sentBefore),
+                buildSpec(accountIdObfuscated, folderId, isRead, isStarred, isFlagged, hasAttachments, search, fromAddress, subject, labelIds, sentAfter, sentBefore, snoozed),
                 validatedSortBy != null ? validatedSortBy : "sentAt",
                 "asc".equalsIgnoreCase(sortDirection),
                 messageId
@@ -543,7 +546,8 @@ public class EmailMessageGetService {
         String subject,
         List<String> labelIds,
         LocalDateTime sentAfter,
-        LocalDateTime sentBefore
+        LocalDateTime sentBefore,
+        Boolean snoozed
     ) {
         Long accountId = idObfuscator.decodeId(accountIdObfuscated);
 
@@ -558,7 +562,10 @@ public class EmailMessageGetService {
 
         Specification<EmailMessage> spec = Specification.<EmailMessage>unrestricted()
                 .and(EmailMessageSpecification.forAccount(accountId))
-                .and(EmailMessageSpecification.notSnoozed())
+                /* snoozed=true asks for exactly what the ordinary list hides */
+                .and(Boolean.TRUE.equals(snoozed)
+                    ? EmailMessageSpecification.onlySnoozed()
+                    : EmailMessageSpecification.notSnoozed())
                 .and(EmailMessageSpecification.notMatchingMuteRules(muteRuleService.getActiveRules(accountId)));
 
             if (decodedFolderId != null) {
