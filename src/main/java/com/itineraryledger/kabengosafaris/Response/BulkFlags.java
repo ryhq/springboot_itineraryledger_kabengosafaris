@@ -44,6 +44,8 @@ public class BulkFlags {
         /** reviews: approved puts one on the site, featured picks it out */
         private Boolean isApproved;
         private Boolean isFeatured;
+        /** blog posts: published is what makes an article readable on the website */
+        private Boolean isPublished;
     }
 
     /**

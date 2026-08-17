@@ -127,6 +127,7 @@ public class SecurityConfigurations {
                 .requestMatchers("/api/safari-documents/*/file", "/api/safari-documents/file/*").permitAll() // Allow public access to safari document files
                 .requestMatchers("/api/invoice-documents/*/file", "/api/invoice-documents/file/*").permitAll() // Allow public access to invoice document files
                 .requestMatchers("/api/hero-images/*/file", "/api/hero-images/file/*").permitAll() // Allow public access to hero image files
+                .requestMatchers("/api/blog-images/*/file", "/api/blog-images/file/*").permitAll() // Allow public access to blog image files (an <img> carries no bearer token)
                 .requestMatchers("/api/heroes/page/*").permitAll() // Allow public access to hero sections by page
                 .requestMatchers("/api/public/**").permitAll() // Allow public access to website frontend APIs
 

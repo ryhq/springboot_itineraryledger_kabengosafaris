@@ -251,6 +251,46 @@ public class PublicTranslationService {
                         }
                     }
                 }
+                /*
+                 * A @Translatable List<String>: the bullet items of a blog body block.
+                 *
+                 * Handled explicitly because the list recursion below looks for DTOs with
+                 * their own annotated fields, and a String has none — so an annotated list of
+                 * plain strings would have been walked past in silence and shipped in English.
+                 */
+                else if (field.isAnnotationPresent(Translatable.class)
+                        && Collection.class.isAssignableFrom(field.getType())) {
+                    Object listVal = field.get(obj);
+                    if (listVal instanceof java.util.List<?> list && !list.isEmpty()) {
+                        java.util.List<String> translatedItems = new java.util.ArrayList<>(list.size());
+                        boolean changed = false;
+                        for (Object element : list) {
+                            if (!(element instanceof String text) || text.isBlank()) {
+                                translatedItems.add(element instanceof String s2 ? s2 : null);
+                                continue;
+                            }
+                            try {
+                                String translated = translationService.translatePlainText(text, "en", targetLang);
+                                if (translated != null && !translated.isBlank()) {
+                                    translatedItems.add(translated);
+                                    changed = true;
+                                } else {
+                                    translatedItems.add(text);
+                                }
+                            } catch (Exception e) {
+                                // one untranslated bullet is better than an empty list
+                                translatedItems.add(text);
+                            }
+                        }
+                        if (changed) {
+                            try {
+                                field.set(obj, translatedItems);
+                            } catch (Exception e) {
+                                log.debug("Could not write translated list {}.{}", clazz.getSimpleName(), field.getName());
+                            }
+                        }
+                    }
+                }
                 // Recurse into List fields that may contain DTOs with @Translatable
                 else if (Collection.class.isAssignableFrom(field.getType())) {
                     Object listVal = field.get(obj);

@@ -15,6 +15,8 @@ import com.itineraryledger.kabengosafaris.Public.Services.PublicItineraryService
 import com.itineraryledger.kabengosafaris.Public.Services.PublicNavigationService;
 import com.itineraryledger.kabengosafaris.Public.Services.PublicParkService;
 import com.itineraryledger.kabengosafaris.Public.Services.PublicSearchService;
+import com.itineraryledger.kabengosafaris.Public.Services.PublicBlogService;
+import com.itineraryledger.kabengosafaris.Public.Services.PublicFaqService;
 import com.itineraryledger.kabengosafaris.Public.Services.PublicTestimonyService;
 import com.itineraryledger.kabengosafaris.Public.Services.PublicTranslationService;
 import com.itineraryledger.kabengosafaris.Newsletter.Services.NewsletterService;
@@ -46,6 +48,8 @@ public class PublicController {
     private final PublicAccommodationService publicAccommodationService;
     private final PublicItineraryService publicItineraryService;
     private final PublicTestimonyService publicTestimonyService;
+    private final PublicBlogService publicBlogService;
+    private final PublicFaqService publicFaqService;
     private final PublicSearchService publicSearchService;
     private final PublicTranslationService publicTranslationService;
     private final NewsletterService newsletterService;
@@ -320,6 +324,46 @@ public class PublicController {
             return publicTestimonyService.getPublicTestimoniesPaginated(page, size, parsedLang);
         }
         return publicTestimonyService.getPublicTestimonies(parsedLang);
+    }
+
+    // ========================
+    // BLOG
+    // ========================
+
+    /**
+     * The blog index.
+     *
+     * Paged when asked (page/size) and whole otherwise, matching the testimony endpoint's
+     * behaviour — the site's index wants a page, its sitemap and llms.txt want all of them.
+     */
+    @GetMapping("/blogs")
+    public ResponseEntity<ApiResponse<?>> getBlogs(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang,
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size
+    ) {
+        return publicBlogService.getPublicBlogs(page, size, publicTranslationService.parseLanguage(lang));
+    }
+
+    /** One article, by the slug the site serves it at. */
+    @GetMapping("/blogs/{slug}")
+    public ResponseEntity<ApiResponse<?>> getBlogBySlug(
+        @PathVariable String slug,
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang
+    ) {
+        return publicBlogService.getPublicBlogBySlug(slug, publicTranslationService.parseLanguage(lang));
+    }
+
+    // ========================
+    // FAQ
+    // ========================
+
+    /** The global FAQ list for /faq — active only, in the order the panel set. */
+    @GetMapping("/faqs")
+    public ResponseEntity<ApiResponse<?>> getFaqs(
+        @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang
+    ) {
+        return publicFaqService.getPublicFaqs(publicTranslationService.parseLanguage(lang));
     }
 
     @GetMapping("/testimonies/summary")
