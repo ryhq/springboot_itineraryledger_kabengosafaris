@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Faq.Services;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -53,6 +54,14 @@ public class FaqService {
     );
     private static final String DEFAULT_SORT_FIELD = "displayOrder";
 
+    /**
+     * Below this, an answer is worth a second look.
+     *
+     * 120 characters is roughly a single line — long enough for "yes" plus a reason, too short
+     * for most of the questions this page is asked.
+     */
+    private static final int THIN_ANSWER_CHARS = 120;
+
     private final FaqRepository faqRepository;
     private final IdObfuscator idObfuscator;
     private final ListStats listStats;
@@ -77,7 +86,37 @@ public class FaqService {
             boolean inactive = filter.getStatuses().contains("inactive");
             if (active != inactive) spec = spec.and(FaqSpecification.isActive(active));
         }
+        /* quality and freshness: OR inside the dimension, AND across dimensions */
+        Specification<Faq> quality = anyOf(filter.getQualities(), want -> switch (want) {
+            case "no-category" -> FaqSpecification.missingCategory();
+            case "has-category" -> FaqSpecification.hasCategory();
+            case "thin-answer" -> FaqSpecification.thinAnswer(THIN_ANSWER_CHARS);
+            default -> null;
+        });
+        if (quality != null) spec = spec.and(quality);
+
+        Specification<Faq> fresh = anyOf(filter.getRecency(), want -> switch (want) {
+            case "added-7" -> FaqSpecification.createdAfter(LocalDateTime.now().minusDays(7));
+            case "added-30" -> FaqSpecification.createdAfter(LocalDateTime.now().minusDays(30));
+            case "updated-7" -> FaqSpecification.updatedAfter(LocalDateTime.now().minusDays(7));
+            case "stale-90" -> FaqSpecification.notUpdatedSince(LocalDateTime.now().minusDays(90));
+            default -> null;
+        });
+        if (fresh != null) spec = spec.and(fresh);
+
         return spec;
+    }
+
+    /** Ors the recognised values of one dimension together; null when none applied. */
+    private Specification<Faq> anyOf(List<String> wanted, java.util.function.Function<String, Specification<Faq>> of) {
+        if (wanted == null || wanted.isEmpty()) return null;
+        Specification<Faq> combined = null;
+        for (String want : wanted) {
+            Specification<Faq> one = of.apply(want);
+            if (one == null) continue;
+            combined = combined == null ? one : combined.or(one);
+        }
+        return combined;
     }
 
     @Transactional(readOnly = true)
@@ -118,11 +157,20 @@ public class FaqService {
             response.put("currentSortDirection", direction.name().toLowerCase());
 
             if (!Boolean.FALSE.equals(includeStats)) {
+                /*
+                 * Counters over the SAME specification as the rows. Every one of these is
+                 * reachable as a filter and every filter has one of these.
+                 */
                 response.put("stats", listStats.of(Faq.class, spec)
                     .total()
                     .count("active", FaqSpecification.isActive(true))
                     .complement("inactive", "active")
+                    .count("categorised", FaqSpecification.hasCategory())
                     .count("missingCategory", FaqSpecification.missingCategory())
+                    .count("thinAnswer", FaqSpecification.thinAnswer(THIN_ANSWER_CHARS))
+                    .count("updatedLast7Days", FaqSpecification.updatedAfter(LocalDateTime.now().minusDays(7)))
+                    .count("staleOver90Days", FaqSpecification.notUpdatedSince(LocalDateTime.now().minusDays(90)))
+                    .recency(FaqSpecification::createdAfter)
                     .build());
             }
 
@@ -184,9 +232,8 @@ public class FaqService {
                 .question(createDTO.getQuestion())
                 .answer(createDTO.getAnswer())
                 .category(createDTO.getCategory())
-                .displayOrder(createDTO.getDisplayOrder() != null
-                    ? createDTO.getDisplayOrder()
-                    : safeOrder(faqRepository.findMaxDisplayOrder()) + 1)
+                /* a new question goes to the end; where it belongs is decided by dragging */
+                .displayOrder(safeOrder(faqRepository.findMaxDisplayOrder()) + 1)
                 .isActive(createDTO.getIsActive() != null ? createDTO.getIsActive() : true)
                 .createdBy(currentUser())
                 .updatedBy(currentUser())
@@ -223,7 +270,6 @@ public class FaqService {
             if (updateDTO.getQuestion() != null) faq.setQuestion(updateDTO.getQuestion());
             if (updateDTO.getAnswer() != null) faq.setAnswer(updateDTO.getAnswer());
             if (updateDTO.getCategory() != null) faq.setCategory(updateDTO.getCategory());
-            if (updateDTO.getDisplayOrder() != null) faq.setDisplayOrder(updateDTO.getDisplayOrder());
             if (updateDTO.getIsActive() != null) faq.setIsActive(updateDTO.getIsActive());
             faq.setUpdatedBy(currentUser());
 

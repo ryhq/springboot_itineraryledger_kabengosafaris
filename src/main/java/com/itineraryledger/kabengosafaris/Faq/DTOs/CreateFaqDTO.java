@@ -6,6 +6,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * A new question.
+ *
+ * No displayOrder: a new FAQ goes to the end of the list, and where it should actually sit is
+ * decided by dragging it there — see UpdateFaqDTO for why one row cannot own a sequence.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,6 +26,5 @@ public class CreateFaqDTO {
     @Size(max = 120, message = "Category must be at most 120 characters")
     private String category;
 
-    private Integer displayOrder;
     private Boolean isActive;
 }
