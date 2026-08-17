@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import com.itineraryledger.kabengosafaris.Response.ContentTypes;
 import com.itineraryledger.kabengosafaris.Accommodation.DTOs.AccommodationImageDTOs.ReorderAccommodationImagesDTO;
 import com.itineraryledger.kabengosafaris.Accommodation.DTOs.AccommodationImageDTOs.UpdateAccommodationImageDTO;
 import com.itineraryledger.kabengosafaris.Accommodation.DTOs.AccommodationImageDTOs.UploadAccommodationImagesDTO;
@@ -177,7 +178,7 @@ public class AccommodationImageController {
             : storageService.getMimeType(image.getFileName());
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(mimeType));
+        headers.setContentType(ContentTypes.safe(mimeType));
         headers.setContentLength(imageBytes.length);
         headers.setCacheControl("public, max-age=86400");
 
@@ -219,7 +220,7 @@ public class AccommodationImageController {
             : storageService.getMimeType(image.getFileName());
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(mimeType));
+        headers.setContentType(ContentTypes.safe(mimeType));
         headers.setContentLength(imageBytes.length);
         headers.setCacheControl("public, max-age=86400");
 

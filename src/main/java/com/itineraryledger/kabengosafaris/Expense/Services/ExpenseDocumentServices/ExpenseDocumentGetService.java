@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Expense.Services.ExpenseDocumentServices;
 
+import com.itineraryledger.kabengosafaris.Response.ContentTypes;
 import com.itineraryledger.kabengosafaris.Expense.DTOs.ExpenseDocumentDTOs.ExpenseDocumentDTO;
 import com.itineraryledger.kabengosafaris.Expense.Entity.ExpenseDocument;
 import com.itineraryledger.kabengosafaris.Expense.Repository.ExpenseDocumentRepository;
@@ -241,7 +242,7 @@ public class ExpenseDocumentGetService {
                     : storageService.getMimeType(doc.getFileName());
             String safeName = doc.getOriginalFileName() != null ? doc.getOriginalFileName() : doc.getFileName();
             return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(mime))
+                    .contentType(ContentTypes.safe(mime))
                     .header("Content-Disposition", "inline; filename=\"" + safeName + "\"")
                     .body(bytes);
         } catch (Exception e) {

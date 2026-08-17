@@ -12,6 +12,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.itineraryledger.kabengosafaris.Response.ContentTypes;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.DTOs.ComposeEmailDTO;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.DTOs.MoveEmailDTO;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.DTOs.QuickReplyDTO;
@@ -128,8 +129,13 @@ public class EmailMessageController {
             ? attachment.getMimeType() : "application/octet-stream";
 
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-            .contentType(MediaType.parseMediaType(mimeType))
+            /*
+             * A mail filename is not ours either: a quote in it would end the header's quoted
+             * string early and a CR/LF would be header injection, so it goes through the same
+             * helper — which also keeps non-ASCII names readable via filename*.
+             */
+            .header(HttpHeaders.CONTENT_DISPOSITION, ContentTypes.attachment(filename))
+            .contentType(ContentTypes.safe(mimeType))
             .body(bytes);
     }
 

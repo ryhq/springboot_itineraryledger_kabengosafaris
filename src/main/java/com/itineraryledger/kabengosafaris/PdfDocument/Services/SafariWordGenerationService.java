@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.PdfDocument.Services;
 
+import com.itineraryledger.kabengosafaris.Response.ContentTypes;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogService;
 import com.itineraryledger.kabengosafaris.PdfDocument.Repository.PdfDocumentRepository;
 import com.itineraryledger.kabengosafaris.PdfDocument.Repository.PdfTemplateRepository;
@@ -182,7 +183,7 @@ public class SafariWordGenerationService extends WordGenerationBaseService {
                 fileName, safariIdObfuscated, savedDocument.getId());
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType(DOCX_MEDIA_TYPE));
+            headers.setContentType(ContentTypes.safe(DOCX_MEDIA_TYPE));
             headers.setContentDispositionFormData("attachment", fileName);
             headers.setContentLength(docxBytes.length);
             headers.set("X-Document-Saved", "true");

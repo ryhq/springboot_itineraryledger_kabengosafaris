@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import com.itineraryledger.kabengosafaris.Response.ContentTypes;
 import com.itineraryledger.kabengosafaris.Customer.DTOs.CustomerDocumentDTOs.UpdateCustomerDocumentDTO;
 import com.itineraryledger.kabengosafaris.Customer.DTOs.CustomerDocumentDTOs.UploadCustomerDocumentsDTO;
 import com.itineraryledger.kabengosafaris.Customer.Entity.CustomerDocument;
@@ -214,7 +215,7 @@ public class CustomerDocumentController {
             : storageService.getMimeType(document.getFileName());
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(mimeType));
+        headers.setContentType(ContentTypes.safe(mimeType));
         headers.setContentLength(documentBytes.length);
         headers.setContentDisposition(
             org.springframework.http.ContentDisposition.inline()
@@ -256,7 +257,7 @@ public class CustomerDocumentController {
             : storageService.getMimeType(document.getFileName());
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(mimeType));
+        headers.setContentType(ContentTypes.safe(mimeType));
         headers.setContentLength(documentBytes.length);
         headers.setContentDisposition(
             org.springframework.http.ContentDisposition.inline()

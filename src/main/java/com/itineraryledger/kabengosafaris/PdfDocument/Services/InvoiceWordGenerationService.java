@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.PdfDocument.Services;
 
+import com.itineraryledger.kabengosafaris.Response.ContentTypes;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogService;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.FullInvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.InvoiceDocumentDTOs.InvoiceDocumentDTO;
@@ -197,7 +198,7 @@ public class InvoiceWordGenerationService extends WordGenerationBaseService {
             log.info("DOCX generated and saved for invoice: {}, document ID: {}", invoiceIdObfuscated, savedDocument.getId());
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType(DOCX_MEDIA_TYPE));
+            headers.setContentType(ContentTypes.safe(DOCX_MEDIA_TYPE));
             headers.setContentDispositionFormData("attachment", fileName);
             headers.setContentLength(docxBytes.length);
             headers.set("X-Document-Saved", "true");

@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import com.itineraryledger.kabengosafaris.Response.ContentTypes;
 import com.itineraryledger.kabengosafaris.Park.DTOs.ParkImageDTOs.ReorderParkImagesDTO;
 import com.itineraryledger.kabengosafaris.Park.DTOs.ParkImageDTOs.UpdateParkImageDTO;
 import com.itineraryledger.kabengosafaris.Park.DTOs.ParkImageDTOs.UploadParkImagesDTO;
@@ -191,7 +192,7 @@ public class ParkImageController {
             : storageService.getMimeType(image.getFileName());
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(mimeType));
+        headers.setContentType(ContentTypes.safe(mimeType));
         headers.setContentLength(imageBytes.length);
         headers.setCacheControl("public, max-age=86400");
 
@@ -229,7 +230,7 @@ public class ParkImageController {
             : storageService.getMimeType(image.getFileName());
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(mimeType));
+        headers.setContentType(ContentTypes.safe(mimeType));
         headers.setContentLength(imageBytes.length);
         headers.setCacheControl("public, max-age=86400");
 

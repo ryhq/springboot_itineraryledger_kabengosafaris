@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.PdfDocument.Services;
 
+import com.itineraryledger.kabengosafaris.Response.ContentTypes;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLog;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogService;
 import com.itineraryledger.kabengosafaris.PdfDocument.Entity.PdfDocument;
@@ -147,7 +148,7 @@ public class WordGenerationBaseService {
 
             // 9. Return DOCX response
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType(DOCX_MEDIA_TYPE));
+            headers.setContentType(ContentTypes.safe(DOCX_MEDIA_TYPE));
             headers.setContentDispositionFormData("attachment", fileName);
             headers.setContentLength(docxBytes.length);
             // Expose the engine used so A/B comparisons can tell outputs apart from the wire
