@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Initializers;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,6 +63,13 @@ public class BlogSeeder {
             .tags(seed.tags() != null ? new ArrayList<>(seed.tags()) : new ArrayList<>())
             /* the site already serves these, so they arrive published */
             .isPublished(true)
+            /*
+             * And already at these addresses — the sitemap lists them — so the slug is frozen
+             * from the date the article says it was published, not from this boot.
+             */
+            .firstPublishedAt(seed.date() != null
+                ? LocalDate.parse(seed.date()).atStartOfDay()
+                : LocalDateTime.now())
             .displayOrder(seed.displayOrder() != null ? seed.displayOrder() : 0)
             .build();
 

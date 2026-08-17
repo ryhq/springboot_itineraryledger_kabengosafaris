@@ -33,6 +33,7 @@ public class BlogListItemDTO {
     private Integer readMinutes;
     private List<String> tags;
     private Boolean isPublished;
+    private LocalDateTime firstPublishedAt;
     private Integer displayOrder;
     private String coverImageUrl;
     private Long imageCount;

@@ -102,6 +102,18 @@ public class Blog {
     @Column(name = "is_published", nullable = false)
     private Boolean isPublished = false;
 
+    /**
+     * When this article FIRST went live, and therefore when its slug froze.
+     *
+     * Policy: a slug is not edited once the post has been published. The address is out in the
+     * world by then — in search results, in somebody's bookmarks, in a WhatsApp message — and
+     * renaming it turns every one of those into a 404. Current state is not enough to enforce
+     * that: unpublish, rename, republish would sidestep it, so the moment is recorded once and
+     * never cleared. Nullable, so it is safe to add to an existing table.
+     */
+    @Column(name = "first_published_at")
+    private LocalDateTime firstPublishedAt;
+
     @Builder.Default
     @Column(name = "display_order", nullable = false)
     private Integer displayOrder = 0;

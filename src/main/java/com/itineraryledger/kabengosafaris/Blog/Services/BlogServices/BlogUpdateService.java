@@ -58,18 +58,46 @@ public class BlogUpdateService {
                 );
             }
 
+            /*
+             * POLICY: a published article's slug is frozen. Refused rather than ignored — a
+             * caller that asked for a new address deserves to be told why it did not happen,
+             * and a silent no-op reads as a save that failed to stick.
+             */
+            if (updateDTO.getSlug() != null && !updateDTO.getSlug().isBlank() && blog.getFirstPublishedAt() != null) {
+                String wanted = contentService.slugify(updateDTO.getSlug());
+                if (wanted != null && !wanted.equals(blog.getSlug())) {
+                    return ResponseEntity.badRequest().body(
+                        ApiResponse.error(
+                            400,
+                            "This article has been published, so its address cannot change. "
+                                + "/blog/" + blog.getSlug() + " is already in search results and in people's links; "
+                                + "renaming it would turn every one of those into a 404.",
+                            "SLUG_LOCKED"
+                        )
+                    );
+                }
+            }
+
             if (updateDTO.getTitle() != null) blog.setTitle(updateDTO.getTitle());
             if (updateDTO.getExcerpt() != null) blog.setExcerpt(updateDTO.getExcerpt());
             if (updateDTO.getAuthor() != null) blog.setAuthor(updateDTO.getAuthor());
             if (updateDTO.getPublishDate() != null) blog.setPublishDate(updateDTO.getPublishDate());
-            if (updateDTO.getIsPublished() != null) blog.setIsPublished(updateDTO.getIsPublished());
+            if (updateDTO.getIsPublished() != null) {
+                blog.setIsPublished(updateDTO.getIsPublished());
+                /* the first publish is what freezes the slug, and it is recorded once */
+                if (Boolean.TRUE.equals(updateDTO.getIsPublished()) && blog.getFirstPublishedAt() == null) {
+                    blog.setFirstPublishedAt(java.time.LocalDateTime.now());
+                    log.info("Blog '{}' published for the first time — its slug is now fixed", blog.getSlug());
+                }
+            }
             if (updateDTO.getDisplayOrder() != null) blog.setDisplayOrder(updateDTO.getDisplayOrder());
             if (updateDTO.getMetaTitle() != null) blog.setMetaTitle(updateDTO.getMetaTitle());
             if (updateDTO.getMetaDescription() != null) blog.setMetaDescription(updateDTO.getMetaDescription());
 
             /*
-             * Changing the slug changes the article's public address; it is still allowed —
-             * the site is not live on these endpoints yet — but it is made unique and logged.
+             * Only reachable while the article has never been published (the check above
+             * refuses it otherwise). A draft's address is nobody's link yet, so renaming it is
+             * free; it is still made unique, because the slug IS the address.
              */
             if (updateDTO.getSlug() != null && !updateDTO.getSlug().isBlank()) {
                 String wanted = contentService.slugify(updateDTO.getSlug());

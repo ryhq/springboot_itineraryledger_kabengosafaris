@@ -73,6 +73,11 @@ public class BlogCreateService {
                 .updatedBy(currentUser)
                 .build();
 
+            /* published on the way in? then it has been live since now, and the slug is fixed */
+            if (Boolean.TRUE.equals(blog.getIsPublished())) {
+                blog.setFirstPublishedAt(java.time.LocalDateTime.now());
+            }
+
             blog = blogRepository.save(blog);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(

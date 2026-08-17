@@ -32,6 +32,8 @@ public class BlogDTO {
     private List<BlogBlockDTO> body;
     private List<BlogFaqDTO> faqs;
     private Boolean isPublished;
+    /** Set the first time the article was published; the slug is frozen once it exists. */
+    private LocalDateTime firstPublishedAt;
     private Integer displayOrder;
     private String metaTitle;
     private String metaDescription;
