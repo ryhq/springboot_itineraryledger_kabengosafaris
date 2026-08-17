@@ -53,6 +53,9 @@ public class EmailAccountSignatureGetService {
     @Autowired
     private IdObfuscator idObfuscator;
 
+    @Autowired
+    private com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "name", "isDefault", "enabled", "fileSize", "createdAt", "updatedAt"
     );
@@ -112,18 +115,7 @@ public class EmailAccountSignatureGetService {
             Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
-            // Build dynamic specification
-            Specification<EmailAccountSignature> specification = Specification.unrestricted();
-
-            specification = specification.and(EmailAccountSignatureSpecification.emailAccountId(emailAccountId));
-
-            if (enabled != null) {
-                specification = specification.and(EmailAccountSignatureSpecification.enabled(enabled));
-            }
-
-            if (isDefault != null) {
-                specification = specification.and(EmailAccountSignatureSpecification.isDefault(isDefault));
-            }
+            Specification<EmailAccountSignature> specification = buildSpec(emailAccountId, enabled, isDefault);
 
             // Fetch signatures with specification and pagination
             Page<EmailAccountSignature> signaturesPage = emailAccountSignatureRepository.findAll(specification, pageable);
@@ -159,7 +151,14 @@ public class EmailAccountSignatureGetService {
      * @param signatureIdObfuscated Obfuscated signature ID
      * @return ResponseEntity with signature details
      */
-    public ResponseEntity<ApiResponse<?>> getSignature(String emailAccountIdObfuscated, String signatureIdObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getSignature(
+            String emailAccountIdObfuscated,
+            String signatureIdObfuscated,
+            /* the list's filters travel with the record so its arrows stay in that set */
+            Boolean enabled,
+            Boolean isDefault,
+            String sortBy,
+            String sortDirection) {
         log.debug("Fetching signature: {}", signatureIdObfuscated);
 
         try {
@@ -176,16 +175,28 @@ public class EmailAccountSignatureGetService {
 
             EmailAccountSignatureDTO signatureDTO = convertToDTO(signature);
 
-            // Circular navigation
-            Long nextId = emailAccountSignatureRepository.findNextId(signatureId).orElse(null);
-            Long previousId = emailAccountSignatureRepository.findPreviousId(signatureId).orElse(null);
-            if (nextId == null) nextId = emailAccountSignatureRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = emailAccountSignatureRepository.findLastId().orElse(null);
+            /*
+             * Circular navigation inside THIS account's signatures, filtered and sorted as the
+             * list was. The repository walk this replaces was global: paging through one
+             * account's signatures stepped into another account's.
+             */
+            String validatedSortBy = validateSortField(sortBy);
+            Map<String, Object> nav = recordNavigation.navigate(
+                EmailAccountSignature.class,
+                buildSpec(emailAccountId, enabled, isDefault),
+                validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
+                "asc".equalsIgnoreCase(sortDirection),
+                signatureId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("signature", signatureDTO);
             responseData.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             responseData.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            responseData.put("position", nav.get("position"));
+            responseData.put("total", nav.get("total"));
 
             log.debug("Signature retrieved successfully: {}", signatureId);
             return ResponseEntity.ok(ApiResponse.success(200, "Signature retrieved successfully", responseData));
@@ -523,5 +534,24 @@ public class EmailAccountSignatureGetService {
                 .createdAt(signature.getCreatedAt())
                 .updatedAt(signature.getUpdatedAt())
                 .build();
+    }
+
+    /**
+     * The ONE description of the filtered set, shared by the rows and by the record arrows.
+     */
+    private Specification<EmailAccountSignature> buildSpec(Long emailAccountId, Boolean enabled, Boolean isDefault) {
+        Specification<EmailAccountSignature> specification = Specification.unrestricted();
+
+        specification = specification.and(EmailAccountSignatureSpecification.emailAccountId(emailAccountId));
+
+        if (enabled != null) {
+            specification = specification.and(EmailAccountSignatureSpecification.enabled(enabled));
+        }
+
+        if (isDefault != null) {
+            specification = specification.and(EmailAccountSignatureSpecification.isDefault(isDefault));
+        }
+
+        return specification;
     }
 }

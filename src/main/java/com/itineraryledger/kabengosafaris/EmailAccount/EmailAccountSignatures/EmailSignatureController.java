@@ -156,8 +156,14 @@ public class EmailSignatureController {
     @PreAuthorize("hasAuthority('PERM_READ_EMAIL_ACCOUNT_SIGNATURE')")
     public ResponseEntity<ApiResponse<?>> getSignature(
             @PathVariable String emailAccountId,
-            @PathVariable String signatureId) {
-        return emailAccountSignatureGetService.getSignature(emailAccountId, signatureId);
+            @PathVariable String signatureId,
+            /* the list's filters travel with the record so its arrows stay in that set */
+            @RequestParam(required = false) Boolean enabled,
+            @RequestParam(required = false) Boolean isDefault,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection) {
+        return emailAccountSignatureGetService.getSignature(
+            emailAccountId, signatureId, enabled, isDefault, sortBy, sortDirection);
     }
 
     /**

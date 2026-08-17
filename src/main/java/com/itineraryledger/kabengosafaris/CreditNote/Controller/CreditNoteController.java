@@ -65,9 +65,22 @@ public class CreditNoteController {
 
     @GetMapping("/{idObfuscated}")
     @PreAuthorize("hasAuthority('PERM_READ_CREDIT_NOTE')")
-    public ResponseEntity<ApiResponse<?>> getCreditNoteById(@PathVariable String idObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getCreditNoteById(
+        @PathVariable String idObfuscated,
+        /* the list's filters travel with the record so its arrows stay in that set */
+        @RequestParam(required = false) String creditNoteCode,
+        @RequestParam(required = false) String title,
+        @RequestParam(required = false) CreditNoteStatus status,
+        @RequestParam(required = false) String invoiceId,
+        @RequestParam(required = false) String customerId,
+        @RequestParam(required = false) LocalDate issueDateFrom,
+        @RequestParam(required = false) LocalDate issueDateTo,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection
+    ) {
         log.info("GET /api/credit-notes/{} - Fetching credit note by ID", idObfuscated);
-        return creditNoteGetService.getCreditNoteById(idObfuscated);
+        return creditNoteGetService.getCreditNoteById(idObfuscated, creditNoteCode, title, status, invoiceId, customerId, issueDateFrom, issueDateTo, isActive, sortBy, sortDirection);
     }
 
     @GetMapping

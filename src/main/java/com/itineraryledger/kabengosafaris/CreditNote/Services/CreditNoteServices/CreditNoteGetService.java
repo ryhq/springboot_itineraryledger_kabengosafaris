@@ -45,6 +45,7 @@ public class CreditNoteGetService {
     private final CreditNoteRepository creditNoteRepository;
     private final IdObfuscator idObfuscator;
     private final CreditNoteCreateService creditNoteCreateService;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     /**
      * Get a single credit note by obfuscated ID
@@ -52,7 +53,19 @@ public class CreditNoteGetService {
      * @param idObfuscated The obfuscated credit note ID
      * @return ResponseEntity with ApiResponse containing the credit note
      */
-    public ResponseEntity<ApiResponse<?>> getCreditNoteById(String idObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getCreditNoteById(
+        String idObfuscated,
+        String creditNoteCode,
+        String title,
+        CreditNoteStatus status,
+        String invoiceId,
+        String customerId,
+        LocalDate issueDateFrom,
+        LocalDate issueDateTo,
+        Boolean isActive,
+        String sortBy,
+        String sortDirection
+    ) {
         log.info("Fetching credit note with ID: {}", idObfuscated);
 
         try {
@@ -78,16 +91,28 @@ public class CreditNoteGetService {
             // Convert to DTO
             CreditNoteDTO creditNoteDTO = creditNoteCreateService.convertToDTO(creditNote);
 
-            // Build navigation
-            Long nextId = creditNoteRepository.findNextId(id).orElse(null);
-            Long previousId = creditNoteRepository.findPreviousId(id).orElse(null);
-            if (nextId == null) nextId = creditNoteRepository.findFirstId().orElse(null);
-            if (previousId == null) previousId = creditNoteRepository.findLastId().orElse(null);
+            /*
+             * Circular navigation over the caller's filtered, sorted set — scoped to the
+             * parent when one is given. The id-ordered walk this replaces stepped through a
+             * different set from the one on screen and could not say where you were in it.
+             */
+            String validatedSortBy = validateSortField(sortBy);
+            java.util.Map<String, Object> nav = recordNavigation.navigate(
+                CreditNote.class,
+                buildSpec(creditNoteCode, title, status, invoiceId, customerId, issueDateFrom, issueDateTo, isActive),
+                validatedSortBy != null ? validatedSortBy : "createdAt",
+                "asc".equalsIgnoreCase(sortDirection),
+                id
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> response = new HashMap<>();
             response.put("creditNote", creditNoteDTO);
             response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Credit note retrieved successfully", response)
@@ -145,44 +170,7 @@ public class CreditNoteGetService {
             }
 
             // Build specification for filtering
-            Specification<CreditNote> spec = Specification.unrestricted();
-
-            if (creditNoteCode != null && !creditNoteCode.isEmpty()) {
-                spec = spec.and(CreditNoteSpecification.byCreditNoteCode(creditNoteCode));
-            }
-            if (title != null && !title.isEmpty()) {
-                spec = spec.and(CreditNoteSpecification.byTitle(title));
-            }
-            if (status != null) {
-                spec = spec.and(CreditNoteSpecification.byStatus(status));
-            }
-            if (isActive != null) {
-                spec = spec.and(CreditNoteSpecification.byIsActive(isActive));
-            }
-            if (issueDateFrom != null) {
-                spec = spec.and(CreditNoteSpecification.byIssueDateFrom(issueDateFrom));
-            }
-            if (issueDateTo != null) {
-                spec = spec.and(CreditNoteSpecification.byIssueDateTo(issueDateTo));
-            }
-
-            // Apply relationship filters (decode IDs)
-            if (invoiceId != null && !invoiceId.isEmpty()) {
-                try {
-                    Long decodedId = idObfuscator.decodeId(invoiceId);
-                    spec = spec.and(CreditNoteSpecification.byInvoiceId(decodedId));
-                } catch (Exception e) {
-                    log.warn("Failed to decode invoice ID: {}", invoiceId, e);
-                }
-            }
-            if (customerId != null && !customerId.isEmpty()) {
-                try {
-                    Long decodedId = idObfuscator.decodeId(customerId);
-                    spec = spec.and(CreditNoteSpecification.byCustomerId(decodedId));
-                } catch (Exception e) {
-                    log.warn("Failed to decode customer ID: {}", customerId, e);
-                }
-            }
+            Specification<CreditNote> spec = buildSpec(creditNoteCode, title, status, invoiceId, customerId, issueDateFrom, issueDateTo, isActive);
 
             // Set default pagination values
             int pageNumber = (page != null && page >= 0) ? page : 0;
@@ -274,5 +262,62 @@ public class CreditNoteGetService {
             if (field.equalsIgnoreCase(sortBy)) return field;
         }
         return null;
+    }
+
+    /**
+     * The ONE description of the filtered set, shared by the rows and by the record
+     * arrows — paging that walked a different set from the one on screen would be
+     * worse than no arrows (see CLAUDE.md).
+     */
+    private Specification<CreditNote> buildSpec(
+        String creditNoteCode,
+        String title,
+        CreditNoteStatus status,
+        String invoiceId,
+        String customerId,
+        LocalDate issueDateFrom,
+        LocalDate issueDateTo,
+        Boolean isActive
+    ) {
+        Specification<CreditNote> spec = Specification.unrestricted();
+
+            if (creditNoteCode != null && !creditNoteCode.isEmpty()) {
+                spec = spec.and(CreditNoteSpecification.byCreditNoteCode(creditNoteCode));
+            }
+            if (title != null && !title.isEmpty()) {
+                spec = spec.and(CreditNoteSpecification.byTitle(title));
+            }
+            if (status != null) {
+                spec = spec.and(CreditNoteSpecification.byStatus(status));
+            }
+            if (isActive != null) {
+                spec = spec.and(CreditNoteSpecification.byIsActive(isActive));
+            }
+            if (issueDateFrom != null) {
+                spec = spec.and(CreditNoteSpecification.byIssueDateFrom(issueDateFrom));
+            }
+            if (issueDateTo != null) {
+                spec = spec.and(CreditNoteSpecification.byIssueDateTo(issueDateTo));
+            }
+
+            // Apply relationship filters (decode IDs)
+            if (invoiceId != null && !invoiceId.isEmpty()) {
+                try {
+                    Long decodedId = idObfuscator.decodeId(invoiceId);
+                    spec = spec.and(CreditNoteSpecification.byInvoiceId(decodedId));
+                } catch (Exception e) {
+                    log.warn("Failed to decode invoice ID: {}", invoiceId, e);
+                }
+            }
+            if (customerId != null && !customerId.isEmpty()) {
+                try {
+                    Long decodedId = idObfuscator.decodeId(customerId);
+                    spec = spec.and(CreditNoteSpecification.byCustomerId(decodedId));
+                } catch (Exception e) {
+                    log.warn("Failed to decode customer ID: {}", customerId, e);
+                }
+            }
+
+        return spec;
     }
 }

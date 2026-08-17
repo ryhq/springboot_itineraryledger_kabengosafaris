@@ -31,6 +31,7 @@ import java.util.Map;
 public class EmailTemplateGetService {
 
     private final EmailTemplateRepository emailTemplateRepository;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final EmailTemplateService emailTemplateService;
     private final IdObfuscator idObfuscator;
 
@@ -95,20 +96,7 @@ public class EmailTemplateGetService {
             Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
-            // Build dynamic specification
-            Specification<EmailTemplate> specification = EmailTemplateSpecification.emailEventId(eventId);
-
-            if (enabled != null) {
-                specification = specification.and(EmailTemplateSpecification.enabled(enabled));
-            }
-
-            if (isDefault != null) {
-                specification = specification.and(EmailTemplateSpecification.isDefault(isDefault));
-            }
-
-            if (isSystemDefault != null) {
-                specification = specification.and(EmailTemplateSpecification.isSystemDefault(isSystemDefault));
-            }
+            Specification<EmailTemplate> specification = buildSpec(eventId, enabled, isDefault, isSystemDefault, name);
 
             if (name != null && !name.isBlank()) {
                 specification = specification.and(EmailTemplateSpecification.nameLike(name));
@@ -152,7 +140,16 @@ public class EmailTemplateGetService {
      * @param templateIdObfuscated Obfuscated template ID
      * @return ResponseEntity with template details
      */
-    public ResponseEntity<ApiResponse<?>> getTemplate(String eventIdObfuscated, String templateIdObfuscated) {
+    public ResponseEntity<ApiResponse<?>> getTemplate(
+            String eventIdObfuscated,
+            String templateIdObfuscated,
+            /* the list's filters travel with the record so its arrows stay in that set */
+            Boolean enabled,
+            Boolean isDefault,
+            Boolean isSystemDefault,
+            String name,
+            String sortBy,
+            String sortDirection) {
         log.debug("Fetching template: {}", templateIdObfuscated);
 
         try {
@@ -169,16 +166,28 @@ public class EmailTemplateGetService {
 
             EmailTemplateDTO templateDTO = convertToDTO(template);
 
-            // Circular navigation scoped to the same email event
-            Long nextId = emailTemplateRepository.findNextIdByEventId(eventId, templateId).orElse(null);
-            Long previousId = emailTemplateRepository.findPreviousIdByEventId(eventId, templateId).orElse(null);
-            if (nextId == null) nextId = emailTemplateRepository.findFirstIdByEventId(eventId).orElse(null);
-            if (previousId == null) previousId = emailTemplateRepository.findLastIdByEventId(eventId).orElse(null);
+            /*
+             * Circular navigation inside this event's templates, filtered and sorted as the
+             * list was — the id-ordered walk it replaces ignored both, and could not say
+             * where in the set you were.
+             */
+            String validatedSortBy = validateSortField(sortBy);
+            Map<String, Object> nav = recordNavigation.navigate(
+                EmailTemplate.class,
+                buildSpec(eventId, enabled, isDefault, isSystemDefault, name),
+                validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
+                "asc".equalsIgnoreCase(sortDirection),
+                templateId
+            );
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
 
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("template", templateDTO);
             responseData.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
             responseData.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            responseData.put("position", nav.get("position"));
+            responseData.put("total", nav.get("total"));
 
             log.debug("Template retrieved successfully: {}", templateId);
             return ResponseEntity.ok(ApiResponse.success(200, "Template retrieved successfully", responseData));
@@ -412,5 +421,36 @@ public class EmailTemplateGetService {
             .createdAt(template.getCreatedAt())
             .updatedAt(template.getUpdatedAt())
             .build();
+    }
+
+    /**
+     * The ONE description of the filtered set, shared by the rows and by the record arrows.
+     */
+    private Specification<EmailTemplate> buildSpec(
+        Long eventId,
+        Boolean enabled,
+        Boolean isDefault,
+        Boolean isSystemDefault,
+        String name
+    ) {
+        Specification<EmailTemplate> specification = EmailTemplateSpecification.emailEventId(eventId);
+
+        if (enabled != null) {
+            specification = specification.and(EmailTemplateSpecification.enabled(enabled));
+        }
+
+        if (isDefault != null) {
+            specification = specification.and(EmailTemplateSpecification.isDefault(isDefault));
+        }
+
+        if (isSystemDefault != null) {
+            specification = specification.and(EmailTemplateSpecification.isSystemDefault(isSystemDefault));
+        }
+
+        if (name != null && !name.isBlank()) {
+            specification = specification.and(EmailTemplateSpecification.nameLike(name));
+        }
+
+        return specification;
     }
 }

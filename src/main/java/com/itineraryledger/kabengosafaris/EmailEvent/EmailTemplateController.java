@@ -138,8 +138,17 @@ public class EmailTemplateController {
     @PreAuthorize("hasAuthority('PERM_READ_EMAIL_TEMPLATE')")
     public ResponseEntity<ApiResponse<?>> getTemplate(
             @PathVariable String eventId,
-            @PathVariable String templateId) {
-        return emailTemplateGetService.getTemplate(eventId, templateId);
+            @PathVariable String templateId,
+            /* the list's filters travel with the record so its arrows stay in that set */
+            @RequestParam(required = false) Boolean enabled,
+            @RequestParam(required = false) Boolean isDefault,
+            @RequestParam(required = false) Boolean isSystemDefault,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection
+    ) {
+        return emailTemplateGetService.getTemplate(
+            eventId, templateId, enabled, isDefault, isSystemDefault, name, sortBy, sortDirection);
     }
 
     /**
