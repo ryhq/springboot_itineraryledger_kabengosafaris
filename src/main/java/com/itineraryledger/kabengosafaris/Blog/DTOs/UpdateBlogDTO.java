@@ -14,6 +14,11 @@ import lombok.NoArgsConstructor;
  *
  * The exception is deliberate: body, faqs and tags are LISTS, and an empty list is a real
  * value ("this article has no bullet blocks any more"), so those are applied whenever present.
+ *
+ * NO slug, by policy: an article's address is decided when it is created and never changes.
+ * The field is absent rather than validated, so no shape of request can move a live URL —
+ * every link to it, in search results, bookmarks and messages already sent, keeps working.
+ * Retitling is free; the address is a promise.
  */
 @Data
 @NoArgsConstructor
@@ -22,9 +27,6 @@ public class UpdateBlogDTO {
 
     @Size(max = 500, message = "Title must be at most 500 characters")
     private String title;
-
-    @Size(max = 255, message = "Slug must be at most 255 characters")
-    private String slug;
 
     private String excerpt;
     private String author;

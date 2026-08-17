@@ -35,7 +35,6 @@ public class BlogUpdateService {
 
     private final BlogRepository blogRepository;
     private final BlogContentService contentService;
-    private final BlogCreateService createService;
     private final BlogGetService getService;
     private final IdObfuscator idObfuscator;
 
@@ -58,26 +57,6 @@ public class BlogUpdateService {
                 );
             }
 
-            /*
-             * POLICY: a published article's slug is frozen. Refused rather than ignored — a
-             * caller that asked for a new address deserves to be told why it did not happen,
-             * and a silent no-op reads as a save that failed to stick.
-             */
-            if (updateDTO.getSlug() != null && !updateDTO.getSlug().isBlank() && blog.getFirstPublishedAt() != null) {
-                String wanted = contentService.slugify(updateDTO.getSlug());
-                if (wanted != null && !wanted.equals(blog.getSlug())) {
-                    return ResponseEntity.badRequest().body(
-                        ApiResponse.error(
-                            400,
-                            "This article has been published, so its address cannot change. "
-                                + "/blog/" + blog.getSlug() + " is already in search results and in people's links; "
-                                + "renaming it would turn every one of those into a 404.",
-                            "SLUG_LOCKED"
-                        )
-                    );
-                }
-            }
-
             if (updateDTO.getTitle() != null) blog.setTitle(updateDTO.getTitle());
             if (updateDTO.getExcerpt() != null) blog.setExcerpt(updateDTO.getExcerpt());
             if (updateDTO.getAuthor() != null) blog.setAuthor(updateDTO.getAuthor());
@@ -95,18 +74,9 @@ public class BlogUpdateService {
             if (updateDTO.getMetaDescription() != null) blog.setMetaDescription(updateDTO.getMetaDescription());
 
             /*
-             * Only reachable while the article has never been published (the check above
-             * refuses it otherwise). A draft's address is nobody's link yet, so renaming it is
-             * free; it is still made unique, because the slug IS the address.
+             * No slug handling at all: UpdateBlogDTO has no such field. The address is set once,
+             * at creation; changing it would mean publishing a different article.
              */
-            if (updateDTO.getSlug() != null && !updateDTO.getSlug().isBlank()) {
-                String wanted = contentService.slugify(updateDTO.getSlug());
-                if (wanted != null && !wanted.equals(blog.getSlug())) {
-                    String free = createService.uniqueSlug(wanted, blog.getId());
-                    log.info("Blog slug changing: {} -> {}", blog.getSlug(), free);
-                    blog.setSlug(free);
-                }
-            }
 
             if (updateDTO.getTags() != null) {
                 blog.getTags().clear();
