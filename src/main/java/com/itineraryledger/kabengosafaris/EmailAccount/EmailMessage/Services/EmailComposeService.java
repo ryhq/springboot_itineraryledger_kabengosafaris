@@ -362,6 +362,7 @@ public class EmailComposeService {
                     String htmlBody = extractHtmlFromMimeMessage(parsedMessage);
                     if (htmlBody != null) {
                         builder.html(htmlBody);
+                        builder.text(HtmlToText.convert(htmlBody));
                     }
                 }
 
@@ -471,7 +472,9 @@ public class EmailComposeService {
                 .from(account.getName() + " <" + account.getEmail() + ">")
                 .to(dto.getToAddresses())
                 .subject(dto.getSubject())
-                .html(dto.getHtmlBody());
+                .html(dto.getHtmlBody())
+                // the text alternative, same as the SMTP path builds
+                .text(HtmlToText.convert(dto.getHtmlBody()));
 
         if (dto.getCcAddresses() != null && !dto.getCcAddresses().isEmpty()) {
             builder.cc(dto.getCcAddresses());
@@ -640,7 +643,13 @@ public class EmailComposeService {
     private MimeMessage buildMimeMessage(JavaMailSender mailSender, EmailAccount account, ComposeEmailDTO dto, List<MultipartFile> attachments, EmailMessage replyTo) throws Exception {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         boolean hasAttachments = attachments != null && !attachments.isEmpty();
-        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, hasAttachments, "UTF-8");
+        /*
+         * Always multipart, attachments or not: multipart is what lets the message carry BOTH a
+         * text and an HTML part (see setText below). With NO_MULTIPART there is nowhere to put
+         * the text half.
+         */
+        MimeMessageHelper helper = new MimeMessageHelper(
+            mimeMessage, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
 
         helper.setFrom(new InternetAddress(account.getEmail(), account.getName()));
         helper.setTo(dto.getToAddresses().toArray(new String[0]));
@@ -653,7 +662,14 @@ public class EmailComposeService {
         }
 
         helper.setSubject(dto.getSubject());
-        helper.setText(dto.getHtmlBody(), true);
+        /*
+         * text first, HTML second — multipart/alternative, in the order the standard wants.
+         *
+         * Sending HTML alone (which is what this did) costs spam score and leaves anything
+         * reading text with tag soup. The text half is derived from the same body, so the two
+         * can never say different things.
+         */
+        helper.setText(HtmlToText.convert(dto.getHtmlBody()), dto.getHtmlBody());
 
         // Set Message-ID
         String hostPart = account.getSmtpHost() != null ? account.getSmtpHost() : "resend.dev";
