@@ -402,6 +402,29 @@ public class EmailMessageGetService {
     // Private helpers
     // =====================================================================
 
+    /**
+     * The body of one message, for anything outside the mailbox that needs to quote it.
+     *
+     * A chase quotes the request it is chasing, and quoting what was ACTUALLY sent beats
+     * re-rendering the letter: if somebody edited the wording before sending, the property received
+     * the edit, and a follow-up that quotes something they never read is worse than none.
+     *
+     * Best effort by design — null when the .eml cannot be read, and the caller carries on without
+     * a quote rather than failing.
+     */
+    public String htmlBodyOf(Long messageId) {
+        try {
+            EmailMessage message = messageId == null
+                ? null : emailMessageRepository.findById(messageId).orElse(null);
+            if (message == null || message.getEmailAccount() == null) return null;
+            return parseHtmlBodyFromEml(message.getEmailAccount().getId(),
+                message.getStoragePath(), message.getFileName());
+        } catch (Exception e) {
+            log.warn("Could not read the body of message {}: {}", messageId, e.getMessage());
+            return null;
+        }
+    }
+
     private String parseHtmlBodyFromEml(Long accountId, String storagePath, String fileName) {
         try {
             byte[] emlBytes = emailStorageService.readEmlFile(accountId, storagePath, fileName);

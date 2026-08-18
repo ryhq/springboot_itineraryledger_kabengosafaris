@@ -61,12 +61,16 @@ public class AvailabilityLetterService {
     private final SafariDayAccommodationRepository stayRepository;
     private final SafariPaxRepository paxRepository;
     private final EmailTemplateRenderer templateRenderer;
+    /** to quote what was actually sent, rather than re-rendering it */
+    private final com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.Services.EmailMessageGetService messageGetService;
     private final IdObfuscator idObfuscator;
 
     private static final String EVENT = "AVAILABILITY_REQUEST";
     private static final String CHASE_EVENT = "AVAILABILITY_REQUEST_CHASE";
     private static final DateTimeFormatter SLASH = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter SHORT = DateTimeFormatter.ofPattern("d MMM yyyy");
+    /** "18 Aug 2026, 08:42" — the stamp above a quoted message. */
+    private static final DateTimeFormatter QUOTE_STAMP = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm");
 
     /** The company this deployment is, for the greeting line. */
     @Value("${app.company.name:Kabengo Safaris}")
@@ -237,18 +241,55 @@ public class AvailabilityLetterService {
 
             String html = templateRenderer.renderTemplate(CHASE_EVENT, variables);
 
-            String subject = request.getSubject() != null && !request.getSubject().isBlank()
+            String subject;
+            if (request.getSubject() != null && !request.getSubject().isBlank()) {
                 /* the same thread, so the same subject with Re: — not a new conversation */
-                ? (request.getSubject().toLowerCase().startsWith("re:")
-                    ? request.getSubject() : "Re: " + request.getSubject())
-                : "Re: Availability Request · " + variables.get("accommodationName");
+                subject = request.getSubject().toLowerCase().startsWith("re:")
+                    ? request.getSubject() : "Re: " + request.getSubject();
+            } else {
+                /* an older row kept no subject; rebuilt WITH its dates rather than left vague */
+                subject = "Re: Availability Request · " + variables.get("accommodationName")
+                    + " · " + range(checkIn, checkOut);
+            }
+
+            /*
+             * Whom to write to: the record, and only then the property.
+             *
+             * Requests written before the envelope was recorded have no To at all, and a chase that
+             * opens with an empty recipient box and a disabled Send button is a dead end. So the
+             * property's own resolution is the fallback — the same one the first letter used.
+             */
+            String to = request.getToAddress();
+            List<String> cc = readAddresses(request.getCcAddresses());
+            List<String> bcc = readAddresses(request.getBccAddresses());
+            boolean recipientsRecovered = false;
+            if ((to == null || to.isBlank()) && property != null) {
+                Recipients resolved = recipientsFor(property);
+                to = resolved.to();
+                if (cc.isEmpty()) cc = resolved.cc();
+                recipientsRecovered = true;
+            }
+
+            /*
+             * The request quoted underneath, as a reply would — what was actually SENT rather than a
+             * re-render, because an edited letter is what the property read. Absent when the stored
+             * .eml cannot be read, in which case the chase still repeats the dates and the rooms.
+             */
+            String quoted = request.getEmailMessageId() != null
+                ? messageGetService.htmlBodyOf(request.getEmailMessageId()) : null;
+            String quotedIntro = request.getSentAt() != null
+                ? "On " + request.getSentAt().format(QUOTE_STAMP) + ", we wrote:"
+                : "Our earlier request:";
 
             Map<String, Object> response = new HashMap<>();
             response.put("subject", subject);
             response.put("html", html);
-            response.put("to", request.getToAddress());
-            response.put("cc", readAddresses(request.getCcAddresses()));
-            response.put("bcc", readAddresses(request.getBccAddresses()));
+            response.put("to", to);
+            response.put("cc", cc);
+            response.put("bcc", bcc);
+            response.put("recipientsRecovered", recipientsRecovered);
+            response.put("quotedHtml", quoted);
+            response.put("quotedIntro", quoted != null ? quotedIntro : null);
             response.put("inReplyToMessageId", request.getEmailMessageId() != null
                 ? idObfuscator.encodeId(request.getEmailMessageId()) : null);
             response.put("chasesSoFar", request.chasesSoFar());

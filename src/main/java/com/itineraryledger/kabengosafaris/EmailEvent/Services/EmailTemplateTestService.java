@@ -216,6 +216,9 @@ public class EmailTemplateTestService {
             case "AVAILABILITY_REQUEST":
                 return generateAvailabilityRequestTestData(user);
 
+            case "AVAILABILITY_REQUEST_CHASE":
+                return generateAvailabilityChaseTestData(user);
+
             case "SEND_SAFARI_DETAILS":
                 return generateSafariDetailsTestData(user);
 
@@ -626,6 +629,46 @@ public class EmailTemplateTestService {
         return "<li style=\"margin: 2px 0\"><span style=\"color: #6b7280\">"
             + date.format(slash) + "</span> &ndash; <strong style=\"color: #111827\">"
             + board + "</strong></li>";
+    }
+
+    /**
+     * Sample values for the chase — a property that has been silent for five days.
+     *
+     * Five, not one: a follow-up after a day reads as impatient, and the wording has to be checked
+     * against a wait that justifies it. The rooms come through as the same HTML list the live path
+     * builds, so the test exercises the real markup.
+     */
+    private TestEmailData generateAvailabilityChaseTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+
+        LocalDate askedOn = LocalDate.now().minusDays(5);
+        LocalDate checkIn = LocalDate.now().plusMonths(5).withDayOfMonth(29);
+        LocalDate checkOut = checkIn.plusDays(3);
+        DateTimeFormatter slash = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        DateTimeFormatter shortDate = DateTimeFormatter.ofPattern("d MMM yyyy");
+
+        variables.put("greetingName", "Reservations Team");
+        variables.put("brandName", companyName != null && !companyName.isBlank()
+            ? companyName : "Kabengo Safaris");
+        variables.put("accommodationName", "Tukaone Weavers Camp");
+        variables.put("askedOn", askedOn.format(slash));
+        variables.put("waitingDays", "5 days");
+        variables.put("checkIn", checkIn.format(slash));
+        variables.put("checkOut", checkOut.format(slash));
+        variables.put("nights", "3");
+        variables.put("guestCount", "5 Guests");
+        variables.put("roomConfiguration",
+            "<li style=\"margin: 2px 0\"><strong style=\"color: #111827\">2 &times;</strong> Double Room"
+            + " <span style=\"color: #6b7280\">&middot; Standard Tent</span></li>"
+            + "<li style=\"margin: 2px 0\"><strong style=\"color: #111827\">1 &times;</strong> Triple Room"
+            + " <span style=\"color: #6b7280\">&middot; Standard Tent</span></li>");
+        variables.put("reference", "SAF-14D13N-01003 · Ultimate Northern Tanzania, Culture & Zanzibar Beach");
+        variables.put("accentColor", "#1c7a58");
+
+        String subject = "[TEST] Re: Availability Request · " + variables.get("accommodationName")
+            + " · " + checkIn.getDayOfMonth() + "–" + checkOut.format(shortDate);
+
+        return new TestEmailData(variables, subject);
     }
 
     private TestEmailData generateSafariDetailsTestData(User user) {
