@@ -55,9 +55,22 @@ public class RegistrationHandler {
      */
     public ResponseEntity<ApiResponse<?>> accountActivation(String token) {
         try {
-            accountVerificationService.accountActivation(token);
+            com.itineraryledger.kabengosafaris.User.User activated =
+                    accountVerificationService.accountActivation(token);
+            /*
+             * The activated account's own email and first name.
+             *
+             * Activation only ENABLES the account; it sets no password. An account an
+             * administrator created has a generated one nobody ever saw, so the next thing that
+             * colleague needs is a password link — and the landing page can only offer that in one
+             * click if it knows where to send it. Nothing is disclosed: the caller just proved
+             * possession of that account's activation token.
+             */
+            java.util.Map<String, Object> data = new java.util.HashMap<>();
+            data.put("email", activated.getEmail());
+            data.put("firstName", activated.getFirstName());
             return ResponseEntity.ok(
-                    ApiResponse.success(200, "Account verified successfully. You can now log in.", null)
+                    ApiResponse.success(200, "Account verified successfully. You can now log in.", data)
             );
         } catch (RegistrationException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
