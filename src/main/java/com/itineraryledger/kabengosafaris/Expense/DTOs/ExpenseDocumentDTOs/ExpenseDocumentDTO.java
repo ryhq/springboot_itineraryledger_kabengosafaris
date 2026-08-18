@@ -40,9 +40,22 @@ public class ExpenseDocumentDTO {
     private String documentTypeDisplayName;
 
     private String fileUrl;
+
+    /**
+     * The same two names every other document module answers with.
+     *
+     * The shared documents table reads `fileDocumentUrl` for the preview and `fileSizeFormatted`
+     * for the Size column; this module answered `fileUrl` and a raw byte count, so a bill's
+     * documents tab showed no preview eye and an empty Size while a safari's showed both. The
+     * table is generated from one contract — a module that speaks a dialect of it silently loses
+     * whichever parts it did not say.
+     */
+    private String fileDocumentUrl;
+    private String documentUrl;
     private String fileName;
     private String originalFileName;
     private Long fileSize;
+    private String fileSizeFormatted;
     private String fileType;
 
     private String description;

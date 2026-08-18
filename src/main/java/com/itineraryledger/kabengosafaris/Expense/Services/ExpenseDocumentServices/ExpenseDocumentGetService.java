@@ -289,9 +289,14 @@ public class ExpenseDocumentGetService {
                 .documentType(d.getDocumentType())
                 .documentTypeDisplayName(d.getDocumentType() != null ? d.getDocumentType().getDisplayName() : null)
                 .fileUrl(d.getFileUrl())
+                /* the house names for the same file, which the shared table reads */
+                .fileDocumentUrl(d.getFileUrl() != null
+                        ? d.getFileUrl() : storageService.constructDocumentUrl(idObfuscator.encodeId(d.getId())))
+                .documentUrl(storageService.constructDocumentUrl(idObfuscator.encodeId(d.getId())))
                 .fileName(d.getFileName())
                 .originalFileName(d.getOriginalFileName())
                 .fileSize(d.getFileSize())
+                .fileSizeFormatted(d.getFileSize() != null ? storageService.formatFileSize(d.getFileSize()) : null)
                 .fileType(d.getFileType())
                 .description(d.getDescription())
                 .documentNumber(d.getDocumentNumber())
