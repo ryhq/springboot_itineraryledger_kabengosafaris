@@ -252,6 +252,22 @@ public class ExpenseDocumentGetService {
         }
     }
 
+    /** "USD 184.00 · 2026-08-20" — what a person needs to see that a slip answers THAT transfer. */
+    private String paymentLabel(com.itineraryledger.kabengosafaris.Expense.Entity.ExpensePayment payment) {
+        if (payment == null) return null;
+        StringBuilder label = new StringBuilder();
+        if (payment.getCurrency() != null) label.append(payment.getCurrency()).append(' ');
+        if (payment.getAmount() != null) label.append(payment.getAmount().stripTrailingZeros().toPlainString());
+        if (payment.getPaymentDate() != null) {
+            if (label.length() > 0) label.append(" \u00b7 ");
+            label.append(payment.getPaymentDate());
+        }
+        if (payment.getReference() != null && !payment.getReference().isBlank()) {
+            label.append(" \u00b7 ").append(payment.getReference().trim());
+        }
+        return label.length() == 0 ? "a payment" : label.toString();
+    }
+
     public ExpenseDocumentDTO toDTO(ExpenseDocument d) {
         return ExpenseDocumentDTO.builder()
                 .id(idObfuscator.encodeId(d.getId()))
@@ -268,6 +284,7 @@ public class ExpenseDocumentGetService {
                         ? d.getExpense().getSafari().getName() : null)
                 .expensePaymentId(d.getExpensePayment() != null
                         ? idObfuscator.encodeId(d.getExpensePayment().getId()) : null)
+                .expensePaymentLabel(paymentLabel(d.getExpensePayment()))
                 .title(d.getTitle())
                 .documentType(d.getDocumentType())
                 .documentTypeDisplayName(d.getDocumentType() != null ? d.getDocumentType().getDisplayName() : null)
