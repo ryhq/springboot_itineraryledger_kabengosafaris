@@ -44,6 +44,21 @@ public interface EmailMessageRepository extends JpaRepository<EmailMessage, Long
     List<EmailMessage> findSnoozedDueBy(@Param("now") LocalDateTime now);
 
     /**
+     * Incoming mail since a date, newest first — what a reply hunt reads.
+     *
+     * Drafts and our own sent copies are excluded: a request cannot be answered by the message that
+     * asked it, and matching one to the other would close every ask the moment it was made.
+     */
+    @Query("""
+        select m from EmailMessage m
+        where m.receivedAt is not null and m.receivedAt >= :since
+          and (m.isDraft is null or m.isDraft = false)
+          and (m.folder is null or lower(m.folder.name) <> 'sent')
+        order by m.receivedAt desc
+        """)
+    List<EmailMessage> findReceivedSince(@Param("since") LocalDateTime since);
+
+    /**
      * Batched COUNT(*) grouped by threadId for a given account, restricted
      * to a set of threadIds. Used to fill in threadCount on list DTOs
      * without N+1.

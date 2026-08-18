@@ -150,6 +150,19 @@ public class AvailabilityRequestController {
         return availabilityRequestService.close(requestId, body);
     }
 
+    /**
+     * Look for replies that already arrived.
+     *
+     * A person clicks this when a lodge has clearly written back and the request still says it is
+     * waiting — mail fetched while the matching hook did not exist, or before a record kept the
+     * headers to match on, would otherwise sit on the chase list for ever.
+     */
+    @PostMapping("/api/availability-requests/rescan-replies")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_AVAILABILITY_REQUEST')")
+    public ResponseEntity<ApiResponse<?>> rescanReplies() {
+        return availabilityRequestService.rescanForReplies();
+    }
+
     @PostMapping("/api/availability-requests/{requestId}/link-reply")
     @PreAuthorize("hasAuthority('PERM_UPDATE_AVAILABILITY_REQUEST')")
     public ResponseEntity<ApiResponse<?>> linkReply(

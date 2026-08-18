@@ -52,6 +52,13 @@ import lombok.extern.slf4j.Slf4j;
 public class AvailabilityRequestService {
 
     private final AvailabilityRequestRepository requestRepository;
+    /*
+     * Our own copy of what went out, so a record can be repaired from it.
+     *
+     * A plain repository rather than a relation: mail lives under an email ACCOUNT and a safari has
+     * no business owning a foreign key into somebody's mailbox.
+     */
+    private final com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.EmailMessageRepository messageRepository;
     private final SafariRepository safariRepository;
     private final AccommodationRepository accommodationRepository;
     private final SafariDayAccommodationRepository stayRepository;
@@ -138,6 +145,16 @@ public class AvailabilityRequestService {
                     .nightDate(stay.getSafariDay().getActualDate())
                     .build());
             }
+
+            /*
+             * The Message-ID of what we sent, which is what a reply's In-Reply-To will name.
+             *
+             * Taken from our own copy of the sent mail rather than asked of the caller: the browser
+             * does not see the header, and without it the matcher had nothing to match on — it read
+             * `rfcMessageId` while the create path only ever wrote `emailMessageId`, so every reply
+             * arrived, was looked at, and was silently ignored.
+             */
+            fillFromSentMessage(request);
 
             AvailabilityRequest saved = requestRepository.save(request);
 
@@ -256,31 +273,39 @@ public class AvailabilityRequestService {
     /* --------------------------------------------------------------- hooks */
 
     /**
-     * A reply has arrived somewhere in the mailbox: does it answer an ask?
+     * A message has arrived: does it answer something we asked?
      *
-     * Matched on headers, not on wording — In-Reply-To or References naming our Message-ID, else the
-     * same thread. Anything else stays unmatched and the request keeps saying "no reply matched",
-     * which is the truth and is what the manual link is for.
+     * Four ways, in order of how much they prove:
+     *
+     *  1. In-Reply-To / References naming the Message-ID we sent — the only one the standards
+     *     guarantee, and the only one that was implemented. It never fired, because nothing wrote
+     *     `rfcMessageId` in the first place.
+     *  2. the same thread id.
+     *  3. the same subject, allowing for the "Re:" a reply adds.
+     *  4. the sender belongs to the property, and exactly one request to that property is waiting.
+     *     A lodge answering from reservations@ when we wrote to info@, through a client that drops
+     *     In-Reply-To, is not an edge case; it is Tuesday. "Exactly one" is what keeps this honest:
+     *     with two open asks to the same lodge, a person has to say which.
+     *
+     * Automated mail is never a reply — a bounce for our own message would otherwise close the very
+     * request it failed to deliver.
      */
     @Transactional
     public void noticeIncomingMessage(Long messageId, String inReplyTo, String references, String threadId,
                                       LocalDateTime receivedAt) {
-        try {
-            AvailabilityRequest match = null;
+        noticeIncomingMessage(messageId, inReplyTo, references, threadId, null, null, receivedAt);
+    }
 
-            for (String header : new String[] { inReplyTo, references }) {
-                if (header == null || header.isBlank() || match != null) continue;
-                for (String token : header.split("[,\\s]+")) {
-                    String cleaned = token.trim();
-                    if (cleaned.isEmpty()) continue;
-                    match = requestRepository.findFirstByRfcMessageId(cleaned).orElse(null);
-                    if (match != null) break;
-                }
-            }
-            if (match == null && threadId != null && !threadId.isBlank()) {
-                match = requestRepository.findByThreadId(threadId).stream()
-                    .filter(AvailabilityRequest::isOpen).findFirst().orElse(null);
-            }
+    @Transactional
+    public void noticeIncomingMessage(Long messageId, String inReplyTo, String references, String threadId,
+                                      String fromAddress, String subject, LocalDateTime receivedAt) {
+        try {
+            if (isAutomated(fromAddress, subject)) return;
+
+            /* history first: a request written before the headers were stored can now be matched */
+            repairMailDetails();
+
+            AvailabilityRequest match = matchMessage(inReplyTo, references, threadId, fromAddress, subject);
             if (match == null || !match.isOpen()) return;
 
             markReplied(match, messageId, receivedAt != null ? receivedAt : LocalDateTime.now());
@@ -290,6 +315,237 @@ public class AvailabilityRequestService {
             /* a mailbox sync must never fail because of bookkeeping */
             log.warn("Could not match an incoming message to an availability request: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Go looking for replies that have already arrived.
+     *
+     * Matching happens as mail is fetched, so anything received while that hook did not exist — or
+     * while the app was down, or before a record kept the headers it needed — sits unanswered on the
+     * chase list for ever. This re-reads the inbox for every open ask and applies the same rules, so
+     * the state can be recovered instead of corrected by hand, one request at a time.
+     */
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> rescanForReplies() {
+        try {
+            repairMailDetails();
+
+            List<AvailabilityRequest> waiting = requestRepository.findChaseDueOrAwaiting();
+            if (waiting.isEmpty()) {
+                Map<String, Object> nothing = new HashMap<>();
+                nothing.put("matched", 0);
+                nothing.put("scanned", 0);
+                nothing.put("waiting", 0);
+                return ResponseEntity.ok(ApiResponse.success(200, "Nothing is waiting on a reply", nothing));
+            }
+
+            /* no request can be answered before it was sent, so the oldest one bounds the read */
+            LocalDateTime since = waiting.stream()
+                .map(AvailabilityRequest::getSentAt)
+                .filter(java.util.Objects::nonNull)
+                .min(LocalDateTime::compareTo)
+                .orElse(LocalDateTime.now().minusDays(60));
+
+            var messages = messageRepository.findReceivedSince(since);
+            int matched = 0;
+            /* oldest first: the first answer to an ask is the one that answered it */
+            for (int i = messages.size() - 1; i >= 0; i--) {
+                var message = messages.get(i);
+                if (isAutomated(message.getFromAddress(), message.getSubject())) continue;
+                AvailabilityRequest hit = matchMessage(
+                    message.getInReplyTo(), message.getReferences(), message.getThreadId(),
+                    message.getFromAddress(), message.getSubject());
+                if (hit == null || !hit.isOpen()) continue;
+                if (message.getReceivedAt() != null && hit.getSentAt() != null
+                    && message.getReceivedAt().isBefore(hit.getSentAt())) continue;
+                markReplied(hit, message.getId(), message.getReceivedAt() != null
+                    ? message.getReceivedAt() : LocalDateTime.now());
+                requestRepository.save(hit);
+                matched++;
+            }
+
+            Map<String, Object> report = new HashMap<>();
+            report.put("matched", matched);
+            report.put("scanned", messages.size());
+            report.put("waiting", waiting.size());
+            log.info("Reply hunt: {} of {} open availability requests matched from {} messages",
+                matched, waiting.size(), messages.size());
+            return ResponseEntity.ok(ApiResponse.success(200, matched == 0
+                ? "No new replies matched"
+                : matched + (matched == 1 ? " reply matched" : " replies matched"), report));
+        } catch (Exception e) {
+            log.error("Error hunting for availability replies", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to look for replies", "AVAILABILITY_RESCAN_FAILED"));
+        }
+    }
+
+    /** The matching rules themselves, so live mail and a rescan can never disagree. */
+    private AvailabilityRequest matchMessage(String inReplyTo, String references, String threadId,
+                                             String fromAddress, String subject) {
+        AvailabilityRequest match = null;
+        for (String header : new String[] { inReplyTo, references }) {
+            if (header == null || header.isBlank() || match != null) continue;
+            for (String token : header.split("[,\\s]+")) {
+                String cleaned = token.trim();
+                if (cleaned.isEmpty()) continue;
+                match = requestRepository.findFirstByRfcMessageId(cleaned).orElse(null);
+                if (match != null) break;
+            }
+        }
+        if (match == null && threadId != null && !threadId.isBlank()) {
+            match = requestRepository.findByThreadId(threadId).stream()
+                .filter(AvailabilityRequest::isOpen).findFirst().orElse(null);
+        }
+        if (match == null) match = matchBySubject(subject);
+        if (match == null) match = matchBySender(fromAddress, subject);
+        return match;
+    }
+
+    /** Mailer daemons and delivery reports are about a message, not answers to it. */
+    private boolean isAutomated(String fromAddress, String subject) {
+        String from = fromAddress == null ? "" : fromAddress.toLowerCase();
+        String subj = subject == null ? "" : subject.toLowerCase();
+        return from.contains("mailer-daemon") || from.contains("postmaster")
+            || from.startsWith("no-reply") || from.startsWith("noreply")
+            || subj.startsWith("delivery status notification")
+            || subj.startsWith("undeliverable")
+            || subj.contains("mail delivery failed")
+            || subj.contains("returning message to sender");
+    }
+
+    /** "Re: Availability Request · Outpost Lodge · 23–24 Jan 2027" is our own subject, answered. */
+    private static String bareSubject(String subject) {
+        if (subject == null) return "";
+        String out = subject.trim();
+        /* strip any run of Re:/Fwd:/Fw: prefixes, however the client stacked them */
+        while (true) {
+            String lower = out.toLowerCase();
+            if (lower.startsWith("re:") || lower.startsWith("aw:")) out = out.substring(3).trim();
+            else if (lower.startsWith("fwd:")) out = out.substring(4).trim();
+            else if (lower.startsWith("fw:")) out = out.substring(3).trim();
+            else break;
+        }
+        return out.replaceAll("\\s+", " ").toLowerCase();
+    }
+
+    private AvailabilityRequest matchBySubject(String subject) {
+        String bare = bareSubject(subject);
+        if (bare.isEmpty()) return null;
+        List<AvailabilityRequest> candidates = requestRepository.findChaseDueOrAwaiting();
+        for (AvailabilityRequest request : candidates) {
+            String ours = bareSubject(request.getSubject());
+            if (!ours.isEmpty() && (ours.equals(bare) || bare.contains(ours))) return request;
+        }
+        return null;
+    }
+
+    /**
+     * The sender belongs to the property, and exactly one ask to it is waiting.
+     *
+     * The address is compared whole and by domain: a group's reservations desk answers for its
+     * camps, and the camp's own address is often on the same domain as the one we wrote to.
+     */
+    private AvailabilityRequest matchBySender(String fromAddress, String subject) {
+        if (fromAddress == null || fromAddress.isBlank()) return null;
+        String from = fromAddress.trim().toLowerCase();
+        String domain = from.contains("@") ? from.substring(from.indexOf('@') + 1) : "";
+
+        List<AvailabilityRequest> waiting = requestRepository.findChaseDueOrAwaiting();
+        List<AvailabilityRequest> hits = new ArrayList<>();
+        for (AvailabilityRequest request : waiting) {
+            if (senderBelongsToRequest(request, from, domain)) hits.add(request);
+        }
+        if (hits.size() == 1) return hits.get(0);
+        if (hits.size() > 1) {
+            /* several asks to the same property: only the subject can say which, and it did not */
+            log.info("A reply from {} could match {} open availability requests — leaving it for a person",
+                from, hits.size());
+        }
+        return null;
+    }
+
+    private boolean senderBelongsToRequest(AvailabilityRequest request, String from, String domain) {
+        List<String> known = new ArrayList<>();
+        if (request.getToAddress() != null) known.add(request.getToAddress());
+        for (String cc : readList(request.getCcAddresses())) known.add(cc);
+        Accommodation accommodation = request.getAccommodation();
+        if (accommodation != null) {
+            try {
+                accommodation.getEmails().forEach(e -> {
+                    if (e.getEmail() != null) known.add(e.getEmail());
+                });
+            } catch (Exception ignored) {
+                /* a lazy collection outside a session tells us nothing; the addresses above still do */
+            }
+        }
+        for (String candidate : known) {
+            if (candidate == null || candidate.isBlank()) continue;
+            String value = candidate.trim().toLowerCase();
+            if (value.equals(from)) return true;
+            if (!domain.isEmpty() && value.endsWith("@" + domain)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Fill in what a record should have kept about the mail it names.
+     *
+     * The Message-ID, the thread, the subject and the addresses all sit on our own copy of the sent
+     * message. A record written before the create path read them shows "written to —" and can never
+     * be matched to a reply, and there is no reason for either: the message is right there.
+     */
+    private void repairMailDetails() {
+        for (AvailabilityRequest request : requestRepository.findNeedingMailRepair()) {
+            if (fillFromSentMessage(request)) requestRepository.save(request);
+        }
+    }
+
+    /** Returns true when something was actually filled in. */
+    private boolean fillFromSentMessage(AvailabilityRequest request) {
+        if (request.getEmailMessageId() == null) return false;
+        var sent = messageRepository.findById(request.getEmailMessageId()).orElse(null);
+        if (sent == null) return false;
+        boolean changed = false;
+        if (request.getRfcMessageId() == null && sent.getMessageId() != null) {
+            request.setRfcMessageId(sent.getMessageId());
+            changed = true;
+        }
+        if (request.getThreadId() == null && sent.getThreadId() != null) {
+            request.setThreadId(sent.getThreadId());
+            changed = true;
+        }
+        if ((request.getSubject() == null || request.getSubject().isBlank()) && sent.getSubject() != null) {
+            request.setSubject(sent.getSubject());
+            changed = true;
+        }
+        if ((request.getToAddress() == null || request.getToAddress().isBlank()) && sent.getToAddresses() != null) {
+            String first = firstAddress(sent.getToAddresses());
+            if (first != null) {
+                request.setToAddress(first);
+                changed = true;
+            }
+        }
+        if ((request.getCcAddresses() == null || request.getCcAddresses().isBlank())
+            && sent.getCcAddresses() != null && !sent.getCcAddresses().isBlank()) {
+            request.setCcAddresses(sent.getCcAddresses());
+            changed = true;
+        }
+        return changed;
+    }
+
+    /**
+     * The first address out of however the message stored them — a JSON array for mail this app
+     * composed, a raw header for mail it synced.
+     */
+    private String firstAddress(String stored) {
+        String value = stored.trim();
+        if (value.startsWith("[")) {
+            List<String> parsed = readList(value);
+            return parsed.isEmpty() ? null : parsed.get(0);
+        }
+        String[] parts = value.split(",");
+        return parts.length == 0 ? null : parts[0].trim();
     }
 
     /**

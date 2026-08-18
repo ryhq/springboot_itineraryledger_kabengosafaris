@@ -313,13 +313,16 @@ public class EmailReceivingService {
         /*
          * Does this answer something we asked?
          *
-         * Matched on In-Reply-To / References / thread — headers, not wording — so an availability
-         * request stops sitting on the chase list the moment the lodge writes back. Best effort by
-         * construction: a mailbox sync must never fail because of bookkeeping, which is why the
-         * service swallows its own errors rather than letting one message abort the fetch.
+         * Headers first — In-Reply-To, References, thread — then the subject and the sender, because
+         * a lodge replying from reservations@ through a client that drops In-Reply-To is ordinary,
+         * and a request left on the chase list after it has been answered is the thing this exists
+         * to prevent. Best effort by construction: a mailbox sync must never fail because of
+         * bookkeeping, which is why the service swallows its own errors rather than letting one
+         * message abort the fetch.
          */
         availabilityRequestService.noticeIncomingMessage(
-            emailMessage.getId(), inReplyTo, references, threadId, emailMessage.getReceivedAt());
+            emailMessage.getId(), inReplyTo, references, threadId,
+            emailMessage.getFromAddress(), emailMessage.getSubject(), emailMessage.getReceivedAt());
 
         // Extract and save attachments
         if (hasAttachments) {
