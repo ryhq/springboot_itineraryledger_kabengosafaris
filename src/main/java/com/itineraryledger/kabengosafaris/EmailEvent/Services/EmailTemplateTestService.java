@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -40,6 +41,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class EmailTemplateTestService {
+
+    /** The same property the live availability letter greets with, so a test reads identically. */
+    @Value("${app.company.name:Kabengo Safaris}")
+    private String companyName;
 
     private final EmailEventRepository emailEventRepository;
     private final EmailTemplateRepository emailTemplateRepository;
@@ -207,6 +212,9 @@ public class EmailTemplateTestService {
 
             case "SAFARI_POST_TRIP_REMINDER":
                 return generateSafariPostTripReminderTestData(user);
+
+            case "AVAILABILITY_REQUEST":
+                return generateAvailabilityRequestTestData(user);
 
             case "SEND_SAFARI_DETAILS":
                 return generateSafariDetailsTestData(user);
@@ -562,6 +570,62 @@ public class EmailTemplateTestService {
         variables.put("alertDate", now.format(dateFormatter));
 
         return new TestEmailData(variables, "[TEST] Post-Trip Tasks Pending — SAF-7D6N-1007 — ended 3 day(s) ago");
+    }
+
+    /**
+     * Sample values for the availability request — a real-shaped ask, not lorem.
+     *
+     * The point of a test send is to see what a lodge will see, so the sample has the two things
+     * that make this letter awkward: several room types on one booking, and a meal plan that
+     * CHANGES mid-stay. A test with one room and one board would look perfect while hiding both.
+     *
+     * roomConfiguration and mealPlan arrive as HTML list items, exactly as the live path supplies
+     * them, so the test exercises the same markup rather than a simplified version of it.
+     */
+    private TestEmailData generateAvailabilityRequestTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+
+        LocalDate checkIn = LocalDate.now().plusMonths(5).withDayOfMonth(29);
+        LocalDate checkOut = checkIn.plusDays(3);
+        DateTimeFormatter slash = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        DateTimeFormatter shortDate = DateTimeFormatter.ofPattern("d MMM yyyy");
+
+        String accent = "#1c7a58";
+
+        variables.put("greetingName", "Reservations Team");
+        variables.put("brandName", companyName != null && !companyName.isBlank()
+            ? companyName : "Kabengo Safaris");
+        variables.put("accommodationName", "Tukaone Weavers Camp");
+        variables.put("checkIn", checkIn.format(slash));
+        variables.put("checkOut", checkOut.format(slash));
+        variables.put("nights", "3");
+        variables.put("guestCount", "5 Guests");
+        variables.put("paxBreakdown", "4 non-resident adults, 1 non-resident child");
+        variables.put("roomConfiguration",
+            "<li style=\"margin: 2px 0\"><strong style=\"color: #111827\">2 &times;</strong> Double Room"
+            + " <span style=\"color: #6b7280\">&middot; Standard Tent</span></li>"
+            + "<li style=\"margin: 2px 0\"><strong style=\"color: #111827\">1 &times;</strong> Triple Room"
+            + " <span style=\"color: #6b7280\">&middot; Standard Tent</span></li>");
+        variables.put("mealPlan",
+            night(checkIn, slash, "Half Board")
+            + night(checkIn.plusDays(1), slash, "Full Board")
+            + night(checkIn.plusDays(2), slash, "Full Board"));
+        /* one visit in the sample, as in the live letter: a second visit is a second request */
+        variables.put("stayBlocks", "");
+        variables.put("reference", "SAF-14D13N-01003 · Ultimate Northern Tanzania, Culture & Zanzibar Beach");
+        variables.put("accentColor", accent);
+
+        String subject = "[TEST] Availability Request · " + variables.get("accommodationName")
+            + " · " + checkIn.getDayOfMonth() + "–" + checkOut.format(shortDate);
+
+        return new TestEmailData(variables, subject);
+    }
+
+    /** One night of the sample meal plan, in the markup the live letter uses. */
+    private String night(LocalDate date, DateTimeFormatter slash, String board) {
+        return "<li style=\"margin: 2px 0\"><span style=\"color: #6b7280\">"
+            + date.format(slash) + "</span> &ndash; <strong style=\"color: #111827\">"
+            + board + "</strong></li>";
     }
 
     private TestEmailData generateSafariDetailsTestData(User user) {
