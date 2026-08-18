@@ -42,6 +42,7 @@ public class AvailabilityRequestListService {
     private final AvailabilityRequestRepository requestRepository;
     private final AvailabilityRequestService requestService;
     private final ListStats listStats;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
     private final IdObfuscator idObfuscator;
 
     private static final Set<String> VALID_SORT_FIELDS =
@@ -121,6 +122,66 @@ public class AvailabilityRequestListService {
             log.error("Error listing availability requests", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 ApiResponse.error(500, "Failed to list availability requests", "AVAILABILITY_REQUEST_LIST_FAILED"));
+        }
+    }
+
+    /**
+     * One request, and where it sits in the set the list was showing.
+     *
+     * This was missing entirely: the record page asked for it and got a 500, which is the worst
+     * kind of gap — a page that exists, a link that leads to it, and nothing behind it. The
+     * filters travel with the request so the prev/next arrows walk the SAME set as the list, which
+     * is the house rule; without them the arrows would wander into requests the list had excluded.
+     */
+    public ResponseEntity<ApiResponse<?>> getOne(
+        String requestIdObfuscated,
+        List<String> statuses,
+        Boolean chaseDue,
+        Boolean awaiting,
+        Boolean repliedUndecided,
+        String safariId,
+        String accommodationId,
+        LocalDateTime sentAfter,
+        LocalDateTime sentBefore,
+        String keyword,
+        String sortBy,
+        String sortDirection
+    ) {
+        try {
+            Long id = idObfuscator.decodeId(requestIdObfuscated);
+            AvailabilityRequest request = id == null
+                ? null : requestRepository.findById(id).orElse(null);
+            if (request == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(404, "Availability request not found",
+                        "AVAILABILITY_REQUEST_NOT_FOUND"));
+            }
+
+            LocalDateTime now = LocalDateTime.now();
+            String resolvedSort = sortBy != null && VALID_SORT_FIELDS.contains(sortBy)
+                ? sortBy : DEFAULT_SORT_FIELD;
+            Specification<AvailabilityRequest> spec = buildSpec(
+                statuses, chaseDue, awaiting, repliedUndecided, safariId, accommodationId,
+                sentAfter, sentBefore, keyword, now);
+
+            Map<String, Object> nav = recordNavigation.navigate(
+                AvailabilityRequest.class, spec, resolvedSort,
+                !"desc".equalsIgnoreCase(sortDirection), id);
+            Long nextId = (Long) nav.get("nextRawId");
+            Long previousId = (Long) nav.get("previousRawId");
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("availabilityRequest", requestService.toRow(request, now));
+            response.put("nextId", nextId != null ? idObfuscator.encodeId(nextId) : null);
+            response.put("previousId", previousId != null ? idObfuscator.encodeId(previousId) : null);
+            response.put("position", nav.get("position"));
+            response.put("total", nav.get("total"));
+            return ResponseEntity.ok(ApiResponse.success(200, "Availability request retrieved", response));
+        } catch (Exception e) {
+            log.error("Error fetching an availability request", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to fetch the availability request",
+                    "AVAILABILITY_REQUEST_FETCH_FAILED"));
         }
     }
 

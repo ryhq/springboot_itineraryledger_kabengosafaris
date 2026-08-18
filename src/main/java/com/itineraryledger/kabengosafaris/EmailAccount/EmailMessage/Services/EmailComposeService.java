@@ -25,6 +25,7 @@ import com.itineraryledger.kabengosafaris.EmailAccount.Components.EncryptionUtil
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.EmailFolderRepository;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.EmailMessageRepository;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.DTOs.ComposeEmailDTO;
+import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailDeliveryStatus;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailFolder;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailFolderType;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailMessage;
@@ -659,6 +660,15 @@ public class EmailComposeService {
                 .storagePath("sent")
                 .sentAt(LocalDateTime.now())
                 .receivedAt(LocalDateTime.now())
+                /*
+                 * SENT, because that is what just happened: our server accepted it.
+                 *
+                 * Only the events path and the Resend webhook set this before, so a message written
+                 * by hand sat in Sent with no state at all — indistinguishable from one that never
+                 * left. DELIVERED is not ours to claim; the webhook upgrades it when the receiving
+                 * server confirms, and that difference is exactly what somebody chasing a lodge needs.
+                 */
+                .deliveryStatus(EmailDeliveryStatus.SENT)
                 .build();
 
             EmailMessage saved = emailMessageRepository.save(emailMessage);

@@ -101,6 +101,27 @@ public class AvailabilityRequestController {
             page, size, sortBy, sortDirection);
     }
 
+    /** One request, with the arrows walking the same filtered set the list showed. */
+    @GetMapping("/api/availability-requests/{requestId}")
+    @PreAuthorize("hasAuthority('PERM_READ_AVAILABILITY_REQUEST')")
+    public ResponseEntity<ApiResponse<?>> getOne(
+            @PathVariable("requestId") String requestId,
+            @RequestParam(required = false) List<String> statuses,
+            @RequestParam(required = false) Boolean chaseDue,
+            @RequestParam(required = false) Boolean awaiting,
+            @RequestParam(required = false) Boolean repliedUndecided,
+            @RequestParam(required = false) String safariId,
+            @RequestParam(required = false) String accommodationId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime sentAfter,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime sentBefore,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection) {
+        return availabilityRequestListService.getOne(requestId, statuses, chaseDue, awaiting,
+            repliedUndecided, safariId, accommodationId, sentAfter, sentBefore, keyword,
+            sortBy, sortDirection);
+    }
+
     @PostMapping("/api/availability-requests/{requestId}/close")
     @PreAuthorize("hasAuthority('PERM_UPDATE_AVAILABILITY_REQUEST')")
     public ResponseEntity<ApiResponse<?>> close(
