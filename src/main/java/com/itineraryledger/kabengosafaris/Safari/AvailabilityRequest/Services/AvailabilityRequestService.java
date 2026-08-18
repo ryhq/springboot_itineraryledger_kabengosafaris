@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.Services;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -337,6 +338,52 @@ public class AvailabilityRequestService {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 ApiResponse.error(500, "Failed to read availability coverage", "AVAILABILITY_COVERAGE_FAILED"));
         }
+    }
+
+    /**
+     * One row of the chase list — flat, and carrying what the row itself has to say.
+     *
+     * The nights are summarised rather than listed: a list page needs "3 nights, 29 Jan – 1 Feb", and
+     * whoever wants the detail opens the request. Counts of Cc and Bcc rather than the addresses,
+     * because a table is not the place to spill who was blind-copied.
+     */
+    public Map<String, Object> toRow(AvailabilityRequest request, LocalDateTime now) {
+        List<LocalDate> nights = request.getStays().stream()
+            .map(AvailabilityRequestStay::getNightDate)
+            .filter(java.util.Objects::nonNull)
+            .sorted()
+            .toList();
+
+        Map<String, Object> row = new HashMap<>();
+        row.put("id", idObfuscator.encodeId(request.getId()));
+        row.put("safariId", request.getSafari() != null ? idObfuscator.encodeId(request.getSafari().getId()) : null);
+        row.put("safariCode", request.getSafari() != null ? request.getSafari().getCode() : null);
+        row.put("safariName", request.getSafari() != null ? request.getSafari().getName() : null);
+        row.put("accommodationId", request.getAccommodation() != null
+            ? idObfuscator.encodeId(request.getAccommodation().getId()) : null);
+        row.put("accommodationName", request.getAccommodation() != null
+            ? request.getAccommodation().getName() : null);
+        row.put("status", request.getStatus().name());
+        row.put("closedReason", request.getClosedReason() != null ? request.getClosedReason().name() : null);
+        row.put("sentAt", request.getSentAt());
+        row.put("chaseDueAt", request.getChaseDueAt());
+        row.put("chaseDue", isChaseDue(request, now));
+        row.put("repliedAt", request.getRepliedAt());
+        row.put("closedAt", request.getClosedAt());
+        row.put("nightCount", nights.size());
+        row.put("firstNight", nights.isEmpty() ? null : nights.get(0));
+        row.put("lastNight", nights.isEmpty() ? null : nights.get(nights.size() - 1));
+        row.put("subject", request.getSubject());
+        row.put("toAddress", request.getToAddress());
+        row.put("ccCount", readList(request.getCcAddresses()).size());
+        row.put("bccCount", readList(request.getBccAddresses()).size());
+        row.put("emailAccountId", request.getEmailAccountId() != null
+            ? idObfuscator.encodeId(request.getEmailAccountId()) : null);
+        row.put("emailMessageId", request.getEmailMessageId() != null
+            ? idObfuscator.encodeId(request.getEmailMessageId()) : null);
+        row.put("replyMessageId", request.getReplyMessageId() != null
+            ? idObfuscator.encodeId(request.getReplyMessageId()) : null);
+        return row;
     }
 
     /* -------------------------------------------------------------- helpers */

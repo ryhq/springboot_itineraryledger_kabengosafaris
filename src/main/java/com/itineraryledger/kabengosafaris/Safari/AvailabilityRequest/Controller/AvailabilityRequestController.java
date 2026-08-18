@@ -10,9 +10,13 @@ import com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.DTOs.CloseA
 import com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.DTOs.CreateAvailabilityRequestDTO;
 import com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.DTOs.LinkReplyDTO;
 import com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.Services.AvailabilityLetterService;
+import com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.Services.AvailabilityRequestListService;
 import com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.Services.AvailabilityRequestService;
 
+import java.time.LocalDateTime;
 import java.util.List;
+
+import org.springframework.format.annotation.DateTimeFormat;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +35,7 @@ public class AvailabilityRequestController {
 
     private final AvailabilityRequestService availabilityRequestService;
     private final AvailabilityLetterService availabilityLetterService;
+    private final AvailabilityRequestListService availabilityRequestListService;
 
     @PostMapping("/api/safaris/{safariId}/availability-requests")
     @PreAuthorize("hasAuthority('PERM_CREATE_AVAILABILITY_REQUEST')")
@@ -66,6 +71,34 @@ public class AvailabilityRequestController {
     @PreAuthorize("hasAuthority('PERM_READ_AVAILABILITY_REQUEST')")
     public ResponseEntity<ApiResponse<?>> coverage(@PathVariable("safariId") String safariId) {
         return availabilityRequestService.coverage(safariId);
+    }
+
+    /**
+     * The chase list: every ask, across every trip.
+     *
+     * Flat rather than under a safari, because "who owes us an answer?" is not a question about one
+     * trip. Sorted by chase date ascending, so the longest wait is first.
+     */
+    @GetMapping("/api/availability-requests")
+    @PreAuthorize("hasAuthority('PERM_READ_AVAILABILITY_REQUEST')")
+    public ResponseEntity<ApiResponse<?>> listAll(
+            @RequestParam(required = false) List<String> statuses,
+            @RequestParam(required = false) Boolean chaseDue,
+            @RequestParam(required = false) Boolean awaiting,
+            @RequestParam(required = false) Boolean repliedUndecided,
+            @RequestParam(required = false) String safariId,
+            @RequestParam(required = false) String accommodationId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime sentAfter,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime sentBefore,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Boolean includeStats,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection) {
+        return availabilityRequestListService.list(statuses, chaseDue, awaiting, repliedUndecided,
+            safariId, accommodationId, sentAfter, sentBefore, keyword, includeStats,
+            page, size, sortBy, sortDirection);
     }
 
     @PostMapping("/api/availability-requests/{requestId}/close")
