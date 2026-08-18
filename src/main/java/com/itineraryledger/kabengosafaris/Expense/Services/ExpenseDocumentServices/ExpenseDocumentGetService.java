@@ -226,8 +226,24 @@ public class ExpenseDocumentGetService {
 
     /** Stream the file bytes back. Inline disposition so PDF/images can preview in-browser. */
     public ResponseEntity<?> downloadFile(String idObfuscated) {
+        Long id;
         try {
-            Long id = idObfuscator.decodeId(idObfuscated);
+            id = idObfuscator.decodeId(idObfuscated);
+        } catch (Exception e) {
+            /*
+             * Its own answer, because it has its own cause and its own fix.
+             *
+             * Every failure here used to be the same 500, so a URL carrying an id that no longer
+             * decodes was indistinguishable from a disk that had lost the file — and neither said
+             * so. This one means the link is stale: reload the record and it is rebuilt.
+             */
+            log.warn("Expense document id could not be decoded: {}", idObfuscated);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "That is not a document id — the link may be from an older "
+                    + "version of this record. Reload the page and try again.",
+                    "EXPENSE_DOCUMENT_ID_INVALID"));
+        }
+        try {
             ExpenseDocument doc = repository.findById(id).orElse(null);
             if (doc == null || doc.getFileName() == null) {
                 return ResponseEntity.status(404).body(
@@ -246,7 +262,8 @@ public class ExpenseDocumentGetService {
                     .header("Content-Disposition", "inline; filename=\"" + safeName + "\"")
                     .body(bytes);
         } catch (Exception e) {
-            log.error("Error downloading expense document", e);
+            /* the id and the stored filename, because "failed" alone has never located anything */
+            log.error("Error downloading expense document {} (id {})", idObfuscated, id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 ApiResponse.error(500, "Failed to download document", "EXPENSE_DOCUMENT_DOWNLOAD_FAILED"));
         }
@@ -269,6 +286,7 @@ public class ExpenseDocumentGetService {
     }
 
     public ExpenseDocumentDTO toDTO(ExpenseDocument d) {
+        String fileHref = storageService.constructDocumentUrl(idObfuscator.encodeId(d.getId()));
         return ExpenseDocumentDTO.builder()
                 .id(idObfuscator.encodeId(d.getId()))
                 .expenseId(d.getExpense() != null ? idObfuscator.encodeId(d.getExpense().getId()) : null)
@@ -288,11 +306,18 @@ public class ExpenseDocumentGetService {
                 .title(d.getTitle())
                 .documentType(d.getDocumentType())
                 .documentTypeDisplayName(d.getDocumentType() != null ? d.getDocumentType().getDisplayName() : null)
-                .fileUrl(d.getFileUrl())
-                /* the house names for the same file, which the shared table reads */
-                .fileDocumentUrl(d.getFileUrl() != null
-                        ? d.getFileUrl() : storageService.constructDocumentUrl(idObfuscator.encodeId(d.getId())))
-                .documentUrl(storageService.constructDocumentUrl(idObfuscator.encodeId(d.getId())))
+                /*
+                 * Built now, not read from the column.
+                 *
+                 * This module is the only one that STORES its file URL — written once at upload with
+                 * the obfuscated id of the moment. Any change to the id salt or length, and every
+                 * stored URL names an id that no longer decodes: the row still lists, the preview
+                 * still offers itself, and fetching the file answers 500 for ever. Constructed on
+                 * read it cannot go stale, which is what every other document module already does.
+                 */
+                .fileUrl(fileHref)
+                .fileDocumentUrl(fileHref)
+                .documentUrl(fileHref)
                 .fileName(d.getFileName())
                 .originalFileName(d.getOriginalFileName())
                 .fileSize(d.getFileSize())
