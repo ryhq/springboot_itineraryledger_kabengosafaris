@@ -51,6 +51,7 @@ public class EmailEventVariables {
             case "SEND_INVOICE" -> loadSchema("invoice-sent-schema.json");
             case "SEND_CREDIT_NOTE" -> loadSchema("credit-note-sent-schema.json");
             case "SEND_PAYMENT_RECEIPT" -> loadSchema("payment-receipt-sent-schema.json");
+            case "AVAILABILITY_REQUEST" -> loadSchema("availability-request-schema.json");
             default -> "[]";
         };
     }
@@ -68,6 +69,7 @@ public class EmailEventVariables {
             case "BOOKING_INQUIRY" -> "Booking Inquiry";
             case "CONTACT_US" -> "Contact Us";
             case "SEND_QUOTE" -> "Quote Sent to Customer";
+            case "AVAILABILITY_REQUEST" -> "Availability Request to a Property";
             case "SAFARI_PAYMENT_GAP" -> "Safari Payment Gap Alert";
             case "SAFARI_READINESS_ALERT" -> "Safari Readiness Alert";
             case "SAFARI_STARTED" -> "Safari Auto-Started";
@@ -95,6 +97,7 @@ public class EmailEventVariables {
             case "BOOKING_INQUIRY" -> "Admin notification sent when a new booking inquiry is submitted. Includes full inquiry details and traveler information.";
             case "CONTACT_US" -> "Admin notification sent when someone submits a message through the Contact Us form. Includes sender details and message content.";
             case "SEND_QUOTE" -> "Email sent to a customer when a safari quote is delivered. Includes quote details, itinerary summary, pricing, validity period, and payment terms.";
+            case "AVAILABILITY_REQUEST" -> "Sent to a lodge or camp asking whether it has room on a safari's nights. Unlike every other event here it goes to a SUPPLIER, not a customer, and it is written from the safari rather than triggered by a state change.";
             case "SAFARI_PAYMENT_GAP" -> "Critical alert sent to operations when a safari has reached its start date but payment is not complete. Requires immediate action.";
             case "SAFARI_READINESS_ALERT" -> "Warning sent to operations when an upcoming safari has unresolved readiness issues (missing vehicles, accommodations, pax data).";
             case "SAFARI_STARTED" -> "Notification sent when a safari is automatically started by the system on its start date.";
@@ -124,6 +127,7 @@ public class EmailEventVariables {
             "BOOKING_INQUIRY",
             "CONTACT_US",
             "SEND_QUOTE",
+            "AVAILABILITY_REQUEST",
             "SAFARI_PAYMENT_GAP",
             "SAFARI_READINESS_ALERT",
             "SAFARI_STARTED",

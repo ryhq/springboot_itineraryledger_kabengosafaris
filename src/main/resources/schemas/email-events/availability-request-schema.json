@@ -1,0 +1,15 @@
+[
+  { "name": "greetingName", "description": "Who to greet — a person's name when the address carries one, else 'Reservations Team'", "isRequired": true },
+  { "name": "brandName", "description": "The company writing, taken from this deployment's own brand", "isRequired": true },
+  { "name": "accommodationName", "description": "The property being asked", "isRequired": true },
+  { "name": "checkIn", "description": "First night, dd/MM/yyyy", "isRequired": true },
+  { "name": "checkOut", "description": "Morning of departure, dd/MM/yyyy", "isRequired": true },
+  { "name": "nights", "description": "Number of nights", "isRequired": true },
+  { "name": "guestCount", "description": "Total guests, e.g. '4 Guests'", "isRequired": true },
+  { "name": "paxBreakdown", "description": "Guests by residency and age, e.g. '4 non-resident adults'", "isRequired": true },
+  { "name": "roomConfiguration", "description": "The room lines as an HTML list — one per room type", "isRequired": true },
+  { "name": "mealPlan", "description": "The meal plan as an HTML list — one line per night, because board can change mid-stay", "isRequired": true },
+  { "name": "stayBlocks", "description": "For a property visited twice: the whole facts-and-rooms block repeated per visit. Empty when there is one visit", "isRequired": false },
+  { "name": "reference", "description": "Our own reference — safari code and name", "isRequired": false },
+  { "name": "accentColor", "description": "The brand's accent, used for the headings and the panel rule", "isRequired": true }
+]

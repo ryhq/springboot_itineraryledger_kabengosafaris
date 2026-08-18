@@ -1,0 +1,82 @@
+<!--
+  Availability request — the default letter.
+
+  Editable in the app (Communication → Email templates) like any other event template, so the
+  wording is the office's to change without a deploy. Two things to keep if you edit it:
+
+  1. Every rule is written INLINE on the element. A mail client throws away a stylesheet, so a
+     <style> block here would leave the letter unstyled in Gmail and Outlook alike.
+  2. {{roomConfiguration}} and {{mealPlan}} arrive as <li> lists, and {{stayBlocks}} as whole
+     repeated blocks for a property visited twice. They are already HTML — do not escape them.
+-->
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.55; color: #1f2421">
+
+  <p style="margin: 0 0 12px">Dear {{greetingName}},</p>
+
+  <p style="margin: 0 0 12px">Warm greetings from <strong style="color: #111827">{{brandName}}</strong>.</p>
+
+  <p style="margin: 0 0 12px">
+    We are putting together a safari for our guests and would be grateful if you could confirm
+    availability at <strong style="color: #111827">{{accommodationName}}</strong> for the dates below.
+  </p>
+
+  <!-- the block a reservations desk checks first, ruled in the brand's accent -->
+  <table style="border-collapse: collapse; width: 100%; background-color: #f7faf8; border-left: 3px solid {{accentColor}}">
+    <tbody>
+      <tr>
+        <td style="padding: 10px 14px">
+          <table style="border-collapse: collapse">
+            <tbody>
+              <tr>
+                <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Check-in</td>
+                <td style="padding: 3px 0; font-size: 14px"><strong style="color: #111827">{{checkIn}}</strong></td>
+              </tr>
+              <tr>
+                <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Check-out</td>
+                <td style="padding: 3px 0; font-size: 14px"><strong style="color: #111827">{{checkOut}}</strong></td>
+              </tr>
+              <tr>
+                <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Number of Nights</td>
+                <td style="padding: 3px 0; font-size: 14px"><strong style="color: #111827">{{nights}}</strong></td>
+              </tr>
+              <tr>
+                <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Number of Guests</td>
+                <td style="padding: 3px 0; font-size: 14px"><strong style="color: #111827">{{guestCount}}</strong></td>
+              </tr>
+              <tr>
+                <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Pax Breakdown</td>
+                <td style="padding: 3px 0; font-size: 14px"><strong style="color: #111827">{{paxBreakdown}}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="margin: 16px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{accentColor}}">Room Configuration</p>
+  <ul style="margin: 0 0 4px; padding-left: 20px">{{roomConfiguration}}</ul>
+
+  <p style="margin: 16px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{accentColor}}">Meal Plan Arrangement</p>
+  <ul style="margin: 0 0 4px; padding-left: 20px">{{mealPlan}}</ul>
+
+  <!-- a property visited twice: the second and later visits, each with its own dates and rooms -->
+  {{stayBlocks}}
+
+  <p style="margin: 0 0 12px">
+    Kindly confirm whether the rooms are available, and share your rates for these dates with
+    <strong style="color: #111827">a clear breakdown per room per night</strong>,
+    <strong style="color: #111827">meal supplements</strong> where applicable, the
+    <strong style="color: #111827">total payable amount</strong>, and your
+    <strong style="color: #111827">payment and cancellation terms</strong>.
+  </p>
+
+  <p style="margin: 0 0 12px">Once received, we shall review and revert promptly with our confirmation.</p>
+
+  <p style="margin: 0 0 12px"><span style="font-size: 12px; color: #6b7280">Our reference: {{reference}}</span></p>
+
+  <p style="margin: 0 0 12px">Thank you very much for your kind assistance.</p>
+
+  <p style="margin: 0 0 12px">Warm regards,</p>
+
+</div>

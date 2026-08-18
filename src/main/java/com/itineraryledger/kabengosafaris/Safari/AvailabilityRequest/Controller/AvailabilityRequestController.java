@@ -9,7 +9,10 @@ import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.DTOs.CloseAvailabilityRequestDTO;
 import com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.DTOs.CreateAvailabilityRequestDTO;
 import com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.DTOs.LinkReplyDTO;
+import com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.Services.AvailabilityLetterService;
 import com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.Services.AvailabilityRequestService;
+
+import java.util.List;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 public class AvailabilityRequestController {
 
     private final AvailabilityRequestService availabilityRequestService;
+    private final AvailabilityLetterService availabilityLetterService;
 
     @PostMapping("/api/safaris/{safariId}/availability-requests")
     @PreAuthorize("hasAuthority('PERM_CREATE_AVAILABILITY_REQUEST')")
@@ -34,6 +38,21 @@ public class AvailabilityRequestController {
             @PathVariable("safariId") String safariId,
             @Valid @RequestBody CreateAvailabilityRequestDTO body) {
         return availabilityRequestService.create(safariId, body);
+    }
+
+    /**
+     * The letter, ready to send: subject, HTML, To and Cc.
+     *
+     * A read, so it is a GET with the nights in the query — nothing is written until the mail has
+     * actually gone. Rendered from the AVAILABILITY_REQUEST template, which the office owns.
+     */
+    @GetMapping("/api/safaris/{safariId}/availability-requests/letter")
+    @PreAuthorize("hasAuthority('PERM_CREATE_AVAILABILITY_REQUEST')")
+    public ResponseEntity<ApiResponse<?>> letter(
+            @PathVariable("safariId") String safariId,
+            @RequestParam String accommodationId,
+            @RequestParam List<String> stayIds) {
+        return availabilityLetterService.preview(safariId, accommodationId, stayIds);
     }
 
     @GetMapping("/api/safaris/{safariId}/availability-requests")

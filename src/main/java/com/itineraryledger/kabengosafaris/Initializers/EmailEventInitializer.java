@@ -110,6 +110,16 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
             "Sent when a new user registers in the system. Contains welcome message and account activation instructions."
         );
 
+        /*
+         * The one event addressed to a SUPPLIER rather than a customer, and the one written by hand
+         * from a safari rather than fired by a state change — which is why its template is worth
+         * having here: the wording belongs to the office, not to a deploy.
+         */
+        initializeEvent(
+            "AVAILABILITY_REQUEST",
+            "Sent to a lodge or camp asking whether it has room on a safari's nights."
+        );
+
         initializeEvent(
             "PASSWORD_RESET",
             "Sent when a user requests to reset their password. Contains password reset link and instructions."
