@@ -47,11 +47,18 @@ public class ContactMessageController {
         @RequestParam(required = false) Boolean includeStats,
         @RequestParam(required = false, defaultValue = "0") Integer pageNumber,
         @RequestParam(required = false, defaultValue = "20") Integer pageSize,
+        /*
+         * page/size are what every other list in this API is paged by, and what the panel sends.
+         * Taking only pageNumber/pageSize meant this list was permanently on page one at twenty
+         * rows: the pager moved, the rows did not. Whichever arrives wins, house names first.
+         */
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
         log.info("GET /api/contact-messages - Listing messages with filters");
-        return getService.listMessages(filter, includeStats, pageNumber, pageSize, sortBy, sortDirection);
+        return getService.listMessages(filter, includeStats, page != null ? page : pageNumber, size != null ? size : pageSize, sortBy, sortDirection);
     }
 
     @GetMapping("/{idObfuscated}")
