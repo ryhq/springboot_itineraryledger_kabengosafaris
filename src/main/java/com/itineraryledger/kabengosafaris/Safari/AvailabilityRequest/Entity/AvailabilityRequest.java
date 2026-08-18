@@ -144,6 +144,26 @@ public class AvailabilityRequest {
     @Column(name = "replied_at")
     private LocalDateTime repliedAt;
 
+    /**
+     * When we last chased, and how many times.
+     *
+     * Without these a chased request stays "chase due" for ever: the date it was first sent does
+     * not move, so the list would keep asking for a chase that has already gone out. Chasing pushes
+     * the due date on by another three working days and counts the nudge, which is also the number
+     * somebody needs before deciding a property has stopped answering.
+     */
+    @Column(name = "last_chased_at")
+    private LocalDateTime lastChasedAt;
+
+    /*
+     * Nullable on purpose. The table already has rows, and ddl-auto=update adds a NOT NULL column to
+     * a populated table by inventing an implicit default — which is the kind of migration that works
+     * on MySQL and fails somewhere else. Null means none, and chasesSoFar() says so.
+     */
+    @Column(name = "chase_count")
+    @Builder.Default
+    private Integer chaseCount = 0;
+
     /** The message that answered, once one is matched or linked by hand. */
     @Column(name = "reply_message_id")
     private Long replyMessageId;
@@ -165,6 +185,11 @@ public class AvailabilityRequest {
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    /** How many nudges have gone out; null in a row written before chasing was recorded. */
+    public int chasesSoFar() {
+        return chaseCount != null ? chaseCount : 0;
+    }
 
     /** Open means still waiting on the property — the state the anti-spam guard asks about. */
     public boolean isOpen() {

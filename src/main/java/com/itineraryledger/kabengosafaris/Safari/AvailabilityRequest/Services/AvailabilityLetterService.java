@@ -1,6 +1,8 @@
 package com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.Services;
 
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,9 +19,14 @@ import org.springframework.stereotype.Service;
 
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.Accommodation;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationEmail;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRepository;
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailTemplateRenderer;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.Entity.AvailabilityRequest;
+import com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.Entity.AvailabilityRequestStay;
+import com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.Repository.AvailabilityRequestRepository;
 import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
 import com.itineraryledger.kabengosafaris.Safari.Repository.SafariRepository;
 import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayAccommodation.Entity.SafariDayAccommodation;
@@ -48,6 +55,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AvailabilityLetterService {
 
+    private final AvailabilityRequestRepository requestRepository;
     private final SafariRepository safariRepository;
     private final AccommodationRepository accommodationRepository;
     private final SafariDayAccommodationRepository stayRepository;
@@ -56,6 +64,7 @@ public class AvailabilityLetterService {
     private final IdObfuscator idObfuscator;
 
     private static final String EVENT = "AVAILABILITY_REQUEST";
+    private static final String CHASE_EVENT = "AVAILABILITY_REQUEST_CHASE";
     private static final DateTimeFormatter SLASH = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter SHORT = DateTimeFormatter.ofPattern("d MMM yyyy");
 
@@ -162,6 +171,126 @@ public class AvailabilityLetterService {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 ApiResponse.error(500, "Failed to render the availability letter", "AVAILABILITY_LETTER_FAILED"));
         }
+    }
+
+    /**
+     * The chase letter, and the envelope the first one went out in.
+     *
+     * The recipients come from the RECORD, not from the mail thread: the request kept the To, the Cc
+     * and the Bcc, and a follow-up that quietly drops the people who were copied — or the address
+     * that was blind-copied — changes who is in the conversation without saying so. Bcc especially:
+     * nothing in the thread can tell you it was there.
+     */
+    public ResponseEntity<ApiResponse<?>> chaseLetter(String requestIdObfuscated) {
+        try {
+            Long requestId = idObfuscator.decodeId(requestIdObfuscated);
+            AvailabilityRequest request = requestId == null
+                ? null : requestRepository.findById(requestId).orElse(null);
+            if (request == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(404, "Availability request not found",
+                        "AVAILABILITY_REQUEST_NOT_FOUND"));
+            }
+
+            Accommodation property = request.getAccommodation();
+            Safari safari = request.getSafari();
+
+            /* the nights this ask covered, from the record rather than the safari as it stands now */
+            List<SafariDayAccommodation> stays = new ArrayList<>();
+            List<LocalDate> nightDates = new ArrayList<>();
+            for (AvailabilityRequestStay night : request.getStays()) {
+                if (night.getNightDate() != null) nightDates.add(night.getNightDate());
+                if (night.getStay() != null) stays.add(night.getStay());
+            }
+            nightDates.sort(LocalDate::compareTo);
+            if (nightDates.isEmpty()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                    "That request records no nights, so there is nothing to chase about",
+                    "NO_NIGHTS_ON_REQUEST"));
+            }
+
+            LocalDate checkIn = nightDates.get(0);
+            LocalDate checkOut = nightDates.get(nightDates.size() - 1).plusDays(1);
+            Pax pax = paxOf(safari.getId());
+
+            long waited = request.getSentAt() == null
+                ? 0 : Duration.between(request.getSentAt(), LocalDateTime.now()).toDays();
+
+            Map<String, String> variables = new HashMap<>();
+            variables.put("greetingName", greetingName(labelOfRecordedTo(property, request.getToAddress())));
+            variables.put("brandName", brandName);
+            variables.put("accommodationName", property != null && property.getName() != null
+                ? property.getName() : "your property");
+            variables.put("askedOn", request.getSentAt() != null
+                ? request.getSentAt().toLocalDate().format(SLASH) : "an earlier date");
+            variables.put("waitingDays", waited <= 1 ? "a day" : waited + " days");
+            variables.put("checkIn", checkIn.format(SLASH));
+            variables.put("checkOut", checkOut.format(SLASH));
+            variables.put("nights", String.valueOf(nightDates.size()));
+            variables.put("guestCount", pax.total() + (pax.total() == 1 ? " Guest" : " Guests"));
+            variables.put("roomConfiguration", stays.isEmpty()
+                /* the stay rows may be gone; the request still knows what it asked for in words */
+                ? "<li style=\"margin: 2px 0\">As per our request of " + variables.get("askedOn") + "</li>"
+                : roomLines(stays));
+            variables.put("reference", reference(safari));
+            variables.put("accentColor", accentColor);
+
+            String html = templateRenderer.renderTemplate(CHASE_EVENT, variables);
+
+            String subject = request.getSubject() != null && !request.getSubject().isBlank()
+                /* the same thread, so the same subject with Re: — not a new conversation */
+                ? (request.getSubject().toLowerCase().startsWith("re:")
+                    ? request.getSubject() : "Re: " + request.getSubject())
+                : "Re: Availability Request · " + variables.get("accommodationName");
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("subject", subject);
+            response.put("html", html);
+            response.put("to", request.getToAddress());
+            response.put("cc", readAddresses(request.getCcAddresses()));
+            response.put("bcc", readAddresses(request.getBccAddresses()));
+            response.put("inReplyToMessageId", request.getEmailMessageId() != null
+                ? idObfuscator.encodeId(request.getEmailMessageId()) : null);
+            response.put("chasesSoFar", request.chasesSoFar());
+            return ResponseEntity.ok(ApiResponse.success(200, "Chase letter rendered", response));
+        } catch (IllegalArgumentException | IllegalStateException bad) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                "The chase template could not be rendered: " + bad.getMessage(),
+                "AVAILABILITY_CHASE_TEMPLATE_UNUSABLE"));
+        } catch (Exception e) {
+            log.error("Error rendering the chase letter", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to render the chase letter", "AVAILABILITY_CHASE_FAILED"));
+        }
+    }
+
+    /** The label on whichever address the first letter went to, for the greeting. */
+    private String labelOfRecordedTo(Accommodation property, String toAddress) {
+        if (property == null || toAddress == null) return null;
+        for (AccommodationEmail email : property.getEmails()) {
+            if (toAddress.equalsIgnoreCase(email.getEmail())) return email.getLabel();
+        }
+        Accommodation parent = property.getParentAccommodation();
+        if (parent != null) {
+            for (AccommodationEmail email : parent.getEmails()) {
+                if (toAddress.equalsIgnoreCase(email.getEmail())) return email.getLabel();
+            }
+        }
+        return null;
+    }
+
+    /** Stored as a JSON array by the composer; a comma list by anything older. */
+    private List<String> readAddresses(String stored) {
+        if (stored == null || stored.isBlank()) return List.of();
+        String trimmed = stored.trim();
+        if (trimmed.startsWith("[")) {
+            try {
+                return new ObjectMapper().readValue(trimmed, new TypeReference<List<String>>() {});
+            } catch (Exception ignored) {
+                /* fall through to the comma reading */
+            }
+        }
+        return List.of(trimmed.split("\\s*,\\s*"));
     }
 
     /* -------------------------------------------------------------- pieces */

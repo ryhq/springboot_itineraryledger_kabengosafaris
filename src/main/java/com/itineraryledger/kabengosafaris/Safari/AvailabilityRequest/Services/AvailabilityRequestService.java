@@ -218,6 +218,41 @@ public class AvailabilityRequestService {
         }
     }
 
+    /**
+     * A chase has gone out: the clock starts again.
+     *
+     * Without this the request keeps its original due date and the list asks for a chase that has
+     * already been sent — so the same lodge gets nudged every morning by whoever opens the list
+     * first. The count is kept because "we have chased three times" is the fact behind deciding a
+     * property has stopped answering.
+     */
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> recordChase(String requestIdObfuscated) {
+        try {
+            AvailabilityRequest request = find(requestIdObfuscated);
+            if (request == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(404, "Availability request not found",
+                        "AVAILABILITY_REQUEST_NOT_FOUND"));
+            }
+            LocalDateTime now = LocalDateTime.now();
+            request.setLastChasedAt(now);
+            request.setChaseCount(request.chasesSoFar() + 1);
+            /* three working days again — the same rule as the first send */
+            request.setChaseDueAt(chaseDueFrom(now));
+            /*
+             * Still SENT, deliberately. A chase is us writing again, not them answering, and moving
+             * the status would make the list look like progress that has not happened.
+             */
+            return ResponseEntity.ok(ApiResponse.success(200, "Chase recorded",
+                toDTO(requestRepository.save(request))));
+        } catch (Exception e) {
+            log.error("Error recording a chase", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to record the chase", "AVAILABILITY_CHASE_RECORD_FAILED"));
+        }
+    }
+
     /* --------------------------------------------------------------- hooks */
 
     /**
@@ -320,6 +355,8 @@ public class AvailabilityRequestService {
                         ? request.getClosedReason().name() : null);
                     row.put("sentAt", request.getSentAt());
                     row.put("repliedAt", request.getRepliedAt());
+        row.put("lastChasedAt", request.getLastChasedAt());
+        row.put("chaseCount", request.chasesSoFar());
                     row.put("chaseDueAt", request.getChaseDueAt());
                     row.put("chaseDue", isChaseDue(request, now));
                     row.put("emailMessageId", request.getEmailMessageId() != null
@@ -369,6 +406,8 @@ public class AvailabilityRequestService {
         row.put("chaseDueAt", request.getChaseDueAt());
         row.put("chaseDue", isChaseDue(request, now));
         row.put("repliedAt", request.getRepliedAt());
+        row.put("lastChasedAt", request.getLastChasedAt());
+        row.put("chaseCount", request.chasesSoFar());
         row.put("closedAt", request.getClosedAt());
         row.put("nightCount", nights.size());
         row.put("firstNight", nights.isEmpty() ? null : nights.get(0));

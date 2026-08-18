@@ -121,6 +121,11 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
         );
 
         initializeEvent(
+            "AVAILABILITY_REQUEST_CHASE",
+            "The follow-up when a property has not answered an availability request."
+        );
+
+        initializeEvent(
             "PASSWORD_RESET",
             "Sent when a user requests to reset their password. Contains password reset link and instructions."
         );

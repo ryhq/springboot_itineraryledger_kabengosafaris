@@ -122,6 +122,26 @@ public class AvailabilityRequestController {
             sortBy, sortDirection);
     }
 
+    /**
+     * The chase letter, and the envelope the first one used.
+     *
+     * A read: nothing is recorded until the follow-up has actually gone, at which point the caller
+     * posts /chased. To, Cc and Bcc come from the RECORD, so a follow-up keeps the same people in
+     * the conversation — including whoever was blind-copied, which the thread itself cannot tell you.
+     */
+    @GetMapping("/api/availability-requests/{requestId}/chase-letter")
+    @PreAuthorize("hasAuthority('PERM_CREATE_AVAILABILITY_REQUEST')")
+    public ResponseEntity<ApiResponse<?>> chaseLetter(@PathVariable("requestId") String requestId) {
+        return availabilityLetterService.chaseLetter(requestId);
+    }
+
+    /** A chase went out: push the due date on by three working days and count it. */
+    @PostMapping("/api/availability-requests/{requestId}/chased")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_AVAILABILITY_REQUEST')")
+    public ResponseEntity<ApiResponse<?>> chased(@PathVariable("requestId") String requestId) {
+        return availabilityRequestService.recordChase(requestId);
+    }
+
     @PostMapping("/api/availability-requests/{requestId}/close")
     @PreAuthorize("hasAuthority('PERM_UPDATE_AVAILABILITY_REQUEST')")
     public ResponseEntity<ApiResponse<?>> close(

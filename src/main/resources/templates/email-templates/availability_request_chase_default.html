@@ -1,0 +1,59 @@
+<!--
+  Availability request — the chase.
+
+  A second, shorter letter: the property has the details already, so this reminds them what was
+  asked and when, and asks for an answer. Editable in the app like any other template. Keep every
+  rule inline: a mail client throws away a stylesheet.
+-->
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.55; color: #1f2421">
+
+  <p style="margin: 0 0 12px">Dear {{greetingName}},</p>
+
+  <p style="margin: 0 0 12px">
+    I hope this finds you well. We wrote on <strong style="color: #111827">{{askedOn}}</strong>
+    about availability at <strong style="color: #111827">{{accommodationName}}</strong> and have not
+    yet had a reply — it has been {{waitingDays}}, so I wanted to make sure our request reached you.
+  </p>
+
+  <table style="border-collapse: collapse; width: 100%; background-color: #f7faf8; border-left: 3px solid {{accentColor}}">
+    <tbody>
+      <tr>
+        <td style="padding: 10px 14px">
+          <table style="border-collapse: collapse">
+            <tbody>
+              <tr>
+                <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Check-in</td>
+                <td style="padding: 3px 0; font-size: 14px"><strong style="color: #111827">{{checkIn}}</strong></td>
+              </tr>
+              <tr>
+                <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Check-out</td>
+                <td style="padding: 3px 0; font-size: 14px"><strong style="color: #111827">{{checkOut}}</strong></td>
+              </tr>
+              <tr>
+                <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Number of Nights</td>
+                <td style="padding: 3px 0; font-size: 14px"><strong style="color: #111827">{{nights}}</strong></td>
+              </tr>
+              <tr>
+                <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Number of Guests</td>
+                <td style="padding: 3px 0; font-size: 14px"><strong style="color: #111827">{{guestCount}}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="margin: 16px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{accentColor}}">Room Configuration</p>
+  <ul style="margin: 0 0 4px; padding-left: 20px">{{roomConfiguration}}</ul>
+
+  <p style="margin: 12px 0">
+    If the rooms are available, kindly confirm and share your rates and terms. If they are not, a
+    quick note to that effect helps just as much — we can look at alternatives straight away.
+  </p>
+
+  <p style="margin: 0 0 12px"><span style="font-size: 12px; color: #6b7280">Our reference: {{reference}}</span></p>
+
+  <p style="margin: 0 0 12px">Thank you very much,</p>
+
+</div>
