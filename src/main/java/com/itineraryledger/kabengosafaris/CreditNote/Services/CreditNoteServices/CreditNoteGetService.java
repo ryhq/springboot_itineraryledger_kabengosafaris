@@ -44,6 +44,7 @@ public class CreditNoteGetService {
 
     private final CreditNoteRepository creditNoteRepository;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final CreditNoteCreateService creditNoteCreateService;
     private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
@@ -58,6 +59,9 @@ public class CreditNoteGetService {
         String creditNoteCode,
         String title,
         CreditNoteStatus status,
+        List<CreditNoteStatus> statuses,
+        List<String> statusGroups,
+        String keyword,
         String invoiceId,
         String customerId,
         LocalDate issueDateFrom,
@@ -99,7 +103,7 @@ public class CreditNoteGetService {
             String validatedSortBy = validateSortField(sortBy);
             java.util.Map<String, Object> nav = recordNavigation.navigate(
                 CreditNote.class,
-                buildSpec(creditNoteCode, title, status, invoiceId, customerId, issueDateFrom, issueDateTo, isActive),
+                buildSpec(creditNoteCode, title, status, statuses, statusGroups, keyword, invoiceId, customerId, issueDateFrom, issueDateTo, isActive),
                 validatedSortBy != null ? validatedSortBy : "createdAt",
                 "asc".equalsIgnoreCase(sortDirection),
                 id
@@ -147,6 +151,13 @@ public class CreditNoteGetService {
         String creditNoteCode,
         String title,
         CreditNoteStatus status,
+        /* several at once — "confirmed or sent" is one question */
+        List<CreditNoteStatus> statuses,
+        /* stages: draft / outstanding / settled */
+        List<String> statusGroups,
+        /* free text over code, title, reason, customer and invoice */
+        String keyword,
+        Boolean includeStats,
         String invoiceId,
         String customerId,
         LocalDate issueDateFrom,
@@ -170,7 +181,8 @@ public class CreditNoteGetService {
             }
 
             // Build specification for filtering
-            Specification<CreditNote> spec = buildSpec(creditNoteCode, title, status, invoiceId, customerId, issueDateFrom, issueDateTo, isActive);
+            Specification<CreditNote> spec = buildSpec(creditNoteCode, title, status, statuses,
+                statusGroups, keyword, invoiceId, customerId, issueDateFrom, issueDateTo, isActive);
 
             // Set default pagination values
             int pageNumber = (page != null && page >= 0) ? page : 0;
@@ -202,6 +214,27 @@ public class CreditNoteGetService {
             response.put("validSortFields", VALID_SORT_FIELDS);
             response.put("currentSortBy", validatedSortBy);
             response.put("currentSortDirection", direction.name().toLowerCase());
+
+            if (!Boolean.FALSE.equals(includeStats)) {
+                /*
+                 * Counters over the SAME specification as the rows, so the cards and the table can
+                 * never disagree. Every one is reachable as a filter, which is the rule for a listing
+                 * page here — and money owed back to a customer is exactly the sort of figure that
+                 * must not be a guess.
+                 */
+                LocalDate today = LocalDate.now();
+                response.put("stats", listStats.of(CreditNote.class, spec)
+                    .total()
+                    .count("draft", CreditNoteSpecification.byStatus(CreditNoteStatus.DRAFT))
+                    .count("confirmed", CreditNoteSpecification.byStatus(CreditNoteStatus.CONFIRMED))
+                    .count("sent", CreditNoteSpecification.byStatus(CreditNoteStatus.SENT))
+                    .count("consumed", CreditNoteSpecification.byStatus(CreditNoteStatus.CONSUMED))
+                    /* raised and not yet used: the credit the company still owes */
+                    .count("outstanding", CreditNoteSpecification.outstanding())
+                    .count("inactive", CreditNoteSpecification.byIsActive(false))
+                    .count("issuedLast30Days", CreditNoteSpecification.issuedFrom(today.minusDays(30)))
+                    .build());
+            }
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, "Credit notes retrieved successfully", response)
@@ -273,6 +306,9 @@ public class CreditNoteGetService {
         String creditNoteCode,
         String title,
         CreditNoteStatus status,
+        List<CreditNoteStatus> statuses,
+        List<String> statusGroups,
+        String keyword,
         String invoiceId,
         String customerId,
         LocalDate issueDateFrom,
@@ -280,6 +316,12 @@ public class CreditNoteGetService {
         Boolean isActive
     ) {
         Specification<CreditNote> spec = Specification.unrestricted();
+        Specification<CreditNote> byStatuses = CreditNoteSpecification.statusIn(statuses);
+        if (byStatuses != null) spec = spec.and(byStatuses);
+        Specification<CreditNote> byGroups = CreditNoteSpecification.statusGroupIn(statusGroups);
+        if (byGroups != null) spec = spec.and(byGroups);
+        Specification<CreditNote> byKeyword = CreditNoteSpecification.keyword(keyword);
+        if (byKeyword != null) spec = spec.and(byKeyword);
 
             if (creditNoteCode != null && !creditNoteCode.isEmpty()) {
                 spec = spec.and(CreditNoteSpecification.byCreditNoteCode(creditNoteCode));

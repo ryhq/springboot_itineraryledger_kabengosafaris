@@ -1,7 +1,10 @@
 package com.itineraryledger.kabengosafaris.CreditNote.Services.CreditNoteServices;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,27 +47,93 @@ public class CreditNoteDeleteService {
     /**
      * Delete credit notes by list of obfuscated IDs
      *
-     * Only DRAFT credit notes can be deleted. Credit notes in other states will be skipped.
+     * Only DRAFT credit notes can be deleted; anything further along is SKIPPED and says why.
+     *
+     * Reports per id — {deletedCount, deletedIds, skipped:[{id, code, reason}]} — because a
+     * confirmed credit note is one the customer may already have been told about, and a plain 200
+     * that quietly deleted three of five rows is the worst way for that to be discovered.
      *
      * @param idObfuscatedList List of obfuscated credit note IDs
-     * @return ResponseEntity with ApiResponse containing success or error
+     * @return ResponseEntity with ApiResponse containing the per-id report
      */
     public ResponseEntity<ApiResponse<?>> deleteCreditNotes(List<String> idObfuscatedList) {
         log.info("Attempting to delete {} credit notes", idObfuscatedList.size());
 
         try {
-            // Decode all obfuscated IDs
-            List<Long> ids = new ArrayList<>();
+            List<String> deletedIds = new ArrayList<>();
+            List<Map<String, Object>> skipped = new ArrayList<>();
+
             for (String idObfuscated : idObfuscatedList) {
+                Long id;
                 try {
-                    Long id = idObfuscator.decodeId(idObfuscated);
-                    ids.add(id);
+                    id = idObfuscator.decodeId(idObfuscated);
                 } catch (Exception e) {
+                    /* an id that decodes to nothing is still an id the caller asked about */
                     log.warn("Failed to decode ID: {}", idObfuscated, e);
+                    skipped.add(skip(idObfuscated, null, "That is not a credit note id"));
+                    continue;
+                }
+
+                try {
+                    CreditNote creditNote = creditNoteRepository.findById(id).orElse(null);
+
+                    if (creditNote == null) {
+                        log.warn("Credit note not found: {}", id);
+                        skipped.add(skip(idObfuscated, null, "No longer exists"));
+                        continue;
+                    }
+
+                    // Only allow deletion of DRAFT credit notes
+                    if (!creditNote.isDeletable()) {
+                        log.warn("Cannot delete credit note {} - status is {} (only DRAFT credit notes can be deleted)",
+                                 creditNote.getCreditNoteCode(), creditNote.getStatus().getDisplayName());
+                        skipped.add(skip(idObfuscated, creditNote.getCreditNoteCode(),
+                            String.format("It is %s. Only a draft can be deleted — this one is on record.",
+                                creditNote.getStatus().getDisplayName().toLowerCase())));
+                        continue;
+                    }
+
+                    // Use AopContext to get proxy and trigger AOP aspect
+                    ((CreditNoteDeleteService) AopContext.currentProxy()).deleteCreditNote(id);
+                    deletedIds.add(idObfuscated);
+                    log.info("Credit note deleted successfully: {} ({})", creditNote.getCreditNoteCode(), id);
+
+                } catch (Exception e) {
+                    log.error("Error deleting credit note: {}", id, e);
+                    skipped.add(skip(idObfuscated, null, "Could not be deleted: " + e.getMessage()));
                 }
             }
 
-            return deleteCreditNotesInternal(ids);
+            Map<String, Object> report = new HashMap<>();
+            report.put("deletedCount", deletedIds.size());
+            report.put("deletedIds", deletedIds);
+            report.put("skipped", skipped);
+
+            StringBuilder message = new StringBuilder();
+            if (!deletedIds.isEmpty()) {
+                message.append(deletedIds.size())
+                       .append(deletedIds.size() > 1 ? " credit notes deleted" : " credit note deleted");
+            }
+            if (!skipped.isEmpty()) {
+                if (!deletedIds.isEmpty()) message.append(". ");
+                message.append(skipped.size())
+                       .append(skipped.size() > 1 ? " skipped" : " skipped");
+            }
+
+            /* nothing deleted and something asked for: a failure, reported as one */
+            if (deletedIds.isEmpty() && !skipped.isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(
+                        400,
+                        message + ": " + skipped.get(0).get("reason"),
+                        "NO_CREDIT_NOTES_DELETED"
+                    )
+                );
+            }
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, message.toString(), report)
+            );
 
         } catch (Exception e) {
             log.error("Error deleting credit notes", e);
@@ -78,80 +147,12 @@ public class CreditNoteDeleteService {
         }
     }
 
-    /**
-     * Delete credit notes by list of IDs (internal method)
-     */
-    private ResponseEntity<ApiResponse<?>> deleteCreditNotesInternal(List<Long> ids) {
-        int deletedCount = 0;
-        int skippedCount = 0;
-        List<String> skippedReasons = new ArrayList<>();
-
-        for (Long id : ids) {
-            try {
-                CreditNote creditNote = creditNoteRepository.findById(id).orElse(null);
-
-                if (creditNote == null) {
-                    log.warn("Credit note not found: {}", id);
-                    skippedCount++;
-                    skippedReasons.add(String.format("Credit note ID %d not found", id));
-                    continue;
-                }
-
-                // Only allow deletion of DRAFT credit notes
-                if (!creditNote.isDeletable()) {
-                    log.warn("Cannot delete credit note {} - status is {} (only DRAFT credit notes can be deleted)",
-                             creditNote.getCreditNoteCode(), creditNote.getStatus().getDisplayName());
-                    skippedCount++;
-                    skippedReasons.add(String.format("Credit note %s cannot be deleted - status is %s (only DRAFT credit notes can be deleted)",
-                                                     creditNote.getCreditNoteCode(), creditNote.getStatus().getDisplayName()));
-                    continue;
-                }
-
-                // Use AopContext to get proxy and trigger AOP aspect
-                ((CreditNoteDeleteService) AopContext.currentProxy()).deleteCreditNote(id);
-                deletedCount++;
-                log.info("Credit note deleted successfully: {} ({})", creditNote.getCreditNoteCode(), id);
-
-            } catch (Exception e) {
-                log.error("Error deleting credit note: {}", id, e);
-                skippedCount++;
-                skippedReasons.add(String.format("Error deleting credit note ID %d: %s", id, e.getMessage()));
-            }
-        }
-
-        // Build response message
-        StringBuilder message = new StringBuilder();
-        if (deletedCount > 0) {
-            message.append(deletedCount)
-                   .append(deletedCount > 1 ? " credit notes deleted successfully" : " credit note deleted successfully");
-        }
-
-        if (skippedCount > 0) {
-            if (deletedCount > 0) {
-                message.append(". ");
-            }
-            message.append(skippedCount)
-                   .append(skippedCount > 1 ? " credit notes skipped" : " credit note skipped");
-        }
-
-        // Return appropriate response
-        if (deletedCount == 0 && skippedCount > 0) {
-            return ResponseEntity.badRequest().body(
-                ApiResponse.error(
-                    400,
-                    message.toString() + ": " + String.join("; ", skippedReasons),
-                    "NO_CREDIT_NOTES_DELETED"
-                )
-            );
-        }
-
-        return ResponseEntity.ok().body(
-            ApiResponse.success(
-                200,
-                message.toString(),
-                skippedCount > 0 ? skippedReasons : null
-            )
-        );
+    private Map<String, Object> skip(String id, String code, String reason) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("id", id);
+        row.put("code", code);
+        row.put("reason", reason);
+        return row;
     }
 
     /**

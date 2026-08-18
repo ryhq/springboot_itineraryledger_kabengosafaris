@@ -71,6 +71,9 @@ public class CreditNoteController {
         @RequestParam(required = false) String creditNoteCode,
         @RequestParam(required = false) String title,
         @RequestParam(required = false) CreditNoteStatus status,
+        @RequestParam(required = false) List<CreditNoteStatus> statuses,
+        @RequestParam(required = false) List<String> statusGroups,
+        @RequestParam(required = false) String keyword,
         @RequestParam(required = false) String invoiceId,
         @RequestParam(required = false) String customerId,
         @RequestParam(required = false) LocalDate issueDateFrom,
@@ -80,7 +83,9 @@ public class CreditNoteController {
         @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/credit-notes/{} - Fetching credit note by ID", idObfuscated);
-        return creditNoteGetService.getCreditNoteById(idObfuscated, creditNoteCode, title, status, invoiceId, customerId, issueDateFrom, issueDateTo, isActive, sortBy, sortDirection);
+        return creditNoteGetService.getCreditNoteById(idObfuscated, creditNoteCode, title, status,
+            statuses, statusGroups, keyword, invoiceId, customerId, issueDateFrom, issueDateTo,
+            isActive, sortBy, sortDirection);
     }
 
     @GetMapping
@@ -89,6 +94,13 @@ public class CreditNoteController {
         @RequestParam(required = false) String creditNoteCode,
         @RequestParam(required = false) String title,
         @RequestParam(required = false) CreditNoteStatus status,
+        /* several at once: "confirmed or sent" is one question about outstanding credit */
+        @RequestParam(required = false) List<CreditNoteStatus> statuses,
+        /* stages rather than states: "outstanding" is confirmed-or-sent, asked as one question */
+        @RequestParam(required = false) List<String> statusGroups,
+        /* free text over the code, the title, the reason, the customer and the invoice */
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) Boolean includeStats,
         @RequestParam(required = false) String invoiceId,
         @RequestParam(required = false) String customerId,
         @RequestParam(required = false) LocalDate issueDateFrom,
@@ -101,8 +113,8 @@ public class CreditNoteController {
     ) {
         log.info("GET /api/credit-notes - Fetching all credit notes with filters");
         return creditNoteGetService.getAllCreditNotes(
-            creditNoteCode, title, status, invoiceId, customerId,
-            issueDateFrom, issueDateTo, isActive, page, size, sortBy, sortDirection
+            creditNoteCode, title, status, statuses, statusGroups, keyword, includeStats, invoiceId,
+            customerId, issueDateFrom, issueDateTo, isActive, page, size, sortBy, sortDirection
         );
     }
 }
