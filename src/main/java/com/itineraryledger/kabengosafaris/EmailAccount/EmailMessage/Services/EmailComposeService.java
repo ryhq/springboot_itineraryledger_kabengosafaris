@@ -4,7 +4,9 @@ import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -428,9 +430,11 @@ public class EmailComposeService {
             boolean isResendApi = account.getProviderType() == EmailAccountProvider.RESEND
                     && account.getSendingMethod() == SendingMethod.API;
 
+            EmailMessage sentCopy = null;
+
             if (isResendApi) {
                 // Send via Resend HTTP API
-                sendViaResendApi(account, dto, attachments, replyTo);
+                sentCopy = sendViaResendApi(account, dto, attachments, replyTo);
             } else {
                 // Send via SMTP (including Resend SMTP)
                 JavaMailSender mailSender = createMailSender(account);
@@ -438,7 +442,7 @@ public class EmailComposeService {
                 mailSender.send(mimeMessage);
 
                 // Save .eml copy to SENT folder
-                saveSentCopy(account, mimeMessage, dto, attachments, replyTo);
+                sentCopy = saveSentCopy(account, mimeMessage, dto, attachments, replyTo);
             }
 
             // Auto-harvest contacts from recipients
@@ -451,7 +455,22 @@ public class EmailComposeService {
 
             log.info("Email sent successfully from {} to {}", account.getEmail(), dto.getToAddresses());
 
-            return ResponseEntity.ok(ApiResponse.success(200, "Email sent successfully", null));
+            /*
+             * WHICH message went out, not merely that one did.
+             *
+             * This used to answer `data: null`, so a caller who needed to record what it had just
+             * sent — an availability request naming its own thread — had nothing to record. The
+             * fields are null only when the sent copy could not be filed, which is a warning about
+             * bookkeeping rather than a failed send.
+             */
+            Map<String, Object> sent = new HashMap<>();
+            sent.put("messageId", sentCopy != null ? idObfuscator.encodeId(sentCopy.getId()) : null);
+            sent.put("rfcMessageId", sentCopy != null ? sentCopy.getMessageId() : null);
+            sent.put("threadId", sentCopy != null ? sentCopy.getThreadId() : null);
+            sent.put("folderId", sentCopy != null && sentCopy.getFolder() != null
+                ? idObfuscator.encodeId(sentCopy.getFolder().getId()) : null);
+
+            return ResponseEntity.ok(ApiResponse.success(200, "Email sent successfully", sent));
         } catch (Exception e) {
             log.error("Error sending email from account {}: {}", account.getEmail(), e.getMessage());
             account.setEmailsFailedCount((account.getEmailsFailedCount() != null ? account.getEmailsFailedCount() : 0L) + 1);
@@ -464,7 +483,8 @@ public class EmailComposeService {
     /**
      * Send email via Resend HTTP API with support for CC, BCC, and attachments
      */
-    private void sendViaResendApi(EmailAccount account, ComposeEmailDTO dto, List<MultipartFile> attachments, EmailMessage replyTo) throws ResendException {
+    /** Returns the sent copy it filed, so this path can be recorded like the SMTP one. */
+    private EmailMessage sendViaResendApi(EmailAccount account, ComposeEmailDTO dto, List<MultipartFile> attachments, EmailMessage replyTo) throws ResendException {
         String apiKey = EncryptionUtil.decrypt(account.getApiKey());
         Resend resend = new Resend(apiKey);
 
@@ -517,10 +537,11 @@ public class EmailComposeService {
         try {
             MimeMessage mimeMessage = buildMimeMessage(
                     new JavaMailSenderImpl(), account, dto, attachments, replyTo);
-            saveSentCopy(account, mimeMessage, dto, attachments, replyTo);
+            return saveSentCopy(account, mimeMessage, dto, attachments, replyTo);
         } catch (Exception e) {
             log.warn("Failed to persist .eml for Resend API send from {}: {}",
                     account.getEmail(), e.getMessage());
+            return null;
         }
     }
 
@@ -578,7 +599,14 @@ public class EmailComposeService {
         }
     }
 
-    private void saveSentCopy(EmailAccount account, MimeMessage mimeMessage, ComposeEmailDTO dto, List<MultipartFile> attachments, EmailMessage replyTo) {
+    /**
+     * The sent copy, and WHICH copy it was.
+     *
+     * It used to return nothing, so the id of the message just sent was thrown away and the caller
+     * could not point anything at it — no availability request, no follow-up, no "open the thread".
+     * Null still means the copy could not be filed, which is a warning rather than a failed send.
+     */
+    private EmailMessage saveSentCopy(EmailAccount account, MimeMessage mimeMessage, ComposeEmailDTO dto, List<MultipartFile> attachments, EmailMessage replyTo) {
         try {
             Long accountId = account.getId();
             String fileName = emailStorageService.generateEmlFileName(mimeMessage.getMessageID());
@@ -589,7 +617,7 @@ public class EmailComposeService {
 
             if (sentFolder == null) {
                 log.warn("No SENT folder found for account {}", account.getEmail());
-                return;
+                return null;
             }
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -633,10 +661,12 @@ public class EmailComposeService {
                 .receivedAt(LocalDateTime.now())
                 .build();
 
-            emailMessageRepository.save(emailMessage);
+            EmailMessage saved = emailMessageRepository.save(emailMessage);
             emailFolderRepository.incrementMessageCount(sentFolder.getId(), 1);
+            return saved;
         } catch (Exception e) {
             log.warn("Failed to save sent copy for account {}: {}", account.getEmail(), e.getMessage());
+            return null;
         }
     }
 

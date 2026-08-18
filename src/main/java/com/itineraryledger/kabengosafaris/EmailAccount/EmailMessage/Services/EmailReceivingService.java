@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountRepository;
+import com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.Services.AvailabilityRequestService;
 import com.itineraryledger.kabengosafaris.EmailAccount.Components.EncryptionUtil;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.EmailAttachmentRepository;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.EmailFolderRepository;
@@ -44,6 +45,8 @@ public class EmailReceivingService {
     private final EmailStorageService emailStorageService;
     private final EmailSettingGetterServices emailSettingGetterServices;
     private final EmailContactService emailContactService;
+    /** availability requests notice their own replies — see the call after a message is saved */
+    private final AvailabilityRequestService availabilityRequestService;
     private final ObjectMapper objectMapper;
 
     /**
@@ -306,6 +309,17 @@ public class EmailReceivingService {
             .build();
 
         emailMessage = emailMessageRepository.save(emailMessage);
+
+        /*
+         * Does this answer something we asked?
+         *
+         * Matched on In-Reply-To / References / thread — headers, not wording — so an availability
+         * request stops sitting on the chase list the moment the lodge writes back. Best effort by
+         * construction: a mailbox sync must never fail because of bookkeeping, which is why the
+         * service swallows its own errors rather than letting one message abort the fetch.
+         */
+        availabilityRequestService.noticeIncomingMessage(
+            emailMessage.getId(), inReplyTo, references, threadId, emailMessage.getReceivedAt());
 
         // Extract and save attachments
         if (hasAttachments) {

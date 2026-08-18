@@ -18,6 +18,7 @@ import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayAccommodatio
 import com.itineraryledger.kabengosafaris.Safari.SafariPax.Entity.SafariPax;
 import com.itineraryledger.kabengosafaris.Safari.SafariPax.Repository.SafariPaxRepository;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
+import com.itineraryledger.kabengosafaris.Safari.AvailabilityRequest.Services.AvailabilityRequestService;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 public class SafariDayAccommodationUpdateService {
 
     private final SafariDayAccommodationRepository accommodationRepository;
+    private final AvailabilityRequestService availabilityRequestService;
     private final SafariPaxRepository paxRepository;
     private final IdObfuscator idObfuscator;
 
@@ -45,11 +47,13 @@ public class SafariDayAccommodationUpdateService {
     public SafariDayAccommodationUpdateService(
         SafariDayAccommodationRepository accommodationRepository,
         SafariPaxRepository paxRepository,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        AvailabilityRequestService availabilityRequestService
     ) {
         this.accommodationRepository = accommodationRepository;
         this.paxRepository = paxRepository;
         this.idObfuscator = idObfuscator;
+        this.availabilityRequestService = availabilityRequestService;
     }
 
     /**
@@ -170,10 +174,14 @@ public class SafariDayAccommodationUpdateService {
                 dayAccommodation.setSpecialArrangements(updateDTO.getSpecialArrangements());
             }
 
+            boolean justConfirmed = false;
+
             if (updateDTO.getBookingStatus() != null) {
                 try {
                     SafariDayAccommodation.BookingStatus status =
                         SafariDayAccommodation.BookingStatus.valueOf(updateDTO.getBookingStatus().toUpperCase());
+                    justConfirmed = status == SafariDayAccommodation.BookingStatus.CONFIRMED
+                        && dayAccommodation.getBookingStatus() != SafariDayAccommodation.BookingStatus.CONFIRMED;
                     dayAccommodation.setBookingStatus(status);
                 } catch (IllegalArgumentException e) {
                     return ResponseEntity.badRequest().body(
@@ -199,6 +207,17 @@ public class SafariDayAccommodationUpdateService {
 
             // Save
             dayAccommodation = accommodationRepository.save(dayAccommodation);
+
+            /*
+             * A confirmed night finishes whatever ask was waiting on it.
+             *
+             * Nobody goes back to close an availability request by hand once the booking is in, and
+             * an ask left open would sit on the chase list for a night already secured. Best effort
+             * by design: the confirmation is the fact, the bookkeeping is not allowed to undo it.
+             */
+            if (justConfirmed) {
+                availabilityRequestService.noticeStayConfirmed(dayAccommodation.getId());
+            }
 
             // Convert to DTO
             SafariDayAccommodationDTO dto = convertToDTO(dayAccommodation);
