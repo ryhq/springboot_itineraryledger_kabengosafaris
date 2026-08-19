@@ -32,6 +32,7 @@ public class CompanyProfileDTO {
     private String timezone;
     private String locale;
 
+    private String brandMark;
     private String brandAccent;
     private String brandRadius;
     private String brandFont;

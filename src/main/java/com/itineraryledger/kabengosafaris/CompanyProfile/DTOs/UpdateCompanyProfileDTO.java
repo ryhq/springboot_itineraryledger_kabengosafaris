@@ -43,14 +43,24 @@ public class UpdateCompanyProfileDTO {
     @Size(max = 16, message = "Locale cannot exceed 16 characters")
     private String locale;
 
+    @Size(max = 8, message = "The mark can be at most 8 characters — one or two is usual")
+    private String brandMark;
+
     @jakarta.validation.constraints.Pattern(
         regexp = "^$|^#[0-9a-fA-F]{6}$",
         message = "The accent must be a 6-digit hex colour, e.g. #1c7a58")
     private String brandAccent;
 
+    /*
+     * Roundness as a percentage, 0 (square) to 100 (as round as this design goes).
+     *
+     * NOT a CSS percentage: border-radius:50% turns a button into a lens, because a CSS percentage is
+     * measured against the element's own width and height. The client maps this to a pixel radius.
+     * px/rem values are still accepted so anything stored before this keeps working.
+     */
     @jakarta.validation.constraints.Pattern(
-        regexp = "^$|^\\d{1,2}(px|rem)$",
-        message = "The corner radius must be a size like 8px or 0.5rem")
+        regexp = "^$|^(100|[1-9]?[0-9])%$|^\\d{1,2}(px|rem)$",
+        message = "Roundness must be a percentage from 0% to 100%")
     private String brandRadius;
 
     @Size(max = 160, message = "The font stack cannot exceed 160 characters")

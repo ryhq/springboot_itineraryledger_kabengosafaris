@@ -72,6 +72,7 @@ public class CompanyProfileWriteService {
         patch(dto.getDefaultCurrency(), v -> profile.setDefaultCurrency(v == null ? null : v.toUpperCase()));
         patch(dto.getTimezone(), profile::setTimezone);
         patch(dto.getLocale(), profile::setLocale);
+        patch(dto.getBrandMark(), profile::setBrandMark);
         patch(dto.getBrandAccent(), v -> profile.setBrandAccent(v == null ? null : v.toLowerCase()));
         patch(dto.getBrandRadius(), profile::setBrandRadius);
         patch(dto.getBrandFont(), profile::setBrandFont);

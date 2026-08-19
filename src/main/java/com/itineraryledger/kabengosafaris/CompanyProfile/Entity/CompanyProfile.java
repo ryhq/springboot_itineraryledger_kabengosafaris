@@ -92,6 +92,10 @@ public class CompanyProfile {
      * How the company looks. Blank means "whatever the app ships with" — this is an override, not a
      * requirement, so an installation that never opens the Brand tab is unaffected.
      */
+    /** drawn when no logo file is uploaded; blank means "the first letter of the trading name" */
+    @Column(name = "brand_mark", length = 8)
+    private String brandMark;
+
     @Column(name = "brand_accent", length = 32)
     private String brandAccent;
 

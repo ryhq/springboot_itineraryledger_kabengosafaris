@@ -121,8 +121,14 @@ public class CompanyProfileGetService {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("name", snapshot.name());
         payload.put("tagline", snapshot.tagline());
-        /* the letter in the fallback mark, when there is no logo file to draw */
-        payload.put("mark", snapshot.name().isBlank() ? "" : snapshot.name().substring(0, 1).toUpperCase());
+        /*
+         * The letter mark, drawn when there is no logo file. The company's own choice if it made one —
+         * an initial is a poor mark for "Jatelo African Travels" — otherwise the first letter.
+         */
+        String chosenMark = profile == null ? null : profile.getBrandMark();
+        payload.put("mark", chosenMark != null && !chosenMark.isBlank()
+            ? chosenMark.trim()
+            : (snapshot.name().isBlank() ? "" : snapshot.name().substring(0, 1).toUpperCase()));
 
         /*
          * Contact details, because the sign-in screen offers "trouble signing in?" and it has to
@@ -182,6 +188,7 @@ public class CompanyProfileGetService {
             .defaultCurrency(profile.getDefaultCurrency())
             .timezone(profile.getTimezone())
             .locale(profile.getLocale())
+            .brandMark(profile.getBrandMark())
             .brandAccent(profile.getBrandAccent())
             .brandRadius(profile.getBrandRadius())
             .brandFont(profile.getBrandFont())
