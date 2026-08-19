@@ -130,6 +130,14 @@ public class SecurityConfigurations {
                 .requestMatchers("/api/blog-images/*/file", "/api/blog-images/file/*").permitAll() // Allow public access to blog image files (an <img> carries no bearer token)
                 .requestMatchers("/api/heroes/page/*").permitAll() // Allow public access to hero sections by page
                 .requestMatchers("/api/public/**").permitAll() // Allow public access to website frontend APIs
+                /*
+                 * The terse health probe: UP or DOWN, no components, no versions, no paths (see the
+                 * `public` health group). Whatever asks — an uptime monitor, a load balancer, the
+                 * deploy script — has no token and no way to obtain one, and answering it with a 401
+                 * would report the app as broken while it is merely private. The DETAILED health
+                 * lives on the localhost-only management port.
+                 */
+                .requestMatchers("/healthz").permitAll()
 
                 .anyRequest().authenticated() // Require authentication for any other request
         )

@@ -34,6 +34,35 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jdbc</artifactId>
 		</dependency>
+		<!--
+			Health, readiness and build info.
+
+			The deploy gate needs to know whether the app can actually SERVE — the database is
+			reachable, the schema is the one this jar expects, the data directory is writable — not
+			merely whether systemd thinks the process is alive. Bound to localhost (see
+			management.server.address), so the detail is for the box and the deploy script only.
+		-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<!--
+			Versioned schema changes.
+
+			Left on the classpath but DISABLED (spring.flyway.enabled) until the current schema is
+			baselined: with `ddl-auto=update` deciding the schema per instance, every company's
+			database drifts its own way, and the drift is invisible until a query hits the column
+			that never got added. Present now so the schema health check can report against it the
+			moment it is switched on.
+		-->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-mysql</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -270,6 +299,19 @@
 				<configuration>
 					<mainClass>com.itineraryledger.kabengosafaris.KabengosafarisApplication</mainClass>
 				</configuration>
+				<executions>
+					<!--
+						Stamps version, build time and the artifact name into the jar, so a running
+						instance can say WHICH build it is. With one deployment you know because you
+						just pushed it; with one per company, "who is behind?" needs an answer that
+						is not a guess.
+					-->
+					<execution>
+						<goals>
+							<goal>build-info</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
