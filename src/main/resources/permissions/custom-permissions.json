@@ -365,6 +365,18 @@
       "action": "UPDATE",
       "entity": "COMPANY_PROFILE",
       "description": "Allows editing the company profile, its emails, phones, addresses, links and brand assets"
+    },
+    {
+      "name": "READ_FEATURE",
+      "action": "READ",
+      "entity": "FEATURE",
+      "description": "Allows viewing which features are enabled for this company"
+    },
+    {
+      "name": "UPDATE_FEATURE",
+      "action": "UPDATE",
+      "entity": "FEATURE",
+      "description": "Allows switching a feature on or off for this company (fleet, credit notes, availability requests, website content, translation)"
     }
   ]
 }

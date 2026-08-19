@@ -50,6 +50,13 @@ public class SecurityConfigurations {
     }
 
     @Bean
+    public com.itineraryledger.kabengosafaris.Feature.FeatureGateFilter featureGateFilter(
+        com.itineraryledger.kabengosafaris.Feature.FeatureService featureService
+    ) {
+        return new com.itineraryledger.kabengosafaris.Feature.FeatureGateFilter(featureService);
+    }
+
+    @Bean
     public DynamicPermissionFilter dynamicPermissionFilter(
         EndpointPermissionService endpointPermissionService
     ) {
@@ -73,7 +80,8 @@ public class SecurityConfigurations {
     public SecurityFilterChain securityFilterChain(
         HttpSecurity httpSecurity,
         JwtAuthenticationFilter jwtAuthenticationFilter,
-        DynamicPermissionFilter dynamicPermissionFilter
+        DynamicPermissionFilter dynamicPermissionFilter,
+        com.itineraryledger.kabengosafaris.Feature.FeatureGateFilter featureGateFilter
     ) throws Exception {
         return httpSecurity
         // Configure CORS inline using a custom configuration source
@@ -155,6 +163,14 @@ public class SecurityConfigurations {
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
         // Add DynamicPermissionFilter before JWT filter for runtime endpoint permission checking
         .addFilterBefore(dynamicPermissionFilter, JwtAuthenticationFilter.class)
+        /*
+         * The feature gate runs FIRST of the three.
+         *
+         * A module this company does not have should answer "no such thing" before anybody asks who is
+         * calling or what they may do — otherwise a disabled feature's 404 depends on being logged in,
+         * and an unauthenticated caller would learn more than a signed-in one.
+         */
+        .addFilterBefore(featureGateFilter, DynamicPermissionFilter.class)
         .build();
     }
     
