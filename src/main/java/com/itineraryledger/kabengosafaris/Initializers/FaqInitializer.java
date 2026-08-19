@@ -29,6 +29,17 @@ import lombok.extern.slf4j.Slf4j;
 @Order(Ordered.LOWEST_PRECEDENCE - 99)
 public class FaqInitializer implements ApplicationRunner {
 
+    /**
+     * Seeded content belongs to ONE company.
+     *
+     * seed/faqs.json holds real FAQs written for the company this repo grew up serving. A
+     * second company inheriting them would publish somebody else's words on its own website, so this
+     * defaults to OFF and an installation that wants them says so. The company already carrying these
+     * rows is unaffected: seeding skips what exists.
+     */
+    @org.springframework.beans.factory.annotation.Value("${app.seed.demo-content.enabled:false}")
+    private boolean demoContentEnabled;
+
     private static final String SEED_FILE = "seed/faqs.json";
 
     private final FaqSeeder seeder;
@@ -36,6 +47,11 @@ public class FaqInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
+        if (!demoContentEnabled) {
+            log.info("Skipping seeded FAQs (app.seed.demo-content.enabled is false)");
+            return;
+        }
+
         try {
             List<FaqSeeder.SeedFaq> seeds = readSeeds();
             if (seeds.isEmpty()) {

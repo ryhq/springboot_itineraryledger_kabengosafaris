@@ -33,6 +33,17 @@ import lombok.extern.slf4j.Slf4j;
 @Order(Ordered.LOWEST_PRECEDENCE - 100)
 public class BlogInitializer implements ApplicationRunner {
 
+    /**
+     * Seeded content belongs to ONE company.
+     *
+     * seed/blogs.json holds real blog posts written for the company this repo grew up serving. A
+     * second company inheriting them would publish somebody else's words on its own website, so this
+     * defaults to OFF and an installation that wants them says so. The company already carrying these
+     * rows is unaffected: seeding skips what exists.
+     */
+    @org.springframework.beans.factory.annotation.Value("${app.seed.demo-content.enabled:false}")
+    private boolean demoContentEnabled;
+
     private static final String SEED_FILE = "seed/blogs.json";
 
     private final BlogSeeder seeder;
@@ -40,6 +51,11 @@ public class BlogInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
+        if (!demoContentEnabled) {
+            log.info("Skipping seeded blog posts (app.seed.demo-content.enabled is false)");
+            return;
+        }
+
         try {
             List<BlogSeeder.SeedBlog> seeds = readSeeds();
             if (seeds.isEmpty()) {
