@@ -45,12 +45,12 @@
     "name": "senderName",
     "description": "Name of the person sending the message",
     "isRequired": false,
-    "defaultValue": "Kabengo Safaris Team"
+    "defaultValue": "{{companyName}} Team"
   },
   {
     "name": "companyEmail",
     "description": "Company email for customer to reply to",
     "isRequired": false,
-    "defaultValue": "info@kabengosafaris.com"
+    "defaultValue": ""
   }
 ]

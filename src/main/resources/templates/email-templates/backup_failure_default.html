@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Backup Failed - Kabengo Safaris</title>
+    <title>Backup Failed - {{companyName}}</title>
     <style>
         /* Reset & Base */
         body {
@@ -306,14 +306,14 @@
     <div class="email-wrapper">
         <div class="email-container">
             <!-- Header -->
-                <div class="email-header"><img src="https://api.kabengosafaris.ryhqtech.com/static/logo-email.png" width="80" height="80" alt="Kabengo Safaris" style="margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+                <div class="email-header"><img src="{{companyLogoUrl}}" width="80" height="80" alt="{{companyName}}" style="margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
                 <!-- <div class="error-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                     </svg>
                 </div> -->
                 <h1>Backup Failed</h1>
-                <p>Kabengo Safaris System Backup - Immediate Attention Required</p>
+                <p>{{companyName}} System Backup - Immediate Attention Required</p>
             </div>
 
             <!-- Content -->
@@ -394,8 +394,8 @@
 
             <!-- Footer -->
             <div class="email-footer">
-                <p><span class="email-footer-brand">Kabengo Safaris</span> Automated Backup System - Alert</p>
-                <p>© 2026 Kabengo Safaris. All rights reserved.</p>
+                <p><span class="email-footer-brand">{{companyName}}</span> Automated Backup System - Alert</p>
+                <p>© {{currentYear}} {{companyName}}. All rights reserved.</p>
                 <p style="font-size: 12px; margin-top: 15px;">
                     This is an automated system alert. Please do not reply to this email.<br>
                     For support, contact your system administrator.

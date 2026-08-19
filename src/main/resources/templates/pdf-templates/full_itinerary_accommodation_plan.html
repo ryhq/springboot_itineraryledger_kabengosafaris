@@ -7,7 +7,7 @@
     </title>
     <style>
       /* ========================================
-           KABENGO SAFARIS — ACCOMMODATION PLAN
+           [[${company.name}]] — ACCOMMODATION PLAN
            Shows the PRIMARY lodge/camp at each stop (no alternatives).
            Brand Colors:
            - Forest Green:    #274e22  (accent — primary plan)
@@ -134,7 +134,7 @@
   <body>
     <!-- Running Footer -->
     <div class="footer-running">
-      <span style="font-weight: 600; color: #5a1e03">Kabengo Safaris</span> | www.kabengosafaris.com
+      <span style="font-weight: 600; color: #5a1e03">[[${company.name}]]</span> | [[${company.website}]]
     </div>
 
     <!-- ========================================
@@ -190,8 +190,8 @@
                 </g>
               </g>
             </svg>
-            <p class="company-info">P.O. Box 11271, Arusha, Tanzania</p>
-            <p class="company-info">+255 786 345 408 | info@kabengosafaris.com</p>
+            <p class="company-info">[[${company.address}]]</p>
+            <p class="company-info">[[${company.phoneSecondary}]] | [[${company.email}]]</p>
           </td>
           <td class="document-title-section">
             <h1 class="document-type">Accommodation<br />Plan</h1>
@@ -295,8 +295,8 @@
          FOOTER
          ======================================== -->
     <div class="footer-section">
-      <div class="footer-brand">KABENGO SAFARIS</div>
-      <p class="footer-contact">Arusha, Tanzania &#160;|&#160; info@kabengosafaris.com &#160;|&#160; +255 786 345 408 &#160;|&#160; TATO / TALA licensed</p>
+      <div class="footer-brand">[[${company.name}]]</div>
+      <p class="footer-contact">[[${company.address}]] &#160;|&#160; [[${company.email}]] &#160;|&#160; [[${company.phoneSecondary}]] &#160;|&#160; TATO / TALA licensed</p>
       <p class="footer-disclaimer">
         This is a provisional accommodation plan. Room types and board bases are indicative and are confirmed at
         the booking / quotation stage, subject to availability. Please advise us of any special requests (dietary

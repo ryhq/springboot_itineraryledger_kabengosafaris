@@ -55,7 +55,7 @@
 </head>
 <body>
 
-    <div class="footer-running">Kabengo Safaris | www.kabengosafaris.com</div>
+    <div class="footer-running">[[${company.name}]] | [[${company.website}]]</div>
 
     <!-- HEADER -->
     <div class="header">
@@ -169,8 +169,8 @@
 
     <!-- FOOTER -->
     <div class="footer">
-        <div class="company">Kabengo Safaris</div>
-        <div class="contacts">info@kabengosafaris.com &#160;&#8226;&#160; +255 746 598 330</div>
+        <div class="company">[[${company.name}]]</div>
+        <div class="contacts">[[${company.email}]] &#160;&#8226;&#160; [[${company.phone}]]</div>
         <div class="legal">
             Please retain this document for your records. For payment-related queries, contact our accounts department quoting invoice
             <span th:text="${receipt.invoiceCode}">INV-000101</span>.

@@ -5,7 +5,7 @@
     <title th:text="${safari.name != null ? safari.name : 'Safari Itinerary'}">Safari Itinerary</title>
     <style>
       /* ========================================
-           KABENGO SAFARIS - MODERN MINIMALIST TEMPLATE
+           COMPANY - MODERN MINIMALIST TEMPLATE
            Brand Colors:
            - Forest Green: #274e22
            - Dark Chocolate Brown: #5a1e03
@@ -481,8 +481,8 @@
   <body>
     <!-- Running Footer Element -->
     <div class="footer-running">
-      <span style="font-weight: 600; color: #5a1e03">Kabengo Safaris</span> |
-      www.kabengosafaris.com
+      <span style="font-weight: 600; color: #5a1e03">[[${company.name}]]</span> |
+      [[${company.website}]]
     </div>
 
     <!-- ========================================
@@ -571,7 +571,7 @@
               <strong>Email:</strong> <span th:text="${safari.customer.primaryEmail}">email@example.com</span>
             </div>
             <div th:if="${safari.customer.primaryPhone != null and !#strings.isEmpty(safari.customer.primaryPhone)}">
-              <strong>Phone:</strong> <span th:text="${safari.customer.primaryPhone}">+255 123 456 789</span>
+              <strong>Phone:</strong> <span th:text="${safari.customer.primaryPhone}">+000 000 000 000</span>
             </div>
           </td>
         </tr>
@@ -872,7 +872,7 @@
       <!-- Emergency Contact -->
       <div th:if="${safari.emergencyContact != null and !#strings.isEmpty(safari.emergencyContact)}" class="info-note-block" style="background: #fdecea; border-left-color: #e74c3c; margin-top: 10px;">
         <div class="info-note-label" style="color: #c0392b;">Emergency Contact</div>
-        <div style="color: #c0392b;" th:text="${safari.emergencyContact}">John Doe +255 123 456 789</div>
+        <div style="color: #c0392b;" th:text="${safari.emergencyContact}">John Doe +000 000 000 000</div>
       </div>
     </section>
 
@@ -1562,12 +1562,12 @@
          FOOTER
          ======================================== -->
     <footer class="document-footer">
-      <div class="footer-brand-name">Kabengo Safaris</div>
+      <div class="footer-brand-name">[[${company.name}]]</div>
       <div class="footer-tagline">"Dream  ●  Explore  ●  Discover"</div>
       <div class="footer-contact">
-        <span>www.kabengosafaris.com</span>
-        <span>info@kabengosafaris.com</span>
-        <span>+255 746 598 330</span>
+        <span>[[${company.website}]]</span>
+        <span>[[${company.email}]]</span>
+        <span>[[${company.phone}]]</span>
       </div>
       <div class="footer-disclaimer">
         This safari itinerary is subject to change based on weather conditions, wildlife movements, park regulations, and operational requirements. All arrangements, prices, and availability are subject to confirmation.

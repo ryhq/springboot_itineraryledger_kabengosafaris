@@ -5,7 +5,7 @@
     <title>Payment Receipt</title>
     <style>
       /* ========================================
-           KABENGO SAFARIS - PAYMENT RECEIPT TEMPLATE
+           COMPANY - PAYMENT RECEIPT TEMPLATE
            Brand Colors:
            - Forest Green: #274e22
            - Dark Chocolate Brown: #5a1e03
@@ -428,8 +428,8 @@
   <body>
     <!-- Running Footer Element -->
     <div class="footer-running">
-      <span style="font-weight: 600; color: #5a1e03">Kabengo Safaris</span> |
-      www.kabengosafaris.com
+      <span style="font-weight: 600; color: #5a1e03">[[${company.name}]]</span> |
+      [[${company.website}]]
     </div>
 
     <!-- ========================================
@@ -603,7 +603,7 @@
         </div>
         <div class="info-row" th:if="${receipt.bankAccountName != null and !#strings.isEmpty(receipt.bankAccountName)}">
           <span class="info-label">Deposited To:</span>
-          <span class="info-value" th:text="${receipt.bankAccountName}">Kabengo Safaris USD Account</span>
+          <span class="info-value" th:text="${receipt.bankAccountName}">Your Company USD Account</span>
         </div>
         <div class="info-row" th:if="${receipt.reference != null and !#strings.isEmpty(receipt.reference)}">
           <span class="info-label">Reference:</span>
@@ -650,20 +650,20 @@
          ======================================== -->
     <div class="confirmation-stamp no-break">
       <div class="stamp-title">Payment Confirmed</div>
-      <div class="stamp-sub">This is an official payment receipt issued by Kabengo Safaris.</div>
+      <div class="stamp-sub">This is an official payment receipt issued by [[${company.name}]].</div>
     </div>
 
     <!-- ========================================
          FOOTER
          ======================================== -->
     <footer class="document-footer">
-      <div class="footer-brand-name">Kabengo Safaris</div>
+      <div class="footer-brand-name">[[${company.name}]]</div>
       <div class="footer-tagline">"Dream  &#9679;  Explore  &#9679;  Discover"</div>
 
       <div class="footer-contact">
-        <span>www.kabengosafaris.com</span>
-        <span>info@kabengosafaris.com</span>
-        <span>+255 746 598 330</span>
+        <span>[[${company.website}]]</span>
+        <span>[[${company.email}]]</span>
+        <span>[[${company.phone}]]</span>
       </div>
 
       <div class="footer-disclaimer">

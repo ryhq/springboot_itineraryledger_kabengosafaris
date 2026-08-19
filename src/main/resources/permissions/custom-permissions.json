@@ -353,6 +353,18 @@
       "action": "UPDATE",
       "entity": "CREDIT_NOTE",
       "description": "Apply a credit note against an invoice"
+    },
+    {
+      "name": "READ_COMPANY_PROFILE",
+      "action": "READ",
+      "entity": "COMPANY_PROFILE",
+      "description": "Allows viewing the company profile: identity, contact details, brand assets and the completeness gaps"
+    },
+    {
+      "name": "UPDATE_COMPANY_PROFILE",
+      "action": "UPDATE",
+      "entity": "COMPANY_PROFILE",
+      "description": "Allows editing the company profile, its emails, phones, addresses, links and brand assets"
     }
   ]
 }

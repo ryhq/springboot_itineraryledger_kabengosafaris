@@ -118,6 +118,6 @@
     "name": "companyEmail",
     "description": "Company contact email address",
     "isRequired": false,
-    "defaultValue": "info@kabengosafaris.com"
+    "defaultValue": ""
   }
 ]

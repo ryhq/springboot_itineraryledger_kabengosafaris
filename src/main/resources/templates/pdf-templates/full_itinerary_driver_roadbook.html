@@ -7,7 +7,7 @@
     </title>
     <style>
       /* ========================================
-           KABENGO SAFARIS — DRIVER-GUIDE ROADBOOK
+           [[${company.name}]] — DRIVER-GUIDE ROADBOOK
            Internal operations document. One block per day with route,
            distance, park gate times, timed activities, meals and overnight.
            Brand Colors: Forest Green #274e22 · Chocolate Brown #5a1e03 · Olive #3e3117
@@ -104,7 +104,7 @@
   </head>
   <body>
     <div class="footer-running">
-      <span style="font-weight: 600; color: #5a1e03">Kabengo Safaris</span> | Driver-Guide Roadbook &#8212; internal use
+      <span style="font-weight: 600; color: #5a1e03">[[${company.name}]]</span> | Driver-Guide Roadbook &#8212; internal use
     </div>
 
     <!-- HEADER -->
@@ -158,8 +158,8 @@
                 </g>
               </g>
             </svg>
-            <p class="company-info">P.O. Box 11271, Arusha, Tanzania</p>
-            <p class="company-info">+255 786 345 408 | info@kabengosafaris.com</p>
+            <p class="company-info">[[${company.address}]]</p>
+            <p class="company-info">[[${company.phoneSecondary}]] | [[${company.email}]]</p>
           </td>
           <td class="document-title-section">
             <h1 class="document-type">Driver<br />Roadbook</h1>
@@ -323,8 +323,8 @@
     </main>
 
     <div class="footer-section">
-      <div class="footer-brand">KABENGO SAFARIS</div>
-      <p class="footer-contact">Operations &#160;|&#160; info@kabengosafaris.com &#160;|&#160; +255 786 345 408</p>
+      <div class="footer-brand">[[${company.name}]]</div>
+      <p class="footer-contact">Operations &#160;|&#160; [[${company.email}]] &#160;|&#160; [[${company.phoneSecondary}]]</p>
       <p class="footer-disclaimer">
         Internal driver-guide roadbook. Times and distances are planning estimates &#8212; adjust to conditions,
         wildlife activity and guest pace. Confirm park gate hours and any permit requirements before travel.

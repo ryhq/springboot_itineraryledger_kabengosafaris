@@ -31,6 +31,8 @@ import java.util.Map;
 @Slf4j
 public class PdfTemplateRenderer {
 
+    private final com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyIdentityService companyIdentityService;
+
     private final PdfTemplateStorageService storageService;
 
     /**
@@ -127,6 +129,18 @@ public class PdfTemplateRenderer {
      * These are available in templates as ${util.methodName()}
      */
     private void addUtilityObjects(Context context) {
+        /*
+         * Who is sending this document.
+         *
+         * Every PDF prints the company's name, address and TIN, and until now it printed them
+         * because the words were in the file — 17 of the 19 shipped PDF templates carried them.
+         * Added HERE because both render paths pass through this method, so a caller cannot forget;
+         * a data model that supplies its own `company` still wins, for previews.
+         */
+        if (!context.containsVariable("company")) {
+            context.setVariable("company", companyIdentityService.templateModel());
+        }
+
         // Date formatter utility
         context.setVariable("dateUtil", new DateUtil());
 

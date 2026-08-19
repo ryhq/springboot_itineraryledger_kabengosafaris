@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Safari Quote - Kabengo Safaris</title>
+    <title>Your Safari Quote - {{companyName}}</title>
     <style>
         /* Reset & Base */
         body {
@@ -305,16 +305,16 @@
         <div class="email-container">
             <!-- Header -->
             <div class="email-header">
-                <img src="https://api.kabengosafaris.ryhqtech.com/static/logo-email.png" width="80" height="80" alt="Kabengo Safaris" style="margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+                <img src="{{companyLogoUrl}}" width="80" height="80" alt="{{companyName}}" style="margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
                 <h1>Your Safari Quote</h1>
-                <p>Kabengo Safaris</p>
+                <p>{{companyName}}</p>
             </div>
 
             <!-- Content -->
             <div class="email-content">
                 <p class="greeting">Dear {{customerName}},</p>
 
-                <p>Thank you for your interest in travelling with Kabengo Safaris! We are pleased to share your personalized safari quote with you.</p>
+                <p>Thank you for your interest in travelling with {{companyName}}! We are pleased to share your personalized safari quote with you.</p>
 
                 <!-- Status Banner -->
                 <div class="status-banner">
@@ -421,8 +421,8 @@
 
             <!-- Footer -->
             <div class="email-footer">
-                <p><span class="email-footer-brand">Kabengo Safaris</span></p>
-                <p>&copy; 2026 Kabengo Safaris. All rights reserved.</p>
+                <p><span class="email-footer-brand">{{companyName}}</span></p>
+                <p>&copy; {{currentYear}} {{companyName}}. All rights reserved.</p>
                 <p style="font-size: 12px; margin-top: 15px;">
                     This quote was sent on {{sentDate}}. If you did not request this quote, please disregard this email.
                 </p>

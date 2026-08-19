@@ -5,7 +5,7 @@
     <title th:text="${costing.subjectName != null ? costing.subjectName + ' — Price Sheet' : 'Price Sheet'}">Cost Estimation</title>
     <style>
       /* ========================================
-           KABENGO SAFARIS - COSTING DOCUMENTS
+           COMPANY - COSTING DOCUMENTS
            Forest Green #274e22 · Chocolate #5a1e03 · Olive #3e3117
            CSS variables are not supported by OpenHTMLToPDF.
            ======================================== */
@@ -160,8 +160,8 @@
     <div class="footer-running">
       <div class="footer-tagline">DREAM · EXPLORE · DISCOVER</div>
       <div class="footer-contact">
-        P.O. Box 11271, Arusha, Tanzania · +255 746 598 330 ·
-        info@kabengosafaris.com · www.kabengosafaris.com
+        [[${company.address}]] · [[${company.phone}]] ·
+        [[${company.email}]] · [[${company.website}]]
       </div>
     </div>
 

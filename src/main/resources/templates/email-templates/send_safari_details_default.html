@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Safari Details - Kabengo Safaris</title>
+    <title>Your Safari Details - {{companyName}}</title>
     <style>
         /* Reset & Base */
         body {
@@ -268,16 +268,16 @@
         <div class="email-container">
             <!-- Header -->
             <div class="email-header">
-                <img src="https://api.kabengosafaris.ryhqtech.com/static/logo-email.png" width="80" height="80" alt="Kabengo Safaris" style="margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+                <img src="{{companyLogoUrl}}" width="80" height="80" alt="{{companyName}}" style="margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
                 <h1>Your Safari Details</h1>
-                <p>Kabengo Safaris</p>
+                <p>{{companyName}}</p>
             </div>
 
             <!-- Content -->
             <div class="email-content">
                 <p class="greeting">Dear {{customerName}},</p>
 
-                <p>We are excited to share the details of your upcoming safari adventure with Kabengo Safaris! Below you will find all the important information about your trip.</p>
+                <p>We are excited to share the details of your upcoming safari adventure with {{companyName}}! Below you will find all the important information about your trip.</p>
 
                 <!-- Status Banner -->
                 <div class="status-banner">
@@ -359,8 +359,8 @@
 
             <!-- Footer -->
             <div class="email-footer">
-                <p><span class="email-footer-brand">Kabengo Safaris</span></p>
-                <p>&copy; 2026 Kabengo Safaris. All rights reserved.</p>
+                <p><span class="email-footer-brand">{{companyName}}</span></p>
+                <p>&copy; {{currentYear}} {{companyName}}. All rights reserved.</p>
                 <p style="font-size: 12px; margin-top: 15px;">
                     This email was sent on {{sentDate}}. If you did not expect this email, please disregard it.
                 </p>

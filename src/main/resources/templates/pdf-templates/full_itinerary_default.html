@@ -9,7 +9,7 @@
     </title>
     <style>
       /* ========================================
-           KABENGO SAFARIS - MODERN ITINERARY PDF
+           COMPANY - MODERN ITINERARY PDF
            Brand Colors:
            - Forest Green: #274e22
            - Dark Chocolate Brown: #5a1e03
@@ -567,8 +567,8 @@
   <body>
     <!-- Running Footer Element -->
     <div class="footer-running">
-      <span style="font-weight: 600; color: #5a1e03">Kabengo Safaris</span> |
-      www.kabengosafaris.com
+      <span style="font-weight: 600; color: #5a1e03">[[${company.name}]]</span> |
+      [[${company.website}]]
     </div>
 
     <!-- ========================================
@@ -681,9 +681,9 @@
                 </g>
               </g>
             </svg>
-            <p class="company-info">P.O. Box 11271, Arusha, Tanzania</p>
+            <p class="company-info">[[${company.address}]]</p>
             <p class="company-info">
-              +255 746 598 330 | info@kabengosafaris.com
+              [[${company.phone}]] | [[${company.email}]]
             </p>
           </td>
           <!-- Right: Document Type & Meta -->
@@ -1264,14 +1264,14 @@
          FOOTER SECTION
          ======================================== -->
     <div class="footer-section">
-      <p class="footer-brand">Kabengo Safaris</p>
+      <p class="footer-brand">[[${company.name}]]</p>
       <p class="footer-tagline">"Dream  ●  Expolre  ●  Discover"</p>
 
       <table class="footer-contact-table">
         <tr>
-          <td>www.kabengosafaris.com</td>
-          <td>info@kabengosafaris.com</td>
-          <td>+255 746 598 330</td>
+          <td>[[${company.website}]]</td>
+          <td>[[${company.email}]]</td>
+          <td>[[${company.phone}]]</td>
         </tr>
       </table>
 
@@ -1299,7 +1299,7 @@
         <span th:text="${#temporals.format(#temporals.createNow(), 'yyyy')}"
           >2026</span
         >
-        Kabengo Safaris. All rights reserved.
+        [[${company.name}]]. All rights reserved.
       </p>
       <p
         class="text-xs text-muted"

@@ -51,9 +51,22 @@ public class EmailTemplateRenderer {
      * and it should not be quietly overruled by the live profile.
      */
     private Map<String, String> withCompany(Map<String, String> variables) {
-        Map<String, String> merged = new java.util.LinkedHashMap<>(companyIdentityService.variables());
+        Map<String, String> merged = new java.util.LinkedHashMap<>(companyVariables());
         if (variables != null) merged.putAll(variables);
         return merged;
+    }
+
+    /**
+     * The company's own variables, plus the year.
+     *
+     * The year is here rather than in the identity snapshot because the snapshot is cached until
+     * something about the company changes, and a copyright line that still says last year on the
+     * 2nd of January is exactly the kind of thing nobody reports.
+     */
+    private Map<String, String> companyVariables() {
+        Map<String, String> map = new java.util.LinkedHashMap<>(companyIdentityService.variables());
+        map.put("currentYear", String.valueOf(java.time.Year.now().getValue()));
+        return map;
     }
 
     /**
@@ -219,6 +232,38 @@ public class EmailTemplateRenderer {
         } catch (Exception e) {
             log.error("Error replacing placeholders in template", e);
             throw new RuntimeException("Failed to render template: " + e.getMessage(), e);
+        }
+
+        /*
+         * Third pass: the company.
+         *
+         * The two passes above are driven by the EVENT's declared variable list, so a placeholder the
+         * event never declared survives into the sent mail as the literal "{{companyName}}". The
+         * company variables belong to every template regardless of which event is firing — a footer
+         * does not become a different footer because the event is a backup failure — so they are
+         * replaced here, after, and only where the event's own definitions left them standing.
+         */
+        for (Map.Entry<String, String> entry : companyVariables().entrySet()) {
+            String name = entry.getKey();
+            String value = entry.getValue() == null ? "" : entry.getValue();
+
+            /*
+             * Optional blocks first: {{#companyInstagram}}<a ...>icon</a>{{/companyInstagram}}. A
+             * company with no Instagram page must not ship an icon linking to nothing, and a footer
+             * cannot be conditional any other way in a template that is plain HTML.
+             */
+            String open = "{{#" + name + "}}";
+            if (result.contains(open)) {
+                Matcher sections = Pattern.compile(
+                    "\\{\\{#" + Pattern.quote(name) + "\\}\\}(.*?)\\{\\{/" + Pattern.quote(name) + "\\}\\}",
+                    Pattern.DOTALL).matcher(result);
+                result = value.isBlank() ? sections.replaceAll("") : sections.replaceAll("$1");
+            }
+
+            String placeholder = "{{" + name + "}}";
+            if (result.contains(placeholder)) {
+                result = result.replace(placeholder, value);
+            }
         }
 
         return result;

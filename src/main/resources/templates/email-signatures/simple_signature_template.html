@@ -1,11 +1,11 @@
-<!-- Kabengo Safaris — simple email signature (no placeholders) -->
+<!-- {{companyName}} — simple email signature (no placeholders) -->
 <div id="signature">
 <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #1f2421; max-width: 560px;">
   <tbody>
   <tr>
     <!-- Logo -->
     <td style="vertical-align: top; padding: 0 22px 0 0; border-right: 1px solid #e6e4dd;" width="92">
-      <img src="https://api.kabengosafaris.ryhqtech.com/static/icon-logo-green.png" width="72" height="79" alt="Kabengo Safaris" style="display:block; width:72px; height:auto; border:0;">
+      <img src="{{companyLogoUrl}}" width="72" height="79" alt="{{companyName}}" style="display:block; width:72px; height:auto; border:0;">
     </td>
 
     <!-- Identity + contact -->
@@ -21,7 +21,7 @@
         Reservation &amp; Booking Manager
       </div>
       <div style="font-size: 13px; font-weight: 400; color: #6b6e69; line-height: 1.4; margin-top: 1px;">
-        Kabengo Safaris &nbsp;·&nbsp; Arusha, Tanzania
+        {{companyName}} &nbsp;·&nbsp; {{companyAddress}}
       </div>
 
       <!-- Spacer -->
@@ -33,27 +33,29 @@
         <tr>
           <td style="padding: 1px 8px 1px 0; color: #9a9d97; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: middle;" width="48">Web</td>
           <td style="padding: 1px 0; vertical-align: middle;">
-            <a href="https://kabengosafaris.com" style="color: #1f2421; text-decoration: none; font-weight: 500;">kabengosafaris.com</a>
+            <a href="https://{{companyWebsite}}" style="color: #1f2421; text-decoration: none; font-weight: 500;">{{companyWebsite}}</a>
           </td>
         </tr>
         <tr>
           <td style="padding: 1px 8px 1px 0; color: #9a9d97; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: middle;">Mail</td>
           <td style="padding: 1px 0; vertical-align: middle;">
-            <a href="mailto:info@kabengosafaris.com" style="color: #1f2421; text-decoration: none; font-weight: 500;">info@kabengosafaris.com</a>
+            <a href="mailto:{{companyEmail}}" style="color: #1f2421; text-decoration: none; font-weight: 500;">{{companyEmail}}</a>
           </td>
         </tr>
         <tr>
           <td style="padding: 1px 8px 1px 0; color: #9a9d97; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: middle;">Tel</td>
           <td style="padding: 1px 0; vertical-align: middle;">
-            <a href="tel:+255746598330" style="color: #1f2421; text-decoration: none; font-weight: 500;">+255 746 598 330</a> 
+            <a href="tel:{{companyPhoneTel}}" style="color: #1f2421; text-decoration: none; font-weight: 500;">{{companyPhone}}</a> 
+            {{#companyPhoneSecondary}}
             /
-            <a href="tel:+255786345408" style="color: #1f2421; text-decoration: none; font-weight: 500;">+255 786 345 408</a>
+            <a href="tel:{{companyPhoneSecondaryTel}}" style="color: #1f2421; text-decoration: none; font-weight: 500;">{{companyPhoneSecondary}}</a>
+            {{/companyPhoneSecondary}}
           </td>
         </tr>
         <tr>
           <td style="padding: 1px 8px 1px 0; color: #9a9d97; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: top;">Post</td>
           <td style="padding: 1px 0; color: #4a4d48; font-weight: 400; vertical-align: top;">
-            P.O. Box 11271, Arusha, Tanzania
+            {{companyAddress}}
           </td>
         </tr>
         </tbody>
@@ -67,24 +69,32 @@
         <tbody>
         <tr>
           <td style="border-top: 1px solid #e6e4dd; padding-top: 12px;">
+            {{#companyHasSocials}}
             <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;">
               <tbody>
               <tr>
                 <td style="padding-right: 14px; font-size: 11px; color: #9a9d97; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: middle;">Follow</td>
+                {{#companyInstagram}}
                 <td style="padding-right: 10px; vertical-align: middle;">
-                  <a href="https://instagram.com/kabengosafaris" style="font-size: 12px; color: #1f2421; text-decoration: none; font-weight: 500;">Instagram</a>
+                  <a href="{{companyInstagram}}" style="font-size: 12px; color: #1f2421; text-decoration: none; font-weight: 500;">Instagram</a>
                 </td>
+                {{/companyInstagram}}
+                {{#companyFacebook}}
                 <td style="padding: 0 10px; color: #d6d4cd; vertical-align: middle; font-size: 12px;">·</td>
                 <td style="padding-right: 10px; vertical-align: middle;">
-                  <a href="https://facebook.com/kabengosafaris" style="font-size: 12px; color: #1f2421; text-decoration: none; font-weight: 500;">Facebook</a>
+                  <a href="{{companyFacebook}}" style="font-size: 12px; color: #1f2421; text-decoration: none; font-weight: 500;">Facebook</a>
                 </td>
+                {{/companyFacebook}}
+                {{#companyLinkedin}}
                 <td style="padding: 0 10px; color: #d6d4cd; vertical-align: middle; font-size: 12px;">·</td>
                 <td style="padding-right: 10px; vertical-align: middle;">
-                  <a href="https://linkedin.com/company/kabengosafaris" style="font-size: 12px; color: #1f2421; text-decoration: none; font-weight: 500;">LinkedIn</a>
+                  <a href="{{companyLinkedin}}" style="font-size: 12px; color: #1f2421; text-decoration: none; font-weight: 500;">LinkedIn</a>
                 </td>
+                {{/companyLinkedin}}
               </tr>
               </tbody>
             </table>
+            {{/companyHasSocials}}
           </td>
         </tr>
         </tbody>

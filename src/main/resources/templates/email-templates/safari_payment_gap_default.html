@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Alert - Safari Overdue - Kabengo Safaris</title>
+    <title>Payment Alert - Safari Overdue - {{companyName}}</title>
     <style>
         /* Reset & Base */
         body {
@@ -265,9 +265,9 @@
         <div class="email-container">
             <!-- Header -->
             <div class="email-header">
-                <img src="https://api.kabengosafaris.ryhqtech.com/static/logo-email.png" width="80" height="80" alt="Kabengo Safaris" style="margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+                <img src="{{companyLogoUrl}}" width="80" height="80" alt="{{companyName}}" style="margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
                 <h1>Payment Alert &#8212; Safari Overdue</h1>
-                <p>Kabengo Safaris - Immediate Attention Required</p>
+                <p>{{companyName}} - Immediate Attention Required</p>
             </div>
 
             <!-- Content -->
@@ -342,8 +342,8 @@
 
             <!-- Footer -->
             <div class="email-footer">
-                <p><span class="email-footer-brand">Kabengo Safaris</span></p>
-                <p>&copy; 2026 Kabengo Safaris. All rights reserved.</p>
+                <p><span class="email-footer-brand">{{companyName}}</span></p>
+                <p>&copy; {{currentYear}} {{companyName}}. All rights reserved.</p>
                 <p style="font-size: 12px; margin-top: 15px;">
                     This is an automated system notification. Please do not reply to this email.
                 </p>

@@ -85,6 +85,6 @@
     "name": "companyEmail",
     "description": "Company email for customer to reply to",
     "isRequired": false,
-    "defaultValue": "info@kabengosafaris.com"
+    "defaultValue": ""
   }
 ]

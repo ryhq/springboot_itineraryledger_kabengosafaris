@@ -5,7 +5,7 @@
     <title th:text="${itinerary.name != null ? itinerary.name : 'Safari Itinerary'}">Safari Itinerary</title>
     <style>
       /* ========================================
-           KABENGO SAFARIS - MODERN MINIMALIST TEMPLATE
+           COMPANY - MODERN MINIMALIST TEMPLATE
            Brand Colors:
            - Forest Green: #274e22
            - Dark Chocolate Brown: #5a1e03
@@ -710,8 +710,8 @@
   <body>
     <!-- Running Footer Element -->
     <div class="footer-running">
-      <span style="font-weight: 600; color: #5a1e03">Kabengo Safaris</span> |
-      www.kabengosafaris.com
+      <span style="font-weight: 600; color: #5a1e03">[[${company.name}]]</span> |
+      [[${company.website}]]
     </div>
 
     <!-- ========================================
@@ -1013,12 +1013,12 @@
          FOOTER
          ======================================== -->
     <footer class="document-footer">
-      <div class="footer-brand-name">Kabengo Safaris</div>
+      <div class="footer-brand-name">[[${company.name}]]</div>
       <div class="footer-tagline">"Dream  ●  Expolre  ●  Discover"</div>
       <div class="footer-contact">
-        <span>www.kabengosafaris.com</span>
-        <span>info@kabengosafaris.com</span>
-        <span>+255 746 598 330</span>
+        <span>[[${company.website}]]</span>
+        <span>[[${company.email}]]</span>
+        <span>[[${company.phone}]]</span>
       </div>
       <div class="footer-disclaimer">
         This itinerary is subject to change based on weather conditions, wildlife movements, and operational requirements. Prices and availability are not guaranteed until booking is confirmed.

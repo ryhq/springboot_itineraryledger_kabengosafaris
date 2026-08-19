@@ -5,7 +5,7 @@
     <title th:text="${invoice.title != null ? invoice.title : 'Safari Quote'}">Safari Quote</title>
     <style>
       /* ========================================
-           KABENGO SAFARIS - INVOICE TEMPLATE
+           COMPANY - INVOICE TEMPLATE
            Brand Colors:
            - Forest Green: #274e22
            - Dark Chocolate Brown: #5a1e03
@@ -896,8 +896,8 @@
   <body>
     <!-- Running Footer Element -->
     <div class="footer-running">
-      <span style="font-weight: 600; color: #5a1e03">Kabengo Safaris</span> |
-      www.kabengosafaris.com
+      <span style="font-weight: 600; color: #5a1e03">[[${company.name}]]</span> |
+      [[${company.website}]]
     </div>
 
     <!-- ========================================
@@ -1308,7 +1308,7 @@
           <div class="bank-account-box no-break" th:style="${!iterStat.last ? 'margin-bottom: 20px;' : ''}">
             <div class="bank-account-header">
               <span class="bank-account-currency" th:text="${bankAccount.currency}">USD</span>
-              <span class="bank-account-name" th:text="${bankAccount.accountName}">Kabengo Safaris Ltd - USD Operations</span>
+              <span class="bank-account-name" th:text="${bankAccount.accountName}">Your Company - USD Operations</span>
             </div>
 
             <table class="bank-account-details" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
@@ -1337,7 +1337,7 @@
                 </tr>
                 <tr th:if="${bankAccount.accountHolderName != null}">
                   <td class="bank-detail-label" style="padding: 5px 0; width: 35%; font-weight: 500;">Account Holder:</td>
-                  <td class="bank-detail-value" style="padding: 5px 0;" th:text="${bankAccount.accountHolderName}">Kabengo Safaris Limited</td>
+                  <td class="bank-detail-value" style="padding: 5px 0;" th:text="${bankAccount.accountHolderName}">Your Company Limited</td>
                 </tr>
                 <tr th:if="${bankAccount.accountNumber != null}">
                   <td class="bank-detail-label" style="padding: 5px 0; width: 35%; font-weight: 500;">Account Number:</td>
@@ -1429,13 +1429,13 @@
          FOOTER
          ======================================== -->
     <footer class="document-footer">
-      <div class="footer-brand-name">Kabengo Safaris</div>
+      <div class="footer-brand-name">[[${company.name}]]</div>
       <div class="footer-tagline">"Dream  ●  Expolre  ●  Discover"</div>
 
       <div class="footer-contact">
-        <span>www.kabengosafaris.com</span>
-        <span>info@kabengosafaris.com</span>
-        <span>+255 746 598 330</span>
+        <span>[[${company.website}]]</span>
+        <span>[[${company.email}]]</span>
+        <span>[[${company.phone}]]</span>
       </div>
 
       <div class="footer-disclaimer">

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Backup Completed Successfully - Kabengo Safaris</title>
+    <title>Backup Completed Successfully - {{companyName}}</title>
     <style>
         /* Reset & Base */
         body {
@@ -284,14 +284,14 @@
         <div class="email-container">
             <!-- Header -->
             <div class="email-header">
-                <img src="https://api.kabengosafaris.ryhqtech.com/static/logo-email.png" width="80" height="80" alt="Kabengo Safaris" style="margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+                <img src="{{companyLogoUrl}}" width="80" height="80" alt="{{companyName}}" style="margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
                 <!-- <div class="success-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                         <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                     </svg>
                 </div> -->
                 <h1>Backup Completed Successfully</h1>
-                <p>Kabengo Safaris System Backup</p>
+                <p>{{companyName}} System Backup</p>
             </div>
 
             <!-- Content -->
@@ -360,14 +360,14 @@
                 <div class="divider"></div>
 
                 <p style="color: #6b6b6b; font-size: 14px;">
-                    This is an automated notification from the Kabengo Safaris backup system. If you have any questions or concerns about this backup, please contact your system administrator.
+                    This is an automated notification from the {{companyName}} backup system. If you have any questions or concerns about this backup, please contact your system administrator.
                 </p>
             </div>
 
             <!-- Footer -->
             <div class="email-footer">
-                <p><span class="email-footer-brand">Kabengo Safaris</span> Automated Backup System</p>
-                <p>© 2026 Kabengo Safaris. All rights reserved.</p>
+                <p><span class="email-footer-brand">{{companyName}}</span> Automated Backup System</p>
+                <p>© {{currentYear}} {{companyName}}. All rights reserved.</p>
                 <p style="font-size: 12px; margin-top: 15px;">
                     This is an automated system notification. Please do not reply to this email.
                 </p>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Receipt - Kabengo Safaris</title>
+    <title>Payment Receipt - {{companyName}}</title>
     <style>
         body {
             margin: 0;
@@ -224,7 +224,7 @@
             <!-- Header -->
             <div class="email-header">
                 <h1>Payment Receipt</h1>
-                <p>Kabengo Safaris</p>
+                <p>{{companyName}}</p>
             </div>
 
             <!-- Content -->
@@ -313,14 +313,14 @@
                 <!-- CTA -->
                 <div class="cta-section">
                     <p>If you have any questions about this payment or your invoice, please contact us at <strong>{{companyEmail}}</strong>.</p>
-                    <p>Thank you for choosing Kabengo Safaris!</p>
+                    <p>Thank you for choosing {{companyName}}!</p>
                 </div>
             </div>
 
             <!-- Footer -->
             <div class="email-footer">
-                <p><span class="email-footer-brand">Kabengo Safaris</span></p>
-                <p>&copy; 2026 Kabengo Safaris. All rights reserved.</p>
+                <p><span class="email-footer-brand">{{companyName}}</span></p>
+                <p>&copy; {{currentYear}} {{companyName}}. All rights reserved.</p>
                 <p style="font-size: 12px; margin-top: 15px;">
                     This payment receipt was sent on {{sentDate}}.
                 </p>

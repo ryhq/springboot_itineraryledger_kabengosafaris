@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Invoice - Kabengo Safaris</title>
+    <title>Your Invoice - {{companyName}}</title>
     <style>
         /* Reset & Base */
         body {
@@ -305,16 +305,16 @@
         <div class="email-container">
             <!-- Header -->
             <div class="email-header">
-                <img src="https://api.kabengosafaris.ryhqtech.com/static/logo-email.png" width="80" height="80" alt="Kabengo Safaris" style="margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+                <img src="{{companyLogoUrl}}" width="80" height="80" alt="{{companyName}}" style="margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
                 <h1>Invoice</h1>
-                <p>Kabengo Safaris</p>
+                <p>{{companyName}}</p>
             </div>
 
             <!-- Content -->
             <div class="email-content">
                 <p class="greeting">Dear {{customerName}},</p>
 
-                <p>Please find below the details of your invoice from Kabengo Safaris. We kindly request that payment be made by the due date indicated.</p>
+                <p>Please find below the details of your invoice from {{companyName}}. We kindly request that payment be made by the due date indicated.</p>
 
                 <!-- Status Banner -->
                 <div class="status-banner">
@@ -379,14 +379,14 @@
                 <!-- CTA -->
                 <div class="cta-section">
                     <p>If you have any questions regarding this invoice or need assistance with payment, please don't hesitate to contact us at <strong>{{companyEmail}}</strong>.</p>
-                    <p>Thank you for choosing Kabengo Safaris!</p>
+                    <p>Thank you for choosing {{companyName}}!</p>
                 </div>
             </div>
 
             <!-- Footer -->
             <div class="email-footer">
-                <p><span class="email-footer-brand">Kabengo Safaris</span></p>
-                <p>&copy; 2026 Kabengo Safaris. All rights reserved.</p>
+                <p><span class="email-footer-brand">{{companyName}}</span></p>
+                <p>&copy; {{currentYear}} {{companyName}}. All rights reserved.</p>
                 <p style="font-size: 12px; margin-top: 15px;">
                     This invoice was sent on {{sentDate}}. If you did not expect this email, please disregard it.
                 </p>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Newsletter Subscription - Kabengo Safaris</title>
+    <title>New Newsletter Subscription - {{companyName}}</title>
     <style>
         /* Reset & Base */
         body {
@@ -208,9 +208,9 @@
         <div class="email-container">
             <!-- Header -->
             <div class="email-header">
-                <img src="https://api.kabengosafaris.ryhqtech.com/static/logo-email.png" width="80" height="80" alt="Kabengo Safaris" style="margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+                <img src="{{companyLogoUrl}}" width="80" height="80" alt="{{companyName}}" style="margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
                 <h1>New Newsletter Subscriber</h1>
-                <p>Kabengo Safaris Newsletter</p>
+                <p>{{companyName}} Newsletter</p>
             </div>
 
             <!-- Content -->
@@ -218,7 +218,7 @@
                 <!-- Status Banner -->
                 <div class="status-banner">
                     <h2>New Subscription</h2>
-                    <p>A new visitor has subscribed to the Kabengo Safaris newsletter</p>
+                    <p>A new visitor has subscribed to the {{companyName}} newsletter</p>
                 </div>
 
                 <p>A new newsletter subscription has been received on <strong>{{subscriptionDate}}</strong>.</p>
@@ -264,14 +264,14 @@
                 <div class="divider"></div>
 
                 <p style="color: #6b6b6b; font-size: 14px;">
-                    This is an automated notification from the Kabengo Safaris newsletter system. No action is required unless you wish to follow up with this subscriber.
+                    This is an automated notification from the {{companyName}} newsletter system. No action is required unless you wish to follow up with this subscriber.
                 </p>
             </div>
 
             <!-- Footer -->
             <div class="email-footer">
-                <p><span class="email-footer-brand">Kabengo Safaris</span> Newsletter System</p>
-                <p>&copy; 2026 Kabengo Safaris. All rights reserved.</p>
+                <p><span class="email-footer-brand">{{companyName}}</span> Newsletter System</p>
+                <p>&copy; {{currentYear}} {{companyName}}. All rights reserved.</p>
                 <p style="font-size: 12px; margin-top: 15px;">
                     This is an automated system notification. Please do not reply to this email.
                 </p>

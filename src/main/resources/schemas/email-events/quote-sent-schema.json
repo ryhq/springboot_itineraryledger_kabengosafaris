@@ -113,6 +113,6 @@
     "name": "companyEmail",
     "description": "Company email address for customer to reply to",
     "isRequired": false,
-    "defaultValue": "info@kabengosafaris.com"
+    "defaultValue": ""
   }
 ]

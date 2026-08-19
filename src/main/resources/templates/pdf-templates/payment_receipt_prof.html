@@ -5,7 +5,7 @@
     <title>Payment Receipt</title>
     <style>
       /* ========================================
-           KABENGO SAFARIS - PAYMENT RECEIPT
+           COMPANY - PAYMENT RECEIPT
            Brand: Forest Green #274e22, Chocolate Brown #5a1e03
            One-page professional layout
            ======================================== */
@@ -373,7 +373,7 @@
                    th:text="${receipt.customer.email}">john@example.com</div>
               <div class="party-line"
                    th:if="${receipt.customer.phone != null and !#strings.isEmpty(receipt.customer.phone)}"
-                   th:text="${receipt.customer.phone}">+255 700 000 000</div>
+                   th:text="${receipt.customer.phone}">+000 000 000 000</div>
             </div>
             <div th:unless="${receipt.customer != null}">
               <div class="party-name">Walk-in Customer</div>
@@ -477,12 +477,12 @@
 
     <!-- ========== FOOTER ========== -->
     <div class="doc-footer">
-      <div class="ftr-brand">Kabengo Safaris</div>
+      <div class="ftr-brand">[[${company.name}]]</div>
       <div class="ftr-tagline">Dream &nbsp;|&nbsp; Explore &nbsp;|&nbsp; Discover</div>
       <div class="ftr-contact">
-        <span>www.kabengosafaris.com</span><span class="sep">|</span>
-        <span>info@kabengosafaris.com</span><span class="sep">|</span>
-        <span>+255 746 598 330</span>
+        <span>[[${company.website}]]</span><span class="sep">|</span>
+        <span>[[${company.email}]]</span><span class="sep">|</span>
+        <span>[[${company.phone}]]</span>
       </div>
       <div class="ftr-disclaimer">
         This is a system-generated official receipt acknowledging the amount received against the referenced invoice.

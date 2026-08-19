@@ -72,6 +72,49 @@ public class CompanyIdentityService {
     }
 
     /** The `${company.*}` object for the Thymeleaf PDF templates. */
+    /**
+     * The company as a Thymeleaf model: {@code ${company.name}}, {@code ${company.bank.swift}}.
+     *
+     * Same data as {@link #snapshot()}, shaped for SpEL — see CompanyTemplateModel for why a record
+     * would not do.
+     */
+    public com.itineraryledger.kabengosafaris.CompanyProfile.DTOs.CompanyTemplateModel templateModel() {
+        Snapshot s = snapshot();
+        return com.itineraryledger.kabengosafaris.CompanyProfile.DTOs.CompanyTemplateModel.builder()
+            .name(s.name())
+            .legalName(s.legalName())
+            .tagline(s.tagline())
+            .email(s.email())
+            .phone(s.phone())
+            .phoneSecondary(s.phoneSecondary())
+            .address(s.address())
+            .website(s.website())
+            .tin(s.tin())
+            .vrn(s.vrn())
+            .registrationNumber(s.registrationNumber())
+            .licenceNumber(s.licenceNumber())
+            .currency(s.defaultCurrency())
+            .emails(s.emails())
+            .phones(s.phones())
+            .socials(s.socials())
+            .logoUrl(s.logoUrl())
+            .logoLightUrl(s.logoLightUrl())
+            .logoDarkUrl(s.logoDarkUrl())
+            .faviconUrl(s.faviconUrl())
+            /* not cached with the snapshot: a copyright line has to be right on the 2nd of January */
+            .year(java.time.Year.now().getValue())
+            .bank(com.itineraryledger.kabengosafaris.CompanyProfile.DTOs.CompanyTemplateModel.Bank.builder()
+                .bankName(s.bank().bankName())
+                .accountName(s.bank().accountName())
+                .accountHolder(s.bank().accountHolder())
+                .accountNumber(s.bank().accountNumber())
+                .swift(s.bank().swift())
+                .iban(s.bank().iban())
+                .currency(s.bank().currency())
+                .build())
+            .build();
+    }
+
     public Snapshot view() {
         return snapshot();
     }
@@ -105,6 +148,27 @@ public class CompanyIdentityService {
         List<String> allPhones = profile.getPhones().stream()
             .filter(p -> Boolean.TRUE.equals(p.getIsActive())).map(CompanyPhone::formatted).toList();
 
+        /*
+         * The second number, separately.
+         *
+         * Letterheads print two numbers side by side. Filling both from `phone` would print the same
+         * number twice, which looks like a mistake because it is one; a company with a single line
+         * gets an empty string here and the template's section for it disappears.
+         */
+        String phoneSecondary = allPhones.size() > 1 ? allPhones.get(1) : "";
+
+        /* one url per platform: primary first among the active ones of that type */
+        Map<String, String> socials = new LinkedHashMap<>();
+        for (CompanyLink.LinkType type : CompanyLink.LinkType.values()) {
+            if (type == CompanyLink.LinkType.WEBSITE) continue;
+            profile.getLinks().stream()
+                .filter(l -> Boolean.TRUE.equals(l.getIsActive()) && l.getLinkType() == type)
+                .sorted(Comparator.comparing((CompanyLink l) -> !Boolean.TRUE.equals(l.getIsPrimary()))
+                    .thenComparing(l -> l.getDisplayOrder() == null ? 0 : l.getDisplayOrder()))
+                .findFirst()
+                .ifPresent(l -> socials.put(type.name(), l.getUrl()));
+        }
+
         return new Snapshot(
             profile.displayName(),
             orEmpty(profile.getLegalName()),
@@ -114,8 +178,8 @@ public class CompanyIdentityService {
             orEmpty(profile.getRegistrationNumber()),
             orEmpty(profile.getLicenceNumber()),
             orEmpty(profile.getDefaultCurrency()),
-            email, phone, address, website,
-            allEmails, allPhones,
+            email, phone, phoneSecondary, address, website,
+            allEmails, allPhones, socials,
             assetUrl(profile, CompanyAsset.AssetKind.LOGO_EMAIL, CompanyAsset.AssetKind.LOGO_LIGHT),
             assetUrl(profile, CompanyAsset.AssetKind.LOGO_LIGHT),
             assetUrl(profile, CompanyAsset.AssetKind.LOGO_DARK),
@@ -142,7 +206,7 @@ public class CompanyIdentityService {
                 .anyMatch(a -> a.getAssetKind() == kind && Boolean.TRUE.equals(a.getIsActive()));
             if (present) {
                 String root = baseUrl == null ? "" : baseUrl.replaceAll("/+$", "");
-                return root + "/api/public/company/assets/" + kind.name().toLowerCase();
+                return root + "/api/public/company/assets/" + kind.name().toLowerCase().replace('_', '-');
             }
         }
         return "";
@@ -176,18 +240,27 @@ public class CompanyIdentityService {
         String name, String legalName, String tagline,
         String tin, String vrn, String registrationNumber, String licenceNumber,
         String defaultCurrency,
-        String email, String phone, String address, String website,
+        String email, String phone, String phoneSecondary, String address, String website,
         List<String> emails, List<String> phones,
+        /** link type -> full url, for the social icons a signature or a footer carries */
+        Map<String, String> socials,
         String logoUrl, String logoLightUrl, String logoDarkUrl, String faviconUrl,
         BankSnapshot bank
     ) {
         /** What a document says before anybody has filled the profile in: the name, and blanks. */
         public static Snapshot empty(String fallbackName) {
             return new Snapshot(orEmptyStatic(fallbackName), "", "", "", "", "", "", "",
-                "", "", "", "", List.of(), List.of(), "", "", "", "", BankSnapshot.empty());
+                "", "", "", "", "", List.of(), List.of(), Map.of(), "", "", "", "", BankSnapshot.empty());
         }
 
         private static String orEmptyStatic(String v) { return v == null ? "" : v; }
+
+        /** What goes in a {@code tel:} href: the leading + and the digits, nothing else. */
+        private static String dialable(String number) {
+            if (number == null) return "";
+            String cleaned = number.replaceAll("[^0-9+]", "");
+            return cleaned.startsWith("+") ? "+" + cleaned.substring(1).replace("+", "") : cleaned;
+        }
 
         /**
          * The template variables. Names are the ones the templates will use, and every one is a
@@ -200,6 +273,10 @@ public class CompanyIdentityService {
             map.put("companyTagline", tagline);
             map.put("companyEmail", email);
             map.put("companyPhone", phone);
+            map.put("companyPhoneSecondary", phoneSecondary);
+            /* tel: links need the digits only — "+255 746 598 330" is not a dialable href */
+            map.put("companyPhoneTel", dialable(phone));
+            map.put("companyPhoneSecondaryTel", dialable(phoneSecondary));
             map.put("companyAddress", address);
             map.put("companyWebsite", website);
             map.put("companyTin", tin);
@@ -209,6 +286,21 @@ public class CompanyIdentityService {
             map.put("companyCurrency", defaultCurrency);
             map.put("companyEmails", String.join(" · ", emails));
             map.put("companyPhones", String.join(" · ", phones));
+            /*
+             * One variable per platform, empty when the company has no such page. A template wraps
+             * its icon in {{#companyFacebook}}…{{/companyFacebook}} so an absent page leaves no
+             * dead link behind.
+             */
+            map.put("companyFacebook", socials.getOrDefault("FACEBOOK", ""));
+            map.put("companyInstagram", socials.getOrDefault("INSTAGRAM", ""));
+            map.put("companyX", socials.getOrDefault("X", ""));
+            map.put("companyLinkedin", socials.getOrDefault("LINKEDIN", ""));
+            map.put("companyYoutube", socials.getOrDefault("YOUTUBE", ""));
+            map.put("companyTiktok", socials.getOrDefault("TIKTOK", ""));
+            map.put("companyTripadvisor", socials.getOrDefault("TRIPADVISOR", ""));
+            map.put("companyBookingUrl", socials.getOrDefault("BOOKING", ""));
+            /* so a signature can drop the whole "Follow us" row rather than leave the label alone */
+            map.put("companyHasSocials", socials.isEmpty() ? "" : "yes");
             map.put("companyLogoUrl", logoUrl);
             map.put("companyLogoDarkUrl", logoDarkUrl);
             map.put("companyFaviconUrl", faviconUrl);

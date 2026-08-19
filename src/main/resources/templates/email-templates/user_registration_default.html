@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to Kabengo Safaris</title>
+    <title>Welcome to {{companyName}}</title>
     <style>
         /* Reset & Base */
         body {
@@ -224,8 +224,8 @@
         <div class="email-container">
             <!-- Header -->
             <div class="email-header">
-                <img src="https://api.kabengosafaris.ryhqtech.com/static/logo-email.png" width="80" height="80" alt="Kabengo Safaris" style="margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
-                <h1>Welcome to Kabengo Safaris</h1>
+                <img src="{{companyLogoUrl}}" width="80" height="80" alt="{{companyName}}" style="margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto;">
+                <h1>Welcome to {{companyName}}</h1>
                 <p>Your Safari Adventure Begins Here</p>
             </div>
 
@@ -236,7 +236,7 @@
                     <p>Hello <strong>{{firstName}}</strong>,</p>
                 </div>
 
-                <p>Thank you for registering with Kabengo Safaris! We're thrilled to have you join our community of safari enthusiasts and adventure seekers.</p>
+                <p>Thank you for registering with {{companyName}}! We're thrilled to have you join our community of safari enthusiasts and adventure seekers.</p>
 
                 <p>Your account has been successfully created. To complete your registration and unlock full access to our platform, please verify your email address by activating your account.</p>
 
@@ -270,7 +270,7 @@
 
                 <!-- Support Info -->
                 <p style="color: #6b6b6b; font-size: 14px;">
-                    If you didn't create an account with Kabengo Safaris, you can safely ignore this email. Your email address will not be used without your confirmation.
+                    If you didn't create an account with {{companyName}}, you can safely ignore this email. Your email address will not be used without your confirmation.
                 </p>
 
                 <p style="color: #6b6b6b; font-size: 14px;">
@@ -280,7 +280,7 @@
                 <!-- Sign-off -->
                 <p style="margin-top: 30px;">
                     Best regards,<br>
-                    <strong class="email-footer-brand">The Kabengo Safaris Team</strong>
+                    <strong class="email-footer-brand">The {{companyName}} Team</strong>
                 </p>
             </div>
 
@@ -288,10 +288,10 @@
             <div class="email-footer">
                 <p>
                     <span class="accent-dot"></span>
-                    <span class="email-footer-brand">Kabengo Safaris</span>
+                    <span class="email-footer-brand">{{companyName}}</span>
                     <span class="accent-dot"></span>
                 </p>
-                <p>&copy; 2025 Kabengo Safaris. All rights reserved.</p>
+                <p>&copy; {{currentYear}} {{companyName}}. All rights reserved.</p>
                 <p style="font-size: 12px; color: #999999;">
                     This is an automated email. Please do not reply to this message.
                 </p>
