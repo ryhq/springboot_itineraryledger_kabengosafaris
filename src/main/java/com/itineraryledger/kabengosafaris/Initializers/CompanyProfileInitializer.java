@@ -58,6 +58,7 @@ public class CompanyProfileInitializer implements ApplicationRunner, Ordered {
         if (!seedEnabled) return;
         if (repository.count() > 0) {
             log.info("Company profile already exists — left exactly as it is");
+            warmUp();
             return;
         }
 
@@ -106,5 +107,29 @@ public class CompanyProfileInitializer implements ApplicationRunner, Ordered {
         log.info("Company profile created: {} ({} emails, {} phones, {} addresses, {} links)",
             profile.displayName(), profile.getEmails().size(), profile.getPhones().size(),
             profile.getAddresses().size(), profile.getLinks().size());
+
+        warmUp();
+    }
+
+    /**
+     * Read the profile the way a document reads it, at boot.
+     *
+     * Because the first version of this could not be read at all — five lazy collections join-fetched
+     * in one query, which Hibernate refuses — and nothing found out until a real request answered 500
+     * with the health check still green. Reading it here means a profile that cannot be loaded shows
+     * up in the deploy's own logs, before a client sees a blank invoice.
+     */
+    private void warmUp() {
+        try {
+            var snapshot = identityService.snapshot();
+            log.info("Company identity resolves: '{}' · {} · {} · {}",
+                snapshot.name(),
+                snapshot.email().isBlank() ? "no email" : snapshot.email(),
+                snapshot.phone().isBlank() ? "no phone" : snapshot.phone(),
+                snapshot.address().isBlank() ? "no address" : snapshot.address());
+        } catch (Exception e) {
+            log.error("The company profile cannot be read — every document and email will fall back to "
+                + "the configured name only. Fix this before sending anything.", e);
+        }
     }
 }

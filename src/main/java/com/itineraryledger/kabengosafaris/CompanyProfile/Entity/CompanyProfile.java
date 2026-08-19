@@ -91,22 +91,27 @@ public class CompanyProfile {
     /* --------------------------------------------------------------- collections */
 
     @OneToMany(mappedBy = "companyProfile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.annotations.BatchSize(size = 32)
     @Builder.Default
     private List<CompanyEmail> emails = new ArrayList<>();
 
     @OneToMany(mappedBy = "companyProfile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.annotations.BatchSize(size = 32)
     @Builder.Default
     private List<CompanyPhone> phones = new ArrayList<>();
 
     @OneToMany(mappedBy = "companyProfile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.annotations.BatchSize(size = 32)
     @Builder.Default
     private List<CompanyAddress> addresses = new ArrayList<>();
 
     @OneToMany(mappedBy = "companyProfile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.annotations.BatchSize(size = 32)
     @Builder.Default
     private List<CompanyLink> links = new ArrayList<>();
 
     @OneToMany(mappedBy = "companyProfile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.annotations.BatchSize(size = 32)
     @Builder.Default
     private List<CompanyAsset> assets = new ArrayList<>();
 

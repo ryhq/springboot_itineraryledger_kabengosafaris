@@ -404,7 +404,17 @@ public class CompanyProfileWriteService {
     }
 
     private <T> T find(List<T> items, String idObfuscated, java.util.function.Function<T, Long> id) {
-        Long decoded = idObfuscator.decodeId(idObfuscated);
+        Long decoded;
+        try {
+            decoded = idObfuscator.decodeId(idObfuscated);
+        } catch (RuntimeException e) {
+            /*
+             * An id that is not decodable is an id that does not exist, as far as this page is
+             * concerned. Letting the decoder's own error out gives a 409 about hashes, which tells
+             * the user nothing and tells everyone else how ids are made.
+             */
+            return null;
+        }
         if (decoded == null) return null;
         return items.stream().filter(i -> decoded.equals(id.apply(i))).findFirst().orElse(null);
     }

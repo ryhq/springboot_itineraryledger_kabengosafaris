@@ -67,17 +67,18 @@ public class CompanyIdentityService {
     }
 
     /** The `{{name}}` map for email templates and signatures. */
+    @Transactional(readOnly = true)
     public Map<String, String> variables() {
         return snapshot().variables();
     }
 
-    /** The `${company.*}` object for the Thymeleaf PDF templates. */
     /**
      * The company as a Thymeleaf model: {@code ${company.name}}, {@code ${company.bank.swift}}.
      *
      * Same data as {@link #snapshot()}, shaped for SpEL — see CompanyTemplateModel for why a record
      * would not do.
      */
+    @Transactional(readOnly = true)
     public com.itineraryledger.kabengosafaris.CompanyProfile.DTOs.CompanyTemplateModel templateModel() {
         Snapshot s = snapshot();
         return com.itineraryledger.kabengosafaris.CompanyProfile.DTOs.CompanyTemplateModel.builder()
@@ -115,6 +116,7 @@ public class CompanyIdentityService {
             .build();
     }
 
+    @Transactional(readOnly = true)
     public Snapshot view() {
         return snapshot();
     }
