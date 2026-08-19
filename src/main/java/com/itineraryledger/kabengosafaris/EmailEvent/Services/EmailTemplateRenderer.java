@@ -38,6 +38,23 @@ public class EmailTemplateRenderer {
     private final EmailEventRepository emailEventRepository;
     private final EmailTemplateRepository emailTemplateRepository;
     private final EmailTemplateService emailTemplateService;
+    private final com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyIdentityService companyIdentityService;
+
+    /**
+     * Who we are, added to every render.
+     *
+     * Templates say the company's name, quote its TIN and print its address; before this they said
+     * them because the words were typed into the file. Merged HERE rather than at each of the ~20
+     * call sites, because a caller that forgets is a letter signed by nobody.
+     *
+     * The caller's own values win: a preview or a test send may deliberately supply something else,
+     * and it should not be quietly overruled by the live profile.
+     */
+    private Map<String, String> withCompany(Map<String, String> variables) {
+        Map<String, String> merged = new java.util.LinkedHashMap<>(companyIdentityService.variables());
+        if (variables != null) merged.putAll(variables);
+        return merged;
+    }
 
     /**
      * Render a template with actual variable values
@@ -48,6 +65,7 @@ public class EmailTemplateRenderer {
      * @throws IllegalArgumentException if event not found, disabled, no template, or missing required variables
      */
     public String renderTemplate(String eventName, Map<String, String> variables) {
+        variables = withCompany(variables);
         log.debug("Rendering template for event: {} with {} variables", eventName, variables.size());
 
         // 1. Get the email event
@@ -84,6 +102,7 @@ public class EmailTemplateRenderer {
      * @return Rendered HTML with all placeholders replaced
      */
     public String renderTemplate(String eventName, Long templateId, Map<String, String> variables) {
+        variables = withCompany(variables);
         log.debug("Rendering specific template ID {} for event: {}", templateId, eventName);
 
         // 1. Get the email event

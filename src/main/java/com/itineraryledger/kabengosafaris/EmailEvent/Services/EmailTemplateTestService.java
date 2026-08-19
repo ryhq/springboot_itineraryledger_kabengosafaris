@@ -43,7 +43,17 @@ import java.util.Map;
 public class EmailTemplateTestService {
 
     /** The same property the live availability letter greets with, so a test reads identically. */
-    @Value("${app.company.name:Kabengo Safaris}")
+    /*
+     * A test send must show what a REAL send would show, so company identity comes from the profile
+     * via the renderer — this class supplies sample business data only. It used to hardcode
+     * info@kabengosafaris.com and fall back to "Kabengo Safaris", and because a caller's variables
+     * win over the merged ones, that would have overridden another company's own details in the one
+     * email they send to check their branding.
+     */
+    @Value("${app.brand.accent:#1c7a58}")
+    private String brandAccent;
+
+    @Value("${app.company.name:}")
     private String companyName;
 
     private final EmailEventRepository emailEventRepository;
@@ -471,7 +481,6 @@ public class EmailTemplateTestService {
         variables.put("depositDueDate", now.plusDays(7).format(dateFormatter));
         variables.put("fullPaymentDueDate", now.plusDays(45).format(dateFormatter));
         variables.put("customerNotes", "Package includes all park entry fees, accommodation, meals, and ground transport. International flights not included.");
-        variables.put("companyEmail", "info@kabengosafaris.com");
 
         String subject = "[TEST] Your Safari Quote: " + variables.get("quoteCode") + " - " + variables.get("quoteTitle");
 
@@ -593,11 +602,10 @@ public class EmailTemplateTestService {
         DateTimeFormatter slash = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         DateTimeFormatter shortDate = DateTimeFormatter.ofPattern("d MMM yyyy");
 
-        String accent = "#1c7a58";
+        String accent = brandAccent;
 
         variables.put("greetingName", "Reservations Team");
-        variables.put("brandName", companyName != null && !companyName.isBlank()
-            ? companyName : "Kabengo Safaris");
+
         variables.put("accommodationName", "Tukaone Weavers Camp");
         variables.put("checkIn", checkIn.format(slash));
         variables.put("checkOut", checkOut.format(slash));
@@ -648,8 +656,7 @@ public class EmailTemplateTestService {
         DateTimeFormatter shortDate = DateTimeFormatter.ofPattern("d MMM yyyy");
 
         variables.put("greetingName", "Reservations Team");
-        variables.put("brandName", companyName != null && !companyName.isBlank()
-            ? companyName : "Kabengo Safaris");
+
         variables.put("accommodationName", "Tukaone Weavers Camp");
         variables.put("askedOn", askedOn.format(slash));
         variables.put("waitingDays", "5 days");
@@ -663,7 +670,7 @@ public class EmailTemplateTestService {
             + "<li style=\"margin: 2px 0\"><strong style=\"color: #111827\">1 &times;</strong> Triple Room"
             + " <span style=\"color: #6b7280\">&middot; Standard Tent</span></li>");
         variables.put("reference", "SAF-14D13N-01003 · Ultimate Northern Tanzania, Culture & Zanzibar Beach");
-        variables.put("accentColor", "#1c7a58");
+        variables.put("accentColor", brandAccent);
 
         String subject = "[TEST] Re: Availability Request · " + variables.get("accommodationName")
             + " · " + checkIn.getDayOfMonth() + "–" + checkOut.format(shortDate);
@@ -696,9 +703,9 @@ public class EmailTemplateTestService {
             "<div class=\"detail-row\"><span class=\"detail-label\">Day 6 (Jun 20)</span><span class=\"detail-value\">Serengeti Game Drives</span></div>" +
             "<div class=\"detail-row\"><span class=\"detail-label\">Day 7 (Jun 21)</span><span class=\"detail-value\">Departure from Arusha</span></div>");
         variables.put("specialRequests", "Vegetarian meals preferred. Would love to see the Great Migration.");
-        variables.put("emergencyContact", "+255 700 123 456 (Kabengo Safaris 24/7)");
+        /* a sample number, but the name on it has to be whoever is sending */
+        variables.put("emergencyContact", "+255 700 123 456 (24/7 emergency line)");
         variables.put("sentDate", now.format(dateFormatter));
-        variables.put("companyEmail", "info@kabengosafaris.com");
 
         return new TestEmailData(variables, "[TEST] Your Safari Details: SAF-7D6N-1007 — 7-Day Serengeti & Ngorongoro Safari");
     }
@@ -721,7 +728,6 @@ public class EmailTemplateTestService {
             "<p>Your driver-guide, <strong>Joseph Mollel</strong>, has over 15 years of experience in the Serengeti ecosystem and speaks English, French, and Swahili.</p>");
         variables.put("sentDate", now.format(dateFormatter));
         variables.put("senderName", "Ricksy Faby, Operations Manager");
-        variables.put("companyEmail", "info@kabengosafaris.com");
 
         return new TestEmailData(variables, "[TEST] SAF-7D6N-1007 — Important Update: Vehicle Upgrade");
     }

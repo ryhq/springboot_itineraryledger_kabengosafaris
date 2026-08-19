@@ -33,11 +33,11 @@ jobs:
           java-version: 21
           cache: maven
 
-      # Tests still do not run here: the only test is a @SpringBootTest that needs a
-      # real MySQL, so it cannot pass on a runner without one. Compiling them at least
-      # keeps them honest until a Testcontainers boot test replaces this line.
-      - name: Compile (including tests)
-        run: ./mvnw -q clean test-compile
+      # Tests run now. The one test that needed a real MySQL — the @SpringBootTest context
+      # load — is explicitly @Disabled with its reason, which is what let every other test
+      # start running instead of the whole suite being skipped.
+      - name: Test
+        run: ./mvnw -q clean test
 
       - name: Build JAR
         run: ./mvnw -q package -DskipTests
