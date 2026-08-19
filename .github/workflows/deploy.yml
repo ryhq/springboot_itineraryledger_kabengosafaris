@@ -52,7 +52,7 @@ jobs:
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DROPLET_HOST }}
-          username: root
+          username: deploy
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: mkdir -p ${{ env.APP_DIR }}/releases
 
@@ -60,7 +60,7 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DROPLET_HOST }}
-          username: root
+          username: deploy
           key: ${{ secrets.DROPLET_SSH_KEY }}
           source: ${{ env.RELEASE }}
           target: ${{ env.APP_DIR }}/releases/
@@ -74,7 +74,7 @@ jobs:
           HEALTH: ${{ env.HEALTH }}
         with:
           host: ${{ secrets.DROPLET_HOST }}
-          username: root
+          username: deploy
           key: ${{ secrets.DROPLET_SSH_KEY }}
           envs: RELEASE,APP_DIR,SERVICE,HEALTH
           command_timeout: 10m
@@ -98,26 +98,17 @@ jobs:
 
             # A dump BEFORE anything can change the schema.
             #
-            # Migrations run at boot, and a migration is the one deploy step that cannot be undone
-            # by putting the old jar back. Credentials come from the unit's own Environment, so the
-            # workflow needs no database secrets of its own and cannot print them.
-            eval "$(systemctl show "$SERVICE" -p Environment | sed 's/^Environment=//' \
-              | tr ' ' '\n' | grep -E '^DB_(USERNAME|PASSWORD)=' | sed 's/^/export /')"
-            DB_NAME="${MYSQL_DATABASE:-springboot_itineraryledger_kabengosafaris}"
-            mkdir -p backups/pre-deploy
-            DUMP="backups/pre-deploy/${DB_NAME}-$(date +%Y%m%d-%H%M%S).sql.gz"
-            if mysqldump -u"${DB_USERNAME:-root}" -p"${DB_PASSWORD:-}" --single-transaction \
-                 --routines --triggers "$DB_NAME" 2>/dev/null | gzip > "$DUMP"; then
-              echo "pre-deploy dump: $DUMP ($(du -h "$DUMP" | cut -f1))"
-              ls -1t backups/pre-deploy/*.sql.gz | tail -n +6 | xargs -r rm -f
-            else
+            # Migrations run at boot, and a migration is the one deploy step that putting the old
+            # jar back does not undo. The dump is a root-owned wrapper this user may TRIGGER but
+            # not read (/usr/local/sbin/kabengo-predeploy-dump), so CI never holds the database
+            # password. A dump that fails stops the deploy rather than proceeding hopefully.
+            if ! sudo -n /usr/local/sbin/kabengo-predeploy-dump; then
               echo "::error::could not take a pre-deploy database dump — refusing to migrate"
-              rm -f "$DUMP"
               exit 1
             fi
 
             ln -sfn "releases/$RELEASE" app.jar
-            systemctl restart "$SERVICE"
+            sudo -n systemctl restart "$SERVICE"
 
             # The gate. Readiness means the database answers, the schema is the one this
             # jar expects, the data directory is writable, and every seeding runner has
@@ -137,7 +128,7 @@ jobs:
               journalctl -u "$SERVICE" -n 40 --no-pager || true
               if [ -n "$PREVIOUS" ] && [ -f "$PREVIOUS" ]; then
                 ln -sfn "$PREVIOUS" app.jar
-                systemctl restart "$SERVICE"
+                sudo -n systemctl restart "$SERVICE"
                 # A jar from before this change has no readiness probe, so proof of life
                 # falls back to the endpoint that has always existed. Otherwise the first
                 # rollback would report failure for a service that came back perfectly.
