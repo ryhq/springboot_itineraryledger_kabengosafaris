@@ -102,6 +102,8 @@ public class CompanyIdentityService {
             .logoLightUrl(s.logoLightUrl())
             .logoDarkUrl(s.logoDarkUrl())
             .faviconUrl(s.faviconUrl())
+            .logoFullUrl(s.logoFullUrl())
+            .logoFullTaglineUrl(s.logoFullTaglineUrl())
             /* not cached with the snapshot: a copyright line has to be right on the 2nd of January */
             .year(java.time.Year.now().getValue())
             .bank(com.itineraryledger.kabengosafaris.CompanyProfile.DTOs.CompanyTemplateModel.Bank.builder()
@@ -186,6 +188,9 @@ public class CompanyIdentityService {
             assetUrl(profile, CompanyAsset.AssetKind.LOGO_LIGHT),
             assetUrl(profile, CompanyAsset.AssetKind.LOGO_DARK),
             assetUrl(profile, CompanyAsset.AssetKind.FAVICON_LIGHT),
+            /* the tagline cut is a deliberate second choice: a header wants the plain lockup */
+            assetUrl(profile, CompanyAsset.AssetKind.LOGO_FULL, CompanyAsset.AssetKind.LOGO_FULL_TAGLINE),
+            assetUrl(profile, CompanyAsset.AssetKind.LOGO_FULL_TAGLINE),
             bank());
     }
 
@@ -238,6 +243,12 @@ public class CompanyIdentityService {
     }
 
     /** What a document knows about the company. Immutable; rebuilt when the profile changes. */
+    /*
+     * A builder, because this record has grown three times and each time every positional caller —
+     * including the tests — stopped compiling. A caller that names the two fields it cares about does
+     * not break when a fourteenth is added.
+     */
+    @lombok.Builder
     public record Snapshot(
         String name, String legalName, String tagline,
         String tin, String vrn, String registrationNumber, String licenceNumber,
@@ -247,12 +258,15 @@ public class CompanyIdentityService {
         /** link type -> full url, for the social icons a signature or a footer carries */
         Map<String, String> socials,
         String logoUrl, String logoLightUrl, String logoDarkUrl, String faviconUrl,
+        /** the whole lockup: a letterhead or a cover page, never a 28px topbar */
+        String logoFullUrl, String logoFullTaglineUrl,
         BankSnapshot bank
     ) {
         /** What a document says before anybody has filled the profile in: the name, and blanks. */
         public static Snapshot empty(String fallbackName) {
             return new Snapshot(orEmptyStatic(fallbackName), "", "", "", "", "", "", "",
-                "", "", "", "", "", List.of(), List.of(), Map.of(), "", "", "", "", BankSnapshot.empty());
+                "", "", "", "", "", List.of(), List.of(), Map.of(), "", "", "", "", "", "",
+                BankSnapshot.empty());
         }
 
         private static String orEmptyStatic(String v) { return v == null ? "" : v; }
@@ -306,6 +320,8 @@ public class CompanyIdentityService {
             map.put("companyLogoUrl", logoUrl);
             map.put("companyLogoDarkUrl", logoDarkUrl);
             map.put("companyFaviconUrl", faviconUrl);
+            map.put("companyLogoFullUrl", logoFullUrl);
+            map.put("companyLogoFullTaglineUrl", logoFullTaglineUrl);
             /* the same brand name older templates already ask for, so they keep working */
             map.put("brandName", name);
             map.put("bankName", bank.bankName());

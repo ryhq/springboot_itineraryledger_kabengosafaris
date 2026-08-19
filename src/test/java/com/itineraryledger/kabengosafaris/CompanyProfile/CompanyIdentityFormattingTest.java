@@ -57,15 +57,32 @@ class CompanyIdentityFormattingTest {
     @Test
     @DisplayName("every documented variable exists, and none of them is null")
     void variablesAreComplete() {
-        CompanyIdentityService.Snapshot snapshot = new CompanyIdentityService.Snapshot(
-            "Kabengo Safaris", "", "Tailor-made safaris",
-            "103-035-856", "", "", "", "TZS",
-            "info@kabengosafaris.com", "+255 746 598 330", "+255 786 345 408", "Arusha, Tanzania", "www.kabengosafaris.com",
-            List.of("info@kabengosafaris.com"), List.of("+255 746 598 330"),
-            Map.of("INSTAGRAM", "https://instagram.com/example"),
-            "https://api.example.com/api/public/company/assets/logo-email", "", "", "",
-            new CompanyIdentityService.BankSnapshot("CRDB", "Kabengo USD", "Kabengo Safaris Ltd",
-                "42810007750", "NMIBTZTZ", "", "USD"));
+        CompanyIdentityService.Snapshot snapshot = CompanyIdentityService.Snapshot.builder()
+            .name("Kabengo Safaris")
+            .legalName("")
+            .tagline("Tailor-made safaris")
+            .tin("103-035-856")
+            .vrn("")
+            .registrationNumber("")
+            .licenceNumber("")
+            .defaultCurrency("TZS")
+            .email("info@kabengosafaris.com")
+            .phone("+255 746 598 330")
+            .phoneSecondary("+255 786 345 408")
+            .address("Arusha, Tanzania")
+            .website("www.kabengosafaris.com")
+            .emails(List.of("info@kabengosafaris.com"))
+            .phones(List.of("+255 746 598 330"))
+            .socials(Map.of("INSTAGRAM", "https://instagram.com/example"))
+            .logoUrl("https://api.example.com/api/public/company/assets/logo-email")
+            .logoLightUrl("")
+            .logoDarkUrl("")
+            .faviconUrl("")
+            .logoFullUrl("")
+            .logoFullTaglineUrl("")
+            .bank(new CompanyIdentityService.BankSnapshot("CRDB", "Kabengo USD", "Kabengo Safaris Ltd",
+                "42810007750", "NMIBTZTZ", "", "USD"))
+            .build();
 
         Map<String, String> vars = snapshot.variables();
         for (String key : List.of("companyName", "companyLegalName", "companyEmail", "companyPhone",

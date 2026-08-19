@@ -84,6 +84,26 @@ class PdfCompanyModelTest {
         assertFalse(html.contains("Pay to"), "no bank account means the payment block is left out");
     }
 
+    @Test
+    @DisplayName("a document asks for one logo and gets the widest one that exists")
+    void documentLogoPrefersTheFullLockup() {
+        CompanyTemplateModel withBoth = CompanyTemplateModel.builder()
+            .logoLightUrl("https://api.example.com/icon")
+            .logoFullUrl("https://api.example.com/full")
+            .build();
+        assertEquals("https://api.example.com/full", withBoth.getDocumentLogoUrl(),
+            "a letterhead has room for the wordmark, so the lockup wins");
+        assertTrue(withBoth.hasFullLogo());
+
+        CompanyTemplateModel iconOnly = CompanyTemplateModel.builder()
+            .logoLightUrl("https://api.example.com/icon")
+            .logoFullUrl("")
+            .build();
+        assertEquals("https://api.example.com/icon", iconOnly.getDocumentLogoUrl(),
+            "with no lockup uploaded the mark is better than nothing");
+        assertFalse(iconOnly.hasFullLogo());
+    }
+
     private PdfTemplateRenderer renderer() {
         CompanyIdentityService identity = mock(CompanyIdentityService.class);
         when(identity.templateModel()).thenReturn(CompanyTemplateModel.builder()

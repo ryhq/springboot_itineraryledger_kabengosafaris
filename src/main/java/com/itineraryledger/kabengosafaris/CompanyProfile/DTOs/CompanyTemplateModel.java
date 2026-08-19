@@ -46,6 +46,9 @@ public class CompanyTemplateModel {
     private final String logoLightUrl;
     private final String logoDarkUrl;
     private final String faviconUrl;
+    /** the whole lockup — mark plus wordmark — for a letterhead or a cover page */
+    private final String logoFullUrl;
+    private final String logoFullTaglineUrl;
 
     /** the year, for a copyright line that has to be right every January */
     private final int year;
@@ -55,6 +58,19 @@ public class CompanyTemplateModel {
     /** True when there is a logo to print, so a template can leave the space out rather than draw a broken image. */
     public boolean hasLogo() {
         return logoLightUrl != null && !logoLightUrl.isBlank();
+    }
+
+    /** Same question for the wide lockup, which a letterhead prefers when it exists. */
+    public boolean hasFullLogo() {
+        return logoFullUrl != null && !logoFullUrl.isBlank();
+    }
+
+    /**
+     * What a document should print at the top: the full lockup where one was uploaded, the icon
+     * otherwise. A template asks for this rather than choosing, so every document agrees.
+     */
+    public String getDocumentLogoUrl() {
+        return hasFullLogo() ? logoFullUrl : logoLightUrl;
     }
 
     /** The name to print on a legal document: the registered entity where there is one. */

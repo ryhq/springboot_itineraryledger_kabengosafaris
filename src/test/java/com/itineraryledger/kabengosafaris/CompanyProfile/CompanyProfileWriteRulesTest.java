@@ -125,9 +125,16 @@ class CompanyProfileWriteRulesTest {
 
     private CompanyProfileGetService getService(CompanyIdentityService.BankSnapshot bank) {
         CompanyIdentityService identity = mock(CompanyIdentityService.class);
-        CompanyIdentityService.Snapshot snapshot = new CompanyIdentityService.Snapshot(
-            "Test Tours", "", "", "", "", "", "", "TZS", "", "", "", "", "",
-            List.of(), List.of(), Map.of(), "", "", "", "", bank);
+        CompanyIdentityService.Snapshot snapshot = CompanyIdentityService.Snapshot.builder()
+            .name("Test Tours")
+            .legalName("").tagline("").tin("").vrn("").registrationNumber("").licenceNumber("")
+            .defaultCurrency("TZS")
+            .email("").phone("").phoneSecondary("").address("").website("")
+            .emails(List.of()).phones(List.of()).socials(Map.of())
+            .logoUrl("").logoLightUrl("").logoDarkUrl("").faviconUrl("")
+            .logoFullUrl("").logoFullTaglineUrl("")
+            .bank(bank)
+            .build();
         when(identity.snapshot()).thenReturn(snapshot);
 
         CompanyProfileGetService service = new CompanyProfileGetService(

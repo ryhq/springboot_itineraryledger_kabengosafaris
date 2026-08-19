@@ -50,9 +50,17 @@ public class CompanyProfileGetService {
     private static final Map<CompanyAsset.AssetKind, String[]> SLOTS = new LinkedHashMap<>();
     static {
         SLOTS.put(CompanyAsset.AssetKind.LOGO_LIGHT,
-            new String[] { "Logo — light mode", "Shown on light backgrounds: the panel in light mode, PDF headers, letterheads." });
+            new String[] { "Icon logo — light mode",
+                "The mark on its own, for light backgrounds: the topbar, the sign-in screen, footers, the website." });
         SLOTS.put(CompanyAsset.AssetKind.LOGO_DARK,
-            new String[] { "Logo — dark mode", "Shown on dark backgrounds: the panel in dark mode." });
+            new String[] { "Icon logo — dark mode",
+                "The same mark for dark backgrounds — the panel in dark mode, and a dark website footer." });
+        SLOTS.put(CompanyAsset.AssetKind.LOGO_FULL,
+            new String[] { "Full logo",
+                "Mark plus wordmark, for places with room: letterheads, PDF covers, a website header." });
+        SLOTS.put(CompanyAsset.AssetKind.LOGO_FULL_TAGLINE,
+            new String[] { "Full logo with tagline",
+                "The same lockup carrying the tagline. Right on a cover page; noise in a header." });
         SLOTS.put(CompanyAsset.AssetKind.FAVICON_LIGHT,
             new String[] { "Favicon — light mode", "The browser tab mark when the viewer's system is light." });
         SLOTS.put(CompanyAsset.AssetKind.FAVICON_DARK,
@@ -95,6 +103,8 @@ public class CompanyProfileGetService {
         payload.put("emails", snapshot.emails());
         payload.put("phones", snapshot.phones());
         payload.put("logoUrl", snapshot.logoLightUrl());
+        payload.put("logoFullUrl", snapshot.logoFullUrl());
+        payload.put("logoFullTaglineUrl", snapshot.logoFullTaglineUrl());
         payload.put("logoDarkUrl", snapshot.logoDarkUrl());
         payload.put("faviconUrl", snapshot.faviconUrl());
         payload.put("defaultCurrency", snapshot.defaultCurrency());
@@ -143,6 +153,9 @@ public class CompanyProfileGetService {
         payload.put("font", orDefault(profile == null ? null : profile.getBrandFont(), ""));
 
         payload.put("logoLightUrl", assetUrlIfPresent(profile, CompanyAsset.AssetKind.LOGO_LIGHT));
+        /* the whole lockup, for a header or a cover page rather than a 28px topbar */
+        payload.put("logoFullUrl", assetUrlIfPresent(profile, CompanyAsset.AssetKind.LOGO_FULL));
+        payload.put("logoFullTaglineUrl", assetUrlIfPresent(profile, CompanyAsset.AssetKind.LOGO_FULL_TAGLINE));
         payload.put("logoDarkUrl", assetUrlIfPresent(profile, CompanyAsset.AssetKind.LOGO_DARK));
         payload.put("faviconLightUrl", assetUrlIfPresent(profile, CompanyAsset.AssetKind.FAVICON_LIGHT));
         payload.put("faviconDarkUrl", assetUrlIfPresent(profile, CompanyAsset.AssetKind.FAVICON_DARK));

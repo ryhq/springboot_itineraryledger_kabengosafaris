@@ -34,11 +34,23 @@ import lombok.NoArgsConstructor;
 @Builder
 public class CompanyAsset {
 
+    /**
+     * The brand's files, by the job each one does.
+     *
+     * Two families, and mixing them up is the usual mistake: LOGO_LIGHT/LOGO_DARK are the ICONIC
+     * mark — the shape alone, legible at 24px in a topbar or on a footer line — while LOGO_FULL is
+     * the whole lockup, mark plus wordmark, for a letterhead or a website header. The full logo has
+     * two cuts because a tagline reads well on a cover page and becomes noise in a header.
+     */
     public enum AssetKind {
         /** the mark for light backgrounds — dark ink */
         LOGO_LIGHT,
         /** the mark for dark backgrounds — light ink */
         LOGO_DARK,
+        /** mark plus wordmark, for places with room */
+        LOGO_FULL,
+        /** the same lockup carrying the tagline */
+        LOGO_FULL_TAGLINE,
         /** square, light theme */
         FAVICON_LIGHT,
         /** square, dark theme */
