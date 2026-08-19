@@ -112,22 +112,30 @@ public class SecurityConfigurations {
         .authorizeHttpRequests(authorizeHttpRequest -> authorizeHttpRequest
                 .requestMatchers("/api/auth/**").permitAll() // Allow unauthenticated access to auth endpoints
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Allow unauthenticated access to Swagger documentation
-                .requestMatchers("/api/accommodation-images/*/file", "/api/accommodation-images/file/*").permitAll() // Allow public access to accommodation image files
-                .requestMatchers("/api/accommodation-documents/*/file", "/api/accommodation-documents/file/*").permitAll() // Allow public access to accommodation document files
-                .requestMatchers("/api/park-images/*/file", "/api/park-images/file/*").permitAll() // Allow public access to park image files
-                .requestMatchers("/api/park-documents/*/file", "/api/park-documents/file/*").permitAll() // Allow public access to park document files
-                .requestMatchers("/api/activity-images/*/file", "/api/activity-images/file/*").permitAll() // Allow public access to activity image files
-                .requestMatchers("/api/activity-documents/*/file", "/api/activity-documents/file/*").permitAll() // Allow public access to activity document files
-                .requestMatchers("/api/park-activity-images/*/file", "/api/park-activity-images/file/*").permitAll() // Allow public access to park activity image files
-                .requestMatchers("/api/park-activity-documents/*/file", "/api/park-activity-documents/file/*").permitAll() // Allow public access to park activity document files
-                .requestMatchers("/api/customer-documents/*/file", "/api/customer-documents/file/*").permitAll() // Allow public access to customer document files
-                .requestMatchers("/api/itinerary-documents/*/file", "/api/itinerary-documents/file/*").permitAll() // Allow public access to itinerary document files
-                .requestMatchers("/api/itinerary-images/*/file", "/api/itinerary-images/file/*").permitAll() // Allow public access to itinerary image files
-                .requestMatchers("/api/quote-documents/*/file", "/api/quote-documents/file/*").permitAll() // Allow public access to quote document files
-                .requestMatchers("/api/safari-documents/*/file", "/api/safari-documents/file/*").permitAll() // Allow public access to safari document files
-                .requestMatchers("/api/invoice-documents/*/file", "/api/invoice-documents/file/*").permitAll() // Allow public access to invoice document files
-                .requestMatchers("/api/hero-images/*/file", "/api/hero-images/file/*").permitAll() // Allow public access to hero image files
-                .requestMatchers("/api/blog-images/*/file", "/api/blog-images/file/*").permitAll() // Allow public access to blog image files (an <img> carries no bearer token)
+                /*
+                 * PUBLIC MEDIA — website content, and an <img> carries no bearer token.
+                 *
+                 * IMAGES only. Every one of these is served to the public site: park and activity
+                 * photos, accommodation galleries, heroes, blog art, testimony portraits. A URL is
+                 * the only credential, which is exactly right for a picture meant to be published.
+                 *
+                 * DOCUMENTS are deliberately NOT here. They were, and it meant a customer document —
+                 * the module that exists to hold passports and visas — could be fetched by anyone
+                 * with the link: no login, no permission check, and links leak through forwarded
+                 * mail, browser history and shared screens. The panel reads private files through
+                 * the API with its token, so nothing needed the exemption.
+                 *
+                 * Adding a media module? CompanyMediaExposureTest fails until it is classified.
+                 */
+                .requestMatchers("/api/accommodation-images/*/file", "/api/accommodation-images/file/*").permitAll()
+                .requestMatchers("/api/park-images/*/file", "/api/park-images/file/*").permitAll()
+                .requestMatchers("/api/activity-images/*/file", "/api/activity-images/file/*").permitAll()
+                .requestMatchers("/api/park-activity-images/*/file", "/api/park-activity-images/file/*").permitAll()
+                .requestMatchers("/api/itinerary-images/*/file", "/api/itinerary-images/file/*").permitAll()
+                .requestMatchers("/api/hero-images/*/file", "/api/hero-images/file/*").permitAll()
+                .requestMatchers("/api/blog-images/*/file", "/api/blog-images/file/*").permitAll()
+                /* was missing, so the public site's testimony portraits answered 401 */
+                .requestMatchers("/api/testimony-images/*/file", "/api/testimony-images/file/*").permitAll()
                 .requestMatchers("/api/heroes/page/*").permitAll() // Allow public access to hero sections by page
                 .requestMatchers("/api/public/**").permitAll() // Allow public access to website frontend APIs
                 /*
