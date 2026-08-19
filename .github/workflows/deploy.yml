@@ -3,10 +3,24 @@ name: Build & Deploy to Droplet
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # Two deploys racing on one droplet means two restarts fighting over one symlink.
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
+    env:
+      # One release per commit, kept beside the others so rollback is a symlink flip.
+      RELEASE: app-${{ github.sha }}.jar
+      APP_DIR: /opt/kabengosafaris
+      SERVICE: kabengosafaris
+      # Actuator listens here, bound to localhost — see management.server.address.
+      HEALTH: http://127.0.0.1:4451/actuator/health/readiness
 
     steps:
       - name: Checkout code
@@ -19,27 +33,118 @@ jobs:
           java-version: 21
           cache: maven
 
-      - name: Build JAR
-        run: ./mvnw clean package -DskipTests
+      # Tests still do not run here: the only test is a @SpringBootTest that needs a
+      # real MySQL, so it cannot pass on a runner without one. Compiling them at least
+      # keeps them honest until a Testcontainers boot test replaces this line.
+      - name: Compile (including tests)
+        run: ./mvnw -q clean test-compile
 
-      - name: Deploy to Droplet
+      - name: Build JAR
+        run: ./mvnw -q package -DskipTests
+
+      - name: Name the artifact after the commit
+        run: |
+          set -e
+          mv target/kabengosafaris-*.jar "$RELEASE"
+          ls -la "$RELEASE"
+
+      - name: Make room for the release
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: root
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: mkdir -p ${{ env.APP_DIR }}/releases
+
+      - name: Upload the release
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DROPLET_HOST }}
           username: root
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          source: target/kabengosafaris-0.0.1-SNAPSHOT.jar
-          target: /opt/kabengosafaris/
-          strip_components: 1
+          source: ${{ env.RELEASE }}
+          target: ${{ env.APP_DIR }}/releases/
 
-      - name: Rename JAR and restart service
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Switch, restart, and prove it can serve
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          RELEASE: ${{ env.RELEASE }}
+          APP_DIR: ${{ env.APP_DIR }}
+          SERVICE: ${{ env.SERVICE }}
+          HEALTH: ${{ env.HEALTH }}
         with:
           host: ${{ secrets.DROPLET_HOST }}
           username: root
           key: ${{ secrets.DROPLET_SSH_KEY }}
+          envs: RELEASE,APP_DIR,SERVICE,HEALTH
+          command_timeout: 10m
           script: |
-            mv /opt/kabengosafaris/kabengosafaris-0.0.1-SNAPSHOT.jar /opt/kabengosafaris/app.jar
-            systemctl restart kabengosafaris
-            sleep 5
-            systemctl is-active kabengosafaris
+            set -u
+            cd "$APP_DIR"
+
+            # What is serving right now, so there is something to go back to. On the very
+            # first run of this workflow app.jar is a real file rather than a symlink; it
+            # is preserved as a release so even that deploy is reversible.
+            PREVIOUS=""
+            if [ -L app.jar ]; then
+              PREVIOUS=$(readlink app.jar)
+            elif [ -f app.jar ]; then
+              mkdir -p releases
+              cp -a app.jar "releases/app-preexisting.jar"
+              PREVIOUS="releases/app-preexisting.jar"
+              rm -f app.jar
+            fi
+            echo "previous release: ${PREVIOUS:-none}"
+
+            ln -sfn "releases/$RELEASE" app.jar
+            systemctl restart "$SERVICE"
+
+            # The gate. Readiness means the database answers, the schema is the one this
+            # jar expects, the data directory is writable, and every seeding runner has
+            # finished — not merely that systemd sees a process.
+            ready=0
+            for i in $(seq 1 60); do
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$HEALTH" || true)
+              if [ "$code" = "200" ]; then ready=1; echo "ready after ~$((i*5))s"; break; fi
+              sleep 5
+            done
+
+            if [ "$ready" != "1" ]; then
+              echo "::error::readiness never went green — rolling back"
+              echo "--- what the app says is wrong:"
+              curl -s --max-time 5 "$HEALTH" || echo "(no answer at all)"
+              echo "--- last 40 lines of the service log:"
+              journalctl -u "$SERVICE" -n 40 --no-pager || true
+              if [ -n "$PREVIOUS" ] && [ -f "$PREVIOUS" ]; then
+                ln -sfn "$PREVIOUS" app.jar
+                systemctl restart "$SERVICE"
+                # A jar from before this change has no readiness probe, so proof of life
+                # falls back to the endpoint that has always existed. Otherwise the first
+                # rollback would report failure for a service that came back perfectly.
+                for i in $(seq 1 24); do
+                  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$HEALTH" || true)
+                  legacy=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
+                    http://127.0.0.1:4450/api/public/navigation || true)
+                  if [ "$code" = "200" ] || [ "$legacy" = "200" ]; then
+                    echo "rolled back to $PREVIOUS and it is serving"; break
+                  fi
+                  sleep 5
+                done
+              else
+                echo "::error::nothing to roll back to — the service is down"
+              fi
+              exit 1
+            fi
+
+            # Keep the last five releases: enough to step back through a bad afternoon,
+            # not enough to fill the disk with 140MB jars.
+            ls -1t releases/app-*.jar 2>/dev/null | tail -n +6 | xargs -r rm -f
+            echo "releases kept:"; ls -1t releases/ | head -5
+
+      - name: Smoke check from outside
+        # The gate above asks the app on localhost. This asks the internet, so a broken
+        # proxy or a firewall change is caught too.
+        run: |
+          sleep 2
+          curl -fsS --max-time 20 -o /dev/null -w 'public /healthz -> HTTP %{http_code}\n' \
+            https://api.kabengosafaris.ryhqtech.com/healthz
