@@ -43,6 +43,9 @@ public class CompanyProfileGetService {
     @Value("${app.company.name:}")
     private String fallbackCompanyName;
 
+    @Value("${app.brand.accent:}")
+    private String defaultAccent;
+
     /** Slot labels; the page shows all five whether or not a file has been uploaded. */
     private static final Map<CompanyAsset.AssetKind, String[]> SLOTS = new LinkedHashMap<>();
     static {
@@ -99,6 +102,61 @@ public class CompanyProfileGetService {
         return ResponseEntity.ok(ApiResponse.success(200, "Company retrieved successfully", payload));
     }
 
+    /**
+     * What the app needs to look like this company, before anybody has logged in.
+     *
+     * Public and deliberately small: the login screen renders before there is a token, and it has to
+     * render in the right colour with the right mark — a build pointed at another company's API must
+     * not flash this company's brand. Nothing sensitive is here; a name and a logo are published by
+     * definition.
+     *
+     * Every field can be empty. Empty means "use whatever the app ships with", so an installation
+     * that never opens the Brand tab is unaffected by this endpoint existing.
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<?>> getBrand() {
+        CompanyProfile profile = profileRepository.findSingleton().orElse(null);
+        CompanyIdentityService.Snapshot snapshot = identityService.snapshot();
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("name", snapshot.name());
+        payload.put("tagline", snapshot.tagline());
+        /* the letter in the fallback mark, when there is no logo file to draw */
+        payload.put("mark", snapshot.name().isBlank() ? "" : snapshot.name().substring(0, 1).toUpperCase());
+
+        /*
+         * Contact details, because the sign-in screen offers "trouble signing in?" and it has to
+         * offer a real address. Already public through /api/public/company — repeated here so the
+         * login screen needs one request, not two.
+         */
+        payload.put("email", snapshot.email());
+        payload.put("website", snapshot.website());
+
+        payload.put("accent", orDefault(profile == null ? null : profile.getBrandAccent(), defaultAccent));
+        payload.put("radius", orDefault(profile == null ? null : profile.getBrandRadius(), ""));
+        payload.put("font", orDefault(profile == null ? null : profile.getBrandFont(), ""));
+
+        payload.put("logoLightUrl", assetUrlIfPresent(profile, CompanyAsset.AssetKind.LOGO_LIGHT));
+        payload.put("logoDarkUrl", assetUrlIfPresent(profile, CompanyAsset.AssetKind.LOGO_DARK));
+        payload.put("faviconLightUrl", assetUrlIfPresent(profile, CompanyAsset.AssetKind.FAVICON_LIGHT));
+        payload.put("faviconDarkUrl", assetUrlIfPresent(profile, CompanyAsset.AssetKind.FAVICON_DARK));
+        payload.put("logoEmailUrl", assetUrlIfPresent(profile, CompanyAsset.AssetKind.LOGO_EMAIL));
+
+        return ResponseEntity.ok(ApiResponse.success(200, "Brand retrieved successfully", payload));
+    }
+
+    private String orDefault(String value, String fallback) {
+        return value == null || value.isBlank() ? (fallback == null ? "" : fallback) : value.trim();
+    }
+
+    /** Empty rather than a URL that 404s: the client falls back to its own asset. */
+    private String assetUrlIfPresent(CompanyProfile profile, CompanyAsset.AssetKind kind) {
+        if (profile == null) return "";
+        boolean present = profile.getAssets().stream()
+            .anyMatch(a -> a.getAssetKind() == kind && Boolean.TRUE.equals(a.getIsActive()));
+        return present ? publicAssetUrl(kind) : "";
+    }
+
     // ------------------------------------------------------------------ mapping
 
     public CompanyProfileDTO toDTO(CompanyProfile profile) {
@@ -124,6 +182,9 @@ public class CompanyProfileGetService {
             .defaultCurrency(profile.getDefaultCurrency())
             .timezone(profile.getTimezone())
             .locale(profile.getLocale())
+            .brandAccent(profile.getBrandAccent())
+            .brandRadius(profile.getBrandRadius())
+            .brandFont(profile.getBrandFont())
             .emails(profile.getEmails().stream().sorted(byOrder(CompanyEmail::getIsPrimary, CompanyEmail::getDisplayOrder, CompanyEmail::getId)).map(this::toDTO).toList())
             .phones(profile.getPhones().stream().sorted(byOrder(CompanyPhone::getIsPrimary, CompanyPhone::getDisplayOrder, CompanyPhone::getId)).map(this::toDTO).toList())
             .addresses(profile.getAddresses().stream().sorted(byOrder(CompanyAddress::getIsPrimary, CompanyAddress::getDisplayOrder, CompanyAddress::getId)).map(this::toDTO).toList())

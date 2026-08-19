@@ -88,6 +88,19 @@ public class CompanyProfile {
     @Column(name = "locale", length = 16)
     private String locale;
 
+    /*
+     * How the company looks. Blank means "whatever the app ships with" — this is an override, not a
+     * requirement, so an installation that never opens the Brand tab is unaffected.
+     */
+    @Column(name = "brand_accent", length = 32)
+    private String brandAccent;
+
+    @Column(name = "brand_radius", length = 16)
+    private String brandRadius;
+
+    @Column(name = "brand_font", length = 160)
+    private String brandFont;
+
     /* --------------------------------------------------------------- collections */
 
     @OneToMany(mappedBy = "companyProfile", cascade = CascadeType.ALL, orphanRemoval = true)

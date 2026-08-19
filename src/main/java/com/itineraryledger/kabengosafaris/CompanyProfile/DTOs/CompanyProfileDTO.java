@@ -32,6 +32,10 @@ public class CompanyProfileDTO {
     private String timezone;
     private String locale;
 
+    private String brandAccent;
+    private String brandRadius;
+    private String brandFont;
+
     private List<CompanyEmailDTO> emails;
     private List<CompanyPhoneDTO> phones;
     private List<CompanyAddressDTO> addresses;

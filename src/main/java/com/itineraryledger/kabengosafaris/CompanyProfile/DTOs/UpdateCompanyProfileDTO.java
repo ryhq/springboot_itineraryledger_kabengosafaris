@@ -42,4 +42,17 @@ public class UpdateCompanyProfileDTO {
 
     @Size(max = 16, message = "Locale cannot exceed 16 characters")
     private String locale;
+
+    @jakarta.validation.constraints.Pattern(
+        regexp = "^$|^#[0-9a-fA-F]{6}$",
+        message = "The accent must be a 6-digit hex colour, e.g. #1c7a58")
+    private String brandAccent;
+
+    @jakarta.validation.constraints.Pattern(
+        regexp = "^$|^\\d{1,2}(px|rem)$",
+        message = "The corner radius must be a size like 8px or 0.5rem")
+    private String brandRadius;
+
+    @Size(max = 160, message = "The font stack cannot exceed 160 characters")
+    private String brandFont;
 }
