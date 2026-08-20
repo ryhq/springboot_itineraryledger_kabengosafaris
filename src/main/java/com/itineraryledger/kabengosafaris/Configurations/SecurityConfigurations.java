@@ -26,6 +26,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
+@lombok.extern.slf4j.Slf4j
 @Configuration // Marks this class as a configuration class
 @EnableWebSecurity // For enabling Spring Security's web security support
 @EnableMethodSecurity(prePostEnabled = true) // To enable method-level security like @PreAuthorize
@@ -75,6 +76,42 @@ public class SecurityConfigurations {
             .build();
     }
 
+    @org.springframework.beans.factory.annotation.Value("${app.management.base.url:}")
+    private String managementBaseUrl;
+
+    @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:}")
+    private String extraAllowedOrigins;
+
+    /**
+     * Who may make a credentialed request to this API.
+     *
+     * The panel's own origin, plus whatever this deployment adds — a second panel hostname during a
+     * cutover, or a developer's machine working against a live API, which is a real workflow and
+     * better stated than smuggled in behind a wildcard.
+     */
+    private List<String> allowedOrigins() {
+        java.util.LinkedHashSet<String> origins = new java.util.LinkedHashSet<>();
+
+        if (managementBaseUrl != null && !managementBaseUrl.isBlank()) {
+            origins.add(managementBaseUrl.trim().replaceAll("/+$", ""));
+        }
+        if (extraAllowedOrigins != null && !extraAllowedOrigins.isBlank()) {
+            for (String origin : extraAllowedOrigins.split(",")) {
+                if (!origin.isBlank()) origins.add(origin.trim().replaceAll("/+$", ""));
+            }
+        }
+        if (origins.isEmpty()) {
+            /*
+             * Never fall back to "everybody". An API that answers nobody is a visible outage somebody
+             * fixes in a minute; an API that answers everybody is a hole nobody notices.
+             */
+            log.error("No CORS origin is configured (app.management.base.url and app.cors.allowed-origins "
+                + "are both empty). The panel will be refused by the browser until one is set.");
+        }
+        log.info("CORS: credentialed requests allowed from {}", origins);
+        return List.copyOf(origins);
+    }
+
     @Bean
     @org.springframework.core.annotation.Order(2)
     public SecurityFilterChain securityFilterChain(
@@ -87,8 +124,23 @@ public class SecurityConfigurations {
         // Configure CORS inline using a custom configuration source
         .cors(cors -> {
             CorsConfiguration corsConfiguration = new CorsConfiguration();
-            corsConfiguration.setAllowedOriginPatterns(List.of("*")); // Allow all origins with credentials support
-            corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH")); // Allow specific methods
+            /*
+             * Named origins, not a wildcard.
+             *
+             * This was `*` WITH credentials, which means any page anywhere could make a credentialed
+             * request to this API and read the answer — the browser's same-origin protection turned
+             * off for every site on the internet at once. It existed for the backup cookie-bridge,
+             * which needs credentials; the fix is to keep credentials and name who may use them.
+             *
+             * The panel's own origin is always allowed, because that is the client this API exists
+             * for. Anything else is stated in configuration per deployment.
+             *
+             * Not affected: the public websites. Their API references are <img> sources, and an image
+             * load is not a CORS request.
+             */
+            corsConfiguration.setAllowedOrigins(allowedOrigins());
+            /* OPTIONS for preflight, HEAD because a monitor sends one and a 403 reads as an outage */
+            corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"));
             corsConfiguration.setAllowedHeaders(List.of("*")); // Allow all headers
             corsConfiguration.setExposedHeaders(List.of(
                 HttpHeaders.CONTENT_DISPOSITION
