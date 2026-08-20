@@ -106,10 +106,34 @@ Then they, or you with them:
 - **Finance → Bank accounts** — at least one default account, or proforma invoices print no payment
   details and nobody can pay.
 
-## 5. CI (Phase 4, not yet automated)
+## 5. CI (one merge, every company)
 
-Until the matrix build lands, a release for a second company is: build the jar, `scp` it to
-`/opt/<id>/app.jar`, restart, and build/copy the panel as in step 3.
+Add the company to `companies.json` in both repos and create a GitHub Environment named after its
+`id`:
+
+| Repo | Environment holds |
+| --- | --- |
+| API | `DROPLET_HOST`, `DROPLET_SSH_KEY` (the `deploy` account's key) |
+| Panel | `DROPLET_HOST`, `DROPLET_SSH_KEY`, `PANEL_DIR` — or the five `CPANEL_*` for a cPanel target |
+
+The API is built and tested once and released to the canary first; the panel is built per company,
+since its API URL and fallback brand are inlined. Nothing in the workflows needs editing.
+
+The host also needs the deploy contract: the `deploy` account with the CI public key, a root-owned
+pre-deploy dump wrapper, and sudoers limited to three exact commands (restart, is-active, dump). See
+`/etc/sudoers.d/50-deploy-<id>` on an existing host for the shape.
+
+## 6. Watch it (optional, five minutes)
+
+```bash
+scp scripts/health-watch.sh root@host:/usr/local/sbin/
+echo 'PORT=<actuator port>' > /etc/health-watch-<service>.env
+systemctl enable --now health-watch@<service>.timer
+```
+
+Every two minutes it asks the same readiness endpoint the deploy gates on, and after three
+consecutive failures it says so once — to the journal, and to `HEALTH_WEBHOOK` if set. It fixes
+nothing on purpose: a watchdog that restarts things hides the fault it was meant to report.
 
 ---
 

@@ -66,7 +66,12 @@ DATA_DIR="/srv/$ID/data"
 BACKUP_DIR="/srv/$ID/backups"
 ENV_FILE="/etc/$ID.env"
 UNIT="/etc/systemd/system/$ID.service"
-SERVICE_USER="deploy"
+# The company's own service account, distinct from the account CI logs in with. Two reasons: a
+# process and the pipeline that replaces it should not be the same identity, and on a host carrying
+# more than one company /proc/<pid>/environ would otherwise hand one company's database password to
+# the other. `deploy` remains the login CI uses.
+SERVICE_USER="$ID"
+DEPLOY_USER="deploy"
 
 # The host's ~/.my.cnf may point at an application user with rights on one database — enough to read,
 # not to create. Provisioning needs administrative access, so it asks for it explicitly instead of
@@ -105,8 +110,12 @@ for port in "$PORT" "$MGMT_PORT"; do
 done
 info "ports $PORT and $MGMT_PORT are free"
 id -u "$SERVICE_USER" >/dev/null 2>&1 || {
-  info "creating the unprivileged service user '$SERVICE_USER'"
+  info "creating the service account '$SERVICE_USER' (runs the API, cannot log in)"
   run "useradd --system --shell /usr/sbin/nologin --home /nonexistent '$SERVICE_USER'"
+}
+id -u "$DEPLOY_USER" >/dev/null 2>&1 || {
+  info "creating the deploy account '$DEPLOY_USER' (CI logs in as this; add its key afterwards)"
+  run "useradd --system --shell /bin/bash --create-home '$DEPLOY_USER'"
 }
 
 # ---------------------------------------------------------------- 1. database
@@ -133,7 +142,10 @@ say "2. Storage"
 for dir in "$APP_DIR" "$APP_DIR/releases" "$DATA_DIR" "$BACKUP_DIR"; do
   if [[ -d "$dir" ]]; then skip "$dir"; else run "mkdir -p '$dir'"; info "created $dir"; fi
 done
-run "chown -R '$SERVICE_USER:$SERVICE_USER' '$APP_DIR' '/srv/$ID'"
+# the release directory is replaced by CI; the storage is written by the service
+run "chown -R '$DEPLOY_USER:$DEPLOY_USER' '$APP_DIR'"
+run "chown -R '$SERVICE_USER:$SERVICE_USER' '/srv/$ID'"
+run "chmod 755 '$APP_DIR'"
 run "chmod 750 '/srv/$ID'"
 
 # ---------------------------------------------------------------- 3. secrets
@@ -208,7 +220,7 @@ app.seed.demo-content.enabled=false
 # Everything else — identity, contact details, brand, which features exist — is DATA, edited in the
 # panel at Settings → Company and Settings → Features. Nothing about this company is compiled in.
 EOF"
-  run "chown '$SERVICE_USER:$SERVICE_USER' '$APP_DIR/application.properties'"
+  run "chown '$DEPLOY_USER:$DEPLOY_USER' '$APP_DIR/application.properties'"
   info "wrote $APP_DIR/application.properties"
 fi
 
