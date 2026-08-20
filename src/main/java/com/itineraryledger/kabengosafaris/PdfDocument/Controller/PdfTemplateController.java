@@ -312,4 +312,17 @@ public class PdfTemplateController {
         log.info("POST /api/pdf-templates/{}/preview - Preview PDF for {} / {}", templateId, documentType, dataId);
         return generationService.previewPdf(documentType, dataId, templateId);
     }
+
+    /**
+     * Restore every system-default pdf templates at once.
+     *
+     * The one action that makes a shipped template fix real: seeded files are never overwritten, so
+     * without this a correction sits in the release and nothing changes.
+     */
+    @PostMapping("/restore-defaults")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_PDF_TEMPLATE')")
+    public ResponseEntity<?> restoreAllSystemDefaults() {
+        log.info("POST /api/pdf-templates/restore-defaults - restoring every system default");
+        return updateService.restoreAllSystemDefaults();
+    }
 }

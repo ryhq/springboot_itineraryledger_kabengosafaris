@@ -297,7 +297,9 @@ public class EmailAccountSignatureGetService {
                     .isDefault(signature.getIsDefault())
                     .enabled(signature.getEnabled())
                     .isSystemDefault(signature.getIsSystemDefault())
-                    .variables(emailAccountSignatureService.parseVariablesJson(signature.getVariablesJson()))
+                    .variables(emailAccountSignatureService.parseVariablesJson(
+                    com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyVariableMerger
+                        .mergeEmailVariables(signature.getVariablesJson())))
                     .fileSize(signature.getFileSize())
                     .createdAt(signature.getCreatedAt())
                     .updatedAt(signature.getUpdatedAt())
@@ -529,7 +531,9 @@ public class EmailAccountSignatureGetService {
                 .isDefault(signature.getIsDefault())
                 .enabled(signature.getEnabled())
                 .isSystemDefault(signature.getIsSystemDefault())
-                .variables(emailAccountSignatureService.parseVariablesJson(signature.getVariablesJson()))
+                .variables(emailAccountSignatureService.parseVariablesJson(
+                    com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyVariableMerger
+                        .mergeEmailVariables(signature.getVariablesJson())))
                 .fileSize(signature.getFileSize())
                 .createdAt(signature.getCreatedAt())
                 .updatedAt(signature.getUpdatedAt())

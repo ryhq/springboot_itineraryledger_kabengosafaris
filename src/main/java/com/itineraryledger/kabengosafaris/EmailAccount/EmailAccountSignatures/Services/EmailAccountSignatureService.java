@@ -36,6 +36,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EmailAccountSignatureService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyPlaceholderRenderer companyPlaceholderRenderer;
+
     @Value("${email.signature.storage.path:./data/email-signatures/}")
     private String signatureStoragePath;
 
@@ -239,6 +242,15 @@ public class EmailAccountSignatureService {
             for (Map.Entry<String, String> entry : variablesToUse.entrySet()) {
                 result = result.replace("{" + entry.getKey() + "}", entry.getValue());
             }
+
+            /*
+             * Then the company's own, as {{placeholders}}.
+             *
+             * A signature's declared variables use single braces; the company's use double, the same
+             * as every email template — and without this pass a sign-off went out reading literally
+             * "{{companyName}}". Same renderer as the templates, so the two cannot drift.
+             */
+            result = companyPlaceholderRenderer.apply(result);
 
             log.debug("Variables replaced successfully for signature: {}", emailSignature.getName());
             return result;

@@ -539,7 +539,18 @@ public class GlobalExceptionHandler {
             MultipartException ex,
             WebRequest request) {
 
-        log.warn("Multipart exception: {}", ex.getMessage());
+        /*
+         * The CAUSE, not just the message.
+         *
+         * "Failed to parse multipart servlet request" is what Spring says for every reason an upload
+         * can die — a temp directory it cannot write, a size limit, a truncated body — and on its own
+         * it sent two investigations down the wrong path. Whatever the browser is told, the log gets
+         * the root cause.
+         */
+        Throwable root = ex;
+        while (root.getCause() != null && root.getCause() != root) root = root.getCause();
+        log.warn("Multipart exception: {} — caused by {}: {}",
+            ex.getMessage(), root.getClass().getName(), root.getMessage());
 
         String message = "Failed to process file upload.";
         String errorCode = ErrorCode.INVALID_INPUT.getCode();

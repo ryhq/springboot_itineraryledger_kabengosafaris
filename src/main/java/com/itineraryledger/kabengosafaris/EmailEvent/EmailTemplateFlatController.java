@@ -200,4 +200,17 @@ public class EmailTemplateFlatController {
         private Boolean isDefault;
         private Boolean enabled;
     }
+
+    /**
+     * Restore every system-default email templates at once.
+     *
+     * The one action that makes a shipped template fix real: seeded files are never overwritten, so
+     * without this a correction sits in the release and nothing changes.
+     */
+    @PostMapping("/restore-defaults")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_TEMPLATE')")
+    public ResponseEntity<?> restoreAllSystemDefaults() {
+        log.info("POST /api/email-templates/restore-defaults - restoring every system default");
+        return updateService.restoreAllSystemDefaults();
+    }
 }

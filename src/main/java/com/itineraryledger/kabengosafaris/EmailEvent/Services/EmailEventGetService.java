@@ -224,7 +224,9 @@ public class EmailEventGetService {
             .name(event.getName())
             .description(event.getDescription())
             .enabled(event.getEnabled())
-            .variablesJson(event.getVariablesJson())
+            /* the company's variables are available to every event, so every event declares them */
+            .variablesJson(com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyVariableMerger
+                .mergeEmailVariables(event.getVariablesJson()))
             .templateCount(templateCount)
             .hasSystemDefaultTemplate(hasSystemDefault)
             .createdAt(event.getCreatedAt())

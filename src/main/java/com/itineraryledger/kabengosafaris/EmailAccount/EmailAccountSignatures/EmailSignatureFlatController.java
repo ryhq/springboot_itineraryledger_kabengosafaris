@@ -210,4 +210,17 @@ public class EmailSignatureFlatController {
         return ResponseEntity.status(404).body(
             ApiResponse.error(404, "Signature not found", "SIGNATURE_NOT_FOUND"));
     }
+
+    /**
+     * Restore every system-default email signatures at once.
+     *
+     * The one action that makes a shipped template fix real: seeded files are never overwritten, so
+     * without this a correction sits in the release and nothing changes.
+     */
+    @PostMapping("/restore-defaults")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_ACCOUNT_SIGNATURE')")
+    public ResponseEntity<?> restoreAllSystemDefaults() {
+        log.info("POST /api/email-signatures/restore-defaults - restoring every system default");
+        return updateService.restoreAllSystemDefaults();
+    }
 }

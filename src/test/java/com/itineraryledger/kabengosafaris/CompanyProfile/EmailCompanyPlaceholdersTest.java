@@ -15,6 +15,7 @@ import org.mockito.ArgumentMatchers;
 import org.junit.jupiter.api.Test;
 
 import com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyIdentityService;
+import com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyPlaceholderRenderer;
 import com.itineraryledger.kabengosafaris.EmailEvent.ModalEntity.EmailEvent;
 import com.itineraryledger.kabengosafaris.EmailEvent.ModalEntity.EmailTemplate;
 import com.itineraryledger.kabengosafaris.EmailEvent.EmailEventRepository;
@@ -102,7 +103,9 @@ class EmailCompanyPlaceholdersTest {
         EmailTemplateService service = mock(EmailTemplateService.class);
         when(service.readTemplateFile(anyString())).thenReturn(templateContent);
 
-        return new EmailTemplateRenderer(events, templates, service, identity)
+        /* the company pass is its own component now, shared with signatures */
+        CompanyPlaceholderRenderer companyRenderer = new CompanyPlaceholderRenderer(identity);
+        return new EmailTemplateRenderer(events, templates, service, identity, companyRenderer)
             .renderTemplate("INVOICE_SENT", Map.of());
     }
 

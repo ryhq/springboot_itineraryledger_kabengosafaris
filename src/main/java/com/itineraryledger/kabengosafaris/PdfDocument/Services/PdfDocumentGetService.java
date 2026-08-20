@@ -246,7 +246,9 @@ public class PdfDocumentGetService {
             .dataSourceClass(document.getDataSourceClass())
             .rootVariableName(document.getRootVariableName())
             .enabled(document.getEnabled())
-            .variablesJson(document.getVariablesJson())
+            /* ${company.*} resolves in every PDF template, so every document declares it */
+            .variablesJson(com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyVariableMerger
+                .mergePdfVariables(document.getVariablesJson()))
             .templateCount(templateCount)
             .createdAt(document.getCreatedAt())
             .updatedAt(document.getUpdatedAt())

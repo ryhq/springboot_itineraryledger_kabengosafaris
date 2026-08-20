@@ -39,6 +39,7 @@ public class EmailTemplateRenderer {
     private final EmailTemplateRepository emailTemplateRepository;
     private final EmailTemplateService emailTemplateService;
     private final com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyIdentityService companyIdentityService;
+    private final com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyPlaceholderRenderer companyPlaceholderRenderer;
 
     /**
      * Who we are, added to every render.
@@ -235,36 +236,13 @@ public class EmailTemplateRenderer {
         }
 
         /*
-         * Third pass: the company.
+         * Third pass: the company, through the shared renderer that signatures use too.
          *
-         * The two passes above are driven by the EVENT's declared variable list, so a placeholder the
-         * event never declared survives into the sent mail as the literal "{{companyName}}". The
-         * company variables belong to every template regardless of which event is firing — a footer
-         * does not become a different footer because the event is a backup failure — so they are
-         * replaced here, after, and only where the event's own definitions left them standing.
+         * The two passes above are driven by the EVENT's declared variables, so a placeholder no event
+         * mentioned survives as literal braces. The company's variables belong to every template
+         * regardless of which event fired.
          */
-        for (Map.Entry<String, String> entry : companyVariables().entrySet()) {
-            String name = entry.getKey();
-            String value = entry.getValue() == null ? "" : entry.getValue();
-
-            /*
-             * Optional blocks first: {{#companyInstagram}}<a ...>icon</a>{{/companyInstagram}}. A
-             * company with no Instagram page must not ship an icon linking to nothing, and a footer
-             * cannot be conditional any other way in a template that is plain HTML.
-             */
-            String open = "{{#" + name + "}}";
-            if (result.contains(open)) {
-                Matcher sections = Pattern.compile(
-                    "\\{\\{#" + Pattern.quote(name) + "\\}\\}(.*?)\\{\\{/" + Pattern.quote(name) + "\\}\\}",
-                    Pattern.DOTALL).matcher(result);
-                result = value.isBlank() ? sections.replaceAll("") : sections.replaceAll("$1");
-            }
-
-            String placeholder = "{{" + name + "}}";
-            if (result.contains(placeholder)) {
-                result = result.replace(placeholder, value);
-            }
-        }
+        result = companyPlaceholderRenderer.apply(result);
 
         return result;
     }

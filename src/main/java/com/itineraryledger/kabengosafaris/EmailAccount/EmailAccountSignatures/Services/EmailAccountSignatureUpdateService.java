@@ -16,6 +16,10 @@ import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 
 import lombok.extern.slf4j.Slf4j;
+import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.List;
 
 /**
  * EmailSignatureUpdateService - Service for updating email signatures
@@ -307,5 +311,59 @@ public class EmailAccountSignatureUpdateService {
                     ApiResponse.error(500, "Failed to restore system default signature", "SIGNATURE_RESTORE_FAILED")
             );
         }
+    }
+
+    /**
+     * Restore EVERY system-default signature in one call.
+     *
+     * Same reason as the templates: a shipped fix reaches an existing installation only when somebody
+     * restores it, and a sign-off is the last thing anybody looks at. Reports per signature, so one
+     * account with a problem does not leave the rest stale.
+     */
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> restoreAllSystemDefaults() {
+        List<EmailAccountSignature> signatures = emailAccountSignatureRepository.findAll().stream()
+            .filter(s -> Boolean.TRUE.equals(s.getIsSystemDefault()))
+            .toList();
+
+        List<String> restored = new ArrayList<>();
+        List<Map<String, String>> skipped = new ArrayList<>();
+
+        for (EmailAccountSignature signature : signatures) {
+            String label = signature.getName();
+            try {
+                var account = signature.getEmailAccount();
+                String original = emailAccountSignatureService.generateDefaultSignatureTemplate(
+                    account == null ? "" : account.getName(),
+                    account == null ? "" : account.getEmail());
+
+                if (original == null || original.isBlank()) {
+                    skipped.add(Map.of("signature", label, "reason", "no packaged default"));
+                    continue;
+                }
+                if (!emailAccountSignatureService.updateSignatureFile(signature.getFileName(), original)) {
+                    skipped.add(Map.of("signature", label, "reason", "could not write the file"));
+                    continue;
+                }
+                signature.setFileSize((long) original.getBytes().length);
+                emailAccountSignatureRepository.save(signature);
+                restored.add(label);
+            } catch (Exception e) {
+                log.error("Could not restore the default signature {}", label, e);
+                skipped.add(Map.of("signature", label,
+                    "reason", e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()));
+            }
+        }
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("restoredCount", restored.size());
+        data.put("restored", restored);
+        data.put("skipped", skipped);
+
+        log.info("Restored {} of {} system-default signatures", restored.size(), signatures.size());
+        String message = skipped.isEmpty()
+            ? restored.size() + " signature(s) restored to the shipped default"
+            : restored.size() + " restored, " + skipped.size() + " could not be";
+        return ResponseEntity.ok(ApiResponse.success(200, message, data));
     }
 }

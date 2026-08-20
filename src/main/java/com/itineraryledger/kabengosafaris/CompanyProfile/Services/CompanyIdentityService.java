@@ -49,6 +49,10 @@ public class CompanyIdentityService {
     @Value("${app.base.url:}")
     private String baseUrl;
 
+    /** the deployment's accent, used until the profile carries one */
+    @Value("${app.brand.accent:#1c7a58}")
+    private String defaultAccent;
+
     private final AtomicReference<Snapshot> cached = new AtomicReference<>();
 
     /** Anything that changes the profile calls this; nothing else needs to know the cache exists. */
@@ -104,6 +108,10 @@ public class CompanyIdentityService {
             .faviconUrl(s.faviconUrl())
             .logoFullUrl(s.logoFullUrl())
             .logoFullTaglineUrl(s.logoFullTaglineUrl())
+            .accent(s.accent())
+            .accentContrast(s.accentContrast())
+            .radius(s.radius())
+            .font(s.font())
             /* not cached with the snapshot: a copyright line has to be right on the 2nd of January */
             .year(java.time.Year.now().getValue())
             .bank(com.itineraryledger.kabengosafaris.CompanyProfile.DTOs.CompanyTemplateModel.Bank.builder()
@@ -188,10 +196,48 @@ public class CompanyIdentityService {
             assetUrl(profile, CompanyAsset.AssetKind.LOGO_LIGHT),
             assetUrl(profile, CompanyAsset.AssetKind.LOGO_DARK),
             assetUrl(profile, CompanyAsset.AssetKind.FAVICON_LIGHT),
+            orEmpty(profile.getBrandAccent()).isBlank() ? orEmpty(defaultAccent) : profile.getBrandAccent(),
+            /* black text on a pale accent, white on a dark one — a heading has to stay readable */
+            contrastFor(orEmpty(profile.getBrandAccent()).isBlank() ? defaultAccent : profile.getBrandAccent()),
+            orEmpty(profile.getBrandRadius()).isBlank() ? "8px" : radiusToPx(profile.getBrandRadius()),
+            orEmpty(profile.getBrandFont()),
             /* the tagline cut is a deliberate second choice: a header wants the plain lockup */
             assetUrl(profile, CompanyAsset.AssetKind.LOGO_FULL, CompanyAsset.AssetKind.LOGO_FULL_TAGLINE),
             assetUrl(profile, CompanyAsset.AssetKind.LOGO_FULL_TAGLINE),
             bank());
+    }
+
+    /**
+     * Roundness as the templates need it: pixels.
+     *
+     * The profile stores a percentage because that is how somebody thinks about roundness; CSS in an
+     * email or a PDF needs a length. Same scale as the panel: 50% is 8px.
+     */
+    private String radiusToPx(String stored) {
+        if (stored == null || stored.isBlank()) return "8px";
+        String value = stored.trim();
+        if (value.endsWith("px") || value.endsWith("rem")) return value;
+        try {
+            int percent = Integer.parseInt(value.replace("%", ""));
+            return Math.round(Math.min(100, Math.max(0, percent)) / 100f * 16) + "px";
+        } catch (NumberFormatException e) {
+            return "8px";
+        }
+    }
+
+    /**
+     * Readable text on the accent.
+     *
+     * A dark green wants white on it and a pale sand wants black, and a template cannot work that out
+     * for itself — so it is computed once here, by luminance.
+     */
+    private String contrastFor(String hex) {
+        if (hex == null || !hex.matches("#[0-9a-fA-F]{6}")) return "#ffffff";
+        int r = Integer.parseInt(hex.substring(1, 3), 16);
+        int g = Integer.parseInt(hex.substring(3, 5), 16);
+        int b = Integer.parseInt(hex.substring(5, 7), 16);
+        double luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        return luminance > 0.6 ? "#16171a" : "#ffffff";
     }
 
     /** Primary first, then declared order — and only among the ones still in use. */
@@ -258,15 +304,29 @@ public class CompanyIdentityService {
         /** link type -> full url, for the social icons a signature or a footer carries */
         Map<String, String> socials,
         String logoUrl, String logoLightUrl, String logoDarkUrl, String faviconUrl,
+        /** the brand: a template that hardcodes a colour is as wrong as one that hardcodes a name */
+        String accent, String accentContrast, String radius, String font,
         /** the whole lockup: a letterhead or a cover page, never a 28px topbar */
         String logoFullUrl, String logoFullTaglineUrl,
         BankSnapshot bank
     ) {
         /** What a document says before anybody has filled the profile in: the name, and blanks. */
         public static Snapshot empty(String fallbackName) {
-            return new Snapshot(orEmptyStatic(fallbackName), "", "", "", "", "", "", "",
-                "", "", "", "", "", List.of(), List.of(), Map.of(), "", "", "", "", "", "",
-                BankSnapshot.empty());
+            /*
+             * The builder, not the positional constructor. This record has grown five times; every
+             * time, this one method was the thing that stopped compiling.
+             */
+            return Snapshot.builder()
+                .name(orEmptyStatic(fallbackName))
+                .legalName("").tagline("").tin("").vrn("").registrationNumber("").licenceNumber("")
+                .defaultCurrency("")
+                .email("").phone("").phoneSecondary("").address("").website("")
+                .emails(List.of()).phones(List.of()).socials(Map.of())
+                .logoUrl("").logoLightUrl("").logoDarkUrl("").faviconUrl("")
+                .accent("").accentContrast("").radius("").font("")
+                .logoFullUrl("").logoFullTaglineUrl("")
+                .bank(BankSnapshot.empty())
+                .build();
         }
 
         private static String orEmptyStatic(String v) { return v == null ? "" : v; }
@@ -320,6 +380,12 @@ public class CompanyIdentityService {
             map.put("companyLogoUrl", logoUrl);
             map.put("companyLogoDarkUrl", logoDarkUrl);
             map.put("companyFaviconUrl", faviconUrl);
+            map.put("companyLogoLightUrl", logoLightUrl);
+            map.put("companyLogoDarkUrl", logoDarkUrl);
+            map.put("companyAccent", accent);
+            map.put("companyAccentContrast", accentContrast);
+            map.put("companyRadius", radius);
+            map.put("companyFont", font);
             map.put("companyLogoFullUrl", logoFullUrl);
             map.put("companyLogoFullTaglineUrl", logoFullTaglineUrl);
             /* the same brand name older templates already ask for, so they keep working */

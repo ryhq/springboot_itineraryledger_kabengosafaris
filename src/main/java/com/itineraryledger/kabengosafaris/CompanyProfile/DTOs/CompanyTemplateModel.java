@@ -50,6 +50,12 @@ public class CompanyTemplateModel {
     private final String logoFullUrl;
     private final String logoFullTaglineUrl;
 
+    /** the brand, so a template stops hardcoding one company's colour */
+    private final String accent;
+    private final String accentContrast;
+    private final String radius;
+    private final String font;
+
     /** the year, for a copyright line that has to be right every January */
     private final int year;
 

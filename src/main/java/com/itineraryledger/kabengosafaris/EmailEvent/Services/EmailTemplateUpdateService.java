@@ -12,6 +12,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.List;
 
 /**
  * Service for updating email templates
@@ -260,5 +264,58 @@ public class EmailTemplateUpdateService {
                 emailTemplateRepository.save(template);
             }
         });
+    }
+
+    /**
+     * Restore EVERY system-default email template in one call.
+     *
+     * A corrected default does not travel with a deploy: seeded files are never overwritten, because
+     * that is what protects an edit somebody made on purpose. So a fix ships, and nothing changes
+     * until each template is restored — twenty of them, one at a time, which nobody finishes.
+     *
+     * Reports per template instead of stopping at the first failure: one event without a packaged
+     * default must not leave the other nineteen stale.
+     */
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> restoreAllSystemDefaults() {
+        List<EmailTemplate> templates = emailTemplateRepository.findAll().stream()
+            .filter(t -> Boolean.TRUE.equals(t.getIsSystemDefault()))
+            .toList();
+
+        List<String> restored = new ArrayList<>();
+        List<Map<String, String>> skipped = new ArrayList<>();
+
+        for (EmailTemplate template : templates) {
+            String event = template.getEmailEvent() == null ? "(no event)" : template.getEmailEvent().getName();
+            try {
+                String original = emailTemplateService.loadSystemDefaultTemplate(event);
+                if (original == null || original.isBlank()) {
+                    skipped.add(Map.of("template", event, "reason", "no packaged default for this event"));
+                    continue;
+                }
+                if (!emailTemplateService.updateTemplateFile(template.getFileName(), original)) {
+                    skipped.add(Map.of("template", event, "reason", "could not write the file"));
+                    continue;
+                }
+                template.setFileSize((long) original.getBytes().length);
+                emailTemplateRepository.save(template);
+                restored.add(event);
+            } catch (Exception e) {
+                log.error("Could not restore the default template for {}", event, e);
+                skipped.add(Map.of("template", event,
+                    "reason", e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()));
+            }
+        }
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("restoredCount", restored.size());
+        data.put("restored", restored);
+        data.put("skipped", skipped);
+
+        log.info("Restored {} of {} system-default email templates", restored.size(), templates.size());
+        String message = skipped.isEmpty()
+            ? restored.size() + " template(s) restored to the shipped default"
+            : restored.size() + " restored, " + skipped.size() + " could not be";
+        return ResponseEntity.ok(ApiResponse.success(200, message, data));
     }
 }

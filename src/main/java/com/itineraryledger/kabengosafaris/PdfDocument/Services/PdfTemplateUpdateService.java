@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Map;
+import java.util.List;
 
 /**
  * Service for updating PDF templates
@@ -117,6 +119,60 @@ public class PdfTemplateUpdateService {
                 ApiResponse.error(500, "Failed to update template", "TEMPLATE_UPDATE_FAILED")
             );
         }
+    }
+
+    /**
+     * Restore EVERY system-default template in one call.
+     *
+     * Shipping a template fix is not a deploy: seeded files are never overwritten, which is what
+     * protects somebody's edits — so a corrected default reaches an existing installation only when
+     * somebody restores it. One template at a time across sixteen documents is a chore nobody
+     * finishes, and a half-restored set is worse than an old one.
+     *
+     * Reports per template rather than failing on the first problem: one document whose resource is
+     * missing must not stop the other fifteen.
+     */
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> restoreAllSystemDefaults() {
+        List<PdfTemplate> templates = pdfTemplateRepository.findAll().stream()
+            .filter(t -> Boolean.TRUE.equals(t.getIsSystemDefault()))
+            .toList();
+
+        List<String> restored = new java.util.ArrayList<>();
+        List<Map<String, String>> skipped = new java.util.ArrayList<>();
+
+        for (PdfTemplate template : templates) {
+            try {
+                String original = storageService.loadSystemDefaultTemplate(template.getPdfDocument().getName());
+                if (original == null || original.isBlank()) {
+                    skipped.add(Map.of("template", template.getName(),
+                        "reason", "no packaged default for " + template.getPdfDocument().getName()));
+                    continue;
+                }
+                if (!storageService.updateTemplateFile(template.getFileName(), original)) {
+                    skipped.add(Map.of("template", template.getName(), "reason", "could not write the file"));
+                    continue;
+                }
+                template.setFileSize((long) original.getBytes().length);
+                pdfTemplateRepository.save(template);
+                restored.add(template.getPdfDocument().getName() + " / " + template.getName());
+            } catch (Exception e) {
+                log.error("Could not restore PDF template {}", template.getName(), e);
+                skipped.add(Map.of("template", template.getName(),
+                    "reason", e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()));
+            }
+        }
+
+        Map<String, Object> data = new java.util.LinkedHashMap<>();
+        data.put("restoredCount", restored.size());
+        data.put("restored", restored);
+        data.put("skipped", skipped);
+
+        log.info("Restored {} of {} system-default PDF templates", restored.size(), templates.size());
+        String message = skipped.isEmpty()
+            ? restored.size() + " template(s) restored to the shipped default"
+            : restored.size() + " restored, " + skipped.size() + " could not be";
+        return ResponseEntity.ok(ApiResponse.success(200, message, data));
     }
 
     /**

@@ -84,7 +84,8 @@ public class PdfDocumentUpdateService {
             .dataSourceClass(document.getDataSourceClass())
             .rootVariableName(document.getRootVariableName())
             .enabled(document.getEnabled())
-            .variablesJson(document.getVariablesJson())
+            .variablesJson(com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyVariableMerger
+                .mergePdfVariables(document.getVariablesJson()))
             .templateCount(templateCount)
             .createdAt(document.getCreatedAt())
             .updatedAt(document.getUpdatedAt())
