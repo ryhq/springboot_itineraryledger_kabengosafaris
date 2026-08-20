@@ -188,35 +188,56 @@ public class CompanyIdentityService {
                 .ifPresent(l -> socials.put(type.name(), l.getUrl()));
         }
 
-        return new Snapshot(
-            profile.displayName(),
-            orEmpty(profile.getLegalName()),
-            orEmpty(profile.getTagline()),
-            orEmpty(profile.getTin()),
-            orEmpty(profile.getVrn()),
-            orEmpty(profile.getRegistrationNumber()),
-            orEmpty(profile.getLicenceNumber()),
-            orEmpty(profile.getDefaultCurrency()),
-            email, phone, phoneSecondary, address, website,
-            allEmails, allPhones, socials,
-            assetUrl(profile, CompanyAsset.AssetKind.LOGO_EMAIL, CompanyAsset.AssetKind.LOGO_LIGHT),
-            assetUrl(profile, CompanyAsset.AssetKind.LOGO_LIGHT),
-            assetUrl(profile, CompanyAsset.AssetKind.LOGO_DARK),
-            assetUrl(profile, CompanyAsset.AssetKind.FAVICON_LIGHT),
-            orEmpty(profile.getBrandAccent()).isBlank() ? orEmpty(defaultAccent) : profile.getBrandAccent(),
-            /* black text on a pale accent, white on a dark one — a heading has to stay readable */
-            contrastFor(orEmpty(profile.getBrandAccent()).isBlank() ? defaultAccent : profile.getBrandAccent()),
-            /* the darker shade a header or a footer band uses, and the tint a callout sits on */
-            shade(orEmpty(profile.getBrandAccent()).isBlank() ? defaultAccent : profile.getBrandAccent(), 0.62f),
-            shade(orEmpty(profile.getBrandAccent()).isBlank() ? defaultAccent : profile.getBrandAccent(), 8.5f),
-            orEmpty(profile.getBrandRadius()).isBlank() ? "8px" : radiusToPx(profile.getBrandRadius()),
-            orEmpty(profile.getBrandFont()),
+        String brandAccent = orEmpty(profile.getBrandAccent()).isBlank()
+            ? orEmpty(defaultAccent) : profile.getBrandAccent().trim();
+
+        /*
+         * The BUILDER, not the positional constructor.
+         *
+         * This is the bug it just cost: two fields were added in the middle of the record and the
+         * arguments here kept their old order, so logoMarkup received a URL and a PDF printed
+         * "https://api…/assets/logo-full-tagline" as text where the logo belongs. Nothing failed to
+         * compile, because they are all Strings — which is exactly why naming them matters.
+         */
+        return Snapshot.builder()
+            .name(profile.displayName())
+            .legalName(orEmpty(profile.getLegalName()))
+            .tagline(orEmpty(profile.getTagline()))
+            .tin(orEmpty(profile.getTin()))
+            .vrn(orEmpty(profile.getVrn()))
+            .registrationNumber(orEmpty(profile.getRegistrationNumber()))
+            .licenceNumber(orEmpty(profile.getLicenceNumber()))
+            .defaultCurrency(orEmpty(profile.getDefaultCurrency()))
+            .email(email)
+            .phone(phone)
+            .phoneSecondary(phoneSecondary)
+            .address(address)
+            .website(website)
+            .emails(allEmails)
+            .phones(allPhones)
+            .socials(socials)
+            /* always the email slot: it answers with a raster even when the company uploaded vectors */
+            .logoUrl(emailLogoUrl(profile))
+            .logoLightUrl(assetUrl(profile, CompanyAsset.AssetKind.LOGO_LIGHT))
+            .logoDarkUrl(assetUrl(profile, CompanyAsset.AssetKind.LOGO_DARK))
+            .faviconUrl(assetUrl(profile, CompanyAsset.AssetKind.FAVICON_LIGHT))
             /* the tagline cut is a deliberate second choice: a header wants the plain lockup */
-            assetUrl(profile, CompanyAsset.AssetKind.LOGO_FULL, CompanyAsset.AssetKind.LOGO_FULL_TAGLINE),
-            assetUrl(profile, CompanyAsset.AssetKind.LOGO_FULL_TAGLINE),
-            assetMarkup(profile, CompanyAsset.AssetKind.LOGO_LIGHT, CompanyAsset.AssetKind.LOGO_FULL),
-            assetMarkup(profile, CompanyAsset.AssetKind.LOGO_FULL, CompanyAsset.AssetKind.LOGO_LIGHT),
-            bank());
+            .logoFullUrl(assetUrl(profile, CompanyAsset.AssetKind.LOGO_FULL, CompanyAsset.AssetKind.LOGO_FULL_TAGLINE))
+            .logoFullTaglineUrl(assetUrl(profile, CompanyAsset.AssetKind.LOGO_FULL_TAGLINE))
+            /* embedded rather than fetched: a PDF is rendered here and read anywhere */
+            .logoMarkup(assetMarkup(profile, CompanyAsset.AssetKind.LOGO_LIGHT, CompanyAsset.AssetKind.LOGO_FULL))
+            .logoFullMarkup(assetMarkup(profile, CompanyAsset.AssetKind.LOGO_FULL,
+                CompanyAsset.AssetKind.LOGO_FULL_TAGLINE, CompanyAsset.AssetKind.LOGO_LIGHT))
+            .accent(brandAccent)
+            /* black text on a pale accent, white on a dark one — a heading has to stay readable */
+            .accentContrast(contrastFor(brandAccent))
+            /* the darker shade a header band uses, and the tint a callout sits on */
+            .accentDark(shade(brandAccent, 0.62f))
+            .accentSoft(shade(brandAccent, 8.5f))
+            .radius(orEmpty(profile.getBrandRadius()).isBlank() ? "8px" : radiusToPx(profile.getBrandRadius()))
+            .font(orEmpty(profile.getBrandFont()))
+            .bank(bank())
+            .build();
     }
 
     /**
@@ -329,6 +350,33 @@ public class CompanyIdentityService {
     }
 
     /** The first kind that exists, so mail falls back to the light logo when no raster is uploaded. */
+    /**
+     * The URL an email should point an {@code <img>} at.
+     *
+     * Always the email slot, whenever the company has uploaded ANY logo — because that endpoint
+     * falls back through the other slots and converts a vector to PNG on the way out. Pointing at
+     * logo-light instead, as this used to, sends a mail client after an SVG it will not render: a
+     * broken-image box at the top of a welcome email, which is what a customer saw.
+     */
+    private String emailLogoUrl(CompanyProfile profile) {
+        return assetUrl(profile, CompanyAsset.AssetKind.LOGO_EMAIL)
+            .isEmpty()
+            ? (hasAnyLogo(profile) ? assetPath("logo-email") : "")
+            : assetUrl(profile, CompanyAsset.AssetKind.LOGO_EMAIL);
+    }
+
+    private boolean hasAnyLogo(CompanyProfile profile) {
+        return profile.getAssets().stream()
+            .anyMatch(a -> Boolean.TRUE.equals(a.getIsActive()) && a.getFileName() != null
+                && a.getAssetKind() != CompanyAsset.AssetKind.FAVICON_LIGHT
+                && a.getAssetKind() != CompanyAsset.AssetKind.FAVICON_DARK);
+    }
+
+    private String assetPath(String slug) {
+        String root = baseUrl == null ? "" : baseUrl.replaceAll("/+$", "");
+        return root + "/api/public/company/assets/" + slug;
+    }
+
     private String assetUrl(CompanyProfile profile, CompanyAsset.AssetKind... kinds) {
         for (CompanyAsset.AssetKind kind : kinds) {
             boolean present = profile.getAssets().stream()

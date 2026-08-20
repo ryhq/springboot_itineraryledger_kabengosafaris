@@ -156,6 +156,11 @@ public final class CompanyVariableCatalogue {
     }
 
     /** The Thymeleaf path for a flat name, or null where the model has no equivalent. */
+    public static String pdfPath(String name) {
+        return pdfPathFor(name);
+    }
+
+    /** The Thymeleaf path for a flat name, or null where the model has no equivalent. */
     private static String pdfPathFor(String name) {
         return switch (name) {
             case "companyName" -> "company.name";

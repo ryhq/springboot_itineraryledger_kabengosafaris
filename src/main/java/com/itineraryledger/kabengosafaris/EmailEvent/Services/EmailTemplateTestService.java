@@ -69,6 +69,17 @@ public class EmailTemplateTestService {
     private final SecuritySettingsGetterServices securitySettingsGetterServices;
     private final IdObfuscator idObfuscator;
 
+    /**
+     * The company pass, the same one a real send goes through.
+     *
+     * A test send used to substitute its sample business data and stop there, so every
+     * {{companyName}} and {{companyAccent}} left the building unresolved. In the inbox that read
+     * "Thank you for registering with !" over a layout with no colours at all — the accent sits
+     * inside the stylesheet, and a mail client meeting `{{` in CSS discards the block rather than
+     * guessing. The whole point of a test send is to show what the customer will get.
+     */
+    private final com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyPlaceholderRenderer companyPlaceholderRenderer;
+
     @Value("${app.management.base.url}")
     private String appManagementBaseUrl;
 
@@ -750,7 +761,12 @@ public class EmailTemplateTestService {
             result = result.replace(placeholder, value);
         }
 
-        return result;
+        /*
+         * Then the company, exactly as EmailTemplateRenderer does it for a real send. The sample
+         * data above wins where the names collide, because a test is allowed to invent a customer —
+         * it is not allowed to invent who is writing to them.
+         */
+        return companyPlaceholderRenderer.apply(result);
     }
 
     /**

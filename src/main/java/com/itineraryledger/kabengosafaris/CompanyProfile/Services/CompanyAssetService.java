@@ -202,10 +202,8 @@ public class CompanyAssetService {
         CompanyProfile profile = profileRepository.findSingleton().orElse(null);
         if (profile == null) return ResponseEntity.notFound().build();
 
-        CompanyAsset asset = profile.getAssets().stream()
-            .filter(a -> a.getAssetKind() == kind && Boolean.TRUE.equals(a.getIsActive()))
-            .findFirst().orElse(null);
-        if (asset == null || asset.getFileName() == null) return ResponseEntity.notFound().build();
+        CompanyAsset asset = resolveAsset(profile, kind);
+        if (asset == null) return ResponseEntity.notFound().build();
 
         Path path = Paths.get(storagePath).resolve(asset.getFileName()).normalize();
         if (!path.startsWith(Paths.get(storagePath).normalize()) || !Files.exists(path)) {
@@ -223,17 +221,122 @@ public class CompanyAssetService {
 
         MediaType mediaType = asset.getMimeType() == null
             ? MediaType.APPLICATION_OCTET_STREAM : MediaType.parseMediaType(asset.getMimeType());
+        String servedName = asset.getFileName();
+
+        /*
+         * The email slot always answers with a raster, whatever it had to borrow. An <img> in an
+         * email pointing at an SVG is a broken-image box in Gmail and in Outlook, and that box is
+         * the first thing a customer sees.
+         */
+        if (kind == CompanyAsset.AssetKind.LOGO_EMAIL && "svg".equals(extensionOf(asset.getFileName()))) {
+            try {
+                bytes = rasterise(path, asset.getFileName());
+                mediaType = MediaType.IMAGE_PNG;
+                servedName = asset.getFileName().replaceAll("\\.svg$", "") + ".png";
+            } catch (IOException e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
+        }
 
         return ResponseEntity.ok()
             .contentType(mediaType)
-            .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + asset.getFileName() + "\"")
+            .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + servedName + "\"")
             /* an SVG served from this origin must not be able to fetch or run anything */
             .header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox")
             .header("X-Content-Type-Options", "nosniff")
             /* the URL is stable per slot, so the file name is the version */
-            .eTag("\"" + asset.getFileName() + "\"")
+            .eTag("\"" + servedName + "\"")
             .cacheControl(CacheControl.maxAge(5, TimeUnit.MINUTES).cachePublic())
             .body(new ByteArrayResource(bytes));
+    }
+
+    /**
+     * What to serve when a slot is empty.
+     *
+     * A template refers to a slot by a fixed URL — /api/public/company/assets/logo-email — and that
+     * URL has to answer for every installation, or the same template breaks on one company and not
+     * on another. A 404 there is a broken-image box in somebody's invoice, so an empty slot borrows
+     * the nearest logo the company HAS rather than admitting nothing.
+     *
+     * Light borrowing from dark (and back) is deliberate: a mark on the wrong background is a
+     * cosmetic problem, and a missing one is not.
+     */
+    private static final Map<CompanyAsset.AssetKind, CompanyAsset.AssetKind[]> FALLBACKS = new LinkedHashMap<>();
+    static {
+        FALLBACKS.put(CompanyAsset.AssetKind.LOGO_EMAIL, new CompanyAsset.AssetKind[] {
+            CompanyAsset.AssetKind.LOGO_FULL, CompanyAsset.AssetKind.LOGO_FULL_TAGLINE,
+            CompanyAsset.AssetKind.LOGO_LIGHT, CompanyAsset.AssetKind.LOGO_DARK });
+        FALLBACKS.put(CompanyAsset.AssetKind.LOGO_FULL, new CompanyAsset.AssetKind[] {
+            CompanyAsset.AssetKind.LOGO_FULL_TAGLINE, CompanyAsset.AssetKind.LOGO_LIGHT });
+        FALLBACKS.put(CompanyAsset.AssetKind.LOGO_FULL_TAGLINE, new CompanyAsset.AssetKind[] {
+            CompanyAsset.AssetKind.LOGO_FULL, CompanyAsset.AssetKind.LOGO_LIGHT });
+        FALLBACKS.put(CompanyAsset.AssetKind.LOGO_LIGHT, new CompanyAsset.AssetKind[] {
+            CompanyAsset.AssetKind.LOGO_FULL, CompanyAsset.AssetKind.LOGO_DARK });
+        FALLBACKS.put(CompanyAsset.AssetKind.LOGO_DARK, new CompanyAsset.AssetKind[] {
+            CompanyAsset.AssetKind.LOGO_FULL, CompanyAsset.AssetKind.LOGO_LIGHT });
+        FALLBACKS.put(CompanyAsset.AssetKind.FAVICON_LIGHT, new CompanyAsset.AssetKind[] {
+            CompanyAsset.AssetKind.FAVICON_DARK, CompanyAsset.AssetKind.LOGO_LIGHT });
+        FALLBACKS.put(CompanyAsset.AssetKind.FAVICON_DARK, new CompanyAsset.AssetKind[] {
+            CompanyAsset.AssetKind.FAVICON_LIGHT, CompanyAsset.AssetKind.LOGO_DARK });
+    }
+
+    /** The uploaded file for a slot, or the nearest stand-in. */
+    private CompanyAsset resolveAsset(CompanyProfile profile, CompanyAsset.AssetKind kind) {
+        CompanyAsset own = active(profile, kind);
+        if (own != null) return own;
+        for (CompanyAsset.AssetKind alternative : FALLBACKS.getOrDefault(kind, new CompanyAsset.AssetKind[0])) {
+            CompanyAsset borrowed = active(profile, alternative);
+            if (borrowed != null) return borrowed;
+        }
+        return null;
+    }
+
+    private CompanyAsset active(CompanyProfile profile, CompanyAsset.AssetKind kind) {
+        return profile.getAssets().stream()
+            .filter(a -> a.getAssetKind() == kind && Boolean.TRUE.equals(a.getIsActive()))
+            .filter(a -> a.getFileName() != null)
+            .findFirst().orElse(null);
+    }
+
+    /**
+     * A PNG of an SVG, for the email slot.
+     *
+     * Mail clients do not render SVG — Gmail and Outlook both show a broken-image box — which is why
+     * uploading an SVG into the email slot is refused. But a company that has only uploaded vector
+     * logos still has to get a logo into its email, and telling them to export a PNG is a task
+     * standing between them and a working letterhead. Batik is already on the classpath for the PDF
+     * renderer, so the conversion happens here instead.
+     *
+     * Cached beside the original and keyed by its file name, which already contains a content hash,
+     * so a re-upload produces a different name and cannot be served a stale raster.
+     */
+    private byte[] rasterise(Path svg, String cacheKey) throws IOException {
+        Path cache = Paths.get(storagePath).resolve("derived").resolve(cacheKey + ".png");
+        if (Files.exists(cache)) return Files.readAllBytes(cache);
+
+        try {
+            org.apache.batik.transcoder.image.PNGTranscoder transcoder =
+                new org.apache.batik.transcoder.image.PNGTranscoder();
+            /* wide enough for a retina letterhead; height follows the aspect ratio */
+            transcoder.addTranscodingHint(
+                org.apache.batik.transcoder.image.PNGTranscoder.KEY_WIDTH, 600f);
+
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+            try (java.io.InputStream in = Files.newInputStream(svg)) {
+                transcoder.transcode(
+                    new org.apache.batik.transcoder.TranscoderInput(in),
+                    new org.apache.batik.transcoder.TranscoderOutput(out));
+            }
+            byte[] png = out.toByteArray();
+            Files.createDirectories(cache.getParent());
+            Files.write(cache, png);
+            log.info("Rasterised company logo '{}' to PNG for email ({} bytes)", svg.getFileName(), png.length);
+            return png;
+        } catch (org.apache.batik.transcoder.TranscoderException e) {
+            /* a logo the converter chokes on is not a reason to fail the request outright */
+            log.error("Could not rasterise company logo '{}' for email", svg.getFileName(), e);
+            throw new IOException("SVG could not be converted to PNG", e);
+        }
     }
 
     // ------------------------------------------------------------------ internals

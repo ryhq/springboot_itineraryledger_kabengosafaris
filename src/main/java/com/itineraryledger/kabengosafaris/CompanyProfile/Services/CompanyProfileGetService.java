@@ -80,6 +80,49 @@ public class CompanyProfileGetService {
         return ResponseEntity.ok(ApiResponse.success(200, "Company profile retrieved successfully", payload));
     }
 
+    /**
+     * Every company variable with the value it currently resolves to.
+     *
+     * The panel needs this to preview a template honestly. A preview that shows `{{companyName}}`
+     * where the name goes, and no colour where the accent goes, cannot answer the only question
+     * somebody previews a letterhead to ask: does this look right. The business variables stay as
+     * placeholders — a customer's name genuinely is not known yet — but who we are is known, so
+     * showing a placeholder there is a worse lie than showing the value.
+     *
+     * Each entry carries both spellings, because the two engines differ: `{{companyName}}` in an
+     * email or a signature, `${company.name}` in a Thymeleaf PDF. `path` is null where the model has
+     * no equivalent.
+     *
+     * Any signed-in user may read it. This is the text their templates already print on invoices and
+     * letters; withholding it from the person writing the layout protects nothing.
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<?>> getVariables() {
+        Map<String, String> resolved = identityService.variables();
+        List<Map<String, Object>> rows = new ArrayList<>();
+
+        for (Map<String, Object> declared : CompanyVariableCatalogue.asEmailVariables()) {
+            String name = (String) declared.get("name");
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("name", name);
+            row.put("path", CompanyVariableCatalogue.pdfPath(name));
+            row.put("description", declared.get("description"));
+            row.put("group", declared.get("group"));
+            /*
+             * currentYear is not part of the cached snapshot — a copyright line that still says last
+             * year on the 2nd of January is exactly the kind of thing nobody reports.
+             */
+            row.put("value", "currentYear".equals(name)
+                ? String.valueOf(java.time.Year.now().getValue())
+                : resolved.getOrDefault(name, ""));
+            rows.add(row);
+        }
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("variables", rows);
+        return ResponseEntity.ok(ApiResponse.success(200, "Company variables retrieved successfully", payload));
+    }
+
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<?>> getCompleteness() {
         CompanyProfile profile = profileRepository.findSingleton().orElse(null);

@@ -52,6 +52,21 @@ public class CompanyProfileController {
         return getService.getCompleteness();
     }
 
+    /**
+     * What the company variables currently resolve to, for previewing a template.
+     *
+     * Guarded by authentication alone rather than by READ_COMPANY_PROFILE: whoever writes an email
+     * template needs to see the name and colours that template will print, and they may have no
+     * business reading the Settings page. Nothing here is secret — it is the text the templates
+     * already send out.
+     */
+    @GetMapping("/variables")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<?>> getVariables() {
+        log.info("GET /api/company/variables - Retrieving resolved company variables");
+        return getService.getVariables();
+    }
+
     @PutMapping
     @PreAuthorize("hasAuthority('PERM_UPDATE_COMPANY_PROFILE')")
     public ResponseEntity<ApiResponse<?>> updateCompany(@Valid @RequestBody UpdateCompanyProfileDTO dto) {
