@@ -11,7 +11,7 @@
 #   provision-company.sh --id jatelo --name "Jatelo African Travels" \
 #       --api-url https://api.jateloafricantravels.com \
 #       --panel-url https://management.jateloafricantravels.com \
-#       --admin-email ops@jateloafricantravels.com [--port 4460] [--dry-run]
+#       --admin-email ops@jateloafricantravels.com [--port 4460] [--stable-ids] [--dry-run]
 #
 # Idempotent by design: every step checks before it acts, and it NEVER overwrites an existing
 # secrets file — re-running against a live install must not rotate its database password out from
@@ -27,6 +27,7 @@ ID=""; NAME=""; API_URL=""; PANEL_URL=""; ADMIN_EMAIL=""
 PORT=""; MGMT_PORT=""; DRY_RUN=0
 JAR_SOURCE=""
 SMTP_HOST=""; SMTP_PORT="587"; SMTP_USER=""; SMTP_PASSWORD=""; SMTP_FROM=""
+STABLE_IDS=0
 
 usage() { sed -n '3,25p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
 
@@ -45,6 +46,7 @@ while [[ $# -gt 0 ]]; do
     --smtp-user) SMTP_USER="$2"; shift 2 ;;
     --smtp-password) SMTP_PASSWORD="$2"; shift 2 ;;
     --smtp-from) SMTP_FROM="$2"; shift 2 ;;
+    --stable-ids) STABLE_IDS=1; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
     -h|--help) usage ;;
     *) echo "unknown option: $1" >&2; usage ;;
@@ -143,9 +145,17 @@ else
   # shell-safe, which produces a string that is NOT decodable — the first boot then fails with
   # "Encryption failed" while saving the mail account.
   ENCRYPTION_KEY="$( (( DRY_RUN )) && echo '<generated-key>' || openssl rand -base64 32 )"
-  # A salt per company: ids are Hashids of the row number, so a shared salt would make company A's
-  # URLs valid shapes in company B — reason enough to keep them distinct.
-  ID_SALT="$(secret salt 48 40)"
+  #
+  # The id salt is left UNSET by default, which means the app derives a new one at every boot.
+  #
+  # That is the house choice, deliberately: an identifier that escapes into a referrer header, a proxy
+  # log or somebody's browser history stops resolving at the next restart. The cost is that no
+  # external reference to a record survives a deploy — a saved deep link, or a saved filter naming a
+  # record, goes stale. --stable-ids trades that the other way and fixes a salt per company (never
+  # shared, or one company's ids would be valid shapes in another's).
+  #
+  ID_SALT=""
+  (( STABLE_IDS )) && ID_SALT="$(secret salt 48 40)"
   run "install -m 600 -o root -g root /dev/null '$ENV_FILE'"
   run "cat > '$ENV_FILE' <<EOF
 # $NAME — written by provision-company.sh. Root-only: the service reads it, nobody prints it.
@@ -165,8 +175,17 @@ APP_BOOTSTRAP_SMTP_PORT=${SMTP_PORT:-587}
 APP_BOOTSTRAP_SMTP_USERNAME=${SMTP_USER:-}
 APP_BOOTSTRAP_SMTP_PASSWORD=${SMTP_PASSWORD:-}
 APP_BOOTSTRAP_SMTP_FROM=${SMTP_FROM:-$ADMIN_EMAIL}
+# Where this company's own newsletter signups, booking inquiries, contact messages and backup
+# reports are sent. There is deliberately NO default: the shared one used to name a real company, so
+# a new install quietly addressed its notifications to somebody else's mailbox.
+NOTIFICATION_EMAILS=${SMTP_FROM:-$ADMIN_EMAIL}
 EOF"
-  info "wrote $ENV_FILE (600 root:root) — database password, encryption key and a fresh id salt"
+  info "wrote $ENV_FILE (600 root:root) — database password and encryption key"
+  if (( STABLE_IDS )); then
+    info "ids are FIXED for this company: saved links survive a restart"
+  else
+    info "ids rotate on every restart (the default): a leaked identifier expires, saved links do not survive"
+  fi
 fi
 
 # ---------------------------------------------------------------- 4. non-secret config

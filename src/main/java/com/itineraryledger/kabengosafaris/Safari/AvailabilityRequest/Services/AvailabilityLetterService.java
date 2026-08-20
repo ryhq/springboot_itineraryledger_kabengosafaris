@@ -73,7 +73,7 @@ public class AvailabilityLetterService {
     private static final DateTimeFormatter QUOTE_STAMP = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm");
 
     /** The company this deployment is, for the greeting line. */
-    @Value("${app.company.name:Kabengo Safaris}")
+    @Value("${app.company.name:}")
     private String brandName;
 
     /** The accent the headings and the panel rule are drawn in. */

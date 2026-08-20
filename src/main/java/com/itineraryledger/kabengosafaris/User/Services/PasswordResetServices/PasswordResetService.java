@@ -32,6 +32,12 @@ import java.util.Map;
 @Slf4j
 public class PasswordResetService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyIdentityService companyIdentityService;
+
+    @org.springframework.beans.factory.annotation.Value("${app.company.name:}")
+    private String configuredCompanyName;
+
     @Autowired
     private UserRepository userRepository;
 
@@ -209,7 +215,7 @@ public class PasswordResetService {
             // Send email
             emailSendingService.sendHtmlEmail(
                 user.getEmail(),
-                "Password Reset Request - Kabengo Safaris",
+                "Password Reset Request - " + companyName(),
                 htmlContent
             );
 
@@ -219,5 +225,17 @@ public class PasswordResetService {
             log.error("Failed to send password reset email to user: {} ({})", user.getUsername(), user.getEmail(), e);
             // Don't throw - we don't want to reveal if email sending failed
         }
+    }
+
+    /** Whose name goes on this message — a literal here welcomed one company's users to another. */
+    private String companyName() {
+        try {
+            String name = companyIdentityService.snapshot().name();
+            if (name != null && !name.isBlank()) return name;
+        } catch (Exception ignored) {
+            /* a message with a plain subject beats no message at all */
+        }
+        return configuredCompanyName == null || configuredCompanyName.isBlank()
+            ? "your account" : configuredCompanyName;
     }
 }

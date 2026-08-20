@@ -39,7 +39,7 @@ public class BackupGetService {
     );
     private static final String DEFAULT_SORT_FIELD = "createdAt";
 
-    @Value("${backup.storage.path:/opt/lampp/htdocs/kabengosafaris/backups/}")
+    @Value("${backup.storage.path:./backups/}")
     private String storagePath;
 
     @Value("${app.base.url:http://localhost:8080}")

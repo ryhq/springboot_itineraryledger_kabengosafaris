@@ -41,6 +41,9 @@ class CompanyLiteralsInTemplatesTest {
      * place — "Arusha" alone is a legitimate safari start point in sample data, "Arusha, Tanzania" as
      * a template's address block is not.
      */
+    /** just the company names, for scanning code rather than templates */
+    private static final Pattern FORBIDDEN_NAME = Pattern.compile("kabengo|jatelo", Pattern.CASE_INSENSITIVE);
+
     private static final Map<Pattern, String> FORBIDDEN = new LinkedHashMap<>();
     static {
         FORBIDDEN.put(Pattern.compile("Kabengo", Pattern.CASE_INSENSITIVE), "{{companyName}} / ${company.name}");
@@ -159,6 +162,50 @@ class CompanyLiteralsInTemplatesTest {
 
         assertTrue(broken.isEmpty(), () -> "the substitutions left markup OpenHTMLtoPDF will refuse:\n"
             + String.join("\n", broken));
+    }
+
+    @Test
+    @DisplayName("no Java string hands a company's own name, address or mailbox to anybody")
+    void noCompanyLiteralsInJavaStrings() throws IOException {
+        Path java = Paths.get("src/main/java/com/itineraryledger/kabengosafaris");
+        Pattern literal = Pattern.compile("\"([^\"]*)\"");
+        /* the package IS this repo's name; a pointcut and a class name are not company-facing text */
+        Pattern packageName = Pattern.compile("com\\.itineraryledger\\.");
+        List<String> offences = new ArrayList<>();
+
+        try (Stream<Path> files = Files.walk(java)) {
+            for (Path file : files.filter(f -> f.toString().endsWith(".java")).toList()) {
+                List<String> lines = Files.readAllLines(file);
+                for (int i = 0; i < lines.size(); i++) {
+                    String line = lines.get(i);
+                    String trimmed = line.trim();
+                    /* comments may name a company: explaining a decision often requires it */
+                    if (trimmed.startsWith("*") || trimmed.startsWith("//") || trimmed.startsWith("/*")) continue;
+
+                    Matcher m = literal.matcher(line);
+                    while (m.find()) {
+                        String text = m.group(1);
+                        if (!FORBIDDEN_NAME.matcher(text).find()) continue;
+                        if (packageName.matcher(text).find()) continue;
+                        /* the seed guard deliberately compares against the name it seeds for */
+                        if (file.getFileName().toString().equals("CompanyProfileInitializer.java")) continue;
+                        offences.add(java.relativize(file) + ":" + (i + 1) + "  \"" + text + "\"");
+                    }
+                }
+            }
+        }
+
+        assertTrue(offences.isEmpty(), () -> """
+            %d company literal(s) in Java strings:
+
+            %s
+
+            An email SUBJECT, an authenticator's issuer label, a notification address or a sender
+            name is read by a person, and this codebase serves several companies. Take the name from
+            CompanyIdentityService (or app.company.name as a fallback), and take addresses from the
+            deployment's own configuration — never a default that names one company, which is how
+            one company's booking inquiries ended up addressed to another's mailbox.
+            """.formatted(offences.size(), String.join("\n", offences)));
     }
 
     // ------------------------------------------------------------------ helpers

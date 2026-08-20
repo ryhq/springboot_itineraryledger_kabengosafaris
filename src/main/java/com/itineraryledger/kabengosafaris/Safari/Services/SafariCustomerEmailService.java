@@ -35,6 +35,12 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 public class SafariCustomerEmailService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyIdentityService companyIdentityService;
+
+    @org.springframework.beans.factory.annotation.Value("${app.company.name:}")
+    private String configuredCompanyName;
+
     private final SafariRepository safariRepository;
     private final IdObfuscator idObfuscator;
     private final EmailTemplateRenderer emailTemplateRenderer;
@@ -234,7 +240,7 @@ public class SafariCustomerEmailService {
             variables.put("messageSubject", messageSubject);
             variables.put("messageBody", messageBody);
             variables.put("sentDate", LocalDate.now().format(DATE_FMT));
-            variables.put("senderName", "Kabengo Safaris Team");
+            variables.put("senderName", companyName() + " Team");
 
             String emailSubject = safari.getCode() + " — " + messageSubject;
             String safariCode = safari.getCode();
@@ -328,5 +334,23 @@ public class SafariCustomerEmailService {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Whose name goes on this message.
+     *
+     * The subject used to be a literal, so a second company's users were welcomed to the first
+     * company. The profile is the source; the configured name is the fallback for the moment before
+     * anybody has filled the profile in.
+     */
+    private String companyName() {
+        try {
+            String name = companyIdentityService.snapshot().name();
+            if (name != null && !name.isBlank()) return name;
+        } catch (Exception ignored) {
+            /* a message with a plain subject beats no message at all */
+        }
+        return configuredCompanyName == null || configuredCompanyName.isBlank()
+            ? "your account" : configuredCompanyName;
     }
 }

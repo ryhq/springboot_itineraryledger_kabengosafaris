@@ -34,17 +34,21 @@ public class IdObfuscator {
     private int defaultSaltLength;
 
     /**
-     * The salt itself, when a deployment states one.
+     * The salt, when a deployment chooses to fix one. Unset by default, and unset is a decision.
      *
-     * Left unset it is generated at every startup — which means every obfuscated id changes when the
-     * service restarts, so a bookmarked record, a link in an email and anything that stored an id
-     * stop resolving on the next deploy. Setting this makes ids stable for the life of the salt.
+     * UNSET — a new salt each startup. Ids are re-derived on every boot, so an identifier that
+     * escaped into a referrer header, a proxy log, a screenshot or a shared browser history stops
+     * resolving at the next restart. The cost is that no external reference to a record survives a
+     * deploy: a saved deep link, or a saved filter naming a record, goes stale.
      *
-     * It also isolates companies: an id is a Hashid of a row number, so two installs sharing a salt
-     * produce URLs that are valid shapes in each other. Provisioning writes a fresh one per company.
+     * SET — ids hold still for the life of the salt, and references keep working. What protects the
+     * record is then authorization alone, which is where the protection properly belongs: Hashids is
+     * an encoding rather than encryption, and a caller who can already read records can supply plenty
+     * of id-to-row pairs.
      *
-     * Changing it invalidates every id already published. That is the price of stability, and it is
-     * why this is configuration rather than something the app rotates on its own.
+     * Either way it is per company, since two installs sharing a salt would produce ids that are
+     * valid shapes in each other. Changing a fixed salt invalidates everything already published,
+     * which is why it is stated in configuration and never rotated by the app itself.
      */
     private final String configuredSalt;
     
@@ -98,12 +102,13 @@ public class IdObfuscator {
         String salt;
         if (configuredSalt != null && !configuredSalt.isBlank()) {
             salt = configuredSalt.trim();
-            log.info("IdObfuscator: using the configured salt — ids are stable across restarts");
+            log.info("IdObfuscator: fixed salt from configuration — ids hold still across restarts, "
+                + "so saved links keep resolving");
         } else {
             salt = StrongPasswordGenerator.generateStrongPassword(saltLengthForGenerator);
-            log.warn("IdObfuscator: no security.idObfuscator.salt is set, so a new salt was generated. "
-                + "Every obfuscated id changes on restart — a saved link to a record will stop working. "
-                + "Set that property (SECURITY_IDOBFUSCATOR_SALT) to keep ids stable.");
+            log.info("IdObfuscator: salt generated for this run — ids are re-derived on every start, "
+                + "so a leaked identifier expires at the next restart and no external reference to a "
+                + "record survives a deploy. Set security.idObfuscator.salt to fix one instead.");
         }
 
         // Initialize and return Hashids with configured settings

@@ -43,6 +43,21 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MFAServices {
 
+    @org.springframework.beans.factory.annotation.Value("${app.company.name:}")
+    private String configuredCompanyName;
+
+    /**
+     * The issuer shown beside the code in somebody's authenticator app.
+     *
+     * It was a literal, so a second company's staff saw the first company's name next to their own
+     * codes. Spaces are dropped because the otpauth: URI carries it as a label.
+     */
+    private String issuer() {
+        String name = configuredCompanyName == null || configuredCompanyName.isBlank()
+            ? "Management" : configuredCompanyName;
+        return name.replaceAll("[^A-Za-z0-9]", "");
+    }
+
     @Autowired
     private UserService userService;
     
@@ -148,15 +163,15 @@ public class MFAServices {
             String qrCodeUri = generateQrCodeImageUri(
                 secret,
                 user.getUsername(),
-                "KabengoSafaris"
+                issuer()
             );
 
             String totpUrl = "otpauth://totp/" +
-                URLEncoder.encode("KabengoSafaris", StandardCharsets.UTF_8) +
+                URLEncoder.encode(issuer(), StandardCharsets.UTF_8) +
                 ":" + 
                 URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8) +
                 "?secret=" + secret +
-                "&issuer=" + URLEncoder.encode("KabengoSafaris", StandardCharsets.UTF_8) +
+                "&issuer=" + URLEncoder.encode(issuer(), StandardCharsets.UTF_8) +
                 "&digits=6&period=30&algorithm=SHA1";
 
             // Create response with QR code and secret

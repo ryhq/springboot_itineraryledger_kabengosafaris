@@ -55,7 +55,7 @@ public class BackupDownloadController {
 
     private final BackupSettingsGetterServices backupSettings;
 
-    @Value("${backup.storage.path:/opt/lampp/htdocs/kabengosafaris/backups/}")
+    @Value("${backup.storage.path:./backups/}")
     private String storagePath;
 
     /**

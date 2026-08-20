@@ -43,7 +43,7 @@ command and no secret.
 ```
 
 It creates the database and a user scoped to it, `/etc/<id>.env` (root-only: database password,
-encryption key, a **fresh id salt**), `/opt/<id>/application.properties`, storage under `/srv/<id>`,
+encryption key, and this company's notification address), `/opt/<id>/application.properties`, storage under `/srv/<id>`,
 a hardened systemd unit, and starts the service.
 
 Re-running is safe. It never rewrites an existing `/etc/<id>.env`, because that would rotate a live
@@ -54,7 +54,7 @@ install's database password out from under the running service.
 ```
 Features (5 switch(es) created): fleet on · credit-notes on · …
 Company profile created: Jatelo African Travels (0 emails, 0 phones, 0 addresses, 0 links)
-IdObfuscator: using the configured salt — ids are stable across restarts
+IdObfuscator: salt generated for this run — ids are re-derived on every start …
 Mail account created for info@… via smtp-relay.brevo.com — the first activation email can be sent
 First account created: ops@example.com (admin) with SUPERADMIN. An activation email has been sent
 Skipping seeded blog posts (app.seed.demo-content.enabled is false)
@@ -142,3 +142,8 @@ just fails later with a worse message.
   `app.seed.demo-content.enabled=true`. A new company writes its own.
 - **The backup filename prefix is a setting**, seeded once. Check it says this company's name, not the
   one whose default it inherited.
+- **Check the notification addresses after the first boot**
+  (`notification_settings`, `backup_settings`). They are seeded from configuration, and a shared
+  default once sent a second company's booking inquiries to the first company's mailbox.
+- **Ids rotate on every restart by default** — deliberate: an identifier that leaks stops resolving.
+  It also means no saved deep link survives a deploy. `--stable-ids` fixes a salt per company instead.

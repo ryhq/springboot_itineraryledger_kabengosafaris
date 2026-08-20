@@ -37,7 +37,7 @@ public class BackupService {
     @Value("${backup.files.base.path:./data/}")
     private String filesBasePath;
 
-    @Value("${backup.storage.path:/opt/lampp/htdocs/kabengosafaris/backups/}")
+    @Value("${backup.storage.path:./backups/}")
     private String storagePath;
 
     /**

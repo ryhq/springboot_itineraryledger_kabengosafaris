@@ -15,19 +15,19 @@ public class NotificationSettingGetterServices {
     @Value("${notification.newsletter.enabled:true}")
     private Boolean defaultNewsletterEnabled;
 
-    @Value("${notification.newsletter.emails:admin@kabengosafaris.com}")
+    @Value("${notification.newsletter.emails:}")
     private String defaultNewsletterEmails;
 
     @Value("${notification.booking_inquiry.enabled:true}")
     private Boolean defaultBookingInquiryEnabled;
 
-    @Value("${notification.booking_inquiry.emails:admin@kabengosafaris.com}")
+    @Value("${notification.booking_inquiry.emails:}")
     private String defaultBookingInquiryEmails;
 
     @Value("${notification.contact_us.enabled:true}")
     private Boolean defaultContactUsEnabled;
 
-    @Value("${notification.contact_us.emails:admin@kabengosafaris.com}")
+    @Value("${notification.contact_us.emails:}")
     private String defaultContactUsEmails;
 
     @Autowired

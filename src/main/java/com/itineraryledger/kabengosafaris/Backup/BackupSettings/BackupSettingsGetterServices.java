@@ -39,7 +39,7 @@ public class BackupSettingsGetterServices {
     @Value("${backup.database.port:3306}")
     private Integer defaultDatabasePort;
 
-    @Value("${backup.database.name:springboot_itineraryledger_kabengosafaris}")
+    @Value("${backup.database.name:}")
     private String defaultDatabaseName;
 
     @Value("${backup.database.username:root}")
@@ -96,7 +96,7 @@ public class BackupSettingsGetterServices {
     @Value("${backup.notification.on.failure:true}")
     private Boolean defaultNotifyOnFailure;
 
-    @Value("${backup.notification.emails:admin@kabengosafaris.com}")
+    @Value("${backup.notification.emails:}")
     private String defaultNotificationEmails;
 
     @Autowired

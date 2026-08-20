@@ -31,21 +31,21 @@ public class NotificationSettingsInitializer implements ApplicationRunner, Order
     @Value("${notification.newsletter.enabled:true}")
     private Boolean newsletterEnabled;
 
-    @Value("${notification.newsletter.emails:admin@kabengosafaris.com}")
+    @Value("${notification.newsletter.emails:}")
     private String newsletterEmails;
 
     // Booking Inquiry Settings
     @Value("${notification.booking_inquiry.enabled:true}")
     private Boolean bookingInquiryEnabled;
 
-    @Value("${notification.booking_inquiry.emails:admin@kabengosafaris.com}")
+    @Value("${notification.booking_inquiry.emails:}")
     private String bookingInquiryEmails;
 
     // Contact Us Settings
     @Value("${notification.contact_us.enabled:true}")
     private Boolean contactUsEnabled;
 
-    @Value("${notification.contact_us.emails:admin@kabengosafaris.com}")
+    @Value("${notification.contact_us.emails:}")
     private String contactUsEmails;
 
     @Override

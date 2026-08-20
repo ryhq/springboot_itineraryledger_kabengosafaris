@@ -42,6 +42,10 @@ import java.util.Map;
 @Slf4j
 public class EmailTemplateTestService {
 
+    /** whoever this installation is — a test send that names the wrong company teaches nothing */
+    @org.springframework.beans.factory.annotation.Value("${app.company.name:Management}")
+    private String brandName;
+
     /** The same property the live availability letter greets with, so a test reads identically. */
     /*
      * A test send must show what a REAL send would show, so company identity comes from the profile
@@ -275,7 +279,7 @@ public class EmailTemplateTestService {
         variables.put("expirationHours", String.valueOf(expirationHours));
         variables.put("expirationDateTime", expirationDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
-        String subject = "[TEST] Welcome to Kabengosafaris - Activate Your Account";
+        String subject = "[TEST] Welcome to " + brandName + " - Activate Your Account";
 
         return new TestEmailData(variables, subject);
     }
@@ -309,7 +313,7 @@ public class EmailTemplateTestService {
         variables.put("expirationDateTime", expirationDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         variables.put("requestedAt", requestedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
-        String subject = "[TEST] Password Reset Request - Kabengosafaris";
+        String subject = "[TEST] Password Reset Request - " + brandName;
 
         return new TestEmailData(variables, subject);
     }
@@ -337,12 +341,12 @@ public class EmailTemplateTestService {
         variables.put("filesIncluded", "Yes");
         variables.put("compressionFormat", "zip");
         variables.put("compressionLevel", "6");
-        variables.put("backupPath", "/opt/lampp/htdocs/kabengosafaris/backups/" + testBackupFilename);
+        variables.put("backupPath", "/srv/backups/" + testBackupFilename);
         variables.put("backupDownloadLink", appManagementBaseUrl + "/api/backups/download/" + testBackupFilename);
         variables.put("retentionDays", "30");
         variables.put("nextBackupTime", nextBackupTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
-        String subject = "[TEST] Backup Completed Successfully - Kabengosafaris";
+        String subject = "[TEST] Backup Completed Successfully - " + brandName;
 
         return new TestEmailData(variables, subject);
     }
@@ -369,7 +373,7 @@ public class EmailTemplateTestService {
         variables.put("errorMessage", "Database backup failed: Connection timeout after 30 seconds. Please check database server connectivity.");
         variables.put("nextBackupTime", nextBackupTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
-        String subject = "[TEST] ⚠️ Backup Failed - Kabengosafaris";
+        String subject = "[TEST] ⚠️ Backup Failed - " + brandName;
 
         return new TestEmailData(variables, subject);
     }

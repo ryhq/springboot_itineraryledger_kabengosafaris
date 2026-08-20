@@ -55,7 +55,7 @@ public class BackupSettingsInitializer implements ApplicationRunner, Ordered {
     @Value("${backup.database.port:3306}")
     private Integer databasePort;
 
-    @Value("${backup.database.name:springboot_itineraryledger_kabengosafaris}")
+    @Value("${backup.database.name:}")
     private String databaseName;
 
     @Value("${backup.database.username:root}")
@@ -148,7 +148,7 @@ public class BackupSettingsInitializer implements ApplicationRunner, Ordered {
     @Value("${backup.notification.on.failure:true}")
     private Boolean notifyOnFailure;
 
-    @Value("${backup.notification.emails:admin@kabengosafaris.com}")
+    @Value("${backup.notification.emails:}")
     private String notificationEmails;
 
     /**

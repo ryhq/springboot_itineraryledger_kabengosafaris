@@ -30,6 +30,12 @@ import java.util.Map;
 @Slf4j
 public class AccountVerificationService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyIdentityService companyIdentityService;
+
+    @org.springframework.beans.factory.annotation.Value("${app.company.name:}")
+    private String configuredCompanyName;
+
     @Autowired
     private UserRepository userRepository;
 
@@ -193,7 +199,7 @@ public class AccountVerificationService {
             // Send email (this will run asynchronously)
             emailSendingService.sendHtmlEmail(
                 user.getEmail(),
-                "Activate Your Account - Kabengosafaris",
+                "Activate Your Account - " + companyName(),
                 htmlContent
             );
 
@@ -203,5 +209,23 @@ public class AccountVerificationService {
             log.error("Failed to send verification email to user: {} ({})", user.getUsername(), user.getEmail(), e);
             throw new RegistrationException("Failed to send verification email");
         }
+    }
+
+    /**
+     * Whose name goes on this message.
+     *
+     * The subject used to be a literal, so a second company's users were welcomed to the first
+     * company. The profile is the source; the configured name is the fallback for the moment before
+     * anybody has filled the profile in.
+     */
+    private String companyName() {
+        try {
+            String name = companyIdentityService.snapshot().name();
+            if (name != null && !name.isBlank()) return name;
+        } catch (Exception ignored) {
+            /* a message with a plain subject beats no message at all */
+        }
+        return configuredCompanyName == null || configuredCompanyName.isBlank()
+            ? "your account" : configuredCompanyName;
     }
 }
