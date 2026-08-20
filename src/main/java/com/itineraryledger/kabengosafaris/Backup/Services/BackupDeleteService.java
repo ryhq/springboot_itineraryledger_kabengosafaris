@@ -100,7 +100,7 @@ public class BackupDeleteService {
                 }
 
                 // Check if file exists
-                File backupFile = new File(storagePath + filename);
+                File backupFile = new File(storagePath, filename);
                 if (!backupFile.exists()) {
                     log.warn("Backup file not found: {}", filename);
                     skippedCount++;
@@ -176,7 +176,7 @@ public class BackupDeleteService {
         entityType = "Backup"
     )
     public void deleteBackup(String filename) {
-        File backupFile = new File(storagePath + filename);
+        File backupFile = new File(storagePath, filename);
 
         if (backupFile.isDirectory()) {
             deleteDirectory(backupFile);

@@ -79,7 +79,7 @@ public class BackupService {
             }
 
             // Create temporary directory for this backup
-            String tempBackupDir = storagePath + backupFileName + "_temp/";
+            String tempBackupDir = new File(storagePath, backupFileName + "_temp").getPath() + "/";
             File tempDir = new File(tempBackupDir);
             tempDir.mkdirs();
 
@@ -120,7 +120,7 @@ public class BackupService {
                 log.info("✓ Backup compressed: {}", finalBackupPath);
             } else {
                 // Move temp directory to final location
-                finalBackupPath = storagePath + backupFileName + "/";
+                finalBackupPath = new File(storagePath, backupFileName).getPath() + "/";
                 Files.move(Paths.get(tempBackupDir), Paths.get(finalBackupPath),
                         StandardCopyOption.REPLACE_EXISTING);
                 result.setCompressed(false);

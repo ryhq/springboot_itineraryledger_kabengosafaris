@@ -85,7 +85,16 @@ public class BackupGetService {
             }
 
             // Check if file exists
-            File backupFile = new File(storagePath + filename);
+            /*
+             * new File(dir, name), never dir + name.
+             *
+             * The configured path may or may not end in a separator — an environment file written by
+             * hand usually does not — and concatenation then produces
+             * "/opt/kabengosafaris/backupsbackup_20260818.zip". The LIST kept working, because a
+             * directory path is valid without its trailing slash, so backups appeared on screen and
+             * every one of them 404'd when opened.
+             */
+            File backupFile = new File(storagePath, filename);
             if (!backupFile.exists()) {
                 return ResponseEntity.status(404).body(
                     ApiResponse.error(404, "Backup not found", "BACKUP_NOT_FOUND")
