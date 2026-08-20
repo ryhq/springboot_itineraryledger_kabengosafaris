@@ -50,6 +50,10 @@ public class CompanyTemplateModel {
     private final String logoFullUrl;
     private final String logoFullTaglineUrl;
 
+    /** the logo as drawable markup — inline SVG, or an <img> with a data URI */
+    private final String logoMarkup;
+    private final String logoFullMarkup;
+
     /** the brand, so a template stops hardcoding one company's colour */
     private final String accent;
     private final String accentContrast;

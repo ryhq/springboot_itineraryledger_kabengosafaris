@@ -53,6 +53,9 @@ public class CompanyIdentityService {
     @Value("${app.brand.accent:#1c7a58}")
     private String defaultAccent;
 
+    @Value("${company.asset.storage.path:./data/company-assets/}")
+    private String assetStoragePath;
+
     private final AtomicReference<Snapshot> cached = new AtomicReference<>();
 
     /** Anything that changes the profile calls this; nothing else needs to know the cache exists. */
@@ -108,6 +111,8 @@ public class CompanyIdentityService {
             .faviconUrl(s.faviconUrl())
             .logoFullUrl(s.logoFullUrl())
             .logoFullTaglineUrl(s.logoFullTaglineUrl())
+            .logoMarkup(s.logoMarkup())
+            .logoFullMarkup(s.logoFullMarkup())
             .accent(s.accent())
             .accentContrast(s.accentContrast())
             .accentDark(s.accentDark())
@@ -209,6 +214,8 @@ public class CompanyIdentityService {
             /* the tagline cut is a deliberate second choice: a header wants the plain lockup */
             assetUrl(profile, CompanyAsset.AssetKind.LOGO_FULL, CompanyAsset.AssetKind.LOGO_FULL_TAGLINE),
             assetUrl(profile, CompanyAsset.AssetKind.LOGO_FULL_TAGLINE),
+            assetMarkup(profile, CompanyAsset.AssetKind.LOGO_LIGHT, CompanyAsset.AssetKind.LOGO_FULL),
+            assetMarkup(profile, CompanyAsset.AssetKind.LOGO_FULL, CompanyAsset.AssetKind.LOGO_LIGHT),
             bank());
     }
 
@@ -282,6 +289,45 @@ public class CompanyIdentityService {
             .findFirst();
     }
 
+    /**
+     * The logo as markup a document can draw without asking the network for anything.
+     *
+     * An uploaded SVG is inlined as-is, which is what the shipped templates always did (with one
+     * company's art hardcoded); anything else becomes an <img> with a data URI. Width is left to the
+     * template, because the space a logo sits in belongs to the design, not to the logo.
+     *
+     * Returns empty when nothing is uploaded — a template guards on it and leaves the space out
+     * rather than drawing a broken image.
+     */
+    private String assetMarkup(CompanyProfile profile, CompanyAsset.AssetKind... kinds) {
+        for (CompanyAsset.AssetKind kind : kinds) {
+            CompanyAsset asset = profile.getAssets().stream()
+                .filter(a -> a.getAssetKind() == kind && Boolean.TRUE.equals(a.getIsActive()))
+                .findFirst().orElse(null);
+            if (asset == null || asset.getFileName() == null) continue;
+
+            try {
+                java.nio.file.Path path = java.nio.file.Paths.get(assetStoragePath, asset.getFileName());
+                if (!java.nio.file.Files.exists(path)) continue;
+                byte[] bytes = java.nio.file.Files.readAllBytes(path);
+
+                String mime = asset.getMimeType() == null ? "" : asset.getMimeType();
+                if (mime.contains("svg")) {
+                    /* inlined, so the vector stays a vector and prints sharp at any size */
+                    String svg = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+                    int start = svg.indexOf("<svg");
+                    return start < 0 ? "" : svg.substring(start);
+                }
+                return "<img src=\"data:" + (mime.isBlank() ? "image/png" : mime) + ";base64,"
+                    + java.util.Base64.getEncoder().encodeToString(bytes)
+                    + "\" alt=\"\" style=\"max-width:100%;height:auto\" />";
+            } catch (Exception e) {
+                log.warn("Could not read the {} asset for embedding: {}", kind, e.getMessage());
+            }
+        }
+        return "";
+    }
+
     /** The first kind that exists, so mail falls back to the light logo when no raster is uploaded. */
     private String assetUrl(CompanyProfile profile, CompanyAsset.AssetKind... kinds) {
         for (CompanyAsset.AssetKind kind : kinds) {
@@ -337,6 +383,15 @@ public class CompanyIdentityService {
         /** the brand: a template that hardcodes a colour is as wrong as one that hardcodes a name */
         String accent, String accentContrast, String accentDark, String accentSoft,
         String radius, String font,
+        /**
+         * The logo as MARKUP, for a document that must not depend on the network.
+         *
+         * A PDF is rendered on the server and a client may open it offline; fetching an https image
+         * mid-render is slow at best and a blank box at worst. Measured against this renderer: inline
+         * SVG draws, an SVG data URI draws, a raster data URI draws — so the asset is embedded, and
+         * whichever form the company uploaded is the form used.
+         */
+        String logoMarkup, String logoFullMarkup,
         /** the whole lockup: a letterhead or a cover page, never a 28px topbar */
         String logoFullUrl, String logoFullTaglineUrl,
         BankSnapshot bank
@@ -355,7 +410,7 @@ public class CompanyIdentityService {
                 .emails(List.of()).phones(List.of()).socials(Map.of())
                 .logoUrl("").logoLightUrl("").logoDarkUrl("").faviconUrl("")
                 .accent("").accentContrast("").accentDark("").accentSoft("").radius("").font("")
-                .logoFullUrl("").logoFullTaglineUrl("")
+                .logoFullUrl("").logoFullTaglineUrl("").logoMarkup("").logoFullMarkup("")
                 .bank(BankSnapshot.empty())
                 .build();
         }
@@ -412,6 +467,8 @@ public class CompanyIdentityService {
             map.put("companyLogoDarkUrl", logoDarkUrl);
             map.put("companyFaviconUrl", faviconUrl);
             map.put("companyLogoLightUrl", logoLightUrl);
+            map.put("companyLogoMarkup", logoMarkup);
+            map.put("companyLogoFullMarkup", logoFullMarkup);
             map.put("companyLogoDarkUrl", logoDarkUrl);
             map.put("companyAccent", accent);
             map.put("companyAccentContrast", accentContrast);

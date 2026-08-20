@@ -208,6 +208,39 @@ class CompanyLiteralsInTemplatesTest {
             """.formatted(offences.size(), String.join("\n", offences)));
     }
 
+    @Test
+    @DisplayName("no template carries a company's artwork as inline SVG")
+    void noEmbeddedArtwork() throws IOException {
+        List<String> offences = new ArrayList<>();
+        Pattern svg = Pattern.compile("<svg\\b.*?</svg>", Pattern.DOTALL);
+
+        for (Path file : scanned()) {
+            if (!file.toString().endsWith(".html")) continue;
+            Matcher m = svg.matcher(Files.readString(file));
+            while (m.find()) {
+                /*
+                 * A status icon — a tick, a warning triangle — is a few hundred characters and belongs
+                 * to the layout. A LOGO is tens of thousands, and it belongs to one company: nineteen
+                 * PDF templates each carried 27KB of the same company's mark, so a second company
+                 * restored the shipped default and got somebody else's logo on its invoice.
+                 */
+                if (m.group().length() >= 2000) {
+                    offences.add(RESOURCES.relativize(file) + "  (" + m.group().length() / 1024
+                        + "KB of inline SVG)");
+                }
+            }
+        }
+
+        assertTrue(offences.isEmpty(), () -> """
+            %d template(s) carry embedded artwork:
+
+            %s
+
+            Use {{companyLogoMarkup}} or {{companyLogoFullMarkup}} — the company's own uploaded asset,
+            embedded at render time so a PDF needs nothing from the network.
+            """.formatted(offences.size(), String.join("\n", offences)));
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private List<Path> scanned() throws IOException {

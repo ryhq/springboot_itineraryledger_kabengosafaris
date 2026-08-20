@@ -81,6 +81,8 @@ public final class CompanyVariableCatalogue {
         VARIABLES.put("companyLogoFullUrl", "Full lockup — mark plus wordmark — for a letterhead");
         VARIABLES.put("companyLogoFullTaglineUrl", "Full lockup carrying the tagline, for a cover page");
         VARIABLES.put("companyFaviconUrl", "Favicon, for anywhere a small square mark is wanted");
+        VARIABLES.put("companyLogoMarkup", "The icon logo as drawable markup, embedded — use this in a PDF, where fetching a URL mid-render is a blank box at worst");
+        VARIABLES.put("companyLogoFullMarkup", "The full lockup as drawable markup, embedded — for a letterhead or a cover page");
 
         VARIABLES.put("bankName", "Default bank account: the bank");
         VARIABLES.put("bankAccountName", "Default bank account: the account name");
@@ -183,6 +185,8 @@ public final class CompanyVariableCatalogue {
             case "companyLogoFullUrl" -> "company.logoFullUrl";
             case "companyLogoFullTaglineUrl" -> "company.logoFullTaglineUrl";
             case "companyFaviconUrl" -> "company.faviconUrl";
+            case "companyLogoMarkup" -> "company.logoMarkup";
+            case "companyLogoFullMarkup" -> "company.logoFullMarkup";
             case "bankName" -> "company.bank.bankName";
             case "bankAccountName" -> "company.bank.accountName";
             case "bankAccountHolder" -> "company.bank.accountHolder";
