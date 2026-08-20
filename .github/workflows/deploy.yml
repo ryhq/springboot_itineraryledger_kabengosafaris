@@ -1,4 +1,11 @@
-name: Build & Deploy to Droplet
+name: Build & Deploy to every company
+
+# One merge, N companies. The jar is built and tested ONCE, then released to the canary first; only
+# if that installation comes back healthy do the others get it. A bad build therefore costs one
+# company a rollback instead of all of them.
+#
+# Adding a company is a pull request against companies.json plus a GitHub Environment named after its
+# id, holding DROPLET_HOST and DROPLET_SSH_KEY. Nothing here needs editing.
 
 on:
   push:
@@ -6,25 +13,19 @@ on:
   workflow_dispatch:
 
 concurrency:
-  # Two deploys racing on one droplet means two restarts fighting over one symlink.
+  # Two releases racing means two restarts fighting over one symlink, per company.
   group: deploy-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-
-    env:
-      # One release per commit, kept beside the others so rollback is a symlink flip.
-      RELEASE: app-${{ github.sha }}.jar
-      APP_DIR: /opt/kabengosafaris
-      SERVICE: kabengosafaris
-      # Actuator listens here, bound to localhost — see management.server.address.
-      HEALTH: http://127.0.0.1:4451/actuator/health/readiness
-
+    outputs:
+      canary: ${{ steps.plan.outputs.canary }}
+      rest: ${{ steps.plan.outputs.rest }}
+      artifact: release-${{ github.sha }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -33,129 +34,95 @@ jobs:
           java-version: 21
           cache: maven
 
-      # Tests run now. The one test that needed a real MySQL — the @SpringBootTest context
-      # load — is explicitly @Disabled with its reason, which is what let every other test
-      # start running instead of the whole suite being skipped.
+      # Tests run before anything is built for anybody. The one test needing a real MySQL — the
+      # @SpringBootTest context load — is explicitly @Disabled with its reason, which is what let
+      # every other test start running instead of the whole suite being skipped.
       - name: Test
         run: ./mvnw -q clean test
 
-      - name: Build JAR
-        run: ./mvnw -q package -DskipTests
+      - name: Build the release
+        # -Dgit.sha stamps the commit into the jar, so /api/public/version can name it later.
+        run: ./mvnw -q package -DskipTests -Dgit.sha=${{ github.sha }}
 
-      - name: Name the artifact after the commit
+      - name: Hand it over
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ github.sha }}
+          path: target/kabengosafaris-*.jar
+          retention-days: 5
+
+      - name: Read the company list
+        id: plan
+        # The canary and the rest come out of companies.json, so the deploy order is reviewable in a
+        # pull request rather than buried in this file.
         run: |
           set -e
-          mv target/kabengosafaris-*.jar "$RELEASE"
-          ls -la "$RELEASE"
+          canary=$(jq -c '[.companies[] | select(.canary == true)]' companies.json)
+          rest=$(jq -c '[.companies[] | select(.canary != true)]' companies.json)
+          echo "canary=$canary" >> "$GITHUB_OUTPUT"
+          echo "rest=$rest" >> "$GITHUB_OUTPUT"
+          echo "canary: $(echo "$canary" | jq -r '.[].id')"
+          echo "then:   $(echo "$rest" | jq -r '.[].id' | tr '\n' ' ')"
+          if [ "$(echo "$canary" | jq 'length')" != "1" ]; then
+            echo "::error::exactly one company must be the canary"; exit 1
+          fi
 
-      - name: Make room for the release
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: deploy
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          script: mkdir -p ${{ env.APP_DIR }}/releases
+  canary:
+    needs: build
+    strategy:
+      matrix:
+        company: ${{ fromJson(needs.build.outputs.canary) }}
+    uses: ./.github/workflows/deploy-one.yml
+    with:
+      id: ${{ matrix.company.id }}
+      name: ${{ matrix.company.name }}
+      appDir: ${{ matrix.company.appDir }}
+      service: ${{ matrix.company.service }}
+      healthPort: ${{ matrix.company.healthPort }}
+      apiPort: ${{ matrix.company.apiPort }}
+      dumpCommand: ${{ matrix.company.dumpCommand }}
+      publicHealthUrl: ${{ matrix.company.publicHealthUrl }}
+      artifact: ${{ needs.build.outputs.artifact }}
+    secrets: inherit
 
-      - name: Upload the release
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: deploy
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          source: ${{ env.RELEASE }}
-          target: ${{ env.APP_DIR }}/releases/
+  everyone-else:
+    # Gated on the canary: a release that could not come back healthy for one company does not reach
+    # the next one.
+    needs: [build, canary]
+    strategy:
+      max-parallel: 1
+      # One company's failure must not cancel a release already under way elsewhere.
+      fail-fast: false
+      matrix:
+        company: ${{ fromJson(needs.build.outputs.rest) }}
+    uses: ./.github/workflows/deploy-one.yml
+    with:
+      id: ${{ matrix.company.id }}
+      name: ${{ matrix.company.name }}
+      appDir: ${{ matrix.company.appDir }}
+      service: ${{ matrix.company.service }}
+      healthPort: ${{ matrix.company.healthPort }}
+      apiPort: ${{ matrix.company.apiPort }}
+      dumpCommand: ${{ matrix.company.dumpCommand }}
+      publicHealthUrl: ${{ matrix.company.publicHealthUrl }}
+      artifact: ${{ needs.build.outputs.artifact }}
+    secrets: inherit
 
-      - name: Switch, restart, and prove it can serve
-        uses: appleboy/ssh-action@v1.2.0
-        env:
-          RELEASE: ${{ env.RELEASE }}
-          APP_DIR: ${{ env.APP_DIR }}
-          SERVICE: ${{ env.SERVICE }}
-          HEALTH: ${{ env.HEALTH }}
-        with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: deploy
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          envs: RELEASE,APP_DIR,SERVICE,HEALTH
-          command_timeout: 10m
-          script: |
-            set -u
-            cd "$APP_DIR"
-
-            # What is serving right now, so there is something to go back to. On the very
-            # first run of this workflow app.jar is a real file rather than a symlink; it
-            # is preserved as a release so even that deploy is reversible.
-            PREVIOUS=""
-            if [ -L app.jar ]; then
-              PREVIOUS=$(readlink app.jar)
-            elif [ -f app.jar ]; then
-              mkdir -p releases
-              cp -a app.jar "releases/app-preexisting.jar"
-              PREVIOUS="releases/app-preexisting.jar"
-              rm -f app.jar
-            fi
-            echo "previous release: ${PREVIOUS:-none}"
-
-            # A dump BEFORE anything can change the schema.
-            #
-            # Migrations run at boot, and a migration is the one deploy step that putting the old
-            # jar back does not undo. The dump is a root-owned wrapper this user may TRIGGER but
-            # not read (/usr/local/sbin/kabengo-predeploy-dump), so CI never holds the database
-            # password. A dump that fails stops the deploy rather than proceeding hopefully.
-            if ! sudo -n /usr/local/sbin/kabengo-predeploy-dump; then
-              echo "::error::could not take a pre-deploy database dump — refusing to migrate"
-              exit 1
-            fi
-
-            ln -sfn "releases/$RELEASE" app.jar
-            sudo -n systemctl restart "$SERVICE"
-
-            # The gate. Readiness means the database answers, the schema is the one this
-            # jar expects, the data directory is writable, and every seeding runner has
-            # finished — not merely that systemd sees a process.
-            ready=0
-            for i in $(seq 1 60); do
-              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$HEALTH" || true)
-              if [ "$code" = "200" ]; then ready=1; echo "ready after ~$((i*5))s"; break; fi
-              sleep 5
-            done
-
-            if [ "$ready" != "1" ]; then
-              echo "::error::readiness never went green — rolling back"
-              echo "--- what the app says is wrong:"
-              curl -s --max-time 5 "$HEALTH" || echo "(no answer at all)"
-              echo "--- last 40 lines of the service log:"
-              journalctl -u "$SERVICE" -n 40 --no-pager || true
-              if [ -n "$PREVIOUS" ] && [ -f "$PREVIOUS" ]; then
-                ln -sfn "$PREVIOUS" app.jar
-                sudo -n systemctl restart "$SERVICE"
-                # A jar from before this change has no readiness probe, so proof of life
-                # falls back to the endpoint that has always existed. Otherwise the first
-                # rollback would report failure for a service that came back perfectly.
-                for i in $(seq 1 24); do
-                  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$HEALTH" || true)
-                  legacy=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
-                    http://127.0.0.1:4450/api/public/navigation || true)
-                  if [ "$code" = "200" ] || [ "$legacy" = "200" ]; then
-                    echo "rolled back to $PREVIOUS and it is serving"; break
-                  fi
-                  sleep 5
-                done
-              else
-                echo "::error::nothing to roll back to — the service is down"
-              fi
-              exit 1
-            fi
-
-            # Keep the last five releases: enough to step back through a bad afternoon,
-            # not enough to fill the disk with 140MB jars.
-            ls -1t releases/app-*.jar 2>/dev/null | tail -n +6 | xargs -r rm -f
-            echo "releases kept:"; ls -1t releases/ | head -5
-
-      - name: Smoke check from outside
-        # The gate above asks the app on localhost. This asks the internet, so a broken
-        # proxy or a firewall change is caught too.
+  report:
+    needs: [build, canary, everyone-else]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Who is running what
+        # The answer to "is anybody behind?" — asked from outside, after the dust settles.
         run: |
-          sleep 2
-          curl -fsS --max-time 20 -o /dev/null -w 'public /healthz -> HTTP %{http_code}\n' \
-            https://api.kabengosafaris.ryhqtech.com/healthz
+          echo "| company | version | commit | built |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | --- | --- | --- |" >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.companies[] | [.id, .publicHealthUrl] | @tsv' companies.json |
+          while IFS=$'\t' read -r id url; do
+            base=$(echo "$url" | sed -E 's|(https?://[^/]+).*|\1|')
+            body=$(curl -fsS --max-time 20 "$base/api/public/version" 2>/dev/null || echo '{}')
+            echo "| $id | $(echo "$body" | jq -r '.version // "?"') | $(echo "$body" | jq -r '.commit // "?"' | cut -c1-8) | $(echo "$body" | jq -r '.builtAt // "?"') |" >> "$GITHUB_STEP_SUMMARY"
+          done
+          cat "$GITHUB_STEP_SUMMARY"

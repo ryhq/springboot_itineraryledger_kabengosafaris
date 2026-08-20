@@ -1,0 +1,168 @@
+name: Deploy one company
+
+# Deploying ONE company's API. Called by deploy.yml — once for the canary, then once per remaining
+# company — so every installation is released by exactly the same steps and the differences between
+# companies are inputs rather than copies of this file.
+#
+# The jar is built once upstream and handed over as an artifact: two companies running "the same
+# release" must be running the same bytes, which a second build cannot promise.
+
+on:
+  workflow_call:
+    inputs:
+      id:
+        description: company id, and the name of its GitHub Environment
+        required: true
+        type: string
+      name:
+        required: true
+        type: string
+      appDir:
+        required: true
+        type: string
+      service:
+        required: true
+        type: string
+      healthPort:
+        required: true
+        type: number
+      apiPort:
+        required: true
+        type: number
+      dumpCommand:
+        description: the root-owned wrapper this deploy user may trigger but not read
+        required: true
+        type: string
+      publicHealthUrl:
+        description: asked from the internet after the switch, so a broken proxy is caught too
+        required: true
+        type: string
+      artifact:
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # The company's own host and key live here, so a workflow cannot reach a company it was not
+    # invoked for — and the environment's name is the company id, which is the whole trick.
+    environment: ${{ inputs.id }}
+
+    steps:
+      - name: Take the release
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact }}
+
+      - name: Name it after the commit
+        run: |
+          set -e
+          mv kabengosafaris-*.jar "app-${{ github.sha }}.jar"
+          ls -la "app-${{ github.sha }}.jar"
+
+      - name: Make room
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: deploy
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: mkdir -p ${{ inputs.appDir }}/releases
+
+      - name: Upload
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: deploy
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          source: app-${{ github.sha }}.jar
+          target: ${{ inputs.appDir }}/releases/
+
+      - name: Switch, restart, and prove it serves
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          RELEASE: app-${{ github.sha }}.jar
+          APP_DIR: ${{ inputs.appDir }}
+          SERVICE: ${{ inputs.service }}
+          HEALTH: http://127.0.0.1:${{ inputs.healthPort }}/actuator/health/readiness
+          LEGACY_HEALTH: http://127.0.0.1:${{ inputs.apiPort }}/api/public/navigation
+          DUMP: ${{ inputs.dumpCommand }}
+          COMPANY: ${{ inputs.name }}
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: deploy
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          envs: RELEASE,APP_DIR,SERVICE,HEALTH,LEGACY_HEALTH,DUMP,COMPANY
+          command_timeout: 12m
+          script: |
+            set -u
+            cd "$APP_DIR"
+            echo "deploying to $COMPANY"
+
+            # What is serving now, so there is something to go back to. On the first run of this
+            # workflow app.jar may be a real file rather than a symlink; it is kept as a release so
+            # even that deploy is reversible.
+            PREVIOUS=""
+            if [ -L app.jar ]; then
+              PREVIOUS=$(readlink app.jar)
+            elif [ -f app.jar ]; then
+              mkdir -p releases
+              cp -a app.jar releases/app-preexisting.jar
+              PREVIOUS="releases/app-preexisting.jar"
+              rm -f app.jar
+            fi
+            echo "previous release: ${PREVIOUS:-none}"
+
+            # A dump BEFORE anything can migrate. Migrations are the one deploy step that putting the
+            # old jar back does not undo. A dump that fails stops the deploy rather than hoping.
+            if ! sudo -n "$DUMP"; then
+              echo "::error::could not take a pre-deploy dump for $COMPANY — refusing to migrate"
+              exit 1
+            fi
+
+            ln -sfn "releases/$RELEASE" app.jar
+            sudo -n /usr/bin/systemctl restart "$SERVICE"
+
+            # Readiness means the database answers, the schema is the one this jar expects, the data
+            # directory is writable and every seeding runner has finished — not that systemd saw a
+            # process start.
+            ready=0
+            for i in $(seq 1 72); do
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$HEALTH" || true)
+              if [ "$code" = "200" ]; then ready=1; echo "ready after ~$((i*5))s"; break; fi
+              sleep 5
+            done
+
+            if [ "$ready" != "1" ]; then
+              echo "::error::$COMPANY never went ready — rolling back"
+              echo "--- what it says is wrong:"; curl -s --max-time 5 "$HEALTH" || echo "(no answer)"
+              echo "--- last 40 log lines:"; journalctl -u "$SERVICE" -n 40 --no-pager 2>/dev/null || true
+              if [ -n "$PREVIOUS" ] && [ -f "$PREVIOUS" ]; then
+                ln -sfn "$PREVIOUS" app.jar
+                sudo -n /usr/bin/systemctl restart "$SERVICE"
+                for i in $(seq 1 24); do
+                  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$HEALTH" || true)
+                  # a jar from before readiness existed still answers the endpoint that always has
+                  legacy=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$LEGACY_HEALTH" || true)
+                  if [ "$code" = "200" ] || [ "$legacy" = "200" ]; then
+                    echo "rolled back to $PREVIOUS and it is serving"; break
+                  fi
+                  sleep 5
+                done
+              else
+                echo "::error::nothing to roll back to — $COMPANY is down"
+              fi
+              exit 1
+            fi
+
+            # Enough history to step back through a bad afternoon, not enough to fill the disk.
+            ls -1t releases/app-*.jar 2>/dev/null | tail -n +6 | xargs -r rm -f
+            echo "releases kept:"; ls -1t releases/ | head -5
+
+      - name: Ask the internet, and say which build answered
+        run: |
+          sleep 3
+          curl -fsS --max-time 25 -o /dev/null -w 'public health -> HTTP %{http_code}\n' \
+            "${{ inputs.publicHealthUrl }}"
+          # The version endpoint is the record of what this company is now running.
+          base="$(echo '${{ inputs.publicHealthUrl }}' | sed -E 's|(https?://[^/]+).*|\1|')"
+          curl -fsS --max-time 25 "$base/api/public/version" || echo "(no version endpoint yet on this build)"

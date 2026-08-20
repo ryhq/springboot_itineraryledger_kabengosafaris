@@ -27,6 +27,7 @@
 		<url/>
 	</scm>
 	<properties>
+		<git.sha>local</git.sha>
 		<java.version>21</java.version>
 	</properties>
 	<dependencies>
@@ -310,6 +311,12 @@
 						<goals>
 							<goal>build-info</goal>
 						</goals>
+						<configuration>
+							<additionalProperties>
+								<!-- the commit this jar was built from; CI passes it, a local build says so -->
+								<sha>${git.sha}</sha>
+							</additionalProperties>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

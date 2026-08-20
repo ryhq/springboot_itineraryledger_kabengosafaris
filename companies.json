@@ -1,0 +1,37 @@
+{
+  "$comment": [
+    "Every company this codebase is deployed for. Adding one is a pull request, which is the point:",
+    "a deploy target that nobody reviewed is how a release reaches a box nobody meant it to.",
+    "",
+    "Nothing secret lives here. Hosts and keys are in the matching GitHub Environment, named by `id`.",
+    "",
+    "`canary: true` deploys FIRST and gates the rest: a bad build stops there. It should be the",
+    "installation whose interruption costs least — today Jatelo, which has no business data in it yet.",
+    "",
+    "`healthPort` is the actuator's own port (management.server.port), not the API's."
+  ],
+  "companies": [
+    {
+      "id": "jatelo",
+      "name": "Jatelo African Travels",
+      "canary": true,
+      "appDir": "/opt/jatelo",
+      "service": "jatelo",
+      "healthPort": 4451,
+      "apiPort": 4450,
+      "dumpCommand": "/usr/local/sbin/jatelo-predeploy-dump",
+      "publicHealthUrl": "https://api.jateloafricantravels.com/api/public/navigation"
+    },
+    {
+      "id": "kabengo",
+      "name": "Kabengo Safaris",
+      "canary": false,
+      "appDir": "/opt/kabengosafaris",
+      "service": "kabengosafaris",
+      "healthPort": 4451,
+      "apiPort": 4450,
+      "dumpCommand": "/usr/local/sbin/kabengo-predeploy-dump",
+      "publicHealthUrl": "https://api.kabengosafaris.ryhqtech.com/healthz"
+    }
+  ]
+}
