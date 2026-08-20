@@ -46,11 +46,20 @@ public class IdObfuscator {
      * Changing it invalidates every id already published. That is the price of stability, and it is
      * why this is configuration rather than something the app rotates on its own.
      */
-    @Value("${security.idObfuscator.salt:}")
-    private String configuredSalt;
+    private final String configuredSalt;
     
+    /*
+     * The salt arrives as a CONSTRUCTOR parameter, not a @Value field.
+     *
+     * Field injection happens after construction, and the constructor is exactly where the salt is
+     * needed — a field would still be null here, so a perfectly good configured salt would be
+     * ignored and the warning below would fire on every boot. (The same trap already shaped the
+     * length fields, which is why they carry `> 0 ?` fallbacks.)
+     */
     @Autowired
-    public IdObfuscator(SecuritySettingsGetterServices securitySettingsServices) {
+    public IdObfuscator(SecuritySettingsGetterServices securitySettingsServices,
+                        @Value("${security.idObfuscator.salt:}") String configuredSalt) {
+        this.configuredSalt = configuredSalt;
         this.hashids = initializeHashids(securitySettingsServices);
     }
 

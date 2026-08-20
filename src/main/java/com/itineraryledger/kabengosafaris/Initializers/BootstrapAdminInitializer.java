@@ -86,7 +86,9 @@ public class BootstrapAdminInitializer implements ApplicationRunner, Ordered {
                 null);
 
             User created = registrationServices.registerUser(request, true);
-            created.setRoles(Set.of(superadmin));
+            /* a MUTABLE set: Hibernate manages this collection and rewrites it on save, so an
+             * immutable one throws UnsupportedOperationException with no message worth reading */
+            created.setRoles(new java.util.HashSet<>(Set.of(superadmin)));
             userRepository.save(created);
 
             log.info("""

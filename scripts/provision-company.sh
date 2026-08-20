@@ -66,6 +66,11 @@ ENV_FILE="/etc/$ID.env"
 UNIT="/etc/systemd/system/$ID.service"
 SERVICE_USER="deploy"
 
+# The host's ~/.my.cnf may point at an application user with rights on one database — enough to read,
+# not to create. Provisioning needs administrative access, so it asks for it explicitly instead of
+# inheriting a config that will fail three steps in with "access denied".
+MYSQL="mysql --defaults-file=/dev/null -u root"
+
 say()  { printf '\n\033[1m%s\033[0m\n' "$*"; }
 info() { printf '  %s\n' "$*"; }
 skip() { printf '  \033[2m· %s (already done)\033[0m\n' "$*"; }
@@ -80,7 +85,9 @@ secret() {
   if (( DRY_RUN )); then echo "<generated-$1>"; else openssl rand -base64 "$2" | tr -d '/+=' | cut -c1-"$3"; fi
 }
 
-say "Provisioning '$NAME' as '$ID'${DRY_RUN:+ (dry run — nothing will change)}"
+DRY_LABEL=""
+(( DRY_RUN )) && DRY_LABEL=" (dry run — nothing will change)"
+say "Provisioning '$NAME' as '$ID'$DRY_LABEL"
 info "database      $DB_NAME (user $DB_USER)"
 info "config        $ENV_FILE + $APP_DIR/application.properties"
 info "storage       $DATA_DIR, backups in $BACKUP_DIR"
@@ -103,10 +110,10 @@ id -u "$SERVICE_USER" >/dev/null 2>&1 || {
 # ---------------------------------------------------------------- 1. database
 say "1. Database"
 DB_PASSWORD=""
-if mysql -N -B -e "show databases like '$DB_NAME'" 2>/dev/null | grep -q "$DB_NAME"; then
+if $MYSQL -N -B -e "show databases like '$DB_NAME'" 2>/dev/null | grep -q "$DB_NAME"; then
   skip "database $DB_NAME exists"
 else
-  run "mysql -e \"create database \\\`$DB_NAME\\\` character set utf8mb4 collate utf8mb4_unicode_ci\""
+  run "$MYSQL -e \"create database \\\`$DB_NAME\\\` character set utf8mb4 collate utf8mb4_unicode_ci\""
   info "created $DB_NAME"
 fi
 
@@ -114,8 +121,8 @@ if [[ -f "$ENV_FILE" ]]; then
   skip "$ENV_FILE exists — keeping the password already in it"
 else
   DB_PASSWORD="$(secret db 32 28)"
-  run "mysql -e \"create user if not exists '$DB_USER'@'localhost' identified by '\$DB_PASSWORD'\""
-  run "mysql -e \"grant all privileges on \\\`$DB_NAME\\\`.* to '$DB_USER'@'localhost'; flush privileges\""
+  run "$MYSQL -e \"create user if not exists '$DB_USER'@'localhost' identified by '\$DB_PASSWORD'\""
+  run "$MYSQL -e \"grant all privileges on \\\`$DB_NAME\\\`.* to '$DB_USER'@'localhost'; flush privileges\""
   info "created the MySQL user $DB_USER with rights on $DB_NAME only"
 fi
 
@@ -132,7 +139,10 @@ say "3. Secrets"
 if [[ -f "$ENV_FILE" ]]; then
   skip "$ENV_FILE — never rewritten, or a restart would lose the running install's credentials"
 else
-  ENCRYPTION_KEY="$(secret enc 48 44)"
+  # AES-256 expects base64 of exactly 32 bytes. The generic generator strips +/= to keep values
+  # shell-safe, which produces a string that is NOT decodable — the first boot then fails with
+  # "Encryption failed" while saving the mail account.
+  ENCRYPTION_KEY="$( (( DRY_RUN )) && echo '<generated-key>' || openssl rand -base64 32 )"
   # A salt per company: ids are Hashids of the row number, so a shared salt would make company A's
   # URLs valid shapes in company B — reason enough to keep them distinct.
   ID_SALT="$(secret salt 48 40)"
