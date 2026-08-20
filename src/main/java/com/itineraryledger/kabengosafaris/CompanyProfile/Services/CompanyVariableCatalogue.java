@@ -63,8 +63,10 @@ public final class CompanyVariableCatalogue {
          * company, exactly like a hardcoded name — so the accent, the corner radius and the font are
          * variables too, and the shipped templates use them.
          */
-        VARIABLES.put("companyAccent", "The brand accent colour, e.g. #1c7a58 — use it for headings, rules and buttons");
+        VARIABLES.put("companyAccent", "The brand accent colour, e.g. #1c7a58. In a PDF use {{companyAccent}} even inside CSS — a ${} expression is escaped there");
         VARIABLES.put("companyAccentContrast", "Text colour that stays legible on the accent");
+        VARIABLES.put("companyAccentDark", "A darker shade of the accent — header bands, footers, rules");
+        VARIABLES.put("companyAccentSoft", "A pale tint of the accent — the wash behind a callout");
         VARIABLES.put("companyRadius", "Corner radius in pixels, e.g. 8px");
         VARIABLES.put("companyFont", "The brand font stack");
 
@@ -171,6 +173,8 @@ public final class CompanyVariableCatalogue {
             case "companyCurrency" -> "company.currency";
             case "companyAccent" -> "company.accent";
             case "companyAccentContrast" -> "company.accentContrast";
+            case "companyAccentDark" -> "company.accentDark";
+            case "companyAccentSoft" -> "company.accentSoft";
             case "companyRadius" -> "company.radius";
             case "companyFont" -> "company.font";
             case "companyLogoUrl" -> "company.logoUrl";

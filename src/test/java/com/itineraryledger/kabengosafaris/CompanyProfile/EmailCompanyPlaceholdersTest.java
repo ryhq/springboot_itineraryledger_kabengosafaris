@@ -67,17 +67,26 @@ class EmailCompanyPlaceholdersTest {
 
     private String render(String templateContent) {
         CompanyIdentityService identity = mock(CompanyIdentityService.class);
-        when(identity.variables()).thenReturn(Map.of(
-            "companyName", "Test Tours",
-            "companyLegalName", "Test Tours Ltd",
-            "companyEmail", "hello@example.com",
-            "companyPhone", "+255 700 000 001",
-            "companyPhoneSecondary", "",
-            "companyAddress", "Arusha, Tanzania",
-            "companyWebsite", "example.com",
-            "companyInstagram", "https://instagram.com/example",
-            "companyFacebook", "",
-            "companyLogoUrl", "https://api.example.com/api/public/company/assets/logo-email"));
+        /*
+         * Built from the catalogue, not hand-listed.
+         *
+         * A hand-written fixture falls behind the moment a variable is added — which is exactly what
+         * happened when the brand colours arrived: the template used them, nothing filled them, and
+         * this test was right to fail. Deriving the stub means the fixture cannot go stale.
+         */
+        Map<String, String> supplied = new java.util.LinkedHashMap<>();
+        for (String name : com.itineraryledger.kabengosafaris.CompanyProfile.Services
+                .CompanyVariableCatalogue.variables().keySet()) {
+            supplied.put(name, switch (name) {
+                case "companyName" -> "Test Tours";
+                case "companyEmail" -> "hello@example.com";
+                case "companyInstagram" -> "https://instagram.com/example";
+                /* deliberately empty: an optional block for a page the company lacks must disappear */
+                case "companyFacebook" -> "";
+                default -> "value-of-" + name;
+            });
+        }
+        when(identity.variables()).thenReturn(supplied);
 
         EmailEvent event = new EmailEvent();
         event.setId(1L);

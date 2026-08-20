@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import com.itineraryledger.kabengosafaris.CompanyProfile.DTOs.CompanyTemplateModel;
 import com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyIdentityService;
+import com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyPlaceholderRenderer;
 import com.itineraryledger.kabengosafaris.PdfDocument.Services.PdfTemplateRenderer;
 import com.itineraryledger.kabengosafaris.PdfDocument.Services.PdfTemplateStorageService;
 
@@ -69,7 +70,7 @@ class PdfCompanyModelTest {
                 .accountNumber("").swift("").iban("").currency("").build())
             .build());
 
-        String html = new PdfTemplateRenderer(identity, mock(PdfTemplateStorageService.class))
+        String html = new PdfTemplateRenderer(identity, new CompanyPlaceholderRenderer(identity), mock(PdfTemplateStorageService.class))
             .renderFromString("""
                 <html><body>
                   <p th:text="${company.tin}">x</p>
@@ -104,6 +105,34 @@ class PdfCompanyModelTest {
         assertFalse(iconOnly.hasFullLogo());
     }
 
+    @Test
+    @DisplayName("the brand reaches a CSS block, which is where a template's colours live")
+    void brandResolvesInsideStyle() {
+        String html = renderer().renderFromString("""
+            <html><head><style>
+              .band { background: {{companyAccentDark}}; }
+              .rule { border-color: {{companyAccent}}; }
+              .callout { background: {{companyAccentSoft}}; color: {{companyAccentContrast}}; }
+              .card { border-radius: {{companyRadius}}; }
+            </style></head>
+            <body><div class="band" style="border-top: 2px solid {{companyAccent}}">x</div></body></html>
+            """, Map.of());
+
+        /*
+         * A brand colour lives in a <style> block and in style="" attributes, and Thymeleaf serves
+         * neither: inlining never touches an attribute, and inside <style> th:inline="css" ESCAPES what
+         * it writes — `\#0f4a35` for a colour, `\31 0px` for a length, both invalid. So the brand is a
+         * plain token, and this asserts it arrives usable rather than merely present.
+         */
+        assertTrue(html.contains("background: #0f4a35;"), "the darker shade, unescaped:\n" + html);
+        assertTrue(html.contains("border-color: #1c7a58;"), "the accent, unescaped");
+        assertTrue(html.contains("border-top: 2px solid #1c7a58"),
+            "and in a style attribute, which Thymeleaf inlining never reaches");
+        assertFalse(html.contains("\\#"), "an escaped colour is not a colour");
+        assertTrue(html.contains("10px"), "the radius should be in the sheet");
+        assertFalse(html.contains("{{company"), "a token left behind would ship to the reader");
+    }
+
     private PdfTemplateRenderer renderer() {
         CompanyIdentityService identity = mock(CompanyIdentityService.class);
         when(identity.templateModel()).thenReturn(CompanyTemplateModel.builder()
@@ -120,6 +149,8 @@ class PdfCompanyModelTest {
             .registrationNumber("R-1")
             .licenceNumber("L-1")
             .currency("USD")
+            .accent("#1c7a58").accentContrast("#ffffff").accentDark("#0f4a35").accentSoft("#e8f5f0")
+            .radius("10px").font("\"Geist Variable\", sans-serif")
             .emails(List.of("hello@example.com"))
             .phones(List.of("+255 700 000 001"))
             .socials(Map.of("INSTAGRAM", "https://instagram.com/example"))
@@ -133,6 +164,14 @@ class PdfCompanyModelTest {
                 .accountNumber("0150123456700").swift("CORUTZTZ").iban("").currency("USD").build())
             .build());
 
-        return new PdfTemplateRenderer(identity, mock(PdfTemplateStorageService.class));
+        when(identity.variables()).thenReturn(Map.of(
+            "companyName", "Test Tours",
+            "companyAccent", "#1c7a58",
+            "companyAccentContrast", "#ffffff",
+            "companyAccentDark", "#0f4a35",
+            "companyAccentSoft", "#e8f5f0",
+            "companyRadius", "10px"));
+
+        return new PdfTemplateRenderer(identity, new CompanyPlaceholderRenderer(identity), mock(PdfTemplateStorageService.class));
     }
 }

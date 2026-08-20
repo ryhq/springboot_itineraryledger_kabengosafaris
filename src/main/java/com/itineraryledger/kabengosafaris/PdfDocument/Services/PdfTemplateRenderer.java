@@ -32,6 +32,7 @@ import java.util.Map;
 public class PdfTemplateRenderer {
 
     private final com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyIdentityService companyIdentityService;
+    private final com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyPlaceholderRenderer companyPlaceholderRenderer;
 
     private final PdfTemplateStorageService storageService;
 
@@ -109,6 +110,18 @@ public class PdfTemplateRenderer {
 
             // Process template
             String renderedHtml = templateEngine.process(contentToProcess, context);
+
+            /*
+             * Then the company's own {{tokens}}, over the finished HTML.
+             *
+             * Two mechanisms on purpose. ${company.x} reads the model, which is right for text and for
+             * th: attributes — but Thymeleaf's inlining does not touch a style="" attribute at all, and
+             * inside a <style> block th:inline="css" ESCAPES what it substitutes: a colour came out as
+             * `\#0f4a35` and a length as `\31 0px`, neither of which is valid CSS. A brand colour lives
+             * in exactly those two places, so it is a plain token replaced here — the same
+             * {{companyAccent}} an email template uses, resolved by the same component.
+             */
+            renderedHtml = companyPlaceholderRenderer.apply(renderedHtml);
 
             // Prepend DOCTYPE back to rendered HTML
             if (!doctype.isEmpty()) {

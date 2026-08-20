@@ -33,10 +33,10 @@
 
         /* Header with Brand Colors */
         .email-header {
-            background: linear-gradient(135deg, #5a1e03 0%, #3e3117 100%);
+            background: linear-gradient(135deg, {{companyAccentDark}} 0%, {{companyAccentDark}} 100%);
             padding: 40px 30px;
             text-align: center;
-            border-bottom: 4px solid #274e22;
+            border-bottom: 4px solid {{companyAccent}};
         }
 
         .email-header h1 {
@@ -67,14 +67,14 @@
         }
 
         .email-content strong {
-            color: #5a1e03;
+            color: {{companyAccentDark}};
             font-weight: 600;
         }
 
         /* Greeting Box */
         .greeting-box {
             background-color: #f9f9f9;
-            border-left: 4px solid #5a1e03;
+            border-left: 4px solid {{companyAccentDark}};
             padding: 20px;
             margin: 25px 0;
             border-radius: 4px;
@@ -94,7 +94,7 @@
         .cta-button {
             display: inline-block;
             padding: 14px 40px;
-            background-color: #5a1e03;
+            background-color: {{companyAccentDark}};
             color: #ffffff !important;
             text-decoration: none;
             border-radius: 6px;
@@ -105,7 +105,7 @@
         }
 
         .cta-button:hover {
-            background-color: #3e3117;
+            background-color: {{companyAccentDark}};
         }
 
         /* Info Alert Box */
@@ -151,7 +151,7 @@
         }
 
         .link-box a {
-            color: #5a1e03;
+            color: {{companyAccentDark}};
             text-decoration: none;
             font-family: 'Courier New', monospace;
             font-size: 12px;
@@ -179,7 +179,7 @@
         }
 
         .email-footer-brand {
-            color: #5a1e03;
+            color: {{companyAccentDark}};
             font-weight: 600;
         }
 
@@ -188,7 +188,7 @@
             display: inline-block;
             width: 8px;
             height: 8px;
-            background-color: #274e22;
+            background-color: {{companyAccent}};
             border-radius: 50%;
             margin: 0 5px;
         }

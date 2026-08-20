@@ -53,6 +53,9 @@ public class CompanyTemplateModel {
     /** the brand, so a template stops hardcoding one company's colour */
     private final String accent;
     private final String accentContrast;
+    /** the darker shade a header band uses, and the tint behind a callout */
+    private final String accentDark;
+    private final String accentSoft;
     private final String radius;
     private final String font;
 

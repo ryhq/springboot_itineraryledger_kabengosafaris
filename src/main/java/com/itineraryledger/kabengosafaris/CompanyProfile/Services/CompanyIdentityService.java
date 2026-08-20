@@ -110,6 +110,8 @@ public class CompanyIdentityService {
             .logoFullTaglineUrl(s.logoFullTaglineUrl())
             .accent(s.accent())
             .accentContrast(s.accentContrast())
+            .accentDark(s.accentDark())
+            .accentSoft(s.accentSoft())
             .radius(s.radius())
             .font(s.font())
             /* not cached with the snapshot: a copyright line has to be right on the 2nd of January */
@@ -199,6 +201,9 @@ public class CompanyIdentityService {
             orEmpty(profile.getBrandAccent()).isBlank() ? orEmpty(defaultAccent) : profile.getBrandAccent(),
             /* black text on a pale accent, white on a dark one — a heading has to stay readable */
             contrastFor(orEmpty(profile.getBrandAccent()).isBlank() ? defaultAccent : profile.getBrandAccent()),
+            /* the darker shade a header or a footer band uses, and the tint a callout sits on */
+            shade(orEmpty(profile.getBrandAccent()).isBlank() ? defaultAccent : profile.getBrandAccent(), 0.62f),
+            shade(orEmpty(profile.getBrandAccent()).isBlank() ? defaultAccent : profile.getBrandAccent(), 8.5f),
             orEmpty(profile.getBrandRadius()).isBlank() ? "8px" : radiusToPx(profile.getBrandRadius()),
             orEmpty(profile.getBrandFont()),
             /* the tagline cut is a deliberate second choice: a header wants the plain lockup */
@@ -223,6 +228,31 @@ public class CompanyIdentityService {
         } catch (NumberFormatException e) {
             return "8px";
         }
+    }
+
+    /**
+     * The accent, darkened or tinted.
+     *
+     * A design has more than one brand colour in it — a header band, a rule, the wash behind a
+     * callout — and asking a company to choose three is asking them to get two of them wrong. A
+     * factor below 1 darkens; above 1 lightens towards white.
+     */
+    private String shade(String hex, float factor) {
+        if (hex == null || !hex.matches("#[0-9a-fA-F]{6}")) return hex == null ? "" : hex;
+        int[] rgb = {
+            Integer.parseInt(hex.substring(1, 3), 16),
+            Integer.parseInt(hex.substring(3, 5), 16),
+            Integer.parseInt(hex.substring(5, 7), 16)
+        };
+        StringBuilder out = new StringBuilder("#");
+        for (int channel : rgb) {
+            int value = factor <= 1f
+                ? Math.round(channel * factor)
+                /* lighten towards white rather than overflowing the channel */
+                : Math.round(channel + (255 - channel) * (1 - 1 / factor));
+            out.append(String.format("%02x", Math.max(0, Math.min(255, value))));
+        }
+        return out.toString();
     }
 
     /**
@@ -305,7 +335,8 @@ public class CompanyIdentityService {
         Map<String, String> socials,
         String logoUrl, String logoLightUrl, String logoDarkUrl, String faviconUrl,
         /** the brand: a template that hardcodes a colour is as wrong as one that hardcodes a name */
-        String accent, String accentContrast, String radius, String font,
+        String accent, String accentContrast, String accentDark, String accentSoft,
+        String radius, String font,
         /** the whole lockup: a letterhead or a cover page, never a 28px topbar */
         String logoFullUrl, String logoFullTaglineUrl,
         BankSnapshot bank
@@ -323,7 +354,7 @@ public class CompanyIdentityService {
                 .email("").phone("").phoneSecondary("").address("").website("")
                 .emails(List.of()).phones(List.of()).socials(Map.of())
                 .logoUrl("").logoLightUrl("").logoDarkUrl("").faviconUrl("")
-                .accent("").accentContrast("").radius("").font("")
+                .accent("").accentContrast("").accentDark("").accentSoft("").radius("").font("")
                 .logoFullUrl("").logoFullTaglineUrl("")
                 .bank(BankSnapshot.empty())
                 .build();
@@ -384,6 +415,8 @@ public class CompanyIdentityService {
             map.put("companyLogoDarkUrl", logoDarkUrl);
             map.put("companyAccent", accent);
             map.put("companyAccentContrast", accentContrast);
+            map.put("companyAccentDark", accentDark);
+            map.put("companyAccentSoft", accentSoft);
             map.put("companyRadius", radius);
             map.put("companyFont", font);
             map.put("companyLogoFullUrl", logoFullUrl);
