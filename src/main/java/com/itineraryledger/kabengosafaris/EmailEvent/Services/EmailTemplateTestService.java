@@ -326,7 +326,7 @@ public class EmailTemplateTestService {
         // Generate realistic test backup data
         LocalDateTime backupTime = LocalDateTime.now();
         LocalDateTime nextBackupTime = LocalDateTime.now().plusDays(1);
-        String testBackupFilename = "kabengosafaris_backup_" +
+        String testBackupFilename = "backup_" +
             backupTime.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".zip";
 
         // Populate variables

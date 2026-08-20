@@ -59,7 +59,8 @@ public class BackupSettingsGetterServices {
     private Boolean defaultFilesEnabled;
 
     // Storage Settings
-    @Value("${backup.storage.filename.prefix:kabengosafaris_backup}")
+    /* a filename is handed to people: it names the company, not this repo */
+    @Value("${backup.storage.filename.prefix:backup}")
     private String defaultFilenamePrefix;
 
     @Value("${backup.storage.filename.date.format:yyyyMMdd_HHmmss}")
