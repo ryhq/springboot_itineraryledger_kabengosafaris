@@ -63,6 +63,7 @@ DB_NAME="app_${ID//-/_}"
 DB_USER="${ID//-/_}"
 APP_DIR="/opt/$ID"
 DATA_DIR="/srv/$ID/data"
+WORK_DIR="/srv/$ID/work"
 BACKUP_DIR="/srv/$ID/backups"
 ENV_FILE="/etc/$ID.env"
 UNIT="/etc/systemd/system/$ID.service"
@@ -139,7 +140,7 @@ fi
 
 # ---------------------------------------------------------------- 2. storage
 say "2. Storage"
-for dir in "$APP_DIR" "$APP_DIR/releases" "$DATA_DIR" "$BACKUP_DIR"; do
+for dir in "$APP_DIR" "$APP_DIR/releases" "$DATA_DIR" "$WORK_DIR" "$BACKUP_DIR"; do
   if [[ -d "$dir" ]]; then skip "$dir"; else run "mkdir -p '$dir'"; info "created $dir"; fi
 done
 # the release directory is replaced by CI; the storage is written by the service
@@ -178,6 +179,9 @@ MYSQL_DATABASE=$DB_NAME
 EMAIL_ENCRYPTION_KEY=$ENCRYPTION_KEY
 SECURITY_IDOBFUSCATOR_SALT=$ID_SALT
 APP_DATA_DIR=$DATA_DIR
+# Tomcat's upload spool and the log file. Relative paths would land in the deployable the pipeline
+# replaces, which the service account does not own — and an upload then fails with a parse error.
+APP_WORK_DIR=$WORK_DIR
 APP_BACKUP_DIR=$BACKUP_DIR
 APP_BOOTSTRAP_ADMIN_EMAIL=${ADMIN_EMAIL:-}
 # The mail account the first boot writes into the database. Without it the activation email for the
