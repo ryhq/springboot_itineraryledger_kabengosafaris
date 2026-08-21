@@ -83,8 +83,8 @@ public final class CompanyVariableCatalogue {
         VARIABLES.put("companyLogoFullUrl", "Full lockup — mark plus wordmark — for a letterhead");
         VARIABLES.put("companyLogoFullTaglineUrl", "Full lockup carrying the tagline, for a cover page");
         VARIABLES.put("companyFaviconUrl", "Favicon, for anywhere a small square mark is wanted");
-        VARIABLES.put("companyLogoMarkup", "The icon logo as drawable markup, embedded — use this in a PDF, where fetching a URL mid-render is a blank box at worst. It FILLS its container, so set the size on the wrapper: <span style=\"display:inline-block;width:120px\">");
-        VARIABLES.put("companyLogoFullMarkup", "The full lockup as drawable markup, embedded — for a letterhead or a cover page. It FILLS its container, so the wrapper's width is the size: <span style=\"display:inline-block;width:180px\">");
+        VARIABLES.put("companyLogoMarkup", "The icon logo as drawable markup, embedded — use this in a PDF, where fetching a URL mid-render is a blank box at worst. It arrives 110px wide; to change that, add a CSS rule such as .company-logo svg { width: 90px; height: 48px }");
+        VARIABLES.put("companyLogoFullMarkup", "The full lockup as drawable markup, embedded — for a letterhead or a cover page. It arrives 180px wide; to change that, add a CSS rule such as .company-logo svg { width: 150px; height: 80px }. Set the height too: this renderer cannot work out a vector's proportions, and height:auto leaves a tall empty band");
 
         VARIABLES.put("bankName", "Default bank account: the bank");
         VARIABLES.put("bankAccountName", "Default bank account: the account name");

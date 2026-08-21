@@ -227,8 +227,8 @@ public class CompanyIdentityService {
             .logoFullUrl(assetUrl(profile, CompanyAsset.AssetKind.LOGO_FULL, CompanyAsset.AssetKind.LOGO_FULL_TAGLINE))
             .logoFullTaglineUrl(assetUrl(profile, CompanyAsset.AssetKind.LOGO_FULL_TAGLINE))
             /* embedded rather than fetched: a PDF is rendered here and read anywhere */
-            .logoMarkup(assetMarkup(profile, CompanyAsset.AssetKind.LOGO_LIGHT, CompanyAsset.AssetKind.LOGO_FULL))
-            .logoFullMarkup(assetMarkup(profile, CompanyAsset.AssetKind.LOGO_FULL,
+            .logoMarkup(assetMarkup(profile, 110, CompanyAsset.AssetKind.LOGO_LIGHT, CompanyAsset.AssetKind.LOGO_FULL))
+            .logoFullMarkup(assetMarkup(profile, 180, CompanyAsset.AssetKind.LOGO_FULL,
                 CompanyAsset.AssetKind.LOGO_FULL_TAGLINE, CompanyAsset.AssetKind.LOGO_LIGHT))
             .accent(brandAccent)
             /* black text on a pale accent, white on a dark one — a heading has to stay readable */
@@ -322,7 +322,7 @@ public class CompanyIdentityService {
      * Returns empty when nothing is uploaded — a template guards on it and leaves the space out
      * rather than drawing a broken image.
      */
-    private String assetMarkup(CompanyProfile profile, CompanyAsset.AssetKind... kinds) {
+    private String assetMarkup(CompanyProfile profile, int baseWidth, CompanyAsset.AssetKind... kinds) {
         for (CompanyAsset.AssetKind kind : kinds) {
             CompanyAsset asset = profile.getAssets().stream()
                 .filter(a -> a.getAssetKind() == kind && Boolean.TRUE.equals(a.getIsActive()))
@@ -337,16 +337,16 @@ public class CompanyIdentityService {
                 String mime = asset.getMimeType() == null ? "" : asset.getMimeType();
                 if (mime.contains("svg")) {
                     /* inlined, so the vector stays a vector and prints sharp at any size */
-                    return sizeableSvg(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
+                    return sizeableSvg(new String(bytes, java.nio.charset.StandardCharsets.UTF_8), baseWidth);
                 }
                 /*
-                 * width, not max-width: the container is what the template author changes, so it has
-                 * to govern in both directions. max-width let a small file print at its own size and
-                 * ignore the layout.
+                 * A raster is the easy case: the renderer reads its dimensions from the file, so
+                 * height:auto genuinely means auto and the box comes out tight. The width is an
+                 * attribute for the same reason as the SVG — a template's CSS rule can beat it.
                  */
                 return "<img src=\"data:" + (mime.isBlank() ? "image/png" : mime) + ";base64,"
                     + java.util.Base64.getEncoder().encodeToString(bytes)
-                    + "\" alt=\"\" style=\"width:100%;height:auto\" />";
+                    + "\" alt=\"\" width=\"" + baseWidth + "\" style=\"height:auto\" />";
             } catch (Exception e) {
                 log.warn("Could not read the {} asset for embedding: {}", kind, e.getMessage());
             }
@@ -407,26 +407,24 @@ public class CompanyIdentityService {
     }
 
     /**
-     * An inlined SVG whose size the TEMPLATE decides.
+     * An inlined SVG sized so it leaves no space around itself, and so a template can still change it.
      *
-     * A logo file states its own dimensions, and a PDF renderer believes them — so a letterhead that
-     * says {@code <span style="width:180px">} around the logo got whatever the file felt like. Worse,
-     * an SVG carrying only a viewBox and no width at all falls back to the renderer's own default
-     * (300x160pt, measured), which is how an itinerary ended up with a logo four times its intended
-     * width. Neither form obeys the wrapper.
+     * Three measured facts about this renderer, none of them guessable:
      *
-     * Measured across the three candidates: only CSS width on the svg element scales with its
-     * container (135pt inside 180px, 300pt inside 400px — exactly container x 0.75). Attributes do
-     * not. So the intrinsic size comes off and {@code width:100%;height:auto} goes on, which makes
-     * the wrapper in the template the one place a size is set:
+     *  1. It never learns a vector's aspect ratio. With {@code height:auto} it allocates its default
+     *     150pt box — 300px tall around a 72px drawing — which is the empty band that appeared above
+     *     and below the logo on every letterhead.
+     *  2. An explicit height collapses the box exactly (measured: 72px box, 1px slack).
+     *  3. A size in width/height ATTRIBUTES behaves the same as one in an inline style — except that
+     *     attributes lose to a CSS rule, and an inline style beats one. So the size goes in
+     *     attributes: a template can override it with {@code .letterhead svg {width:120px}} and an
+     *     inline style could not be overridden at all.
      *
-     * <pre>{@code <span style="display:inline-block;width:180px">{{companyLogoFullMarkup}}</span>}</pre>
-     *
-     * The viewBox is what survives, because it carries the aspect ratio. A file that has none gets
-     * one derived from the width and height being removed — otherwise stripping them would leave
-     * nothing to scale from.
+     * The height is computed from the viewBox at {@code baseWidth}, because the renderer will not do
+     * it. {@code preserveAspectRatio="xMinYMin meet"} means a template that changes only the width
+     * still gets an undistorted logo, top-left, rather than a stretched one.
      */
-    public static String sizeableSvg(String svg) {
+    public static String sizeableSvg(String svg, int baseWidth) {
         if (svg == null) return "";
         int start = svg.indexOf("<svg");
         if (start < 0) return "";
@@ -439,22 +437,44 @@ public class CompanyIdentityService {
 
         String width = svgAttribute(tag, "width");
         String height = svgAttribute(tag, "height");
-        boolean hasViewBox = svgAttribute(tag, "viewBox") != null;
-        String existingStyle = svgAttribute(tag, "style");
+        String viewBox = svgAttribute(tag, "viewBox");
 
         tag = tag
             .replaceAll("(?i)\\s+width\\s*=\\s*(\"[^\"]*\"|'[^']*')", "")
             .replaceAll("(?i)\\s+height\\s*=\\s*(\"[^\"]*\"|'[^']*')", "")
-            .replaceAll("(?i)\\s+style\\s*=\\s*(\"[^\"]*\"|'[^']*')", "");
+            .replaceAll("(?i)\\s+preserveAspectRatio\\s*=\\s*(\"[^\"]*\"|'[^']*')", "");
 
-        if (!hasViewBox && isLength(width) && isLength(height)) {
+        /* the ratio, from the viewBox where there is one, else from the size being removed */
+        double ratio = ratioOf(viewBox);
+        if (ratio <= 0 && isLength(width) && isLength(height)) {
+            double w = Double.parseDouble(numberIn(width));
+            double h = Double.parseDouble(numberIn(height));
+            if (w > 0) ratio = h / w;
+        }
+        if (ratio <= 0) ratio = 1;
+
+        if (viewBox == null && isLength(width) && isLength(height)) {
+            /* nothing else carries the shape once the dimensions are gone */
             tag += " viewBox=\"0 0 " + numberIn(width) + " " + numberIn(height) + "\"";
         }
 
-        /* whatever the file styled itself with is kept, with the sizing appended so it wins */
-        String style = (existingStyle == null || existingStyle.isBlank() ? "" : existingStyle.trim() + ";")
-            + "width:100%;height:auto";
-        return tag + " style=\"" + style + "\"" + rest;
+        int drawnHeight = Math.max(1, (int) Math.round(baseWidth * ratio));
+        return tag + " width=\"" + baseWidth + "\" height=\"" + drawnHeight + "\""
+            + " preserveAspectRatio=\"xMinYMin meet\"" + rest;
+    }
+
+    /** height / width from a viewBox, or 0 when it has none to give. */
+    private static double ratioOf(String viewBox) {
+        if (viewBox == null) return 0;
+        String[] parts = viewBox.trim().split("[\\s,]+");
+        if (parts.length < 4) return 0;
+        try {
+            double w = Double.parseDouble(parts[2]);
+            double h = Double.parseDouble(parts[3]);
+            return w > 0 ? h / w : 0;
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     /** The value of one attribute in an opening tag, or null. Quoted either way, any case. */
