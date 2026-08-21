@@ -146,6 +146,28 @@ public class PasswordResetService {
             throw new PasswordResetException("User not found");
         }
 
+        /*
+         * Is this link still live?
+         *
+         * A reset token is a stateless JWT — signature and expiry are all it can be judged on by
+         * itself — so the same link worked repeatedly for its whole lifetime, including long after
+         * its owner had finished resetting. Anybody who came across it later (a shared inbox, a
+         * forwarded message, browser history, a proxy log) could set the password again.
+         *
+         * A link minted before the current password was set is spent. That also kills an older link
+         * the moment a newer one is used, which is the same fault wearing a different hat.
+         *
+         * The message deliberately does not distinguish "already used" from "expired": both mean ask
+         * for a new one, and the difference tells a stranger holding the link whether they were
+         * first.
+         */
+        java.time.LocalDateTime issuedAt = jwtTokenProvider.getIssuedAt(token);
+        if (user.getPasswordChangedAt() != null
+                && (issuedAt == null || !issuedAt.isAfter(user.getPasswordChangedAt()))) {
+            log.warn("Rejected a spent password-reset link for user: {}", username);
+            throw new PasswordResetException("Invalid or expired reset token");
+        }
+
         // Validate password policy
         try {
             passwordValidator.validatePassword(newPassword);
@@ -156,6 +178,8 @@ public class PasswordResetService {
         // Hash and save the new password
         String hashedPassword = PasswordHasher.hashPassword(newPassword);
         user.setPassword(hashedPassword);
+        /* stamped BEFORE the save, so this link and every older one are spent from here on */
+        user.setPasswordChangedAt(java.time.LocalDateTime.now());
 
         // Reset password expiry date if configured
         try {

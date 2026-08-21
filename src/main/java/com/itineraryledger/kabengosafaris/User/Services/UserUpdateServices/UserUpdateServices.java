@@ -206,6 +206,14 @@ public class UserUpdateServices {
         // Hash the new password
         String hashedPassword = PasswordHasher.hashPassword(updateRequest.getNewPassword());
         user.setPassword(hashedPassword);
+        /*
+         * Changing your own password also spends any outstanding reset link.
+         *
+         * Otherwise a link somebody requested, abandoned, and left sitting in their inbox stays
+         * usable after they have already changed the password by hand — which is the same hole from
+         * the other direction.
+         */
+        user.setPasswordChangedAt(LocalDateTime.now());
 
         // Reset password expiry date from database settings
         try {

@@ -55,13 +55,22 @@ public class CompanyProfileController {
     /**
      * What the company variables currently resolve to, for previewing a template.
      *
-     * Guarded by authentication alone rather than by READ_COMPANY_PROFILE: whoever writes an email
-     * template needs to see the name and colours that template will print, and they may have no
-     * business reading the Settings page. Nothing here is secret — it is the text the templates
-     * already send out.
+     * This was `isAuthenticated()` on the reasoning that nothing here is secret — it is the text the
+     * templates already send out. That was wrong twice over. The payload carries the TIN and the
+     * default bank account's number, IBAN and SWIFT, which are not "the text on a letterhead" in any
+     * useful sense. And authentication is SELF-SERVICE here: anyone may create an account from the
+     * sign-in screen and activate it from their own inbox, so `isAuthenticated()` means "anyone who
+     * can receive email", not "somebody who works here".
+     *
+     * So: whoever edits a template may read it, because they genuinely need to see the name and the
+     * colours their layout will print — and the money and tax numbers inside it are redacted unless
+     * the caller may read the company profile outright.
      */
     @GetMapping("/variables")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyAuthority('PERM_READ_COMPANY_PROFILE', 'PERM_UPDATE_COMPANY_PROFILE',"
+        + " 'PERM_READ_EMAIL_TEMPLATE', 'PERM_UPDATE_EMAIL_TEMPLATE',"
+        + " 'PERM_READ_PDF_TEMPLATE', 'PERM_UPDATE_PDF_TEMPLATE',"
+        + " 'PERM_READ_EMAIL_ACCOUNT_SIGNATURE', 'PERM_UPDATE_EMAIL_ACCOUNT_SIGNATURE')")
     public ResponseEntity<ApiResponse<?>> getVariables() {
         log.info("GET /api/company/variables - Retrieving resolved company variables");
         return getService.getVariables();

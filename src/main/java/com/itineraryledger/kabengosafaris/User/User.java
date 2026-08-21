@@ -66,6 +66,16 @@ public class User implements UserDetails {
 
     private LocalDateTime passwordExpiryDate;
 
+    /**
+     * When the password was last set, so a reset link issued before it can be refused.
+     *
+     * A reset token is a stateless JWT, which means signature and expiry are the only things it can
+     * be judged on by itself — so the same link worked over and over until it expired, including
+     * after somebody had already used it. Comparing the token's issued-at against this makes a used
+     * link spent, and makes an older link dead as soon as a newer one is used.
+     */
+    private LocalDateTime passwordChangedAt;
+
     // MFA fields
     private boolean mfaEnabled;
 

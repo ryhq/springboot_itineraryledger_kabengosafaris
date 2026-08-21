@@ -104,10 +104,33 @@ public class CompanyProfileGetService {
      * Any signed-in user may read it. This is the text their templates already print on invoices and
      * letters; withholding it from the person writing the layout protects nothing.
      */
+    /**
+     * Variables a template author may see the value of without being able to read the company record.
+     *
+     * Everything EXCEPT the bank account and the tax numbers. A letterhead's colours and address are
+     * the point of a preview; an account number is not, and this endpoint is reachable by anybody who
+     * edits templates.
+     */
+    private static final java.util.Set<String> NEEDS_COMPANY_READ = java.util.Set.of(
+        "companyTin", "companyVrn", "companyRegistrationNumber", "companyLicenceNumber",
+        "bankName", "bankAccountName", "bankAccountHolder", "bankAccountNumber",
+        "bankSwift", "bankIban", "bankCurrency");
+
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<?>> getVariables() {
         Map<String, String> resolved = identityService.variables();
         List<Map<String, Object>> rows = new ArrayList<>();
+
+        /*
+         * Whether the caller may see the sensitive half. Read from the authentication rather than
+         * taken on trust from the caller, and defaulting to "no" when there is no authentication at
+         * all — a redaction that fails open is not a redaction.
+         */
+        org.springframework.security.core.Authentication auth =
+            org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        boolean mayReadCompany = auth != null && auth.getAuthorities().stream()
+            .map(Object::toString)
+            .anyMatch(a -> a.equals("PERM_READ_COMPANY_PROFILE") || a.equals("PERM_UPDATE_COMPANY_PROFILE"));
 
         for (Map<String, Object> declared : CompanyVariableCatalogue.asEmailVariables()) {
             String name = (String) declared.get("name");
@@ -120,9 +143,15 @@ public class CompanyProfileGetService {
              * currentYear is not part of the cached snapshot — a copyright line that still says last
              * year on the 2nd of January is exactly the kind of thing nobody reports.
              */
-            row.put("value", "currentYear".equals(name)
+            boolean redacted = NEEDS_COMPANY_READ.contains(name) && !mayReadCompany;
+            row.put("value", redacted ? "" : ("currentYear".equals(name)
                 ? String.valueOf(java.time.Year.now().getValue())
-                : resolved.getOrDefault(name, ""));
+                : resolved.getOrDefault(name, "")));
+            /*
+             * Say WHY it is blank. Without this the panel shows "Empty — set it in Settings" for a
+             * value that is set, and somebody goes looking for a fault in the company record.
+             */
+            if (redacted) row.put("redacted", true);
             rows.add(row);
         }
 

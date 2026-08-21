@@ -211,6 +211,28 @@ public class JwtTokenProvider {
                 .getSubject();
     }
 
+    /**
+     * When the token was issued, or null if it cannot be read.
+     *
+     * Needed to tell a fresh password-reset link from a spent one: the token itself carries no
+     * used/unused state, so the only thing that can settle it is whether the password has changed
+     * since this link was minted.
+     */
+    public java.time.LocalDateTime getIssuedAt(String token) {
+        try {
+            java.util.Date issued = Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getIssuedAt();
+            return issued == null ? null
+                : java.time.LocalDateTime.ofInstant(issued.toInstant(), java.time.ZoneId.systemDefault());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public TokenType getTokenType(String token) {
         try {
             Object typeClaim = Jwts.parser()

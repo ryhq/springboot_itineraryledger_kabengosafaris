@@ -88,23 +88,74 @@ public class RegistrationServices {
      * @param sendActivationEmail false to create the account silently; it stays
      *                            disabled either way until somebody activates it
      */
+    /**
+     * A registration nobody has completed: never activated, and holding no roles.
+     *
+     * Both halves matter. `enabled == false` alone would also describe an account an administrator
+     * deliberately deactivated, and handing that address to the next person who asks for it would be
+     * a way to take over somebody's account by filling in a form.
+     */
+    private boolean isUnclaimed(User user) {
+        return user != null
+            && !Boolean.TRUE.equals(user.getEnabled())
+            && (user.getRoles() == null || user.getRoles().isEmpty());
+    }
+
+    private boolean sameRow(User a, User b) {
+        return a != null && b != null && a.getId() != null && a.getId().equals(b.getId());
+    }
+
     public User registerUser(RegistrationRequest request, boolean sendActivationEmail) {
         // Validate all required fields
         validateRegistrationRequest(request);
 
-        // Check if user already exists
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        /*
+         * An address nobody has proved they control does not get to own itself forever.
+         *
+         * The row was written before the activation email went out, and a second attempt was refused
+         * outright — so anyone could type a colleague's address, or the company's own info@, and that
+         * address was permanently unusable. Nothing had to be compromised: filling in a form was
+         * enough, and the person locked out had no way to tell why.
+         *
+         * A pending registration — never activated, no roles, so nobody has ever signed in as it —
+         * is a claim, not an account. A fresh attempt on the same address replaces it and re-sends
+         * the activation. Whoever actually reads that mailbox is the one who ends up with the
+         * account, which is the only test that means anything here.
+         *
+         * An ACTIVATED account still refuses, because it belongs to somebody.
+         */
+        User pending = userRepository.findByEmail(request.getEmail())
+            .filter(this::isUnclaimed)
+            .orElse(null);
+
+        if (pending == null && userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RegistrationException("Email already registered");
         }
 
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new RegistrationException("Username already exists");
+        User usernameHolder = userRepository.findByUsername(request.getUsername()).orElse(null);
+        if (usernameHolder != null && !sameRow(usernameHolder, pending)) {
+            /* a pending row of its own is replaceable for the same reason as the address */
+            if (isUnclaimed(usernameHolder) && pending == null) {
+                pending = usernameHolder;
+            } else {
+                throw new RegistrationException("Username already exists");
+            }
         }
 
         if (request.getPhoneNumber() != null) {
-            if (userRepository.findByPhoneNumber(request.getPhoneNumber()).isPresent()) {
-                throw new RegistrationException("Phone already exists");
+            User phoneHolder = userRepository.findByPhoneNumber(request.getPhoneNumber()).orElse(null);
+            if (phoneHolder != null && !sameRow(phoneHolder, pending)) {
+                if (isUnclaimed(phoneHolder) && pending == null) {
+                    pending = phoneHolder;
+                } else {
+                    throw new RegistrationException("Phone already exists");
+                }
             }
+        }
+
+        if (pending != null) {
+            log.info("Replacing an unactivated registration for {} rather than refusing the address",
+                request.getEmail());
         }
 
         // Validate password policy using database settings
@@ -118,7 +169,7 @@ public class RegistrationServices {
         String hashedPassword = PasswordHasher.hashPassword(request.getPassword());
 
         // Create and configure user entity
-        User user = User.builder()
+        User user = pending != null ? pending : User.builder()
                 .email(request.getEmail().toLowerCase().trim())
                 .username(request.getUsername().trim())
                 .password(hashedPassword)
@@ -126,9 +177,29 @@ public class RegistrationServices {
                 .lastName(request.getLastName().trim())
                 .phoneNumber(request.getPhoneNumber() != null ? request.getPhoneNumber().trim() : null)
                 .enabled(false) // Disabled until email verification
+                /* the first password is a password change too, so reset links are judged against it */
+                .passwordChangedAt(LocalDateTime.now())
                 .accountLocked(false)
                 .failedAttempt(0)
                 .build();
+
+        /*
+         * Overwrite the claim in place when there was one, so its id, and anything already pointing
+         * at it, survive — and so the unique constraints on email/username/phone are not fought over
+         * by two rows for the same person.
+         */
+        if (pending != null) {
+            user.setEmail(request.getEmail().toLowerCase().trim());
+            user.setUsername(request.getUsername().trim());
+            user.setPassword(hashedPassword);
+            user.setFirstName(request.getFirstName().trim());
+            user.setLastName(request.getLastName().trim());
+            user.setPhoneNumber(request.getPhoneNumber() != null ? request.getPhoneNumber().trim() : null);
+            user.setEnabled(false);
+            user.setAccountLocked(false);
+            user.setFailedAttempt(0);
+            user.setPasswordChangedAt(LocalDateTime.now());
+        }
 
         // Calculate password expiry date from database settings
         try {
