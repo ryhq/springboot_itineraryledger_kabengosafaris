@@ -106,6 +106,7 @@ public class CompanyIdentityService {
             .phones(s.phones())
             .socials(s.socials())
             .logoUrl(s.logoUrl())
+            .logoEmailDarkUrl(s.logoEmailDarkUrl())
             .logoLightUrl(s.logoLightUrl())
             .logoDarkUrl(s.logoDarkUrl())
             .faviconUrl(s.faviconUrl())
@@ -218,6 +219,7 @@ public class CompanyIdentityService {
             .socials(socials)
             /* always the email slot: it answers with a raster even when the company uploaded vectors */
             .logoUrl(emailLogoUrl(profile))
+            .logoEmailDarkUrl(emailLogoDarkUrl(profile))
             .logoLightUrl(assetUrl(profile, CompanyAsset.AssetKind.LOGO_LIGHT))
             .logoDarkUrl(assetUrl(profile, CompanyAsset.AssetKind.LOGO_DARK))
             .faviconUrl(assetUrl(profile, CompanyAsset.AssetKind.FAVICON_LIGHT))
@@ -335,13 +337,16 @@ public class CompanyIdentityService {
                 String mime = asset.getMimeType() == null ? "" : asset.getMimeType();
                 if (mime.contains("svg")) {
                     /* inlined, so the vector stays a vector and prints sharp at any size */
-                    String svg = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
-                    int start = svg.indexOf("<svg");
-                    return start < 0 ? "" : svg.substring(start);
+                    return sizeableSvg(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
                 }
+                /*
+                 * width, not max-width: the container is what the template author changes, so it has
+                 * to govern in both directions. max-width let a small file print at its own size and
+                 * ignore the layout.
+                 */
                 return "<img src=\"data:" + (mime.isBlank() ? "image/png" : mime) + ";base64,"
                     + java.util.Base64.getEncoder().encodeToString(bytes)
-                    + "\" alt=\"\" style=\"max-width:100%;height:auto\" />";
+                    + "\" alt=\"\" style=\"width:100%;height:auto\" />";
             } catch (Exception e) {
                 log.warn("Could not read the {} asset for embedding: {}", kind, e.getMessage());
             }
@@ -363,6 +368,18 @@ public class CompanyIdentityService {
             .isEmpty()
             ? (hasAnyLogo(profile) ? assetPath("logo-email") : "")
             : assetUrl(profile, CompanyAsset.AssetKind.LOGO_EMAIL);
+    }
+
+    /**
+     * The URL an email's coloured header band should point at.
+     *
+     * Same reasoning as the light one — always the slot, so the endpoint's fallback and its
+     * SVG-to-PNG conversion both apply — but this slot borrows the DARK mark first.
+     */
+    private String emailLogoDarkUrl(CompanyProfile profile) {
+        String own = assetUrl(profile, CompanyAsset.AssetKind.LOGO_EMAIL_DARK);
+        if (!own.isEmpty()) return own;
+        return hasAnyLogo(profile) ? assetPath("logo-email-dark") : "";
     }
 
     private boolean hasAnyLogo(CompanyProfile profile) {
@@ -387,6 +404,74 @@ public class CompanyIdentityService {
             }
         }
         return "";
+    }
+
+    /**
+     * An inlined SVG whose size the TEMPLATE decides.
+     *
+     * A logo file states its own dimensions, and a PDF renderer believes them — so a letterhead that
+     * says {@code <span style="width:180px">} around the logo got whatever the file felt like. Worse,
+     * an SVG carrying only a viewBox and no width at all falls back to the renderer's own default
+     * (300x160pt, measured), which is how an itinerary ended up with a logo four times its intended
+     * width. Neither form obeys the wrapper.
+     *
+     * Measured across the three candidates: only CSS width on the svg element scales with its
+     * container (135pt inside 180px, 300pt inside 400px — exactly container x 0.75). Attributes do
+     * not. So the intrinsic size comes off and {@code width:100%;height:auto} goes on, which makes
+     * the wrapper in the template the one place a size is set:
+     *
+     * <pre>{@code <span style="display:inline-block;width:180px">{{companyLogoFullMarkup}}</span>}</pre>
+     *
+     * The viewBox is what survives, because it carries the aspect ratio. A file that has none gets
+     * one derived from the width and height being removed — otherwise stripping them would leave
+     * nothing to scale from.
+     */
+    public static String sizeableSvg(String svg) {
+        if (svg == null) return "";
+        int start = svg.indexOf("<svg");
+        if (start < 0) return "";
+        svg = svg.substring(start);
+
+        int close = svg.indexOf('>');
+        if (close < 0) return "";
+        String tag = svg.substring(0, close);
+        String rest = svg.substring(close);
+
+        String width = svgAttribute(tag, "width");
+        String height = svgAttribute(tag, "height");
+        boolean hasViewBox = svgAttribute(tag, "viewBox") != null;
+        String existingStyle = svgAttribute(tag, "style");
+
+        tag = tag
+            .replaceAll("(?i)\\s+width\\s*=\\s*(\"[^\"]*\"|'[^']*')", "")
+            .replaceAll("(?i)\\s+height\\s*=\\s*(\"[^\"]*\"|'[^']*')", "")
+            .replaceAll("(?i)\\s+style\\s*=\\s*(\"[^\"]*\"|'[^']*')", "");
+
+        if (!hasViewBox && isLength(width) && isLength(height)) {
+            tag += " viewBox=\"0 0 " + numberIn(width) + " " + numberIn(height) + "\"";
+        }
+
+        /* whatever the file styled itself with is kept, with the sizing appended so it wins */
+        String style = (existingStyle == null || existingStyle.isBlank() ? "" : existingStyle.trim() + ";")
+            + "width:100%;height:auto";
+        return tag + " style=\"" + style + "\"" + rest;
+    }
+
+    /** The value of one attribute in an opening tag, or null. Quoted either way, any case. */
+    private static String svgAttribute(String tag, String name) {
+        java.util.regex.Matcher m = java.util.regex.Pattern
+            .compile("(?i)\\s" + java.util.regex.Pattern.quote(name) + "\\s*=\\s*(\"([^\"]*)\"|'([^']*)')")
+            .matcher(tag);
+        if (!m.find()) return null;
+        return m.group(2) != null ? m.group(2) : m.group(3);
+    }
+
+    private static boolean isLength(String value) {
+        return value != null && value.matches("\\s*\\d+(\\.\\d+)?\\s*(px|pt)?\\s*");
+    }
+
+    private static String numberIn(String value) {
+        return value.replaceAll("[^0-9.]", "");
     }
 
     /** The default active account, in the company's own currency where there is a choice. */
@@ -428,6 +513,15 @@ public class CompanyIdentityService {
         /** link type -> full url, for the social icons a signature or a footer carries */
         Map<String, String> socials,
         String logoUrl, String logoLightUrl, String logoDarkUrl, String faviconUrl,
+        /**
+         * The raster an email header should use, which is the DARK-ink mark.
+         *
+         * The shipped emails paint that band in the dark accent, so the light-background copy is a
+         * green mark on a dark green field — the welcome email opened with a faint outline where the
+         * logo belongs. Separate slot, separate variable, because "which logo" is a question about
+         * the background it lands on.
+         */
+        String logoEmailDarkUrl,
         /** the brand: a template that hardcodes a colour is as wrong as one that hardcodes a name */
         String accent, String accentContrast, String accentDark, String accentSoft,
         String radius, String font,
@@ -456,7 +550,7 @@ public class CompanyIdentityService {
                 .defaultCurrency("")
                 .email("").phone("").phoneSecondary("").address("").website("")
                 .emails(List.of()).phones(List.of()).socials(Map.of())
-                .logoUrl("").logoLightUrl("").logoDarkUrl("").faviconUrl("")
+                .logoUrl("").logoLightUrl("").logoDarkUrl("").faviconUrl("").logoEmailDarkUrl("")
                 .accent("").accentContrast("").accentDark("").accentSoft("").radius("").font("")
                 .logoFullUrl("").logoFullTaglineUrl("").logoMarkup("").logoFullMarkup("")
                 .bank(BankSnapshot.empty())
@@ -512,6 +606,7 @@ public class CompanyIdentityService {
             /* so a signature can drop the whole "Follow us" row rather than leave the label alone */
             map.put("companyHasSocials", socials.isEmpty() ? "" : "yes");
             map.put("companyLogoUrl", logoUrl);
+            map.put("companyLogoEmailDarkUrl", logoEmailDarkUrl);
             map.put("companyLogoDarkUrl", logoDarkUrl);
             map.put("companyFaviconUrl", faviconUrl);
             map.put("companyLogoLightUrl", logoLightUrl);
@@ -519,6 +614,14 @@ public class CompanyIdentityService {
             map.put("companyLogoFullMarkup", logoFullMarkup);
             map.put("companyLogoDarkUrl", logoDarkUrl);
             map.put("companyAccent", accent);
+            /*
+             * The accent with no '#', for a colour inside a data: URI.
+             *
+             * A signature's icons are SVGs inlined as data URIs, and a '#' there has to be written
+             * %23 or the URI ends at the hash. Without this the icons stayed a hardcoded bronze,
+             * which is the same fault as a hardcoded name: right for nobody in particular.
+             */
+            map.put("companyAccentBare", accent == null ? "" : accent.replace("#", ""));
             map.put("companyAccentContrast", accentContrast);
             map.put("companyAccentDark", accentDark);
             map.put("companyAccentSoft", accentSoft);

@@ -66,7 +66,15 @@ public class CompanyProfileGetService {
         SLOTS.put(CompanyAsset.AssetKind.FAVICON_DARK,
             new String[] { "Favicon — dark mode", "The browser tab mark when the viewer's system is dark." });
         SLOTS.put(CompanyAsset.AssetKind.LOGO_EMAIL,
-            new String[] { "Logo — email", "A PNG. Mail clients do not render SVG, so email needs its own raster copy." });
+            new String[] { "Logo — email, light background",
+                "A PNG for the body of a message, where the background is white. "
+                + "Mail clients do not render SVG, so email needs its own raster copy — "
+                + "upload a vector and it is converted for you." });
+        SLOTS.put(CompanyAsset.AssetKind.LOGO_EMAIL_DARK,
+            new String[] { "Logo — email, dark header",
+                "A PNG for the coloured header band at the top of every message. "
+                + "The band is painted in the dark accent, so the light-background copy "
+                + "disappears into it — this wants the light-ink version of the mark." });
     }
 
     @Transactional(readOnly = true)
@@ -203,6 +211,7 @@ public class CompanyProfileGetService {
         payload.put("faviconLightUrl", assetUrlIfPresent(profile, CompanyAsset.AssetKind.FAVICON_LIGHT));
         payload.put("faviconDarkUrl", assetUrlIfPresent(profile, CompanyAsset.AssetKind.FAVICON_DARK));
         payload.put("logoEmailUrl", assetUrlIfPresent(profile, CompanyAsset.AssetKind.LOGO_EMAIL));
+        payload.put("logoEmailDarkUrl", assetUrlIfPresent(profile, CompanyAsset.AssetKind.LOGO_EMAIL_DARK));
 
         return ResponseEntity.ok(ApiResponse.success(200, "Brand retrieved successfully", payload));
     }
@@ -432,8 +441,9 @@ public class CompanyProfileGetService {
 
             boolean blocking = kind == CompanyAsset.AssetKind.LOGO_LIGHT;
             gaps.add(gap("asset." + kind.name(), slot.getValue()[0], blocking ? "BLOCKING" : "RECOMMENDED",
-                kind == CompanyAsset.AssetKind.LOGO_EMAIL
-                    ? "Outgoing email shows a broken image, or falls back to the SVG that mail clients cannot render."
+                kind == CompanyAsset.AssetKind.LOGO_EMAIL || kind == CompanyAsset.AssetKind.LOGO_EMAIL_DARK
+                    ? "Email borrows another slot and converts it, so this is about control rather than breakage: "
+                        + "the borrowed mark may be the wrong ink for the background it lands on."
                     : slot.getValue()[1],
                 "ASSETS"));
         }

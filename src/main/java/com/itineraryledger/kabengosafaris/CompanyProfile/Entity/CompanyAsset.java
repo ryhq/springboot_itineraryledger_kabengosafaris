@@ -55,8 +55,16 @@ public class CompanyAsset {
         FAVICON_LIGHT,
         /** square, dark theme */
         FAVICON_DARK,
-        /** raster for mail, because SVG mostly does not survive an email client */
-        LOGO_EMAIL
+        /** raster for mail on a light background, because SVG mostly does not survive an email client */
+        LOGO_EMAIL,
+        /**
+         * raster for mail on a DARK background.
+         *
+         * The shipped emails paint their header band in the dark accent, so the light-background
+         * copy disappears into it — a green mark on a dark green band is a faint outline, which is
+         * what a welcome email opened with.
+         */
+        LOGO_EMAIL_DARK
     }
 
     @Id

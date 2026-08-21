@@ -96,8 +96,8 @@ class CompanyProfileWriteRulesTest {
     }
 
     @Test
-    @DisplayName("a plain SVG is stored, and the email slot refuses one because mail cannot render it")
-    void plainSvgStoredButNotForEmail(@TempDir Path dir) throws Exception {
+    @DisplayName("a plain SVG is stored — including in an email slot, which converts it on the way out")
+    void plainSvgIsStoredEverywhere(@TempDir Path dir) throws Exception {
         CompanyAssetService service = assetService(dir);
         byte[] svg = "<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0h10v10H0z\"/></svg>".getBytes();
 
@@ -105,9 +105,19 @@ class CompanyProfileWriteRulesTest {
         assertEquals(200, ok.getStatusCode().value());
         assertEquals(1, Files.list(dir).count(), "the file landed in the asset directory");
 
-        var refused = service.upload("logo-email", new MockMultipartFile("file", "logo.svg", "image/svg+xml", svg));
-        assertEquals(400, refused.getStatusCode().value());
-        assertTrue(String.valueOf(refused.getBody().getMessage()).contains("PNG"));
+        /*
+         * This used to be a 400 telling somebody to go and export a PNG, and the rule behind it was
+         * right — Gmail and Outlook draw a broken-image box for an SVG. But the refusal put a chore
+         * between a company and a working letterhead, and a company whose designer supplied only
+         * vectors could not finish at all. The endpoint rasterises when it serves the slot instead
+         * (see EmailLogoIsRasterTest), so the upload is accepted and the email still gets a raster.
+         */
+        for (String slot : new String[] { "logo-email", "logo-email-dark" }) {
+            var accepted = service.upload(slot,
+                new MockMultipartFile("file", "logo.svg", "image/svg+xml", svg));
+            assertEquals(200, accepted.getStatusCode().value(),
+                slot + " should accept a vector and convert it: " + accepted.getBody().getMessage());
+        }
     }
 
     @Test

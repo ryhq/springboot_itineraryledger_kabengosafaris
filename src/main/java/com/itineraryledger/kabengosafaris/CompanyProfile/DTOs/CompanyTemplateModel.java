@@ -43,6 +43,8 @@ public class CompanyTemplateModel {
     private final java.util.Map<String, String> socials;
 
     private final String logoUrl;
+    /** the raster for an email's coloured header band, where the light-ink mark belongs */
+    private final String logoEmailDarkUrl;
     private final String logoLightUrl;
     private final String logoDarkUrl;
     private final String faviconUrl;

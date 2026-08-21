@@ -117,10 +117,15 @@ public class CompanyAssetService {
             }
         }
 
-        if (kind == CompanyAsset.AssetKind.LOGO_EMAIL && "svg".equals(extension)) {
-            return badRequest("The email logo has to be a raster image — Outlook and Gmail do not render SVG. "
-                + "Export the same logo as a PNG, around 400px wide.");
-        }
+        /*
+         * An SVG in an email slot is now converted rather than refused.
+         *
+         * The rule was right — Gmail and Outlook draw a broken-image box for an SVG — but refusing
+         * the upload left the person with a task ("go and export a PNG") standing between them and a
+         * working letterhead, and a company whose designer only supplied vectors could not finish.
+         * The endpoint rasterises on the way out, so the file is accepted and the email still gets a
+         * raster.
+         */
 
         CompanyProfile profile = writeService.requireProfile();
 
@@ -228,7 +233,7 @@ public class CompanyAssetService {
          * email pointing at an SVG is a broken-image box in Gmail and in Outlook, and that box is
          * the first thing a customer sees.
          */
-        if (kind == CompanyAsset.AssetKind.LOGO_EMAIL && "svg".equals(extensionOf(asset.getFileName()))) {
+        if (isEmailSlot(kind) && "svg".equals(extensionOf(asset.getFileName()))) {
             try {
                 bytes = rasterise(path, asset.getFileName());
                 mediaType = MediaType.IMAGE_PNG;
@@ -263,6 +268,10 @@ public class CompanyAssetService {
      */
     private static final Map<CompanyAsset.AssetKind, CompanyAsset.AssetKind[]> FALLBACKS = new LinkedHashMap<>();
     static {
+        /* the dark-header copy borrows the DARK ink first — that is the whole point of the slot */
+        FALLBACKS.put(CompanyAsset.AssetKind.LOGO_EMAIL_DARK, new CompanyAsset.AssetKind[] {
+            CompanyAsset.AssetKind.LOGO_DARK, CompanyAsset.AssetKind.LOGO_EMAIL,
+            CompanyAsset.AssetKind.LOGO_FULL, CompanyAsset.AssetKind.LOGO_LIGHT });
         FALLBACKS.put(CompanyAsset.AssetKind.LOGO_EMAIL, new CompanyAsset.AssetKind[] {
             CompanyAsset.AssetKind.LOGO_FULL, CompanyAsset.AssetKind.LOGO_FULL_TAGLINE,
             CompanyAsset.AssetKind.LOGO_LIGHT, CompanyAsset.AssetKind.LOGO_DARK });
@@ -278,6 +287,10 @@ public class CompanyAssetService {
             CompanyAsset.AssetKind.FAVICON_DARK, CompanyAsset.AssetKind.LOGO_LIGHT });
         FALLBACKS.put(CompanyAsset.AssetKind.FAVICON_DARK, new CompanyAsset.AssetKind[] {
             CompanyAsset.AssetKind.FAVICON_LIGHT, CompanyAsset.AssetKind.LOGO_DARK });
+    }
+
+    private static boolean isEmailSlot(CompanyAsset.AssetKind kind) {
+        return kind == CompanyAsset.AssetKind.LOGO_EMAIL || kind == CompanyAsset.AssetKind.LOGO_EMAIL_DARK;
     }
 
     /** The uploaded file for a slot, or the nearest stand-in. */

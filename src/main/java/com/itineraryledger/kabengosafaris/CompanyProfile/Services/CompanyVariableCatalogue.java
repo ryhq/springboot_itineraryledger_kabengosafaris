@@ -64,6 +64,7 @@ public final class CompanyVariableCatalogue {
          * variables too, and the shipped templates use them.
          */
         VARIABLES.put("companyAccent", "The brand accent colour, e.g. #1c7a58. In a PDF use {{companyAccent}} even inside CSS — a ${} expression is escaped there");
+        VARIABLES.put("companyAccentBare", "The accent with no '#', for a colour inside a data: URI — write it as %23{{companyAccentBare}}");
         VARIABLES.put("companyAccentContrast", "Text colour that stays legible on the accent");
         VARIABLES.put("companyAccentDark", "A darker shade of the accent — header bands, footers, rules");
         VARIABLES.put("companyAccentSoft", "A pale tint of the accent — the wash behind a callout");
@@ -75,14 +76,15 @@ public final class CompanyVariableCatalogue {
          * so a template refers to the variable and never to a host, and the same template renders for
          * every company without editing.
          */
-        VARIABLES.put("companyLogoUrl", "Logo for email and documents (the raster copy where one is uploaded)");
+        VARIABLES.put("companyLogoUrl", "Logo for a message BODY — a raster, on a white background. Upload a vector and it is converted for you");
+        VARIABLES.put("companyLogoEmailDarkUrl", "Logo for a message's coloured HEADER band — the light-ink mark, since the band is dark");
         VARIABLES.put("companyLogoLightUrl", "Icon logo for light backgrounds");
         VARIABLES.put("companyLogoDarkUrl", "Icon logo for dark backgrounds");
         VARIABLES.put("companyLogoFullUrl", "Full lockup — mark plus wordmark — for a letterhead");
         VARIABLES.put("companyLogoFullTaglineUrl", "Full lockup carrying the tagline, for a cover page");
         VARIABLES.put("companyFaviconUrl", "Favicon, for anywhere a small square mark is wanted");
-        VARIABLES.put("companyLogoMarkup", "The icon logo as drawable markup, embedded — use this in a PDF, where fetching a URL mid-render is a blank box at worst");
-        VARIABLES.put("companyLogoFullMarkup", "The full lockup as drawable markup, embedded — for a letterhead or a cover page");
+        VARIABLES.put("companyLogoMarkup", "The icon logo as drawable markup, embedded — use this in a PDF, where fetching a URL mid-render is a blank box at worst. It FILLS its container, so set the size on the wrapper: <span style=\"display:inline-block;width:120px\">");
+        VARIABLES.put("companyLogoFullMarkup", "The full lockup as drawable markup, embedded — for a letterhead or a cover page. It FILLS its container, so the wrapper's width is the size: <span style=\"display:inline-block;width:180px\">");
 
         VARIABLES.put("bankName", "Default bank account: the bank");
         VARIABLES.put("bankAccountName", "Default bank account: the account name");
@@ -185,6 +187,7 @@ public final class CompanyVariableCatalogue {
             case "companyRadius" -> "company.radius";
             case "companyFont" -> "company.font";
             case "companyLogoUrl" -> "company.logoUrl";
+            case "companyLogoEmailDarkUrl" -> "company.logoEmailDarkUrl";
             case "companyLogoLightUrl" -> "company.logoLightUrl";
             case "companyLogoDarkUrl" -> "company.logoDarkUrl";
             case "companyLogoFullUrl" -> "company.logoFullUrl";
