@@ -24,6 +24,9 @@ public class RegistrationHandler {
     @Autowired
     private AccountVerificationService accountVerificationService;
 
+    @Autowired
+    private com.itineraryledger.kabengosafaris.Security.RateLimit.RateLimiter rateLimiter;
+
     /**
      * Handle user registration request
      *
@@ -31,6 +34,29 @@ public class RegistrationHandler {
      * @return ResponseEntity with ApiResponse
      */
     public ResponseEntity<ApiResponse<?>> registerUserHTTPHandler(RegistrationRequest request) {
+        /*
+         * How many activation emails one address may be sent, whoever is asking.
+         *
+         * The filter limits the other two mail-senders by recipient, but it cannot do it here: this
+         * endpoint carries its email in a JSON BODY, and a servlet filter reading the body consumes
+         * the stream the controller then needs. Checked here instead, where the address is already
+         * parsed — and only on THIS path, so an administrator creating accounts and the first-run
+         * initializer are untouched.
+         *
+         * Without it the per-IP ceiling is the only guard, and the attack worth stopping is a
+         * hundred machines asking this installation to mail the same person.
+         */
+        String email = request.getEmail() == null ? null : request.getEmail().trim().toLowerCase();
+        if (email != null && !email.isBlank()) {
+            long waitFor = rateLimiter.check("register-email:" + email, 3, java.time.Duration.ofHours(1));
+            if (waitFor > 0) {
+                return ResponseEntity.status(429).body(ApiResponse.error(429,
+                    "That address has already been sent several activation emails. "
+                        + "Check the inbox, or try again in about " + Math.max(1, waitFor / 60)
+                        + " minutes.", "RATE_LIMITED"));
+            }
+        }
+
         try {
             registrationServices.registerUser(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(

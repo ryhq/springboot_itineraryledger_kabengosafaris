@@ -118,7 +118,8 @@ public class SecurityConfigurations {
         HttpSecurity httpSecurity,
         JwtAuthenticationFilter jwtAuthenticationFilter,
         DynamicPermissionFilter dynamicPermissionFilter,
-        com.itineraryledger.kabengosafaris.Feature.FeatureGateFilter featureGateFilter
+        com.itineraryledger.kabengosafaris.Feature.FeatureGateFilter featureGateFilter,
+        com.itineraryledger.kabengosafaris.Security.RateLimit.RateLimitFilter rateLimitFilter
     ) throws Exception {
         return httpSecurity
         // Configure CORS inline using a custom configuration source
@@ -252,6 +253,16 @@ public class SecurityConfigurations {
          * and an unauthenticated caller would learn more than a signed-in one.
          */
         .addFilterBefore(featureGateFilter, DynamicPermissionFilter.class)
+        /*
+         * The rate limiter runs before all of them.
+         *
+         * Everything it guards is reachable without an account, so making it wait behind
+         * authentication would mean the work it exists to prevent — a database lookup and an outgoing
+         * email — happens on the way to being refused. It sits after CORS, though, which Spring puts
+         * at the head of the chain: a 429 the browser cannot read is a form that silently does
+         * nothing.
+         */
+        .addFilterBefore(rateLimitFilter, com.itineraryledger.kabengosafaris.Feature.FeatureGateFilter.class)
         .build();
     }
     
