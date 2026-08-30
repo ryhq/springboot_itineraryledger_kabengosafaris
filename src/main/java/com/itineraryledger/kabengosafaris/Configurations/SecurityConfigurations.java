@@ -135,8 +135,12 @@ public class SecurityConfigurations {
              * The panel's own origin is always allowed, because that is the client this API exists
              * for. Anything else is stated in configuration per deployment.
              *
-             * Not affected: the public websites. Their API references are <img> sources, and an image
-             * load is not a CORS request.
+             * The public websites are handled SEPARATELY, below. An earlier version of this comment
+             * claimed they were unaffected because "their API references are <img> sources, and an
+             * image load is not a CORS request". Only the pictures are. The sites also FETCH their
+             * parks, heroes, accommodations and testimonies from /api/public/*, and locking this to
+             * the panel's origin emptied both of them — the API kept answering 200 with every row
+             * present, and the browser threw the answers away.
              */
             corsConfiguration.setAllowedOrigins(allowedOrigins());
             /* OPTIONS for preflight, HEAD because a monitor sends one and a 403 reads as an outage */
@@ -154,9 +158,34 @@ public class SecurityConfigurations {
             // "No response from server" even on 200 OK.
             corsConfiguration.setAllowCredentials(true);
 
-            UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource(); // Create a configuration source
-            source.registerCorsConfiguration("/**", corsConfiguration); // Apply CORS configuration to all endpoints
-            cors.configurationSource(source);  // Set the configuration source
+            /*
+             * The public API answers any origin, and carries no credentials while doing it.
+             *
+             * These endpoints are published by definition: a park's description, a hero image, the
+             * testimonials — served to a website whose whole job is showing them to strangers, and
+             * readable by anyone who types the URL. CORS protects a browser from being used as
+             * somebody's authenticated proxy, and with credentials off there is no authority to
+             * borrow, so naming origins here would buy nothing and cost an outage every time a
+             * site gains a www, a staging host or a preview deployment.
+             *
+             * allowCredentials(false) is the load-bearing half. A wildcard WITH credentials is the
+             * hole this whole configuration exists to close, and the browser refuses that pairing
+             * anyway — which is a good sign it should not be attempted.
+             *
+             * POST is included because the sites submit to it: a testimonial, a newsletter
+             * subscription, a booking inquiry.
+             */
+            CorsConfiguration publicConfiguration = new CorsConfiguration();
+            publicConfiguration.setAllowedOriginPatterns(List.of("*"));
+            publicConfiguration.setAllowedMethods(List.of("GET", "POST", "HEAD", "OPTIONS"));
+            publicConfiguration.setAllowedHeaders(List.of("*"));
+            publicConfiguration.setAllowCredentials(false);
+
+            UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+            /* the more specific pattern is registered first — the source takes the first match */
+            source.registerCorsConfiguration("/api/public/**", publicConfiguration);
+            source.registerCorsConfiguration("/**", corsConfiguration);
+            cors.configurationSource(source);
         })
 
         .csrf(csrf -> csrf.disable()) // Disable CSRF as we're using a stateless REST API

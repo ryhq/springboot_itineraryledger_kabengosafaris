@@ -30,10 +30,18 @@ class CorsPolicyTest {
     void noWildcardWithCredentials() throws IOException {
         String source = Files.readString(CONFIG);
 
-        assertFalse(source.contains("setAllowedOriginPatterns(List.of(\"*\"))"),
-            "a wildcard origin pattern is back, and this configuration allows credentials");
-        assertFalse(source.contains("setAllowedOrigins(List.of(\"*\"))"),
-            "a wildcard origin is back, and this configuration allows credentials");
+        /*
+         * Scoped to the CREDENTIALED configuration. The public API deliberately answers any origin,
+         * with credentials off — so a file-wide search for a wildcard now finds a legitimate one,
+         * and the thing that actually matters is the PAIRING.
+         */
+        String credentialed = source.substring(source.indexOf("CorsConfiguration corsConfiguration"),
+            source.indexOf("CorsConfiguration publicConfiguration"));
+
+        assertFalse(credentialed.contains("setAllowedOriginPatterns(List.of(\"*\"))"),
+            "a wildcard origin pattern is back in the credentialed configuration");
+        assertFalse(credentialed.contains("setAllowedOrigins(List.of(\"*\"))"),
+            "a wildcard origin is back in the credentialed configuration");
         assertTrue(source.contains("setAllowedOrigins(allowedOrigins())"),
             "origins should come from configuration, so each deployment names its own callers");
         assertTrue(source.contains("setAllowCredentials(true)"),
@@ -46,5 +54,39 @@ class CorsPolicyTest {
         String source = Files.readString(CONFIG);
         assertTrue(source.contains("\"OPTIONS\""), "a browser sends OPTIONS before any non-simple request");
         assertTrue(source.contains("\"HEAD\""), "HEAD used to 403, which looks exactly like a broken endpoint");
+    }
+
+    @Test
+    @DisplayName("the public API answers any origin, and carries no credentials while doing it")
+    void thePublicSitesAreStillServed() throws IOException {
+        String source = Files.readString(CONFIG);
+
+        /*
+         * This is the second half of the same lesson, and it cost a live outage to learn.
+         *
+         * Locking CORS to the panel's origin was right for the authenticated API and wrong for the
+         * public one: both company websites went blank while the API kept answering 200 with every
+         * row present, because the browser was throwing the answers away. The comment justifying it
+         * said the sites were unaffected since "their API references are <img> sources" — true of the
+         * pictures, false of the parks, heroes, accommodations and testimonials they FETCH.
+         */
+        int publicAt = source.indexOf("CorsConfiguration publicConfiguration");
+        assertTrue(publicAt > 0,
+            "there must be a separate CORS configuration for /api/public/**, or every public website "
+                + "served by this API goes blank");
+
+        String publicBlock = source.substring(publicAt, source.indexOf("cors.configurationSource", publicAt));
+
+        assertTrue(publicBlock.contains("setAllowCredentials(false)"),
+            "a wildcard origin is only safe with credentials OFF — with them on it is the exact hole "
+                + "the rest of this configuration exists to close");
+        assertTrue(publicBlock.contains("\"POST\""),
+            "the sites submit testimonials, newsletter sign-ups and booking inquiries");
+        assertTrue(source.contains("registerCorsConfiguration(\"/api/public/**\""),
+            "the public rule has to be registered, and before the catch-all — the source takes the "
+                + "first pattern that matches");
+        assertTrue(source.indexOf("registerCorsConfiguration(\"/api/public/**\"")
+                < source.indexOf("registerCorsConfiguration(\"/**\""),
+            "the specific pattern must be registered first or the catch-all swallows it");
     }
 }
