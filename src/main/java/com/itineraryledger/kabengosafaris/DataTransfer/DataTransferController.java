@@ -69,17 +69,23 @@ public class DataTransferController {
             long size = java.nio.file.Files.size(bundle);
 
             /*
-             * Streamed from the temp file and deleted afterwards, whatever happens — including a
-             * browser that gives up half way through a large download, which is a closed connection
-             * rather than an error and would otherwise leave the file behind for good.
+             * A plain Resource, written synchronously by Spring — NOT a StreamingResponseBody.
              *
-             * Content-Length is set because a download with a known size shows progress, and one of
-             * these can run to hundreds of megabytes with pictures in it.
+             * The streaming version runs after the controller returns, on an async dispatch, which
+             * put any failure there outside this try block entirely: the export kept answering 500
+             * with the global handler's "An unexpected error occurred" and my specific message never
+             * appeared. Whatever was wrong, being unable to see it was worse. A Resource is copied
+             * before the method's frame is gone, so a fault here says what it was.
+             *
+             * Memory stays bounded either way — the bundle is a file on disk and Spring copies it
+             * through a buffer. Content-Length is set so a large download shows real progress.
              */
-            org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody body = out -> {
-                try (var in = java.nio.file.Files.newInputStream(bundle)) {
-                    in.transferTo(out);
-                } finally {
+            java.io.InputStream stream = new java.io.FilterInputStream(
+                    java.nio.file.Files.newInputStream(bundle)) {
+                @Override
+                public void close() throws java.io.IOException {
+                    super.close();
+                    /* the bundle exists to be sent once; leaving it behind fills the disk slowly */
                     java.nio.file.Files.deleteIfExists(bundle);
                 }
             };
@@ -88,11 +94,23 @@ public class DataTransferController {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .contentLength(size)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
-                .body(body);
-        } catch (Exception e) {
+                .body(new org.springframework.core.io.InputStreamResource(stream));
+        } catch (Throwable e) {
+            /*
+             * Throwable, and the exception's CLASS in the message.
+             *
+             * Three rounds were spent on an export that answered 500 while every message reaching
+             * the screen was somebody's generic sentence — the global handler's, then mine. This
+             * endpoint is behind an export permission, so the person reading it is an administrator
+             * of this company, and telling them "NullPointerException: this.maxAge is null" costs
+             * nothing and saves a deploy. e.getMessage() is null for plenty of exceptions, which is
+             * why the class name is not optional.
+             */
             log.error("Could not build the export bundle", e);
+            String detail = e.getClass().getSimpleName()
+                + (e.getMessage() == null ? "" : ": " + e.getMessage());
             return ResponseEntity.status(500).body(
-                ApiResponse.error(500, "Could not build the bundle: " + e.getMessage(), "EXPORT_FAILED"));
+                ApiResponse.error(500, "Could not build the bundle — " + detail, "EXPORT_FAILED"));
         }
     }
 
@@ -144,10 +162,12 @@ public class DataTransferController {
             /* a bad bundle is the caller's problem and the message says what is wrong with it */
             return ResponseEntity.badRequest().body(
                 ApiResponse.error(400, e.getMessage(), "BAD_BUNDLE"));
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.error("Import failed", e);
+            String detail = e.getClass().getSimpleName()
+                + (e.getMessage() == null ? "" : ": " + e.getMessage());
             return ResponseEntity.status(500).body(
-                ApiResponse.error(500, "The import failed: " + e.getMessage(), "IMPORT_FAILED"));
+                ApiResponse.error(500, "The import failed — " + detail, "IMPORT_FAILED"));
         }
     }
 }

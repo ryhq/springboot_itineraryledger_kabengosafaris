@@ -57,6 +57,10 @@ public class BundleExportService {
      */
     private final java.util.Optional<org.springframework.boot.info.BuildProperties> buildProperties;
 
+    /** the same directory every other file this application writes lives under */
+    @org.springframework.beans.factory.annotation.Value("${app.data.dir:./data}")
+    private String dataDir;
+
     private String buildCommit() {
         return buildProperties
             .map(build -> build.get("sha") == null ? "unknown" : build.get("sha"))
@@ -128,7 +132,17 @@ public class BundleExportService {
         manifest.put("includeImages", includeImages);
         ArrayNode moduleRows = manifest.putArray("modules");
 
-        java.nio.file.Path bundle = java.nio.file.Files.createTempFile("bundle-", ".zip");
+        /*
+         * Built under the application's own data directory, not /tmp.
+         *
+         * The service runs with PrivateTmp, where /tmp is a RAM-backed tmpfs — so a bundle with a
+         * company's galleries in it would be written to memory by another name, which is the exact
+         * problem building it in a byte[] had. This path is on disk and inside the unit's
+         * ReadWritePaths.
+         */
+        java.nio.file.Path scratch = java.nio.file.Paths.get(dataDir, "bundles");
+        java.nio.file.Files.createDirectories(scratch);
+        java.nio.file.Path bundle = java.nio.file.Files.createTempFile(scratch, "bundle-", ".zip");
         try (OutputStream out = java.nio.file.Files.newOutputStream(bundle);
              ZipOutputStream zip = new ZipOutputStream(out)) {
 
