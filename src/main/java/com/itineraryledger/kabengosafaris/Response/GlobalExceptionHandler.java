@@ -512,6 +512,10 @@ public class GlobalExceptionHandler {
      * Handle MaxUploadSizeExceededException (file/request size exceeded)
      * Thrown when uploaded file or total request exceeds configured limits
      */
+    /** read from the same property that does the refusing, so the two cannot disagree */
+    @org.springframework.beans.factory.annotation.Value("${spring.servlet.multipart.max-file-size:10MB}")
+    private String maxUploadSize;
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiResponse<Void>> handleMaxUploadSizeExceededException(
             MaxUploadSizeExceededException ex,
@@ -519,7 +523,15 @@ public class GlobalExceptionHandler {
 
         log.warn("Upload size exceeded: {}", ex.getMessage());
 
-        String message = "Upload size limit exceeded. Please reduce file size or upload fewer files at once.";
+        /*
+         * Say the actual limit. "Reduce file size" is advice nobody can act on without knowing what
+         * to reduce it to, and this particular refusal reaches the browser as a CORS error — the
+         * response is written while the upload is still being parsed, before the CORS headers go on
+         * — so by the time somebody sees a message at all, it had better be the whole answer.
+         */
+        String message = "That file is larger than this installation accepts ("
+                + maxUploadSize + "). A data bundle exported without pictures is a fraction of the "
+                + "size and carries the same rates.";
 
         ApiResponse<Void> response = ApiResponse.error(
                 HttpStatus.PAYLOAD_TOO_LARGE.value(),
