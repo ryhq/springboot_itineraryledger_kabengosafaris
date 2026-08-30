@@ -377,6 +377,18 @@
       "action": "UPDATE",
       "entity": "FEATURE",
       "description": "Allows switching a feature on or off for this company (fleet, credit notes, availability requests, website content, translation)"
+    },
+    {
+      "name": "EXPORT_DATA_BUNDLE",
+      "action": "READ",
+      "entity": "DATA_TRANSFER",
+      "description": "Allows exporting reference data (parks, activities, accommodations and their rates) as a bundle for another company"
+    },
+    {
+      "name": "IMPORT_DATA_BUNDLE",
+      "action": "CREATE",
+      "entity": "DATA_TRANSFER",
+      "description": "Allows importing a data bundle exported from another company, including previewing what it would write"
     }
   ]
 }

@@ -36,6 +36,30 @@ public interface ActivityTariffRateRepository extends JpaRepository<ActivityTari
     List<ActivityTariffRate> findByActivityId(Long activityId);
 
     /**
+     * The one rate identified by the combination the table declares unique — park and age band both
+     * optional.
+     *
+     * The derived finders next to this one cannot serve an import, because a derived query compares
+     * a null parameter with `= NULL`, which is never true in SQL. A rate that applies to every age,
+     * or to no particular park, would therefore never be found, and each import would try to insert
+     * it again.
+     */
+    @Query("""
+        SELECT r FROM ActivityTariffRate r
+        WHERE r.activity.id = :activityId
+          AND r.season.id = :seasonId
+          AND r.nationCategory.id = :nationCategoryId
+          AND ((:parkId IS NULL AND r.park IS NULL) OR r.park.id = :parkId)
+          AND ((:ageCategoryId IS NULL AND r.ageCategory IS NULL) OR r.ageCategory.id = :ageCategoryId)
+        """)
+    Optional<ActivityTariffRate> findTheOne(
+        @Param("activityId") Long activityId,
+        @Param("parkId") Long parkId,
+        @Param("seasonId") Long seasonId,
+        @Param("nationCategoryId") Long nationCategoryId,
+        @Param("ageCategoryId") Long ageCategoryId);
+
+    /**
      * Find all global rates for an activity (no park)
      */
     List<ActivityTariffRate> findByActivityIdAndParkIsNull(Long activityId);

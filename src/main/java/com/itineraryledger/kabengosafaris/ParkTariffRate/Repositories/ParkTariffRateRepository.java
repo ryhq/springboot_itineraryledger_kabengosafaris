@@ -38,6 +38,29 @@ public interface ParkTariffRateRepository extends JpaRepository<ParkTariffRate, 
     List<ParkTariffRate> findByParkId(@Param("parkId") Long parkId);
 
     /**
+     * The one rate identified by the combination the table declares unique.
+     *
+     * Written out rather than derived, because the age band is nullable and a derived query compares
+     * it with `= :ageCategoryId` — which is never true for NULL in SQL. A park fee that applies to
+     * every age would therefore never be found, and an import would insert a duplicate on every run
+     * until the unique constraint refused it.
+     */
+    @Query("""
+        SELECT r FROM ParkTariffRate r
+        WHERE r.parkTariff.park.id = :parkId
+          AND r.parkTariff.tariff.id = :tariffId
+          AND r.season.id = :seasonId
+          AND r.nationCategory.id = :nationCategoryId
+          AND ((:ageCategoryId IS NULL AND r.ageCategory IS NULL) OR r.ageCategory.id = :ageCategoryId)
+        """)
+    Optional<ParkTariffRate> findByParkIdAndTariffIdAndSeasonIdAndNationCategoryIdAndAgeCategoryId(
+        @Param("parkId") Long parkId,
+        @Param("tariffId") Long tariffId,
+        @Param("seasonId") Long seasonId,
+        @Param("nationCategoryId") Long nationCategoryId,
+        @Param("ageCategoryId") Long ageCategoryId);
+
+    /**
      * Find all rates for a specific tariff (across all parks)
      */
     @Query("SELECT ptr FROM ParkTariffRate ptr WHERE ptr.parkTariff.tariff.id = :tariffId")

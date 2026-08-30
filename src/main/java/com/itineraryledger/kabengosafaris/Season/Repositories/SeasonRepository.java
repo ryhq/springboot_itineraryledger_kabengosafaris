@@ -28,6 +28,18 @@ public interface SeasonRepository extends JpaRepository<Season, Long>, JpaSpecif
     boolean existsByIsGlobalTrueAndName(String name);
 
     /**
+     * The one global season with this name, for matching a season across installations.
+     *
+     * A season carries no slug and its name is unique only within its scope, so the scope is part of
+     * the lookup: a company-wide "High Season" is a different row from a lodge's own "High Season",
+     * and an import that conflated them would attach a lodge's rates to somebody else's dates.
+     */
+    Optional<Season> findByIsGlobalTrueAndNameIgnoreCase(String name);
+
+    /** The same question for a season belonging to one accommodation. */
+    Optional<Season> findByAccommodationIdAndNameIgnoreCase(Long accommodationId, String name);
+
+    /**
      * Count global seasons
      */
     long countByIsGlobalTrue();
@@ -58,6 +70,9 @@ public interface SeasonRepository extends JpaRepository<Season, Long>, JpaSpecif
      * Find all active seasons for an accommodation
      */
     List<Season> findByAccommodationIdAndIsActiveTrue(Long accommodationId);
+
+    /** Every season belonging to one lodge, active or not — an export carries what is there. */
+    List<Season> findByAccommodationId(Long accommodationId);
 
     /**
      * Check if an accommodation has any seasons configured

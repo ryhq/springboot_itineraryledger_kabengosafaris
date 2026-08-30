@@ -18,6 +18,9 @@ public interface AccommodationBoardTypeRepository extends JpaRepository<Accommod
      */
     Optional<AccommodationBoardType> findByAccommodationIdAndName(Long accommodationId, String name);
 
+    /** Every one of a lodge's board types, for reading it whole — export, and a rate's parents on import. */
+    java.util.List<AccommodationBoardType> findByAccommodationId(Long accommodationId);
+
     /**
      * Check if board type exists by accommodation ID and name
      */

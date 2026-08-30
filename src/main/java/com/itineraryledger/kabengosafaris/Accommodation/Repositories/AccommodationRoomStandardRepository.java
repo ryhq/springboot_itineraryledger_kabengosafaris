@@ -18,6 +18,9 @@ public interface AccommodationRoomStandardRepository extends JpaRepository<Accom
      */
     Optional<AccommodationRoomStandard> findByAccommodationIdAndName(Long accommodationId, String name);
 
+    /** Every one of a lodge's room standards, for reading it whole — export, and a rate's parents on import. */
+    java.util.List<AccommodationRoomStandard> findByAccommodationId(Long accommodationId);
+
     /**
      * Check if room standard exists by accommodation ID and name
      */
