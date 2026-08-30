@@ -66,6 +66,20 @@ public final class Scalars {
                 Method getter = property.getReadMethod();
                 if (getter == null || skip.contains(property.getName())) continue;
                 if (!isSimple(property.getPropertyType())) continue;
+
+                /*
+                 * A column is something that can be written back. Anything with a getter and no
+                 * setter is DERIVED — computed from the real columns — and treating it as data was
+                 * a fault twice over: it put values in the bundle that no import could ever restore,
+                 * and it invoked code that has every right to fail.
+                 *
+                 * Which it did, on a live export. PaxAgeCategory.getAgeRangeDisplay() reads maxAge
+                 * to print "6–11 years", and an adult category is legitimately "12 and over" with no
+                 * maximum — so exporting a company's guest categories threw a NullPointerException
+                 * on correct data. SeasonPeriod.getDurationDays() the same, on a period with no
+                 * start. The whole bundle came back as a 500 saying nothing.
+                 */
+                if (property.getWriteMethod() == null) continue;
                 Object value = getter.invoke(entity);
                 if (value != null) values.put(property.getName(), value);
             }
