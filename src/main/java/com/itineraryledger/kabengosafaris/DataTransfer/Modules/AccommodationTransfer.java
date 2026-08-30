@@ -67,6 +67,12 @@ public class AccommodationTransfer implements ModuleTransfer {
     @Override public long count() { return accommodations.count(); }
 
     @Override
+    public String detail() {
+        long total = rates.count();
+        return total == 0 ? "no rates yet" : String.format("%,d rate%s", total, total == 1 ? "" : "s");
+    }
+
+    @Override
     public List<String> requires() {
         /* no parks: a lodge's rate names nothing outside itself except a company-wide season */
         return List.of("seasons");

@@ -64,13 +64,31 @@ public class DataTransferController {
     public ResponseEntity<?> export(@RequestParam Set<String> modules,
                                     @RequestParam(defaultValue = "false") boolean includeImages) {
         try {
-            byte[] bundle = exportService.export(new LinkedHashSet<>(modules), includeImages);
+            java.nio.file.Path bundle = exportService.export(new LinkedHashSet<>(modules), includeImages);
             String fileName = "data-bundle-" + java.time.LocalDate.now() + ".zip";
+            long size = java.nio.file.Files.size(bundle);
+
+            /*
+             * Streamed from the temp file and deleted afterwards, whatever happens — including a
+             * browser that gives up half way through a large download, which is a closed connection
+             * rather than an error and would otherwise leave the file behind for good.
+             *
+             * Content-Length is set because a download with a known size shows progress, and one of
+             * these can run to hundreds of megabytes with pictures in it.
+             */
+            org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody body = out -> {
+                try (var in = java.nio.file.Files.newInputStream(bundle)) {
+                    in.transferTo(out);
+                } finally {
+                    java.nio.file.Files.deleteIfExists(bundle);
+                }
+            };
 
             return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentLength(size)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
-                .body(bundle);
+                .body(body);
         } catch (Exception e) {
             log.error("Could not build the export bundle", e);
             return ResponseEntity.status(500).body(

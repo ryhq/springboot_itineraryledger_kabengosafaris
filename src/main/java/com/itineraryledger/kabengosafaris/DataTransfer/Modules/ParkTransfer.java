@@ -58,6 +58,12 @@ public class ParkTransfer implements ModuleTransfer {
     @Override public long count() { return parks.count(); }
 
     @Override
+    public String detail() {
+        long total = rates.count();
+        return total == 0 ? "no rates yet" : String.format("%,d rate%s", total, total == 1 ? "" : "s");
+    }
+
+    @Override
     public List<String> requires() {
         /* a rate is made of these; a park without them arrives with nowhere to put its numbers */
         return List.of("tariffs", "pax-categories", "seasons");

@@ -1,7 +1,7 @@
 package com.itineraryledger.kabengosafaris.DataTransfer.Services;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
@@ -72,6 +72,7 @@ public class BundleExportService {
                 "name", m.name(),
                 "label", m.label(),
                 "count", m.count(),
+                "detail", m.detail(),
                 "requires", m.requires()))
             .toList();
     }
@@ -101,8 +102,21 @@ public class BundleExportService {
         return modules.stream().sorted(Comparator.comparingInt(ModuleTransfer::order)).toList();
     }
 
+    /**
+     * Build the bundle into a temporary FILE, and hand back the path.
+     *
+     * Not a byte[], which is what the first version did and what failed on the first real export:
+     * a company with 69 lodges and their galleries produces a zip far larger than it is sensible to
+     * hold in memory, twice — once as the zip being built and again as the response body. Written to
+     * disk it is bounded by disk.
+     *
+     * Not streamed straight to the response either, tempting as that is. Everything here is read
+     * lazily inside this transaction, and a StreamingResponseBody runs AFTER the controller returns,
+     * with the transaction closed and every lazy relation dead. A temp file is the honest middle:
+     * built while the data is reachable, streamed once it is complete, deleted by the caller.
+     */
     @Transactional(readOnly = true)
-    public byte[] export(Set<String> requested, boolean includeImages) throws IOException {
+    public java.nio.file.Path export(Set<String> requested, boolean includeImages) throws IOException {
         Set<String> chosen = expand(requested);
         List<TransferFile> files = new ArrayList<>();
 
@@ -114,8 +128,9 @@ public class BundleExportService {
         manifest.put("includeImages", includeImages);
         ArrayNode moduleRows = manifest.putArray("modules");
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try (ZipOutputStream zip = new ZipOutputStream(out)) {
+        java.nio.file.Path bundle = java.nio.file.Files.createTempFile("bundle-", ".zip");
+        try (OutputStream out = java.nio.file.Files.newOutputStream(bundle);
+             ZipOutputStream zip = new ZipOutputStream(out)) {
 
             for (ModuleTransfer module : sorted()) {
                 if (!chosen.contains(module.name())) continue;
@@ -134,10 +149,22 @@ public class BundleExportService {
                 row.put("askedFor", requested.contains(module.name()));
             }
 
+            /*
+             * Copied through a buffer rather than read whole: a bundle's files are the large part,
+             * and readAllBytes on each one puts the biggest image in the gallery into memory for no
+             * reason. Duplicate names are skipped rather than thrown on — two owners can legitimately
+             * reference one stored file, and a ZipException there would lose the entire export.
+             */
+            java.util.Set<String> written = new java.util.HashSet<>();
             for (TransferFile file : files) {
-                zip.putNextEntry(new ZipEntry(file.path()));
-                zip.write(Files.readAllBytes(file.source()));
-                zip.closeEntry();
+                if (!written.add(file.path())) continue;
+                try {
+                    zip.putNextEntry(new ZipEntry(file.path()));
+                    Files.copy(file.source(), zip);
+                    zip.closeEntry();
+                } catch (IOException e) {
+                    log.warn("Left '{}' out of the bundle: {}", file.path(), e.getMessage());
+                }
             }
 
             /* last, so its counts are final — a reader takes the manifest, not the file order */
@@ -146,8 +173,9 @@ public class BundleExportService {
             zip.closeEntry();
         }
 
-        log.info("Exported {} module(s){} for {}", chosen.size(),
-            includeImages ? " with " + files.size() + " file(s)" : "", identity.snapshot().name());
-        return out.toByteArray();
+        log.info("Exported {} module(s){} for {} — {} KB", chosen.size(),
+            includeImages ? " with " + files.size() + " file(s)" : "", identity.snapshot().name(),
+            java.nio.file.Files.size(bundle) / 1024);
+        return bundle;
     }
 }

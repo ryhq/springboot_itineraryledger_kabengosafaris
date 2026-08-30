@@ -53,6 +53,12 @@ public class ActivityTransfer implements ModuleTransfer {
     @Override public long count() { return activities.count(); }
 
     @Override
+    public String detail() {
+        long total = rates.count();
+        return total == 0 ? "no rates yet" : String.format("%,d rate%s", total, total == 1 ? "" : "s");
+    }
+
+    @Override
     public List<String> requires() {
         /* parks, because a rate may be priced for one */
         return List.of("tariffs", "pax-categories", "seasons", "parks");

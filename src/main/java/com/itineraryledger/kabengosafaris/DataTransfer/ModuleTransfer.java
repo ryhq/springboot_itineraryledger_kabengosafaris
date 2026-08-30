@@ -28,6 +28,16 @@ public interface ModuleTransfer {
     long count();
 
     /**
+     * The number somebody actually cares about, when it is not the one above.
+     *
+     * "27 parks" is not why anybody moves parks between companies — the 2,664 rates hanging off them
+     * are, and a picker that shows only the parents understates the job by two orders of magnitude.
+     */
+    default String detail() {
+        return "";
+    }
+
+    /**
      * True when this module travels only because something else needs it.
      *
      * The tariff catalogue and the pax categories are nobody's idea of an export; they are what park
