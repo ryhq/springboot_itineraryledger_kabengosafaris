@@ -160,6 +160,15 @@ public class CreateEmailAccountDTO {
     private Boolean imapUseTls;
 
     /**
+     * Mailbox login, when it differs from the SMTP one (a relay sends, another host holds the
+     * mail). Leave both blank to reuse the SMTP credentials.
+     */
+    private String imapUsername;
+
+    /** Mailbox password. Required with imapUsername, refused without it. */
+    private String imapPassword;
+
+    /**
      * How often to fetch emails in minutes
      */
     @Min(value = 1, message = "Fetch interval must be at least 1 minute")

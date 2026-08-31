@@ -402,6 +402,9 @@ public class EmailAccountGetService {
                 .imapPort(emailAccount.getImapPort())
                 .imapUseSsl(emailAccount.getImapUseSsl())
                 .imapUseTls(emailAccount.getImapUseTls())
+                .imapUsername(emailAccount.getImapUsername())
+                .imapPasswordConfigured(emailAccount.getImapPassword() != null
+                    && !emailAccount.getImapPassword().isBlank())
                 .receivingEnabled(emailAccount.getReceivingEnabled())
                 .fetchIntervalMinutes(emailAccount.getFetchIntervalMinutes())
                 .maxFetchCount(emailAccount.getMaxFetchCount())

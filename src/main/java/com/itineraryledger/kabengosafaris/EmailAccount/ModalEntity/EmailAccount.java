@@ -126,6 +126,21 @@ public class EmailAccount {
     private Boolean imapUseTls;
 
     /**
+     * Username for the mail store, when it differs from the SMTP one.
+     *
+     * A host that blocks outbound 465/587 forces sending through a relay while the mailbox itself
+     * stays elsewhere — two servers, two logins. Null means "same credentials as sending", which is
+     * every account whose provider does both.
+     */
+    private String imapUsername;
+
+    /**
+     * Password for the mail store, encrypted at rest like the SMTP one. Only read when
+     * imapUsername is also set; see ImapCredentials.
+     */
+    private String imapPassword;
+
+    /**
      * Whether email receiving is enabled for this account
      */
     @Column(nullable = false)

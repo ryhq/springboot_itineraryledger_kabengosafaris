@@ -21,6 +21,7 @@ import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.EmailMessage
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.*;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailContact;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccount;
+import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.ImapCredentials;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.ReceivingProtocol;
 
 import jakarta.mail.*;
@@ -218,8 +219,8 @@ public class EmailReceivingService {
 
         Session session = Session.getInstance(props);
         Store store = session.getStore(protocol);
-        String decryptedPassword = EncryptionUtil.decrypt(account.getSmtpPassword());
-        store.connect(account.getImapHost(), account.getSmtpUsername(), decryptedPassword);
+        ImapCredentials credentials = ImapCredentials.of(account);
+        store.connect(account.getImapHost(), credentials.username(), credentials.password());
 
         return store;
     }

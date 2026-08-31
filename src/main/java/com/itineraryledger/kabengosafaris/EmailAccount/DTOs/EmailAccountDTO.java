@@ -179,6 +179,15 @@ public class EmailAccountDTO {
     private Integer imapPort;
     private Boolean imapUseSsl;
     private Boolean imapUseTls;
+
+    /** Shown so the panel can say which login opens the mailbox. */
+    private String imapUsername;
+
+    /**
+     * Whether the mailbox has a password of its own. The password itself is never returned, the
+     * same rule the SMTP password, API key and webhook secret live under.
+     */
+    private Boolean imapPasswordConfigured;
     private Boolean receivingEnabled;
     private Integer fetchIntervalMinutes;
     private Integer maxFetchCount;

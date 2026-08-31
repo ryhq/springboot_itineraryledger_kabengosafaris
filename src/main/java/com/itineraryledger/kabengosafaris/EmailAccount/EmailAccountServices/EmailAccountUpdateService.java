@@ -361,6 +361,29 @@ public class EmailAccountUpdateService {
         if (updateDTO.getImapUseTls() != null) {
             existing.setImapUseTls(updateDTO.getImapUseTls());
         }
+        /*
+         * The mailbox login, when the mail does not live on the server that sends for it.
+         *
+         * A blank string clears the field and reverts to the SMTP credentials; null leaves it
+         * alone, the patch semantics the rest of this method uses. The pair is validated on the
+         * RESULT rather than on the request, because clearing only the username would leave a
+         * password with nothing to pair it to.
+         */
+        if (updateDTO.getImapUsername() != null) {
+            existing.setImapUsername(trimToNull(updateDTO.getImapUsername()));
+        }
+        if (updateDTO.getImapPassword() != null) {
+            String secret = trimToNull(updateDTO.getImapPassword());
+            existing.setImapPassword(secret == null ? null : EncryptionUtil.encrypt(secret));
+        }
+        if ((existing.getImapUsername() == null) != (existing.getImapPassword() == null)) {
+            String missing = existing.getImapUsername() != null ? "password" : "username";
+            return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                "A separate mailbox login needs both a username and a password — the " + missing
+                    + " is missing. Clear both to sign in to the mailbox with the SMTP credentials.",
+                "IMAP_CREDENTIALS_INCOMPLETE"));
+        }
+
         if (updateDTO.getReceivingEnabled() != null) {
             existing.setReceivingEnabled(updateDTO.getReceivingEnabled());
         }
@@ -425,5 +448,12 @@ public class EmailAccountUpdateService {
             case 2 -> SendingMethod.SMTP;
             default -> null;
         };
+    }
+
+    /** Null unless there is something left after trimming; a blank string means "clear this". */
+    private String trimToNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

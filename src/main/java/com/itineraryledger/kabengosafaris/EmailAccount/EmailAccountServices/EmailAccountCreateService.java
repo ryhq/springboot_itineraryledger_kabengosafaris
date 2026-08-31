@@ -85,6 +85,14 @@ public class EmailAccountCreateService {
             }
 
             // Validate provider type
+            /*
+             * A mailbox login is a pair. One half of it would be silently combined with the SMTP
+             * half, and the resulting authentication failure names neither field.
+             */
+            ResponseEntity<ApiResponse<?>> pairingError =
+                rejectHalfAnImapLogin(createDTO.getImapUsername(), createDTO.getImapPassword());
+            if (pairingError != null) return pairingError;
+
             EmailAccountProvider providerType = validateAndGetProviderType(createDTO.getProviderType());
             if (providerType == null) {
                 log.warn("Invalid provider type: {}", createDTO.getProviderType());
@@ -257,6 +265,8 @@ public class EmailAccountCreateService {
                 .imapPort(createDTO.getImapPort())
                 .imapUseSsl(createDTO.getImapUseSsl())
                 .imapUseTls(createDTO.getImapUseTls())
+                .imapUsername(trimToNull(createDTO.getImapUsername()))
+                .imapPassword(encryptIfPresent(createDTO.getImapPassword()))
                 .receivingEnabled(false)
                 .fetchIntervalMinutes(createDTO.getFetchIntervalMinutes() != null ? createDTO.getFetchIntervalMinutes() : 5)
                 .maxFetchCount(createDTO.getMaxFetchCount() != null ? createDTO.getMaxFetchCount() : 50)
@@ -346,5 +356,36 @@ public class EmailAccountCreateService {
             case 2 -> SendingMethod.SMTP;
             default -> null;
         };
+    }
+
+    /** Null unless there is something left after trimming. */
+    private String trimToNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    /** Secrets are encrypted at rest; absent stays absent. */
+    private String encryptIfPresent(String secret) {
+        String trimmed = trimToNull(secret);
+        return trimmed == null ? null : EncryptionUtil.encrypt(trimmed);
+    }
+
+    /**
+     * Refuse a mailbox username without its password, or the reverse.
+     *
+     * Accepting half would fall back to the SMTP pair (see ImapCredentials) and quietly ignore
+     * what was typed, so the account would keep signing in as the sender with no sign anything
+     * had been asked for.
+     */
+    private ResponseEntity<ApiResponse<?>> rejectHalfAnImapLogin(String username, String password) {
+        boolean hasUser = trimToNull(username) != null;
+        boolean hasSecret = trimToNull(password) != null;
+        if (hasUser == hasSecret) return null;
+        String missing = hasUser ? "password" : "username";
+        return ResponseEntity.badRequest().body(ApiResponse.error(400,
+            "A separate mailbox login needs both a username and a password — the " + missing
+                + " is missing. Leave both blank to sign in to the mailbox with the SMTP credentials.",
+            "IMAP_CREDENTIALS_INCOMPLETE"));
     }
 }

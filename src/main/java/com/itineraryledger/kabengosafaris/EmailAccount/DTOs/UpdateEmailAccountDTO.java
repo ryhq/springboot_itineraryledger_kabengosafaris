@@ -161,6 +161,11 @@ public class UpdateEmailAccountDTO {
     /**
      * Whether email receiving is enabled
      */
+    private String imapUsername;
+
+    /** Write-only, like the SMTP password. Blank string clears it and reverts to the SMTP pair. */
+    private String imapPassword;
+
     private Boolean receivingEnabled;
 
     /**

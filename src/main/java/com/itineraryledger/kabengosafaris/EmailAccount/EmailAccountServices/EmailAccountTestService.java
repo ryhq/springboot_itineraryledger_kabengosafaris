@@ -20,6 +20,7 @@ import com.itineraryledger.kabengosafaris.EmailAccount.DTOs.EmailAccountDTO;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountRepository;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccount;
+import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.ImapCredentials;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccountProvider;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.ReceivingProtocol;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.SendingMethod;
@@ -522,8 +523,8 @@ public class EmailAccountTestService {
 
                 Session session = Session.getInstance(props);
                 store = session.getStore(protocol);
-                String decryptedPassword = EncryptionUtil.decrypt(account.getSmtpPassword());
-                store.connect(account.getImapHost(), account.getSmtpUsername(), decryptedPassword);
+                ImapCredentials credentials = ImapCredentials.of(account);
+                store.connect(account.getImapHost(), credentials.username(), credentials.password());
 
                 // Update account
                 account.setLastFetchErrorMessage(null);
