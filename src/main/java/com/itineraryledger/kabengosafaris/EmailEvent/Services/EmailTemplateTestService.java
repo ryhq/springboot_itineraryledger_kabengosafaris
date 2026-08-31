@@ -69,6 +69,10 @@ public class EmailTemplateTestService {
     private final SecuritySettingsGetterServices securitySettingsGetterServices;
     private final IdObfuscator idObfuscator;
 
+    /** Who this installation is, for the letters that print an address. Never a literal. */
+    private final com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyIdentityService
+        companyIdentityService;
+
     /**
      * The company pass, the same one a real send goes through.
      *
@@ -229,6 +233,18 @@ public class EmailTemplateTestService {
             case "SAFARI_READINESS_ALERT":
                 return generateSafariReadinessAlertTestData(user);
 
+            case "BILL_DUE_REMINDER":
+                return generateBillDueReminderTestData(user);
+
+            case "SEND_INVOICE":
+                return generateInvoiceSentTestData(user);
+
+            case "SEND_CREDIT_NOTE":
+                return generateCreditNoteSentTestData(user);
+
+            case "SEND_PAYMENT_RECEIPT":
+                return generatePaymentReceiptSentTestData(user);
+
             case "SAFARI_STARTED":
                 return generateSafariStartedTestData(user);
 
@@ -335,6 +351,136 @@ public class EmailTemplateTestService {
      * @param user The user to send the test email to
      * @return TestEmailData with backup success-specific variables and subject
      */
+    /**
+     * Sample data for the bill due reminder.
+     *
+     * Written as the three-days-out warning rather than the seven-day one, because that is the
+     * variant with something to prove: it is the middle of the three, so seeing it renders correctly
+     * says the urgency line, the amount and the optional blocks all behave. A test of the earliest
+     * warning would look identical and demonstrate less.
+     *
+     * Both optional blocks are filled — the vendor's own reference and the trip — since a test that
+     * leaves them empty shows a letter with two sections silently missing and no way to tell whether
+     * that was the data or the template.
+     */
+    /*
+     * The three customer-facing money letters. They had no test case either, so "Send me a test"
+     * refused on all three exactly as it did on the reminder — found while fixing that one, and
+     * fixed here rather than left to be discovered one template at a time.
+     *
+     * Every OPTIONAL field is filled on purpose. A test that leaves them blank renders a letter with
+     * whole sections quietly missing, and gives no way to tell whether the template is wrong or the
+     * sample simply had nothing to put there.
+     */
+    private TestEmailData generateInvoiceSentTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        LocalDate today = LocalDate.now();
+
+        variables.put("customerName", displayName(user));
+        variables.put("invoiceCode", "INV-000000");
+        variables.put("invoiceTitle", "Sample Safari — Northern Circuit");
+        variables.put("issueDate", today.toString());
+        variables.put("dueDate", today.plusDays(14).toString());
+        variables.put("grandTotal", "USD 4,850.00");
+        variables.put("safariName", "Sample Safari — Northern Circuit");
+        variables.put("safariCode", "SAF-0D0N-00000");
+        variables.put("itemsSummary", "Accommodation, park fees and activities for 2 guests");
+        variables.put("paymentTerms", "50% deposit on confirmation, balance 30 days before arrival");
+        variables.put("customerNotes", "Sample note — this invoice is a test and is not payable.");
+        variables.put("sentDate", today.toString());
+        variables.put("companyEmail", companyEmail());
+
+        return new TestEmailData(variables, "[TEST] Invoice INV-000000 · USD 4,850.00");
+    }
+
+    private TestEmailData generateCreditNoteSentTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        LocalDate today = LocalDate.now();
+
+        variables.put("customerName", displayName(user));
+        variables.put("creditNoteCode", "CRN-000000");
+        variables.put("creditNoteTitle", "Sample credit — one night not taken");
+        variables.put("issueDate", today.toString());
+        variables.put("invoiceCode", "INV-000000");
+        variables.put("totalCredit", "USD 420.00");
+        variables.put("reason", "A night released before arrival at the guests' request");
+        variables.put("itemsSummary", "1 × Double Room, Full Board — 1 night");
+        variables.put("customerNotes", "Sample note — this credit note is a test.");
+        variables.put("sentDate", today.toString());
+        variables.put("companyEmail", companyEmail());
+
+        return new TestEmailData(variables, "[TEST] Credit note CRN-000000 · USD 420.00");
+    }
+
+    private TestEmailData generatePaymentReceiptSentTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        LocalDate today = LocalDate.now();
+
+        variables.put("customerName", displayName(user));
+        variables.put("invoiceCode", "INV-000000");
+        variables.put("invoiceTitle", "Sample Safari — Northern Circuit");
+        variables.put("paymentAmount", "USD 2,425.00");
+        variables.put("paymentDate", today.toString());
+        variables.put("paymentMethod", "Bank transfer");
+        variables.put("paymentReference", "TRF-SAMPLE-0001");
+        variables.put("grandTotal", "USD 4,850.00");
+        variables.put("totalPaid", "USD 2,425.00");
+        variables.put("balanceRemaining", "USD 2,425.00");
+        variables.put("paymentStatus", "Part paid");
+        variables.put("safariName", "Sample Safari — Northern Circuit");
+        variables.put("safariCode", "SAF-0D0N-00000");
+        variables.put("paymentNotes", "Sample note — this receipt is a test.");
+        /*
+         * The cross-currency block filled too: it is the part of this letter most likely to be got
+         * wrong, and a test that never exercises it is a test that never checks it.
+         */
+        variables.put("isCrossCurrency", "true");
+        variables.put("exchangeRate", "2,600.00");
+        variables.put("invoiceCurrency", "USD");
+        variables.put("paymentCurrency", "TZS");
+        variables.put("equivalentAmount", "TZS 6,305,000.00");
+        variables.put("bankAccountName", "Sample operating account");
+        variables.put("sentDate", today.toString());
+        variables.put("companyEmail", companyEmail());
+
+        return new TestEmailData(variables, "[TEST] Payment received · INV-000000 · USD 2,425.00");
+    }
+
+    /** The signed-in person, since a test letter is addressed to whoever asked for it. */
+    private String displayName(User user) {
+        String full = ((user.getFirstName() == null ? "" : user.getFirstName()) + " "
+            + (user.getLastName() == null ? "" : user.getLastName())).trim();
+        return full.isEmpty() ? user.getUsername() : full;
+    }
+
+    /** Never a literal: whose installation this is comes from the company record. */
+    private String companyEmail() {
+        return companyIdentityService.snapshot().email();
+    }
+
+    private TestEmailData generateBillDueReminderTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+
+        LocalDate dueDate = LocalDate.now().plusDays(3);
+
+        variables.put("urgency", "Due in 3 days");
+        variables.put("daysAway", "3");
+        variables.put("billCode", "EXP-000000");
+        variables.put("billTitle", "Sample Lodge — Double Room, Full Board — 2 rooms — day 4");
+        variables.put("vendorName", "Sample Lodge Ltd");
+        variables.put("amount", "USD 1,240.00");
+        variables.put("dueDate", dueDate.toString());
+        variables.put("reference", "INV-SAMPLE-0001");
+        variables.put("status", "DRAFT");
+        variables.put("safariName", "Sample Safari — Northern Circuit");
+        variables.put("safariCode", "SAF-0D0N-00000");
+
+        String subject = "[TEST] Due in 3 days · " + variables.get("vendorName")
+                + " · " + variables.get("amount");
+
+        return new TestEmailData(variables, subject);
+    }
+
     private TestEmailData generateBackupSuccessTestData(User user) {
         Map<String, String> variables = new HashMap<>();
 
