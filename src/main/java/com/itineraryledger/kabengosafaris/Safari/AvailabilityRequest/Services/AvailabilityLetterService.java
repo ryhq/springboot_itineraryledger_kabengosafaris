@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -122,10 +123,20 @@ public class AvailabilityLetterService {
                 byNight.computeIfAbsent(nightOf(stay), key -> new ArrayList<>()).add(stay);
             }
 
-            LocalDate checkIn = byNight.keySet().iterator().next();
-            LocalDate lastNight = checkIn;
-            for (LocalDate night : byNight.keySet()) lastNight = night;
-            LocalDate checkOut = lastNight.plusDays(1);
+            /*
+             * Split into CONSECUTIVE stretches before anything is written.
+             *
+             * A property used on two separate nights is not one booking. Reading the first night and
+             * the last as check-in and check-out produced a letter saying "26/01 to 29/01, 2 nights"
+             * — three nights of dates against a count of two — for guests who are somewhere else on
+             * the 27th. A reservations desk either blocks a night nobody wants or writes back to ask
+             * what we meant, and both cost more than getting it right here.
+             */
+            List<List<LocalDate>> blocks = consecutiveBlocks(byNight.keySet());
+            List<LocalDate> firstBlock = blocks.get(0);
+
+            LocalDate checkIn = firstBlock.get(0);
+            LocalDate checkOut = firstBlock.get(firstBlock.size() - 1).plusDays(1);
 
             Pax pax = paxOf(safari.getId());
             Recipients recipients = recipientsFor(property);
@@ -136,23 +147,30 @@ public class AvailabilityLetterService {
             variables.put("accommodationName", property.getName() != null ? property.getName() : "your property");
             variables.put("checkIn", checkIn.format(SLASH));
             variables.put("checkOut", checkOut.format(SLASH));
-            variables.put("nights", String.valueOf(byNight.size()));
+            /* this block's nights, not the trip's — the table describes one visit */
+            variables.put("nights", String.valueOf(firstBlock.size()));
             variables.put("guestCount", pax.total() + (pax.total() == 1 ? " Guest" : " Guests"));
             variables.put("paxBreakdown", pax.text());
-            variables.put("roomConfiguration", roomLines(byNight.values().iterator().next()));
-            variables.put("mealPlan", mealPlan(byNight));
+            variables.put("roomConfiguration", roomLines(byNight.get(checkIn)));
+            variables.put("mealPlan", mealPlan(subMap(byNight, firstBlock)));
             /*
-             * One stretch of nights per letter. A property visited twice is two asks — which is also
-             * how the picker groups them and how the coverage per night reads back.
+             * The second and later visits, each with its own dates, rooms and board — which is what
+             * the template's {{stayBlocks}} was always for and what this used to leave empty.
              */
-            variables.put("stayBlocks", "");
+            variables.put("stayBlocks", laterBlocks(byNight, blocks));
             variables.put("reference", reference(safari));
             variables.put("accentColor", accentColor);
 
             String html = templateRenderer.renderTemplate(EVENT, variables);
 
+            /* every stretch in the subject: a desk filing by date should see both */
+            StringBuilder spans = new StringBuilder();
+            for (List<LocalDate> block : blocks) {
+                if (spans.length() > 0) spans.append(" & ");
+                spans.append(range(block.get(0), block.get(block.size() - 1).plusDays(1)));
+            }
             String subject = "Availability Request · " + variables.get("accommodationName")
-                + " · " + range(checkIn, checkOut);
+                + " · " + spans;
 
             Map<String, Object> response = new HashMap<>();
             response.put("subject", subject);
@@ -335,6 +353,92 @@ public class AvailabilityLetterService {
     }
 
     /* -------------------------------------------------------------- pieces */
+
+    /**
+     * Nights grouped into consecutive stretches.
+     *
+     * 26th, 28th is two stretches, not one span with a hole in it. Always returns at least one
+     * block when there is at least one night, so the caller can read block zero without checking.
+     */
+    private List<List<LocalDate>> consecutiveBlocks(Collection<LocalDate> nights) {
+        List<LocalDate> ordered = new ArrayList<>(new TreeSet<>(nights));
+        List<List<LocalDate>> blocks = new ArrayList<>();
+        List<LocalDate> current = new ArrayList<>();
+
+        for (LocalDate night : ordered) {
+            if (!current.isEmpty() && !current.get(current.size() - 1).plusDays(1).equals(night)) {
+                blocks.add(current);
+                current = new ArrayList<>();
+            }
+            current.add(night);
+        }
+        if (!current.isEmpty()) blocks.add(current);
+        return blocks;
+    }
+
+    private Map<LocalDate, List<SafariDayAccommodation>> subMap(
+            Map<LocalDate, List<SafariDayAccommodation>> byNight, List<LocalDate> block) {
+        Map<LocalDate, List<SafariDayAccommodation>> out = new LinkedHashMap<>();
+        for (LocalDate night : block) {
+            List<SafariDayAccommodation> rooms = byNight.get(night);
+            if (rooms != null) out.put(night, rooms);
+        }
+        return out;
+    }
+
+    /**
+     * Visits after the first, written out in full.
+     *
+     * Each one repeats its own dates, nights, rooms and board rather than referring back, because a
+     * reservations desk reads these as separate bookings and quotes them separately. Empty for a
+     * property visited once, which is the common case and leaves the letter exactly as it was.
+     */
+    private String laterBlocks(Map<LocalDate, List<SafariDayAccommodation>> byNight,
+                               List<List<LocalDate>> blocks) {
+        if (blocks.size() < 2) return "";
+
+        StringBuilder out = new StringBuilder();
+        out.append("<p style=\"margin: 16px 0 6px; font-size: 13px; color: #6b7280\">")
+           .append("The guests return to the property later in the trip. ")
+           .append("These are separate nights, with a gap in between — please treat each as its own booking.")
+           .append("</p>");
+
+        for (int i = 1; i < blocks.size(); i++) {
+            List<LocalDate> block = blocks.get(i);
+            LocalDate from = block.get(0);
+            LocalDate to = block.get(block.size() - 1).plusDays(1);
+
+            out.append("<table style=\"border-collapse: collapse; width: 100%; margin: 10px 0 0;")
+               .append(" background-color: #f7faf8; border-left: 3px solid ").append(accentColor)
+               .append("\"><tbody><tr><td style=\"padding: 10px 14px\">")
+               .append("<p style=\"margin: 0 0 6px; font-size: 12px; font-weight: 700;")
+               .append(" letter-spacing: 0.08em; text-transform: uppercase; color: ").append(accentColor)
+               .append("\">Second stay</p>")
+               .append("<table style=\"border-collapse: collapse\"><tbody>")
+               .append(factRow("Check-in", from.format(SLASH)))
+               .append(factRow("Check-out", to.format(SLASH)))
+               .append(factRow("Number of Nights", String.valueOf(block.size())))
+               .append("</tbody></table>")
+               .append("<p style=\"margin: 10px 0 4px; font-size: 12px; font-weight: 700;")
+               .append(" letter-spacing: 0.08em; text-transform: uppercase; color: ").append(accentColor)
+               .append("\">Room Configuration</p><ul style=\"margin: 0 0 4px; padding-left: 20px\">")
+               .append(roomLines(byNight.get(from)))
+               .append("</ul>")
+               .append("<p style=\"margin: 10px 0 4px; font-size: 12px; font-weight: 700;")
+               .append(" letter-spacing: 0.08em; text-transform: uppercase; color: ").append(accentColor)
+               .append("\">Meal Plan Arrangement</p><ul style=\"margin: 0 0 4px; padding-left: 20px\">")
+               .append(mealPlan(subMap(byNight, block)))
+               .append("</ul></td></tr></tbody></table>");
+        }
+        return out.toString();
+    }
+
+    private String factRow(String label, String value) {
+        return "<tr><td style=\"padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px;"
+            + " white-space: nowrap\">" + escape(label) + "</td>"
+            + "<td style=\"padding: 3px 0; font-size: 14px\"><strong style=\"color: #111827\">"
+            + escape(value) + "</strong></td></tr>";
+    }
 
     private LocalDate nightOf(SafariDayAccommodation stay) {
         LocalDate date = stay.getSafariDay() != null ? stay.getSafariDay().getActualDate() : null;
