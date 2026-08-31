@@ -187,6 +187,11 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
         );
 
         initializeEvent(
+            "BILL_DUE_REMINDER",
+            "Sent as a supplier's bill approaches its due date — a week out, three days out, and on the day itself."
+        );
+
+        initializeEvent(
             "SAFARI_STARTED",
             "Notification sent when a safari is automatically started by the system on its start date."
         );

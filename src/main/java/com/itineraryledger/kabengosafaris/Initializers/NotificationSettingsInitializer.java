@@ -153,6 +153,51 @@ public class NotificationSettingsInitializer implements ApplicationRunner, Order
                 false
         );
 
+        // Bill Due Reminders
+        createOrUpdateSetting(
+                "notification.bill_due.enabled",
+                "true",
+                SettingDataType.BOOLEAN,
+                "Send a reminder as a supplier's bill approaches its due date",
+                NotificationSetting.Category.BILL_DUE,
+                false
+        );
+
+        createOrUpdateSetting(
+                "notification.bill_due.emails",
+                contactUsEmails,
+                SettingDataType.STRING,
+                "Email addresses to receive bill due reminders (comma-separated: email1@example.com,email2@example.com)",
+                NotificationSetting.Category.BILL_DUE,
+                false
+        );
+
+        /*
+         * Three warnings, not one. A single reminder is a single chance to be looking at the inbox
+         * that morning — and a lapsed provisional hold costs the room, not just a late payment. The
+         * days are configurable because a company with tighter supplier terms will want tighter
+         * lead times, but the shape (early warning, last chance, today) is the point.
+         */
+        createOrUpdateSetting(
+                "notification.bill_due.lead_days",
+                "7,3,0",
+                SettingDataType.STRING,
+                "How many days before the due date to send a reminder, comma-separated. "
+                        + "0 means on the day itself. Default 7,3,0",
+                NotificationSetting.Category.BILL_DUE,
+                false
+        );
+
+        createOrUpdateSetting(
+                "notification.bill_due.include_drafts",
+                "true",
+                SettingDataType.BOOLEAN,
+                "Remind about bills still in draft. On, because a provisional booking is usually "
+                        + "recorded as a draft and it is the one you can least afford to miss",
+                NotificationSetting.Category.BILL_DUE,
+                false
+        );
+
         log.info("All notification settings have been initialized");
     }
 

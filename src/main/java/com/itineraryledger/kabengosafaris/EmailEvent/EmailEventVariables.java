@@ -43,6 +43,7 @@ public class EmailEventVariables {
             case "SEND_QUOTE" -> loadSchema("quote-sent-schema.json");
             case "SAFARI_PAYMENT_GAP" -> loadSchema("safari-payment-gap-schema.json");
             case "SAFARI_READINESS_ALERT" -> loadSchema("safari-readiness-alert-schema.json");
+            case "BILL_DUE_REMINDER" -> loadSchema("bill-due-reminder-schema.json");
             case "SAFARI_STARTED" -> loadSchema("safari-started-schema.json");
             case "SAFARI_COMPLETED" -> loadSchema("safari-completed-schema.json");
             case "SAFARI_POST_TRIP_REMINDER" -> loadSchema("safari-post-trip-reminder-schema.json");
@@ -74,6 +75,7 @@ public class EmailEventVariables {
             case "AVAILABILITY_REQUEST_CHASE" -> "Availability Request — Chase";
             case "SAFARI_PAYMENT_GAP" -> "Safari Payment Gap Alert";
             case "SAFARI_READINESS_ALERT" -> "Safari Readiness Alert";
+            case "BILL_DUE_REMINDER" -> "Bill Due Reminder";
             case "SAFARI_STARTED" -> "Safari Auto-Started";
             case "SAFARI_COMPLETED" -> "Safari Auto-Completed";
             case "SAFARI_POST_TRIP_REMINDER" -> "Safari Post-Trip Reminder";
@@ -103,6 +105,7 @@ public class EmailEventVariables {
             case "AVAILABILITY_REQUEST" -> "Sent to a lodge or camp asking whether it has room on a safari's nights. Unlike every other event here it goes to a SUPPLIER, not a customer, and it is written from the safari rather than triggered by a state change.";
             case "SAFARI_PAYMENT_GAP" -> "Critical alert sent to operations when a safari has reached its start date but payment is not complete. Requires immediate action.";
             case "SAFARI_READINESS_ALERT" -> "Warning sent to operations when an upcoming safari has unresolved readiness issues (missing vehicles, accommodations, pax data).";
+            case "BILL_DUE_REMINDER" -> "Sent as a supplier's bill approaches its due date — a week out, three days out, and on the day. Nobody writes in to say a provisional hold is lapsing, so this is the only warning there is.";
             case "SAFARI_STARTED" -> "Notification sent when a safari is automatically started by the system on its start date.";
             case "SAFARI_COMPLETED" -> "Notification sent when a safari is automatically completed after its end date. Post-trip tasks may be pending.";
             case "SAFARI_POST_TRIP_REMINDER" -> "Reminder sent for recently completed safaris with pending post-trip tasks (feedback collection, expense reconciliation).";
@@ -134,6 +137,7 @@ public class EmailEventVariables {
             "AVAILABILITY_REQUEST_CHASE",
             "SAFARI_PAYMENT_GAP",
             "SAFARI_READINESS_ALERT",
+            "BILL_DUE_REMINDER",
             "SAFARI_STARTED",
             "SAFARI_COMPLETED",
             "SAFARI_POST_TRIP_REMINDER",

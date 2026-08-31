@@ -1,0 +1,13 @@
+[
+  { "name": "urgency", "description": "How close it is, ready to use as a heading: \"Due in 7 days\", \"Due tomorrow\" or \"PAY TODAY\"", "isRequired": true },
+  { "name": "daysAway", "description": "Days until the due date. 0 means today", "isRequired": true },
+  { "name": "billCode", "description": "The bill's own code, e.g. EXP-000006", "isRequired": true },
+  { "name": "billTitle", "description": "What the bill is for, as recorded", "isRequired": true },
+  { "name": "vendorName", "description": "Who is owed", "isRequired": true },
+  { "name": "amount", "description": "The grand total, with its currency", "isRequired": true },
+  { "name": "dueDate", "description": "The date payment is expected, ISO", "isRequired": true },
+  { "name": "reference", "description": "The vendor's own invoice or reservation number, where one was recorded", "isRequired": false },
+  { "name": "status", "description": "DRAFT, RECORDED or PARTIALLY_PAID", "isRequired": false },
+  { "name": "safariName", "description": "The trip this bill belongs to, if any", "isRequired": false },
+  { "name": "safariCode", "description": "That trip's code", "isRequired": false }
+]

@@ -64,7 +64,15 @@ public class NotificationSetting {
     public enum Category {
         NEWSLETTER("Newsletter Notification Settings"),
         BOOKING_INQUIRY("Booking Inquiry Notification Settings"),
-        CONTACT_US("Contact Us Notification Settings");
+        CONTACT_US("Contact Us Notification Settings"),
+        /**
+         * Reminders that a supplier's bill falls due.
+         *
+         * The other three are about somebody contacting US. This one is the opposite: nobody writes
+         * in to say a provisional hold is about to lapse, so the only way the date is not missed is
+         * if this installation says so first.
+         */
+        BILL_DUE("Bill Due Reminder Settings");
 
         private final String displayName;
 

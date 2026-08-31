@@ -1,0 +1,72 @@
+<!--
+  Bill due reminder — the default letter.
+
+  Sent to the office, not to a supplier, so it is written to be ACTED on: what is owed, to whom, by
+  when, and how urgent, above the fold and readable in a notification preview.
+
+  Every rule is inline. A mail client throws away a stylesheet, and the accent arrives as
+  {{companyAccent}} — a colour written into the CSS here would be one company's green in every
+  company's inbox.
+-->
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.55; color: #1f2421">
+
+  <!-- the whole point of the message, before anything else -->
+  <table style="border-collapse: collapse; width: 100%; background-color: {{companyAccentSoft}}; border-left: 4px solid {{companyAccentDark}}">
+    <tbody>
+      <tr>
+        <td style="padding: 14px 16px">
+          <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: {{companyAccentDark}}">
+            {{urgency}}
+          </div>
+          <div style="margin-top: 4px; font-size: 20px; font-weight: 700; color: #111827">
+            {{amount}}
+          </div>
+          <div style="margin-top: 2px; font-size: 14px; color: #374151">
+            to <strong style="color: #111827">{{vendorName}}</strong>, due {{dueDate}}
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="margin: 16px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{companyAccent}}">The bill</p>
+
+  <table style="border-collapse: collapse">
+    <tbody>
+      <tr>
+        <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Reference</td>
+        <td style="padding: 3px 0; font-size: 14px"><strong style="color: #111827">{{billCode}}</strong></td>
+      </tr>
+      <tr>
+        <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">For</td>
+        <td style="padding: 3px 0; font-size: 14px">{{billTitle}}</td>
+      </tr>
+      <tr>
+        <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">State</td>
+        <td style="padding: 3px 0; font-size: 14px">{{status}}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- only when the vendor gave us their own number, and only when this belongs to a trip -->
+  {{#reference}}
+  <p style="margin: 10px 0 0; font-size: 13px; color: #374151">
+    Their reference: <strong style="color: #111827">{{reference}}</strong>
+  </p>
+  {{/reference}}
+
+  {{#safariCode}}
+  <p style="margin: 6px 0 0; font-size: 13px; color: #374151">
+    For <strong style="color: #111827">{{safariName}}</strong> ({{safariCode}})
+  </p>
+  {{/safariCode}}
+
+  <p style="margin: 16px 0 12px; font-size: 13px; color: #6b7280">
+    A supplier holding rooms does not write to say the hold is lapsing — the date simply passes. If
+    this has already been paid, mark it off so the reminders stop.
+  </p>
+
+  <p style="margin: 0; font-size: 12px; color: #9ca3af">
+    Sent by {{companyName}} · {{currentYear}}
+  </p>
+</div>

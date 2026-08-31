@@ -34,6 +34,23 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
     List<Expense> findUnpaidBySafariId(@Param("safariId") Long safariId);
 
     List<Expense> findByExpenseDateBetween(LocalDate from, LocalDate to);
+
+    /**
+     * Bills whose due date falls on one of a set of days, in a state that still owes money.
+     *
+     * Written as a query because the reminder asks for several specific DAYS rather than a range —
+     * 7, 3 and 0 days out are three dates, not a window, and fetching the window would mean
+     * reminding about every bill in between on every single one of those days.
+     */
+    @Query("""
+        SELECT e FROM Expense e
+        WHERE e.isActive = true
+          AND e.dueDate IN :dueDates
+          AND e.status IN :statuses
+        ORDER BY e.dueDate ASC
+        """)
+    List<Expense> findDueOn(@Param("dueDates") java.util.Collection<java.time.LocalDate> dueDates,
+                            @Param("statuses") java.util.Collection<com.itineraryledger.kabengosafaris.Expense.Enums.ExpenseStatus> statuses);
     long countByExpenseDateBetween(LocalDate from, LocalDate to);
 
     // Navigation queries (mirror InvoiceRepository)

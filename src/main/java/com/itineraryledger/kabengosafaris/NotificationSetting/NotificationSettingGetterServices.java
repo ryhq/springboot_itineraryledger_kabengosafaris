@@ -99,4 +99,54 @@ public class NotificationSettingGetterServices {
                 .filter(email -> !email.isEmpty())
                 .collect(Collectors.toList());
     }
+
+    // ==================== BILL DUE REMINDERS ====================
+
+    public Boolean isBillDueReminderEnabled() {
+        return getBooleanSetting("notification.bill_due.enabled", true);
+    }
+
+    /**
+     * Who hears about a bill falling due.
+     *
+     * Falls back to the contact-us addresses rather than to nobody: this setting is newer than most
+     * installations, and a reminder nobody receives is indistinguishable from a reminder that was
+     * never built.
+     */
+    public List<String> getBillDueReminderEmails() {
+        String configured = getSettingValue("notification.bill_due.emails", null);
+        if (configured == null || configured.trim().isEmpty()) {
+            return getContactMessageNotificationEmails();
+        }
+        return Arrays.stream(configured.split(","))
+                .map(String::trim)
+                .filter(email -> !email.isEmpty())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * How many days ahead to warn, largest first.
+     *
+     * Defaults to 7, 3 and 0 — early warning, last chance, and the day itself. Parsed defensively
+     * because it is a free-text field somebody can put anything in, and a bad character here must
+     * not stop every reminder for the whole company.
+     */
+    public List<Integer> getBillDueLeadDays() {
+        String configured = getSettingValue("notification.bill_due.lead_days", "7,3,0");
+        List<Integer> days = new java.util.ArrayList<>();
+        for (String part : (configured == null ? "7,3,0" : configured).split(",")) {
+            try {
+                int value = Integer.parseInt(part.trim());
+                if (value >= 0 && value <= 365 && !days.contains(value)) days.add(value);
+            } catch (NumberFormatException ignored) {
+                /* one unreadable entry should not silence the readable ones */
+            }
+        }
+        if (days.isEmpty()) days = List.of(7, 3, 0);
+        return days.stream().sorted(java.util.Comparator.reverseOrder()).collect(Collectors.toList());
+    }
+
+    public Boolean isBillDueDraftsIncluded() {
+        return getBooleanSetting("notification.bill_due.include_drafts", true);
+    }
 }
