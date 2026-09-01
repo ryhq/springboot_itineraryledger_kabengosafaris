@@ -100,7 +100,8 @@ public class EmailAccountSignature {
      * Users can restore this signature to its original default template if modified
      */
     @Column(nullable = false)
-    private Boolean isSystemDefault;
+    @Builder.Default
+    private Boolean isSystemDefault = false;
 
     /**
      * JSON string storing variable definitions and their default values

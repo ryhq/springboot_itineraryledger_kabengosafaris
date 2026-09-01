@@ -117,6 +117,19 @@ public class EmailAccountSignatureCreateService {
                     .enabled(Boolean.TRUE.equals(createDTO.getEnabled()))
                     .variablesJson(variablesJson)
                     .fileSize(fileSize)
+                    /*
+                     * Somebody wrote this one, so it is not a system default.
+                     *
+                     * Leaving it unset left the column null, and the column is NOT NULL, so the
+                     * insert failed at COMMIT — after this method's try/catch had already returned
+                     * 201. The class is @Transactional, so the violation surfaced from the commit
+                     * instead of the catch, and the office got "An unexpected error occurred" with
+                     * no clue which field.
+                     *
+                     * Every signature in either company came from the automatic path, which does
+                     * set it. Creating one by hand had never once worked.
+                     */
+                    .isSystemDefault(false)
                     .build();
 
             // If marking as default, clear other defaults for this account
