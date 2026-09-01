@@ -123,5 +123,14 @@ class ItineraryTravelsWholeTest {
             "and read them back on the way in");
         assertTrue(lodges.contains("existsByEmail(address)") && lodges.contains("existsByPhoneNumber(number)"),
             "matched on the address itself, which is what the table treats as unique");
+
+        /*
+         * And COUNTED. Written silently the first time, so a check reported "4 records would be
+         * written" while intending to write fifty two more. A number nobody can see is worse than
+         * no number, because the check exists to say what the import will do.
+         */
+        assertTrue(lodges.contains("forModule(\"accommodation-emails\")")
+                && lodges.contains("forModule(\"accommodation-phones\")"),
+            "contacts must report under their own names, or the check under-counts what it will write");
     }
 }

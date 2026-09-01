@@ -221,21 +221,41 @@ public class AccommodationTransfer implements ModuleTransfer {
          * unique: one address belongs to one property, so an address already here is left alone
          * rather than moved.
          */
+        /*
+         * Counted in the report under their own names.
+         *
+         * Written silently at first, which meant a check said "4 records would be written" while
+         * quietly intending to write fifty two more. A number the office cannot see is worse than
+         * no number: the whole point of the check is that it says what the import will do.
+         */
+        var emailOutcome = context.getReport().forModule("accommodation-emails");
         for (JsonNode child : row.path("emails")) {
             String address = child.path("email").asText(null);
-            if (address == null || address.isBlank() || emails.existsByEmail(address)) continue;
+            if (address == null || address.isBlank()) continue;
+            if (emails.existsByEmail(address)) {
+                emailOutcome.skip(address, "already here");
+                continue;
+            }
             AccommodationEmail made = new AccommodationEmail();
             Scalars.apply(mapper, child, made);
             made.setAccommodation(lodge);
             emails.save(made);
+            emailOutcome.created();
         }
+
+        var phoneOutcome = context.getReport().forModule("accommodation-phones");
         for (JsonNode child : row.path("phones")) {
             String number = child.path("phoneNumber").asText(null);
-            if (number == null || number.isBlank() || phones.existsByPhoneNumber(number)) continue;
+            if (number == null || number.isBlank()) continue;
+            if (phones.existsByPhoneNumber(number)) {
+                phoneOutcome.skip(number, "already here");
+                continue;
+            }
             AccommodationPhone made = new AccommodationPhone();
             Scalars.apply(mapper, child, made);
             made.setAccommodation(lodge);
             phones.save(made);
+            phoneOutcome.created();
         }
 
         for (JsonNode child : row.path("boardTypes")) {
