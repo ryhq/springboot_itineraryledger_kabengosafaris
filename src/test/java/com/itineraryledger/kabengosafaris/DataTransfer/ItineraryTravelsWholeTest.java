@@ -104,4 +104,24 @@ class ItineraryTravelsWholeTest {
         assertTrue(source.contains("OrderBySortOrderAsc"),
             "park visits and activities carry a sort order that has to survive the journey");
     }
+
+    @Test
+    @DisplayName("a lodge travels with its emails and phones, or it cannot be booked through")
+    void contactsTravelWithTheProperty() throws IOException {
+        /*
+         * Left out at first because a lodge felt like room types and rates. An accommodation with
+         * no reservations address is a record you cannot book anything through, and it showed up
+         * as a freshly transferred company holding 0 emails and 0 phones against the 48 and 54 of
+         * the one it came from.
+         */
+        String lodges = Files.readString(Path.of("src/main/java/com/itineraryledger/kabengosafaris/"
+            + "DataTransfer/Modules/AccommodationTransfer.java"));
+
+        assertTrue(lodges.contains("putArray(\"emails\")") && lodges.contains("putArray(\"phones\")"),
+            "a property must export its contacts alongside its room setup");
+        assertTrue(lodges.contains("row.path(\"emails\")") && lodges.contains("row.path(\"phones\")"),
+            "and read them back on the way in");
+        assertTrue(lodges.contains("existsByEmail(address)") && lodges.contains("existsByPhoneNumber(number)"),
+            "matched on the address itself, which is what the table treats as unique");
+    }
 }

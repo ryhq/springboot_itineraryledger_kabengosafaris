@@ -16,6 +16,9 @@ public interface AccommodationEmailRepository extends JpaRepository<Accommodatio
     /**
      * Find email by exact email address
      */
+    /** Every address on one property, so the data transfer can carry them with it. */
+    java.util.List<AccommodationEmail> findByAccommodationId(Long accommodationId);
+
     Optional<AccommodationEmail> findByEmail(String email);
 
     /**

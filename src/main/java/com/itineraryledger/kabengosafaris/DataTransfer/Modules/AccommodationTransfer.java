@@ -15,6 +15,8 @@ import com.itineraryledger.kabengosafaris.Accommodation.Entities.Accommodation;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationBoardType;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRate;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRoomStandard;
+import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationEmail;
+import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationPhone;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRoomType;
 import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationBoardTypeRepository;
 import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRateRepository;
@@ -61,6 +63,10 @@ public class AccommodationTransfer implements ModuleTransfer {
     private final AccommodationImageRepository accommodationImages;
     private final ImageFiles imageFiles;
     private final ReferenceResolver resolver;
+    private final com.itineraryledger.kabengosafaris.Accommodation.Repositories
+        .AccommodationEmailRepository emails;
+    private final com.itineraryledger.kabengosafaris.Accommodation.Repositories
+        .AccommodationPhoneRepository phones;
     private final ObjectMapper mapper;
 
     @Override public String name() { return "accommodations"; }
@@ -99,6 +105,23 @@ public class AccommodationTransfer implements ModuleTransfer {
             for (AccommodationRoomStandard standard : roomStandards.findByAccommodationId(lodge.getId())) {
                 standards.add(Scalars.of(mapper, standard));
             }
+            /*
+             * The contacts travel with the property.
+             *
+             * Left out at first because a lodge felt like room types and rates. It is not: an
+             * accommodation with no reservations address is a record you cannot book anything
+             * through, and the office found out by opening a freshly transferred company and
+             * seeing 0 emails and 0 phones against 48 and 54 in the one it came from.
+             */
+            ArrayNode emailRows = node.putArray("emails");
+            for (AccommodationEmail email : emails.findByAccommodationId(lodge.getId())) {
+                emailRows.add(Scalars.of(mapper, email));
+            }
+            ArrayNode phoneRows = node.putArray("phones");
+            for (AccommodationPhone phone : phones.findByAccommodationId(lodge.getId())) {
+                phoneRows.add(Scalars.of(mapper, phone));
+            }
+
             ArrayNode boards = node.putArray("boardTypes");
             for (AccommodationBoardType board : boardTypes.findByAccommodationId(lodge.getId())) {
                 boards.add(Scalars.of(mapper, board));
@@ -193,6 +216,28 @@ public class AccommodationTransfer implements ModuleTransfer {
             }, n -> roomStandards.findByAccommodationIdAndName(lodge.getId(), n).isPresent(),
                 made -> roomStandards.save((AccommodationRoomStandard) made));
         }
+        /*
+         * Matched on the address rather than on a name, because that is what the table treats as
+         * unique: one address belongs to one property, so an address already here is left alone
+         * rather than moved.
+         */
+        for (JsonNode child : row.path("emails")) {
+            String address = child.path("email").asText(null);
+            if (address == null || address.isBlank() || emails.existsByEmail(address)) continue;
+            AccommodationEmail made = new AccommodationEmail();
+            Scalars.apply(mapper, child, made);
+            made.setAccommodation(lodge);
+            emails.save(made);
+        }
+        for (JsonNode child : row.path("phones")) {
+            String number = child.path("phoneNumber").asText(null);
+            if (number == null || number.isBlank() || phones.existsByPhoneNumber(number)) continue;
+            AccommodationPhone made = new AccommodationPhone();
+            Scalars.apply(mapper, child, made);
+            made.setAccommodation(lodge);
+            phones.save(made);
+        }
+
         for (JsonNode child : row.path("boardTypes")) {
             ensure(child, () -> {
                 AccommodationBoardType made = new AccommodationBoardType();

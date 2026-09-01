@@ -16,6 +16,9 @@ public interface AccommodationPhoneRepository extends JpaRepository<Accommodatio
     /**
      * Find phone by exact phone number
      */
+    /** Every number on one property, so the data transfer can carry them with it. */
+    java.util.List<AccommodationPhone> findByAccommodationId(Long accommodationId);
+
     Optional<AccommodationPhone> findByPhoneNumber(String phoneNumber);
 
     /**
