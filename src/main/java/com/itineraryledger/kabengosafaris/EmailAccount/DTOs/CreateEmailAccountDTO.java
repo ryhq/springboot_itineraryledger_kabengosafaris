@@ -87,7 +87,7 @@ public class CreateEmailAccountDTO {
      * 1=GMAIL, 2=OUTLOOK, 3=SENDGRID, 4=MAILGUN, 5=AWS_SES, 6=CUSTOM, 7=RESEND
      */
     @NotNull(message = "Provider type is required")
-    private Integer providerType;
+    private String providerType;
 
     /**
      * API key for HTTP-based email providers (Resend, SendGrid, etc.)
@@ -107,7 +107,7 @@ public class CreateEmailAccountDTO {
      * For API-based providers (Resend), defaults to API (1)
      * For SMTP-based providers, always SMTP (2)
      */
-    private Integer sendingMethod;
+    private String sendingMethod;
 
     /**
      * Maximum number of emails to send per minute (rate limiting)
@@ -136,7 +136,7 @@ public class CreateEmailAccountDTO {
     /**
      * Receiving protocol: 1=IMAP, 2=POP3, 3=NONE (default NONE)
      */
-    private Integer receivingProtocol;
+    private String receivingProtocol;
 
     /**
      * IMAP/POP3 host address (e.g., mail.kabengosafaris.com)

@@ -86,7 +86,7 @@ public class UpdateEmailAccountDTO {
      * Email provider type as integer (optional)
      * 1=GMAIL, 2=OUTLOOK, 3=SENDGRID, 4=MAILGUN, 5=AWS_SES, 6=CUSTOM, 7=RESEND
      */
-    private Integer providerType;
+    private String providerType;
 
     /**
      * API key for HTTP-based email providers (Resend, SendGrid, etc.) (optional)
@@ -104,7 +104,7 @@ public class UpdateEmailAccountDTO {
      * Sending method as integer (optional)
      * 1=API, 2=SMTP
      */
-    private Integer sendingMethod;
+    private String sendingMethod;
 
     /**
      * Maximum number of emails to send per minute (optional)
@@ -135,7 +135,7 @@ public class UpdateEmailAccountDTO {
     /**
      * Receiving protocol: 1=IMAP, 2=POP3, 3=NONE
      */
-    private Integer receivingProtocol;
+    private String receivingProtocol;
 
     /**
      * IMAP/POP3 host address

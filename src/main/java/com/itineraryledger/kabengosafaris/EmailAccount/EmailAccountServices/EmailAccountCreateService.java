@@ -12,6 +12,7 @@ import com.itineraryledger.kabengosafaris.EmailAccount.DTOs.EmailAccountDTO;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountRepository;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccount;
+import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccountEnums;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.EmailAccountProvider;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.ReceivingProtocol;
 import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.SendingMethod;
@@ -315,47 +316,18 @@ public class EmailAccountCreateService {
      * @param providerTypeInt The provider type as integer
      * @return EmailAccountProvider enum or null if invalid
      */
-    private ReceivingProtocol validateAndGetReceivingProtocol(Integer protocolInt) {
-        if (protocolInt == null) return ReceivingProtocol.NONE;
-        return switch (protocolInt) {
-            case 1 -> ReceivingProtocol.IMAP;
-            case 2 -> ReceivingProtocol.POP3;
-            default -> ReceivingProtocol.NONE;
-        };
+    private ReceivingProtocol validateAndGetReceivingProtocol(String protocol) {
+        if (protocol == null) return ReceivingProtocol.NONE;
+        ReceivingProtocol parsed = EmailAccountEnums.receivingProtocol(protocol);
+        return parsed == null ? ReceivingProtocol.NONE : parsed;
     }
 
-    private EmailAccountProvider validateAndGetProviderType(Integer providerTypeInt) {
-        if (providerTypeInt == null) {
-            return null;
-        }
-
-        switch (providerTypeInt) {
-            case 1:
-                return EmailAccountProvider.GMAIL;
-            case 2:
-                return EmailAccountProvider.OUTLOOK;
-            case 3:
-                return EmailAccountProvider.SENDGRID;
-            case 4:
-                return EmailAccountProvider.MAILGUN;
-            case 5:
-                return EmailAccountProvider.AWS_SES;
-            case 6:
-                return EmailAccountProvider.CUSTOM;
-            case 7:
-                return EmailAccountProvider.RESEND;
-            default:
-                return null;
-        }
+    private EmailAccountProvider validateAndGetProviderType(String providerType) {
+        return EmailAccountEnums.provider(providerType);
     }
 
-    private SendingMethod validateAndGetSendingMethod(Integer sendingMethodInt) {
-        if (sendingMethodInt == null) return null;
-        return switch (sendingMethodInt) {
-            case 1 -> SendingMethod.API;
-            case 2 -> SendingMethod.SMTP;
-            default -> null;
-        };
+    private SendingMethod validateAndGetSendingMethod(String sendingMethod) {
+        return EmailAccountEnums.sendingMethod(sendingMethod);
     }
 
     /** Null unless there is something left after trimming. */
