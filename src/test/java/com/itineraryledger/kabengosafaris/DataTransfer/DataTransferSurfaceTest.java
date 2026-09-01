@@ -39,7 +39,23 @@ class DataTransferSurfaceTest {
      */
     private static final Set<String> MAY_BE_EXPORTED = Set.of(
         "TariffTransfer", "PaxCategoryTransfer", "SeasonTransfer",
-        "ParkTransfer", "ActivityTransfer", "AccommodationTransfer");
+        "ParkTransfer", "ActivityTransfer", "AccommodationTransfer",
+        /*
+         * Which activities a park offers. A decision about the product, not about a person, and
+         * the link an itinerary needs before a crater descent can be put on a day at all.
+         */
+        "ParkActivityTransfer",
+        /*
+         * Itineraries and their days.
+         *
+         * Read the line carefully before adding anything like this again. An itinerary is a
+         * PRODUCT assembled from inventory: parks, lodges, activities and the order they are
+         * visited in. It names no customer, carries no price, and belongs to nobody. A SAFARI is
+         * the same shape with a customer and dates attached, and that is the thing that must never
+         * appear in this list. The distinction is one word in a package name and the whole reason
+         * this test exists.
+         */
+        "ItineraryTransfer");
 
     /** Never, whatever anybody names the class. */
     private static final List<String> FORBIDDEN = List.of(

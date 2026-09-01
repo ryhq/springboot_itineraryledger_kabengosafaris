@@ -34,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 public class ReferenceResolver {
 
     private final TariffRepository tariffs;
+    private final com.itineraryledger.kabengosafaris.Activity.ActivityRepository activities;
     private final SeasonRepository seasons;
     private final PaxNationCategoryRepository nations;
     private final PaxAgeCategoryRepository ages;
@@ -62,6 +63,13 @@ public class ReferenceResolver {
         Season own = context.cached("season:" + accommodationId, name,
             key -> seasons.findByAccommodationIdAndNameIgnoreCase(accommodationId, key).orElse(null));
         return own != null ? own : globalSeason(context, name);
+    }
+
+    /** An activity by slug. Slugs travel; names get retyped. */
+    public com.itineraryledger.kabengosafaris.Activity.Activity activity(
+            TransferContext context, String slug) {
+        if (slug == null || slug.isBlank()) return null;
+        return context.cached("activity", slug, key -> activities.findBySlug(key).orElse(null));
     }
 
     public PaxNationCategory nation(TransferContext context, String name) {
