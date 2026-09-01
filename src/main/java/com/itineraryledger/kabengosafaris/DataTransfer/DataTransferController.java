@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.springframework.http.HttpHeaders;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.Semaphore;
 import org.springframework.http.HttpStatus;
 import org.springframework.dao.PessimisticLockingFailureException;
@@ -152,18 +155,57 @@ public class DataTransferController {
      */
     private static final Semaphore ONE_BUNDLE_AT_A_TIME = new Semaphore(1);
 
+    /**
+     * What is running, so the screen can say so.
+     *
+     * A bundle of a few thousand rates takes longer than the gateway will hold a request open, so
+     * the browser gets a 504 while the transaction carries on to the end. The page then believes
+     * nothing is happening, the office presses the button again, and the answer is "wait for it to
+     * finish" with no way to tell when that is. This is that way.
+     */
+    private static final AtomicReference<Progress> RUNNING = new AtomicReference<>();
+
+    /** A transfer in flight: which kind, and since when. */
+    private record Progress(String kind, Instant startedAt) {}
+
+    /**
+     * Whether a transfer is running, and for how long.
+     *
+     * Cheap and pollable on purpose: it reads one reference and touches no database, so a page may
+     * ask every couple of seconds for as long as it is open.
+     */
+    @GetMapping("/status")
+    @PreAuthorize("hasAuthority('PERM_IMPORT_DATA_BUNDLE')")
+    public ResponseEntity<ApiResponse<?>> status() {
+        Progress busy = RUNNING.get();
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("running", busy != null);
+        payload.put("kind", busy == null ? null : busy.kind());
+        payload.put("startedAt", busy == null ? null : busy.startedAt().toString());
+        payload.put("elapsedSeconds",
+            busy == null ? 0 : Duration.between(busy.startedAt(), Instant.now()).toSeconds());
+        return ResponseEntity.ok(ApiResponse.success(200,
+            busy == null ? "Nothing is running" : busy.kind() + " in progress", payload));
+    }
+
     private ResponseEntity<ApiResponse<?>> handle(MultipartFile file, TransferMode mode, boolean previewOnly) {
         if (file == null || file.isEmpty()) {
             return ResponseEntity.badRequest().body(
                 ApiResponse.error(400, "No bundle was uploaded.", "NO_BUNDLE"));
         }
         if (!ONE_BUNDLE_AT_A_TIME.tryAcquire()) {
+            Progress busy = RUNNING.get();
+            String since = busy == null ? "" : " It started "
+                + Duration.between(busy.startedAt(), Instant.now()).toSeconds() + "s ago.";
+            String what = busy == null ? "Another bundle"
+                : ("PREVIEW".equals(busy.kind()) ? "A bundle check" : "An import");
             return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(409,
-                "Another bundle is being read right now. Checking a bundle writes every record and "
-                    + "rolls it back, so it holds the same rows this one needs — wait for it to "
-                    + "finish and try again.",
+                what + " is already running." + since + " Checking a bundle writes every record and "
+                    + "rolls it back, so it holds the same rows this one needs — this page will say "
+                    + "when it is free.",
                 "TRANSFER_IN_PROGRESS"));
         }
+        RUNNING.set(new Progress(previewOnly ? "PREVIEW" : "IMPORT", Instant.now()));
         try (var stream = file.getInputStream()) {
             BundleImportService.Bundle bundle = importService.read(stream);
             TransferReport report = previewOnly
@@ -198,6 +240,7 @@ public class DataTransferController {
             return ResponseEntity.status(500).body(
                 ApiResponse.error(500, "The import failed — " + describe(e), "IMPORT_FAILED"));
         } finally {
+            RUNNING.set(null);
             ONE_BUNDLE_AT_A_TIME.release();
         }
     }
