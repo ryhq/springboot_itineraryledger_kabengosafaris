@@ -166,6 +166,9 @@ public class ResendWebhookEventGetService {
                 .subject(event.getSubject())
                 .eventTimestamp(event.getEventTimestamp())
                 .receivedAt(event.getReceivedAt())
+                .bounceType(bounce(event, "type"))
+                .bounceSubType(bounce(event, "subType"))
+                .bounceMessage(bounce(event, "message"))
                 .build();
     }
 
@@ -218,5 +221,28 @@ public class ResendWebhookEventGetService {
     private String validateSortField(String sortBy) {
         if (sortBy == null || sortBy.isEmpty()) return null;
         return VALID_SORT_FIELDS.contains(sortBy) ? sortBy : null;
+    }
+
+    /**
+     * One field out of the bounce block of a stored payload, or null.
+     *
+     * Parsed on read rather than stored in columns of its own: the payload is already kept
+     * verbatim, which is the record that matters, and a provider that renames a field should
+     * leave the log readable rather than the migration half-applied.
+     */
+    private String bounce(ResendWebhookEvent event, String field) {
+        String raw = event.getRawPayload();
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            com.fasterxml.jackson.databind.JsonNode node =
+                new com.fasterxml.jackson.databind.ObjectMapper().readTree(raw);
+            com.fasterxml.jackson.databind.JsonNode value =
+                node.path("data").path("bounce").path(field);
+            return value.isMissingNode() || value.isNull() ? null : value.asText();
+        } catch (Exception e) {
+            /* A payload we cannot parse is not a reason to fail the whole listing. */
+            log.debug("Could not read bounce.{} from event {}", field, event.getId(), e);
+            return null;
+        }
     }
 }

@@ -94,10 +94,10 @@ public class EmailReceivingService {
 
             for (Message message : messages) {
                 MimeMessage mimeMessage = (MimeMessage) message;
-                String messageId = mimeMessage.getMessageID();
+                String messageId = identityOf(mimeMessage);
 
                 // Skip if already fetched (deduplicate by Message-ID)
-                if (messageId != null && emailMessageRepository
+                if (emailMessageRepository
                         .findByEmailAccountIdAndMessageId(account.getId(), messageId).isPresent()) {
                     continue;
                 }
@@ -227,7 +227,7 @@ public class EmailReceivingService {
 
     private void processMessage(MimeMessage mimeMessage, EmailAccount account, EmailFolder folder,
                                 boolean isSeenOnServer) throws Exception {
-        String messageId = mimeMessage.getMessageID();
+        String messageId = identityOf(mimeMessage);
         String fileName = emailStorageService.generateEmlFileName(messageId);
 
         // Save .eml file to disk
@@ -412,6 +412,63 @@ public class EmailReceivingService {
             }
         } catch (Exception e) {
             log.warn("Failed to extract attachments for message {}: {}", emailMessage.getMessageId(), e.getMessage());
+        }
+    }
+
+    /**
+     * What identifies this message, whether or not it carries a Message-ID.
+     *
+     * Deduplication was `messageId != null && alreadyHave(messageId)`, so a message with no
+     * Message-ID header skipped the check entirely and was inserted again on EVERY five-minute
+     * cycle, for ever. Jatelo's reservations mailbox held ninety-three copies of one welcome
+     * letter within a day of being connected, all stamped with the same send time, and the count
+     * was still climbing.
+     *
+     * The header is optional in practice — plenty of senders omit it, and a strict reading of
+     * RFC 5322 makes it a SHOULD — so the fix is not to demand one but to derive an identity from
+     * the message itself. Sender, recipients, subject, send date and size are stable across
+     * fetches of the same message and differ between genuinely different ones.
+     *
+     * The synthetic value is deliberately shaped like a Message-ID and deliberately says what it
+     * is, so nobody later mistakes it for something the sender wrote.
+     */
+    private String identityOf(MimeMessage mimeMessage) {
+        try {
+            String header = mimeMessage.getMessageID();
+            if (header != null && !header.isBlank()) return header;
+        } catch (MessagingException e) {
+            log.debug("Could not read Message-ID; deriving one from the message", e);
+        }
+
+        StringBuilder material = new StringBuilder();
+        appendQuietly(material, () -> java.util.Arrays.toString(mimeMessage.getFrom()));
+        appendQuietly(material, () -> java.util.Arrays.toString(
+            mimeMessage.getRecipients(Message.RecipientType.TO)));
+        appendQuietly(material, mimeMessage::getSubject);
+        appendQuietly(material, () -> String.valueOf(mimeMessage.getSentDate()));
+        appendQuietly(material, () -> String.valueOf(mimeMessage.getSize()));
+
+        try {
+            byte[] digest = java.security.MessageDigest.getInstance("SHA-256")
+                .digest(material.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            String hash = java.util.HexFormat.of().formatHex(digest).substring(0, 32);
+            return "<" + hash + "@no-message-id.local>";
+        } catch (Exception e) {
+            /*
+             * Unreachable in practice — SHA-256 is required of every JVM. Falling back to the
+             * material itself keeps dedup working rather than reopening the duplicate hole.
+             */
+            log.warn("Could not hash a message identity; using the raw material", e);
+            return "<" + material.toString().hashCode() + "@no-message-id.local>";
+        }
+    }
+
+    /** Reading a header can throw; a header that will not be read simply contributes nothing. */
+    private void appendQuietly(StringBuilder material, java.util.concurrent.Callable<String> read) {
+        try {
+            material.append(read.call()).append('\u0000');
+        } catch (Exception e) {
+            material.append('\u0000');
         }
     }
 }
