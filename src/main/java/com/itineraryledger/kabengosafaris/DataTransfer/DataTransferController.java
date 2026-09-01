@@ -6,6 +6,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.springframework.http.HttpHeaders;
+import java.util.concurrent.Semaphore;
+import org.springframework.http.HttpStatus;
+import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -134,10 +138,31 @@ public class DataTransferController {
         return handle(file, mode, false);
     }
 
+    /**
+     * One bundle at a time.
+     *
+     * A preview does the whole import and rolls it back, so it holds row locks across every table
+     * the bundle touches for as long as it runs — thousands of rates is tens of seconds. A second
+     * request arriving in that window waits on those locks and dies at MySQL's lock wait timeout,
+     * reporting an insert that was never the problem.
+     *
+     * Which is exactly what "Check this bundle" followed by "Import" does. Serialising is the fix:
+     * two full-bundle transactions have nothing to gain from running at once, and the caller is
+     * told to wait rather than handed a lock timeout.
+     */
+    private static final Semaphore ONE_BUNDLE_AT_A_TIME = new Semaphore(1);
+
     private ResponseEntity<ApiResponse<?>> handle(MultipartFile file, TransferMode mode, boolean previewOnly) {
         if (file == null || file.isEmpty()) {
             return ResponseEntity.badRequest().body(
                 ApiResponse.error(400, "No bundle was uploaded.", "NO_BUNDLE"));
+        }
+        if (!ONE_BUNDLE_AT_A_TIME.tryAcquire()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(409,
+                "Another bundle is being read right now. Checking a bundle writes every record and "
+                    + "rolls it back, so it holds the same rows this one needs — wait for it to "
+                    + "finish and try again.",
+                "TRANSFER_IN_PROGRESS"));
         }
         try (var stream = file.getInputStream()) {
             BundleImportService.Bundle bundle = importService.read(stream);
@@ -164,10 +189,58 @@ public class DataTransferController {
                 ApiResponse.error(400, e.getMessage(), "BAD_BUNDLE"));
         } catch (Throwable e) {
             log.error("Import failed", e);
-            String detail = e.getClass().getSimpleName()
-                + (e.getMessage() == null ? "" : ": " + e.getMessage());
+            if (isLockContention(e)) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(409,
+                    "The import could not get at the records it needed — something else was "
+                        + "holding them. Nothing was written. Wait a moment and try again.",
+                    "TRANSFER_CONTENDED"));
+            }
             return ResponseEntity.status(500).body(
-                ApiResponse.error(500, "The import failed — " + detail, "IMPORT_FAILED"));
+                ApiResponse.error(500, "The import failed — " + describe(e), "IMPORT_FAILED"));
+        } finally {
+            ONE_BUNDLE_AT_A_TIME.release();
         }
+    }
+
+    /**
+     * Whether this failure is two transactions competing rather than a bad bundle.
+     *
+     * Worth separating because the cure is "try again", which no amount of reading the SQL in the
+     * message would suggest.
+     */
+    static boolean isLockContention(Throwable failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof PessimisticLockingFailureException
+                || cause instanceof CannotAcquireLockException) {
+                return true;
+            }
+            String message = cause.getMessage();
+            if (message != null && (message.contains("Lock wait timeout exceeded")
+                || message.contains("Deadlock found"))) {
+                return true;
+            }
+            if (cause.getCause() == cause) break;
+        }
+        return false;
+    }
+
+    /**
+     * A failure, said in one line, without the statement.
+     *
+     * The detail matters — an import that fails silently is worse — but a parameterised INSERT
+     * printed twice tells the office nothing and pushes the actual sentence off the screen. The
+     * class name and the first line of the message are what a person can act on or quote.
+     */
+    static String describe(Throwable failure) {
+        String message = failure.getMessage();
+        if (message == null) return failure.getClass().getSimpleName();
+        int statement = message.indexOf(" [insert into");
+        if (statement < 0) statement = message.indexOf(" [update ");
+        if (statement < 0) statement = message.indexOf("; SQL [");
+        if (statement > 0) message = message.substring(0, statement);
+        message = message.split("\\R")[0].trim();
+        int cap = 300;
+        if (message.length() > cap) message = message.substring(0, cap) + "…";
+        return failure.getClass().getSimpleName() + ": " + message;
     }
 }
