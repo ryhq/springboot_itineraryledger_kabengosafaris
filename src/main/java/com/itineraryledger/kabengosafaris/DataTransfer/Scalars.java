@@ -9,6 +9,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.MonthDay;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -104,6 +109,22 @@ public final class Scalars {
         copy.remove(NEVER);
         for (String name : exclude) copy.remove(name);
 
+        /*
+         * Only the columns `of` would have written. This is what makes apply the exact inverse of
+         * of, and it is not a tidiness argument: a row carries its references as NAMES, because a
+         * name is the only form that means anything in another installation. A rate's row therefore
+         * has "season": "High Season" while the entity's season property is a Season — and Jackson,
+         * asked to build an entity out of a string, failed the whole row.
+         *
+         * FAIL_ON_UNKNOWN_PROPERTIES does not help, because season is not unknown. It is known and
+         * it is the wrong shape.
+         *
+         * Every rate importer hit this — parks, activities and accommodations all name their four
+         * references the same way — so no rate had ever imported. Excluding them at each call site
+         * would work until the next module forgot, and the error it produces names no field.
+         */
+        copy.remove(notColumnsOf(entity.getClass()));
+
         try {
             /*
              * Unknown fields ignored, and it has to be said explicitly: the default is to throw, so
@@ -116,8 +137,45 @@ public final class Scalars {
                 .readerForUpdating(entity)
                 .readValue(copy);
         } catch (Exception e) {
-            throw new IllegalStateException(
-                "Could not apply " + copy.fieldNames() + " to " + entity.getClass().getSimpleName(), e);
+            /*
+             * fieldNames() is an Iterator, so this used to read "Could not apply
+             * java.util.LinkedHashMap$LinkedKeyIterator@458f3d5c to ParkTariffRate" — an object
+             * address where the diagnosis should be, and the cause discarded on top. The import
+             * failed for a reason the message could not express, twice over.
+             */
+            List<String> fields = new ArrayList<>();
+            copy.fieldNames().forEachRemaining(fields::add);
+            String where = e instanceof JsonMappingException mapping
+                && !mapping.getPath().isEmpty() ? " at " + mapping.getPathReference() : "";
+            throw new IllegalStateException("Could not apply " + String.join(", ", fields)
+                + " to " + entity.getClass().getSimpleName() + where + ": " + e.getMessage(), e);
         }
     }
+
+    /**
+     * The property names on this class that are NOT columns — associations, collections, and
+     * anything derived (a getter with no setter). Cached: an import applies this per row, and a
+     * bundle carries thousands.
+     */
+    private static Collection<String> notColumnsOf(Class<?> type) {
+        return NOT_COLUMNS.computeIfAbsent(type, klass -> {
+            Set<String> names = new java.util.HashSet<>();
+            try {
+                BeanInfo info = Introspector.getBeanInfo(klass, Object.class);
+                for (PropertyDescriptor property : info.getPropertyDescriptors()) {
+                    if (isSimple(property.getPropertyType()) && property.getWriteMethod() != null) {
+                        continue;
+                    }
+                    names.add(property.getName());
+                }
+            } catch (Exception e) {
+                /* Nothing to exclude is the old behaviour; a readable failure follows either way. */
+                log.warn("Could not introspect {} to separate columns from references",
+                    klass.getSimpleName(), e);
+            }
+            return names;
+        });
+    }
+
+    private static final Map<Class<?>, Collection<String>> NOT_COLUMNS = new ConcurrentHashMap<>();
 }
