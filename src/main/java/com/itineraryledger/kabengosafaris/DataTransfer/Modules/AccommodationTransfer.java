@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.DataTransfer.Modules;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -282,10 +284,10 @@ public class AccommodationTransfer implements ModuleTransfer {
                 continue;
             }
 
-            AccommodationRate existing = rates
-                .findByAccommodationIdAndSeasonIdAndRoomTypeIdAndRoomStandardIdAndBoardTypeId(
-                    lodge.getId(), season.getId(), type.getId(), standard.getId(), board.getId())
-                .orElse(null);
+            /* One read per lodge, not one per rate — see ParkTransfer.ratesAlreadyHere. */
+            String rateKey = season.getId() + "/" + type.getId() + "/" + standard.getId()
+                + "/" + board.getId();
+            AccommodationRate existing = ratesAlreadyHere(context, lodge).get(rateKey);
 
             if (existing != null && !context.mayOverwrite()) {
                 outcome.skip(key, "already here");
@@ -300,6 +302,7 @@ public class AccommodationTransfer implements ModuleTransfer {
             rate.setRoomStandard(standard);
             rate.setBoardType(board);
             rates.save(rate);
+            ratesAlreadyHere(context, lodge).put(rateKey, rate);
 
             if (existing == null) outcome.created(); else outcome.updated();
         }
@@ -338,5 +341,20 @@ public class AccommodationTransfer implements ModuleTransfer {
             accommodationImages.save(image);
             outcome.created();
         }
+    }
+
+    /** Every rate this lodge already has, by composite key, read once per lodge. */
+    private Map<String, AccommodationRate> ratesAlreadyHere(
+            TransferContext context, Accommodation lodge) {
+        return context.cached("lodge-rate-index", String.valueOf(lodge.getId()), cacheKey -> {
+            Map<String, AccommodationRate> index = new HashMap<>();
+            for (AccommodationRate rate : rates.findByAccommodationId(lodge.getId())) {
+                index.put((rate.getSeason() == null ? null : rate.getSeason().getId())
+                    + "/" + (rate.getRoomType() == null ? null : rate.getRoomType().getId())
+                    + "/" + (rate.getRoomStandard() == null ? null : rate.getRoomStandard().getId())
+                    + "/" + (rate.getBoardType() == null ? null : rate.getBoardType().getId()), rate);
+            }
+            return index;
+        });
     }
 }

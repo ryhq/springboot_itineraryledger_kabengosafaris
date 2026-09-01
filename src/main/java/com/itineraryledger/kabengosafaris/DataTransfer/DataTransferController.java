@@ -169,6 +169,18 @@ public class DataTransferController {
     private record Progress(String kind, Instant startedAt) {}
 
     /**
+     * The last report, kept so a cut-off request can still collect it.
+     *
+     * The work finishes whether or not anyone is still listening; throwing the result away because
+     * the socket closed means the office cannot see what its own import did. An import COMMITS in
+     * that case, so the alternative is a company that has been written to and a screen that never
+     * said so.
+     */
+    private static final AtomicReference<Finished> LAST = new AtomicReference<>();
+
+    private record Finished(String kind, Instant finishedAt, Map<String, Object> payload) {}
+
+    /**
      * Whether a transfer is running, and for how long.
      *
      * Cheap and pollable on purpose: it reads one reference and touches no database, so a page may
@@ -184,6 +196,11 @@ public class DataTransferController {
         payload.put("startedAt", busy == null ? null : busy.startedAt().toString());
         payload.put("elapsedSeconds",
             busy == null ? 0 : Duration.between(busy.startedAt(), Instant.now()).toSeconds());
+
+        Finished last = LAST.get();
+        payload.put("lastKind", last == null ? null : last.kind());
+        payload.put("lastFinishedAt", last == null ? null : last.finishedAt().toString());
+        payload.put("lastResult", last == null ? null : last.payload());
         return ResponseEntity.ok(ApiResponse.success(200,
             busy == null ? "Nothing is running" : busy.kind() + " in progress", payload));
     }
@@ -223,6 +240,7 @@ public class DataTransferController {
             String message = previewOnly
                 ? "Nothing was written — this is what the bundle would do"
                 : "Bundle imported";
+            LAST.set(new Finished(previewOnly ? "PREVIEW" : "IMPORT", Instant.now(), payload));
             return ResponseEntity.ok(ApiResponse.success(200, message, payload));
 
         } catch (IllegalArgumentException e) {

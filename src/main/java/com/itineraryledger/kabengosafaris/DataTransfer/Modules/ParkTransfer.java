@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.DataTransfer.Modules;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
@@ -224,11 +226,18 @@ public class ParkTransfer implements ModuleTransfer {
              * The composite the table already declares unique. Using it as the import identity means
              * the database and this code cannot disagree about what "the same rate" is.
              */
-            ParkTariffRate existing = rates
-                .findByParkIdAndTariffIdAndSeasonIdAndNationCategoryIdAndAgeCategoryId(
-                    park.getId(), tariff.getId(), season.getId(), nation.getId(),
-                    age == null ? null : age.getId())
-                .orElse(null);
+            /*
+             * Looked up in a map built once per park, not with a query per rate.
+             *
+             * A park carries a few hundred rates and each one asked "is this already here?" on its
+             * own, then asked for the park-tariff link on its own, then inserted. Three round trips
+             * a row across three modules is sixteen thousand for one bundle, and a check of 5,394
+             * rates took 274 seconds — longer than the gateway holds the request open, so the
+             * report could never reach the person who asked for it. The rows were never the cost.
+             */
+            String rateKey = tariff.getId() + "/" + season.getId() + "/" + nation.getId()
+                + "/" + (age == null ? "-" : age.getId());
+            ParkTariffRate existing = ratesAlreadyHere(context, park).get(rateKey);
 
             if (existing != null && !context.mayOverwrite()) {
                 outcome.skip(key, "already here");
@@ -241,13 +250,15 @@ public class ParkTransfer implements ModuleTransfer {
              * is the stronger evidence that the park charges it, so the link is created rather than
              * the rate refused.
              */
-            ParkTariff link = parkTariffs.findByParkIdAndTariffId(park.getId(), tariff.getId())
-                .orElseGet(() -> {
-                    ParkTariff fresh = new ParkTariff();
-                    fresh.setPark(park);
-                    fresh.setTariff(tariff);
-                    return parkTariffs.save(fresh);
-                });
+            ParkTariff link = context.cached("park-tariff:" + park.getId(),
+                String.valueOf(tariff.getId()),
+                cacheKey -> parkTariffs.findByParkIdAndTariffId(park.getId(), tariff.getId())
+                    .orElseGet(() -> {
+                        ParkTariff fresh = new ParkTariff();
+                        fresh.setPark(park);
+                        fresh.setTariff(tariff);
+                        return parkTariffs.save(fresh);
+                    }));
 
             ParkTariffRate rate = existing == null ? new ParkTariffRate() : existing;
             Scalars.apply(mapper, rateRow, rate);
@@ -256,6 +267,7 @@ public class ParkTransfer implements ModuleTransfer {
             rate.setNationCategory(nation);
             rate.setAgeCategory(age);
             rates.save(rate);
+            ratesAlreadyHere(context, park).put(rateKey, rate);
 
             if (existing == null) outcome.created(); else outcome.updated();
         }
@@ -294,5 +306,30 @@ public class ParkTransfer implements ModuleTransfer {
             parkImages.save(image);
             outcome.created();
         }
+    }
+
+    /**
+     * Every rate this park already has, by its composite key, read once.
+     *
+     * Cached on the context so the second rate in a park does not re-read them, and updated as rows
+     * are written so a bundle naming the same rate twice still sees the first one.
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, ParkTariffRate> ratesAlreadyHere(TransferContext context, Park park) {
+        return context.cached("park-rate-index", String.valueOf(park.getId()), cacheKey -> {
+            Map<String, ParkTariffRate> index = new HashMap<>();
+            for (ParkTariffRate rate : rates.findByParkId(park.getId())) {
+                index.put(compositeKeyOf(rate), rate);
+            }
+            return index;
+        });
+    }
+
+    private static String compositeKeyOf(ParkTariffRate rate) {
+        ParkTariff link = rate.getParkTariff();
+        Long tariffId = link == null || link.getTariff() == null ? null : link.getTariff().getId();
+        return tariffId + "/" + (rate.getSeason() == null ? null : rate.getSeason().getId())
+            + "/" + (rate.getNationCategory() == null ? null : rate.getNationCategory().getId())
+            + "/" + (rate.getAgeCategory() == null ? "-" : rate.getAgeCategory().getId());
     }
 }

@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.DataTransfer.Modules;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
@@ -164,9 +166,10 @@ public class ActivityTransfer implements ModuleTransfer {
                 continue;
             }
 
-            ActivityTariffRate existing = rates.findTheOne(
-                activity.getId(), park == null ? null : park.getId(), season.getId(),
-                nation.getId(), age == null ? null : age.getId()).orElse(null);
+            /* One read per activity, not one per rate — see ParkTransfer.ratesAlreadyHere. */
+            String rateKey = (park == null ? "-" : park.getId()) + "/" + season.getId()
+                + "/" + nation.getId() + "/" + (age == null ? "-" : age.getId());
+            ActivityTariffRate existing = ratesAlreadyHere(context, activity).get(rateKey);
 
             if (existing != null && !context.mayOverwrite()) {
                 outcome.skip(key, "already here");
@@ -181,6 +184,7 @@ public class ActivityTransfer implements ModuleTransfer {
             rate.setNationCategory(nation);
             rate.setAgeCategory(age);
             rates.save(rate);
+            ratesAlreadyHere(context, activity).put(rateKey, rate);
 
             if (existing == null) outcome.created(); else outcome.updated();
         }
@@ -219,5 +223,20 @@ public class ActivityTransfer implements ModuleTransfer {
             activityImages.save(image);
             outcome.created();
         }
+    }
+
+    /** Every rate this activity already has, by composite key, read once per activity. */
+    private Map<String, ActivityTariffRate> ratesAlreadyHere(
+            TransferContext context, Activity activity) {
+        return context.cached("activity-rate-index", String.valueOf(activity.getId()), cacheKey -> {
+            Map<String, ActivityTariffRate> index = new HashMap<>();
+            for (ActivityTariffRate rate : rates.findByActivityId(activity.getId())) {
+                index.put((rate.getPark() == null ? "-" : rate.getPark().getId())
+                    + "/" + (rate.getSeason() == null ? null : rate.getSeason().getId())
+                    + "/" + (rate.getNationCategory() == null ? null : rate.getNationCategory().getId())
+                    + "/" + (rate.getAgeCategory() == null ? "-" : rate.getAgeCategory().getId()), rate);
+            }
+            return index;
+        });
     }
 }
