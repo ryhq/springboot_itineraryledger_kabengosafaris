@@ -93,7 +93,7 @@ class EmailAccountEnumsTest {
          * acceptable. Kept as literals deliberately: if someone adds an option there, this fails
          * and the API is extended to match, rather than the user meeting a malformed-body error.
          */
-        for (String protocol : new String[] {"IMAP", "NONE"}) {
+        for (String protocol : new String[] {"IMAP", "POP3", "NONE"}) {
             assertNotNull(EmailAccountEnums.receivingProtocol(protocol), protocol);
         }
         for (String method : new String[] {"API", "SMTP"}) {
