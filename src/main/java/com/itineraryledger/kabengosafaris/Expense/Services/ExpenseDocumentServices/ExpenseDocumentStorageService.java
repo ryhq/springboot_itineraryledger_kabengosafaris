@@ -26,7 +26,9 @@ import java.security.NoSuchAlgorithmException;
 @Slf4j
 public class ExpenseDocumentStorageService {
 
-    @Value("${expense.document.storage.path:./data/expense-documents/}")
+    /* The nested default matters: if the key is ever missing from the properties again, the files
+     * still land under the data root instead of a release-relative ./data that nothing tests. */
+    @Value("${expense.document.storage.path:${app.data.dir:./data}/expense-documents/}")
     private String storagePath;
 
     @Value("${app.base.url:http://localhost:4450}")
@@ -35,17 +37,46 @@ public class ExpenseDocumentStorageService {
     @Autowired
     private FileSettingGetterServices fileSettingGetterServices;
 
+    /**
+     * Creates the directory and proves it can be written to.
+     *
+     * <p>The old version said only "Failed to initialize expense document storage directory",
+     * which named neither the path it tried nor why the filesystem refused -- and a relative
+     * path means the answer depends on the service's working directory, so there was nothing to
+     * go on from the panel. Both now travel in the message: whoever sees the toast sees the
+     * absolute path and the refusal.
+     *
+     * <p>It probes with a real file rather than trusting {@code Files.isWritable}: a directory
+     * that exists but belongs to another account, a read-only mount and a full disk all pass
+     * that check and then fail at the copy, where the failure used to become a silent null.
+     */
     public void initializeStorageDirectory() {
+        Path path = Paths.get(storagePath).toAbsolutePath().normalize();
         try {
-            Path path = Paths.get(storagePath);
-            if (!Files.exists(path)) {
-                Files.createDirectories(path);
-                log.info("Created expense document storage directory: {}", storagePath);
-            }
-        } catch (IOException e) {
-            log.error("Failed to create expense document storage directory: {}", storagePath, e);
-            throw new RuntimeException("Failed to initialize expense document storage directory", e);
+            Files.createDirectories(path);
+        } catch (IOException | RuntimeException e) {
+            throw new RuntimeException(refusal("create the expense document directory", path, e), e);
         }
+
+        Path probe = path.resolve(".write-probe");
+        try {
+            Files.writeString(probe, "ok");
+        } catch (IOException e) {
+            throw new RuntimeException(refusal("write to the expense document directory", path, e), e);
+        } finally {
+            try {
+                Files.deleteIfExists(probe);
+            } catch (IOException ignored) {
+                /* a probe we could write but not remove is not a reason to refuse an upload */
+            }
+        }
+    }
+
+    private String refusal(String what, Path path, Exception cause) {
+        String detail = cause.getMessage() == null ? cause.getClass().getSimpleName()
+                : cause.getClass().getSimpleName() + ": " + cause.getMessage();
+        log.error("Could not {} {}", what, path, cause);
+        return "Could not " + what + " " + path + " (" + detail + ")";
     }
 
     public String validateDocument(MultipartFile file) {
