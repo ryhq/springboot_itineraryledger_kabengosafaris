@@ -42,7 +42,9 @@ public class SafariCostEstimationController {
      * - Returns both STO (Tour Operator) and Rack (Public) rates
      * - Costs grouped by currency (no mixing)
      * - Only uses active rates
-     * - Skips alternative accommodations and optional activities
+     * - Alternative beds, optional activities, fees switched off and fees WAIVED on this safari are
+ *   priced into dayCostDetails[].excludedLineItems and counted in no total, so the office can
+ *   compare an option without it changing what the safari costs
      * - Comprehensive rate issue logging
      *
      * Response:

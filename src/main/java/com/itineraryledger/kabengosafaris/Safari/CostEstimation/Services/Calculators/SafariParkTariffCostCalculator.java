@@ -3,6 +3,7 @@ package com.itineraryledger.kabengosafaris.Safari.CostEstimation.Services.Calcul
 import com.itineraryledger.kabengosafaris.Activity.ChargingBasis;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CostLineItemDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.CostItemType;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.ExclusionReason;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Core.ParkTariffRateLookupService;
 import com.itineraryledger.kabengosafaris.ParkTariff.ParkTariff;
 import com.itineraryledger.kabengosafaris.ParkTariff.ParkTariffRepository;
@@ -78,6 +79,17 @@ public class SafariParkTariffCostCalculator {
             for (FullSafariDTO.ParkTariffDTO tariff : park.getTariffs()) {
                 // Skip if not included in price
                 if (tariff.getIsIncludedInPrice() != null && !tariff.getIsIncludedInPrice()) {
+                    continue;
+                }
+
+                /*
+                 * A waived fee is not a fee. SafariDayParkTariff has carried isWaived and a
+                 * waive(reason) method since it was written, the repository's unpaid queries
+                 * respect it, and this calculator read it nowhere -- so a fee somebody had
+                 * deliberately given away was still in the safari's cost. It is priced as an
+                 * excluded line instead, where the money that was waived stays visible.
+                 */
+                if (Boolean.TRUE.equals(tariff.getIsWaived())) {
                     continue;
                 }
 
@@ -342,5 +354,68 @@ public class SafariParkTariffCostCalculator {
             .currency(DEFAULT_CURRENCY)
             .notes("Rate not found")
             .build();
+    }
+
+    /**
+     * The fees this day would charge but does not: switched off, or waived.
+     *
+     * Priced with the same private method as a charged fee, so an excluded line can never disagree
+     * with what including it would cost. Never added to the totals -- that is the aggregator's
+     * job, and it sums a different list.
+     */
+    public List<CostLineItemDTO> calculateExcludedForDay(
+            FullSafariDTO.DayDTO day,
+            LocalDate dayDate,
+            Season season,
+            List<FullSafariDTO.PaxDTO> paxList,
+            int carCount
+    ) {
+        List<CostLineItemDTO> excluded = new ArrayList<>();
+
+        if (day.getParks() == null || day.getParks().isEmpty()) {
+            return excluded;
+        }
+
+        for (FullSafariDTO.DayParkDTO park : day.getParks()) {
+            if (park.getTariffs() == null || park.getTariffs().isEmpty()) {
+                continue;
+            }
+
+            Long parkId = idObfuscator.decodeId(park.getParkId());
+            if (parkId == null) {
+                continue;
+            }
+
+            for (FullSafariDTO.ParkTariffDTO tariff : park.getTariffs()) {
+                boolean waived = Boolean.TRUE.equals(tariff.getIsWaived());
+                boolean notIncluded = tariff.getIsIncludedInPrice() != null
+                    && !tariff.getIsIncludedInPrice();
+                if (!waived && !notIncluded) {
+                    continue;
+                }
+
+                Long tariffId = idObfuscator.decodeId(tariff.getTariffId());
+                if (tariffId == null) {
+                    continue;
+                }
+
+                CostLineItemDTO line = calculateTariffCost(
+                    day.getDayNumber(), parkId, park.getParkName(), tariffId,
+                    tariff.getTariffName(), season, paxList, carCount);
+                if (line == null) {
+                    continue;
+                }
+
+                /* Waived wins the label: it says who gave the money up, which "not included" does not. */
+                line.setExclusionReason(waived
+                    ? ExclusionReason.WAIVED_FEE
+                    : ExclusionReason.NOT_INCLUDED_IN_PRICE);
+                line.setEntryId(tariff.getId());
+                line.setParentEntryId(park.getId());
+                excluded.add(line);
+            }
+        }
+
+        return excluded;
     }
 }

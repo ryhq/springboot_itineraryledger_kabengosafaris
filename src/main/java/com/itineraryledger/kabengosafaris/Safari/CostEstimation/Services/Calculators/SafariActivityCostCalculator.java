@@ -6,6 +6,7 @@ import com.itineraryledger.kabengosafaris.Activity.ChargingBasis;
 import com.itineraryledger.kabengosafaris.ActivityTariffRate.ActivityTariffRate;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CostLineItemDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.CostItemType;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.ExclusionReason;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Core.ActivityRateLookupService;
 import com.itineraryledger.kabengosafaris.PaxNationCategory.PaxNationCategory;
 import com.itineraryledger.kabengosafaris.PaxNationCategory.Repositories.PaxNationCategoryRepository;
@@ -454,5 +455,72 @@ public class SafariActivityCostCalculator {
             .currency(DEFAULT_CURRENCY)
             .notes("Rate not found")
             .build();
+    }
+
+    /**
+     * The extras this day offers and the lines somebody switched off, priced.
+     *
+     * Same private pricing methods as a charged activity, so an option can never disagree with
+     * what including it would cost.
+     */
+    public List<CostLineItemDTO> calculateExcludedForDay(
+            FullSafariDTO.DayDTO day,
+            LocalDate dayDate,
+            Season season,
+            List<FullSafariDTO.PaxDTO> paxList,
+            int carCount
+    ) {
+        List<CostLineItemDTO> excluded = new ArrayList<>();
+
+        if (day.getActivities() != null) {
+            for (FullSafariDTO.DayActivityDTO activity : day.getActivities()) {
+                boolean notIncluded = activity.getIsIncludedInPrice() != null
+                    && !activity.getIsIncludedInPrice();
+                boolean optional = Boolean.TRUE.equals(activity.getIsOptional());
+                if (!notIncluded && !optional) {
+                    continue;
+                }
+
+                CostLineItemDTO line = calculateStandaloneActivityCost(
+                    day.getDayNumber(), activity, season, paxList, carCount);
+                if (line == null) {
+                    continue;
+                }
+                /* Optional wins the label: it is the one a client can still say yes to. */
+                line.setExclusionReason(optional
+                    ? ExclusionReason.OPTIONAL_ACTIVITY
+                    : ExclusionReason.NOT_INCLUDED_IN_PRICE);
+                line.setEntryId(activity.getId());
+                excluded.add(line);
+            }
+        }
+
+        if (day.getParks() != null) {
+            for (FullSafariDTO.DayParkDTO park : day.getParks()) {
+                if (park.getActivities() == null) {
+                    continue;
+                }
+                Long parkId = idObfuscator.decodeId(park.getParkId());
+                for (FullSafariDTO.ParkActivityDTO parkActivity : park.getActivities()) {
+                    if (parkActivity.getIsIncludedInPrice() == null
+                        || parkActivity.getIsIncludedInPrice()) {
+                        continue;
+                    }
+                    CostLineItemDTO line = calculateParkActivityCost(
+                        day.getDayNumber(), parkActivity, parkId, park.getParkName(),
+                        season, paxList, carCount);
+                    if (line == null) {
+                        continue;
+                    }
+                    /* A park activity has no optional flag of its own, so this is all it can say. */
+                    line.setExclusionReason(ExclusionReason.NOT_INCLUDED_IN_PRICE);
+                    line.setEntryId(parkActivity.getId());
+                    line.setParentEntryId(park.getId());
+                    excluded.add(line);
+                }
+            }
+        }
+
+        return excluded;
     }
 }

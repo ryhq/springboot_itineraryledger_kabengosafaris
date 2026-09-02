@@ -82,6 +82,16 @@ public class SafariDayAccommodationController {
         return getService.getSafariDayAccommodation(safariId, dayId, accommodationId, sortBy, sortDirection);
     }
 
+    /** Promote a recorded option to the booked stay. One request, because it moves several rows. */
+    @PostMapping("/{accommodationId}/make-primary")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_SAFARI_DAY_ACCOMMODATION')")
+    public ResponseEntity<ApiResponse<?>> makePrimary(
+            @PathVariable String safariId,
+            @PathVariable String dayId,
+            @PathVariable String accommodationId) {
+        return updateService.makePrimary(safariId, dayId, accommodationId);
+    }
+
     @PutMapping("/{accommodationId}")
     @PreAuthorize("hasAuthority('PERM_UPDATE_SAFARI_DAY_ACCOMMODATION')")
     public ResponseEntity<ApiResponse<?>> updateAccommodation(

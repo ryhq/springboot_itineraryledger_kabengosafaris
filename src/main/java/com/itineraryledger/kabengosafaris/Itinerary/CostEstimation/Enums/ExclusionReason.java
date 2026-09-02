@@ -21,7 +21,17 @@ public enum ExclusionReason {
     OPTIONAL_ACTIVITY("Optional", "Offered as an extra, not part of the trip price"),
 
     /** Somebody turned it off. A fee excluded on purpose, or an activity marked not included. */
-    NOT_INCLUDED_IN_PRICE("Not included", "Deliberately left out of the trip price");
+    NOT_INCLUDED_IN_PRICE("Not included", "Deliberately left out of the trip price"),
+
+    /**
+     * A park fee waived on a running safari -- a comp, a resident exemption, a park's own goodwill.
+     *
+     * Safari-only: an itinerary is a product, and nothing is waived on a product. The estimator
+     * used to read the flag nowhere at all, so a waived fee was still charged; it is a line to
+     * show with its reason, not one to drop, because somebody has to be able to see what was
+     * given away.
+     */
+    WAIVED_FEE("Waived", "Waived on this safari, so nobody is charged for it");
 
     private final String label;
     private final String description;

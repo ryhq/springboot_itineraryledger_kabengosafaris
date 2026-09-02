@@ -343,4 +343,67 @@ public class SafariDayAccommodationUpdateService {
 
         return null;
     }
+
+    /**
+     * Promote a recorded option to the booked stay for the day.
+     *
+     * Separate from the update endpoint even though it only changes flags, because it changes them
+     * on SEVERAL rows at once. Offered as two PUTs, the atomicity would be the caller's problem,
+     * and a day left with two primaries prices as two beds for one night -- on a safari that is a
+     * bill somebody pays.
+     */
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> makePrimary(
+        String safariIdObfuscated,
+        String dayIdObfuscated,
+        String accommodationIdObfuscated
+    ) {
+        log.info("Making safari accommodation primary: {}", accommodationIdObfuscated);
+
+        try {
+            Long dayId;
+            Long entryId;
+            try {
+                dayId = idObfuscator.decodeId(dayIdObfuscated);
+                entryId = idObfuscator.decodeId(accommodationIdObfuscated);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid ID", "INVALID_ID"));
+            }
+
+            SafariDayAccommodation target = accommodationRepository.findById(entryId).orElse(null);
+            if (target == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Accommodation not found", "ACCOMMODATION_NOT_FOUND"));
+            }
+            if (target.getSafariDay() == null || !target.getSafariDay().getId().equals(dayId)) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400,
+                        "That stay is not on this day", "ACCOMMODATION_NOT_ON_DAY"));
+            }
+
+            /*
+             * Every sibling on the day, not just the current primary. A day can arrive with two
+             * primaries from an older import or a half-finished edit, and promoting one option is
+             * the moment to leave the day with exactly one.
+             */
+            List<SafariDayAccommodation> onThisDay = accommodationRepository.findBySafariDayId(dayId);
+            for (SafariDayAccommodation stay : onThisDay) {
+                boolean shouldBePrimary = stay.getId().equals(entryId);
+                if (Boolean.TRUE.equals(stay.getIsAlternative()) == shouldBePrimary) {
+                    stay.setIsAlternative(!shouldBePrimary);
+                    accommodationRepository.save(stay);
+                }
+            }
+
+            log.info("Safari accommodation {} is now the booked stay on day {}", entryId, dayId);
+            return ResponseEntity.ok(ApiResponse.success(200,
+                "This stay is now the booked one for the day", null));
+
+        } catch (Exception e) {
+            log.error("Error making safari accommodation primary", e);
+            return ResponseEntity.status(500).body(
+                ApiResponse.error(500, "Could not change the booked stay", "MAKE_PRIMARY_FAILED"));
+        }
+    }
 }

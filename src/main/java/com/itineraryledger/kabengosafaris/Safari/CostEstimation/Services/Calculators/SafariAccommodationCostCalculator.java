@@ -3,7 +3,9 @@ package com.itineraryledger.kabengosafaris.Safari.CostEstimation.Services.Calcul
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRate;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CostLineItemDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.CostItemType;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.ExclusionReason;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Core.AccommodationRateLookupService;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.Entity.ItineraryDayPark.ParkEntryType;
 import com.itineraryledger.kabengosafaris.Safari.DTOs.FullSafariDTO;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.RequiredArgsConstructor;
@@ -185,5 +187,123 @@ public class SafariAccommodationCostCalculator {
         return paxList.stream()
             .mapToInt(p -> p.getCount() != null ? p.getCount() : 0)
             .sum();
+    }
+
+    /**
+     * The beds this day could have used instead, priced.
+     *
+     * Reported as a difference from the booked bed, and because the rest of the day is invariant
+     * -- fees and activities are declared per day and do not follow the bed -- that difference is
+     * also the difference to the whole safari. A day with alternatives and no primary yet reports
+     * them with no delta rather than a delta from zero, which would read as though every option
+     * added its full cost.
+     */
+    public List<CostLineItemDTO> calculateExcludedForDay(
+            FullSafariDTO.DayDTO day,
+            LocalDate dayDate,
+            List<FullSafariDTO.PaxDTO> paxList
+    ) {
+        List<CostLineItemDTO> excluded = new ArrayList<>();
+
+        if (day.getIsOvernight() != null && !day.getIsOvernight()) {
+            return excluded;
+        }
+        if (day.getAccommodations() == null || day.getAccommodations().isEmpty()) {
+            return excluded;
+        }
+
+        int totalPax = calculateTotalPax(paxList);
+
+        CostLineItemDTO primary = null;
+        for (FullSafariDTO.DayAccommodationDTO candidate : day.getAccommodations()) {
+            if (!Boolean.TRUE.equals(candidate.getIsAlternative())) {
+                primary = calculateAccommodationCost(day.getDayNumber(), candidate, dayDate, totalPax);
+                break;
+            }
+        }
+
+        String sleepoverPark = sleepoverParkOf(day);
+
+        for (FullSafariDTO.DayAccommodationDTO accommodation : day.getAccommodations()) {
+            if (!Boolean.TRUE.equals(accommodation.getIsAlternative())) {
+                continue;
+            }
+
+            CostLineItemDTO line = calculateAccommodationCost(
+                day.getDayNumber(), accommodation, dayDate, totalPax);
+            if (line == null) {
+                continue;
+            }
+
+            line.setExclusionReason(ExclusionReason.ALTERNATIVE_ACCOMMODATION);
+            line.setEntryId(accommodation.getId());
+
+            /* Only where both sides are priced in the same money: a delta across currencies is a lie. */
+            if (primary != null && primary.getCurrency() != null
+                && primary.getCurrency().equals(line.getCurrency())) {
+                line.setDeltaVsPrimarySto(
+                    nullSafe(line.getStoTotalPrice()).subtract(nullSafe(primary.getStoTotalPrice())));
+                line.setDeltaVsPrimaryRack(
+                    nullSafe(line.getRackTotalPrice()).subtract(nullSafe(primary.getRackTotalPrice())));
+            }
+
+            line.setSleepsElsewhere(sleepsElsewhere(accommodation, sleepoverPark));
+            excluded.add(line);
+        }
+
+        return excluded;
+    }
+
+    /**
+     * The park this day sleeps in, or null when it sleeps outside every park.
+     *
+     * Read off the park visit marked SLEEP_OVER, since that is where the day's concession fee
+     * comes from. A day with no sleepover park cannot have a fee that depends on where anybody
+     * sleeps, so there is nothing to warn about.
+     */
+    private String sleepoverParkOf(FullSafariDTO.DayDTO day) {
+        if (day.getParks() == null) {
+            return null;
+        }
+        for (FullSafariDTO.DayParkDTO visit : day.getParks()) {
+            if (visit.getEntryType() == ParkEntryType.SLEEP_OVER) {
+                return visit.getParkName();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Whether taking this bed would leave the day's fees describing somewhere nobody is sleeping.
+     *
+     * Compared on the park's name against the lodge's region and district, which is coarse and
+     * deliberately so: this is a prompt to go and look, not an assertion. A false warning costs
+     * somebody ten seconds; a missing one costs a concession fee per person per night on a safari
+     * that is already running.
+     */
+    private Boolean sleepsElsewhere(
+            FullSafariDTO.DayAccommodationDTO accommodation,
+            String sleepoverParkName
+    ) {
+        if (sleepoverParkName == null || sleepoverParkName.isBlank()) {
+            return null;
+        }
+        String park = flatten(sleepoverParkName);
+        String region = flatten(accommodation.getAccommodationRegion());
+        String district = flatten(accommodation.getAccommodationDistrict());
+        if (region.isEmpty() && district.isEmpty()) {
+            return null;
+        }
+        boolean inside = (!district.isEmpty() && park.contains(district))
+            || (!region.isEmpty() && park.contains(region));
+        return !inside;
+    }
+
+    private static String flatten(String value) {
+        return value == null ? "" : value.toLowerCase().replaceAll("[^a-z0-9]+", " ").trim();
+    }
+
+    private static BigDecimal nullSafe(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
     }
 }

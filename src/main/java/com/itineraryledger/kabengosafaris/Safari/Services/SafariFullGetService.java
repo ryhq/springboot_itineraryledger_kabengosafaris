@@ -408,6 +408,8 @@ public class SafariFullGetService {
         dto.setAccommodationId(idObfuscator.encodeId(entity.getAccommodation().getId()));
         dto.setAccommodationName(entity.getAccommodation().getName());
         dto.setAccommodationSlug(entity.getAccommodation().getSlug());
+        dto.setAccommodationRegion(entity.getAccommodation().getRegion());
+        dto.setAccommodationDistrict(entity.getAccommodation().getDistrict());
         dto.setRoomTypeId(entity.getRoomType() != null ? idObfuscator.encodeId(entity.getRoomType().getId()) : null);
         dto.setRoomTypeName(entity.getRoomType() != null ? entity.getRoomType().getName() : null);
         dto.setRoomTypeMaxOccupancy(entity.getRoomType() != null ? entity.getRoomType().getMaxOccupancy() : null);

@@ -77,17 +77,35 @@ public class SafariPerDayCostAggregator {
             allItems.addAll(parkFeeItems);
             allItems.addAll(activityItems);
 
+            /*
+             * Priced, and kept out of allItems on purpose.
+             *
+             * Alternative beds, optional activities, fees somebody switched off, and fees waived
+             * on this safari. They go into their own field on the day, never into the list the
+             * totals are summed from, which is why the calculators expose them through a second
+             * method: showing an option must not change what the safari costs.
+             */
+            List<CostLineItemDTO> excludedItems = new ArrayList<>();
+            excludedItems.addAll(safariAccommodationCostCalculator.calculateExcludedForDay(
+                day, day.getDate(), paxList));
+            excludedItems.addAll(safariParkTariffCostCalculator.calculateExcludedForDay(
+                day, day.getDate(), globalSeason, paxList, carCount));
+            excludedItems.addAll(safariActivityCostCalculator.calculateExcludedForDay(
+                day, day.getDate(), globalSeason, paxList, carCount));
+
             // Calculate totals by currency
             List<CurrencyGroupedCostDTO> totalsByCurrency = calculateTotalsByCurrency(allItems);
 
             // Build day cost detail
             DayCostDetailDTO dayDetail = DayCostDetailDTO.builder()
+                .dayId(day.getId())
                 .dayNumber(day.getDayNumber())
                 .dayTitle(day.getTitle())
                 .date(day.getDate())
                 .seasonName(seasonName)
                 .isOvernight(day.getIsOvernight())
                 .lineItems(allItems)
+                .excludedLineItems(excludedItems)
                 .totalsByCurrency(totalsByCurrency)
                 .build();
 
