@@ -365,6 +365,8 @@ public class ItineraryFullGetService {
             .accommodationId(idObfuscator.encodeId(accommodation.getAccommodation().getId()))
             .accommodationName(accommodation.getAccommodation().getName())
             .accommodationSlug(accommodation.getAccommodation().getSlug())
+            .accommodationRegion(accommodation.getAccommodation().getRegion())
+            .accommodationDistrict(accommodation.getAccommodation().getDistrict())
             .roomTypeId(idObfuscator.encodeId(accommodation.getRoomType().getId()))
             .roomTypeName(accommodation.getRoomType().getName())
             .roomTypeMaxOccupancy(accommodation.getRoomType().getMaxOccupancy())

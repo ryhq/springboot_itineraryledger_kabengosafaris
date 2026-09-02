@@ -94,6 +94,22 @@ public class ItineraryDayAccommodationController {
         return updateService.updateItineraryDayAccommodation(itineraryId, dayId, accommodationId, updateDTO);
     }
 
+    /**
+     * Promote a recorded option to the booked stay for the day.
+     *
+     * Separate from the update endpoint even though it only changes flags, because it changes them
+     * on SEVERAL rows at once. Offering it as two PUTs would put the atomicity in the caller's
+     * hands, and a day left with two primaries prices as two beds for one night.
+     */
+    @PostMapping("/{accommodationId}/make-primary")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_ITINERARY_DAY_ACCOMMODATION')")
+    public ResponseEntity<ApiResponse<?>> makePrimary(
+            @PathVariable String itineraryId,
+            @PathVariable String dayId,
+            @PathVariable String accommodationId) {
+        return updateService.makePrimary(itineraryId, dayId, accommodationId);
+    }
+
     @DeleteMapping("/{accommodationId}")
     @PreAuthorize("hasAuthority('PERM_DELETE_ITINERARY_DAY_ACCOMMODATION')")
     public ResponseEntity<ApiResponse<?>> deleteAccommodation(

@@ -7,6 +7,7 @@ import com.itineraryledger.kabengosafaris.ActivityTariffRate.ActivityTariffRate;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CostLineItemDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.CostItemType;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Core.ActivityRateLookupService;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.ExclusionReason;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.FullItineraryDTO;
 import com.itineraryledger.kabengosafaris.PaxNationCategory.PaxNationCategory;
 import com.itineraryledger.kabengosafaris.PaxNationCategory.Repositories.PaxNationCategoryRepository;
@@ -471,5 +472,81 @@ public class ActivityCostCalculator {
             .currency(DEFAULT_CURRENCY)
             .notes("Rate not found")
             .build();
+    }
+
+    /**
+     * The activities this day offers but does not charge for.
+     *
+     * Two different things end up here and the reason says which. An OPTIONAL activity is one the
+     * client may add, like a Maasai boma visit or a balloon flight; a NOT_INCLUDED one is a line
+     * somebody deliberately switched off. Both were dropped silently before this, so an itinerary
+     * could carry a priced upsell that no cost screen would ever show, and the office would quote
+     * it from memory or not at all.
+     *
+     * A sibling of calculateForDay, so nothing here can reach a total: the aggregator puts this
+     * list in its own field.
+     */
+    public List<CostLineItemDTO> calculateExcludedForDay(
+        FullItineraryDTO.DayDTO day,
+        LocalDate dayDate,
+        Season season,
+        List<FullItineraryDTO.PaxDTO> paxList,
+        int carCount
+    ) {
+        List<CostLineItemDTO> excluded = new ArrayList<>();
+
+        if (day.getActivities() != null) {
+            for (FullItineraryDTO.DayActivityDTO activity : day.getActivities()) {
+                boolean notIncluded = activity.getIsIncludedInPrice() != null
+                    && !activity.getIsIncludedInPrice();
+                boolean optional = Boolean.TRUE.equals(activity.getIsOptional());
+                if (!notIncluded && !optional) {
+                    continue;
+                }
+
+                CostLineItemDTO line = calculateStandaloneActivityCost(
+                    day.getDayNumber(), activity, season, paxList, carCount);
+                if (line == null) {
+                    continue;
+                }
+                /* Optional wins the label: it is the one a client can say yes to. */
+                line.setExclusionReason(optional
+                    ? ExclusionReason.OPTIONAL_ACTIVITY
+                    : ExclusionReason.NOT_INCLUDED_IN_PRICE);
+                line.setEntryId(activity.getId());
+                excluded.add(line);
+            }
+        }
+
+        if (day.getParks() != null) {
+            for (FullItineraryDTO.DayParkDTO park : day.getParks()) {
+                if (park.getActivities() == null) {
+                    continue;
+                }
+                Long parkId = idObfuscator.decodeId(park.getParkId());
+                for (FullItineraryDTO.ParkActivityDTO parkActivity : park.getActivities()) {
+                    if (parkActivity.getIsIncludedInPrice() == null
+                        || parkActivity.getIsIncludedInPrice()) {
+                        continue;
+                    }
+                    CostLineItemDTO line = calculateParkActivityCost(
+                        day.getDayNumber(), parkActivity, parkId, park.getParkName(),
+                        season, paxList, carCount);
+                    if (line == null) {
+                        continue;
+                    }
+                    /*
+                     * A park activity has no optional flag of its own, so "not included" is all
+                     * this side can say. In practice it is used the same way: the Maasai boma
+                     * visit on a Ngorongoro transit is recorded exactly like this.
+                     */
+                    line.setExclusionReason(ExclusionReason.NOT_INCLUDED_IN_PRICE);
+                    line.setEntryId(parkActivity.getId());
+                    excluded.add(line);
+                }
+            }
+        }
+
+        return excluded;
     }
 }

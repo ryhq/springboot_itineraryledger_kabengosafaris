@@ -166,6 +166,13 @@ public class FullItineraryDTO {
         private String accommodationId;
         private String accommodationName;
         private String accommodationSlug;
+        /*
+         * Where the lodge is, so the estimator can notice an alternative that sleeps outside the
+         * park whose fees the day is carrying. Park fees hang off the park visit and do not follow
+         * the bed, so the swap that looks cheapest can be the one that quietly loses a fee.
+         */
+        private String accommodationRegion;
+        private String accommodationDistrict;
         private String roomTypeId;
         private String roomTypeName;
         private Integer roomTypeMaxOccupancy;

@@ -2,6 +2,7 @@ package com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.CostItemType;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.ExclusionReason;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -86,6 +87,43 @@ public class CostLineItemDTO {
      * Additional context or notes
      */
     private String notes;
+
+    /**
+     * Why this line is shown but not counted. Null on every line that IS counted.
+     *
+     * Its presence is the whole contract of the excluded list: a line carrying a reason must never
+     * reach a total, and a line in the totals must never carry one.
+     */
+    private ExclusionReason exclusionReason;
+
+    /**
+     * The day-child row this line came from, for a control that wants to change it.
+     *
+     * Not the same as itemId, which holds the CATALOGUE id: the accommodation, the activity, the
+     * tariff. A screen offering "make this one primary" has to address the row on the day, and the
+     * catalogue id cannot do that, least of all when the same lodge appears on four nights.
+     */
+    private String entryId;
+
+    /**
+     * What choosing this alternative would do to the trip, against the bed currently booked.
+     *
+     * It is the TRIP delta, not just the night's, and that is not a simplification. Park fees,
+     * tariffs and activities are declared per day and do not move when the bed does, so the only
+     * figure that changes is this one. Set on accommodation alternatives only.
+     */
+    private BigDecimal deltaVsPrimarySto;
+
+    private BigDecimal deltaVsPrimaryRack;
+
+    /**
+     * True when this alternative sleeps somewhere the day's fees do not describe.
+     *
+     * Park fees hang off the park VISIT, not off where anybody sleeps. Swap a camp inside the
+     * Serengeti for a lodge in Karatu and the concession fee stays on the day, quietly wrong by a
+     * fee per person per night. The estimator cannot fix that on its own, so it says so instead.
+     */
+    private Boolean sleepsElsewhere;
 
     /**
      * For a per-person item, what each pax band actually pays.

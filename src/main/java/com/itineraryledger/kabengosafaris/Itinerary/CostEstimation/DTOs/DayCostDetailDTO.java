@@ -53,6 +53,20 @@ public class DayCostDetailDTO {
     private List<CostLineItemDTO> lineItems = new ArrayList<>();
 
     /**
+     * Priced, and deliberately not in any total.
+     *
+     * Alternative beds, optional activities, and fees somebody switched off. They were discarded
+     * before this existed, which meant the office could see what it had chosen and never what it
+     * had passed over.
+     *
+     * The aggregators sum lineItems and only lineItems. Nothing here reaches a figure a client is
+     * ever shown, and a test holds that line, because the day this list leaks into a total the
+     * whole feature becomes a way to over-quote.
+     */
+    @Builder.Default
+    private List<CostLineItemDTO> excludedLineItems = new ArrayList<>();
+
+    /**
      * Totals grouped by currency (no currency mixing)
      */
     @Builder.Default

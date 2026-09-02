@@ -337,4 +337,74 @@ public class ItineraryDayAccommodationUpdateService {
 
         return null;
     }
+
+    /**
+     * Make one recorded option the booked one, and demote whatever held that place.
+     *
+     * One call rather than two, because the pair of writes has to land together. Done from a screen
+     * as "set this one primary" then "set that one alternative", a failure between them leaves the
+     * day with two primaries, which the estimator prices as two beds for one night, or with none,
+     * which prices as no bed at all. Both are wrong on a quote and neither announces itself. The
+     * class is @Transactional, so here they commit or neither does.
+     *
+     * Written to be idempotent: promoting the bed that is already primary is a no-op that still
+     * reports success, since a double click on a slow connection should not be an error.
+     */
+    @AuditLogAnnotation(action = "MAKE_ITINERARY_DAY_ACCOMMODATION_PRIMARY",
+        description = "Making an accommodation option the booked one", entityType = "ItineraryDayAccommodation")
+    public ResponseEntity<ApiResponse<?>> makePrimary(
+        String itineraryIdObfuscated,
+        String dayIdObfuscated,
+        String accommodationIdObfuscated
+    ) {
+        log.info("Making accommodation primary: {}", accommodationIdObfuscated);
+
+        try {
+            Long dayId;
+            Long entryId;
+            try {
+                dayId = idObfuscator.decodeId(dayIdObfuscated);
+                entryId = idObfuscator.decodeId(accommodationIdObfuscated);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid ID", "INVALID_ID"));
+            }
+
+            ItineraryDayAccommodation target = accommodationRepository.findById(entryId).orElse(null);
+            if (target == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Accommodation not found", "ACCOMMODATION_NOT_FOUND"));
+            }
+            if (target.getItineraryDay() == null
+                || !target.getItineraryDay().getId().equals(dayId)) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400,
+                        "That stay is not on this day", "ACCOMMODATION_NOT_ON_DAY"));
+            }
+
+            /*
+             * Every sibling on the day, not just the current primary. A day can arrive with two
+             * primaries from an older import or a half-finished edit, and promoting one option is
+             * the moment to leave the day with exactly one.
+             */
+            List<ItineraryDayAccommodation> onThisDay =
+                accommodationRepository.findByItineraryDayId(dayId);
+            for (ItineraryDayAccommodation stay : onThisDay) {
+                boolean shouldBePrimary = stay.getId().equals(entryId);
+                if (Boolean.TRUE.equals(stay.getIsAlternative()) == shouldBePrimary) {
+                    stay.setIsAlternative(!shouldBePrimary);
+                    accommodationRepository.save(stay);
+                }
+            }
+
+            log.info("Accommodation {} is now the booked stay on day {}", entryId, dayId);
+            return ResponseEntity.ok(ApiResponse.success(200,
+                "This stay is now the booked one for the day", null));
+
+        } catch (Exception e) {
+            log.error("Error making accommodation primary", e);
+            return ResponseEntity.status(500).body(
+                ApiResponse.error(500, "Could not change the booked stay", "MAKE_PRIMARY_FAILED"));
+        }
+    }
 }

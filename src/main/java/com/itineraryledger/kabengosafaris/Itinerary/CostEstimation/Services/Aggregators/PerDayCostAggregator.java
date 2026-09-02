@@ -82,6 +82,22 @@ public class PerDayCostAggregator {
             allItems.addAll(parkFeeItems);
             allItems.addAll(activityItems);
 
+            /*
+             * Priced, and kept out of allItems on purpose.
+             *
+             * Alternative beds, optional activities and fees somebody switched off. They go into
+             * their own field on the day, never into the list the totals are summed from, which is
+             * why the calculators expose them through a second method: adding an option to a trip
+             * must not change what the trip costs.
+             */
+            List<CostLineItemDTO> excludedItems = new ArrayList<>();
+            excludedItems.addAll(accommodationCostCalculator.calculateExcludedForDay(
+                day, dayDate, paxList));
+            excludedItems.addAll(parkTariffCostCalculator.calculateExcludedForDay(
+                day, dayDate, globalSeason, paxList, carCount));
+            excludedItems.addAll(activityCostCalculator.calculateExcludedForDay(
+                day, dayDate, globalSeason, paxList, carCount));
+
             // Calculate totals by currency
             List<CurrencyGroupedCostDTO> totalsByCurrency = calculateTotalsByCurrency(allItems);
 
@@ -93,6 +109,7 @@ public class PerDayCostAggregator {
                 .seasonName(seasonName)
                 .isOvernight(day.getIsOvernight())
                 .lineItems(allItems)
+                .excludedLineItems(excludedItems)
                 .totalsByCurrency(totalsByCurrency)
                 .build();
 

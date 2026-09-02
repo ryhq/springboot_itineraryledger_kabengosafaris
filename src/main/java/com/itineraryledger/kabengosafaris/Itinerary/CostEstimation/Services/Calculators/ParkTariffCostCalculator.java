@@ -4,6 +4,7 @@ import com.itineraryledger.kabengosafaris.Activity.ChargingBasis;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CostLineItemDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.CostItemType;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Core.ParkTariffRateLookupService;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.ExclusionReason;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.FullItineraryDTO;
 import com.itineraryledger.kabengosafaris.ParkTariff.ParkTariff;
 import com.itineraryledger.kabengosafaris.ParkTariff.ParkTariffRepository;
@@ -359,5 +360,59 @@ public class ParkTariffCostCalculator {
             .currency(DEFAULT_CURRENCY)
             .notes("Rate not found")
             .build();
+    }
+
+    /**
+     * The park fees this day records but does not charge.
+     *
+     * Somebody switched these off. That is a legitimate thing to do, a fee the client pays at the
+     * gate for instance, but it was invisible on every cost screen, so a quote could omit a
+     * conservation fee and look complete. Priced here so the omission is a visible decision rather
+     * than a silence.
+     *
+     * A sibling of calculateForDay, so nothing here reaches a total.
+     */
+    public List<CostLineItemDTO> calculateExcludedForDay(
+        FullItineraryDTO.DayDTO day,
+        LocalDate dayDate,
+        Season season,
+        List<FullItineraryDTO.PaxDTO> paxList,
+        int carCount
+    ) {
+        List<CostLineItemDTO> excluded = new ArrayList<>();
+
+        if (day.getParks() == null || day.getParks().isEmpty()) {
+            return excluded;
+        }
+
+        for (FullItineraryDTO.DayParkDTO park : day.getParks()) {
+            if (park.getTariffs() == null || park.getTariffs().isEmpty()) {
+                continue;
+            }
+            Long parkId = idObfuscator.decodeId(park.getParkId());
+            if (parkId == null) {
+                continue;
+            }
+            for (FullItineraryDTO.ParkTariffDTO tariff : park.getTariffs()) {
+                if (tariff.getIsIncludedInPrice() == null || tariff.getIsIncludedInPrice()) {
+                    continue;
+                }
+                Long tariffId = idObfuscator.decodeId(tariff.getTariffId());
+                if (tariffId == null) {
+                    continue;
+                }
+                CostLineItemDTO line = calculateTariffCost(
+                    day.getDayNumber(), parkId, park.getParkName(), tariffId,
+                    tariff.getTariffName(), season, paxList, carCount);
+                if (line == null) {
+                    continue;
+                }
+                line.setExclusionReason(ExclusionReason.NOT_INCLUDED_IN_PRICE);
+                line.setEntryId(tariff.getId());
+                excluded.add(line);
+            }
+        }
+
+        return excluded;
     }
 }
