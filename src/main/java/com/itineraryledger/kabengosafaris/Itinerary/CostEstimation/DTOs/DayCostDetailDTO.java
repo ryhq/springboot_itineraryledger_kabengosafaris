@@ -24,6 +24,15 @@ public class DayCostDetailDTO {
     /**
      * Day number (1-indexed)
      */
+    /**
+     * The day itself, not its position.
+     *
+     * A cost screen that can change something has to name the row it is changing, and a day number
+     * is not an address. Without this the only way to act on what the estimate shows was to go and
+     * find the same day on another tab.
+     */
+    private String dayId;
+
     private Integer dayNumber;
 
     /**

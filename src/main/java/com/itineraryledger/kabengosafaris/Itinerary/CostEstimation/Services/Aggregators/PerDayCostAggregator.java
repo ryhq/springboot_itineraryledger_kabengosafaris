@@ -103,6 +103,7 @@ public class PerDayCostAggregator {
 
             // Build day cost detail
             DayCostDetailDTO dayDetail = DayCostDetailDTO.builder()
+                .dayId(day.getId())
                 .dayNumber(day.getDayNumber())
                 .dayTitle(day.getTitle())
                 .date(dayDate)

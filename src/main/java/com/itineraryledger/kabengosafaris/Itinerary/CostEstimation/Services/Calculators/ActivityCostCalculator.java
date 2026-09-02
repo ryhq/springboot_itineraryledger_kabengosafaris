@@ -542,6 +542,7 @@ public class ActivityCostCalculator {
                      */
                     line.setExclusionReason(ExclusionReason.NOT_INCLUDED_IN_PRICE);
                     line.setEntryId(parkActivity.getId());
+                    line.setParentEntryId(park.getId());
                     excluded.add(line);
                 }
             }

@@ -409,6 +409,7 @@ public class ParkTariffCostCalculator {
                 }
                 line.setExclusionReason(ExclusionReason.NOT_INCLUDED_IN_PRICE);
                 line.setEntryId(tariff.getId());
+                line.setParentEntryId(park.getId());
                 excluded.add(line);
             }
         }

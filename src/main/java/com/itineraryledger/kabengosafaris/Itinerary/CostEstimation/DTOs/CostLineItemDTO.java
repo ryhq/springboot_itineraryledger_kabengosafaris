@@ -106,6 +106,14 @@ public class CostLineItemDTO {
     private String entryId;
 
     /**
+     * The park visit a fee or in-park activity hangs off, where there is one.
+     *
+     * Those rows are addressed through their visit, not directly off the day, so entryId alone
+     * cannot reach them.
+     */
+    private String parentEntryId;
+
+    /**
      * What choosing this alternative would do to the trip, against the bed currently booked.
      *
      * It is the TRIP delta, not just the night's, and that is not a simplification. Park fees,
