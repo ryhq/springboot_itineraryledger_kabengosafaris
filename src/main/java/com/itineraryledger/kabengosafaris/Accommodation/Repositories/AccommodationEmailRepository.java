@@ -27,6 +27,18 @@ public interface AccommodationEmailRepository extends JpaRepository<Accommodatio
     boolean existsByEmail(String email);
 
     /**
+     * Is this address already on THIS accommodation?
+     *
+     * Scoped on purpose. Sister properties share a reservations desk -- Acacia Farm Lodge in Karatu
+     * and Serengeti Acacia Bliss at Seronera are one company answering one inbox -- so a global
+     * check meant the second property could hold no contact details at all. Nothing looks an
+     * accommodation up BY address, so there is nothing that needs the address to be unique.
+     */
+    boolean existsByAccommodationIdAndEmail(Long accommodationId, String email);
+
+    boolean existsByAccommodationIdAndEmailAndIdNot(Long accommodationId, String email, Long id);
+
+    /**
      * Mark all emails for an accommodation as non-primary
      */
     @Modifying

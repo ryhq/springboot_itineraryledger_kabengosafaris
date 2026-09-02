@@ -232,7 +232,7 @@ public class AccommodationTransfer implements ModuleTransfer {
         for (JsonNode child : row.path("emails")) {
             String address = child.path("email").asText(null);
             if (address == null || address.isBlank()) continue;
-            if (emails.existsByEmail(address)) {
+            if (emails.existsByAccommodationIdAndEmail(lodge.getId(), address)) {
                 emailOutcome.skip(address, "already here");
                 continue;
             }
@@ -247,7 +247,7 @@ public class AccommodationTransfer implements ModuleTransfer {
         for (JsonNode child : row.path("phones")) {
             String number = child.path("phoneNumber").asText(null);
             if (number == null || number.isBlank()) continue;
-            if (phones.existsByPhoneNumber(number)) {
+            if (phones.existsByAccommodationIdAndPhoneNumber(lodge.getId(), number)) {
                 phoneOutcome.skip(number, "already here");
                 continue;
             }

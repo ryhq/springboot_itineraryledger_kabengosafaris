@@ -26,6 +26,11 @@ public interface AccommodationPhoneRepository extends JpaRepository<Accommodatio
      */
     boolean existsByPhoneNumber(String phoneNumber);
 
+    /** Is this number already on THIS accommodation? See the note on the email repository. */
+    boolean existsByAccommodationIdAndPhoneNumber(Long accommodationId, String phoneNumber);
+
+    boolean existsByAccommodationIdAndPhoneNumberAndIdNot(Long accommodationId, String phoneNumber, Long id);
+
     /**
      * Mark all phones for an accommodation as non-primary
      */

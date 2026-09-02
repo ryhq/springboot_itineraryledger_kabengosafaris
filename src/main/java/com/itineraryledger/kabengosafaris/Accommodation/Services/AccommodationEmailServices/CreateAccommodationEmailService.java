@@ -89,7 +89,9 @@ public class CreateAccommodationEmailService {
             }
 
             // Check for duplicate email
-            if (accommodationEmailRepository.existsByEmail(createDTO.getEmail())) {
+            /* On THIS accommodation. Two sister properties share one reservations desk. */
+            if (accommodationEmailRepository.existsByAccommodationIdAndEmail(
+                    accommodation.getId(), createDTO.getEmail())) {
                 log.warn("Email already exists: {}", createDTO.getEmail());
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(

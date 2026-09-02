@@ -110,7 +110,8 @@ public class UpdateAccommodationPhoneService {
 
         // Check if phone number is being changed and if it's unique
         if (updateDTO.getPhoneNumber() != null && !updateDTO.getPhoneNumber().equals(phone.getPhoneNumber())) {
-            if (accommodationPhoneRepository.existsByPhoneNumber(updateDTO.getPhoneNumber())) {
+            if (accommodationPhoneRepository.existsByAccommodationIdAndPhoneNumberAndIdNot(
+                    phone.getAccommodation().getId(), updateDTO.getPhoneNumber(), phone.getId())) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(
                         400,

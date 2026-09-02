@@ -88,7 +88,9 @@ public class CreateAccommodationPhoneService {
             }
 
             // Check for duplicate phone number
-            if (accommodationPhoneRepository.existsByPhoneNumber(createDTO.getPhoneNumber())) {
+            /* On THIS accommodation. Two sister properties share one switchboard. */
+            if (accommodationPhoneRepository.existsByAccommodationIdAndPhoneNumber(
+                    accommodation.getId(), createDTO.getPhoneNumber())) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(
                         400,

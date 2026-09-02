@@ -110,7 +110,8 @@ public class UpdateAccommodationEmailService {
 
         // Check if email is being changed and if it's unique
         if (updateDTO.getEmail() != null && !updateDTO.getEmail().equals(email.getEmail())) {
-            if (accommodationEmailRepository.existsByEmail(updateDTO.getEmail())) {
+            if (accommodationEmailRepository.existsByAccommodationIdAndEmailAndIdNot(
+                    email.getAccommodation().getId(), updateDTO.getEmail(), email.getId())) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(
                         400,
