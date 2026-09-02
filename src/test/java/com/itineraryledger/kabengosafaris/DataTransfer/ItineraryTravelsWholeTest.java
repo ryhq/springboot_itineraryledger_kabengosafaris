@@ -121,8 +121,16 @@ class ItineraryTravelsWholeTest {
             "a property must export its contacts alongside its room setup");
         assertTrue(lodges.contains("row.path(\"emails\")") && lodges.contains("row.path(\"phones\")"),
             "and read them back on the way in");
-        assertTrue(lodges.contains("existsByEmail(address)") && lodges.contains("existsByPhoneNumber(number)"),
-            "matched on the address itself, which is what the table treats as unique");
+        /*
+         * Matched on the address AND the lodge it is being written to. This assertion used to say
+         * "the address itself, which is what the table treats as unique", and that was wrong twice
+         * over: the table carries no unique index on the address, and two sister properties really
+         * do share a reservations desk. Acacia Farm Lodge and Serengeti Acacia Bliss answer the
+         * same inbox, and the unscoped check imported the second one with no way to book it.
+         */
+        assertTrue(lodges.contains("existsByAccommodationIdAndEmail(lodge.getId(), address)")
+                && lodges.contains("existsByAccommodationIdAndPhoneNumber(lodge.getId(), number)"),
+            "a contact is a duplicate only on the property being written, not across every lodge");
 
         /*
          * And COUNTED. Written silently the first time, so a check reported "4 records would be
