@@ -59,6 +59,66 @@ class BudgetLevelsTest {
     }
 
     @Test
+    @DisplayName("five beds on a night: the first, the true middle and the last")
+    void fiveOptionsPickTheEndsAndTheMiddle() {
+        /*
+         * A real shape, not a hypothetical: day 4 of the nine-day Ndutu itinerary carries a booked
+         * bed and four recorded alternatives. Three columns can only ever surface three of the
+         * five, and the two they skip are the point of this test -- they are not lost, they are
+         * still in the options table above with their own Make primary button, and somebody should
+         * be able to see from the code which three the columns will name.
+         */
+        Trip trip = new Trip();
+        trip.night(1, "C", "MID_RANGE", 200, true)
+            .option("A", "BUDGET", 100)
+            .option("B", "BUDGET", 150)
+            .option("D", "LUXURY", 250)
+            .option("E", "LUXURY", 300);
+
+        BudgetLevelComparisonDTO out = trip.compare();
+
+        assertEquals("A", pick(out, BudgetLevel.LOWEST, 1).getAccommodationName());
+        assertEquals("C", pick(out, BudgetLevel.MEDIUM, 1).getAccommodationName(),
+            "with five beds the middle one IS the median, so Medium takes it");
+        assertEquals("E", pick(out, BudgetLevel.HIGH, 1).getAccommodationName());
+
+        /* B and D belong to no column. Positional on purpose: see the outlier note below. */
+        List<String> named = new ArrayList<>();
+        for (BudgetLevel level : BudgetLevel.values()) {
+            named.add(pick(out, level, 1).getAccommodationName());
+        }
+        assertTrue(!named.contains("B") && !named.contains("D"),
+            "the columns name three of the five; the rest stay in the options table: " + named);
+        assertEquals(5, pick(out, BudgetLevel.MEDIUM, 1).getOptionsOnThisNight(),
+            "the night still reports how many beds it had, so three columns never look like three "
+                + "options");
+    }
+
+    @Test
+    @DisplayName("an outlier cannot drag medium: the middle is by position, not by the spread")
+    void mediumIsPositionalSoOneWildRateCannotMoveIt() {
+        /*
+         * 100, 110, 120, 130 and one camp at 500. Taking the option nearest the MIDPOINT of the
+         * spread (300) would make Medium the 130 -- the dearest of the sensible beds -- because one
+         * outlier moved it. By position it stays the 120, which is what "the middle option you
+         * recorded" means.
+         */
+        Trip trip = new Trip();
+        trip.night(1, "Booked", "MID_RANGE", 120, true)
+            .option("Cheapest", "BUDGET", 100)
+            .option("Second", "BUDGET", 110)
+            .option("Fourth", "MID_RANGE", 130)
+            .option("The outlier", "ULTRA_LUXURY", 500);
+
+        BudgetLevelComparisonDTO out = trip.compare();
+
+        assertEquals("Booked", pick(out, BudgetLevel.MEDIUM, 1).getAccommodationName(),
+            "one wild rate must not decide what Medium means");
+        assertEquals("The outlier", pick(out, BudgetLevel.HIGH, 1).getAccommodationName());
+        assertEquals("Cheapest", pick(out, BudgetLevel.LOWEST, 1).getAccommodationName());
+    }
+
+    @Test
     @DisplayName("lowest is never dearer than medium, and medium never dearer than high")
     void theTotalsAreMonotonic() {
         Trip trip = new Trip();
