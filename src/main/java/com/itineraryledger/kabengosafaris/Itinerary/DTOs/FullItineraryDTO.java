@@ -173,6 +173,13 @@ public class FullItineraryDTO {
          */
         private String accommodationRegion;
         private String accommodationDistrict;
+        /*
+         * The lodge's own category, which is a label somebody typed and may be wrong. It never
+         * decides a level -- the money does -- but it is what lets a level column say "cheapest
+         * here, and labelled Ultra-Luxury", which is either a mislabelled lodge or a good deal,
+         * and both are worth somebody's attention.
+         */
+        private String accommodationCategory;
         private String roomTypeId;
         private String roomTypeName;
         private Integer roomTypeMaxOccupancy;

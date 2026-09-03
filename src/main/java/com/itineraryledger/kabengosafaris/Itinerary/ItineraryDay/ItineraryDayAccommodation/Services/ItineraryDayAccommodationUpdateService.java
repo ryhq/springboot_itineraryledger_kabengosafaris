@@ -382,20 +382,7 @@ public class ItineraryDayAccommodationUpdateService {
                         "That stay is not on this day", "ACCOMMODATION_NOT_ON_DAY"));
             }
 
-            /*
-             * Every sibling on the day, not just the current primary. A day can arrive with two
-             * primaries from an older import or a half-finished edit, and promoting one option is
-             * the moment to leave the day with exactly one.
-             */
-            List<ItineraryDayAccommodation> onThisDay =
-                accommodationRepository.findByItineraryDayId(dayId);
-            for (ItineraryDayAccommodation stay : onThisDay) {
-                boolean shouldBePrimary = stay.getId().equals(entryId);
-                if (Boolean.TRUE.equals(stay.getIsAlternative()) == shouldBePrimary) {
-                    stay.setIsAlternative(!shouldBePrimary);
-                    accommodationRepository.save(stay);
-                }
-            }
+            promote(dayId, entryId);
 
             log.info("Accommodation {} is now the booked stay on day {}", entryId, dayId);
             return ResponseEntity.ok(ApiResponse.success(200,
@@ -405,6 +392,31 @@ public class ItineraryDayAccommodationUpdateService {
             log.error("Error making accommodation primary", e);
             return ResponseEntity.status(500).body(
                 ApiResponse.error(500, "Could not change the booked stay", "MAKE_PRIMARY_FAILED"));
+        }
+    }
+
+    /**
+     * Make one row the booked stay for its day, and leave exactly one.
+     *
+     * The whole invariant of a day's beds lives here and nowhere else: a day with two primaries
+     * prices as two beds for one night, and a day with none prices as no bed. Both the single
+     * make-primary endpoint and adopting a whole budget level go through this, so there is one
+     * implementation to get right rather than two to keep in step.
+     *
+     * <p>Every sibling is considered, not just the current primary, because a day can arrive with
+     * two primaries from an older import or a half-finished edit, and promoting one option is the
+     * moment to put that right.
+     *
+     * <p>Callers are responsible for the transaction and for checking the row belongs to the day.
+     */
+    public void promote(Long dayId, Long entryId) {
+        List<ItineraryDayAccommodation> onThisDay = accommodationRepository.findByItineraryDayId(dayId);
+        for (ItineraryDayAccommodation stay : onThisDay) {
+            boolean shouldBePrimary = stay.getId().equals(entryId);
+            if (Boolean.TRUE.equals(stay.getIsAlternative()) == shouldBePrimary) {
+                stay.setIsAlternative(!shouldBePrimary);
+                accommodationRepository.save(stay);
+            }
         }
     }
 }
