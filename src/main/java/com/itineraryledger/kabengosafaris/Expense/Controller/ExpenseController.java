@@ -100,6 +100,19 @@ public class ExpenseController {
     }
 
     /**
+     * POST /{id}/record — this bill is real, and can now take payments.
+     *
+     * The transition the payment service has always asked for and nothing offered. Refused on a
+     * bill with no amount yet, because that is what the rule is actually protecting.
+     */
+    @PostMapping("/{id}/record")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_EXPENSE')")
+    public ResponseEntity<ApiResponse<?>> record(@PathVariable String id) {
+        log.info("POST /api/expenses/{}/record", id);
+        return expenseUpdateService.markRecorded(id);
+    }
+
+    /**
      * POST /{id}/cancel — we do not owe this after all.
      *
      * Refused once money has been paid against it: that is a refund, not a

@@ -145,6 +145,74 @@ public class ExpenseUpdateService {
     }
 
     /**
+     * Draft to recorded: the moment a bill becomes a real liability.
+     *
+     * Its own act rather than a status field on the form, exactly like cancelling, because it is a
+     * decision and not a detail: up to here the bill is a sketch whose figures are still moving,
+     * and afterwards it is money the company owes, which is why a payment may attach to it.
+     *
+     * <p>This endpoint existed nowhere before, and the payment service told people to use it. A
+     * bill created as a draft could take no payment and reach no other state, so the only way out
+     * of the one live bill on Jatelo was to cancel it. The refusal was right and unreachable, which
+     * is worse than either.
+     *
+     * <p>A bill with nothing on it is refused, because that is the substance behind the rule: a
+     * draft is not blocked for being a draft, it is blocked for having no settled figure to pay.
+     */
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> markRecorded(String idObfuscated) {
+        try {
+            Long id = idObfuscator.decodeId(idObfuscated);
+            if (id == null) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid bill id", "INVALID_ID"));
+            }
+            Expense expense = expenseRepository.findById(id).orElse(null);
+            if (expense == null) {
+                return ResponseEntity.status(404).body(
+                    ApiResponse.error(404, "Bill not found", "EXPENSE_NOT_FOUND"));
+            }
+            if (expense.getStatus() == ExpenseStatus.CANCELLED) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400,
+                        "This bill is cancelled. Reopen it first.", "EXPENSE_CANCELLED"));
+            }
+            if (expense.getStatus() != ExpenseStatus.DRAFT) {
+                /* Already past the draft. Saying so beats a 400 nobody can act on. */
+                return ResponseEntity.ok(ApiResponse.success(200,
+                    "This bill is already recorded", null));
+            }
+            if (!hasAnythingToPay(expense)) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400,
+                        "This bill has no amount yet. Add its lines, or an amount, and recalculate "
+                            + "the totals before recording it.",
+                        "EXPENSE_HAS_NO_TOTAL"));
+            }
+
+            expense.setStatus(ExpenseStatus.RECORDED);
+            expenseRepository.save(expense);
+
+            return ResponseEntity.ok(ApiResponse.success(200,
+                "Bill recorded. It can now take payments", null));
+        } catch (Exception e) {
+            log.error("Error recording bill", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500, "Failed to record the bill", "EXPENSE_RECORD_FAILED"));
+        }
+    }
+
+    /** Is there a figure to pay? Grand totals are held per currency, so any positive one counts. */
+    private boolean hasAnythingToPay(Expense expense) {
+        if (expense.getGrandTotals() == null) {
+            return false;
+        }
+        return expense.getGrandTotals().stream()
+            .anyMatch(price -> price.getTotalPrice() != null
+                && price.getTotalPrice().compareTo(java.math.BigDecimal.ZERO) > 0);
+    }
+
+    /**
      * Withdrawing a bill, and bringing one back.
      *
      * Its own act rather than a status field on the form: cancelling says "we do

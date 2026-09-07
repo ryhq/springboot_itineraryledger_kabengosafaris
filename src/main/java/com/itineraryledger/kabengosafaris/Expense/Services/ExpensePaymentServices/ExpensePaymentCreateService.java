@@ -38,6 +38,7 @@ public class ExpensePaymentCreateService {
     private final BankAccountRepository bankAccountRepository;
     private final UserRepository userRepository;
     private final ExpenseStateTransitionService stateTransitionService;
+    private final com.itineraryledger.kabengosafaris.Expense.Services.ExpenseServices.ExpenseUpdateService expenseUpdateService;
     private final ExpensePaymentGetService getService;
     private final IdObfuscator idObfuscator;
 
@@ -56,14 +57,29 @@ public class ExpensePaymentCreateService {
                     ApiResponse.error(404, "Expense not found", "EXPENSE_NOT_FOUND"));
             }
 
-            // Refuse to record payments on a draft expense (no totals yet) or
-            // a cancelled one. PAID/PARTIALLY_PAID are fine — adds another payment.
+            /*
+             * A draft bill is still being edited, so money must not attach to a figure that can
+             * still move. But wanting to pay it IS the signal that it is real, so the caller may
+             * say "record it first" and both happen here, in this one transaction — never a bill
+             * left recorded with no payment against it.
+             *
+             * The promotion goes through the same method the standalone action uses, so the rule
+             * about a bill with no amount is enforced in one place rather than two.
+             */
             if (expense.getStatus() == null
                     || expense.getStatus() == com.itineraryledger.kabengosafaris.Expense.Enums.ExpenseStatus.DRAFT) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                    ApiResponse.error(409,
-                        "Mark the expense as RECORDED before adding payments.",
-                        "EXPENSE_NOT_PAYABLE"));
+                if (!Boolean.TRUE.equals(dto.getMarkRecorded())) {
+                    return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                        ApiResponse.error(409,
+                            "This bill is still a draft, so it cannot take a payment yet. Record it "
+                                + "first — the payment drawer can do both at once.",
+                            "EXPENSE_NOT_PAYABLE"));
+                }
+                ResponseEntity<ApiResponse<?>> recorded =
+                    expenseUpdateService.markRecorded(expenseIdObfuscated);
+                if (!recorded.getStatusCode().is2xxSuccessful()) {
+                    return recorded;
+                }
             }
             if (expense.getStatus() == com.itineraryledger.kabengosafaris.Expense.Enums.ExpenseStatus.CANCELLED) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(

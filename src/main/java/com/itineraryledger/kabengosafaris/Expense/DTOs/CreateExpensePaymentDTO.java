@@ -47,4 +47,14 @@ public class CreateExpensePaymentDTO {
 
     private String reference;
     private String notes;
+
+    /**
+     * Record the bill first, if it is still a draft.
+     *
+     * Wanting to pay a bill IS the signal that the bill is real, so making somebody leave the
+     * drawer, find another button and come back is ceremony rather than safety. Explicit rather
+     * than automatic: the caller says it meant to promote the bill, and both happen in one
+     * transaction so a bill can never end up recorded with no payment against it.
+     */
+    private Boolean markRecorded;
 }
