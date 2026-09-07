@@ -187,6 +187,13 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
         );
 
         initializeEvent(
+            "SEND_PAYMENT_ADVICE",
+            "Sent to a supplier after we have paid one of their bills: what went out, when, how, "
+                + "our transfer reference and what is left owing. Sent by hand from the payment, "
+                + "because a correction should not tell them twice."
+        );
+
+        initializeEvent(
             "BILL_DUE_REMINDER",
             "Sent as a supplier's bill approaches its due date — a week out, three days out, and on the day itself."
         );

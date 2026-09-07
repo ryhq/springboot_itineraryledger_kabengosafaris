@@ -26,6 +26,11 @@ public class ExpenseDTO {
     // Vendor
     private String vendorId;
     private String vendorName;
+    /*
+     * Where the payment advice goes. Read from the vendor rather than typed on the bill, so one
+     * correction on the vendor fixes every bill that will ever be advised to them.
+     */
+    private String vendorEmail;
     private String vendorType;
 
     // Safari (nullable for operational expenses)

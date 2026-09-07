@@ -52,6 +52,7 @@ public class EmailEventVariables {
             case "SEND_INVOICE" -> loadSchema("invoice-sent-schema.json");
             case "SEND_CREDIT_NOTE" -> loadSchema("credit-note-sent-schema.json");
             case "SEND_PAYMENT_RECEIPT" -> loadSchema("payment-receipt-sent-schema.json");
+            case "SEND_PAYMENT_ADVICE" -> loadSchema("payment-advice-schema.json");
             case "AVAILABILITY_REQUEST" -> loadSchema("availability-request-schema.json");
             case "AVAILABILITY_REQUEST_CHASE" -> loadSchema("availability-request-chase-schema.json");
             default -> "[]";
@@ -84,6 +85,7 @@ public class EmailEventVariables {
             case "SEND_INVOICE" -> "Invoice Sent to Customer";
             case "SEND_CREDIT_NOTE" -> "Credit Note Sent to Customer";
             case "SEND_PAYMENT_RECEIPT" -> "Payment Receipt Sent to Customer";
+            case "SEND_PAYMENT_ADVICE" -> "Payment Advice to Vendor";
             default -> eventName;
         };
     }
@@ -114,6 +116,7 @@ public class EmailEventVariables {
             case "SEND_INVOICE" -> "Email sent to customer when an invoice is delivered. Includes invoice details, line items summary, total amount, payment terms, and due date.";
             case "SEND_CREDIT_NOTE" -> "Email sent to customer when a credit note is issued against an invoice. Includes credit details, credited items, total credit amount, and original invoice reference.";
             case "SEND_PAYMENT_RECEIPT" -> "Email sent to customer when a payment is recorded against an invoice. Includes payment amount, method, reference, invoice details, and remaining balance.";
+            case "SEND_PAYMENT_ADVICE" -> "Sent to a SUPPLIER after we have paid one of their bills — the trade's payment or remittance advice. It carries what went out, when, how, our transfer reference and what is left owing, which is what a lodge needs to match the money to a reservation. Like the availability request it goes outward to a supplier, and it is sent by hand from the payment rather than fired by a state change: a correction to a payment should not email them a second time.";
             default -> "";
         };
     }
@@ -145,7 +148,8 @@ public class EmailEventVariables {
             "SEND_SAFARI_MESSAGE",
             "SEND_INVOICE",
             "SEND_CREDIT_NOTE",
-            "SEND_PAYMENT_RECEIPT"
+            "SEND_PAYMENT_RECEIPT",
+            "SEND_PAYMENT_ADVICE"
         };
     }
 

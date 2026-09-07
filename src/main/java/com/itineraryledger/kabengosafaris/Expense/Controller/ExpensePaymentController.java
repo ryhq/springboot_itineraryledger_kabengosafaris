@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Expense.Controller;
 
 import com.itineraryledger.kabengosafaris.Expense.DTOs.CreateExpensePaymentDTO;
+import com.itineraryledger.kabengosafaris.Expense.DTOs.SendPaymentAdviceDTO;
 import com.itineraryledger.kabengosafaris.Expense.DTOs.UpdateExpensePaymentDTO;
 import com.itineraryledger.kabengosafaris.Expense.Services.ExpensePaymentServices.*;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
@@ -21,6 +22,7 @@ public class ExpensePaymentController {
     private final ExpensePaymentCreateService createService;
     private final ExpensePaymentUpdateService updateService;
     private final ExpensePaymentDeleteService deleteService;
+    private final ExpensePaymentAdviceService adviceService;
 
     @PostMapping
     @PreAuthorize("hasAuthority('PERM_RECORD_EXPENSE_PAYMENT')")
@@ -50,6 +52,26 @@ public class ExpensePaymentController {
             @PathVariable String paymentId,
             @Valid @RequestBody UpdateExpensePaymentDTO dto) {
         return updateService.updatePayment(expenseId, paymentId, dto);
+    }
+
+    /**
+     * POST /{paymentId}/advice — tell the supplier we have paid them.
+     *
+     * By hand, not on a state change: correcting a mistyped reference would otherwise email them a
+     * second time about money that only moved once. `to` overrides the vendor's own address, for
+     * the accounts desk that is not the reservations desk.
+     */
+    @PostMapping("/{paymentId}/advice")
+    @PreAuthorize("hasAuthority('PERM_RECORD_EXPENSE_PAYMENT')")
+    public ResponseEntity<ApiResponse<?>> sendAdvice(
+            @PathVariable String expenseId,
+            @PathVariable String paymentId,
+            @RequestBody(required = false) SendPaymentAdviceDTO dto) {
+        log.info("POST /api/expenses/{}/payments/{}/advice", expenseId, paymentId);
+        return adviceService.send(
+            paymentId,
+            dto == null ? null : dto.getTo(),
+            dto == null ? null : dto.getEmailTemplateId());
     }
 
     @DeleteMapping("/{paymentId}")

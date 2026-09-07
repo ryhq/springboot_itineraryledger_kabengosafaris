@@ -245,6 +245,9 @@ public class EmailTemplateTestService {
             case "SEND_PAYMENT_RECEIPT":
                 return generatePaymentReceiptSentTestData(user);
 
+            case "SEND_PAYMENT_ADVICE":
+                return generatePaymentAdviceTestData(user);
+
             case "SAFARI_STARTED":
                 return generateSafariStartedTestData(user);
 
@@ -456,6 +459,39 @@ public class EmailTemplateTestService {
     /** Never a literal: whose installation this is comes from the company record. */
     private String companyEmail() {
         return companyIdentityService.snapshot().email();
+    }
+
+    /**
+     * A part payment on purpose.
+     *
+     * Sending the settled case as the sample would hide the line that matters most: a supplier
+     * reading "still owing 0.00" when 620 is outstanding stops chasing a balance they are owed.
+     */
+    private TestEmailData generatePaymentAdviceTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+
+        variables.put("vendorName", "Sample Lodge Ltd");
+        variables.put("settlement", "Part payment");
+        variables.put("amountPaid", "USD 620.00");
+        variables.put("paidOn", LocalDate.now().toString());
+        variables.put("method", "Bank transfer");
+        variables.put("reference", "FT26090712345");
+        variables.put("paidFrom", "Sample operating account");
+        variables.put("billCode", "EXP-000000");
+        variables.put("billTitle", "Sample Lodge — Double Room, Full Board — 2 rooms — day 4");
+        variables.put("billDescription", "Two nights, half board, arriving 10 September");
+        variables.put("vendorReference", "INV-SAMPLE-0001");
+        variables.put("billTotal", "USD 1,240.00");
+        variables.put("balanceRemaining", "USD 620.00");
+        variables.put("isSettled", "no");
+        variables.put("safariName", "Sample Safari — Northern Circuit");
+        variables.put("safariCode", "SAF-0D0N-00000");
+        variables.put("notes", "Balance to follow once the second room is confirmed.");
+
+        String subject = "[TEST] Payment sent · " + variables.get("amountPaid")
+                + " · " + variables.get("billCode");
+
+        return new TestEmailData(variables, subject);
     }
 
     private TestEmailData generateBillDueReminderTestData(User user) {

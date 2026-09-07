@@ -1,0 +1,19 @@
+[
+  { "name": "vendorName", "description": "Who was paid, as recorded on the vendor", "isRequired": true },
+  { "name": "settlement", "description": "Ready to use as a heading: \"Paid in full\" or \"Part payment\"", "isRequired": true },
+  { "name": "amountPaid", "description": "What went out in this payment, with its currency", "isRequired": true },
+  { "name": "paidOn", "description": "The date the money left, ISO", "isRequired": true },
+  { "name": "method", "description": "How it was sent: bank transfer, cash, mobile money", "isRequired": true },
+  { "name": "reference", "description": "OUR transfer reference, so they can find it on their statement", "isRequired": false },
+  { "name": "paidFrom", "description": "The account it was sent from, by name only — never an account number", "isRequired": false },
+  { "name": "billCode", "description": "Our own reference for the bill, e.g. EXP-000002", "isRequired": true },
+  { "name": "billTitle", "description": "What the bill is for, as recorded", "isRequired": true },
+  { "name": "billDescription", "description": "The longer description, where one was written", "isRequired": false },
+  { "name": "vendorReference", "description": "THEIR invoice or reservation number, where we recorded it. The thing they will search by", "isRequired": false },
+  { "name": "billTotal", "description": "The whole bill, with its currency", "isRequired": true },
+  { "name": "balanceRemaining", "description": "What is still owed after this payment, with its currency. Zero when settled", "isRequired": true },
+  { "name": "isSettled", "description": "\"yes\" when nothing is left owing, \"no\" when this is a part payment", "isRequired": true },
+  { "name": "safariName", "description": "The trip the bill belongs to, if any", "isRequired": false },
+  { "name": "safariCode", "description": "That trip's code, which suppliers often quote back", "isRequired": false },
+  { "name": "notes", "description": "Anything the office added to the payment", "isRequired": false }
+]

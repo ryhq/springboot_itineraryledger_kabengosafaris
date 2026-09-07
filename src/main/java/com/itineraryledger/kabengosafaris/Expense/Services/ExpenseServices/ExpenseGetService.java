@@ -222,6 +222,7 @@ public class ExpenseGetService {
             .description(e.getDescription())
             .vendorId(e.getVendor() != null ? idObfuscator.encodeId(e.getVendor().getId()) : null)
             .vendorName(e.getVendor() != null ? e.getVendor().getName() : null)
+            .vendorEmail(e.getVendor() != null ? e.getVendor().getEmail() : null)
             .vendorType(e.getVendor() != null && e.getVendor().getType() != null
                     ? e.getVendor().getType().getDisplayName() : null)
             .safariId(e.getSafari() != null ? idObfuscator.encodeId(e.getSafari().getId()) : null)
