@@ -38,33 +38,51 @@ class PaymentAdviceTellsTheTruthTest {
     }
 
     @Test
-    @DisplayName("it is sent by hand, never fired by a payment being recorded")
-    void nothingSendsItAutomatically() throws IOException {
+    @DisplayName("nothing here sends: the letter is rendered and the mailbox sends it")
+    void theServiceRendersRatherThanSends() throws IOException {
         /*
-         * Recording a payment must not email the supplier: correcting a mistyped reference would
-         * tell them a second time about money that only moved once. The advice hangs off its own
-         * endpoint, and the create service must know nothing about it.
+         * The first version of this posted the advice straight out of a drawer. It left no trace
+         * anybody could search, the person sending never saw what went, and a supplier's reply had
+         * nothing to thread under. Now it renders a letter and the composer sends it, exactly as a
+         * request for availability does.
          */
-        String create = Files.readString(Path.of("src/main/java/com/itineraryledger/kabengosafaris/"
-            + "Expense/Services/ExpensePaymentServices/ExpensePaymentCreateService.java"));
-        assertFalse(create.contains("AdviceService") || create.contains("SEND_PAYMENT_ADVICE"),
-            "recording a payment must not send the advice; a correction would send it again");
+        String source = Files.readString(SERVICE);
+        assertFalse(source.contains("EmailSendingService") || source.contains("sendHtmlEmail("),
+            "this service must not be able to send. The composer sends, so the advice lands in "
+                + "Sent and can be found again");
+        assertTrue(source.contains("public ResponseEntity<ApiResponse<?>> letter("),
+            "it renders a letter for the composer to carry");
 
         String controller = Files.readString(Path.of("src/main/java/com/itineraryledger/"
             + "kabengosafaris/Expense/Controller/ExpensePaymentController.java"));
-        assertTrue(controller.contains("@PostMapping(\"/{paymentId}/advice\")"),
-            "it needs a door of its own");
+        assertTrue(controller.contains("@GetMapping(\"/{paymentId}/advice\")"),
+            "a GET, because asking for the letter changes nothing");
+        assertFalse(controller.contains("@PostMapping(\"/{paymentId}/advice\")"),
+            "two ways to send the same letter is how the two come to disagree");
+
+        /* and recording a payment still must not tell the supplier anything */
+        String create = Files.readString(Path.of("src/main/java/com/itineraryledger/kabengosafaris/"
+            + "Expense/Services/ExpensePaymentServices/ExpensePaymentCreateService.java"));
+        assertFalse(create.contains("AdviceService") || create.contains("SEND_PAYMENT_ADVICE"),
+            "recording a payment must not write to the supplier; a correction would write again");
     }
 
     @Test
-    @DisplayName("no recipient is refused out loud, not answered with a cheerful 200")
-    void sendingToNobodyIsAnError() throws IOException {
+    @DisplayName("the payment's own proof is offered; the bill's other paperwork is not")
+    void onlyTheSlipIsSuggested() throws IOException {
+        /*
+         * A supplier asking "show me the transfer" wants one file. Suggesting the bill's whole
+         * folder is how somebody accidentally sends a lodge our internal paperwork, so the proof of
+         * THIS payment is marked suggested and everything else is merely available.
+         */
         String source = Files.readString(SERVICE);
-        assertTrue(source.contains("NO_VENDOR_EMAIL"),
-            "a vendor with no address must produce an error naming the vendor, not a success that "
-                + "sent nothing");
-        assertTrue(source.contains("PAYMENT_ADVICE_SEND_FAILED"),
-            "every address failing is a failure, however many were tried");
+        assertTrue(source.contains("findByExpensePaymentIdOrderByCreatedAtDesc"),
+            "the payment's own documents are the ones a supplier asked for");
+        assertTrue(source.contains("describe(doc, true)") && source.contains("describe(doc, false)"),
+            "the two kinds must be distinguishable, or the panel cannot pre-select the right one");
+        assertTrue(source.contains("if (doc.getExpensePayment() != null) continue;"),
+            "a document belonging to another payment must not be offered here as though it were "
+                + "loose on the bill");
     }
 
     @Test

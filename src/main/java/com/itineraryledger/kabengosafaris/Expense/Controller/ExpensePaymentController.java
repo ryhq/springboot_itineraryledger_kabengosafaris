@@ -1,7 +1,6 @@
 package com.itineraryledger.kabengosafaris.Expense.Controller;
 
 import com.itineraryledger.kabengosafaris.Expense.DTOs.CreateExpensePaymentDTO;
-import com.itineraryledger.kabengosafaris.Expense.DTOs.SendPaymentAdviceDTO;
 import com.itineraryledger.kabengosafaris.Expense.DTOs.UpdateExpensePaymentDTO;
 import com.itineraryledger.kabengosafaris.Expense.Services.ExpensePaymentServices.*;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
@@ -55,23 +54,18 @@ public class ExpensePaymentController {
     }
 
     /**
-     * POST /{paymentId}/advice — tell the supplier we have paid them.
+     * GET /{paymentId}/advice — the letter, for the composer to send.
      *
-     * By hand, not on a state change: correcting a mistyped reference would otherwise email them a
-     * second time about money that only moved once. `to` overrides the vendor's own address, for
-     * the accounts desk that is not the reservations desk.
+     * Rendered here and sent from the mailbox, so the advice lands in Sent like every other message
+     * and the supplier's reply threads under it. Nothing goes out until somebody presses Send.
      */
-    @PostMapping("/{paymentId}/advice")
+    @GetMapping("/{paymentId}/advice")
     @PreAuthorize("hasAuthority('PERM_RECORD_EXPENSE_PAYMENT')")
-    public ResponseEntity<ApiResponse<?>> sendAdvice(
+    public ResponseEntity<ApiResponse<?>> adviceLetter(
             @PathVariable String expenseId,
-            @PathVariable String paymentId,
-            @RequestBody(required = false) SendPaymentAdviceDTO dto) {
-        log.info("POST /api/expenses/{}/payments/{}/advice", expenseId, paymentId);
-        return adviceService.send(
-            paymentId,
-            dto == null ? null : dto.getTo(),
-            dto == null ? null : dto.getEmailTemplateId());
+            @PathVariable String paymentId) {
+        log.info("GET /api/expenses/{}/payments/{}/advice", expenseId, paymentId);
+        return adviceService.letter(paymentId);
     }
 
     @DeleteMapping("/{paymentId}")

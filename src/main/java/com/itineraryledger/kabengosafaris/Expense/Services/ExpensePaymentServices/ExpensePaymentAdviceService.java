@@ -1,10 +1,10 @@
 package com.itineraryledger.kabengosafaris.Expense.Services.ExpensePaymentServices;
 
-import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
-import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices.EmailSendingService;
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailTemplateRenderer;
 import com.itineraryledger.kabengosafaris.Expense.Entity.Expense;
+import com.itineraryledger.kabengosafaris.Expense.Entity.ExpenseDocument;
 import com.itineraryledger.kabengosafaris.Expense.Entity.ExpensePayment;
+import com.itineraryledger.kabengosafaris.Expense.Repository.ExpenseDocumentRepository;
 import com.itineraryledger.kabengosafaris.Expense.Repository.ExpensePaymentRepository;
 import com.itineraryledger.kabengosafaris.Expense.Services.ExpenseServices.ExpensePaymentAggregationService;
 import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -51,22 +52,23 @@ public class ExpensePaymentAdviceService {
     private static final DecimalFormat MONEY = new DecimalFormat("#,##0.00");
 
     private final ExpensePaymentRepository payments;
+    private final ExpenseDocumentRepository documents;
     private final ExpensePaymentAggregationService aggregation;
     private final EmailTemplateRenderer templateRenderer;
-    private final EmailSendingService emailSendingService;
     private final IdObfuscator idObfuscator;
 
-    @AuditLogAnnotation(
-        action = "SEND_PAYMENT_ADVICE",
-        entityType = "EXPENSE_PAYMENT",
-        entityIdParamName = "paymentIdObfuscated",
-        description = "Email a supplier a payment advice for money paid against their bill"
-    )
-    public ResponseEntity<ApiResponse<?>> send(
-        String paymentIdObfuscated,
-        List<String> toOverride,
-        Long emailTemplateId
-    ) {
+    /**
+     * The letter, ready for the composer. Nothing is sent from here.
+     *
+     * The office presses Send in the mailbox, which is where a sent message belongs: it lands in
+     * Sent, it can be found again, and a supplier's reply threads under it. An advice fired from a
+     * drawer left no trace anybody could search, and the person sending it never saw what went.
+     *
+     * <p>Attachments are OFFERED, not attached. The payment's own proof — the bank slip — is what a
+     * supplier usually wants, so it leads; the bill's other documents follow. Whoever is sending
+     * decides, because a bill can carry paperwork that is ours rather than theirs.
+     */
+    public ResponseEntity<ApiResponse<?>> letter(String paymentIdObfuscated) {
         try {
             Long paymentId = idObfuscator.decodeId(paymentIdObfuscated);
             if (paymentId == null) {
@@ -87,77 +89,65 @@ public class ExpensePaymentAdviceService {
                         "This payment is not attached to a bill", "EXPENSE_PAYMENT_ORPHANED"));
             }
 
-            Set<String> recipients = new LinkedHashSet<>();
-            if (toOverride != null) {
-                for (String address : toOverride) {
-                    if (address != null && !address.isBlank()) recipients.add(address.trim());
-                }
-            }
-            if (recipients.isEmpty() && bill.getVendor() != null
-                && bill.getVendor().getEmail() != null && !bill.getVendor().getEmail().isBlank()) {
-                recipients.add(bill.getVendor().getEmail().trim());
-            }
-            if (recipients.isEmpty()) {
-                /*
-                 * Named rather than silent. The old shape of this mistake elsewhere in the system
-                 * was a 200 that sent nothing, and nobody learns from a success.
-                 */
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                    ApiResponse.error(409,
-                        bill.getVendor() == null
-                            ? "This bill has no vendor, so there is nobody to advise. Set the "
-                                + "vendor on the bill, or give an address to send to."
-                            : "There is no email address on " + bill.getVendor().getName()
-                                + ". Add one to the vendor, or give an address to send to.",
-                        "NO_VENDOR_EMAIL"));
-            }
-
             Map<String, String> variables = variablesFor(payment, bill);
-            String subject = "Payment sent · " + variables.get("amountPaid")
-                + " · " + variables.get("billCode");
+            String html = templateRenderer.renderTemplate(EVENT, variables);
 
-            String html = emailTemplateId != null
-                ? templateRenderer.renderTemplate(EVENT, emailTemplateId, variables)
-                : templateRenderer.renderTemplate(EVENT, variables);
-
-            List<String> sent = new ArrayList<>();
-            List<String> failed = new ArrayList<>();
-            for (String address : recipients) {
-                try {
-                    emailSendingService.sendHtmlEmail(address, subject, html);
-                    sent.add(address);
-                } catch (Exception e) {
-                    /* one bad address must not cost the others their advice */
-                    log.warn("Could not send the payment advice for {} to {}: {}",
-                        bill.getExpenseCode(), address, e.getMessage());
-                    failed.add(address);
-                }
+            Set<String> to = new LinkedHashSet<>();
+            if (bill.getVendor() != null && bill.getVendor().getEmail() != null
+                && !bill.getVendor().getEmail().isBlank()) {
+                to.add(bill.getVendor().getEmail().trim());
             }
 
-            if (sent.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(
-                    ApiResponse.error(502,
-                        "The advice could not be sent to " + String.join(", ", failed),
-                        "PAYMENT_ADVICE_SEND_FAILED"));
-            }
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("to", new ArrayList<>(to));
+            body.put("cc", List.of());
+            body.put("subject", "Payment sent · " + variables.get("amountPaid")
+                + " · " + variables.get("billCode"));
+            body.put("html", html);
+            body.put("vendorName", variables.get("vendorName"));
+            body.put("attachments", attachmentsFor(payment, bill));
 
-            Map<String, Object> report = new HashMap<>();
-            report.put("sentTo", sent);
-            report.put("failed", failed);
-            report.put("subject", subject);
-
-            return ResponseEntity.ok(ApiResponse.success(200,
-                failed.isEmpty()
-                    ? "Payment advice sent to " + String.join(", ", sent)
-                    : "Sent to " + String.join(", ", sent) + "; failed for "
-                        + String.join(", ", failed),
-                report));
+            return ResponseEntity.ok(ApiResponse.success(200, "Payment advice ready", body));
         } catch (Exception e) {
-            log.error("Error sending payment advice", e);
+            log.error("Error preparing payment advice", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                ApiResponse.error(500, "Failed to send the payment advice",
+                ApiResponse.error(500, "Could not prepare the payment advice",
                     "PAYMENT_ADVICE_FAILED"));
         }
+    }
+
+    /**
+     * What could be attached, the payment's own proof first.
+     *
+     * {@code suggested} is the slip for THIS payment: a supplier asking "show me the transfer"
+     * wants that one file, and offering the bill's whole folder as though it were all relevant is
+     * how somebody accidentally sends a supplier our internal paperwork.
+     */
+    private List<Map<String, Object>> attachmentsFor(ExpensePayment payment, Expense bill) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        Set<Long> seen = new LinkedHashSet<>();
+
+        for (ExpenseDocument doc : documents.findByExpensePaymentIdOrderByCreatedAtDesc(payment.getId())) {
+            if (seen.add(doc.getId())) out.add(describe(doc, true));
+        }
+        for (ExpenseDocument doc : documents.findByExpenseIdOrderByCreatedAtDesc(bill.getId())) {
+            if (doc.getExpensePayment() != null) continue;
+            if (seen.add(doc.getId())) out.add(describe(doc, false));
+        }
+        return out;
+    }
+
+    private Map<String, Object> describe(ExpenseDocument doc, boolean suggested) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("id", idObfuscator.encodeId(doc.getId()));
+        row.put("title", text(doc.getTitle(), text(doc.getOriginalFileName(), "Document")));
+        row.put("fileName", text(doc.getOriginalFileName(), text(doc.getFileName(), "")));
+        row.put("fileType", text(doc.getFileType(), ""));
+        row.put("fileSize", doc.getFileSize());
+        row.put("documentType", doc.getDocumentType() == null ? null : doc.getDocumentType().name());
+        row.put("suggested", suggested);
+        row.put("source", suggested ? "Proof of this payment" : "Filed on the bill");
+        return row;
     }
 
     /** Everything the template names, and nothing it does not. */
