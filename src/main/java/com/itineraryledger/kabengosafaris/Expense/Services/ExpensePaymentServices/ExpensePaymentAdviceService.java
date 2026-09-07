@@ -2,7 +2,15 @@ package com.itineraryledger.kabengosafaris.Expense.Services.ExpensePaymentServic
 
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailTemplateRenderer;
 import com.itineraryledger.kabengosafaris.Expense.Entity.Expense;
+import com.itineraryledger.kabengosafaris.Accommodation.Entities.Accommodation;
+import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRepository;
+import com.itineraryledger.kabengosafaris.Accommodation.Services.SupplierContactResolver;
+import com.itineraryledger.kabengosafaris.Expense.Entity.ExpenseAllocation;
 import com.itineraryledger.kabengosafaris.Expense.Entity.ExpenseDocument;
+import com.itineraryledger.kabengosafaris.Expense.Enums.ExpenseSubjectType;
+import com.itineraryledger.kabengosafaris.Expense.Repository.ExpenseAllocationRepository;
+import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayAccommodation.Entity.SafariDayAccommodation;
+import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayAccommodation.Repository.SafariDayAccommodationRepository;
 import com.itineraryledger.kabengosafaris.Expense.Entity.ExpensePayment;
 import com.itineraryledger.kabengosafaris.Expense.Repository.ExpenseDocumentRepository;
 import com.itineraryledger.kabengosafaris.Expense.Repository.ExpensePaymentRepository;
@@ -53,6 +61,10 @@ public class ExpensePaymentAdviceService {
 
     private final ExpensePaymentRepository payments;
     private final ExpenseDocumentRepository documents;
+    private final ExpenseAllocationRepository allocations;
+    private final SafariDayAccommodationRepository stays;
+    private final AccommodationRepository properties;
+    private final SupplierContactResolver contacts;
     private final ExpensePaymentAggregationService aggregation;
     private final EmailTemplateRenderer templateRenderer;
     private final IdObfuscator idObfuscator;
@@ -92,15 +104,12 @@ public class ExpensePaymentAdviceService {
             Map<String, String> variables = variablesFor(payment, bill);
             String html = templateRenderer.renderTemplate(EVENT, variables);
 
-            Set<String> to = new LinkedHashSet<>();
-            if (bill.getVendor() != null && bill.getVendor().getEmail() != null
-                && !bill.getVendor().getEmail().isBlank()) {
-                to.add(bill.getVendor().getEmail().trim());
-            }
+            Recipients recipients = recipientsFor(bill);
 
             Map<String, Object> body = new LinkedHashMap<>();
-            body.put("to", new ArrayList<>(to));
-            body.put("cc", List.of());
+            body.put("to", recipients.to());
+            body.put("cc", recipients.cc());
+            body.put("recipientsFrom", recipients.source());
             body.put("subject", "Payment sent · " + variables.get("amountPaid")
                 + " · " + variables.get("billCode"));
             body.put("html", html);
@@ -114,6 +123,64 @@ public class ExpensePaymentAdviceService {
                 ApiResponse.error(500, "Could not prepare the payment advice",
                     "PAYMENT_ADVICE_FAILED"));
         }
+    }
+
+    /** Where the advice should go, and how we knew. */
+    private record Recipients(List<String> to, List<String> cc, String source) {}
+
+    /**
+     * Who to tell, resolved the way a request for availability is.
+     *
+     * The vendor's own single email address is the LAST resort, not the first. A vendor is an
+     * account we settle; the addresses that get answered belong to the property, and a lodge
+     * usually keeps several — reservations, accounts, a general inbox. Reading only the vendor is
+     * why the first version of this opened the composer with an empty To for a camp that plainly
+     * has two addresses on file.
+     *
+     * <p>The property is found from what the bill COVERS, which is the only link that says which
+     * one this money was for: a group can own a dozen camps behind one vendor, and its Karatu
+     * lodge has no part in a Serengeti night. Falling back to a vendor that exactly one property
+     * points at is safe for the ordinary case where somebody billed by hand.
+     */
+    private Recipients recipientsFor(Expense bill) {
+        Accommodation property = propertyFor(bill);
+        if (property != null) {
+            SupplierContactResolver.Recipients resolved = contacts.forBilling(property);
+            if (resolved.to() != null) {
+                return new Recipients(List.of(resolved.to()), resolved.cc(),
+                    resolved.viaParent()
+                        ? "the group at " + resolved.parentName()
+                        : property.getName());
+            }
+        }
+
+        if (bill.getVendor() != null && bill.getVendor().getEmail() != null
+            && !bill.getVendor().getEmail().isBlank()) {
+            return new Recipients(List.of(bill.getVendor().getEmail().trim()), List.of(),
+                bill.getVendor().getName());
+        }
+
+        /* Nobody. The composer says so plainly, which beats sending to an address we invented. */
+        return new Recipients(List.of(), List.of(), null);
+    }
+
+    /** The property this bill was raised against, from its covers or from its vendor. */
+    private Accommodation propertyFor(Expense bill) {
+        for (ExpenseAllocation allocation : allocations.findByExpenseIdOrderByDayNumberAsc(bill.getId())) {
+            if (allocation.getSubjectType() != ExpenseSubjectType.ACCOMMODATION
+                || allocation.getSubjectId() == null) {
+                continue;
+            }
+            SafariDayAccommodation stay = stays.findById(allocation.getSubjectId()).orElse(null);
+            if (stay != null && stay.getAccommodation() != null) return stay.getAccommodation();
+        }
+
+        if (bill.getVendor() != null) {
+            List<Accommodation> byVendor = properties.findByVendorId(bill.getVendor().getId());
+            /* exactly one, or we cannot say which camp of a group this was */
+            if (byVendor.size() == 1) return byVendor.get(0);
+        }
+        return null;
     }
 
     /**

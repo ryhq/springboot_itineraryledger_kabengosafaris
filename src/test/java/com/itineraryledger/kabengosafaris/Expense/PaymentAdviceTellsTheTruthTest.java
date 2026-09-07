@@ -86,6 +86,49 @@ class PaymentAdviceTellsTheTruthTest {
     }
 
     @Test
+    @DisplayName("recipients come from the property, and the vendor is the last resort")
+    void theAddressesComeFromWhoAnswersThem() throws IOException {
+        /*
+         * The first version read bill.getVendor().getEmail() and nothing else, so the composer
+         * opened with an empty To for Osinon Tented Camp — a camp with two addresses on file,
+         * reservations@ marked primary and info@ beside it. A vendor is an account we settle; the
+         * addresses that get answered belong to the property.
+         */
+        String source = Files.readString(SERVICE);
+        assertTrue(source.contains("contacts.forBilling(property)"),
+            "the property's addresses come first, resolved the way a request for rooms is");
+        assertTrue(source.contains("findByExpenseIdOrderByDayNumberAsc"),
+            "which property is found from what the bill COVERS: a group can own a dozen camps "
+                + "behind one vendor account");
+        assertTrue(source.contains("if (byVendor.size() == 1) return byVendor.get(0);"),
+            "falling back through the vendor is only safe when exactly one property points at it");
+
+        int property = source.indexOf("contacts.forBilling(property)");
+        int vendor = source.indexOf("bill.getVendor().getEmail()");
+        assertTrue(property > 0 && vendor > property,
+            "the vendor's single address must be the LAST resort, not the first");
+    }
+
+    @Test
+    @DisplayName("one implementation of who to write to, shared with the availability letter")
+    void theResolverIsNotCopied() throws IOException {
+        String availability = Files.readString(Path.of("src/main/java/com/itineraryledger/"
+            + "kabengosafaris/Safari/AvailabilityRequest/Services/AvailabilityLetterService.java"));
+
+        assertTrue(availability.contains("contacts.forReservations(property)"),
+            "the availability letter must use the shared resolver, so its behaviour and the "
+                + "advice's cannot drift apart");
+        assertFalse(availability.contains("private AccommodationEmail best("),
+            "its private copy of the parent-group fallback, de-duplication and ordering is gone; "
+                + "two copies of that would drift");
+
+        String resolver = Files.readString(Path.of("src/main/java/com/itineraryledger/"
+            + "kabengosafaris/Accommodation/Services/SupplierContactResolver.java"));
+        assertTrue(resolver.contains("EmailType.BILLING") && resolver.contains("EmailType.RESERVATIONS"),
+            "the difference between the two letters is the PREFERENCE, and it lives in one place");
+    }
+
+    @Test
     @DisplayName("the letter never carries our account number")
     void weDoNotPublishOurOwnBankDetails() throws IOException {
         String source = Files.readString(SERVICE);

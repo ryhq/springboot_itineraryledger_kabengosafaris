@@ -50,4 +50,7 @@ public interface AccommodationRepository extends JpaRepository<Accommodation, Lo
 
     /** Properties pointing at this vendor — checked before a vendor is deleted. */
     long countByVendorId(Long vendorId);
+
+    /** The properties settled through one vendor account. One means we know which camp it was. */
+    java.util.List<Accommodation> findByVendorId(Long vendorId);
 }

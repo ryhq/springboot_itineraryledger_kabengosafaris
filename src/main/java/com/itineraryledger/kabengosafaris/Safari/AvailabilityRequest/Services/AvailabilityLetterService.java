@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.Accommodation;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationEmail;
+import com.itineraryledger.kabengosafaris.Accommodation.Services.SupplierContactResolver;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRepository;
@@ -57,6 +58,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AvailabilityLetterService {
 
     private final AvailabilityRequestRepository requestRepository;
+    private final SupplierContactResolver contacts;
     private final SafariRepository safariRepository;
     private final AccommodationRepository accommodationRepository;
     private final SafariDayAccommodationRepository stayRepository;
@@ -139,7 +141,7 @@ public class AvailabilityLetterService {
             LocalDate checkOut = firstBlock.get(firstBlock.size() - 1).plusDays(1);
 
             Pax pax = paxOf(safari.getId());
-            Recipients recipients = recipientsFor(property);
+            SupplierContactResolver.Recipients recipients = recipientsFor(property);
 
             Map<String, String> variables = new HashMap<>();
             variables.put("greetingName", greetingName(recipients.label()));
@@ -282,7 +284,7 @@ public class AvailabilityLetterService {
             List<String> bcc = readAddresses(request.getBccAddresses());
             boolean recipientsRecovered = false;
             if ((to == null || to.isBlank()) && property != null) {
-                Recipients resolved = recipientsFor(property);
+                SupplierContactResolver.Recipients resolved = recipientsFor(property);
                 to = resolved.to();
                 if (cc.isEmpty()) cc = resolved.cc();
                 recipientsRecovered = true;
@@ -529,70 +531,12 @@ public class AvailabilityLetterService {
         return count == 1 ? lower : lower + "s";
     }
 
-    private record Recipients(String to, List<String> cc, boolean viaParent, String parentName, String label) {}
-
-    /**
-     * The property's addresses, then its headquarters'.
-     *
-     * A branch often keeps none of its own — everything for it is answered by the group — so a To
-     * taken from the property alone reports a camp as unreachable when its group can be written to
-     * today. Sibling branches are left out: another camp has no part in this booking.
-     */
-    private Recipients recipientsFor(Accommodation property) {
-        List<AccommodationEmail> mine = active(property);
-        Accommodation parent = property.getParentAccommodation();
-        List<AccommodationEmail> theirs = parent != null ? active(parent) : List.of();
-
-        AccommodationEmail own = best(mine);
-        AccommodationEmail chosen = own != null ? own : best(theirs);
-
-        List<String> cc = new ArrayList<>();
-        Set<String> seen = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        if (chosen != null && chosen.getEmail() != null) seen.add(chosen.getEmail());
-        for (List<AccommodationEmail> list : List.of(mine, theirs)) {
-            for (AccommodationEmail email : list) {
-                if (email.getEmail() == null || seen.contains(email.getEmail())) continue;
-                seen.add(email.getEmail());
-                cc.add(email.getEmail());
-            }
-        }
-
-        return new Recipients(
-            chosen != null ? chosen.getEmail() : null,
-            cc,
-            chosen != null && own == null,
-            parent != null ? parent.getName() : null,
-            chosen != null ? chosen.getLabel() : null);
-    }
-
-    private List<AccommodationEmail> active(Accommodation property) {
-        List<AccommodationEmail> list = new ArrayList<>();
-        for (AccommodationEmail email : property.getEmails()) {
-            if (email.getEmail() != null && !Boolean.FALSE.equals(email.getIsActive())) list.add(email);
-        }
-        /* sorted before anything is chosen, so a group with reservations1/2/3@ picks predictably */
-        list.sort((a, b) -> a.getEmail().compareToIgnoreCase(b.getEmail()));
-        return list;
-    }
-
-    private AccommodationEmail best(List<AccommodationEmail> list) {
-        AccommodationEmail reservationsPrimary = null;
-        AccommodationEmail reservations = null;
-        AccommodationEmail primary = null;
-        AccommodationEmail general = null;
-        for (AccommodationEmail email : list) {
-            boolean isReservations = email.getEmailType() == AccommodationEmail.EmailType.RESERVATIONS;
-            boolean isPrimary = Boolean.TRUE.equals(email.getIsPrimary());
-            if (isReservations && isPrimary && reservationsPrimary == null) reservationsPrimary = email;
-            if (isReservations && reservations == null) reservations = email;
-            if (isPrimary && primary == null) primary = email;
-            if (email.getEmailType() == AccommodationEmail.EmailType.GENERAL && general == null) general = email;
-        }
-        if (reservationsPrimary != null) return reservationsPrimary;
-        if (reservations != null) return reservations;
-        if (primary != null) return primary;
-        if (general != null) return general;
-        return list.isEmpty() ? null : list.get(0);
+    /* Recipients, active() and best() moved to SupplierContactResolver: the payment advice needs
+     * the same rules with a different preference, and two copies of parent-group fallback and
+     * de-duplication would have drifted. Asking for reservations here keeps this letter's
+     * behaviour exactly as it was. */
+    private SupplierContactResolver.Recipients recipientsFor(Accommodation property) {
+        return contacts.forReservations(property);
     }
 
     /**
