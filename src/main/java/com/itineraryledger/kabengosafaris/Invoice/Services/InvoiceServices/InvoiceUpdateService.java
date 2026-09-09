@@ -174,6 +174,11 @@ public class InvoiceUpdateService {
                 }
 
                 // Update pricing fields (DRAFT only)
+                if (updateDTO.getTaxAppliesTo() != null) {
+                    invoice.setTaxAppliesTo(updateDTO.getTaxAppliesTo().isBlank()
+                        ? null  // blank is how a scope is CLEARED back to every line
+                        : updateDTO.getTaxAppliesTo());
+                }
                 if (updateDTO.getTaxPercentage() != null) {
                     invoice.setTaxPercentage(updateDTO.getTaxPercentage());
                 }
@@ -312,6 +317,7 @@ public class InvoiceUpdateService {
             .amountsPaid(paymentAggregationService.computeAmountsPaid(invoice))
             .balances(paymentAggregationService.computeBalances(invoice))
             .taxPercentage(invoice.getTaxPercentage())
+            .taxAppliesTo(invoice.getTaxAppliesTo())
             .discountPercentage(invoice.getDiscountPercentage())
             .discountReason(invoice.getDiscountReason())
             .agentCommissionPercentage(invoice.getAgentCommissionPercentage())

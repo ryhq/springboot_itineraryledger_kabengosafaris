@@ -169,6 +169,16 @@ public class Invoice {
     private BigDecimal taxPercentage;
 
     /**
+     * Which line categories the tax applies to, comma-joined. NULL means every one of them.
+     *
+     * <p>Carried over from the quote when an invoice is generated, so what was quoted is what gets
+     * billed. Park and crater fees are the authority's own charge and carry no tax of ours to pass
+     * on; taxing them at the bed rate at invoice time would undo the scope exactly where it counts.
+     */
+    @Column(name = "tax_applies_to", length = 200)
+    private String taxAppliesTo;
+
+    /**
      * Discount percentage applied (if applicable)
      */
     @Column(precision = 5, scale = 2)

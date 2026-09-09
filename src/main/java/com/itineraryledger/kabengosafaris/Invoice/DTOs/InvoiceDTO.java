@@ -50,6 +50,9 @@ public class InvoiceDTO {
 
     // Pricing details
     private BigDecimal taxPercentage;
+
+    /** Which line categories the tax applies to. Null = all of them. */
+    private String taxAppliesTo;
     private BigDecimal discountPercentage;
     private String discountReason;
 
@@ -86,4 +89,16 @@ public class InvoiceDTO {
     private String updatedByName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    /**
+     * The tax scope in words, for the document the client reads.
+     *
+     * <p>A scoped tax does not divide into the subtotal: 18% on the beds alone is 9.7% of the
+     * trip, and a client checking the arithmetic finds a percentage that is not there. The enum
+     * names are for us; this is the sentence for them.
+     */
+    public String getTaxAppliesToLabel() {
+        return com.itineraryledger.kabengosafaris.GlobalEnums.LineCategoryScope.describe(
+            taxAppliesTo, com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceItemType.class);
+    }
 }

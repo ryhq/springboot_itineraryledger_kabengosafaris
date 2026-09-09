@@ -147,6 +147,7 @@ public class InvoiceFullGetService {
         // PRICING DETAILS
         // ========================
         dto.setTaxPercentage(invoice.getTaxPercentage());
+        dto.setTaxAppliesTo(invoice.getTaxAppliesTo());
         dto.setDiscountPercentage(invoice.getDiscountPercentage());
         dto.setDiscountReason(invoice.getDiscountReason());
         dto.setAgentCommissionPercentage(invoice.getAgentCommissionPercentage());

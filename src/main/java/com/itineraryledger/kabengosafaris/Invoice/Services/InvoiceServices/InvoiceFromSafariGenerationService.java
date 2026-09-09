@@ -229,6 +229,25 @@ public class InvoiceFromSafariGenerationService {
                     dto.getPaymentTerms()
             );
 
+            /*
+             * The tax SCOPE travels with the tax percentage.
+             *
+             * Set here rather than as a sixteenth positional argument to the builder above: a list
+             * that long is where an inserted parameter silently shifts every one after it, and
+             * this one decides how much the client is billed.
+             *
+             * Explicit on the request wins; otherwise the quote's scope comes across with the
+             * percentage it belongs to. Without this, a quote taxed on the beds alone is billed at
+             * the same rate over the park fees too.
+             */
+            if (dto.getTaxAppliesTo() != null) {
+                createInvoiceDTO.setTaxAppliesTo(dto.getTaxAppliesTo());
+            } else if (latestQuote != null && latestQuote.getTaxAppliesTo() != null) {
+                createInvoiceDTO.setTaxAppliesTo(latestQuote.getTaxAppliesTo());
+                log.debug("Using tax scope [{}] from quote {}",
+                        latestQuote.getTaxAppliesTo(), latestQuote.getQuoteCode());
+            }
+
             // Markup multiplier baked into each line item's unit price (same
             // model as Quote): customer never sees a markup line — the
             // inflated price IS the line total. Falls back to quote values

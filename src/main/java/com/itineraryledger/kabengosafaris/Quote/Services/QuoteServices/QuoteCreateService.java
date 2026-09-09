@@ -17,7 +17,9 @@ import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
 import com.itineraryledger.kabengosafaris.Itinerary.Repository.ItineraryRepository;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.CreateQuoteDTO;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.QuoteDTO;
+import com.itineraryledger.kabengosafaris.GlobalEnums.LineCategoryScope;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
+import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemType;
 import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteStatus;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteTotalsCalculationService;
@@ -152,12 +154,16 @@ public class QuoteCreateService {
                 .safariStartDate(createDTO.getSafariStartDate())
                 .isStoRate(createDTO.getIsStoRate() != null ? createDTO.getIsStoRate() : true)
                 .taxPercentage(createDTO.getTaxPercentage())
+                .taxAppliesTo(LineCategoryScope.canonicalOf(
+                    createDTO.getTaxAppliesTo(), QuoteItemType.class))
                 .discountPercentage(createDTO.getDiscountPercentage())
                 .discountReason(createDTO.getDiscountReason())
                 .agentCommissionPercentage(createDTO.getAgentCommissionPercentage())
                 .agentCommissionReason(createDTO.getAgentCommissionReason())
                 .marginUpliftPercentage(createDTO.getMarginUpliftPercentage())
                 .marginUpliftReason(createDTO.getMarginUpliftReason())
+                .marginUpliftAppliesTo(LineCategoryScope.canonicalOf(
+                    createDTO.getMarginUpliftAppliesTo(), QuoteItemType.class))
                 .condenseItems(createDTO.getCondenseItems() != null ? createDTO.getCondenseItems() : false)
                 .version(1)
                 .status(QuoteStatus.DRAFT)
@@ -228,12 +234,14 @@ public class QuoteCreateService {
             .grandTotals(quote.getGrandTotals())
             .isStoRate(quote.getIsStoRate())
             .taxPercentage(quote.getTaxPercentage())
+            .taxAppliesTo(quote.getTaxAppliesTo())
             .discountPercentage(quote.getDiscountPercentage())
             .discountReason(quote.getDiscountReason())
             .agentCommissionPercentage(quote.getAgentCommissionPercentage())
             .agentCommissionReason(quote.getAgentCommissionReason())
             .marginUpliftPercentage(quote.getMarginUpliftPercentage())
             .marginUpliftReason(quote.getMarginUpliftReason())
+            .marginUpliftAppliesTo(quote.getMarginUpliftAppliesTo())
             .condenseItems(quote.getCondenseItems())
             .version(quote.getVersion())
             .status(quote.getStatus())

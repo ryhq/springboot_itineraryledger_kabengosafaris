@@ -8,6 +8,7 @@ import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
 import com.itineraryledger.kabengosafaris.Quote.Entity.QuoteItem;
 import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemType;
+import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemTypeScope;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.Entity.QuoteDay;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.Entity.QuoteDayAccommodation;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayActivity.Entity.QuoteDayActivity;
@@ -396,7 +397,17 @@ public class QuoteCostEstimationService {
      * "Markup" line on the PDF.
      */
     private int persistItems(Quote quote, ItineraryCostEstimationDTO estimation) {
-        BigDecimal multiplier = computeMarkupMultiplier(quote);
+        /*
+         * One multiplier per CATEGORY, because the uplift is aimed rather than sprayed.
+         *
+         * A provision against a supplier invoicing beyond contract is an accommodation risk. Park
+         * fees are gazetted and the activities are our own, so spreading the provision across all
+         * three charges the client for a risk those lines do not carry. The agent commission is
+         * not scoped: a referral fee is a share of the whole sale.
+         */
+        BigDecimal accommodationMultiplier = computeMarkupMultiplier(quote, QuoteItemType.ACCOMMODATION);
+        BigDecimal parkFeeMultiplier = computeMarkupMultiplier(quote, QuoteItemType.PARK_FEE);
+        BigDecimal activityMultiplier = computeMarkupMultiplier(quote, QuoteItemType.ACTIVITY);
         boolean condense = Boolean.TRUE.equals(quote.getCondenseItems());
         /*
          * displayOrder is 1-based and unique within a quote, which is what the
@@ -414,13 +425,13 @@ public class QuoteCostEstimationService {
                 ? estimation.getActivityCosts().getItems() : null;
 
         if (condense) {
-            written += writeCondensed(quote, accommodation, QuoteItemType.ACCOMMODATION, "Accommodation", multiplier, written + 1);
-            written += writeCondensed(quote, parkFees, QuoteItemType.PARK_FEE, "Park Fees", multiplier, written + 1);
-            written += writeCondensed(quote, activities, QuoteItemType.ACTIVITY, "Activities", multiplier, written + 1);
+            written += writeCondensed(quote, accommodation, QuoteItemType.ACCOMMODATION, "Accommodation", accommodationMultiplier, written + 1);
+            written += writeCondensed(quote, parkFees, QuoteItemType.PARK_FEE, "Park Fees", parkFeeMultiplier, written + 1);
+            written += writeCondensed(quote, activities, QuoteItemType.ACTIVITY, "Activities", activityMultiplier, written + 1);
         } else {
-            written += writePerLine(quote, accommodation, QuoteItemType.ACCOMMODATION, multiplier, written + 1);
-            written += writePerLine(quote, parkFees, QuoteItemType.PARK_FEE, multiplier, written + 1);
-            written += writePerLine(quote, activities, QuoteItemType.ACTIVITY, multiplier, written + 1);
+            written += writePerLine(quote, accommodation, QuoteItemType.ACCOMMODATION, accommodationMultiplier, written + 1);
+            written += writePerLine(quote, parkFees, QuoteItemType.PARK_FEE, parkFeeMultiplier, written + 1);
+            written += writePerLine(quote, activities, QuoteItemType.ACTIVITY, activityMultiplier, written + 1);
         }
         return written;
     }
@@ -470,13 +481,20 @@ public class QuoteCostEstimationService {
     }
 
     /**
-     * (1 + agentCommission% + marginUplift%) / 100. Defaults to 1 (no markup)
-     * when both fields are null or zero.
+     * (1 + agentCommission% + marginUplift%) / 100 for this category. 1 when neither applies.
+     *
+     * <p>The commission counts on every line, because a referral fee is a share of the whole sale.
+     * The uplift counts only where {@code marginUpliftAppliesTo} names the category, so a
+     * provision meant for accommodation does not quietly ride on the park fees too.
+     *
+     * <p>Package-private so the arithmetic can be asserted on its own: this multiplier is applied
+     * to every price the customer sees, and it is not something to verify by reading.
      */
-    private BigDecimal computeMarkupMultiplier(Quote quote) {
+    BigDecimal computeMarkupMultiplier(Quote quote, QuoteItemType type) {
         BigDecimal commission = quote.getAgentCommissionPercentage() != null
                 ? quote.getAgentCommissionPercentage() : BigDecimal.ZERO;
-        BigDecimal uplift = quote.getMarginUpliftPercentage() != null
+        BigDecimal uplift = QuoteItemTypeScope.covers(quote.getMarginUpliftAppliesTo(), type)
+                && quote.getMarginUpliftPercentage() != null
                 ? quote.getMarginUpliftPercentage() : BigDecimal.ZERO;
         BigDecimal totalPct = commission.add(uplift);
         if (totalPct.signum() == 0) return BigDecimal.ONE;

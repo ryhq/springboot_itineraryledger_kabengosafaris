@@ -45,6 +45,10 @@ public class QuoteDTO {
     // Pricing details
     private Boolean isStoRate;
     private BigDecimal taxPercentage;
+
+    /** Which line categories the tax applies to ("ACCOMMODATION" / "ACCOMMODATION,ACTIVITY"). Null = all. */
+    private String taxAppliesTo;
+
     private BigDecimal discountPercentage;
     private String discountReason;
 
@@ -53,6 +57,10 @@ public class QuoteDTO {
     private String agentCommissionReason;
     private BigDecimal marginUpliftPercentage;
     private String marginUpliftReason;
+
+    /** Which line categories the margin uplift applies to. Null = all. The commission is never scoped. */
+    private String marginUpliftAppliesTo;
+
 
     // Whether derived items are condensed (one row per type) or per-line
     private Boolean condenseItems;

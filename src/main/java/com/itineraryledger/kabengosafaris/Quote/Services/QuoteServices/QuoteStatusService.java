@@ -772,6 +772,7 @@ public class QuoteStatusService {
             .grandTotals(quote.getGrandTotals())
             .isStoRate(quote.getIsStoRate())
             .taxPercentage(quote.getTaxPercentage())
+            .taxAppliesTo(quote.getTaxAppliesTo())
             .discountPercentage(quote.getDiscountPercentage())
             .discountReason(quote.getDiscountReason())
             .version(quote.getVersion())

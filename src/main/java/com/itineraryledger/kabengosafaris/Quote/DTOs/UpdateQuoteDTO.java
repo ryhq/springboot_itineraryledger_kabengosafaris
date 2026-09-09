@@ -44,6 +44,10 @@ public class UpdateQuoteDTO {
     private LocalDate safariStartDate;
     private Boolean isStoRate;
     private BigDecimal taxPercentage;
+
+    /** Which line categories the tax applies to ("ACCOMMODATION" / "ACCOMMODATION,ACTIVITY"). Null = all. */
+    private String taxAppliesTo;
+
     private BigDecimal discountPercentage;
     private String discountReason;
 
@@ -51,6 +55,10 @@ public class UpdateQuoteDTO {
     private String agentCommissionReason;
     private BigDecimal marginUpliftPercentage;
     private String marginUpliftReason;
+
+    /** Which line categories the margin uplift applies to. Null = all. The commission is never scoped. */
+    private String marginUpliftAppliesTo;
+
 
     private Boolean condenseItems;
 

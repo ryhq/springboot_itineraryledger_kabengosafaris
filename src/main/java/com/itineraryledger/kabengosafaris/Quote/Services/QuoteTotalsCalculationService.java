@@ -3,6 +3,7 @@ package com.itineraryledger.kabengosafaris.Quote.Services;
 import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
 import com.itineraryledger.kabengosafaris.Quote.Entity.QuoteItem;
+import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemTypeScope;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteItemRepository;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
 import lombok.RequiredArgsConstructor;
@@ -71,9 +72,19 @@ public class QuoteTotalsCalculationService {
         // Calculate subtotals by currency
         Map<String, BigDecimal> subtotalsByCurrency = calculateSubtotalsByCurrency(items);
 
-        // Calculate taxes by currency (if tax percentage is set)
+        /*
+         * Tax is charged on the lines it applies to, not on the whole quote.
+         *
+         * Park, crater and conservation fees are government charges with no VAT of ours inside
+         * them, so a single percentage over the subtotal invents a liability nobody owes. The
+         * scope names the categories; null means all of them, which is what every quote written
+         * before this said by saying nothing.
+         */
+        Map<String, BigDecimal> taxableByCurrency = subtotalsByCurrency(
+            items, quote.getTaxAppliesTo());
+
         Map<String, BigDecimal> taxesByCurrency = calculateTaxesByCurrency(
-            subtotalsByCurrency,
+            taxableByCurrency,
             quote.getTaxPercentage()
         );
 
@@ -104,15 +115,35 @@ public class QuoteTotalsCalculationService {
             grandTotalsByCurrency.size(),
             formatTotals(grandTotalsByCurrency)
         );
+        if (quote.getTaxAppliesTo() != null && quote.getTaxPercentage() != null) {
+            log.info("  tax {}% charged on {} ({} of the subtotal)",
+                quote.getTaxPercentage(),
+                QuoteItemTypeScope.describe(quote.getTaxAppliesTo()),
+                formatTotals(taxableByCurrency));
+        }
     }
 
     /**
      * Calculate subtotals by currency from all active quote items
      */
     private Map<String, BigDecimal> calculateSubtotalsByCurrency(List<QuoteItem> items) {
+        return subtotalsByCurrency(items, null);
+    }
+
+    /**
+     * The same sum, over the lines a scope names.
+     *
+     * <p>Null scope means every line, so this is also how the plain subtotal is worked out. One
+     * method rather than two, because a taxable base computed differently from the subtotal is how
+     * a tax comes to be charged on a figure that appears nowhere on the quote.
+     */
+    private Map<String, BigDecimal> subtotalsByCurrency(List<QuoteItem> items, String scope) {
         Map<String, BigDecimal> subtotals = new HashMap<>();
 
         for (QuoteItem item : items) {
+            if (!QuoteItemTypeScope.covers(scope, item.getItemType())) {
+                continue;
+            }
             if (Boolean.TRUE.equals(item.getIsActive()) && item.getPrices() != null) {
                 for (Price price : item.getPrices()) {
                     String currency = price.getCurrency();

@@ -196,6 +196,19 @@ public class Quote {
     private BigDecimal taxPercentage;
 
     /**
+     * Which line categories the tax applies to, comma separated, or null for all of them.
+     *
+     * <p>Because a single percentage over the whole quote is wrong for a Tanzanian safari. Park,
+     * crater and conservation fees are government charges: they carry no VAT of ours to pass on,
+     * and taxing them at the same rate as a bed invents a liability nobody owes. Accommodation is
+     * the line where a tax or a provision genuinely belongs.
+     *
+     * <p>Null means every category, so every quote written before this behaves exactly as it did.
+     */
+    @Column(name = "tax_applies_to", length = 200)
+    private String taxAppliesTo;
+
+    /**
      * Discount percentage applied (if applicable)
      */
     @Column(precision = 5, scale = 2)
@@ -238,6 +251,21 @@ public class Quote {
      */
     @Column(name = "margin_uplift_reason", length = 500)
     private String marginUpliftReason;
+
+    /**
+     * Which line categories the margin uplift applies to, comma separated, or null for all.
+     *
+     * <p>The reason this exists: a supplier who invoices for things that were not in the rates is
+     * an ACCOMMODATION risk. Park fees are gazetted and activities are our own, so a provision
+     * spread across all three charges the client for a risk that only one of them carries.
+     *
+     * <p>The agent commission is deliberately NOT scoped this way: a referral fee is a share of
+     * the whole sale, not of one part of it.
+     *
+     * <p>Null means every category, so nothing written before this changes.
+     */
+    @Column(name = "margin_uplift_applies_to", length = 200)
+    private String marginUpliftAppliesTo;
 
     /**
      * Whether the derived QuoteItem rows should be rolled up by category

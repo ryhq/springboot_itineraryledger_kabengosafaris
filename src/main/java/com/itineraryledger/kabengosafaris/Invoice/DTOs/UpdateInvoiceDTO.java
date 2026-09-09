@@ -23,6 +23,9 @@ public class UpdateInvoiceDTO {
     private String description;
 
     private BigDecimal taxPercentage;
+
+    /** Which line categories the tax applies to. Null = leave it as it is. */
+    private String taxAppliesTo;
     private BigDecimal discountPercentage;
     private String discountReason;
 

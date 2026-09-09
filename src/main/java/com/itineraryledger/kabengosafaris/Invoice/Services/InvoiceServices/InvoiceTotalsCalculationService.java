@@ -1,6 +1,8 @@
 package com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceServices;
 
+import com.itineraryledger.kabengosafaris.GlobalEnums.LineCategoryScope;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
+import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceItemType;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.InvoiceLineItem;
 import com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceLineItemRepository;
 import com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceRepository;
@@ -74,9 +76,18 @@ public class InvoiceTotalsCalculationService {
         // Calculate subtotals by currency
         Map<String, BigDecimal> subtotalsByCurrency = calculateSubtotalsByCurrency(lineItems);
 
-        // Calculate taxes by currency (if tax percentage is set)
+        /*
+         * Tax is charged on the lines it applies to, not on the whole invoice.
+         *
+         * The scope arrives with the quote. Charging the quoted percentage over everything here
+         * would bill the client more than they were quoted, which is the one place the difference
+         * is not a discussion but a debt.
+         */
+        Map<String, BigDecimal> taxableByCurrency = subtotalsByCurrency(
+            lineItems, invoice.getTaxAppliesTo());
+
         Map<String, BigDecimal> taxesByCurrency = calculateTaxesByCurrency(
-            subtotalsByCurrency,
+            taxableByCurrency,
             invoice.getTaxPercentage()
         );
 
@@ -107,15 +118,35 @@ public class InvoiceTotalsCalculationService {
             grandTotalsByCurrency.size(),
             formatTotals(grandTotalsByCurrency)
         );
+        if (invoice.getTaxAppliesTo() != null && invoice.getTaxPercentage() != null) {
+            log.info("  tax {}% charged on {} ({} of the subtotal)",
+                invoice.getTaxPercentage(),
+                LineCategoryScope.describe(invoice.getTaxAppliesTo(), InvoiceItemType.class),
+                formatTotals(taxableByCurrency));
+        }
     }
 
     /**
      * Calculate subtotals by currency from all active line items
      */
     private Map<String, BigDecimal> calculateSubtotalsByCurrency(List<InvoiceLineItem> lineItems) {
+        return subtotalsByCurrency(lineItems, null);
+    }
+
+    /**
+     * The same sum, over the lines a scope names.
+     *
+     * <p>Null scope means every line, so this is also how the plain subtotal is worked out. One
+     * method rather than two, because a taxable base computed differently from the subtotal is how
+     * a tax comes to be charged on a figure that appears nowhere on the invoice.
+     */
+    private Map<String, BigDecimal> subtotalsByCurrency(List<InvoiceLineItem> lineItems, String scope) {
         Map<String, BigDecimal> subtotals = new HashMap<>();
 
         for (InvoiceLineItem item : lineItems) {
+            if (!LineCategoryScope.covers(scope, item.getItemType())) {
+                continue;
+            }
             if (Boolean.TRUE.equals(item.getIsActive()) && item.getPrices() != null) {
                 for (Price price : item.getPrices()) {
                     String currency = price.getCurrency();

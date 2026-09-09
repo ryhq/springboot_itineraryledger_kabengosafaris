@@ -16,6 +16,7 @@ import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerRepository
 import com.itineraryledger.kabengosafaris.Quote.DTOs.QuoteDTO;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.UpdateQuoteDTO;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
+import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemTypeScope;
 import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteStatus;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteTotalsCalculationService;
@@ -295,6 +296,27 @@ public class QuoteUpdateService {
             if (updateDTO.getMarginUpliftReason() != null) {
                 quote.setMarginUpliftReason(updateDTO.getMarginUpliftReason());
             }
+            /*
+             * Narrowing the uplift to accommodation changes every park-fee and activity line, so
+             * it needs the same rewrite a percentage change does. Left out, the scope would be
+             * saved and the prices would keep the old spread.
+             */
+            if (updateDTO.getMarginUpliftAppliesTo() != null
+                    && !updateDTO.getMarginUpliftAppliesTo().equals(quote.getMarginUpliftAppliesTo())) {
+                quote.setMarginUpliftAppliesTo(
+                    QuoteItemTypeScope.canonical(
+                        QuoteItemTypeScope.parse(updateDTO.getMarginUpliftAppliesTo())));
+                needsItemsRecalc = true;
+            }
+            /*
+             * The tax scope only moves the tax line, which recalculateTotals redoes on every save,
+             * so it needs no item rewrite.
+             */
+            if (updateDTO.getTaxAppliesTo() != null) {
+                quote.setTaxAppliesTo(
+                    QuoteItemTypeScope.canonical(
+                        QuoteItemTypeScope.parse(updateDTO.getTaxAppliesTo())));
+            }
             // Toggling the per-line/condensed layout also forces a recalc so
             // the QuoteItem rows are rewritten in the new shape.
             if (updateDTO.getCondenseItems() != null
@@ -412,12 +434,14 @@ public class QuoteUpdateService {
             .grandTotals(quote.getGrandTotals())
             .isStoRate(quote.getIsStoRate())
             .taxPercentage(quote.getTaxPercentage())
+            .taxAppliesTo(quote.getTaxAppliesTo())
             .discountPercentage(quote.getDiscountPercentage())
             .discountReason(quote.getDiscountReason())
             .agentCommissionPercentage(quote.getAgentCommissionPercentage())
             .agentCommissionReason(quote.getAgentCommissionReason())
             .marginUpliftPercentage(quote.getMarginUpliftPercentage())
             .marginUpliftReason(quote.getMarginUpliftReason())
+            .marginUpliftAppliesTo(quote.getMarginUpliftAppliesTo())
             .condenseItems(quote.getCondenseItems())
             .version(quote.getVersion())
             .status(quote.getStatus())

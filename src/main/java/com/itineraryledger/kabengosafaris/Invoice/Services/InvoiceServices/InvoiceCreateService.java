@@ -13,6 +13,8 @@ import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.CreateInvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.InvoiceDTO;
+import com.itineraryledger.kabengosafaris.GlobalEnums.LineCategoryScope;
+import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceItemType;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
 import com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceRepository;
@@ -150,6 +152,8 @@ public class InvoiceCreateService {
                 .discounts(new ArrayList<>())
                 .grandTotals(new ArrayList<>())
                 .taxPercentage(createDTO.getTaxPercentage())
+                .taxAppliesTo(LineCategoryScope.canonicalOf(
+                    createDTO.getTaxAppliesTo(), InvoiceItemType.class))
                 .discountPercentage(createDTO.getDiscountPercentage())
                 .discountReason(createDTO.getDiscountReason())
                 .agentCommissionPercentage(createDTO.getAgentCommissionPercentage())
@@ -217,6 +221,7 @@ public class InvoiceCreateService {
             .amountsPaid(paymentAggregationService.computeAmountsPaid(invoice))
             .balances(paymentAggregationService.computeBalances(invoice))
             .taxPercentage(invoice.getTaxPercentage())
+            .taxAppliesTo(invoice.getTaxAppliesTo())
             .discountPercentage(invoice.getDiscountPercentage())
             .discountReason(invoice.getDiscountReason())
             .agentCommissionPercentage(invoice.getAgentCommissionPercentage())

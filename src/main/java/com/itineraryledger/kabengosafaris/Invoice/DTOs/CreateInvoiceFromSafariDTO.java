@@ -34,6 +34,9 @@ public class CreateInvoiceFromSafariDTO {
 
     // Invoice pricing
     private BigDecimal taxPercentage;
+
+    /** Which line categories the tax applies to. Null = inherit the quote's scope. */
+    private String taxAppliesTo;
     private BigDecimal discountPercentage;
     private String discountReason;
 

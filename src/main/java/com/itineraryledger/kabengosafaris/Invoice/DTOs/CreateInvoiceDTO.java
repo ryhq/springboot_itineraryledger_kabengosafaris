@@ -48,6 +48,9 @@ public class CreateInvoiceDTO {
     private String supplementReason;
 
     private BigDecimal taxPercentage;
+
+    /** Which line categories the tax applies to. Null = all of them. */
+    private String taxAppliesTo;
     private BigDecimal discountPercentage;
     private String discountReason;
 

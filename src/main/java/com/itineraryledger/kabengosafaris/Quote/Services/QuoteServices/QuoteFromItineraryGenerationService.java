@@ -16,6 +16,7 @@ import com.itineraryledger.kabengosafaris.Quote.DTOs.CreateQuoteDTO;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.QuoteDTO;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.QuoteItemDTOs.CreateQuoteItemDTO;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
+import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemTypeScope;
 import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemType;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.Entity.QuoteDay;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.Entity.QuoteDayAccommodation;
@@ -109,12 +110,14 @@ public class QuoteFromItineraryGenerationService {
             Boolean useStoRate,
             Integer validityDays,
             BigDecimal taxPercentage,
+            String taxAppliesTo,
             BigDecimal discountPercentage,
             String discountReason,
             BigDecimal agentCommissionPercentage,
             String agentCommissionReason,
             BigDecimal marginUpliftPercentage,
             String marginUpliftReason,
+            String marginUpliftAppliesTo,
             Boolean condense
     ) {
         boolean condenseLineItems = Boolean.TRUE.equals(condense);
@@ -198,12 +201,14 @@ public class QuoteFromItineraryGenerationService {
                     validityDays != null ? validityDays : 30,
                     useRackRates,
                     taxPercentage,
+                    taxAppliesTo,
                     discountPercentage,
                     discountReason,
                     agentCommissionPercentage,
                     agentCommissionReason,
                     marginUpliftPercentage,
                     marginUpliftReason,
+                    marginUpliftAppliesTo,
                     condenseLineItems
             );
 
@@ -269,12 +274,14 @@ public class QuoteFromItineraryGenerationService {
             int validityDays,
             boolean useStoRate,
             BigDecimal taxPercentage,
+            String taxAppliesTo,
             BigDecimal discountPercentage,
             String discountReason,
             BigDecimal agentCommissionPercentage,
             String agentCommissionReason,
             BigDecimal marginUpliftPercentage,
             String marginUpliftReason,
+            String marginUpliftAppliesTo,
             boolean condenseLineItems
     ) {
         CreateQuoteDTO dto = new CreateQuoteDTO();
@@ -296,6 +303,15 @@ public class QuoteFromItineraryGenerationService {
         // Pricing details
         dto.setIsStoRate(useStoRate);
         dto.setTaxPercentage(taxPercentage); // Can be null
+        /*
+         * Canonicalised on the way in, so "accommodation" and "ACCOMMODATION , ACTIVITY" store the
+         * same, and a scope naming every category stores as null, which is what "all of them" has
+         * always meant here.
+         */
+        dto.setTaxAppliesTo(taxAppliesTo == null ? null
+            : QuoteItemTypeScope.canonical(QuoteItemTypeScope.parse(taxAppliesTo)));
+        dto.setMarginUpliftAppliesTo(marginUpliftAppliesTo == null ? null
+            : QuoteItemTypeScope.canonical(QuoteItemTypeScope.parse(marginUpliftAppliesTo)));
 
         if (discountPercentage != null) {
             dto.setDiscountPercentage(discountPercentage);

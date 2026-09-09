@@ -172,7 +172,7 @@
             </th:block>
             <th:block th:if="${invoice.taxPercentage != null and invoice.taxPercentage > 0}">
                 <th:block th:each="tax : ${invoice.taxes}">
-                    <tr><td class="label" th:text="'Tax (' + ${invoice.taxPercentage} + '%)'">Tax</td><td class="value" th:text="${tax.formattedTotalPrice != null ? tax.formattedTotalPrice : (tax.currency + ' ' + tax.totalPrice)}">0</td></tr>
+                    <tr><td class="label" th:text="'Tax (' + ${invoice.taxPercentage} + '%)' + (${invoice.taxAppliesTo != null} ? ' on ' + ${invoice.taxAppliesToLabel} : '')">Tax</td><td class="value" th:text="${tax.formattedTotalPrice != null ? tax.formattedTotalPrice : (tax.currency + ' ' + tax.totalPrice)}">0</td></tr>
                 </th:block>
             </th:block>
             <th:block th:if="${invoice.discountPercentage != null and invoice.discountPercentage > 0}">

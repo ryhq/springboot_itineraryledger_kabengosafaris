@@ -1074,6 +1074,9 @@
                   <td th:attr="colspan=${colspanCount}" class="summary-label">
                     Tax
                     <span th:if="${quote.taxPercentage != null}">(<span th:text="${quote.taxPercentage}">18</span>%)</span>
+                    <!-- a scoped tax does not divide into the subtotal, so the document says what it is on -->
+                    <span th:if="${quote.taxAppliesTo != null}" style="font-size: 0.85em; color: #666;"
+                          th:text="'on ' + ${quote.taxAppliesToLabel}">on accommodation only</span>
                   </td>
                 </th:block>
                 <!-- Total Price columns for taxes -->

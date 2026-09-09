@@ -105,12 +105,16 @@ public class QuoteController {
         @RequestParam(required = false) Boolean useStoRate,
         @RequestParam(required = false, defaultValue = "30") Integer validityDays,
         @RequestParam(required = false) BigDecimal taxPercentage,
+        /* "ACCOMMODATION" to tax the beds only. Absent means every line, as before. */
+        @RequestParam(required = false) String taxAppliesTo,
         @RequestParam(required = false) BigDecimal discountPercentage,
         @RequestParam(required = false) String discountReason,
         @RequestParam(required = false) BigDecimal agentCommissionPercentage,
         @RequestParam(required = false) String agentCommissionReason,
         @RequestParam(required = false) BigDecimal marginUpliftPercentage,
         @RequestParam(required = false) String marginUpliftReason,
+        /* "ACCOMMODATION" to aim a provision where the risk is. Absent means every line. */
+        @RequestParam(required = false) String marginUpliftAppliesTo,
         @RequestParam(required = false, defaultValue = "false") Boolean condense
     ) {
         log.info("POST /api/quotes/generate-from-itinerary - Generating quote from itinerary: {} for customer: {} (condense={})",
@@ -123,12 +127,14 @@ public class QuoteController {
             useStoRate,
             validityDays,
             taxPercentage,
+            taxAppliesTo,
             discountPercentage,
             discountReason,
             agentCommissionPercentage,
             agentCommissionReason,
             marginUpliftPercentage,
             marginUpliftReason,
+            marginUpliftAppliesTo,
             condense
         );
     }

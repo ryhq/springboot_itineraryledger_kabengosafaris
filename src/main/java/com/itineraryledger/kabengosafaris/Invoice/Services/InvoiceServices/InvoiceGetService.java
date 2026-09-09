@@ -397,6 +397,7 @@ public class InvoiceGetService {
             .amountsPaid(paymentAggregationService.computeAmountsPaid(invoice))
             .balances(paymentAggregationService.computeBalances(invoice))
             .taxPercentage(invoice.getTaxPercentage())
+            .taxAppliesTo(invoice.getTaxAppliesTo())
             .discountPercentage(invoice.getDiscountPercentage())
             .discountReason(invoice.getDiscountReason())
             .agentCommissionPercentage(invoice.getAgentCommissionPercentage())

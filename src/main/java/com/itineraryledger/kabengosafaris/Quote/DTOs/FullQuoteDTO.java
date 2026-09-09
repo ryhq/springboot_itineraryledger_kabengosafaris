@@ -50,6 +50,9 @@ public class FullQuoteDTO {
     // ========================
     private Boolean isStoRate;
     private BigDecimal taxPercentage;
+
+    /** Which line categories the tax applies to. Null = all of them. */
+    private String taxAppliesTo;
     private BigDecimal discountPercentage;
     private String discountReason;
 
@@ -58,6 +61,9 @@ public class FullQuoteDTO {
     private String agentCommissionReason;
     private BigDecimal marginUpliftPercentage;
     private String marginUpliftReason;
+
+    /** Which line categories the margin uplift applies to. Null = all. */
+    private String marginUpliftAppliesTo;
 
     private Boolean condenseItems;
 
@@ -202,5 +208,19 @@ public class FullQuoteDTO {
         private String breakdown;
         private String formattedUnitPrice;
         private String formattedTotalPrice;
+    }
+
+    /**
+     * The tax scope in words, for the document the client reads.
+     *
+     * <p>A scoped tax does not divide into the subtotal: 18% charged on the beds alone is 9.7% of
+     * the trip, and a client checking the arithmetic finds a percentage that is not there. The
+     * enum names are for us; this is the sentence for them.
+     *
+     * <p>A getter rather than a stored field, because SpEL resolves getters and there is nothing
+     * here to keep in step with the value it describes.
+     */
+    public String getTaxAppliesToLabel() {
+        return com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemTypeScope.describe(taxAppliesTo);
     }
 }
