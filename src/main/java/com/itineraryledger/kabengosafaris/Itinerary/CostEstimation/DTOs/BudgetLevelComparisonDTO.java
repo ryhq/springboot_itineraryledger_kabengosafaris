@@ -82,6 +82,15 @@ public class BudgetLevelComparisonDTO {
         private Integer nightsAlreadyThere;
         private Integer nightsWithoutAChoice;
 
+        /**
+         * Nights in this column whose price came from a season that does not cover the date.
+         *
+         * A column built on fallback rates looks exactly as precise as one built on real ones, and
+         * that is the dangerous case: the office quotes it. Counted here so the screen can say how
+         * much of the total is guesswork before anybody adopts it.
+         */
+        private Integer nightsPricedOnAFallback;
+
         private List<NightPickDTO> nights = new ArrayList<>();
     }
 
@@ -114,6 +123,19 @@ public class BudgetLevelComparisonDTO {
         private BigDecimal deltaRack;
 
         private Boolean isCurrentPrimary;
+
+        /**
+         * True when the estimator could not find a season covering this date and priced the bed
+         * from another one anyway.
+         *
+         * The figure is then a rate for a different time of year wearing this night's clothes.
+         * Nyikani, Ndutu Savannah and The Sands all do this today, which is eight lines of a
+         * nine-day itinerary.
+         */
+        private Boolean pricedOnAFallback;
+
+        /** Which season it actually used, so the gap can be found and closed. */
+        private String seasonUsed;
 
         /** How many options this night had to choose from. One means all three levels agree. */
         private Integer optionsOnThisNight;

@@ -5,6 +5,9 @@ import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.BudgetLe
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CostLineItemDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CurrencyGroupedCostDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.DayCostDetailDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.RateIssueLogDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.RateIssueType;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Core.RateIssueLoggerService;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.BudgetLevel;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.CostItemType;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.ExclusionReason;
@@ -47,6 +50,7 @@ import java.util.Map;
 public class ItineraryBudgetLevelService {
 
     private final PerDayCostAggregator perDayCostAggregator;
+    private final RateIssueLoggerService rateIssues;
 
     /**
      * Build the three columns.
@@ -55,7 +59,14 @@ public class ItineraryBudgetLevelService {
      * @param startDate  the date the estimate is priced against, since rates are seasonal
      */
     public BudgetLevelComparisonDTO compare(FullItineraryDTO itinerary, LocalDate startDate) {
+        /*
+         * Cleared first, so what the calculators report below belongs to THIS run. The aggregator
+         * logs an issue as a side effect of pricing, which is how a night that was priced from the
+         * wrong season becomes knowable at all.
+         */
+        rateIssues.clear();
         List<DayCostDetailDTO> days = perDayCostAggregator.aggregateByDay(itinerary, startDate);
+        Map<Integer, String> fallbackNights = fallbackSeasonsByDay();
         List<CurrencyGroupedCostDTO> current = perDayCostAggregator.calculateGrandTotals(days);
 
         Map<String, FullItineraryDTO.DayAccommodationDTO> rows = rowsByEntryId(itinerary);
@@ -68,6 +79,7 @@ public class ItineraryBudgetLevelService {
             if (night == null) {
                 continue;
             }
+            night.fallbackSeason = fallbackNights.get(day.getDayNumber());
             if (night.mixedCurrency) {
                 warnings.add(String.format(
                     "Day %d has options in more than one currency, so it was not ranked and every "
@@ -78,6 +90,14 @@ public class ItineraryBudgetLevelService {
         }
 
         int withAChoice = (int) nights.stream().filter(n -> n.options.size() > 1).count();
+
+        for (NightCandidates night : nights) {
+            if (night.fallbackSeason == null) continue;
+            warnings.add(String.format(
+                "Day %d was priced from '%s', which does not cover that date. Every level's total "
+                    + "carries that guess until the property's seasons are fixed",
+                night.day.getDayNumber(), night.fallbackSeason));
+        }
 
         List<BudgetLevelComparisonDTO.LevelDTO> levels = new ArrayList<>();
         for (BudgetLevel level : BudgetLevel.values()) {
@@ -96,6 +116,25 @@ public class ItineraryBudgetLevelService {
             .levels(levels)
             .warnings(warnings)
             .build();
+    }
+
+    /**
+     * The nights the estimator could not price properly, by day number.
+     *
+     * SEASON_NOT_FOUND means it priced the bed from another season anyway, which is the dangerous
+     * case: the line has a figure, the figure looks exact, and it is a rate for a different time
+     * of year. Only accommodation matters here, because only the bed changes between levels.
+     */
+    private Map<Integer, String> fallbackSeasonsByDay() {
+        Map<Integer, String> byDay = new LinkedHashMap<>();
+        for (RateIssueLogDTO issue : rateIssues.getIssues()) {
+            if (issue.getIssueType() != RateIssueType.SEASON_NOT_FOUND) continue;
+            if (issue.getItemType() != CostItemType.ACCOMMODATION) continue;
+            if (issue.getDayNumber() == null) continue;
+            byDay.putIfAbsent(issue.getDayNumber(),
+                issue.getSeasonName() == null ? "another season" : issue.getSeasonName());
+        }
+        return byDay;
     }
 
     /** The rows a level would promote, for the caller that actually writes. */
@@ -203,6 +242,7 @@ public class ItineraryBudgetLevelService {
         int changed = 0;
         int already = 0;
         int noChoice = 0;
+        int onAFallback = 0;
 
         for (NightCandidates night : nights) {
             CostLineItemDTO chosen = pick(night, level);
@@ -236,6 +276,8 @@ public class ItineraryBudgetLevelService {
                 deltaRack.merge(currency, dRack, BigDecimal::add);
             }
 
+            if (night.fallbackSeason != null) onAFallback++;
+
             picks.add(BudgetLevelComparisonDTO.NightPickDTO.builder()
                 .dayId(night.day.getDayId())
                 .dayNumber(night.day.getDayNumber())
@@ -251,6 +293,8 @@ public class ItineraryBudgetLevelService {
                 .deltaSto(night.mixedCurrency ? null : dSto)
                 .deltaRack(night.mixedCurrency ? null : dRack)
                 .isCurrentPrimary(isPrimary)
+                .pricedOnAFallback(night.fallbackSeason != null ? Boolean.TRUE : null)
+                .seasonUsed(night.fallbackSeason)
                 .optionsOnThisNight(night.options.size())
                 .note(noteFor(level, night, chosen, category))
                 .build());
@@ -268,6 +312,7 @@ public class ItineraryBudgetLevelService {
             .nightsChanged(changed)
             .nightsAlreadyThere(already)
             .nightsWithoutAChoice(noChoice)
+            .nightsPricedOnAFallback(onAFallback)
             .nights(picks)
             .build();
     }
@@ -391,6 +436,8 @@ public class ItineraryBudgetLevelService {
         CostLineItemDTO primary;
         List<CostLineItemDTO> options = List.of();
         boolean mixedCurrency;
+        /** the season it was priced from, when that season does not cover the date */
+        String fallbackSeason;
         Map<String, FullItineraryDTO.DayAccommodationDTO> rows = Map.of();
     }
 }

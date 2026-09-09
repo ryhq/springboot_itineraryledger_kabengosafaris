@@ -5,6 +5,9 @@ import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.BudgetLe
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CostLineItemDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CurrencyGroupedCostDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.DayCostDetailDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.RateIssueLogDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.RateIssueType;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Core.RateIssueLoggerService;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.BudgetLevel;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.CostItemType;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.ExclusionReason;
@@ -239,6 +242,48 @@ class BudgetLevelsTest {
     // ── the badge ───────────────────────────────────────────────────────────────────────────────
 
     @Test
+    @DisplayName("a night priced from the wrong season says so in every column")
+    void aFallbackPriceIsNotPresentedAsAFact() {
+        /*
+         * The Sands has no season covering September to mid-December, so those nights are priced
+         * from another one and the line looks exactly as precise as a real rate. That is the
+         * dangerous case, because the office quotes it: a level total built on a guess must say
+         * which part of itself is a guess.
+         */
+        Trip trip = new Trip();
+        trip.night(1, "The Sands", "LUXURY", 800, true).option("Cheaper beach hotel", "MID_RANGE", 500);
+        trip.pricedFromTheWrongSeason(1, "High Season 2026/27");
+
+        BudgetLevelComparisonDTO out = trip.compare();
+
+        assertTrue(out.getWarnings().stream().anyMatch(w -> w.contains("does not cover that date")),
+            "the screen has to be told before anybody adopts a column: " + out.getWarnings());
+
+        for (BudgetLevel level : BudgetLevel.values()) {
+            assertEquals(Boolean.TRUE, pick(out, level, 1).getPricedOnAFallback(),
+                level + " shows this night's price as though it were a fact");
+            assertEquals("High Season 2026/27", pick(out, level, 1).getSeasonUsed(),
+                "which season it used is what lets somebody close the gap");
+            assertEquals(1, level(out, level).getNightsPricedOnAFallback(),
+                level + " must count how much of its total is guesswork");
+        }
+    }
+
+    @Test
+    @DisplayName("a night with real rates is not flagged")
+    void arealPriceIsNotDoubted() {
+        Trip trip = new Trip();
+        trip.night(1, "Masek", "MID_RANGE", 450, true).option("Ndutu Savannah", "BUDGET", 340);
+
+        BudgetLevelComparisonDTO out = trip.compare();
+
+        assertNull(pick(out, BudgetLevel.LOWEST, 1).getPricedOnAFallback(),
+            "doubt on every line is the same as doubt on none");
+        assertEquals(0, level(out, BudgetLevel.LOWEST).getNightsPricedOnAFallback());
+        assertTrue(out.getWarnings().isEmpty(), "no warning where there is nothing wrong");
+    }
+
+    @Test
     @DisplayName("every accommodation category maps onto a badge")
     void noCategoryFallsThrough() {
         for (AccommodationCategory category : AccommodationCategory.values()) {
@@ -297,7 +342,19 @@ class BudgetLevelsTest {
     private static class Trip {
         private final List<DayCostDetailDTO> days = new ArrayList<>();
         private final List<FullItineraryDTO.DayDTO> treeDays = new ArrayList<>();
+        private final List<RateIssueLogDTO> problems = new ArrayList<>();
         private Night last;
+
+        /** This night's bed was priced from a season that does not cover the date. */
+        Trip pricedFromTheWrongSeason(int dayNumber, String seasonUsed) {
+            problems.add(RateIssueLogDTO.builder()
+                .issueType(RateIssueType.SEASON_NOT_FOUND)
+                .itemType(CostItemType.ACCOMMODATION)
+                .dayNumber(dayNumber)
+                .seasonName(seasonUsed)
+                .build());
+            return this;
+        }
 
         Trip copyOf(Trip other) {
             days.addAll(other.days);
@@ -313,6 +370,9 @@ class BudgetLevelsTest {
         }
 
         BudgetLevelComparisonDTO compare() {
+            RateIssueLoggerService issues = mock(RateIssueLoggerService.class);
+            when(issues.getIssues()).thenReturn(problems);
+
             PerDayCostAggregator aggregator = mock(PerDayCostAggregator.class);
             when(aggregator.aggregateByDay(any(), any())).thenReturn(days);
             when(aggregator.calculateGrandTotals(any())).thenReturn(List.of(
@@ -329,7 +389,7 @@ class BudgetLevelsTest {
             itinerary.setName("A trip");
             itinerary.setDays(treeDays);
 
-            return new ItineraryBudgetLevelService(aggregator).compare(itinerary, START);
+            return new ItineraryBudgetLevelService(aggregator, issues).compare(itinerary, START);
         }
     }
 
