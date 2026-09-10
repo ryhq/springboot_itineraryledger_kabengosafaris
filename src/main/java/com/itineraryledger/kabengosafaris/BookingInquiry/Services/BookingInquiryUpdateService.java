@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
@@ -137,6 +138,17 @@ public class BookingInquiryUpdateService {
      * duplicated: somebody who enquired last year and books again is the same
      * person, and their history is worth more than a clean new record.
      */
+    /*
+     * NOT_SUPPORTED, because @Transactional is on the CLASS.
+     *
+     * Taking the annotation off this method achieved nothing on its own: the class-level one still
+     * opened a transaction that committed after the method returned, and the template below simply
+     * joined it rather than committing anything, so a constraint that failed on flush still landed
+     * outside the catch as a bare 500 with no error code of its own. Suspending the ambient
+     * transaction leaves the template owning a real one that begins and commits inside the try,
+     * which is the only arrangement where this method can report on its own failure.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public ResponseEntity<ApiResponse<?>> convertToCustomer(String idObfuscated) {
         try {
             return transactions.execute(status -> convertWithin(idObfuscated));
