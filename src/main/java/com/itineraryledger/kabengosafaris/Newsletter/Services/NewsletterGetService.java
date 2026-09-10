@@ -245,6 +245,13 @@ public class NewsletterGetService {
             .breakdown("byStatus", SubscriptionStatus.values(),
                 st -> NewsletterSubscriptionSpecification.statusIn(List.of(st)))
             .count("active", NewsletterSubscriptionSpecification.statusIn(List.of(SubscriptionStatus.ACTIVE)))
+            /*
+             * Awaiting confirmation is the one status somebody has to be able to see. These people
+             * are NOT on the list and will receive nothing, so counting them as subscribers is how
+             * a mail-out gets planned for an audience that does not exist.
+             */
+            .count("pendingConfirmation",
+                NewsletterSubscriptionSpecification.statusIn(List.of(SubscriptionStatus.PENDING_CONFIRMATION)))
             .count("unsubscribed", NewsletterSubscriptionSpecification.statusIn(List.of(SubscriptionStatus.UNSUBSCRIBED)))
             .count("bounced", NewsletterSubscriptionSpecification.statusIn(List.of(SubscriptionStatus.BOUNCED)))
             .count("noCustomer", NewsletterSubscriptionSpecification.hasNoCustomer())
