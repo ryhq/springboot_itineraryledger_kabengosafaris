@@ -39,6 +39,15 @@ public class JwtTokenProvider {
 
     private final SecuritySettingsGetterServices securitySettingsGetterServices;
 
+    /**
+     * The key every access and refresh token is signed with, regenerated at every startup.
+     *
+     * <p>Deliberate, not an oversight. The key never leaves memory, so there is nothing in
+     * configuration or in a backup to leak, and no rotation to remember. The price is that a
+     * restart invalidates every token ever issued: a deploy signs everybody out, and any script
+     * holding a token has to authenticate again afterwards. That trade has been made on purpose,
+     * so a token outliving a restart would be the bug, not the reverse.
+     */
     private String JWT_SECRET_KEY = "";
 
     @Value("${security.jwt.expiration.time.minutes:180}")
@@ -260,6 +269,16 @@ public class JwtTokenProvider {
                     .build()
                     .parseSignedClaims(token);
             return true;
+        } catch (io.jsonwebtoken.security.SignatureException e) {
+            /*
+             * The one that was never caught. jjwt raises its OWN SignatureException, and the
+             * clause below names java.lang.SecurityException, which a JWT library has no reason
+             * to throw. So a token signed with a different key -- a forgery, or an ordinary
+             * session from before a restart regenerated the key -- came out of here as a thrown
+             * exception rather than a false, and every caller that treats this as a yes-or-no
+             * question got neither.
+             */
+            log.warn("JWT signature does not match: {}", e.getMessage());
         } catch (SecurityException e) {
             log.error("Invalid JWT signature: {}", e.getMessage());
         } catch (MalformedJwtException e) {
@@ -270,6 +289,9 @@ public class JwtTokenProvider {
             log.error("Unsupported JWT token: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
             log.error("JWT claims string is empty: {}", e.getMessage());
+        } catch (io.jsonwebtoken.JwtException e) {
+            // anything else the library can raise about a token is still just "no"
+            log.warn("JWT rejected: {}", e.getMessage());
         }
         return false;
     }
