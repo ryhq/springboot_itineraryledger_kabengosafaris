@@ -165,6 +165,34 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
         );
 
         // ========================================
+        // What the PERSON who submitted is told
+        //
+        // Every event above tells the office something arrived. These tell the sender we heard,
+        // which until now nothing did: somebody filled in the planner, got a blank page, and had
+        // no way of knowing whether the form had worked at all.
+        // ========================================
+
+        initializeEvent(
+            "NEWSLETTER_CONFIRM",
+            "Sent to the subscriber the moment they submit the newsletter form. Carries the one-click confirmation link; nothing else is ever sent to an address that has not followed it."
+        );
+
+        initializeEvent(
+            "NEWSLETTER_WELCOME",
+            "Sent to the subscriber once they confirm. Says what we will send, how often, and how to leave."
+        );
+
+        initializeEvent(
+            "CONTACT_US_RECEIVED",
+            "Sent back to whoever used the Contact Us form. Quotes their own message so they can see it arrived intact, and names the reply commitment the website makes."
+        );
+
+        initializeEvent(
+            "BOOKING_INQUIRY_RECEIVED",
+            "Sent back to whoever submitted the safari planner. Reads their answers back so a mistake can be corrected before anything is priced, and offers WhatsApp for somebody who would rather not wait."
+        );
+
+        // ========================================
         // Quote Events
         // ========================================
 

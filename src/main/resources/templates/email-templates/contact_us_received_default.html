@@ -1,0 +1,66 @@
+<!--
+  "We have your message" — the reply that goes back to whoever used the contact form.
+
+  The website promises a reply within 24 hours from a real specialist rather than an
+  auto-responder, which puts this email in an awkward position: it IS an auto-responder. So it
+  does not pretend to be an answer. It confirms we have the message, repeats what they wrote so
+  they can see nothing was lost, names the deadline the website named, and gives them a faster
+  way through if they would rather not wait.
+
+  Quoting their own message back is the part that earns its place. It is the only proof they have
+  that the form worked at all.
+-->
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.55; color: #1f2421">
+
+  <p style="margin: 0 0 14px">Hello {{greetingName}},</p>
+
+  <p style="margin: 0 0 16px">
+    Thank you for writing to us. This is just to say your message arrived safely{{#replyWithinHours}} and
+    that a specialist will reply within {{replyWithinHours}} hours{{/replyWithinHours}}. A person will
+    answer you, not a template.
+  </p>
+
+  {{#subject}}
+  <p style="margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{companyAccent}}">Your message</p>
+  {{/subject}}
+
+  <table style="border-collapse: collapse; width: 100%; background-color: {{companyAccentSoft}}; border-left: 4px solid {{companyAccentDark}}">
+    <tbody>
+      <tr>
+        <td style="padding: 14px 16px">
+          {{#subject}}
+          <div style="font-size: 14px; font-weight: 700; color: #111827">{{subject}}</div>
+          {{/subject}}
+          <div style="margin-top: 6px; font-size: 13px; color: #374151; white-space: pre-line">{{message}}</div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table style="border-collapse: collapse; margin: 16px 0 0">
+    <tbody>
+      <tr>
+        <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Reference</td>
+        <td style="padding: 3px 0; font-size: 14px"><strong style="color: #111827">{{contactCode}}</strong></td>
+      </tr>
+      <tr>
+        <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Received</td>
+        <td style="padding: 3px 0; font-size: 14px">{{contactDate}}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="margin: 18px 0 0">
+    If it is urgent, {{#companyPhone}}call us on {{companyPhone}}{{/companyPhone}}{{#companyPhone}} or {{/companyPhone}}reply
+    to this message and it will reach the same person. Quoting {{contactCode}} helps us find you quickly.
+  </p>
+
+  <p style="margin: 14px 0 0">
+    Kind regards,<br>
+    {{companyName}}
+  </p>
+
+  <p style="margin: 18px 0 0; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280">
+    {{companyName}}{{#companyPhone}} · {{companyPhone}}{{/companyPhone}}{{#companyEmail}} · {{companyEmail}}{{/companyEmail}}{{#companyWebsite}} · {{companyWebsite}}{{/companyWebsite}}
+  </p>
+</div>

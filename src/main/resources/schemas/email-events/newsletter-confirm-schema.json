@@ -1,0 +1,40 @@
+[
+  {
+    "name": "email",
+    "description": "The address that was entered on the form",
+    "isRequired": true
+  },
+  {
+    "name": "confirmUrl",
+    "description": "One-click link that confirms the subscription. Nothing is sent to this address until it is followed.",
+    "isRequired": true
+  },
+  {
+    "name": "name",
+    "description": "Their name, when the form collected one"
+  },
+  {
+    "name": "greetingName",
+    "description": "Their first name if we have one, otherwise a neutral greeting. Use this rather than name so the line never reads 'Hello ,'"
+  },
+  {
+    "name": "preferredLocale",
+    "description": "Language the visitor was browsing in, e.g. en, fr"
+  },
+  {
+    "name": "source",
+    "description": "Where the subscription came from, e.g. WEBSITE"
+  },
+  {
+    "name": "subscribedAt",
+    "description": "When they submitted the form, formatted for reading"
+  },
+  {
+    "name": "expiresInDays",
+    "description": "How long the confirmation link stays valid"
+  },
+  {
+    "name": "unsubscribeUrl",
+    "description": "Link that removes the address outright, for somebody who did not subscribe themselves"
+  }
+]

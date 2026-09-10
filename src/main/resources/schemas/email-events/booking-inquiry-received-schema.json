@@ -1,0 +1,154 @@
+[
+  {
+    "name": "inquiryCode",
+    "description": "Reference code for the inquiry, e.g. INQ-0001-08-26",
+    "isRequired": true
+  },
+  {
+    "name": "firstName",
+    "description": "Their first name",
+    "isRequired": true
+  },
+  {
+    "name": "lastName",
+    "description": "Their last name",
+    "isRequired": true
+  },
+  {
+    "name": "greetingName",
+    "description": "Their first name, or their full name when only that is known"
+  },
+  {
+    "name": "email",
+    "description": "Their email address",
+    "isRequired": true
+  },
+  {
+    "name": "phone",
+    "description": "Phone number, when they gave one"
+  },
+  {
+    "name": "country",
+    "description": "Country of residence they selected"
+  },
+  {
+    "name": "adults",
+    "description": "Number of adults travelling",
+    "isRequired": true
+  },
+  {
+    "name": "children",
+    "description": "Number of children travelling",
+    "isRequired": true
+  },
+  {
+    "name": "totalTravelers",
+    "description": "Adults and children together",
+    "isRequired": true
+  },
+  {
+    "name": "travellersSummary",
+    "description": "The party in one phrase, e.g. '2 adults and 1 child'"
+  },
+  {
+    "name": "preferredStartDate",
+    "description": "The date they would like to start, formatted for reading"
+  },
+  {
+    "name": "preferredEndDate",
+    "description": "The date they would like to finish, formatted for reading"
+  },
+  {
+    "name": "preferredDatesSummary",
+    "description": "Both dates in one phrase, or the single one they gave"
+  },
+  {
+    "name": "preferredDurationDays",
+    "description": "How many days they asked for"
+  },
+  {
+    "name": "budgetCategory",
+    "description": "The comfort level they chose, e.g. MID_RANGE"
+  },
+  {
+    "name": "budgetCategoryLabel",
+    "description": "The same, written for a customer to read, e.g. 'Mid-range'"
+  },
+  {
+    "name": "tripType",
+    "description": "Private, group and so on"
+  },
+  {
+    "name": "tripTypeLabel",
+    "description": "The same, written for a customer to read"
+  },
+  {
+    "name": "interests",
+    "description": "What they said they are interested in, comma separated"
+  },
+  {
+    "name": "destinations",
+    "description": "Parks and places they named, comma separated"
+  },
+  {
+    "name": "specialRequests",
+    "description": "Anything they asked for specifically"
+  },
+  {
+    "name": "message",
+    "description": "What they wrote in their own words"
+  },
+  {
+    "name": "source",
+    "description": "Which form or channel it arrived through"
+  },
+  {
+    "name": "preferredLocale",
+    "description": "Language they were browsing in"
+  },
+  {
+    "name": "inquiryDate",
+    "description": "When they submitted it, formatted for reading",
+    "isRequired": true
+  },
+  {
+    "name": "replyWithinHours",
+    "description": "The reply commitment the website makes, in hours"
+  },
+  {
+    "name": "itineraryName",
+    "description": "Name of the itinerary they were looking at"
+  },
+  {
+    "name": "itineraryCode",
+    "description": "Its reference code"
+  },
+  {
+    "name": "itineraryUrl",
+    "description": "Public link to it on the website, so they can look again while they wait"
+  },
+  {
+    "name": "itineraryTotalDays",
+    "description": "How many days that itinerary runs"
+  },
+  {
+    "name": "itineraryTotalNights",
+    "description": "How many nights"
+  },
+  {
+    "name": "itineraryStartLocation",
+    "description": "Where it starts"
+  },
+  {
+    "name": "itineraryEndLocation",
+    "description": "Where it ends"
+  },
+  {
+    "name": "itineraryDescription",
+    "description": "Its summary paragraph"
+  },
+  {
+    "name": "whatsappUrl",
+    "description": "A wa.me link to the office WhatsApp, for somebody who would rather not wait for email"
+  }
+]

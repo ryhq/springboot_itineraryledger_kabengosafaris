@@ -5,6 +5,7 @@ import com.itineraryledger.kabengosafaris.BookingInquiry.Entity.BookingInquiry;
 import com.itineraryledger.kabengosafaris.BookingInquiry.Repository.BookingInquiryRepository;
 import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerEmailRepository;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices.EmailSendingService;
+import com.itineraryledger.kabengosafaris.EmailEvent.Services.CustomerAcknowledgementSender;
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailTemplateRenderer;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.BudgetCategory;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
@@ -43,6 +44,7 @@ public class BookingInquiryService {
     private final NotificationSettingGetterServices notificationSettingGetterServices;
     private final EmailTemplateRenderer emailTemplateRenderer;
     private final EmailSendingService emailSendingService;
+    private final CustomerAcknowledgementSender acknowledgements;
 
     public BookingInquiryService(BookingInquiryRepository inquiryRepository,
                                  CustomerEmailRepository customerEmailRepository,
@@ -51,7 +53,8 @@ public class BookingInquiryService {
                                  ParkRepository parkRepository,
                                  NotificationSettingGetterServices notificationSettingGetterServices,
                                  EmailTemplateRenderer emailTemplateRenderer,
-                                 EmailSendingService emailSendingService) {
+                                 EmailSendingService emailSendingService,
+                                 CustomerAcknowledgementSender acknowledgements) {
         this.inquiryRepository = inquiryRepository;
         this.customerEmailRepository = customerEmailRepository;
         this.idObfuscator = idObfuscator;
@@ -60,6 +63,7 @@ public class BookingInquiryService {
         this.notificationSettingGetterServices = notificationSettingGetterServices;
         this.emailTemplateRenderer = emailTemplateRenderer;
         this.emailSendingService = emailSendingService;
+        this.acknowledgements = acknowledgements;
     }
 
     @Transactional
@@ -134,6 +138,11 @@ public class BookingInquiryService {
 
         inquiryRepository.save(inquiry);
         sendInquiryNotification(inquiry);
+        /*
+         * And tell THEM. Somebody who fills in ten steps of a planner and receives nothing has no
+         * way of knowing the form worked, and the natural next move is to try a competitor's.
+         */
+        sendInquiryAcknowledgement(inquiry);
         return GENERIC_SUCCESS;
     }
 
@@ -314,6 +323,84 @@ public class BookingInquiryService {
 
 
         return variables;
+    }
+
+    /**
+     * Tell the enquirer we have it, and read their answers back.
+     *
+     * <p>Reading it back is the useful part rather than politeness: dates, party size and comfort
+     * level are exactly what is cheap to correct today and expensive to correct after a quote has
+     * been built on them.
+     */
+    private void sendInquiryAcknowledgement(BookingInquiry inquiry) {
+        try {
+            acknowledgements.send(
+                "BOOKING_INQUIRY_RECEIVED",
+                inquiry.getEmail(),
+                "We have your safari enquiry (" + inquiry.getCode() + ")",
+                buildAcknowledgementVariables(inquiry));
+        } catch (Exception e) {
+            log.error("Could not acknowledge inquiry {}: {}", inquiry.getCode(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Everything the BOOKING_INQUIRY_RECEIVED template is entitled to ask for.
+     *
+     * <p>Every answer the planner captures is supplied whether or not the default template prints
+     * it, so a different template can be written for a different tone without touching any Java.
+     * Read on the caller's thread, because the send has no session and a lazy collection would
+     * fail to load inside it.
+     */
+    Map<String, String> buildAcknowledgementVariables(BookingInquiry inquiry) {
+        DateTimeFormatter readable = DateTimeFormatter.ofPattern("d MMMM yyyy");
+        Map<String, String> v = new HashMap<>(buildNotificationVariables(inquiry));
+
+        v.put("greetingName", acknowledgements.greetingName(
+            inquiry.getFirstName(),
+            inquiry.getDisplayName()));
+
+        // the party in one phrase, because "2 / 1" needs a caption and "2 adults and 1 child" does not
+        v.put("travellersSummary", travellersSummary(inquiry));
+
+        String start = inquiry.getPreferredStartDate() != null
+            ? inquiry.getPreferredStartDate().format(readable) : "";
+        String end = inquiry.getPreferredEndDate() != null
+            ? inquiry.getPreferredEndDate().format(readable) : "";
+        v.put("preferredDatesSummary",
+            !start.isEmpty() && !end.isEmpty() ? start + " to " + end
+                : !start.isEmpty() ? "from " + start
+                : end.isEmpty() ? "" : "until " + end);
+
+        v.put("budgetCategoryLabel", inquiry.getBudgetCategory() != null
+            ? readableEnum(inquiry.getBudgetCategory().name()) : "");
+        v.put("tripTypeLabel", inquiry.getTripType() != null
+            ? readableEnum(inquiry.getTripType().name()) : "");
+
+        Itinerary itinerary = inquiry.getItinerary();
+        v.put("itineraryUrl", itinerary != null
+            ? acknowledgements.itineraryUrl(itinerary.getCode()) : "");
+
+        return v;
+    }
+
+    /** "2 adults and 1 child", or "1 adult" — never a pair of bare numbers. */
+    private String travellersSummary(BookingInquiry inquiry) {
+        int adults = inquiry.getAdults() != null ? inquiry.getAdults() : 0;
+        int children = inquiry.getChildren() != null ? inquiry.getChildren() : 0;
+        StringBuilder out = new StringBuilder();
+        if (adults > 0) out.append(adults).append(adults == 1 ? " adult" : " adults");
+        if (children > 0) {
+            if (out.length() > 0) out.append(" and ");
+            out.append(children).append(children == 1 ? " child" : " children");
+        }
+        return out.toString();
+    }
+
+    /** MID_RANGE becomes "Mid range": the enum names are ours, not the customer's. */
+    private String readableEnum(String name) {
+        String spaced = name.toLowerCase().replace('_', ' ');
+        return Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1);
     }
 
     private LocalDate parseDate(String dateStr) {

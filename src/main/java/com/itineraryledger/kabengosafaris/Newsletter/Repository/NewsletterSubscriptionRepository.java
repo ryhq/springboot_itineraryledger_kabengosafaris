@@ -12,6 +12,9 @@ import java.util.Optional;
 @Repository
 public interface NewsletterSubscriptionRepository extends JpaRepository<NewsletterSubscription, Long>, JpaSpecificationExecutor<NewsletterSubscription> {
     Optional<NewsletterSubscription> findByEmailIgnoreCase(String email);
+
+    /** The confirm and unsubscribe links carry this rather than an email address. */
+    Optional<NewsletterSubscription> findByConfirmToken(String confirmToken);
     boolean existsByEmailIgnoreCase(String email);
     long countByStatus(SubscriptionStatus status);
 

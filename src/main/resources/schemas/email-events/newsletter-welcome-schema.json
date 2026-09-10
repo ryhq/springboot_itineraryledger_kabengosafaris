@@ -1,0 +1,32 @@
+[
+  {
+    "name": "email",
+    "description": "The confirmed address",
+    "isRequired": true
+  },
+  {
+    "name": "name",
+    "description": "Their name, when the form collected one"
+  },
+  {
+    "name": "greetingName",
+    "description": "Their first name if we have one, otherwise a neutral greeting"
+  },
+  {
+    "name": "confirmedAt",
+    "description": "When they confirmed, formatted for reading"
+  },
+  {
+    "name": "preferredLocale",
+    "description": "Language the visitor was browsing in"
+  },
+  {
+    "name": "unsubscribeUrl",
+    "description": "One-click unsubscribe. Every newsletter mail must carry one.",
+    "isRequired": true
+  },
+  {
+    "name": "websiteUrl",
+    "description": "The public site, for a browse-our-safaris link"
+  }
+]

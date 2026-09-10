@@ -224,6 +224,19 @@ public class EmailTemplateTestService {
             case "CONTACT_US":
                 return generateContactUsTestData(user);
 
+            // the four that answer the public rather than the office
+            case "NEWSLETTER_CONFIRM":
+                return generateNewsletterConfirmTestData(user);
+
+            case "NEWSLETTER_WELCOME":
+                return generateNewsletterWelcomeTestData(user);
+
+            case "CONTACT_US_RECEIVED":
+                return generateContactUsReceivedTestData(user);
+
+            case "BOOKING_INQUIRY_RECEIVED":
+                return generateBookingInquiryReceivedTestData(user);
+
             case "SEND_QUOTE":
                 return generateQuoteSentTestData(user);
 
@@ -644,6 +657,104 @@ public class EmailTemplateTestService {
         String subject = "[TEST] New Contact Message: " + variables.get("contactCode") + " - " + variables.get("subject");
 
         return new TestEmailData(variables, subject);
+    }
+
+    /**
+     * Sample data for the four acknowledgements the public receives.
+     *
+     * <p>The links point at example.test rather than at us: a test send goes to whoever pressed
+     * the button, and a working confirmation link in a test email would subscribe a colleague or,
+     * worse, retire a real token.
+     */
+    private TestEmailData generateNewsletterConfirmTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        variables.put("email", user.getEmail());
+        variables.put("name", user.getFirstName() + " " + user.getLastName());
+        variables.put("greetingName", user.getFirstName());
+        variables.put("confirmUrl", "https://example.test/confirm?token=sample");
+        variables.put("unsubscribeUrl", "https://example.test/unsubscribe?token=sample");
+        variables.put("preferredLocale", "en");
+        variables.put("source", "WEBSITE");
+        variables.put("subscribedAt", LocalDateTime.now().format(DateTimeFormatter.ofPattern("d MMMM yyyy")));
+        variables.put("expiresInDays", "14");
+        return new TestEmailData(variables, "[TEST] Please confirm your subscription");
+    }
+
+    private TestEmailData generateNewsletterWelcomeTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        variables.put("email", user.getEmail());
+        variables.put("name", user.getFirstName() + " " + user.getLastName());
+        variables.put("greetingName", user.getFirstName());
+        variables.put("confirmedAt", LocalDateTime.now().format(DateTimeFormatter.ofPattern("d MMMM yyyy")));
+        variables.put("preferredLocale", "en");
+        variables.put("unsubscribeUrl", "https://example.test/unsubscribe?token=sample");
+        variables.put("websiteUrl", "https://example.test");
+        return new TestEmailData(variables, "[TEST] Welcome to our safari news");
+    }
+
+    private TestEmailData generateContactUsReceivedTestData(User user) {
+        LocalDateTime now = LocalDateTime.now();
+        Map<String, String> variables = new HashMap<>();
+        String code = "MSG-0001-" + String.format("%02d-%02d", now.getMonthValue(), now.getYear() % 100);
+        variables.put("contactCode", code);
+        variables.put("name", user.getFirstName() + " " + user.getLastName());
+        variables.put("greetingName", user.getFirstName());
+        variables.put("email", user.getEmail());
+        variables.put("phone", "+255 700 987 654");
+        variables.put("subject", "A quick question about August");
+        variables.put("message", "Hello, we are four adults hoping to see the migration in August. "
+            + "Could you tell us which camps you would recommend, and roughly what a week costs?");
+        variables.put("messageExcerpt", "Hello, we are four adults hoping to see the migration in August.");
+        variables.put("contactDate", now.format(DateTimeFormatter.ofPattern("d MMMM yyyy 'at' HH:mm")));
+        variables.put("replyWithinHours", "24");
+        variables.put("source", "WEBSITE");
+        variables.put("preferredLocale", "en");
+        return new TestEmailData(variables, "[TEST] We have your message (" + code + ")");
+    }
+
+    private TestEmailData generateBookingInquiryReceivedTestData(User user) {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter readable = DateTimeFormatter.ofPattern("d MMMM yyyy");
+        Map<String, String> variables = new HashMap<>();
+        String code = "INQ-0001-" + String.format("%02d-%02d", now.getMonthValue(), now.getYear() % 100);
+        variables.put("inquiryCode", code);
+        variables.put("firstName", user.getFirstName());
+        variables.put("lastName", user.getLastName());
+        variables.put("greetingName", user.getFirstName());
+        variables.put("email", user.getEmail());
+        variables.put("phone", "+255 700 987 654");
+        variables.put("country", "United Kingdom");
+        variables.put("adults", "2");
+        variables.put("children", "1");
+        variables.put("totalTravelers", "3");
+        variables.put("travellersSummary", "2 adults and 1 child");
+        variables.put("preferredStartDate", now.plusMonths(6).format(readable));
+        variables.put("preferredEndDate", now.plusMonths(6).plusDays(9).format(readable));
+        variables.put("preferredDatesSummary",
+            now.plusMonths(6).format(readable) + " to " + now.plusMonths(6).plusDays(9).format(readable));
+        variables.put("preferredDurationDays", "10");
+        variables.put("budgetCategory", "MID_RANGE");
+        variables.put("budgetCategoryLabel", "Mid range");
+        variables.put("tripType", "PRIVATE");
+        variables.put("tripTypeLabel", "Private");
+        variables.put("interests", "Wildlife, Photography");
+        variables.put("destinations", "Serengeti National Park, Ngorongoro Conservation Area");
+        variables.put("specialRequests", "One of us is vegetarian.");
+        variables.put("message", "We would like to see the crater and spend a few days on the coast afterwards.");
+        variables.put("source", "WEBSITE");
+        variables.put("preferredLocale", "en");
+        variables.put("inquiryDate", now.format(DateTimeFormatter.ofPattern("d MMMM yyyy 'at' HH:mm")));
+        variables.put("replyWithinHours", "24");
+        variables.put("itineraryName", "10 Days Northern Circuit and Zanzibar");
+        variables.put("itineraryCode", "ITI-10D9N-0000");
+        variables.put("itineraryUrl", "https://example.test/safaris/ITI-10D9N-0000");
+        variables.put("itineraryTotalDays", "10");
+        variables.put("itineraryTotalNights", "9");
+        variables.put("itineraryStartLocation", "Kilimanjaro");
+        variables.put("itineraryEndLocation", "Zanzibar");
+        variables.put("itineraryDescription", "Six nights on safari and three on the coast.");
+        variables.put("whatsappUrl", "https://wa.me/255700987654");
+        return new TestEmailData(variables, "[TEST] We have your safari enquiry (" + code + ")");
     }
 
     private TestEmailData generateQuoteSentTestData(User user) {

@@ -1,0 +1,125 @@
+<!--
+  "We have your enquiry" — back to the person who filled in the safari planner.
+
+  The planner asks ten steps' worth of questions, so the first thing this email owes them is
+  proof that all of it arrived and was read correctly. Reading their own answers back is not
+  padding: dates, party size and comfort level are exactly the things that are worth correcting
+  on day one rather than after a quote is built on them.
+
+  It also gives a way through that is faster than email, because somebody who has just spent a
+  minute on a form is at their most interested right now and a day is a long time.
+
+  Every variable the planner captures is declared on the event, whether or not this template
+  prints it — a different template can then be written for a different tone without touching any
+  Java. That is why the list is long and this file only uses part of it.
+-->
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.55; color: #1f2421">
+
+  <p style="margin: 0 0 14px">Hello {{greetingName}},</p>
+
+  <p style="margin: 0 0 16px">
+    Thank you for telling us about the trip you have in mind. Your enquiry is with a specialist in
+    Arusha now{{#replyWithinHours}}, and you will have a reply within {{replyWithinHours}} hours{{/replyWithinHours}}.
+    They will build you a proposal by hand, with the lodges named and the pricing set out honestly.
+    There is no obligation in any of it.
+  </p>
+
+  <p style="margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{companyAccent}}">What you told us</p>
+
+  <table style="border-collapse: collapse; width: 100%; background-color: {{companyAccentSoft}}; border-left: 4px solid {{companyAccentDark}}">
+    <tbody>
+      <tr>
+        <td style="padding: 14px 16px">
+          <table style="border-collapse: collapse">
+            <tbody>
+              {{#travellersSummary}}
+              <tr>
+                <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Travelling</td>
+                <td style="padding: 3px 0; font-size: 14px">{{travellersSummary}}</td>
+              </tr>
+              {{/travellersSummary}}
+              {{#preferredDatesSummary}}
+              <tr>
+                <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Dates</td>
+                <td style="padding: 3px 0; font-size: 14px">{{preferredDatesSummary}}</td>
+              </tr>
+              {{/preferredDatesSummary}}
+              {{#preferredDurationDays}}
+              <tr>
+                <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Length</td>
+                <td style="padding: 3px 0; font-size: 14px">{{preferredDurationDays}} days</td>
+              </tr>
+              {{/preferredDurationDays}}
+              {{#budgetCategoryLabel}}
+              <tr>
+                <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Comfort level</td>
+                <td style="padding: 3px 0; font-size: 14px">{{budgetCategoryLabel}}</td>
+              </tr>
+              {{/budgetCategoryLabel}}
+              {{#tripTypeLabel}}
+              <tr>
+                <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Trip</td>
+                <td style="padding: 3px 0; font-size: 14px">{{tripTypeLabel}}</td>
+              </tr>
+              {{/tripTypeLabel}}
+              {{#destinations}}
+              <tr>
+                <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Places</td>
+                <td style="padding: 3px 0; font-size: 14px">{{destinations}}</td>
+              </tr>
+              {{/destinations}}
+              {{#interests}}
+              <tr>
+                <td style="padding: 3px 18px 3px 0; color: #6b7280; font-size: 13px; white-space: nowrap">Interested in</td>
+                <td style="padding: 3px 0; font-size: 14px">{{interests}}</td>
+              </tr>
+              {{/interests}}
+            </tbody>
+          </table>
+
+          {{#message}}
+          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.08); font-size: 13px; color: #374151; white-space: pre-line">{{message}}</div>
+          {{/message}}
+          {{#specialRequests}}
+          <div style="margin-top: 8px; font-size: 13px; color: #374151; white-space: pre-line">{{specialRequests}}</div>
+          {{/specialRequests}}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="margin: 14px 0 0; font-size: 13px; color: #6b7280">
+    If any of that is wrong, reply and say so. It is far easier to fix now than after we have priced it.
+  </p>
+
+  {{#itineraryName}}
+  <p style="margin: 18px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: {{companyAccent}}">The safari you were looking at</p>
+
+  <p style="margin: 0 0 4px; font-size: 15px; font-weight: 700; color: #111827">
+    {{#itineraryUrl}}<a href="{{itineraryUrl}}" style="color: #111827; text-decoration: none">{{itineraryName}}</a>{{/itineraryUrl}}
+  </p>
+  <p style="margin: 0; font-size: 13px; color: #6b7280">
+    {{#itineraryTotalDays}}{{itineraryTotalDays}} days{{/itineraryTotalDays}}{{#itineraryStartLocation}} · from {{itineraryStartLocation}}{{/itineraryStartLocation}}{{#itineraryEndLocation}} to {{itineraryEndLocation}}{{/itineraryEndLocation}}
+  </p>
+  {{#itineraryUrl}}
+  <p style="margin: 8px 0 0; font-size: 13px">
+    <a href="{{itineraryUrl}}" style="color: {{companyAccentDark}}">Look at it again while you wait</a>
+  </p>
+  {{/itineraryUrl}}
+  {{/itineraryName}}
+
+  <p style="margin: 18px 0 0">
+    Would you rather not wait for email? {{#whatsappUrl}}<a href="{{whatsappUrl}}" style="color: {{companyAccentDark}}">Message us on WhatsApp</a>{{/whatsappUrl}}{{#companyPhone}}{{#whatsappUrl}}, or {{/whatsappUrl}}call {{companyPhone}}{{/companyPhone}}.
+    Quote {{inquiryCode}} and whoever answers will already know your trip.
+  </p>
+
+  <p style="margin: 14px 0 0">
+    Kind regards,<br>
+    {{companyName}}
+  </p>
+
+  <p style="margin: 18px 0 0; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280">
+    Enquiry {{inquiryCode}} · received {{inquiryDate}}<br>
+    {{companyName}}{{#companyPhone}} · {{companyPhone}}{{/companyPhone}}{{#companyEmail}} · {{companyEmail}}{{/companyEmail}}{{#companyWebsite}} · {{companyWebsite}}{{/companyWebsite}}
+  </p>
+</div>

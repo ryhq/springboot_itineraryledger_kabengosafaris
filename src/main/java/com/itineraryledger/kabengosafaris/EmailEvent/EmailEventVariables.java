@@ -38,6 +38,14 @@ public class EmailEventVariables {
             case "BACKUP_SUCCESS" -> loadSchema("backup-success-schema.json");
             case "BACKUP_FAILURE" -> loadSchema("backup-failure-schema.json");
             case "NEWSLETTER_SUBSCRIPTION" -> loadSchema("newsletter-subscription-schema.json");
+            /*
+             * The four below go to the PERSON who submitted, not to the office. Every event above
+             * them tells us something; these tell them we heard.
+             */
+            case "NEWSLETTER_CONFIRM" -> loadSchema("newsletter-confirm-schema.json");
+            case "NEWSLETTER_WELCOME" -> loadSchema("newsletter-welcome-schema.json");
+            case "CONTACT_US_RECEIVED" -> loadSchema("contact-us-received-schema.json");
+            case "BOOKING_INQUIRY_RECEIVED" -> loadSchema("booking-inquiry-received-schema.json");
             case "BOOKING_INQUIRY" -> loadSchema("booking-inquiry-schema.json");
             case "CONTACT_US" -> loadSchema("contact-us-schema.json");
             case "SEND_QUOTE" -> loadSchema("quote-sent-schema.json");
@@ -69,6 +77,10 @@ public class EmailEventVariables {
             case "BACKUP_SUCCESS" -> "Backup Success";
             case "BACKUP_FAILURE" -> "Backup Failure";
             case "NEWSLETTER_SUBSCRIPTION" -> "Newsletter Subscription";
+            case "NEWSLETTER_CONFIRM" -> "Newsletter: confirm your subscription";
+            case "NEWSLETTER_WELCOME" -> "Newsletter: welcome";
+            case "CONTACT_US_RECEIVED" -> "Contact us: we have your message";
+            case "BOOKING_INQUIRY_RECEIVED" -> "Booking inquiry: we have your enquiry";
             case "BOOKING_INQUIRY" -> "Booking Inquiry";
             case "CONTACT_US" -> "Contact Us";
             case "SEND_QUOTE" -> "Quote Sent to Customer";

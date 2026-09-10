@@ -44,6 +44,26 @@ public class NewsletterSubscription {
 
     private LocalDateTime unsubscribedAt;
 
+    /**
+     * The secret in the confirm and unsubscribe links.
+     *
+     * <p>One token does both jobs. Unsubscribing by plain email address lets anybody remove
+     * anybody, and a confirmation that can be guessed confirms nothing, so both links carry this
+     * instead. It survives unsubscribing so that a link in an old newsletter still works.
+     */
+    @Column(name = "confirm_token", length = 64, unique = true)
+    private String confirmToken;
+
+    /** When they proved they own the address. Null means they never did. */
+    @Column(name = "confirmed_at")
+    private LocalDateTime confirmedAt;
+
+    public String getConfirmToken() { return confirmToken; }
+    public void setConfirmToken(String confirmToken) { this.confirmToken = confirmToken; }
+
+    public LocalDateTime getConfirmedAt() { return confirmedAt; }
+    public void setConfirmedAt(LocalDateTime confirmedAt) { this.confirmedAt = confirmedAt; }
+
     // Getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

@@ -1,0 +1,55 @@
+[
+  {
+    "name": "name",
+    "description": "Full name of the person who wrote to us",
+    "isRequired": true
+  },
+  {
+    "name": "greetingName",
+    "description": "Their first name if we can tell it apart, otherwise their full name"
+  },
+  {
+    "name": "email",
+    "description": "Their email address",
+    "isRequired": true
+  },
+  {
+    "name": "contactCode",
+    "description": "Reference code for the message, e.g. MSG-0001-03-26",
+    "isRequired": true
+  },
+  {
+    "name": "phone",
+    "description": "Phone number, when they gave one"
+  },
+  {
+    "name": "subject",
+    "description": "Subject line they chose"
+  },
+  {
+    "name": "message",
+    "description": "What they wrote, so they can see we have it in full",
+    "isRequired": true
+  },
+  {
+    "name": "messageExcerpt",
+    "description": "The first couple of lines of their message, for a short template"
+  },
+  {
+    "name": "contactDate",
+    "description": "When they wrote, formatted for reading",
+    "isRequired": true
+  },
+  {
+    "name": "replyWithinHours",
+    "description": "The reply commitment the website makes, in hours"
+  },
+  {
+    "name": "source",
+    "description": "Which form or channel it arrived through"
+  },
+  {
+    "name": "preferredLocale",
+    "description": "Language they were browsing in"
+  }
+]
