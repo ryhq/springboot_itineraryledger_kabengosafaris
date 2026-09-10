@@ -35,19 +35,32 @@ public class BookingInquiryUpdateService {
     private final com.itineraryledger.kabengosafaris.Customer.Repository.CustomerRepository customerRepository;
     private final com.itineraryledger.kabengosafaris.Customer.Repository.CustomerEmailRepository customerEmailRepository;
 
+    /**
+     * The commit has to happen where the error can be caught.
+     *
+     * <p>With {@code @Transactional} on the method, the transaction commits AFTER the method
+     * returns, so a constraint violation raised on flush never reaches the method's own catch
+     * block. The endpoint answered "An unexpected error occurred" with no error code of its own
+     * and nothing in the response naming the field at fault. Committing inside the try keeps the
+     * work atomic and lets the failure be reported by the code that caused it.
+     */
+    private final org.springframework.transaction.support.TransactionTemplate transactions;
+
     @Autowired
     public BookingInquiryUpdateService(
         BookingInquiryRepository repository,
         IdObfuscator idObfuscator,
         BookingInquiryGetService getService,
         com.itineraryledger.kabengosafaris.Customer.Repository.CustomerRepository customerRepository,
-        com.itineraryledger.kabengosafaris.Customer.Repository.CustomerEmailRepository customerEmailRepository
+        com.itineraryledger.kabengosafaris.Customer.Repository.CustomerEmailRepository customerEmailRepository,
+        org.springframework.transaction.PlatformTransactionManager transactionManager
     ) {
         this.repository = repository;
         this.idObfuscator = idObfuscator;
         this.getService = getService;
         this.customerRepository = customerRepository;
         this.customerEmailRepository = customerEmailRepository;
+        this.transactions = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
     }
 
     @AuditLogAnnotation(action = "UPDATE_BOOKING_INQUIRY", description = "Updating booking inquiry", entityType = "BookingInquiry", entityIdParamName = "idObfuscated")
@@ -124,9 +137,21 @@ public class BookingInquiryUpdateService {
      * duplicated: somebody who enquired last year and books again is the same
      * person, and their history is worth more than a clean new record.
      */
-    @Transactional
     public ResponseEntity<ApiResponse<?>> convertToCustomer(String idObfuscated) {
         try {
+            return transactions.execute(status -> convertWithin(idObfuscated));
+        } catch (Exception e) {
+            log.error("Error converting inquiry to customer", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ApiResponse.error(500,
+                    "Could not make a customer from this inquiry: " + rootMessage(e),
+                    "INQUIRY_CONVERT_FAILED"));
+        }
+    }
+
+    /** The write itself, inside a transaction the caller commits and can therefore report on. */
+    private ResponseEntity<ApiResponse<?>> convertWithin(String idObfuscated) {
+        {
             Long id = idObfuscator.decodeId(idObfuscated);
             BookingInquiry inquiry = repository.findById(id).orElse(null);
             if (inquiry == null) {
@@ -173,7 +198,13 @@ public class BookingInquiryUpdateService {
                     .isVip(false)
                     .build();
 
-                customer = customerRepository.save(customer);
+                /*
+                 * Saved once to be given an id, then coded from it. The code column is NOT NULL
+                 * and @NotBlank, so the row spends one statement in a state its own constraints
+                 * forbid; saveAndFlush makes that window a single statement rather than one that
+                 * stays open until commit, where nothing can report on it.
+                 */
+                customer = customerRepository.saveAndFlush(customer);
                 customer.setCode(customer.generateCode());
 
                 if (inquiry.getEmail() != null && !inquiry.getEmail().isBlank()) {
@@ -217,11 +248,20 @@ public class BookingInquiryUpdateService {
                     "customerName", customer.getDisplayName(),
                     "created", created)));
 
-        } catch (Exception e) {
-            log.error("Error converting inquiry to customer", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                ApiResponse.error(500, "Failed to convert this inquiry", "INQUIRY_CONVERT_FAILED"));
         }
+    }
+
+    /**
+     * The deepest thing that actually went wrong.
+     *
+     * <p>A constraint violation arrives wrapped several times over, and the outermost message says
+     * only that a statement failed. The cause at the bottom is the one that names the column.
+     */
+    private String rootMessage(Throwable e) {
+        Throwable root = e;
+        while (root.getCause() != null && root.getCause() != root) root = root.getCause();
+        String message = root.getMessage();
+        return message == null || message.isBlank() ? root.getClass().getSimpleName() : message;
     }
 
     /**

@@ -209,69 +209,7 @@ public class BookingInquiryService {
                 return;
             }
 
-            // Pre-extract all entity data synchronously (avoids lazy loading issues in async thread)
-            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
-
-            Map<String, String> variables = new HashMap<>();
-            variables.put("inquiryCode", inquiry.getCode());
-            variables.put("firstName", inquiry.getFirstName());
-            variables.put("lastName", inquiry.getLastName());
-            variables.put("email", inquiry.getEmail());
-            variables.put("phone", inquiry.getPhone() != null ? inquiry.getPhone() : "");
-            variables.put("country", inquiry.getCountry() != null ? inquiry.getCountry() : "");
-            variables.put("adults", String.valueOf(inquiry.getAdults()));
-            variables.put("children", String.valueOf(inquiry.getChildren()));
-            variables.put("totalTravelers", String.valueOf(inquiry.getTotalTravelers()));
-            variables.put("preferredStartDate", inquiry.getPreferredStartDate() != null
-                    ? inquiry.getPreferredStartDate().format(dateFormatter) : "");
-            variables.put("preferredEndDate", inquiry.getPreferredEndDate() != null
-                    ? inquiry.getPreferredEndDate().format(dateFormatter) : "");
-            variables.put("budgetCategory", inquiry.getBudgetCategory() != null
-                    ? inquiry.getBudgetCategory().name() : "");
-            variables.put("tripType", inquiry.getTripType() != null
-                    ? inquiry.getTripType().name() : "");
-            variables.put("interests", inquiry.getInterests() != null && !inquiry.getInterests().isEmpty()
-                    ? inquiry.getInterests().stream().map(TripInterest::getDisplayName)
-                        .collect(java.util.stream.Collectors.joining(", "))
-                    : "");
-            variables.put("preferredDurationDays", inquiry.getPreferredDurationDays() != null
-                    ? String.valueOf(inquiry.getPreferredDurationDays()) : "");
-            variables.put("destinations", inquiry.getDestinationParks() != null && !inquiry.getDestinationParks().isEmpty()
-                    ? inquiry.getDestinationParks().stream().map(Park::getName)
-                        .collect(java.util.stream.Collectors.joining(", "))
-                    : "");
-            variables.put("specialRequests", inquiry.getSpecialRequests() != null
-                    ? inquiry.getSpecialRequests() : "");
-            variables.put("message", inquiry.getMessage() != null ? inquiry.getMessage() : "");
-            variables.put("source", inquiry.getSource() != null ? inquiry.getSource() : "WEBSITE");
-            variables.put("preferredLocale", inquiry.getPreferredLocale() != null
-                    ? inquiry.getPreferredLocale() : "en");
-            variables.put("inquiryDate", LocalDateTime.now().format(
-                    DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm a")));
-
-            Itinerary itinerary = inquiry.getItinerary();
-            if (itinerary != null) {
-                variables.put("itineraryName", itinerary.getName() != null ? itinerary.getName() : "");
-                variables.put("itineraryCode", itinerary.getCode() != null ? itinerary.getCode() : "");
-                variables.put("itineraryTotalDays", itinerary.getTotalDays() != null
-                        ? String.valueOf(itinerary.getTotalDays()) : "");
-                variables.put("itineraryTotalNights", itinerary.getTotalNights() != null
-                        ? String.valueOf(itinerary.getTotalNights()) : "");
-                variables.put("itineraryStartLocation", itinerary.getStartLocation() != null
-                        ? itinerary.getStartLocation() : "");
-                variables.put("itineraryEndLocation", itinerary.getEndLocation() != null
-                        ? itinerary.getEndLocation() : "");
-                variables.put("itineraryDescription", itinerary.getDescription() != null
-                        ? itinerary.getDescription() : "");
-            } else {
-                variables.put("itineraryName", "");
-                variables.put("itineraryCode", "");
-                variables.put("itineraryTotalDays", "");
-                variables.put("itineraryTotalNights", "");
-                variables.put("itineraryStartLocation", "");
-                variables.put("itineraryEndLocation", "");
-                variables.put("itineraryDescription", "");
-            }
+            Map<String, String> variables = buildNotificationVariables(inquiry);
 
             String subject = "New Booking Inquiry: " + inquiry.getCode() + " - " + inquiry.getDisplayName();
             String inquiryCode = inquiry.getCode();
@@ -295,6 +233,87 @@ public class BookingInquiryService {
             log.warn("Failed to prepare booking inquiry notification for {}: {}",
                     inquiry.getCode(), e.getMessage());
         }
+    }
+
+    /**
+     * Everything the BOOKING_INQUIRY template is entitled to ask for.
+     *
+     * <p>Package-private and separated from the send so it can be checked against the event's own
+     * schema. The renderer rejects a template render when a REQUIRED variable is missing or blank,
+     * and it does so inside an async block whose only reaction is a logged warning. A name that
+     * drifts between this map and the schema therefore stops every inquiry email silently, which
+     * is how no booking inquiry notification was ever delivered.
+     *
+     * <p>Entity data is read here, on the caller's thread, because the async send has no session
+     * and a lazy collection would fail to load in it.
+     */
+    Map<String, String> buildNotificationVariables(BookingInquiry inquiry) {
+        // Pre-extract all entity data synchronously (avoids lazy loading issues in async thread)
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
+
+        Map<String, String> variables = new HashMap<>();
+        variables.put("inquiryCode", inquiry.getCode());
+        variables.put("firstName", inquiry.getFirstName());
+        variables.put("lastName", inquiry.getLastName());
+        variables.put("email", inquiry.getEmail());
+        variables.put("phone", inquiry.getPhone() != null ? inquiry.getPhone() : "");
+        variables.put("country", inquiry.getCountry() != null ? inquiry.getCountry() : "");
+        variables.put("adults", String.valueOf(inquiry.getAdults()));
+        variables.put("children", String.valueOf(inquiry.getChildren()));
+        variables.put("totalTravelers", String.valueOf(inquiry.getTotalTravelers()));
+        variables.put("preferredStartDate", inquiry.getPreferredStartDate() != null
+                ? inquiry.getPreferredStartDate().format(dateFormatter) : "");
+        variables.put("preferredEndDate", inquiry.getPreferredEndDate() != null
+                ? inquiry.getPreferredEndDate().format(dateFormatter) : "");
+        variables.put("budgetCategory", inquiry.getBudgetCategory() != null
+                ? inquiry.getBudgetCategory().name() : "");
+        variables.put("tripType", inquiry.getTripType() != null
+                ? inquiry.getTripType().name() : "");
+        variables.put("interests", inquiry.getInterests() != null && !inquiry.getInterests().isEmpty()
+                ? inquiry.getInterests().stream().map(TripInterest::getDisplayName)
+                    .collect(java.util.stream.Collectors.joining(", "))
+                : "");
+        variables.put("preferredDurationDays", inquiry.getPreferredDurationDays() != null
+                ? String.valueOf(inquiry.getPreferredDurationDays()) : "");
+        variables.put("destinations", inquiry.getDestinationParks() != null && !inquiry.getDestinationParks().isEmpty()
+                ? inquiry.getDestinationParks().stream().map(Park::getName)
+                    .collect(java.util.stream.Collectors.joining(", "))
+                : "");
+        variables.put("specialRequests", inquiry.getSpecialRequests() != null
+                ? inquiry.getSpecialRequests() : "");
+        variables.put("message", inquiry.getMessage() != null ? inquiry.getMessage() : "");
+        variables.put("source", inquiry.getSource() != null ? inquiry.getSource() : "WEBSITE");
+        variables.put("preferredLocale", inquiry.getPreferredLocale() != null
+                ? inquiry.getPreferredLocale() : "en");
+        variables.put("inquiryDate", LocalDateTime.now().format(
+                DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm a")));
+
+        Itinerary itinerary = inquiry.getItinerary();
+        if (itinerary != null) {
+            variables.put("itineraryName", itinerary.getName() != null ? itinerary.getName() : "");
+            variables.put("itineraryCode", itinerary.getCode() != null ? itinerary.getCode() : "");
+            variables.put("itineraryTotalDays", itinerary.getTotalDays() != null
+                    ? String.valueOf(itinerary.getTotalDays()) : "");
+            variables.put("itineraryTotalNights", itinerary.getTotalNights() != null
+                    ? String.valueOf(itinerary.getTotalNights()) : "");
+            variables.put("itineraryStartLocation", itinerary.getStartLocation() != null
+                    ? itinerary.getStartLocation() : "");
+            variables.put("itineraryEndLocation", itinerary.getEndLocation() != null
+                    ? itinerary.getEndLocation() : "");
+            variables.put("itineraryDescription", itinerary.getDescription() != null
+                    ? itinerary.getDescription() : "");
+        } else {
+            variables.put("itineraryName", "");
+            variables.put("itineraryCode", "");
+            variables.put("itineraryTotalDays", "");
+            variables.put("itineraryTotalNights", "");
+            variables.put("itineraryStartLocation", "");
+            variables.put("itineraryEndLocation", "");
+            variables.put("itineraryDescription", "");
+        }
+
+
+        return variables;
     }
 
     private LocalDate parseDate(String dateStr) {

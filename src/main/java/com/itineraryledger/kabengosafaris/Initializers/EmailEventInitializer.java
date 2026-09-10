@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Initializers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itineraryledger.kabengosafaris.EmailEvent.EmailEventRepository;
 import com.itineraryledger.kabengosafaris.EmailEvent.EmailEventVariables;
 import com.itineraryledger.kabengosafaris.EmailEvent.ModalEntity.EmailEvent;
@@ -258,14 +259,38 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
      */
     private void initializeEvent(String eventName, String description) {
         try {
-            // Check if event already exists
-            if (emailEventRepository.existsByName(eventName)) {
-                log.debug("⊘ Email event already exists: {}", eventName);
-                return;
-            }
-
             // Get system-defined variables for this event
             String variablesJson = EmailEventVariables.getVariablesForEvent(eventName);
+
+            /*
+             * An existing event is RECONCILED, not skipped.
+             *
+             * The variable catalogue is system-owned: it is generated from the schema files, and
+             * the panel says so ("Set by the system, from the code that sends this email"). Only
+             * the templates and the on/off switch belong to whoever is using the app, and neither
+             * is touched here.
+             *
+             * Skipping meant a schema could never be corrected after first boot. BOOKING_INQUIRY
+             * was seeded when the schema still demanded a variable called `inquiryId`; the schema
+             * was later fixed to `inquiryCode`, which is what the sender supplies and what the
+             * template prints, but the stored row kept the old name. Every inquiry since then
+             * failed validation with "Missing required variables: inquiryId", inside an async
+             * block that logs a warning and returns, so nobody was told and no email was sent for
+             * any booking inquiry ever received.
+             */
+            EmailEvent existing = emailEventRepository.findByName(eventName).orElse(null);
+            if (existing != null) {
+                if (!sameVariables(existing.getVariablesJson(), variablesJson)) {
+                    log.warn("Email event {} had a stale variable catalogue; refreshing it from the schema "
+                        + "({} variables). Its templates and enabled flag are untouched.",
+                        eventName, countVariables(variablesJson));
+                    existing.setVariablesJson(variablesJson);
+                    emailEventRepository.save(existing);
+                } else {
+                    log.debug("⊘ Email event already exists and matches its schema: {}", eventName);
+                }
+                return;
+            }
 
             // Create email event with variables
             EmailEvent event = EmailEvent.builder()
@@ -289,6 +314,23 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
 
         } catch (Exception e) {
             log.error("Failed to initialize email event: {}", eventName, e);
+        }
+    }
+
+    /**
+     * Whether a stored catalogue still says what the schema says.
+     *
+     * <p>Compared as parsed JSON rather than as text, so a reformat or a reordered key does not
+     * rewrite every event on every boot and bury a real change in the log.
+     */
+    private boolean sameVariables(String stored, String fromSchema) {
+        if (stored == null || stored.isBlank()) return false;
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readTree(stored).equals(mapper.readTree(fromSchema));
+        } catch (Exception e) {
+            // unreadable stored JSON is exactly the case that needs replacing
+            return false;
         }
     }
 
