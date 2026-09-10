@@ -348,6 +348,22 @@ public class Customer {
      * Example: ID=1 -> CUS-000101, ID=999 -> CUS-001099, ID=1000 -> CUS-001100
      */
     @Transient
+    /**
+     * A stand-in code for the single statement before the id exists.
+     *
+     * <p>{@code code} is NOT NULL and {@code @NotBlank}, and {@link #generateCode()} needs the id,
+     * which only an insert can supply. So the row is written once with this, then coded properly.
+     * Converting an enquirer skipped the stand-in and failed validation at persist time with
+     * "Customer code is required", which is the whole reason that button did nothing.
+     *
+     * <p>Unique per call, deliberately. The literal "TEMP" was used here before, and {@code code}
+     * carries a unique constraint: two people creating a customer in the same moment collided on
+     * it, and a second save that never ran left a customer actually called TEMP.
+     */
+    public static String provisionalCode() {
+        return "NEW-" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 20);
+    }
+
     public String generateCode() {
         if (id == null) {
             return null;

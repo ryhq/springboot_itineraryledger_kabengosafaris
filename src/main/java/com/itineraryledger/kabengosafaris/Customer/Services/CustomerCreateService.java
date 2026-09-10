@@ -119,7 +119,7 @@ public class CustomerCreateService {
 
             // Create customer entity (code will be set after first save)
             Customer customer = Customer.builder()
-                .code("TEMP") // Temporary code, will be updated after save
+                .code(Customer.provisionalCode()) // replaced with CUS-nnnnnn once the id exists
                 .customerType(createDTO.getCustomerType())
                 .title(createDTO.getTitle())
                 .salutation(createDTO.getSalutation())

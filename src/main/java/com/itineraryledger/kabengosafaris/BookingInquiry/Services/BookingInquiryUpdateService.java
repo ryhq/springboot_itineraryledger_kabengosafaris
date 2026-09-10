@@ -195,6 +195,12 @@ public class BookingInquiryUpdateService {
 
             if (customer == null) {
                 customer = Customer.builder()
+                    /*
+                     * The stand-in code has to be on the row before it is written. Without it the
+                     * insert fails its own @NotBlank on code, and because this method used to
+                     * commit outside its try nobody ever saw which field was at fault.
+                     */
+                    .code(Customer.provisionalCode())
                     .customerType(CustomerType.INDIVIDUAL)
                     .firstName(inquiry.getFirstName())
                     .lastName(inquiry.getLastName())
