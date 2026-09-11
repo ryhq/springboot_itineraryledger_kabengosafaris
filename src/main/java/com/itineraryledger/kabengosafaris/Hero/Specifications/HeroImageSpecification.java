@@ -56,6 +56,10 @@ public class HeroImageSpecification {
      *
      * <p>The page has a search box and this module had no keyword parameter, so the box sent one
      * nothing read and every image came back. A filter that does nothing reads as a wrong answer.
+     *
+     * <p>No {@code coalesce} around the columns: {@code description} is a {@code @Lob}, and MySQL
+     * refuses {@code coalesce(lob, '')} -- which turned the search into a 500. A null column simply
+     * fails the LIKE, which is the same answer inside an OR.
      */
     public static Specification<HeroImage> matchesKeyword(String keyword) {
         return (root, query, cb) -> {
@@ -68,12 +72,12 @@ public class HeroImageSpecification {
                 query.distinct(true);
             }
             return cb.or(
-                cb.like(cb.lower(cb.coalesce(root.get("fileName"), "")), like),
-                cb.like(cb.lower(cb.coalesce(root.get("originalFileName"), "")), like),
-                cb.like(cb.lower(cb.coalesce(root.get("altText"), "")), like),
-                cb.like(cb.lower(cb.coalesce(root.get("caption"), "")), like),
-                cb.like(cb.lower(cb.coalesce(root.get("description"), "")), like),
-                cb.like(cb.lower(cb.coalesce(hero.get("title"), "")), like)
+                cb.like(cb.lower(root.get("fileName")), like),
+                cb.like(cb.lower(root.get("originalFileName")), like),
+                cb.like(cb.lower(root.get("altText")), like),
+                cb.like(cb.lower(root.get("caption")), like),
+                cb.like(cb.lower(root.get("description")), like),
+                cb.like(cb.lower(hero.get("title")), like)
             );
         };
     }

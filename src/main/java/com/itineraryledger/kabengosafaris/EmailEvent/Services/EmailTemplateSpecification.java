@@ -64,11 +64,11 @@ public class EmailTemplateSpecification {
                 query.distinct(true);
             }
             return cb.or(
-                cb.like(cb.lower(cb.coalesce(root.get("name"), "")), like),
-                cb.like(cb.lower(cb.coalesce(root.get("description"), "")), like),
-                cb.like(cb.lower(cb.coalesce(root.get("fileName"), "")), like),
-                cb.like(cb.lower(cb.coalesce(event.get("name"), "")), like),
-                cb.like(cb.lower(cb.coalesce(event.get("displayName"), "")), like)
+                cb.like(cb.lower(root.get("name")), like),
+                cb.like(cb.lower(root.get("description")), like),
+                cb.like(cb.lower(root.get("fileName")), like),
+                cb.like(cb.lower(event.get("name")), like),
+                cb.like(cb.lower(event.get("displayName")), like)
             );
         };
     }

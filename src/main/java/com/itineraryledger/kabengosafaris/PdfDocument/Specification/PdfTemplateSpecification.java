@@ -92,10 +92,10 @@ public class PdfTemplateSpecification {
             }
             return cb.or(
                 cb.like(cb.lower(root.get("name")), like),
-                cb.like(cb.lower(cb.coalesce(root.get("description"), "")), like),
-                cb.like(cb.lower(cb.coalesce(root.get("fileName"), "")), like),
-                cb.like(cb.lower(cb.coalesce(document.get("name"), "")), like),
-                cb.like(cb.lower(cb.coalesce(document.get("displayName"), "")), like)
+                cb.like(cb.lower(root.get("description")), like),
+                cb.like(cb.lower(root.get("fileName")), like),
+                cb.like(cb.lower(document.get("name")), like),
+                cb.like(cb.lower(document.get("displayName")), like)
             );
         };
     }

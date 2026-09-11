@@ -147,10 +147,10 @@ public class SafariDocumentSpecification {
             }
             String like = "%" + keyword.trim().toLowerCase() + "%";
             return cb.or(
-                cb.like(cb.lower(cb.coalesce(root.get("title"), "")), like),
-                cb.like(cb.lower(cb.coalesce(root.get("description"), "")), like),
-                cb.like(cb.lower(cb.coalesce(root.get("fileName"), "")), like),
-                cb.like(cb.lower(cb.coalesce(root.get("originalFileName"), "")), like)
+                cb.like(cb.lower(root.get("title")), like),
+                cb.like(cb.lower(root.get("description")), like),
+                cb.like(cb.lower(root.get("fileName")), like),
+                cb.like(cb.lower(root.get("originalFileName")), like)
             );
         };
     }

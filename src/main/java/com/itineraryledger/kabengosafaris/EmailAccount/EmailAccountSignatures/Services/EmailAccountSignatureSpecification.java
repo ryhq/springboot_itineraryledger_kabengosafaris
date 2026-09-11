@@ -52,9 +52,9 @@ public class EmailAccountSignatureSpecification {
             }
             String like = "%" + keyword.trim().toLowerCase() + "%";
             return cb.or(
-                cb.like(cb.lower(cb.coalesce(root.get("name"), "")), like),
-                cb.like(cb.lower(cb.coalesce(root.get("description"), "")), like),
-                cb.like(cb.lower(cb.coalesce(root.get("fileName"), "")), like)
+                cb.like(cb.lower(root.get("name")), like),
+                cb.like(cb.lower(root.get("description")), like),
+                cb.like(cb.lower(root.get("fileName")), like)
             );
         };
     }

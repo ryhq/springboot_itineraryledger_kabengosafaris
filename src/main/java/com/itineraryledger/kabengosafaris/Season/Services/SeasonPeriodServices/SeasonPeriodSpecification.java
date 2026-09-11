@@ -205,9 +205,9 @@ public class SeasonPeriodSpecification {
                 query.distinct(true);
             }
             return cb.or(
-                cb.like(cb.lower(cb.coalesce(root.get("notes"), "")), like),
-                cb.like(cb.lower(cb.coalesce(season.get("name"), "")), like),
-                cb.like(cb.lower(cb.coalesce(season.get("description"), "")), like)
+                cb.like(cb.lower(root.get("notes")), like),
+                cb.like(cb.lower(season.get("name")), like),
+                cb.like(cb.lower(season.get("description")), like)
             );
         };
     }
