@@ -109,6 +109,18 @@ public class QuoteUpdateService {
                 if (updateDTO.getDiscountPercentage() != null && !updateDTO.getDiscountPercentage().equals(quote.getDiscountPercentage())) {
                     blockedFields.add("discountPercentage");
                 }
+                /*
+                 * A scope is a price change. Narrowing the tax to the beds, or the discount to the
+                 * lines that are ours to discount, moves the total exactly as changing the
+                 * percentage does -- so neither can be edited on a quote the customer is already
+                 * holding. Compared canonically, because one selection has one spelling.
+                 */
+                if (scopeChanged(updateDTO.getTaxAppliesTo(), quote.getTaxAppliesTo())) {
+                    blockedFields.add("taxAppliesTo");
+                }
+                if (scopeChanged(updateDTO.getDiscountAppliesTo(), quote.getDiscountAppliesTo())) {
+                    blockedFields.add("discountAppliesTo");
+                }
                 if (updateDTO.getAgentCommissionPercentage() != null && !updateDTO.getAgentCommissionPercentage().equals(quote.getAgentCommissionPercentage())) {
                     blockedFields.add("agentCommissionPercentage");
                 }
@@ -155,6 +167,18 @@ public class QuoteUpdateService {
                 }
                 if (updateDTO.getDiscountPercentage() != null && !updateDTO.getDiscountPercentage().equals(quote.getDiscountPercentage())) {
                     blockedFields.add("discountPercentage");
+                }
+                /*
+                 * A scope is a price change. Narrowing the tax to the beds, or the discount to the
+                 * lines that are ours to discount, moves the total exactly as changing the
+                 * percentage does -- so neither can be edited on a quote the customer is already
+                 * holding. Compared canonically, because one selection has one spelling.
+                 */
+                if (scopeChanged(updateDTO.getTaxAppliesTo(), quote.getTaxAppliesTo())) {
+                    blockedFields.add("taxAppliesTo");
+                }
+                if (scopeChanged(updateDTO.getDiscountAppliesTo(), quote.getDiscountAppliesTo())) {
+                    blockedFields.add("discountAppliesTo");
                 }
                 if (updateDTO.getAgentCommissionPercentage() != null && !updateDTO.getAgentCommissionPercentage().equals(quote.getAgentCommissionPercentage())) {
                     blockedFields.add("agentCommissionPercentage");
@@ -317,6 +341,12 @@ public class QuoteUpdateService {
                     QuoteItemTypeScope.canonical(
                         QuoteItemTypeScope.parse(updateDTO.getTaxAppliesTo())));
             }
+            /* The discount scope moves only the discount line, redone on every save. Same as tax. */
+            if (updateDTO.getDiscountAppliesTo() != null) {
+                quote.setDiscountAppliesTo(
+                    QuoteItemTypeScope.canonical(
+                        QuoteItemTypeScope.parse(updateDTO.getDiscountAppliesTo())));
+            }
             // Toggling the per-line/condensed layout also forces a recalc so
             // the QuoteItem rows are rewritten in the new shape.
             if (updateDTO.getCondenseItems() != null
@@ -437,6 +467,7 @@ public class QuoteUpdateService {
             .taxAppliesTo(quote.getTaxAppliesTo())
             .discountPercentage(quote.getDiscountPercentage())
             .discountReason(quote.getDiscountReason())
+            .discountAppliesTo(quote.getDiscountAppliesTo())
             .agentCommissionPercentage(quote.getAgentCommissionPercentage())
             .agentCommissionReason(quote.getAgentCommissionReason())
             .marginUpliftPercentage(quote.getMarginUpliftPercentage())
@@ -520,4 +551,18 @@ public class QuoteUpdateService {
         }
         return null;
     }
+
+    /**
+     * Whether an incoming scope actually differs from the stored one.
+     *
+     * <p>Null means "leave unchanged", as everywhere else on the patch. The comparison is on the
+     * canonical form: "ACTIVITY,ACCOMMODATION" and "ACCOMMODATION,ACTIVITY" are one scope, and a
+     * re-send of the same selection must not read as an edit and block a save.
+     */
+    private static boolean scopeChanged(String incoming, String stored) {
+        if (incoming == null) return false;
+        return !java.util.Objects.equals(
+            QuoteItemTypeScope.canonical(QuoteItemTypeScope.parse(incoming)), stored);
+    }
+
 }

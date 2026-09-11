@@ -236,6 +236,23 @@ public class Quote {
     private String discountReason;
 
     /**
+     * Which line categories the discount comes off, comma separated, or null for all of them.
+     *
+     * <p>The twin of {@link #taxAppliesTo}, for the same reason read the other way round: park,
+     * crater and conservation fees are the authority's own charge, gazetted to the dollar, and not
+     * ours to discount. A single percentage over the subtotal therefore either gives away money on
+     * a fee we merely collect, or has to be fudged.
+     *
+     * <p>It was fudged: 10% off accommodation, transport and activities was written up as 7.92% of
+     * the whole quote, worked out by hand, with the real rule typed into the discount reason so the
+     * odd figure could be explained. Add a line and 7.92 is silently wrong.
+     *
+     * <p>Null means every category, so every quote written before this behaves exactly as it did.
+     */
+    @Column(name = "discount_applies_to", length = 200)
+    private String discountAppliesTo;
+
+    /**
      * Agent commission percentage — money flowing out of the company to a
      * third-party agent who referred the customer. Applied to every line
      * item's unit price as a multiplier (alongside marginUpliftPercentage)

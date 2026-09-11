@@ -43,6 +43,9 @@ public class CreateQuoteDTO {
     private BigDecimal discountPercentage;
     private String discountReason;
 
+    /** Which line categories the discount comes off ("ACCOMMODATION,ACTIVITY"). Null = all. */
+    private String discountAppliesTo;
+
     // Agent commission + margin uplift — applied multiplicatively to every
     // QuoteItem's unit price when items are derived from the Quote tree.
     // Customer never sees a separate line; the inflated price IS the

@@ -96,14 +96,16 @@ class TaxIsChargedOnlyOnTheCategoriesItNamesTest {
     }
 
     @Test
-    @DisplayName("the discount stays over the whole quote, because it is a gesture, not a tax")
-    void discountIsNotScoped() {
+    @DisplayName("scoping the tax does not scope the discount: the two are set separately")
+    void theTaxScopeDoesNotMoveTheDiscount() {
         Quote quote = quote(new BigDecimal("18"), "ACCOMMODATION", new BigDecimal("10"));
 
         service.recalculateTotals(quote);
 
         assertEquals(new BigDecimal("1317.77"), usd(quote.getDiscounts()),
-            "10% of the full 13,177.74 -- a discount the client can see is a discount off the trip");
+            "10% of the full 13,177.74, because this quote names no discount scope. Where the "
+                + "discount should come off only part of the trip, discountAppliesTo says so -- "
+                + "see ADiscountComesOffOnlyWhatIsOursToDiscountTest.");
         assertEquals(new BigDecimal("13141.57"), usd(quote.getGrandTotals()));
     }
 

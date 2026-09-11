@@ -100,6 +100,7 @@ public class QuoteFromItineraryGenerationService {
      * @param taxPercentage Optional tax percentage to apply (can be null)
      * @param discountPercentage Optional discount percentage to apply
      * @param discountReason Optional reason for discount
+     * @param discountAppliesTo Which line categories the discount comes off (null = all of them)
      * @return ResponseEntity with the created quote
      */
     public ResponseEntity<ApiResponse<?>> generateQuoteFromItinerary(
@@ -113,6 +114,7 @@ public class QuoteFromItineraryGenerationService {
             String taxAppliesTo,
             BigDecimal discountPercentage,
             String discountReason,
+            String discountAppliesTo,
             BigDecimal agentCommissionPercentage,
             String agentCommissionReason,
             BigDecimal marginUpliftPercentage,
@@ -217,6 +219,7 @@ public class QuoteFromItineraryGenerationService {
                     taxAppliesTo,
                     discountPercentage,
                     discountReason,
+                    discountAppliesTo,
                     agentCommissionPercentage,
                     agentCommissionReason,
                     marginUpliftPercentage,
@@ -290,6 +293,7 @@ public class QuoteFromItineraryGenerationService {
             String taxAppliesTo,
             BigDecimal discountPercentage,
             String discountReason,
+            String discountAppliesTo,
             BigDecimal agentCommissionPercentage,
             String agentCommissionReason,
             BigDecimal marginUpliftPercentage,
@@ -335,6 +339,12 @@ public class QuoteFromItineraryGenerationService {
             dto.setDiscountPercentage(discountPercentage);
             dto.setDiscountReason(discountReason);
         }
+        /*
+         * The scope is set whether or not a percentage came with it, so a scope kept on a quote
+         * whose percentage is filled in later still means what it said.
+         */
+        dto.setDiscountAppliesTo(discountAppliesTo == null ? null
+            : QuoteItemTypeScope.canonical(QuoteItemTypeScope.parse(discountAppliesTo)));
 
         // Internal markup — bakes into every line item's stored unit price
         // by QuoteCostEstimationService. Customer never sees a separate

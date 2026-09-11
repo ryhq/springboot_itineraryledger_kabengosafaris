@@ -156,6 +156,8 @@ public class InvoiceCreateService {
                     createDTO.getTaxAppliesTo(), InvoiceItemType.class))
                 .discountPercentage(createDTO.getDiscountPercentage())
                 .discountReason(createDTO.getDiscountReason())
+                .discountAppliesTo(LineCategoryScope.canonicalOf(
+                    createDTO.getDiscountAppliesTo(), InvoiceItemType.class))
                 .agentCommissionPercentage(createDTO.getAgentCommissionPercentage())
                 .agentCommissionReason(createDTO.getAgentCommissionReason())
                 .marginUpliftPercentage(createDTO.getMarginUpliftPercentage())
@@ -224,6 +226,7 @@ public class InvoiceCreateService {
             .taxAppliesTo(invoice.getTaxAppliesTo())
             .discountPercentage(invoice.getDiscountPercentage())
             .discountReason(invoice.getDiscountReason())
+            .discountAppliesTo(invoice.getDiscountAppliesTo())
             .agentCommissionPercentage(invoice.getAgentCommissionPercentage())
             .agentCommissionReason(invoice.getAgentCommissionReason())
             .marginUpliftPercentage(invoice.getMarginUpliftPercentage())

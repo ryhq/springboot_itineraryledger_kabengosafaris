@@ -56,6 +56,9 @@ public class FullQuoteDTO {
     private BigDecimal discountPercentage;
     private String discountReason;
 
+    /** Which line categories the discount comes off ("ACCOMMODATION,ACTIVITY"). Null = all. */
+    private String discountAppliesTo;
+
     // Markup (bakes into per-line-item unit prices; never a separate line)
     private BigDecimal agentCommissionPercentage;
     private String agentCommissionReason;
@@ -222,5 +225,16 @@ public class FullQuoteDTO {
      */
     public String getTaxAppliesToLabel() {
         return com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemTypeScope.describe(taxAppliesTo);
+    }
+
+    /**
+     * The discount scope in words, for the document the client reads.
+     *
+     * <p>Same problem as the tax and worse, because a discount is a promise: 10% off the parts we
+     * sell is 7.92% of a quote carrying park fees, and a client who works out the percentage and
+     * finds 7.92 has been given no way to see that the 10% was kept. This says what it came off.
+     */
+    public String getDiscountAppliesToLabel() {
+        return com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemTypeScope.describe(discountAppliesTo);
     }
 }

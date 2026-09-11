@@ -190,6 +190,16 @@ public class Invoice {
     @Column(length = 500)
     private String discountReason;
 
+    /**
+     * Which line categories the discount comes off, comma-joined. NULL means every one of them.
+     *
+     * <p>Carried over from the quote when an invoice is generated, so what was promised is what
+     * gets deducted. Park and crater fees are not ours to discount, and taking the discount off
+     * them at invoice time would undo the scope exactly where the money changes hands.
+     */
+    @Column(name = "discount_applies_to", length = 200)
+    private String discountAppliesTo;
+
     // =====================================================================
     // MARKUP (bakes into per-line-item unit prices, not a separate line)
     // =====================================================================

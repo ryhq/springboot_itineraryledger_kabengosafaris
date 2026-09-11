@@ -26,7 +26,7 @@ import java.util.Map;
  * This service automatically recalculates:
  * - Subtotals by currency (sum of all active line item prices)
  * - Taxes by currency (subtotal × taxPercentage)
- * - Discounts by currency (subtotal × discountPercentage)
+ * - Discounts by currency (the lines discountAppliesTo names × discountPercentage)
  * - Grand totals by currency (subtotal + taxes - discounts)
  *
  * Balances by currency are NOT persisted — they are derived on demand
@@ -91,9 +91,18 @@ public class InvoiceTotalsCalculationService {
             invoice.getTaxPercentage()
         );
 
-        // Calculate discounts by currency (if discount percentage is set)
+        /*
+         * And the discount comes off the lines it applies to, not off the whole invoice.
+         *
+         * The scope arrives with the quote, like the tax scope beside it. Taking the quoted
+         * percentage off everything here would credit the client against park fees we merely
+         * collect, and short the company by the difference at the moment the money is banked.
+         */
+        Map<String, BigDecimal> discountableByCurrency = subtotalsByCurrency(
+            lineItems, invoice.getDiscountAppliesTo());
+
         Map<String, BigDecimal> discountsByCurrency = calculateDiscountsByCurrency(
-            subtotalsByCurrency,
+            discountableByCurrency,
             invoice.getDiscountPercentage()
         );
 
@@ -124,6 +133,12 @@ public class InvoiceTotalsCalculationService {
                 LineCategoryScope.describe(invoice.getTaxAppliesTo(), InvoiceItemType.class),
                 formatTotals(taxableByCurrency));
         }
+        if (invoice.getDiscountAppliesTo() != null && invoice.getDiscountPercentage() != null) {
+            log.info("  discount {}% taken off {} ({} of the subtotal)",
+                invoice.getDiscountPercentage(),
+                LineCategoryScope.describe(invoice.getDiscountAppliesTo(), InvoiceItemType.class),
+                formatTotals(discountableByCurrency));
+        }
     }
 
     /**
@@ -150,8 +165,13 @@ public class InvoiceTotalsCalculationService {
             if (Boolean.TRUE.equals(item.getIsActive()) && item.getPrices() != null) {
                 for (Price price : item.getPrices()) {
                     String currency = price.getCurrency();
+                    /*
+                     * Normalised to cents as it is merged, as on the quote side. The sum otherwise
+                     * carries whatever scale the line items happened to have, so re-summing the
+                     * same stored rows can land a few cents from the figure already persisted.
+                     */
                     BigDecimal totalPrice = price.getTotalPrice() != null
-                        ? price.getTotalPrice()
+                        ? price.getTotalPrice().setScale(2, RoundingMode.HALF_UP)
                         : BigDecimal.ZERO;
 
                     subtotals.merge(currency, totalPrice, BigDecimal::add);

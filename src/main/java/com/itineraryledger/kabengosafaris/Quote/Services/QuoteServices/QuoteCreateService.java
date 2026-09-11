@@ -159,6 +159,8 @@ public class QuoteCreateService {
                     createDTO.getTaxAppliesTo(), QuoteItemType.class))
                 .discountPercentage(createDTO.getDiscountPercentage())
                 .discountReason(createDTO.getDiscountReason())
+                .discountAppliesTo(LineCategoryScope.canonicalOf(
+                    createDTO.getDiscountAppliesTo(), QuoteItemType.class))
                 .agentCommissionPercentage(createDTO.getAgentCommissionPercentage())
                 .agentCommissionReason(createDTO.getAgentCommissionReason())
                 .marginUpliftPercentage(createDTO.getMarginUpliftPercentage())
@@ -238,6 +240,7 @@ public class QuoteCreateService {
             .taxAppliesTo(quote.getTaxAppliesTo())
             .discountPercentage(quote.getDiscountPercentage())
             .discountReason(quote.getDiscountReason())
+            .discountAppliesTo(quote.getDiscountAppliesTo())
             .agentCommissionPercentage(quote.getAgentCommissionPercentage())
             .agentCommissionReason(quote.getAgentCommissionReason())
             .marginUpliftPercentage(quote.getMarginUpliftPercentage())

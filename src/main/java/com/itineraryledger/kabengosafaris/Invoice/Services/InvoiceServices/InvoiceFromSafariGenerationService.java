@@ -247,6 +247,18 @@ public class InvoiceFromSafariGenerationService {
                 log.debug("Using tax scope [{}] from quote {}",
                         latestQuote.getTaxAppliesTo(), latestQuote.getQuoteCode());
             }
+            /*
+             * The discount scope travels the same way, for the same reason read the other way
+             * round: a discount promised on the lines that are ours to discount must not come off
+             * the park fees when the invoice is raised, or the company eats the difference.
+             */
+            if (dto.getDiscountAppliesTo() != null) {
+                createInvoiceDTO.setDiscountAppliesTo(dto.getDiscountAppliesTo());
+            } else if (latestQuote != null && latestQuote.getDiscountAppliesTo() != null) {
+                createInvoiceDTO.setDiscountAppliesTo(latestQuote.getDiscountAppliesTo());
+                log.debug("Using discount scope [{}] from quote {}",
+                        latestQuote.getDiscountAppliesTo(), latestQuote.getQuoteCode());
+            }
 
             // Markup multiplier baked into each line item's unit price (same
             // model as Quote): customer never sees a markup line — the
@@ -365,7 +377,10 @@ public class InvoiceFromSafariGenerationService {
         } else if (latestQuote != null && latestQuote.getDiscountPercentage() != null) {
             dto.setDiscountPercentage(latestQuote.getDiscountPercentage());
             dto.setDiscountReason(latestQuote.getDiscountReason());
-            log.debug("Using discount {}% from quote {}", latestQuote.getDiscountPercentage(), latestQuote.getQuoteCode());
+            dto.setDiscountAppliesTo(latestQuote.getDiscountAppliesTo());
+            log.debug("Using discount {}% on {} from quote {}", latestQuote.getDiscountPercentage(),
+                    latestQuote.getDiscountAppliesTo() == null ? "every line" : latestQuote.getDiscountAppliesTo(),
+                    latestQuote.getQuoteCode());
         }
 
         // Markup — explicit override beats quote fallback

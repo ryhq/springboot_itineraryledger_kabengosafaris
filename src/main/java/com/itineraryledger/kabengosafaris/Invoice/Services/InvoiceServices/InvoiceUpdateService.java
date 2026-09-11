@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
+import com.itineraryledger.kabengosafaris.GlobalEnums.LineCategoryScope;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.InvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.UpdateInvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
@@ -121,6 +122,17 @@ public class InvoiceUpdateService {
                 if (updateDTO.getDiscountPercentage() != null && !updateDTO.getDiscountPercentage().equals(invoice.getDiscountPercentage())) {
                     blockedFields.add("discountPercentage");
                 }
+                /*
+                 * A scope is a price change: it moves the total exactly as the percentage does, so
+                 * it cannot be edited on an invoice already sent. Compared canonically, because one
+                 * selection has one spelling.
+                 */
+                if (scopeChanged(updateDTO.getTaxAppliesTo(), invoice.getTaxAppliesTo())) {
+                    blockedFields.add("taxAppliesTo");
+                }
+                if (scopeChanged(updateDTO.getDiscountAppliesTo(), invoice.getDiscountAppliesTo())) {
+                    blockedFields.add("discountAppliesTo");
+                }
                 if (updateDTO.getAgentCommissionPercentage() != null && !updateDTO.getAgentCommissionPercentage().equals(invoice.getAgentCommissionPercentage())) {
                     blockedFields.add("agentCommissionPercentage");
                 }
@@ -184,6 +196,12 @@ public class InvoiceUpdateService {
                 }
                 if (updateDTO.getDiscountPercentage() != null) {
                     invoice.setDiscountPercentage(updateDTO.getDiscountPercentage());
+                }
+                if (updateDTO.getDiscountAppliesTo() != null) {
+                    // blank is how a scope is CLEARED back to every line
+                    invoice.setDiscountAppliesTo(LineCategoryScope.canonicalOf(
+                        updateDTO.getDiscountAppliesTo(),
+                        com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceItemType.class));
                 }
 
                 // Markup fields (DRAFT only) — bake into existing line item
@@ -320,6 +338,7 @@ public class InvoiceUpdateService {
             .taxAppliesTo(invoice.getTaxAppliesTo())
             .discountPercentage(invoice.getDiscountPercentage())
             .discountReason(invoice.getDiscountReason())
+            .discountAppliesTo(invoice.getDiscountAppliesTo())
             .agentCommissionPercentage(invoice.getAgentCommissionPercentage())
             .agentCommissionReason(invoice.getAgentCommissionReason())
             .marginUpliftPercentage(invoice.getMarginUpliftPercentage())
@@ -397,4 +416,19 @@ public class InvoiceUpdateService {
         }
         return null;
     }
+
+    /**
+     * Whether an incoming scope actually differs from the stored one.
+     *
+     * <p>Null means "leave unchanged". The comparison is on the canonical form, so re-sending the
+     * same selection written the other way round does not read as an edit and block a save.
+     */
+    private static boolean scopeChanged(String incoming, String stored) {
+        if (incoming == null) return false;
+        return !java.util.Objects.equals(
+            LineCategoryScope.canonicalOf(incoming,
+                com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceItemType.class),
+            stored);
+    }
+
 }

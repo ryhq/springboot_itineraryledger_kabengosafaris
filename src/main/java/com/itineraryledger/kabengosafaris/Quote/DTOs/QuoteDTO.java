@@ -52,6 +52,9 @@ public class QuoteDTO {
     private BigDecimal discountPercentage;
     private String discountReason;
 
+    /** Which line categories the discount comes off ("ACCOMMODATION,ACTIVITY"). Null = all. */
+    private String discountAppliesTo;
+
     // Agent commission + margin uplift (internal; bakes into item prices)
     private BigDecimal agentCommissionPercentage;
     private String agentCommissionReason;

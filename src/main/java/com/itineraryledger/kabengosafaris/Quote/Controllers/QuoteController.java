@@ -93,6 +93,7 @@ public class QuoteController {
      * @param taxPercentage Optional tax percentage to apply (can be null)
      * @param discountPercentage Optional discount percentage to apply
      * @param discountReason Optional reason for discount
+     * @param discountAppliesTo Which line categories the discount comes off (absent = all of them)
      * @return ResponseEntity with ApiResponse containing the created quote
      */
     @PostMapping("/generate-from-itinerary")
@@ -109,6 +110,11 @@ public class QuoteController {
         @RequestParam(required = false) String taxAppliesTo,
         @RequestParam(required = false) BigDecimal discountPercentage,
         @RequestParam(required = false) String discountReason,
+        /*
+         * "ACCOMMODATION,TRANSPORT,ACTIVITY" to discount what is ours to discount. Absent means
+         * every line, as before -- including the park fees, which are not ours to give away.
+         */
+        @RequestParam(required = false) String discountAppliesTo,
         @RequestParam(required = false) BigDecimal agentCommissionPercentage,
         @RequestParam(required = false) String agentCommissionReason,
         @RequestParam(required = false) BigDecimal marginUpliftPercentage,
@@ -130,6 +136,7 @@ public class QuoteController {
             taxAppliesTo,
             discountPercentage,
             discountReason,
+            discountAppliesTo,
             agentCommissionPercentage,
             agentCommissionReason,
             marginUpliftPercentage,
@@ -484,6 +491,7 @@ public class QuoteController {
      * @param taxPercentage Optional tax percentage override (inherits from original if not provided)
      * @param discountPercentage Optional discount percentage override (inherits from original if not provided)
      * @param discountReason Optional discount reason override (inherits from original if not provided)
+     * @param discountAppliesTo Optional discount scope override (inherits from original if absent)
      */
     @PostMapping("/{id}/create-new-version")
     @PreAuthorize("hasAuthority('PERM_CREATE_QUOTE')")
@@ -496,12 +504,14 @@ public class QuoteController {
         @RequestParam(required = false, defaultValue = "30") Integer validityDays,
         @RequestParam(required = false) BigDecimal taxPercentage,
         @RequestParam(required = false) BigDecimal discountPercentage,
-        @RequestParam(required = false) String discountReason
+        @RequestParam(required = false) String discountReason,
+        /* Absent inherits the original's scope, like every other pricing field here. */
+        @RequestParam(required = false) String discountAppliesTo
     ) {
         log.info("POST /api/quotes/{}/create-new-version - Creating new version (startDate: {}, currency: {}, useStoRate: {})",
             id, startDate, currency, useStoRate);
         return quoteVersionService.createNewVersion(id, versionNotes, startDate, currency, useStoRate,
-            validityDays, taxPercentage, discountPercentage, discountReason);
+            validityDays, taxPercentage, discountPercentage, discountReason, discountAppliesTo);
     }
 
     // ========================

@@ -400,6 +400,7 @@ public class InvoiceGetService {
             .taxAppliesTo(invoice.getTaxAppliesTo())
             .discountPercentage(invoice.getDiscountPercentage())
             .discountReason(invoice.getDiscountReason())
+            .discountAppliesTo(invoice.getDiscountAppliesTo())
             .agentCommissionPercentage(invoice.getAgentCommissionPercentage())
             .agentCommissionReason(invoice.getAgentCommissionReason())
             .marginUpliftPercentage(invoice.getMarginUpliftPercentage())

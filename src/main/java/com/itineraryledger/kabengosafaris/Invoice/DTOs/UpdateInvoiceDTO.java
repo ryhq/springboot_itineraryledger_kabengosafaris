@@ -29,6 +29,9 @@ public class UpdateInvoiceDTO {
     private BigDecimal discountPercentage;
     private String discountReason;
 
+    /** Which line categories the discount comes off ("ACCOMMODATION,ACTIVITY"). Null = all. */
+    private String discountAppliesTo;
+
     // Markup (changing these re-derives all line items)
     private BigDecimal agentCommissionPercentage;
     private String agentCommissionReason;

@@ -177,7 +177,7 @@
             </th:block>
             <th:block th:if="${invoice.discountPercentage != null and invoice.discountPercentage > 0}">
                 <th:block th:each="discount : ${invoice.discounts}">
-                    <tr><td class="label" th:text="'Discount (' + ${invoice.discountPercentage} + '%)'">Discount</td><td class="value" th:text="${'-' + (discount.formattedTotalPrice != null ? discount.formattedTotalPrice : (discount.currency + ' ' + discount.totalPrice))}">0</td></tr>
+                    <tr><td class="label" th:text="'Discount (' + ${invoice.discountPercentage} + '%)' + (${invoice.discountAppliesTo != null} ? ' off ' + ${invoice.discountAppliesToLabel} : '')">Discount</td><td class="value" th:text="${'-' + (discount.formattedTotalPrice != null ? discount.formattedTotalPrice : (discount.currency + ' ' + discount.totalPrice))}">0</td></tr>
                 </th:block>
             </th:block>
             <th:block th:each="grandTotal : ${invoice.grandTotals}">

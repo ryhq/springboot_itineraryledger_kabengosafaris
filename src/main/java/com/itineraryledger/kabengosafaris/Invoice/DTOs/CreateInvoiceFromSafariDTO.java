@@ -40,6 +40,9 @@ public class CreateInvoiceFromSafariDTO {
     private BigDecimal discountPercentage;
     private String discountReason;
 
+    /** Which line categories the discount comes off ("ACCOMMODATION,ACTIVITY"). Null = all. */
+    private String discountAppliesTo;
+
     // Markup (commission + uplift bake into per-line-item unit prices before
     // discount/tax). Customer never sees a separate markup line.
     private BigDecimal agentCommissionPercentage;

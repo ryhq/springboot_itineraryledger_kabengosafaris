@@ -72,6 +72,30 @@
         "isRequired": false
     },
     {
+        "path": "taxAppliesTo",
+        "type": "String",
+        "description": "Which line categories the tax is charged on, comma-joined. Empty means every line.",
+        "isRequired": false
+    },
+    {
+        "path": "taxAppliesToLabel",
+        "type": "String",
+        "description": "The tax scope in words for the reader ('accommodation only'). Print this beside the percentage: a scoped tax does not divide into the subtotal.",
+        "isRequired": false
+    },
+    {
+        "path": "discountAppliesTo",
+        "type": "String",
+        "description": "Which line categories the discount comes off, comma-joined. Empty means every line. Park fees are not ours to discount.",
+        "isRequired": false
+    },
+    {
+        "path": "discountAppliesToLabel",
+        "type": "String",
+        "description": "The discount scope in words for the reader ('accommodation and activity only'). Print this beside the percentage, or the figure looks wrong to anyone checking it.",
+        "isRequired": false
+    },
+    {
         "path": "sentDate",
         "type": "LocalDate",
         "description": "Date quote was sent to customer",

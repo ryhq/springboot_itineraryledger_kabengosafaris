@@ -54,6 +54,9 @@ public class CreateInvoiceDTO {
     private BigDecimal discountPercentage;
     private String discountReason;
 
+    /** Which line categories the discount comes off ("ACCOMMODATION,ACTIVITY"). Null = all. */
+    private String discountAppliesTo;
+
     // Markup (bake into per-line-item unit price before discount/tax)
     private BigDecimal agentCommissionPercentage;
     private String agentCommissionReason;

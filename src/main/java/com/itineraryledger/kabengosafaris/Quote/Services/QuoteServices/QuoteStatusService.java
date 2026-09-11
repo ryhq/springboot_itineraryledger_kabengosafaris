@@ -775,6 +775,7 @@ public class QuoteStatusService {
             .taxAppliesTo(quote.getTaxAppliesTo())
             .discountPercentage(quote.getDiscountPercentage())
             .discountReason(quote.getDiscountReason())
+            .discountAppliesTo(quote.getDiscountAppliesTo())
             .version(quote.getVersion())
             .status(quote.getStatus())
             .safariStartDate(quote.getSafariStartDate())

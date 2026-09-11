@@ -51,6 +51,9 @@ public class UpdateQuoteDTO {
     private BigDecimal discountPercentage;
     private String discountReason;
 
+    /** Which line categories the discount comes off ("ACCOMMODATION,ACTIVITY"). Null = all. */
+    private String discountAppliesTo;
+
     private BigDecimal agentCommissionPercentage;
     private String agentCommissionReason;
     private BigDecimal marginUpliftPercentage;

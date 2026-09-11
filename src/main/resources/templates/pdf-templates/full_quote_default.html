@@ -808,6 +808,9 @@
             <td class="totals-label">
               Discount
               <span th:if="${quote.discountPercentage != null}">(<span th:text="${quote.discountPercentage}">10</span>%)</span>
+              <!-- a scoped discount does not divide into the subtotal either, so it says what it came off -->
+              <span th:if="${quote.discountAppliesTo != null}" style="font-size: 0.85em; color: #666;"
+                    th:text="'off ' + ${quote.discountAppliesToLabel}">off accommodation only</span>
               <span th:if="${quote.discountReason != null and !#strings.isEmpty(quote.discountReason)}" style="font-size: 8pt; color: #6b6b6b;">
                 - <span th:text="${quote.discountReason}">Early booking discount</span>
               </span>

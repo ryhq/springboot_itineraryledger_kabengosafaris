@@ -1175,6 +1175,9 @@
                   <td th:attr="colspan=${colspanCount}" class="summary-label">
                     Discount
                     <span th:if="${invoice.discountPercentage != null}">(<span th:text="${invoice.discountPercentage}">10</span>%)</span>
+                    <!-- a scoped discount does not divide into the subtotal, so it says what it came off -->
+                    <span th:if="${invoice.discountAppliesTo != null}" style="font-size: 0.85em; color: #666;"
+                          th:text="'off ' + ${invoice.discountAppliesToLabel}">off accommodation only</span>
                     <span th:if="${invoice.discountReason != null and !#strings.isEmpty(invoice.discountReason)}" style="font-size: 8pt; color: #6b6b6b;">
                       - <span th:text="${invoice.discountReason}">Early booking discount</span>
                     </span>

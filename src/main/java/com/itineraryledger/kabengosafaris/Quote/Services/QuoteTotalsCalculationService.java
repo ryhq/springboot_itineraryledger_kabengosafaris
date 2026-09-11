@@ -24,8 +24,8 @@ import java.util.Map;
  *
  * This service automatically recalculates:
  * - Subtotals by currency (sum of all active item prices)
- * - Taxes by currency (subtotal × taxPercentage)
- * - Discounts by currency (subtotal × discountPercentage)
+ * - Taxes by currency (the lines taxAppliesTo names × taxPercentage)
+ * - Discounts by currency (the lines discountAppliesTo names × discountPercentage)
  * - Grand totals by currency (subtotal + taxes - discounts)
  *
  * Should be called whenever:
@@ -88,9 +88,20 @@ public class QuoteTotalsCalculationService {
             quote.getTaxPercentage()
         );
 
-        // Calculate discounts by currency (if discount percentage is set)
+        /*
+         * And the discount comes off the lines it applies to, not off the whole quote.
+         *
+         * Park, crater and conservation fees are the authority's own charge, gazetted to the
+         * dollar and not ours to give away. A discount promised on the parts we sell had to be
+         * written up as an odd percentage of everything -- 10% off accommodation, transport and
+         * activities became 7.92% of the quote, worked out by hand -- and the next line added
+         * made that 7.92 quietly wrong. The scope names the lines; null means all of them.
+         */
+        Map<String, BigDecimal> discountableByCurrency = subtotalsByCurrency(
+            items, quote.getDiscountAppliesTo());
+
         Map<String, BigDecimal> discountsByCurrency = calculateDiscountsByCurrency(
-            subtotalsByCurrency,
+            discountableByCurrency,
             quote.getDiscountPercentage()
         );
 
@@ -120,6 +131,12 @@ public class QuoteTotalsCalculationService {
                 quote.getTaxPercentage(),
                 QuoteItemTypeScope.describe(quote.getTaxAppliesTo()),
                 formatTotals(taxableByCurrency));
+        }
+        if (quote.getDiscountAppliesTo() != null && quote.getDiscountPercentage() != null) {
+            log.info("  discount {}% taken off {} ({} of the subtotal)",
+                quote.getDiscountPercentage(),
+                QuoteItemTypeScope.describe(quote.getDiscountAppliesTo()),
+                formatTotals(discountableByCurrency));
         }
     }
 

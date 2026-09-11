@@ -20,6 +20,7 @@ import com.itineraryledger.kabengosafaris.Quote.DTOs.QuoteDTO;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.QuoteItemDTOs.CreateQuoteItemDTO;
 import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
+import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemTypeScope;
 import com.itineraryledger.kabengosafaris.Quote.Entity.QuoteItem;
 import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemType;
 import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteStatus;
@@ -66,7 +67,7 @@ public class QuoteVersionService {
             String idObfuscated, String versionNotes,
             LocalDate startDate, String currency, Boolean useStoRate,
             Integer validityDays, BigDecimal taxPercentage,
-            BigDecimal discountPercentage, String discountReason) {
+            BigDecimal discountPercentage, String discountReason, String discountAppliesTo) {
 
         log.info("Creating new version of quote: {}", idObfuscated);
 
@@ -117,6 +118,9 @@ public class QuoteVersionService {
             BigDecimal resolvedTax = taxPercentage != null ? taxPercentage : original.getTaxPercentage();
             BigDecimal resolvedDiscount = discountPercentage != null ? discountPercentage : original.getDiscountPercentage();
             String resolvedDiscountReason = discountReason != null ? discountReason : original.getDiscountReason();
+            String resolvedDiscountScope = discountAppliesTo != null
+                ? QuoteItemTypeScope.canonical(QuoteItemTypeScope.parse(discountAppliesTo))
+                : original.getDiscountAppliesTo();
             int resolvedValidityDays = validityDays != null ? validityDays : 30;
 
             boolean dateChanged = resolvedStartDate != null && original.getSafariStartDate() != null
@@ -155,6 +159,22 @@ public class QuoteVersionService {
                 .taxPercentage(resolvedTax)
                 .discountPercentage(resolvedDiscount)
                 .discountReason(resolvedDiscountReason)
+                /*
+                 * Everything below was being dropped, and a new version is the SAME sale repriced.
+                 * A revision reverted the tax to every line, forgot which lines the discount was
+                 * promised on, lost the margin uplift and the agent's commission, and priced one
+                 * vehicle again -- so v2 came out at a different total from v1 for reasons nobody
+                 * had asked for, on the document that supersedes the one already sent.
+                 */
+                .carCount(original.getCarCount())
+                .taxAppliesTo(original.getTaxAppliesTo())
+                .discountAppliesTo(resolvedDiscountScope)
+                .agentCommissionPercentage(original.getAgentCommissionPercentage())
+                .agentCommissionReason(original.getAgentCommissionReason())
+                .marginUpliftPercentage(original.getMarginUpliftPercentage())
+                .marginUpliftReason(original.getMarginUpliftReason())
+                .marginUpliftAppliesTo(original.getMarginUpliftAppliesTo())
+                .condenseItems(original.getCondenseItems())
                 .version(newVersionNumber)
                 .previousVersion(original)
                 .status(QuoteStatus.DRAFT)
@@ -235,6 +255,23 @@ public class QuoteVersionService {
     // ============================================================
 
     private int regenerateItemsFromCostEstimation(Quote newQuote, LocalDate startDate, Boolean useStoRate, String currency) {
+        /*
+         * This path writes the estimator's figures straight onto the new version, WITHOUT the
+         * commission and uplift multipliers that QuoteCostEstimationService applies when a quote
+         * is priced normally. So a version created with a new start date comes out at cost plus
+         * the default margin only, with the markup silently gone from the prices.
+         *
+         * Not fixed here -- it needs this service to price through QuoteCostEstimationService like
+         * every other path -- but it is no longer silent.
+         */
+        boolean hasMarkup = newQuote.getAgentCommissionPercentage() != null
+            || newQuote.getMarginUpliftPercentage() != null;
+        if (hasMarkup) {
+            log.error("Re-pricing quote {} for a new start date DROPS its markup: commission {} and "
+                + "uplift {} are not applied by this path. Check the line prices before sending it.",
+                newQuote.getQuoteCode(), newQuote.getAgentCommissionPercentage(),
+                newQuote.getMarginUpliftPercentage());
+        }
         String itineraryObfuscatedId = idObfuscator.encodeId(newQuote.getItinerary().getId());
         String quoteObfuscatedId = idObfuscator.encodeId(newQuote.getId());
 
@@ -436,6 +473,7 @@ public class QuoteVersionService {
             .taxAppliesTo(quote.getTaxAppliesTo())
             .discountPercentage(quote.getDiscountPercentage())
             .discountReason(quote.getDiscountReason())
+            .discountAppliesTo(quote.getDiscountAppliesTo())
             .version(quote.getVersion())
             .status(quote.getStatus())
             .safariStartDate(quote.getSafariStartDate())
