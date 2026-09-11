@@ -123,8 +123,21 @@ public class QuoteFromItineraryGenerationService {
         boolean condenseLineItems = Boolean.TRUE.equals(condense);
         log.info("Generating quote for itinerary: {} and customer: {}", itineraryIdObfuscated, customerIdObfuscated);
 
-        // Default useStoRate to false if not provided
-        boolean useRackRates = useStoRate != null ? useStoRate : false;
+        /*
+         * Rack unless somebody explicitly asks for cost.
+         *
+         * The variable used to be called priceAtCost while holding useStoRate, which reads as the
+         * opposite of what it is. Naming it for what it means, because a quote generated on the
+         * cost basis is priced at what we PAY, with no margin at all, and it looks like a normal
+         * quote: three were generated that way in one session before anybody noticed the total was
+         * suspiciously round.
+         */
+        boolean priceAtCost = Boolean.TRUE.equals(useStoRate);
+        if (priceAtCost) {
+            log.warn("Quote for itinerary {} is being generated on the STO basis, which is our COST. "
+                + "There is no margin in it. This is only right for an internal costing, never for "
+                + "something a customer will see.", itineraryIdObfuscated);
+        }
 
         try {
             // 1. Validate inputs and decode IDs
@@ -175,7 +188,7 @@ public class QuoteFromItineraryGenerationService {
 
             // 2. Get cost estimation from itinerary
             ResponseEntity<ApiResponse<?>> costResponse =
-                    costEstimationService.estimateCosts(itineraryIdObfuscated, startDate, useRackRates, currency);
+                    costEstimationService.estimateCosts(itineraryIdObfuscated, startDate, priceAtCost, currency);
 
             if (!costResponse.getStatusCode().is2xxSuccessful() || costResponse.getBody() == null) {
                 log.error("Failed to get cost estimation for itinerary: {}", itineraryIdObfuscated);
@@ -199,7 +212,7 @@ public class QuoteFromItineraryGenerationService {
                     costEstimation,
                     startDate,
                     validityDays != null ? validityDays : 30,
-                    useRackRates,
+                    priceAtCost,
                     taxPercentage,
                     taxAppliesTo,
                     discountPercentage,
@@ -302,6 +315,11 @@ public class QuoteFromItineraryGenerationService {
 
         // Pricing details
         dto.setIsStoRate(useStoRate);
+        /*
+         * Take the vehicle count now rather than reading it back through the itinerary at pricing
+         * time. Editing the itinerary later must not reprice a quote somebody has already been sent.
+         */
+        dto.setCarCount(itinerary.getCarCount());
         dto.setTaxPercentage(taxPercentage); // Can be null
         /*
          * Canonicalised on the way in, so "accommodation" and "ACCOMMODATION , ACTIVITY" store the

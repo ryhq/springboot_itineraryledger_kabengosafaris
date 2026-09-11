@@ -107,8 +107,16 @@ public class QuoteCostEstimationService {
         FullItineraryDTO synthetic = buildSyntheticDTO(quote);
 
         // 2. Delegate to the existing pricing engine
+        /*
+         * A quote with no recorded basis is priced at RACK, not cost.
+         *
+         * The engine reads a null basis as STO, which is our cost. Quotes written before the flag
+         * existed carry null, so recalculating one silently repriced a customer's quote down to
+         * what we pay. Generation has always defaulted to rack; recalculation now agrees with it.
+         */
+        boolean priceAtCost = Boolean.TRUE.equals(quote.getIsStoRate());
         ResponseEntity<ApiResponse<?>> resp = itineraryCostEstimationService.estimateCostsFromDTO(
-                synthetic, quote.getSafariStartDate(), quote.getIsStoRate(), null);
+                synthetic, quote.getSafariStartDate(), priceAtCost, null);
         if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) {
             log.warn("recalculate: cost estimation failed for quote {}", quote.getQuoteCode());
             return 0;
@@ -221,8 +229,18 @@ public class QuoteCostEstimationService {
             dto.setId(idObfuscator.encodeId(quote.getItinerary().getId()));
             dto.setCode(quote.getItinerary().getCode());
             dto.setName(quote.getItinerary().getName());
-            dto.setCarCount(quote.getItinerary().getCarCount());
         }
+        /*
+         * The quote's own vehicle count, not the itinerary's.
+         *
+         * Reading it through the itinerary meant a later edit there silently repriced this quote,
+         * and a quote without an itinerary fell back to one vehicle and under-charged every
+         * per-vehicle fee. Quotes written before the column exists fall back to the itinerary once,
+         * which is the best that can be said for them.
+         */
+        dto.setCarCount(quote.getCarCount() != null
+                ? quote.getCarCount()
+                : (quote.getItinerary() != null ? quote.getItinerary().getCarCount() : null));
         int totalDays = quote.getDays() != null ? quote.getDays().size() : 0;
         dto.setTotalDays(totalDays);
         dto.setTotalNights(Math.max(0, totalDays - 1));
@@ -463,16 +481,36 @@ public class QuoteCostEstimationService {
         int written = 0;
         for (CostLineItem li : lineItems) {
             if (li.getCurrency() == null) continue;
-            BigDecimal baseUnit = li.getUnitPrice() != null ? li.getUnitPrice() : BigDecimal.ZERO;
-            BigDecimal inflatedUnit = baseUnit.multiply(multiplier)
-                    .setScale(2, java.math.RoundingMode.HALF_UP);
             int qty = li.getQuantity() != null ? li.getQuantity() : 1;
+
+            /*
+             * Round the TOTAL once, then derive the unit for display.
+             *
+             * This used to round the unit price and multiply, which pushed the rounding error
+             * through the quantity: a half-cent on the unit became half a cent times five people
+             * on the line. The condensed writer below has always rounded the total once, so the
+             * same quote totalled differently depending only on whether it was condensed, and a
+             * metadata save and a pricing save could land four cents apart on one quote.
+             *
+             * It also used to reconstruct the total from the unit price, which for park fees is a
+             * blended average across pax categories the estimator computed for display only. The
+             * estimator's own total is the exact figure, so that is what gets inflated.
+             */
+            BigDecimal baseTotal = li.getTotalPrice() != null
+                    ? li.getTotalPrice()
+                    : (li.getUnitPrice() != null ? li.getUnitPrice() : BigDecimal.ZERO)
+                        .multiply(BigDecimal.valueOf(qty));
+            BigDecimal inflatedTotal = baseTotal.multiply(multiplier)
+                    .setScale(2, java.math.RoundingMode.HALF_UP);
+            BigDecimal inflatedUnit = qty > 0
+                    ? inflatedTotal.divide(BigDecimal.valueOf(qty), 2, java.math.RoundingMode.HALF_UP)
+                    : inflatedTotal;
 
             Price p = new Price();
             p.setCurrency(li.getCurrency());
             p.setQuantity(qty);
             p.setUnitPrice(inflatedUnit);
-            p.setTotalPrice(inflatedUnit.multiply(BigDecimal.valueOf(qty)));
+            p.setTotalPrice(inflatedTotal);
             if (Boolean.FALSE.equals(li.getRateFound())) {
                 p.setBreakdown("Rate not found — estimated");
             }

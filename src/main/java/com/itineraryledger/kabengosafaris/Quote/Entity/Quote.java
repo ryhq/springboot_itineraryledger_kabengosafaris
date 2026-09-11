@@ -192,6 +192,21 @@ public class Quote {
     /**
      * Tax percentage applied (if applicable)
      */
+    /**
+     * How many vehicles this trip was priced for, snapshotted at generation.
+     *
+     * <p>The quote used to read this through its source itinerary at pricing time, which is wrong
+     * twice over: an itinerary whose vehicle count is edited afterwards silently reprices every
+     * quote built from it, and a quote with no itinerary fell back to ONE vehicle. Every
+     * per-vehicle charge -- the crater service most of all -- then priced a single car for a party
+     * that needs two, which is a flat, whole-number error nobody would spot in a subtotal.
+     *
+     * <p>A quote already snapshots its days and its pax for exactly this reason. This belongs with
+     * them.
+     */
+    @Column(name = "car_count")
+    private Integer carCount;
+
     @Column(precision = 5, scale = 2)
     private BigDecimal taxPercentage;
 

@@ -147,8 +147,16 @@ public class QuoteTotalsCalculationService {
             if (Boolean.TRUE.equals(item.getIsActive()) && item.getPrices() != null) {
                 for (Price price : item.getPrices()) {
                     String currency = price.getCurrency();
+                    /*
+                     * Normalised to cents as it is merged.
+                     *
+                     * The sum used to carry whatever scale the item prices happened to have, so the
+                     * persisted subtotal depended on how the items had been written. Re-summing the
+                     * same stored items after a metadata save could produce a figure four cents from
+                     * the one a pricing save produced, on a quote nobody had touched.
+                     */
                     BigDecimal totalPrice = price.getTotalPrice() != null
-                        ? price.getTotalPrice()
+                        ? price.getTotalPrice().setScale(2, RoundingMode.HALF_UP)
                         : BigDecimal.ZERO;
 
                     subtotals.merge(currency, totalPrice, BigDecimal::add);

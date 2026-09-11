@@ -32,6 +32,9 @@ public class CreateQuoteDTO {
 
     private LocalDate safariStartDate;
     private Boolean isStoRate;
+    /** Vehicles this trip is priced for. Snapshotted, so a later itinerary edit cannot reprice it. */
+    private Integer carCount;
+
     private BigDecimal taxPercentage;
 
     /** Which line categories the tax applies to ("ACCOMMODATION" / "ACCOMMODATION,ACTIVITY"). Null = all. */

@@ -153,6 +153,7 @@ public class QuoteCreateService {
                 .grandTotals(new ArrayList<>())
                 .safariStartDate(createDTO.getSafariStartDate())
                 .isStoRate(createDTO.getIsStoRate() != null ? createDTO.getIsStoRate() : true)
+                .carCount(createDTO.getCarCount())
                 .taxPercentage(createDTO.getTaxPercentage())
                 .taxAppliesTo(LineCategoryScope.canonicalOf(
                     createDTO.getTaxAppliesTo(), QuoteItemType.class))
