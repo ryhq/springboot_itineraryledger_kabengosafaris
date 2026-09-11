@@ -87,6 +87,8 @@ public class HeroImageController {
     public ResponseEntity<?> getAllImages(
             @RequestParam(value = "heroId", required = false) String heroId,
             @RequestParam(value = "heroTitle", required = false) String heroTitle,
+            /* the house free-text parameter: the panel's search box sends this */
+            @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "heroPage", required = false) HeroPage heroPage,
             @RequestParam(value = "isPrimary", required = false) Boolean isPrimary,
             @RequestParam(value = "isActive", required = false) Boolean isActive,
@@ -99,6 +101,7 @@ public class HeroImageController {
         return getService.getAllImages(
             heroId,
             heroTitle,
+            keyword,
             heroPage,
             isPrimary,
             isActive,
@@ -121,6 +124,7 @@ public class HeroImageController {
         /* the list's filters travel with the record so its arrows stay in that set */
         @RequestParam(value = "heroId", required = false) String heroId,
         @RequestParam(value = "heroTitle", required = false) String heroTitle,
+        @RequestParam(value = "keyword", required = false) String keyword,
         @RequestParam(value = "heroPage", required = false) HeroPage heroPage,
         @RequestParam(value = "isPrimary", required = false) Boolean isPrimary,
         @RequestParam(value = "isActive", required = false) Boolean isActive,
@@ -128,7 +132,7 @@ public class HeroImageController {
         @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/hero-images/{} - Fetching image by ID", id);
-        return getService.getImageById(id, scopeParentId, heroId, heroTitle, heroPage, isPrimary, isActive, sortBy, sortDirection);
+        return getService.getImageById(id, scopeParentId, heroId, heroTitle, keyword, heroPage, isPrimary, isActive, sortBy, sortDirection);
     }
 
     /**

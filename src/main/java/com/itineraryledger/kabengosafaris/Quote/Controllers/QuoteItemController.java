@@ -92,6 +92,8 @@ public class QuoteItemController {
         @RequestParam(required = false) String description,
         @RequestParam(required = false) Boolean isActive,
         @RequestParam(required = false) String itemTypeGroup,
+        /* the house free-text parameter: the panel's search box sends this */
+        @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
@@ -105,6 +107,7 @@ public class QuoteItemController {
             description,
             isActive,
             itemTypeGroup,
+            keyword,
             page,
             size,
             sortBy,
@@ -123,11 +126,12 @@ public class QuoteItemController {
         @RequestParam(required = false) String description,
         @RequestParam(required = false) Boolean isActive,
         @RequestParam(required = false) String itemTypeGroup,
+        @RequestParam(required = false) String keyword,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/quotes/{}/items/{} - Fetching item", quoteId, itemId);
-        return getService.getQuoteItemById(itemId, quoteId, itemType, itemName, description, isActive, itemTypeGroup, sortBy, sortDirection);
+        return getService.getQuoteItemById(itemId, quoteId, itemType, itemName, description, isActive, itemTypeGroup, keyword, sortBy, sortDirection);
     }
 
     @PostMapping("/reorder")

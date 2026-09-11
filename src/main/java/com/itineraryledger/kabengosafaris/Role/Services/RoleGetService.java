@@ -79,6 +79,7 @@ public class RoleGetService {
         int size,
         String name,
         String displayName,
+        String keyword,
         Boolean active,
         Boolean isSystemRole,
         String sortBy,
@@ -129,6 +130,11 @@ public class RoleGetService {
 
         if (displayName != null && !displayName.isBlank()) {
             specification = specification.and(RoleSpecification.displayNameLike(displayName));
+        }
+
+        /* the house free-text parameter, which this listing had no way to honour */
+        if (keyword != null && !keyword.isBlank()) {
+            specification = specification.and(RoleSpecification.searchKeyword(keyword));
         }
 
         if (active != null) {

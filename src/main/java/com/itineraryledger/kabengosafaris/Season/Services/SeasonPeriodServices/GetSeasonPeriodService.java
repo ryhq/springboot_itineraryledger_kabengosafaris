@@ -76,7 +76,7 @@ public class GetSeasonPeriodService {
      * @return ResponseEntity with ApiResponse containing the season period
      */
     public ResponseEntity<ApiResponse<?>> getSeasonPeriodById(String idObfuscated) {
-        return getSeasonPeriodById(idObfuscated, null, null, null, null, null, null, null, null);
+        return getSeasonPeriodById(idObfuscated, null, null, null, null, null, null, null, null, null);
     }
 
     /**
@@ -93,6 +93,7 @@ public class GetSeasonPeriodService {
         Integer year,
         Boolean isRecurring,
         String notes,
+        String keyword,
         String sortBy,
         String sortDirection
     ) {
@@ -143,7 +144,7 @@ public class GetSeasonPeriodService {
                 }
             }
             Specification<SeasonPeriod> navSpec = buildSpec(
-                decodedSeasonId, isActive, isSystem, year, isRecurring, null, null, notes
+                decodedSeasonId, isActive, isSystem, year, isRecurring, null, null, notes, keyword
             );
             String navSortBy = validateSortField(sortBy);
             if (navSortBy == null) navSortBy = DEFAULT_SORT_FIELD;
@@ -206,6 +207,7 @@ public class GetSeasonPeriodService {
         MonthDay startDate,
         MonthDay endDate,
         String notes,
+        String keyword,
         Boolean includeStats,
         Integer page,
         Integer size,
@@ -235,7 +237,7 @@ public class GetSeasonPeriodService {
                 }
             }
             Specification<SeasonPeriod> spec = buildSpec(
-                decodedSeasonId, isActive, isSystem, year, isRecurring, startDate, endDate, notes
+                decodedSeasonId, isActive, isSystem, year, isRecurring, startDate, endDate, notes, keyword
             );
 
             // Set default pagination values
@@ -328,7 +330,8 @@ public class GetSeasonPeriodService {
         Boolean isRecurring,
         MonthDay startDate,
         MonthDay endDate,
-        String notes
+        String notes,
+        String keyword
     ) {
         Specification<SeasonPeriod> spec = Specification.unrestricted();
         if (seasonId != null) spec = spec.and(SeasonPeriodSpecification.hasSeasonId(seasonId));
@@ -343,6 +346,7 @@ public class GetSeasonPeriodService {
         if (startDate != null) spec = spec.and(SeasonPeriodSpecification.hasStartDate(startDate));
         if (endDate != null) spec = spec.and(SeasonPeriodSpecification.hasEndDate(endDate));
         if (notes != null && !notes.isBlank()) spec = spec.and(SeasonPeriodSpecification.notesLike(notes));
+        if (keyword != null && !keyword.isBlank()) spec = spec.and(SeasonPeriodSpecification.matchesKeyword(keyword));
         return spec;
     }
 

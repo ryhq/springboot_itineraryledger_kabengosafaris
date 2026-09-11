@@ -73,7 +73,7 @@ public class EmailAccountSignatureGetService {
      * @return ResponseEntity with paginated signatures
      */
     public ResponseEntity<ApiResponse<?>> getAllSignatures(String emailAccountIdObfuscated, Boolean enabled,
-            Boolean isDefault, int page, int size, String sortBy, String sortDirection) {
+            Boolean isDefault, String keyword, int page, int size, String sortBy, String sortDirection) {
         log.debug("Fetching signatures for email account: {} with filters - enabled: {}, isDefault: {}, page: {}, size: {}, sortDirection: {}",
                 emailAccountIdObfuscated, enabled, isDefault, page, size, sortDirection);
 
@@ -115,7 +115,7 @@ public class EmailAccountSignatureGetService {
             Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
-            Specification<EmailAccountSignature> specification = buildSpec(emailAccountId, enabled, isDefault);
+            Specification<EmailAccountSignature> specification = buildSpec(emailAccountId, enabled, isDefault, keyword);
 
             // Fetch signatures with specification and pagination
             Page<EmailAccountSignature> signaturesPage = emailAccountSignatureRepository.findAll(specification, pageable);
@@ -157,6 +157,7 @@ public class EmailAccountSignatureGetService {
             /* the list's filters travel with the record so its arrows stay in that set */
             Boolean enabled,
             Boolean isDefault,
+            String keyword,
             String sortBy,
             String sortDirection) {
         log.debug("Fetching signature: {}", signatureIdObfuscated);
@@ -183,7 +184,7 @@ public class EmailAccountSignatureGetService {
             String validatedSortBy = validateSortField(sortBy);
             Map<String, Object> nav = recordNavigation.navigate(
                 EmailAccountSignature.class,
-                buildSpec(emailAccountId, enabled, isDefault),
+                buildSpec(emailAccountId, enabled, isDefault, keyword),
                 validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
                 "asc".equalsIgnoreCase(sortDirection),
                 signatureId
@@ -543,7 +544,7 @@ public class EmailAccountSignatureGetService {
     /**
      * The ONE description of the filtered set, shared by the rows and by the record arrows.
      */
-    private Specification<EmailAccountSignature> buildSpec(Long emailAccountId, Boolean enabled, Boolean isDefault) {
+    private Specification<EmailAccountSignature> buildSpec(Long emailAccountId, Boolean enabled, Boolean isDefault, String keyword) {
         Specification<EmailAccountSignature> specification = Specification.unrestricted();
 
         specification = specification.and(EmailAccountSignatureSpecification.emailAccountId(emailAccountId));
@@ -554,6 +555,10 @@ public class EmailAccountSignatureGetService {
 
         if (isDefault != null) {
             specification = specification.and(EmailAccountSignatureSpecification.isDefault(isDefault));
+        }
+
+        if (keyword != null && !keyword.isBlank()) {
+            specification = specification.and(EmailAccountSignatureSpecification.matchesKeyword(keyword));
         }
 
         return specification;

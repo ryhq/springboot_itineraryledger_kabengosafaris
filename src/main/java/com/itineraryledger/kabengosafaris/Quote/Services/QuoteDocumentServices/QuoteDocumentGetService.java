@@ -63,6 +63,7 @@ public class QuoteDocumentGetService {
             String version,
             Boolean currentlyValid,
             String quoteCode,
+            String keyword,
             String sortBy,
             String sortDirection,
             int page,
@@ -99,7 +100,7 @@ public class QuoteDocumentGetService {
 
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
-            Specification<QuoteDocument> spec = buildSpec(quoteId, documentType, isActive, isGenerated, title, version, currentlyValid, quoteCode);
+            Specification<QuoteDocument> spec = buildSpec(quoteId, documentType, isActive, isGenerated, title, version, currentlyValid, quoteCode, keyword);
 
             Page<QuoteDocument> documentPage = quoteDocumentRepository.findAll(spec, pageable);
             Page<QuoteDocumentDTO> dtoPage = documentPage.map(this::toDTO);
@@ -138,6 +139,7 @@ public class QuoteDocumentGetService {
         String version,
         Boolean currentlyValid,
         String quoteCode,
+        String keyword,
         String sortBy,
         String sortDirection
     ) {
@@ -171,7 +173,7 @@ public class QuoteDocumentGetService {
             String validatedSortBy = validateSortField(sortBy);
             java.util.Map<String, Object> nav = recordNavigation.navigate(
                 QuoteDocument.class,
-                buildSpec(quoteId, documentType, isActive, isGenerated, title, version, currentlyValid, quoteCode),
+                buildSpec(quoteId, documentType, isActive, isGenerated, title, version, currentlyValid, quoteCode, keyword),
                 validatedSortBy != null ? validatedSortBy : "createdAt",
                 "asc".equalsIgnoreCase(sortDirection),
                 id
@@ -299,7 +301,8 @@ public class QuoteDocumentGetService {
         String title,
         String version,
         Boolean currentlyValid,
-        String quoteCode
+        String quoteCode,
+        String keyword
     ) {
         /* the parent arrives obfuscated; an unreadable one simply means "not scoped" */
         Long decodedQuoteId = null;
@@ -317,7 +320,8 @@ public class QuoteDocumentGetService {
                 .and(QuoteDocumentSpecification.byIsGenerated(isGenerated))
                 .and(QuoteDocumentSpecification.byTitleContains(title))
                 .and(QuoteDocumentSpecification.byVersion(version))
-                .and(QuoteDocumentSpecification.byQuoteCode(quoteCode));
+                .and(QuoteDocumentSpecification.byQuoteCode(quoteCode))
+                .and(QuoteDocumentSpecification.matchesKeyword(keyword));
 
             if (Boolean.TRUE.equals(currentlyValid)) {
                 spec = spec.and(QuoteDocumentSpecification.byCurrentlyValid(LocalDateTime.now()));

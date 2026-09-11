@@ -57,6 +57,8 @@ public class InvoiceLineItemController {
         @RequestParam(required = false) String itemName,
         @RequestParam(required = false) String description,
         @RequestParam(required = false) Boolean isActive,
+        /* the house free-text parameter: the panel's search box sends this */
+        @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
         @RequestParam(required = false) String sortBy,
@@ -64,7 +66,7 @@ public class InvoiceLineItemController {
     ) {
         log.info("GET /api/invoices/{}/line-items - Fetching all invoice line items", invoiceId);
         return invoiceLineItemGetService.getAllInvoiceLineItems(
-            invoiceId, itemName, description, isActive, page, size, sortBy, sortDirection
+            invoiceId, itemName, description, isActive, keyword, page, size, sortBy, sortDirection
         );
     }
 
@@ -77,11 +79,13 @@ public class InvoiceLineItemController {
         @RequestParam(required = false) String itemName,
         @RequestParam(required = false) String description,
         @RequestParam(required = false) Boolean isActive,
+        /* the house free-text parameter: the panel's search box sends this */
+        @RequestParam(required = false) String keyword,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/invoices/{}/line-items/{} - Fetching invoice line item by ID", invoiceId, itemId);
-        return invoiceLineItemGetService.getInvoiceLineItemById(invoiceId, itemId, itemName, description, isActive, sortBy, sortDirection);
+        return invoiceLineItemGetService.getInvoiceLineItemById(invoiceId, itemId, itemName, description, isActive, keyword, sortBy, sortDirection);
     }
 
     @PutMapping("/{itemId}")

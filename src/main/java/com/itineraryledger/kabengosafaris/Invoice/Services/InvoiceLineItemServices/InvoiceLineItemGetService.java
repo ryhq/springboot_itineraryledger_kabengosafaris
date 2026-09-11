@@ -48,6 +48,7 @@ public class InvoiceLineItemGetService {
         String itemName,
         String description,
         Boolean isActive,
+        String keyword,
         String sortBy,
         String sortDirection
     ) {
@@ -81,7 +82,7 @@ public class InvoiceLineItemGetService {
             String validatedSortBy = validateSortField(sortBy);
             java.util.Map<String, Object> nav = recordNavigation.navigate(
                 InvoiceLineItem.class,
-                buildSpec(invoiceId, itemName, description, isActive),
+                buildSpec(invoiceId, itemName, description, isActive, keyword),
                 validatedSortBy != null ? validatedSortBy : "displayOrder",
                 "asc".equalsIgnoreCase(sortDirection),
                 id
@@ -113,6 +114,7 @@ public class InvoiceLineItemGetService {
         String itemName,
         String description,
         Boolean isActive,
+        String keyword,
         Integer page,
         Integer size,
         String sortBy,
@@ -131,7 +133,7 @@ public class InvoiceLineItemGetService {
                 );
             }
 
-            Specification<InvoiceLineItem> spec = buildSpec(invoiceId, itemName, description, isActive);
+            Specification<InvoiceLineItem> spec = buildSpec(invoiceId, itemName, description, isActive, keyword);
 
             int pageNumber = (page != null && page >= 0) ? page : 0;
             int pageSize = (size != null && size > 0) ? size : 10;
@@ -212,7 +214,8 @@ public class InvoiceLineItemGetService {
         String invoiceId,
         String itemName,
         String description,
-        Boolean isActive
+        Boolean isActive,
+        String keyword
     ) {
         Long decodedInvoiceId = null;
         if (invoiceId != null && !invoiceId.isBlank()) {
@@ -233,6 +236,9 @@ public class InvoiceLineItemGetService {
             }
             if (isActive != null) {
                 spec = spec.and(InvoiceLineItemSpecification.byIsActive(isActive));
+            }
+            if (keyword != null && !keyword.isEmpty()) {
+                spec = spec.and(InvoiceLineItemSpecification.matchesKeyword(keyword));
             }
 
         return spec;

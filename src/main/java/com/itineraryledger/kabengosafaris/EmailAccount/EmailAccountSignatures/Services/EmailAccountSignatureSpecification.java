@@ -38,4 +38,25 @@ public class EmailAccountSignatureSpecification {
     public static Specification<EmailAccountSignature> nameLike(String name) {
         return (root, query, cb) -> cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%");
     }
+
+    /**
+     * The free-text search, over what the signatures listing shows.
+     *
+     * <p>The page has a search box and this module had no keyword parameter, so the box sent one
+     * nothing read and every signature came back.
+     */
+    public static Specification<EmailAccountSignature> matchesKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                return cb.conjunction();
+            }
+            String like = "%" + keyword.trim().toLowerCase() + "%";
+            return cb.or(
+                cb.like(cb.lower(cb.coalesce(root.get("name"), "")), like),
+                cb.like(cb.lower(cb.coalesce(root.get("description"), "")), like),
+                cb.like(cb.lower(cb.coalesce(root.get("fileName"), "")), like)
+            );
+        };
+    }
+
 }

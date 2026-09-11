@@ -51,8 +51,14 @@ public class EmailContactController {
             @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection,
             @RequestParam(value = "isStarred", required = false) Boolean isStarred,
             @RequestParam(value = "source", required = false) String source,
-            @RequestParam(value = "search", required = false) String search) {
-        return emailContactGetService.getContacts(accountId, page, size, sortBy, sortDirection, isStarred, source, search);
+            @RequestParam(value = "search", required = false) String search,
+            /*
+             * `keyword` is the house name for free text and what the panel sends; `search`
+             * predates it here and still works. Whichever arrives is the same search.
+             */
+            @RequestParam(value = "keyword", required = false) String keyword) {
+        return emailContactGetService.getContacts(accountId, page, size, sortBy, sortDirection, isStarred, source,
+                keyword != null && !keyword.isBlank() ? keyword : search);
     }
 
     /**
@@ -67,10 +73,12 @@ public class EmailContactController {
         @RequestParam(value = "isStarred", required = false) Boolean isStarred,
         @RequestParam(value = "source", required = false) String source,
         @RequestParam(value = "search", required = false) String search,
+        @RequestParam(value = "keyword", required = false) String keyword,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false) String sortDirection
     ) {
-        return emailContactGetService.getContact(accountId, contactId, isStarred, source, search, sortBy, sortDirection);
+        return emailContactGetService.getContact(accountId, contactId, isStarred, source,
+                keyword != null && !keyword.isBlank() ? keyword : search, sortBy, sortDirection);
     }
 
     /**

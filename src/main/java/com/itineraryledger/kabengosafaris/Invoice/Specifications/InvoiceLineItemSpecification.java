@@ -58,4 +58,24 @@ public class InvoiceLineItemSpecification {
             );
         };
     }
+
+    /**
+     * The free-text search, over what the line items listing shows.
+     *
+     * <p>The tab has a search box and this module had no keyword parameter, so the box sent one
+     * nothing read and every line came back.
+     */
+    public static Specification<InvoiceLineItem> matchesKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                return cb.conjunction();
+            }
+            String like = "%" + keyword.trim().toLowerCase() + "%";
+            return cb.or(
+                cb.like(cb.lower(cb.coalesce(root.get("itemName"), "")), like),
+                cb.like(cb.lower(cb.coalesce(root.get("description"), "")), like)
+            );
+        };
+    }
+
 }

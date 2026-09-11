@@ -64,6 +64,7 @@ public class QuoteItemGetService {
         String description,
         Boolean isActive,
         String itemTypeGroup,
+        String keyword,
         String sortBy,
         String sortDirection
     ) {
@@ -100,7 +101,7 @@ public class QuoteItemGetService {
             String validatedSortBy = validateSortField(sortBy);
             java.util.Map<String, Object> nav = recordNavigation.navigate(
                 QuoteItem.class,
-                buildSpec(quoteId, itemType, itemName, description, isActive, itemTypeGroup),
+                buildSpec(quoteId, itemType, itemName, description, isActive, itemTypeGroup, keyword),
                 validatedSortBy != null ? validatedSortBy : "displayOrder",
                 "asc".equalsIgnoreCase(sortDirection),
                 id
@@ -149,6 +150,7 @@ public class QuoteItemGetService {
         String description,
         Boolean isActive,
         String itemTypeGroup,
+        String keyword,
         Integer page,
         Integer size,
         String sortBy,
@@ -169,7 +171,7 @@ public class QuoteItemGetService {
             }
 
             // Build specification for filtering
-            Specification<QuoteItem> spec = buildSpec(quoteId, itemType, itemName, description, isActive, itemTypeGroup);
+            Specification<QuoteItem> spec = buildSpec(quoteId, itemType, itemName, description, isActive, itemTypeGroup, keyword);
 
             // Set default pagination values
             int pageNumber = (page != null && page >= 0) ? page : 0;
@@ -394,7 +396,8 @@ public class QuoteItemGetService {
         String itemName,
         String description,
         Boolean isActive,
-        String itemTypeGroup
+        String itemTypeGroup,
+        String keyword
     ) {
         Long decodedQuoteId = null;
         if (quoteId != null && !quoteId.isBlank()) {
@@ -419,6 +422,9 @@ public class QuoteItemGetService {
             }
             if (isActive != null) {
                 spec = spec.and(QuoteItemSpecification.byIsActive(isActive));
+            }
+            if (keyword != null && !keyword.isEmpty()) {
+                spec = spec.and(QuoteItemSpecification.matchesKeyword(keyword));
             }
             if (itemTypeGroup != null && !itemTypeGroup.isEmpty()) {
                 spec = spec.and(QuoteItemSpecification.byItemTypeGroup(itemTypeGroup));

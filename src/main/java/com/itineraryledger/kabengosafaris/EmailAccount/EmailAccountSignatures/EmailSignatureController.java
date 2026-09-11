@@ -119,11 +119,13 @@ public class EmailSignatureController {
             @PathVariable String emailAccountId,
             @RequestParam(required = false) Boolean enabled,
             @RequestParam(required = false) Boolean isDefault,
+            /* the house free-text parameter: the panel's search box sends this */
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false, defaultValue = "desc") String sortDirection) {
-        return emailAccountSignatureGetService.getAllSignatures(emailAccountId, enabled, isDefault, page, size, sortBy, sortDirection);
+        return emailAccountSignatureGetService.getAllSignatures(emailAccountId, enabled, isDefault, keyword, page, size, sortBy, sortDirection);
     }
 
     /**
@@ -160,10 +162,11 @@ public class EmailSignatureController {
             /* the list's filters travel with the record so its arrows stay in that set */
             @RequestParam(required = false) Boolean enabled,
             @RequestParam(required = false) Boolean isDefault,
+            @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortDirection) {
         return emailAccountSignatureGetService.getSignature(
-            emailAccountId, signatureId, enabled, isDefault, sortBy, sortDirection);
+            emailAccountId, signatureId, enabled, isDefault, keyword, sortBy, sortDirection);
     }
 
     /**

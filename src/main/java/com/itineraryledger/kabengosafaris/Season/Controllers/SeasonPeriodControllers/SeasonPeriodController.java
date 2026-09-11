@@ -94,12 +94,13 @@ public class SeasonPeriodController {
         @RequestParam(required = false) Integer year,
         @RequestParam(required = false) Boolean isRecurring,
         @RequestParam(required = false) String notes,
+        @RequestParam(required = false) String keyword,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false) String sortDirection
     ) {
         log.info("GET /api/season-periods/{} - Fetching season period by ID", id);
         return getSeasonPeriodService.getSeasonPeriodById(
-            id, seasonId, isActive, isSystem, year, isRecurring, notes, sortBy, sortDirection
+            id, seasonId, isActive, isSystem, year, isRecurring, notes, keyword, sortBy, sortDirection
         );
     }
 
@@ -126,6 +127,8 @@ public class SeasonPeriodController {
         @RequestParam(required = false) Integer year,
         @RequestParam(required = false) Boolean isRecurring,
         @RequestParam(required = false) String notes,
+        /* the house free-text parameter: the panel's search box sends this */
+        @RequestParam(required = false) String keyword,
         @RequestParam(required = false) Boolean includeStats,
         @RequestParam(required = false, defaultValue = "0") Integer page,
         @RequestParam(required = false, defaultValue = "10") Integer size,
@@ -142,6 +145,7 @@ public class SeasonPeriodController {
             null, // startDate - not commonly filtered by users
             null, // endDate - not commonly filtered by users
             notes,
+            keyword,
             includeStats,
             page,
             size,

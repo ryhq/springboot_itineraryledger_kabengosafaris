@@ -133,4 +133,27 @@ public class QuoteDocumentSpecification {
             ? cb.conjunction()
             : cb.equal(root.get("quote").get("customer").get("id"), customerId);
     }
+
+    /**
+     * The free-text search, over what the documents listing shows.
+     *
+     * <p>The page has a search box and this module had no keyword parameter, so the box sent one
+     * that nothing read and every document came back. A filter that does nothing reads as a wrong
+     * answer, not as a missing feature.
+     */
+    public static Specification<QuoteDocument> matchesKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                return cb.conjunction();
+            }
+            String like = "%" + keyword.trim().toLowerCase() + "%";
+            return cb.or(
+                cb.like(cb.lower(cb.coalesce(root.get("title"), "")), like),
+                cb.like(cb.lower(cb.coalesce(root.get("description"), "")), like),
+                cb.like(cb.lower(cb.coalesce(root.get("fileName"), "")), like),
+                cb.like(cb.lower(cb.coalesce(root.get("originalFileName"), "")), like)
+            );
+        };
+    }
+
 }

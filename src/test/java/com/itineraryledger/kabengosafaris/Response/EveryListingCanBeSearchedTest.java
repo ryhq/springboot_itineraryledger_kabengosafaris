@@ -41,21 +41,13 @@ class EveryListingCanBeSearchedTest {
     private static final Path JAVA = Paths.get("src/main/java");
 
     /**
-     * Paged listings that still ignore the search box.
+     * Paged listings that still ignore a keyword.
      *
-     * <p>The public ones serve the website, which has no search box of its own; the rest are panel
-     * pages and tabs where typing currently does nothing. Fix one, delete its line.
+     * <p>All of them serve the public website, which has no search box of its own -- it asks for a
+     * park's images or a page of blog posts, never for a phrase. The panel's listings were worked
+     * through and are gone from this list; if the website ever grows a search, these come with it.
      */
     private static final Set<String> WITHOUT_SEARCH_TODAY = new TreeSet<>(Set.of(
-        "CustomerDocumentController (root)",
-        "CustomerDocumentController (\"/customer/{customerId}\")",
-        "EmailSignatureController (root)",
-        "EmailContactController (root)",
-        "EmailMessageController (root)",
-        "EmailTemplateController (root)",
-        "HeroImageController (root)",
-        "InvoiceLineItemController (root)",
-        "PdfDocumentController (root)",
         "PublicController (\"/parks/{identifier}/images\")",
         "PublicController (\"/parks/{identifier}/activities\")",
         "PublicController (\"/parks/{identifier}/safaris\")",
@@ -66,13 +58,7 @@ class EveryListingCanBeSearchedTest {
         "PublicController (\"/accommodations/{identifier}/safaris\")",
         "PublicController (\"/gallery\")",
         "PublicController (\"/testimonies\")",
-        "PublicController (\"/blogs\")",
-        "QuoteDocumentController (root)",
-        "QuoteItemController (root)",
-        "RoleController (\"/{roleId}/users\")",
-        "SafariDocumentController (root)",
-        "SeasonPeriodController (root)",
-        "UserController (\"/roles\")"
+        "PublicController (\"/blogs\")"
     ));
 
     /** A paged GET: it takes both page and size, so a person can be looking through a list. */
@@ -80,9 +66,13 @@ class EveryListingCanBeSearchedTest {
         "@GetMapping([^\n]*)\n((?:\\s*@[A-Za-z][^\n]*\n)*)\\s*public\\s+[^(]*\\((.*?)\\)\\s*\\{",
         Pattern.DOTALL);
 
-    /** `@ModelAttribute QuoteFilter filter` carries its own params, qualified name or not. */
+    /**
+     * `@ModelAttribute QuoteFilter filter` carries its own params, and the annotation is spelled
+     * fully qualified in places -- which is how this first read PDF documents and season periods
+     * as broken when they were not.
+     */
     private static final Pattern FILTER_OBJECT = Pattern.compile(
-        "@ModelAttribute\\s+([\\w.]+)\\s+\\w+");
+        "@(?:[\\w.]+\\.)?ModelAttribute\\s+([\\w.]+)\\s+\\w+");
 
     @Test
     @DisplayName("no new paged listing ships with a search box the API ignores")

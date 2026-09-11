@@ -79,6 +79,8 @@ public class UserController {
         @RequestParam(defaultValue = "10") int size,
         @RequestParam(required = false) String name,
         @RequestParam(required = false) String displayName,
+        /* the house free-text parameter: the panel's search box sends this */
+        @RequestParam(required = false) String keyword,
         @RequestParam(required = false) Boolean active,
         @RequestParam(required = false) Boolean isSystemRole,
         @RequestParam(required = false) String sortBy,
@@ -97,6 +99,7 @@ public class UserController {
             size,
             name,
             displayName,
+            keyword,
             active,
             isSystemRole,
             sortBy,

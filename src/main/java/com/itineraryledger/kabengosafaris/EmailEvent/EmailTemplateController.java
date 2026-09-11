@@ -117,11 +117,13 @@ public class EmailTemplateController {
             @RequestParam(required = false) Boolean isDefault,
             @RequestParam(required = false) Boolean isSystemDefault,
             @RequestParam(required = false) String name,
+            /* the house free-text parameter: the panel's search box sends this */
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String sortBy,
             @RequestParam(defaultValue = "desc") String sortDirection) {
-        return emailTemplateGetService.getAllTemplates(eventId, enabled, isDefault, isSystemDefault, name, page, size, sortBy, sortDirection);
+        return emailTemplateGetService.getAllTemplates(eventId, enabled, isDefault, isSystemDefault, name, keyword, page, size, sortBy, sortDirection);
     }
 
     /**
@@ -144,11 +146,12 @@ public class EmailTemplateController {
             @RequestParam(required = false) Boolean isDefault,
             @RequestParam(required = false) Boolean isSystemDefault,
             @RequestParam(required = false) String name,
+            @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortDirection
     ) {
         return emailTemplateGetService.getTemplate(
-            eventId, templateId, enabled, isDefault, isSystemDefault, name, sortBy, sortDirection);
+            eventId, templateId, enabled, isDefault, isSystemDefault, name, keyword, sortBy, sortDirection);
     }
 
     /**

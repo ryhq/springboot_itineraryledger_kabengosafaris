@@ -59,6 +59,7 @@ public class EmailTemplateGetService {
             Boolean isDefault,
             Boolean isSystemDefault,
             String name,
+            String keyword,
             int page,
             int size,
             String sortBy,
@@ -96,7 +97,7 @@ public class EmailTemplateGetService {
             Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
-            Specification<EmailTemplate> specification = buildSpec(eventId, enabled, isDefault, isSystemDefault, name);
+            Specification<EmailTemplate> specification = buildSpec(eventId, enabled, isDefault, isSystemDefault, name, keyword);
 
             if (name != null && !name.isBlank()) {
                 specification = specification.and(EmailTemplateSpecification.nameLike(name));
@@ -148,6 +149,7 @@ public class EmailTemplateGetService {
             Boolean isDefault,
             Boolean isSystemDefault,
             String name,
+            String keyword,
             String sortBy,
             String sortDirection) {
         log.debug("Fetching template: {}", templateIdObfuscated);
@@ -174,7 +176,7 @@ public class EmailTemplateGetService {
             String validatedSortBy = validateSortField(sortBy);
             Map<String, Object> nav = recordNavigation.navigate(
                 EmailTemplate.class,
-                buildSpec(eventId, enabled, isDefault, isSystemDefault, name),
+                buildSpec(eventId, enabled, isDefault, isSystemDefault, name, keyword),
                 validatedSortBy != null ? validatedSortBy : DEFAULT_SORT_FIELD,
                 "asc".equalsIgnoreCase(sortDirection),
                 templateId
@@ -431,7 +433,8 @@ public class EmailTemplateGetService {
         Boolean enabled,
         Boolean isDefault,
         Boolean isSystemDefault,
-        String name
+        String name,
+        String keyword
     ) {
         Specification<EmailTemplate> specification = EmailTemplateSpecification.emailEventId(eventId);
 
@@ -445,6 +448,10 @@ public class EmailTemplateGetService {
 
         if (isSystemDefault != null) {
             specification = specification.and(EmailTemplateSpecification.isSystemDefault(isSystemDefault));
+        }
+
+        if (keyword != null && !keyword.isBlank()) {
+            specification = specification.and(EmailTemplateSpecification.matchesKeyword(keyword));
         }
 
         if (name != null && !name.isBlank()) {

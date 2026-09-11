@@ -90,6 +90,8 @@ public class CustomerDocumentController {
             @RequestParam(value = "customerName", required = false) String customerName,
             @RequestParam(value = "customerType", required = false) CustomerType customerType,
             @RequestParam(value = "email", required = false) String email,
+            /* the house free-text parameter: the panel's search box sends this */
+            @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "identityDocumentsOnly", required = false) Boolean identityDocumentsOnly,
             @RequestParam(value = "travelDocumentsOnly", required = false) Boolean travelDocumentsOnly,
             @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
@@ -114,6 +116,7 @@ public class CustomerDocumentController {
             customerName,
             customerType,
             email,
+            keyword,
             identityDocumentsOnly,
             travelDocumentsOnly,
             sortBy,
@@ -161,6 +164,7 @@ public class CustomerDocumentController {
     @PreAuthorize("hasAuthority('PERM_READ_CUSTOMER_DOCUMENT')")
     public ResponseEntity<?> getDocumentsByCustomerId(
             @PathVariable("customerId") String customerId,
+            @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "documentType", required = false) DocumentType documentType,
             @RequestParam(value = "isActive", required = false) Boolean isActive,
             @RequestParam(value = "title", required = false) String title,
@@ -176,6 +180,7 @@ public class CustomerDocumentController {
     ) {
         return getService.getDocumentsByCustomerId(
             customerId,
+            keyword,
             documentType,
             isActive,
             title,

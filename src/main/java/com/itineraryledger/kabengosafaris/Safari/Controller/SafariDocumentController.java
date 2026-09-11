@@ -95,6 +95,8 @@ public class SafariDocumentController {
             @RequestParam(value = "quotationDocumentsOnly", required = false) Boolean quotationDocumentsOnly,
             @RequestParam(value = "travelDocumentsOnly", required = false) Boolean travelDocumentsOnly,
             @RequestParam(value = "voucherDocumentsOnly", required = false) Boolean voucherDocumentsOnly,
+            /* the house free-text parameter: the panel's search box sends this */
+            @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
             @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection,
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -115,6 +117,7 @@ public class SafariDocumentController {
             quotationDocumentsOnly,
             travelDocumentsOnly,
             voucherDocumentsOnly,
+            keyword,
             sortBy,
             sortDirection,
             page,
@@ -145,10 +148,11 @@ public class SafariDocumentController {
         @RequestParam(value = "quotationDocumentsOnly", required = false) Boolean quotationDocumentsOnly,
         @RequestParam(value = "travelDocumentsOnly", required = false) Boolean travelDocumentsOnly,
         @RequestParam(value = "voucherDocumentsOnly", required = false) Boolean voucherDocumentsOnly,
+        @RequestParam(value = "keyword", required = false) String keyword,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false) String sortDirection
     ) {
-        return getService.getDocumentById(id, safariId, documentType, isActive, isGenerated, title, version, currentlyValid, safariName, safariCode, safariIsActive, safariState, quotationDocumentsOnly, travelDocumentsOnly, voucherDocumentsOnly, sortBy, sortDirection);
+        return getService.getDocumentById(id, safariId, documentType, isActive, isGenerated, title, version, currentlyValid, safariName, safariCode, safariIsActive, safariState, quotationDocumentsOnly, travelDocumentsOnly, voucherDocumentsOnly, keyword, sortBy, sortDirection);
     }
 
     /**

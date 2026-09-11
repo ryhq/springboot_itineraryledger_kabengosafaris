@@ -83,6 +83,8 @@ public class QuoteDocumentController {
     public ResponseEntity<?> getAllDocuments(
             @RequestParam(value = "quoteId", required = false) String quoteId,
             @RequestParam(value = "quoteCode", required = false) String quoteCode,
+            /* the house free-text parameter: the panel's search box sends this */
+            @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "documentType", required = false) DocumentType documentType,
             @RequestParam(value = "title", required = false) String title,
             @RequestParam(value = "version", required = false) String version,
@@ -103,6 +105,7 @@ public class QuoteDocumentController {
             version,
             currentlyValid,
             quoteCode,
+            keyword,
             sortBy,
             sortDirection,
             page,
@@ -127,10 +130,11 @@ public class QuoteDocumentController {
         @RequestParam(value = "version", required = false) String version,
         @RequestParam(value = "currentlyValid", required = false) Boolean currentlyValid,
         @RequestParam(value = "quoteCode", required = false) String quoteCode,
+        @RequestParam(value = "keyword", required = false) String keyword,
         @RequestParam(required = false) String sortBy,
         @RequestParam(required = false) String sortDirection
     ) {
-        return getService.getDocumentById(id, quoteId, documentType, isActive, isGenerated, title, version, currentlyValid, quoteCode, sortBy, sortDirection);
+        return getService.getDocumentById(id, quoteId, documentType, isActive, isGenerated, title, version, currentlyValid, quoteCode, keyword, sortBy, sortDirection);
     }
 
     /**

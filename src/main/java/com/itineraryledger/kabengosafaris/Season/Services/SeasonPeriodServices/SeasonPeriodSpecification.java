@@ -186,4 +186,30 @@ public class SeasonPeriodSpecification {
     public static Specification<SeasonPeriod> wrapsTheYear() {
         return (root, query, cb) -> cb.lessThan(root.get("endDate"), root.get("startDate"));
     }
+
+    /**
+     * The free-text search, over what the periods listing shows.
+     *
+     * <p>The page has a search box and this module had no keyword parameter, so the box sent one
+     * nothing read and every period came back. Joins the season, because a period is read as
+     * "which season is this?" -- somebody types "festive", and that word is on the season.
+     */
+    public static Specification<SeasonPeriod> matchesKeyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                return cb.conjunction();
+            }
+            String like = "%" + keyword.trim().toLowerCase() + "%";
+            var season = root.join("season", jakarta.persistence.criteria.JoinType.LEFT);
+            if (query != null) {
+                query.distinct(true);
+            }
+            return cb.or(
+                cb.like(cb.lower(cb.coalesce(root.get("notes"), "")), like),
+                cb.like(cb.lower(cb.coalesce(season.get("name"), "")), like),
+                cb.like(cb.lower(cb.coalesce(season.get("description"), "")), like)
+            );
+        };
+    }
+
 }

@@ -610,9 +610,11 @@ public class RoleController {
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size,
         @RequestParam(required = false) String search,
+        /* `keyword` is the house name for free text; `search` predates it and still works */
+        @RequestParam(required = false) String keyword,
         @RequestParam(defaultValue = "asc") String sortDirection
     ) {
-        return roleUserAssignmentService.getUsersForRole(roleId, page, size, search, sortDirection);
+        return roleUserAssignmentService.getUsersForRole(roleId, page, size, keyword != null && !keyword.isBlank() ? keyword : search, sortDirection);
     }
 
     /**

@@ -70,6 +70,7 @@ public class SafariDocumentGetService {
             Boolean quotationDocumentsOnly,
             Boolean travelDocumentsOnly,
             Boolean voucherDocumentsOnly,
+            String keyword,
             String sortBy,
             String sortDirection,
             int page,
@@ -106,7 +107,7 @@ public class SafariDocumentGetService {
 
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
-            Specification<SafariDocument> spec = buildSpec(safariId, documentType, isActive, isGenerated, title, version, currentlyValid, safariName, safariCode, safariIsActive, safariState, quotationDocumentsOnly, travelDocumentsOnly, voucherDocumentsOnly);
+            Specification<SafariDocument> spec = buildSpec(safariId, documentType, isActive, isGenerated, title, version, currentlyValid, safariName, safariCode, safariIsActive, safariState, quotationDocumentsOnly, travelDocumentsOnly, voucherDocumentsOnly, keyword);
 
             Page<SafariDocument> documentPage = safariDocumentRepository.findAll(spec, pageable);
             Page<SafariDocumentDTO> dtoPage = documentPage.map(this::toDTO);
@@ -151,6 +152,7 @@ public class SafariDocumentGetService {
         Boolean quotationDocumentsOnly,
         Boolean travelDocumentsOnly,
         Boolean voucherDocumentsOnly,
+        String keyword,
         String sortBy,
         String sortDirection
     ) {
@@ -184,7 +186,7 @@ public class SafariDocumentGetService {
             String validatedSortBy = validateSortField(sortBy);
             java.util.Map<String, Object> nav = recordNavigation.navigate(
                 SafariDocument.class,
-                buildSpec(safariId, documentType, isActive, isGenerated, title, version, currentlyValid, safariName, safariCode, safariIsActive, safariState, quotationDocumentsOnly, travelDocumentsOnly, voucherDocumentsOnly),
+                buildSpec(safariId, documentType, isActive, isGenerated, title, version, currentlyValid, safariName, safariCode, safariIsActive, safariState, quotationDocumentsOnly, travelDocumentsOnly, voucherDocumentsOnly, keyword),
                 validatedSortBy != null ? validatedSortBy : "createdAt",
                 "asc".equalsIgnoreCase(sortDirection),
                 id
@@ -320,7 +322,8 @@ public class SafariDocumentGetService {
         SafariState safariState,
         Boolean quotationDocumentsOnly,
         Boolean travelDocumentsOnly,
-        Boolean voucherDocumentsOnly
+        Boolean voucherDocumentsOnly,
+        String keyword
     ) {
         /* the parent arrives obfuscated; an unreadable one simply means "not scoped" */
         Long decodedSafariId = null;
@@ -341,7 +344,8 @@ public class SafariDocumentGetService {
                 .and(SafariDocumentSpecification.bySafariName(safariName))
                 .and(SafariDocumentSpecification.bySafariCode(safariCode))
                 .and(SafariDocumentSpecification.bySafariIsActive(safariIsActive))
-                .and(SafariDocumentSpecification.bySafariState(safariState));
+                .and(SafariDocumentSpecification.bySafariState(safariState))
+                .and(SafariDocumentSpecification.matchesKeyword(keyword));
 
             if (Boolean.TRUE.equals(currentlyValid)) {
                 spec = spec.and(SafariDocumentSpecification.byCurrentlyValid(LocalDateTime.now()));

@@ -58,6 +58,7 @@ public class CustomerDocumentGetService {
             String customerName,
             CustomerType customerType,
             String email,
+            String keyword,
             Boolean identityDocumentsOnly,
             Boolean travelDocumentsOnly,
             String sortBy,
@@ -109,7 +110,8 @@ public class CustomerDocumentGetService {
                 .and(CustomerDocumentSpecification.byVersion(version))
                 .and(CustomerDocumentSpecification.byCustomerName(customerName))
                 .and(CustomerDocumentSpecification.byCustomerType(customerType))
-                .and(CustomerDocumentSpecification.byCustomerEmail(email));
+                .and(CustomerDocumentSpecification.byCustomerEmail(email))
+                .and(CustomerDocumentSpecification.matchesKeyword(keyword));
 
             if (Boolean.TRUE.equals(currentlyValid)) {
                 spec = spec.and(CustomerDocumentSpecification.byCurrentlyValid(LocalDateTime.now()));
@@ -265,6 +267,7 @@ public class CustomerDocumentGetService {
 
     public ResponseEntity<ApiResponse<?>> getDocumentsByCustomerId(
             String customerId,
+            String keyword,
             DocumentType documentType,
             Boolean isActive,
             String title,
@@ -320,7 +323,8 @@ public class CustomerDocumentGetService {
                 .and(CustomerDocumentSpecification.byIsActive(isActive))
                 .and(CustomerDocumentSpecification.byTitleContains(title))
                 .and(CustomerDocumentSpecification.byDocumentNumber(documentNumber))
-                .and(CustomerDocumentSpecification.byVersion(version));
+                .and(CustomerDocumentSpecification.byVersion(version))
+                .and(CustomerDocumentSpecification.matchesKeyword(keyword));
 
             if (Boolean.TRUE.equals(currentlyValid)) {
                 spec = spec.and(CustomerDocumentSpecification.byCurrentlyValid(LocalDateTime.now()));
@@ -460,8 +464,12 @@ public class CustomerDocumentGetService {
     ) {
         Specification<CustomerDocument> spec = Specification.unrestricted();
         if (decodedParentId != null) spec = spec.and(CustomerDocumentSpecification.byCustomerId(decodedParentId));
-        // documents have no keyword spec; the list searches by title, so match that
-        if (keyword != null && !keyword.isEmpty()) spec = spec.and(CustomerDocumentSpecification.byTitleContains(keyword));
+        /*
+         * The SAME search the list runs. It used to match on title alone here while the
+         * list matched on nothing at all, so the arrows walked a different set from the
+         * rows on screen -- which CLAUDE.md calls worse than having no arrows.
+         */
+        spec = spec.and(CustomerDocumentSpecification.matchesKeyword(keyword));
         if (documentTypes != null && !documentTypes.isEmpty()) spec = spec.and(CustomerDocumentSpecification.documentTypeIn(documentTypes));
         if (statuses != null && !statuses.isEmpty()) {
             java.util.List<Boolean> states = new java.util.ArrayList<>();

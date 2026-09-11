@@ -124,6 +124,7 @@ public class HeroImageGetService {
     public ResponseEntity<?> getAllImages(
             String obfuscatedHeroId,
             String heroTitle,
+            String keyword,
             HeroPage heroPage,
             Boolean isPrimary,
             Boolean isActive,
@@ -132,7 +133,7 @@ public class HeroImageGetService {
             String sortBy,
             String sortDirection
     ) {
-        Specification<HeroImage> spec = buildSpec(obfuscatedHeroId, heroTitle, heroPage, isPrimary, isActive);
+        Specification<HeroImage> spec = buildSpec(obfuscatedHeroId, heroTitle, keyword, heroPage, isPrimary, isActive);
 
         String validatedSortBy = validateSortField(sortBy);
         if (validatedSortBy == null) {
@@ -180,6 +181,7 @@ public class HeroImageGetService {
         String scopeParentId,
         String obfuscatedHeroId,
         String heroTitle,
+        String keyword,
         HeroPage heroPage,
         Boolean isPrimary,
         Boolean isActive,
@@ -218,7 +220,7 @@ public class HeroImageGetService {
             String validatedSortBy = validateSortField(sortBy);
             java.util.Map<String, Object> nav = recordNavigation.navigate(
                 HeroImage.class,
-                buildSpec(decodedParentId != null ? scopeParentId : obfuscatedHeroId, heroTitle, heroPage, isPrimary, isActive),
+                buildSpec(decodedParentId != null ? scopeParentId : obfuscatedHeroId, heroTitle, keyword, heroPage, isPrimary, isActive),
                 validatedSortBy != null ? validatedSortBy : "createdAt",
                 "asc".equalsIgnoreCase(sortDirection),
                 id
@@ -303,6 +305,7 @@ public class HeroImageGetService {
     private Specification<HeroImage> buildSpec(
         String obfuscatedHeroId,
         String heroTitle,
+        String keyword,
         HeroPage heroPage,
         Boolean isPrimary,
         Boolean isActive
@@ -320,6 +323,9 @@ public class HeroImageGetService {
 
         if (heroTitle != null && !heroTitle.isBlank()) {
             spec = spec.and(HeroImageSpecification.byHeroTitle(heroTitle));
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(HeroImageSpecification.matchesKeyword(keyword));
         }
         if (heroPage != null) {
             spec = spec.and(HeroImageSpecification.byHeroPage(heroPage));

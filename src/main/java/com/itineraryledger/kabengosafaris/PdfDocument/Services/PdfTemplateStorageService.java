@@ -216,6 +216,30 @@ public class PdfTemplateStorageService {
             log.warn("Refusing to read a template path rather than a name: {}", fileName);
             return null;
         }
+        String content = readResource(fileName);
+        return content != null ? content : readResource(withoutStamp(fileName));
+    }
+
+    /**
+     * The shipped name behind a stored one.
+     *
+     * <p>A row's file is named by {@link #generateFileName}: document, template name, and a
+     * timestamp so two saves cannot collide on disk. So the row for the shipped
+     * "full_itinerary_modern.html" is stored as "full_itinerary_modern_20260324_143945.html", and
+     * the seed name is what is left when the stamp comes off.
+     *
+     * <p>Deterministic in the direction that matters: the seeder derived the row's NAME from the
+     * file's suffix, so putting them back together reconstructs the file it came from. A template
+     * somebody wrote here and happened to call "Modern" would reconstruct the same name -- Restore
+     * would then offer to replace their work with ours, which is why it stays behind a confirm and
+     * says plainly that anything written here is lost. The proper answer is a provenance column on
+     * the row, which is a bigger change than this.
+     */
+    private static String withoutStamp(String fileName) {
+        return fileName.replaceFirst("_\\d{8}_\\d{6}\\.html$", ".html");
+    }
+
+    private String readResource(String fileName) {
         String resourcePath = "templates/pdf-templates/" + fileName;
         try (var resource = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
             if (resource == null) return null;

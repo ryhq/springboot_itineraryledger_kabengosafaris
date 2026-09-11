@@ -53,6 +53,11 @@ public class EmailMessageController {
             @RequestParam(required = false) Boolean isFlagged,
             @RequestParam(required = false) Boolean hasAttachments,
             @RequestParam(required = false) String search,
+            /*
+             * `keyword` is the house name for free text and what a generic list page sends;
+             * `search` predates it here and still works. Whichever arrives is the same search.
+             */
+            @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String fromAddress,
             @RequestParam(required = false) String subject,
             @RequestParam(required = false) List<String> labelIds,
@@ -64,7 +69,8 @@ public class EmailMessageController {
             @RequestParam(required = false) String sortDirection
     ) {
         return emailMessageGetService.getMessages(accountId, page, size, folderId,
-            isRead, isStarred, isFlagged, hasAttachments, search, fromAddress, subject, labelIds,
+            isRead, isStarred, isFlagged, hasAttachments,
+            keyword != null && !keyword.isBlank() ? keyword : search, fromAddress, subject, labelIds,
             sentAfter, sentBefore, snoozed, sortBy, sortDirection);
     }
 
