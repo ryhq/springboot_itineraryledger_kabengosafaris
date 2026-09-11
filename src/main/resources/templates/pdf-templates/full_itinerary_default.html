@@ -729,9 +729,10 @@
         th:if="${itinerary.highlights != null and !#strings.isEmpty(itinerary.highlights)}"
       >
         <h4 class="highlights-title">Trip Highlights</h4>
-        <p class="highlights-content" th:text="${itinerary.highlights}">
-          Trip highlights...
-        </p>
+        <!-- iterated, because the field is usually a JSON array and printing it raw showed the brackets -->
+        <ul class="highlights-content" style="margin: 0; padding-left: 18px" th:if="${!#lists.isEmpty(itinerary.highlightsList)}">
+          <li th:each="highlight : ${itinerary.highlightsList}" th:text="${highlight}">A highlight</li>
+        </ul>
       </div>
 
       <!-- Trip Statistics Summary -->

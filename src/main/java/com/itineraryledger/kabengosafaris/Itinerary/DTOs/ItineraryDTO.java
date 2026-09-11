@@ -53,4 +53,28 @@ public class ItineraryDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<ItineraryCostSummaryDTO> costSummary;
+
+    /**
+     * The highlights as a list a document can print, however they happen to be stored.
+     *
+     * <p>Same reasoning as on {@code FullItineraryDTO}: the field is usually a JSON array because
+     * that is what the website wants, and a template printing it straight out shows the brackets
+     * and quotes to a customer. The safari document reaches the itinerary through this DTO.
+     */
+    public java.util.List<String> getHighlightsList() {
+        if (highlights == null || highlights.isBlank()) return java.util.List.of();
+        String trimmed = highlights.trim();
+        if (trimmed.startsWith("[")) {
+            try {
+                java.util.List<String> parsed = new com.fasterxml.jackson.databind.ObjectMapper()
+                    .readValue(trimmed, new com.fasterxml.jackson.core.type.TypeReference<java.util.List<String>>() {});
+                return parsed.stream().filter(h -> h != null && !h.isBlank()).map(String::trim).toList();
+            } catch (Exception e) {
+                // unparseable: show it as written rather than showing nothing
+            }
+        }
+        java.util.List<String> lines = java.util.Arrays.stream(trimmed.split("\\r?\\n"))
+            .map(String::trim).filter(l -> !l.isEmpty()).toList();
+        return lines.isEmpty() ? java.util.List.of(trimmed) : lines;
+    }
 }

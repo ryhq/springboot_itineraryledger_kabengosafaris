@@ -253,4 +253,33 @@ public class FullItineraryDTO {
         private String notes;
         private Boolean isIncludedInPrice;
     }
+
+    /**
+     * The highlights as a list a document can print, however they happen to be stored.
+     *
+     * <p>Most itineraries hold this field as a JSON array, because that is what the website wants.
+     * The PDF templates printed the field straight out, so "Trip Highlights" on every itinerary
+     * document a customer has ever received read {@code ["Tarangire elephants", "Crater descent"]},
+     * brackets, quotes and all. 46 of 60 itineraries are stored that way.
+     *
+     * <p>A getter rather than a stored field: SpEL resolves getters, the value is derived, and
+     * changing the stored shape would break the website that expects the array.
+     */
+    public java.util.List<String> getHighlightsList() {
+        if (highlights == null || highlights.isBlank()) return java.util.List.of();
+        String trimmed = highlights.trim();
+        if (trimmed.startsWith("[")) {
+            try {
+                java.util.List<String> parsed = new com.fasterxml.jackson.databind.ObjectMapper()
+                    .readValue(trimmed, new com.fasterxml.jackson.core.type.TypeReference<java.util.List<String>>() {});
+                return parsed.stream().filter(h -> h != null && !h.isBlank()).map(String::trim).toList();
+            } catch (Exception e) {
+                // unparseable: fall through and show it as written rather than showing nothing
+            }
+        }
+        // a plain value may still be several lines, or one sentence
+        java.util.List<String> lines = java.util.Arrays.stream(trimmed.split("\\r?\\n"))
+            .map(String::trim).filter(l -> !l.isEmpty()).toList();
+        return lines.isEmpty() ? java.util.List.of(trimmed) : lines;
+    }
 }
