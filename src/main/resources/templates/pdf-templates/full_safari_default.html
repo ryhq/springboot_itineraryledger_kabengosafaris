@@ -1225,10 +1225,20 @@
                         <div th:if="${accommodation.isAlternative != null and accommodation.isAlternative}"
                              class="text-small text-muted">Alternative Accommodation
                         </div>
-                        <div th:if="${accommodation.notes != null and !#strings.isEmpty(accommodation.notes)}"
-                             class="notes-box mt-1">
-                            <div class="notes-text" th:text="${accommodation.notes}">Notes</div>
-                        </div>
+                        <!--
+                  The stay's notes are NOT printed here.
+
+                  That field is operational bookkeeping about a booking, not something written for
+                  a guest, and it is the field a script filled with lines like
+                  "Auto-linked alternative: MID_RANGE in Arusha, STO $90", carrying our cost and our
+                  internal grading, which then appeared in the accommodation section of a
+                  document sent to a customer.
+
+                  The writer lives outside this repository, so filtering on the wording would be a
+                  blocklist against a string nobody here controls. The three operational templates
+                  (accommodation plan, accommodation choices, safari accommodation plan) still show
+                  it, because their reader is the office.
+                -->
                         <div th:if="${accommodation.guestFeedback != null and !#strings.isEmpty(accommodation.guestFeedback)}"
                              class="highlights-box mt-1">
                             <div class="highlights-title">Guest Feedback</div>

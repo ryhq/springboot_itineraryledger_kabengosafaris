@@ -1236,9 +1236,13 @@
         Terms and conditions apply.
       </div>
 
-      <div class="footer-generated" th:if="${quote.createdByName != null or quote.isStoRate != null}">
-        <span th:if="${quote.createdByName != null}">Prepared by: <span th:text="${quote.createdByName}">John Doe</span></span>
-        <span th:if="${quote.isStoRate != null}"> | Rate Type: <span th:text="${quote.isStoRate ? 'STO Rate' : 'Rack Rate'}">STO Rate</span></span>
+      <!--
+        Rate Type deliberately not printed. This is the customer's copy, and "STO Rate" told them
+        the figures beside it are our operator cost; "Rack Rate" is trade vocabulary they should not
+        have to decode. The basis stays on the record and on the internal cost estimation sheet.
+      -->
+      <div class="footer-generated" th:if="${quote.createdByName != null}">
+        <span>Prepared by: <span th:text="${quote.createdByName}">John Doe</span></span>
       </div>
     </footer>
   </body>

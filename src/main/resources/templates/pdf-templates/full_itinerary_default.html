@@ -1092,13 +1092,20 @@
                     <span th:text="${acc.roomCount}">2</span></span
                   >
                 </div>
-                <p
-                  th:if="${acc.notes != null and !#strings.isEmpty(acc.notes)}"
-                  class="text-small text-muted mt-5"
-                  th:text="${acc.notes}"
-                >
-                  Notes...
-                </p>
+                <!--
+                  The stay's notes are NOT printed here.
+
+                  That field is operational bookkeeping about a booking, not something written for
+                  a guest, and it is the field a script filled with lines like
+                  "Auto-linked alternative: MID_RANGE in Arusha, STO $90", carrying our cost and our
+                  internal grading, which then appeared in the accommodation section of a
+                  document sent to a customer.
+
+                  The writer lives outside this repository, so filtering on the wording would be a
+                  blocklist against a string nobody here controls. The three operational templates
+                  (accommodation plan, accommodation choices, safari accommodation plan) still show
+                  it, because their reader is the office.
+                -->
               </div>
             </div>
 

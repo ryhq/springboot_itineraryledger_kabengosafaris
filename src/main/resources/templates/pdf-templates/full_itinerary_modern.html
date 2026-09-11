@@ -933,7 +933,20 @@
                   <span th:if="${acc.boardTypeName != null}"> | <span class="accommodation-details-label">Board:</span> <span th:text="${acc.boardTypeName}">Full Board</span></span>
                   <span th:if="${acc.roomCount != null}"> | <span class="accommodation-details-label">Rooms:</span> <span th:text="${acc.roomCount}">2</span></span>
                 </div>
-                <div class="accommodation-notes" th:if="${acc.notes != null and !#strings.isEmpty(acc.notes)}" th:text="${acc.notes}">Notes...</div>
+                <!--
+                  The stay's notes are NOT printed here.
+
+                  That field is operational bookkeeping about a booking, not something written for
+                  a guest, and it is the field a script filled with lines like
+                  "Auto-linked alternative: MID_RANGE in Arusha, STO $90", carrying our cost and our
+                  internal grading, which then appeared in the accommodation section of a
+                  document sent to a customer.
+
+                  The writer lives outside this repository, so filtering on the wording would be a
+                  blocklist against a string nobody here controls. The three operational templates
+                  (accommodation plan, accommodation choices, safari accommodation plan) still show
+                  it, because their reader is the office.
+                -->
               </div>
             </div>
 

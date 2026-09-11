@@ -416,7 +416,7 @@
                     {"path": "boardTypeName", "type": "String", "description": "Board type (e.g., 'Full Board', 'Half Board', 'B&B')"},
                     {"path": "roomCount", "type": "Integer", "description": "Number of rooms"},
                     {"path": "isAlternative", "type": "Boolean", "description": "Whether this is an alternative/backup option"},
-                    {"path": "notes", "type": "String", "description": "Accommodation notes"},
+                    {"path": "notes", "type": "String", "description": "Internal operational notes about this booking. NOT for customer documents - it has carried our cost and our budget grading."},
                     {"path": "confirmationNumber", "type": "String", "description": "Booking confirmation number"},
                     {"path": "checkInTime", "type": "LocalDateTime", "description": "Check-in timestamp"},
                     {"path": "checkOutTime", "type": "LocalDateTime", "description": "Check-out timestamp"},
