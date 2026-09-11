@@ -205,6 +205,20 @@ public class InvoiceFromSafariGenerationService {
                             ApiResponse.error(500, "Cost estimation returned null", "NULL_ESTIMATION")
                     );
                 }
+                /*
+                 * Say so when the price is not whole.
+                 *
+                 * The estimator reports what it could not price and this read neither, so an
+                 * invoice short a night looked exactly like a complete one -- and an invoice is
+                 * where a missing line stops being a conversation and becomes money not asked for.
+                 */
+                if (Boolean.TRUE.equals(costEstimation.getHasIncompleteRates())) {
+                    List<String> unpriced = costEstimation.getWarnings() != null
+                            ? costEstimation.getWarnings() : List.of();
+                    log.error("Invoice for safari {} has {} thing(s) nobody could price. It must not "
+                            + "be sent until these are resolved: {}",
+                            dto.getSafariId(), unpriced.size(), unpriced);
+                }
             }
 
             // 5. Create the Invoice entity (quote accounting fields used as defaults when not explicitly provided)

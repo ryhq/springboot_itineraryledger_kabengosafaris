@@ -7,6 +7,7 @@ import com.itineraryledger.kabengosafaris.Activity.ChargingBasis;
 import com.itineraryledger.kabengosafaris.Activity.ActivityRepository;
 import com.itineraryledger.kabengosafaris.ActivityTariffRate.ActivityTariffRate;
 import com.itineraryledger.kabengosafaris.ActivityTariffRate.Repositories.ActivityTariffRateRepository;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Core.SeasonResolverService;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.ItineraryCostEstimationDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.ItineraryCostEstimationDTO.*;
 import com.itineraryledger.kabengosafaris.ParkTariff.ParkTariff;
@@ -58,6 +59,7 @@ public class SafariCostEstimationService {
     private final ActivityTariffRateRepository activityTariffRateRepository;
     private final ActivityRepository activityRepository;
     private final SeasonPeriodRepository seasonPeriodRepository;
+    private final SeasonResolverService seasonResolverService;
     private final PaxNationCategoryRepository nationCategoryRepository;
     private final IdObfuscator idObfuscator;
 
@@ -612,13 +614,13 @@ public class SafariCostEstimationService {
                 if (seasonId == null || roomTypeId == null || roomStandardId == null || boardTypeId == null) {
                     warnings.add(String.format("Missing rate parameters for: %s on Day %d",
                         accommodation.getAccommodationName(), day.getDayNumber()));
+                    items.add(unpricedNight(day, accommodation, "no season or room details"));
                     continue;
                 }
 
+                /* Active rates only: a deactivated rate row is not a price anybody may be billed. */
                 Optional<AccommodationRate> rateOpt = accommodationRateRepository
-                    .findByAccommodationIdAndSeasonIdAndRoomTypeIdAndRoomStandardIdAndBoardTypeId(
-                        accommodationId, seasonId, roomTypeId, roomStandardId, boardTypeId
-                    );
+                    .findActiveRate(accommodationId, seasonId, roomTypeId, roomStandardId, boardTypeId);
 
                 if (rateOpt.isPresent()) {
                     AccommodationRate rate = rateOpt.get();
@@ -678,6 +680,7 @@ public class SafariCostEstimationService {
                         accommodation.getRoomStandardName(),
                         accommodation.getBoardTypeName(),
                         day.getDayNumber()));
+                    items.add(unpricedNight(day, accommodation, "no rate for this season"));
                 }
             }
         }
@@ -691,24 +694,52 @@ public class SafariCostEstimationService {
     }
 
     /**
-     * Find accommodation-specific season for a date
+     * A night we could not price, still on the list.
+     *
+     * <p>The same bug as on the quote side, on the path that bills. When a rate could not be found
+     * this service appended a sentence to a warnings list that nothing downstream reads, and did
+     * not add the line. The night vanished from the invoice, and the property was not even named
+     * for anybody to notice it was absent.
+     *
+     * <p>A zero on a line somebody can see gets queried before the invoice goes out. A line that
+     * is not there does not. {@code rateFound = false} is what the writers already look for to
+     * print "Rate not found" beside it.
+     */
+    private CostLineItem unpricedNight(
+            FullSafariDTO.DayDTO day,
+            FullSafariDTO.DayAccommodationDTO accommodation,
+            String why
+    ) {
+        return CostLineItem.builder()
+            .dayNumber(day.getDayNumber())
+            .itemType("ACCOMMODATION")
+            .itemName(accommodation.getAccommodationName()
+                + (accommodation.getRoomTypeName() != null ? " - " + accommodation.getRoomTypeName() : ""))
+            .referenceId(accommodation.getAccommodationId())
+            .quantity(accommodation.getRoomCount() != null ? accommodation.getRoomCount() : 1)
+            .unitPrice(BigDecimal.ZERO)
+            .totalPrice(BigDecimal.ZERO)
+            .currency(DEFAULT_CURRENCY)
+            .notes("Rate not found — " + why)
+            .rateFound(false)
+            .build();
+    }
+
+    /**
+     * Find the accommodation's season for a date, through the shared resolver.
+     *
+     * <p>This used to walk every season period in the database, take the first whose dates matched
+     * and never ask whether the season itself was still switched on -- then fall back to a GLOBAL
+     * season, which can never hold an accommodation rate, so the night could not be priced and was
+     * dropped. That is the bug that took 1,695 and 1,830 off two quotes, and it lived here too, on
+     * the path that raises invoices.
+     *
+     * <p>Kept as a one-line delegation rather than deleted outright so the call site reads the same
+     * as before. What it must never do again is carry its own rules.
      */
     private Season findAccommodationSeasonForDate(Long accommodationId, LocalDate date) {
-        List<SeasonPeriod> periods = seasonPeriodRepository.findAll();
-
-        // First try accommodation-specific seasons
-        for (SeasonPeriod period : periods) {
-            Season season = period.getSeason();
-            if (!season.getIsGlobal() &&
-                season.getAccommodation() != null &&
-                season.getAccommodation().getId().equals(accommodationId) &&
-                period.containsDate(date)) {
-                return season;
-            }
-        }
-
-        // Fallback to global season
-        return findSeasonForDate(date);
+        return seasonResolverService.resolveAccommodationSeasonWithDetails(accommodationId, date)
+            .season();
     }
 
     /**
