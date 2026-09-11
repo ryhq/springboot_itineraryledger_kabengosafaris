@@ -146,10 +146,14 @@ public class AccommodationDocumentSpecification {
         return (root, query, cb) -> {
             if (keyword == null || keyword.isBlank()) return cb.conjunction();
             String like = "%" + keyword.toLowerCase() + "%";
+            /*
+             * No originalFileName here: this entity has no such field, and asking for it threw
+             * rather than searching. `description` is the other thing worth matching on.
+             */
             return cb.or(
                 cb.like(cb.lower(root.get("title")), like),
                 cb.like(cb.lower(root.get("fileName")), like),
-                cb.like(cb.lower(root.get("originalFileName")), like));
+                cb.like(cb.lower(root.get("description")), like));
         };
     }
 }

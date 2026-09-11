@@ -68,7 +68,7 @@ public class EmailTemplateSpecification {
                 cb.like(cb.lower(root.get("description")), like),
                 cb.like(cb.lower(root.get("fileName")), like),
                 cb.like(cb.lower(event.get("name")), like),
-                cb.like(cb.lower(event.get("displayName")), like)
+                cb.like(cb.lower(event.get("description")), like)
             );
         };
     }

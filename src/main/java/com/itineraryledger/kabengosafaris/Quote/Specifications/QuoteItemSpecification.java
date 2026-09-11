@@ -132,8 +132,7 @@ public class QuoteItemSpecification {
             String like = "%" + keyword.trim().toLowerCase() + "%";
             return cb.or(
                 cb.like(cb.lower(root.get("itemName")), like),
-                cb.like(cb.lower(root.get("description")), like),
-                cb.like(cb.lower(root.get("notes")), like)
+                cb.like(cb.lower(root.get("description")), like)
             );
         };
     }
