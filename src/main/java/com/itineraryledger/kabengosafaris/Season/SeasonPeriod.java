@@ -98,9 +98,20 @@ public class SeasonPeriod {
     /**
      * Check if a given date falls within this season period
      * Handles year-wrapping periods (e.g., Dec 15 - Jan 15)
+     *
+     * <p>A period belonging to a switched-off season does not contain any date. This used to check
+     * only the PERIOD's own flag, so deactivating a season left its periods still matching: one
+     * Zanzibar property has five overlapping seasons, three of them deactivated and holding no rate
+     * rows, and a resolver walking periods in arbitrary order would land on a dead one, find no
+     * rate, and drop the night from a customer's quote. Switching a season off has to mean it stops
+     * being chosen.
      */
     public boolean containsDate(LocalDate date) {
         if (!isActive) {
+            return false;
+        }
+
+        if (season != null && season.getIsActive() != null && !season.getIsActive()) {
             return false;
         }
 

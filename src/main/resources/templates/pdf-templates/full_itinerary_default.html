@@ -858,7 +858,8 @@
               <span
                 th:if="${day.startLocation != null and day.endLocation != null}"
               >
-                &rarr;
+                <!-- "to", not an arrow: the PDF font has no arrow glyph and it printed as a hash -->
+                to
               </span>
               <span
                 th:if="${day.endLocation != null}"

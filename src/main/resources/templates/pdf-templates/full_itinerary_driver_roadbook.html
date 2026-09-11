@@ -156,7 +156,7 @@
             <div class="meta-label">Route</div>
             <div class="meta-value">
               <span th:text="${itinerary.startLocation != null ? itinerary.startLocation : '—'}">Arusha</span>
-              &#8594;
+               to 
               <span th:text="${itinerary.endLocation != null ? itinerary.endLocation : '—'}">Zanzibar</span>
             </div>
           </td>
@@ -171,12 +171,12 @@
               <tr>
                 <td>
                   <div class="day-tag" th:text="${day.dayTag != null ? day.dayTag : ('Day ' + day.dayNumber)}">Day 10</div>
-                  <div class="day-title" th:text="${day.title != null ? day.title : 'Day'}">Serengeti → Fly to Zanzibar</div>
+                  <div class="day-title" th:text="${day.title != null ? day.title : 'Day'}">Serengeti  to  Fly to Zanzibar</div>
                 </td>
                 <td class="day-route">
                   <span th:if="${day.startLocation != null or day.endLocation != null}">
                     <strong th:text="${day.startLocation != null ? day.startLocation : '—'}">Seronera</strong>
-                    &#8594;
+                     to 
                     <strong th:text="${day.endLocation != null ? day.endLocation : '—'}">Zanzibar</strong>
                   </span>
                   <span th:if="${day.distanceKm != null}" th:text="${' · ' + day.distanceKm + ' km'}"> · 320 km</span>

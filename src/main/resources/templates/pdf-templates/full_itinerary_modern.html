@@ -837,7 +837,8 @@
             <h3 class="day-title" th:if="${day.title != null}" th:text="${day.title}">Arrival Day</h3>
             <div class="day-route-banner" th:if="${day.startLocation != null or day.endLocation != null}">
               <span th:if="${day.startLocation != null}" th:text="${day.startLocation}">Start</span>
-              <span th:if="${day.startLocation != null and day.endLocation != null}"> &#8594; </span>
+              <!-- "to", not an arrow: the PDF font has no arrow glyph and it printed as a hash -->
+              <span th:if="${day.startLocation != null and day.endLocation != null}"> to </span>
               <span th:if="${day.endLocation != null}" th:text="${day.endLocation}">End</span>
               <span th:if="${day.distanceKm != null}"> (<span th:text="${day.distanceKm}">100</span> km)</span>
             </div>

@@ -128,6 +128,20 @@ public class QuoteCostEstimationService {
         // 4. Refresh subtotals / taxes / discounts / grand totals
         totalsCalculationService.recalculateTotals(quote);
 
+        /*
+         * Say so when the price is not whole.
+         *
+         * The estimator reports incomplete rates and a list of what it could not price, and this
+         * method used to read neither. A quote that is short a night looked exactly like a quote
+         * that is complete, which is how two of them reached customers under-priced.
+         */
+        if (Boolean.TRUE.equals(estimation.getHasIncompleteRates())) {
+            List<String> unpriced = estimation.getWarnings() != null
+                    ? estimation.getWarnings() : List.of();
+            log.error("Quote {} has {} thing(s) nobody could price. It must not be sent until these "
+                    + "are resolved: {}", quote.getQuoteCode(), unpriced.size(), unpriced);
+        }
+
         log.info("Quote {} recalculated: {} items, {} currencies",
                 quote.getQuoteCode(), written, estimation.getSubtotalByCurrency() != null
                         ? estimation.getSubtotalByCurrency().size() : 1);

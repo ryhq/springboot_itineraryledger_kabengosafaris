@@ -22,7 +22,9 @@ import org.springframework.web.context.request.async.AsyncRequestNotUsableExcept
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.ErrorResponseException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -663,6 +665,62 @@ public class GlobalExceptionHandler {
         );
 
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * Handle a path that matches no handler.
+     *
+     * <p>The handler above catches {@code NoHandlerFoundException}, which Spring only raises when
+     * resource mappings are off. With them on, an unmatched path is claimed by the resource handler
+     * and comes out as {@code NoResourceFoundException} instead, so the 404 above was unreachable
+     * and every unknown URL answered 500 "An unexpected error occurred".
+     *
+     * <p>That is not a cosmetic difference. A wrong URL and a crashing endpoint looked identical,
+     * which is what stopped a real pricing bug from being diagnosed: the URL used to inspect a
+     * quote's day tree does not exist, and the 500 read as a broken endpoint rather than a typo.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFoundException(
+            NoResourceFoundException ex,
+            WebRequest request) {
+
+        log.warn("No endpoint at: {} {}", ex.getHttpMethod(), ex.getResourcePath());
+
+        ApiResponse<Void> response = ApiResponse.error(
+                HttpStatus.NOT_FOUND.value(),
+                "Endpoint not found",
+                ErrorCode.RESOURCE_NOT_FOUND.getCode()
+        );
+
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * Handle any Spring exception that already carries its own status.
+     *
+     * <p>Without this, a deliberate 404, 405 or 415 raised inside the framework fell through to the
+     * catch-all and was flattened into a 500. An error that misreports its own kind sends whoever
+     * is reading it looking in the wrong place.
+     */
+    @ExceptionHandler(ErrorResponseException.class)
+    public ResponseEntity<ApiResponse<Void>> handleErrorResponseException(
+            ErrorResponseException ex,
+            WebRequest request) {
+
+        HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
+        if (status == null) status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        log.warn("Request failed with {}: {}", status, ex.getMessage());
+
+        ApiResponse<Void> response = ApiResponse.error(
+                status.value(),
+                status.is4xxClientError() ? status.getReasonPhrase() : "An unexpected error occurred",
+                (status == HttpStatus.NOT_FOUND
+                    ? ErrorCode.RESOURCE_NOT_FOUND
+                    : ErrorCode.INTERNAL_SERVER_ERROR).getCode()
+        );
+
+        return new ResponseEntity<>(response, status);
     }
 
     /**
