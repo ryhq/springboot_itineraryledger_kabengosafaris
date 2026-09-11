@@ -69,6 +69,38 @@ public class PdfTemplateSpecification {
     }
 
     /**
+     * The free-text search, over everything the listing actually shows.
+     *
+     * <p>The page has a search box and the module had no keyword parameter at all, so every
+     * search sent one and Spring ignored it: typing anything -- a document name, a word, or
+     * nonsense -- returned all sixteen rows, which reads as "sixteen matches" rather than as a
+     * filter that does nothing.
+     *
+     * <p>Joins the document, because the Document column is the one most worth searching: a
+     * person looking for the invoice layout types "invoice", and that word is on the document,
+     * not on a row called "Default".
+     */
+    public static Specification<PdfTemplate> keyword(String keyword) {
+        return (root, query, cb) -> {
+            if (keyword == null || keyword.isBlank()) {
+                return null;
+            }
+            String like = "%" + keyword.trim().toLowerCase() + "%";
+            var document = root.join("pdfDocument", jakarta.persistence.criteria.JoinType.LEFT);
+            if (query != null) {
+                query.distinct(true);
+            }
+            return cb.or(
+                cb.like(cb.lower(root.get("name")), like),
+                cb.like(cb.lower(cb.coalesce(root.get("description"), "")), like),
+                cb.like(cb.lower(cb.coalesce(root.get("fileName"), "")), like),
+                cb.like(cb.lower(cb.coalesce(document.get("name"), "")), like),
+                cb.like(cb.lower(cb.coalesce(document.get("displayName"), "")), like)
+            );
+        };
+    }
+
+    /**
      * Filter by paper size
      */
     public static Specification<PdfTemplate> paperSize(String paperSize) {

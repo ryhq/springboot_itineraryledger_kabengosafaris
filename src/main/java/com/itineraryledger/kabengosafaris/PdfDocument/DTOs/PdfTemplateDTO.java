@@ -37,6 +37,15 @@ public class PdfTemplateDTO {
     private Integer marginRight;
     private Boolean isDefault;
     private Boolean isSystemDefault;
+
+    /**
+     * Whether we ship an original this row can be restored to.
+     *
+     * <p>Not the same question as isSystemDefault: every layout we ship has an original, but only
+     * one per document is flagged the default. The panel gates the Restore button on this, so a
+     * Modern variant offers it and a template somebody wrote here does not.
+     */
+    private Boolean hasShippedOriginal;
     private Boolean enabled;
     private Long fileSize;
     private String fileSizeFormatted;

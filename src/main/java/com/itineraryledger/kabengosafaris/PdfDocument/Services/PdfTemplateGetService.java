@@ -73,6 +73,7 @@ public class PdfTemplateGetService {
         Boolean isDefault,
         Boolean isSystemDefault,
         String name,
+        String keyword,
         String paperSize,
         String orientation,
         Integer page,
@@ -108,6 +109,9 @@ public class PdfTemplateGetService {
             }
             if (name != null && !name.isBlank()) {
                 spec = spec.and(PdfTemplateSpecification.nameLike(name));
+            }
+            if (keyword != null && !keyword.isBlank()) {
+                spec = spec.and(PdfTemplateSpecification.keyword(keyword));
             }
             if (paperSize != null && !paperSize.isBlank()) {
                 spec = spec.and(PdfTemplateSpecification.paperSize(paperSize));
@@ -326,6 +330,7 @@ public class PdfTemplateGetService {
             .marginRight(template.getMarginRight())
             .isDefault(template.getIsDefault())
             .isSystemDefault(template.getIsSystemDefault())
+            .hasShippedOriginal(storageService.hasShippedTemplate(template.getFileName()))
             .enabled(template.getEnabled())
             .fileSize(template.getFileSize())
             .fileSizeFormatted(storageService.formatFileSize(template.getFileSize()))

@@ -257,6 +257,7 @@ public class PdfTemplateCreateService {
             .marginRight(template.getMarginRight())
             .isDefault(template.getIsDefault())
             .isSystemDefault(template.getIsSystemDefault())
+            .hasShippedOriginal(storageService.hasShippedTemplate(template.getFileName()))
             .enabled(template.getEnabled())
             .fileSize(template.getFileSize())
             .fileSizeFormatted(storageService.formatFileSize(template.getFileSize()))

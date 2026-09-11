@@ -195,14 +195,26 @@ public class PdfTemplateUpdateService {
                 );
             }
 
-            if (!template.getIsSystemDefault()) {
+            /*
+             * Restore the row's OWN shipped file, not its document's default.
+             *
+             * It used to load "<document>_default.html" and be gated on isSystemDefault, so the
+             * button worked for seven of the nineteen layouts we ship. The Modern variants, the
+             * accommodation plan and the rest had no way back at all -- and had restore been
+             * offered for them under those rules it would have written the DEFAULT layout over a
+             * variant, which is worse than refusing.
+             *
+             * The row's file name is the resource it was seeded from, so it answers both
+             * questions at once: which original, and whether there is one.
+             */
+            String originalContent = storageService.loadShippedTemplate(template.getFileName());
+            if (originalContent == null) {
                 return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Only system default templates can be restored", "NOT_SYSTEM_DEFAULT")
+                    ApiResponse.error(400, "This template was written here, so there is no shipped "
+                        + "original to restore. Edit it, or delete it and add it again.",
+                        "NO_SHIPPED_ORIGINAL")
                 );
             }
-
-            // Load original content from resources
-            String originalContent = storageService.loadSystemDefaultTemplate(template.getPdfDocument().getName());
 
             // Update the file
             boolean updated = storageService.updateTemplateFile(template.getFileName(), originalContent);
@@ -262,6 +274,7 @@ public class PdfTemplateUpdateService {
             .marginRight(template.getMarginRight())
             .isDefault(template.getIsDefault())
             .isSystemDefault(template.getIsSystemDefault())
+            .hasShippedOriginal(storageService.hasShippedTemplate(template.getFileName()))
             .enabled(template.getEnabled())
             .fileSize(template.getFileSize())
             .fileSizeFormatted(storageService.formatFileSize(template.getFileSize()))

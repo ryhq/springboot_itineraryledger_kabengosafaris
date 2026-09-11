@@ -175,6 +175,8 @@ public class PdfTemplateController {
         @RequestParam(required = false) Boolean isDefault,
         @RequestParam(required = false) Boolean isSystemDefault,
         @RequestParam(required = false) String name,
+        /* the house free-text parameter: the panel's search box sends this */
+        @RequestParam(required = false) String keyword,
         @RequestParam(required = false) String paperSize,
         @RequestParam(required = false) String orientation,
         @RequestParam(required = false, defaultValue = "0") Integer page,
@@ -184,7 +186,7 @@ public class PdfTemplateController {
         @RequestParam(required = false) Boolean includeStats
     ) {
         log.info("GET /api/pdf-templates - Fetching templates with filters");
-        return getService.getAllTemplates(documentId, documentType, rootVariableName, enabled, isDefault, isSystemDefault, name, paperSize, orientation, page, size, sortBy, sortDirection, includeStats);
+        return getService.getAllTemplates(documentId, documentType, rootVariableName, enabled, isDefault, isSystemDefault, name, keyword, paperSize, orientation, page, size, sortBy, sortDirection, includeStats);
     }
 
     /**

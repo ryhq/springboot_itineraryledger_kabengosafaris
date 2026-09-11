@@ -197,6 +197,41 @@ public class PdfTemplateStorageService {
     }
 
     /**
+     * The shipped file a row was seeded from, found by the row's OWN file name.
+     *
+     * <p>A template row holds only a file name, and that name is exactly the resource it was
+     * seeded from -- "full_itinerary_modern.html" on disk came from
+     * "templates/pdf-templates/full_itinerary_modern.html" in the jar. That is the whole of the
+     * repo-to-row mapping we have, and it is enough to answer "is there an original to go back
+     * to?" for every layout we ship, not just the one per document called _default.
+     *
+     * <p>Null when there is no such resource, which is the honest answer for a template somebody
+     * wrote here: there is no original, and Restore must say so rather than overwrite it with a
+     * different document's default.
+     */
+    public String loadShippedTemplate(String fileName) {
+        if (fileName == null || fileName.isBlank()) return null;
+        /* a row's file name is a bare name; anything else is not one of ours */
+        if (fileName.contains("/") || fileName.contains("\\") || fileName.contains("..")) {
+            log.warn("Refusing to read a template path rather than a name: {}", fileName);
+            return null;
+        }
+        String resourcePath = "templates/pdf-templates/" + fileName;
+        try (var resource = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
+            if (resource == null) return null;
+            return new String(resource.readAllBytes());
+        } catch (Exception e) {
+            log.error("Failed to read shipped template: {}", resourcePath, e);
+            return null;
+        }
+    }
+
+    /** Whether we ship an original for this row's file name. */
+    public boolean hasShippedTemplate(String fileName) {
+        return loadShippedTemplate(fileName) != null;
+    }
+
+    /**
      * Load a shipped template other than the default, by its resource suffix.
      *
      * Returns null rather than a fallback: an extra template that is missing
