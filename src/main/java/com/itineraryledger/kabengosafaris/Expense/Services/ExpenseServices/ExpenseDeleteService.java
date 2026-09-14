@@ -14,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -36,32 +38,68 @@ public class ExpenseDeleteService {
                 ApiResponse.error(400, "No expense IDs provided", "INVALID_IDS"));
         }
 
+        /*
+         * Index-aligned with idsObfuscated on purpose: a skipped entry has to name the id the
+         * caller sent, and dropping an undecodable one would shift every id after it.
+         */
         List<Long> ids = new ArrayList<>();
         for (String s : idsObfuscated) {
-            try { ids.add(idObfuscator.decodeId(s)); }
-            catch (Exception e) { log.warn("Failed to decode expense id: {}", s); }
+            try {
+                ids.add(idObfuscator.decodeId(s));
+            } catch (Exception e) {
+                log.warn("Failed to decode expense id: {}", s);
+                ids.add(null);
+            }
         }
 
         try {
-            int deleted = 0;
-            int blocked = 0;
-            for (Long id : ids) {
+            /*
+             * A refusal has to come back as data, not as prose.
+             *
+             * This counted what it refused and then threw the count away, answering 200 with a
+             * null body. The panel has nothing structured to read in that case, so it reports
+             * every id it asked about as deleted: a partially paid bill stayed on the list under
+             * a toast saying "1 Bill(s) deleted". A 200 that silently deleted nothing is the one
+             * answer this contract forbids (CLAUDE.md).
+             */
+            List<String> deletedIds = new ArrayList<>();
+            List<Map<String, Object>> skipped = new ArrayList<>();
+
+            for (int i = 0; i < ids.size(); i++) {
+                Long id = ids.get(i);
+                String encodedId = idsObfuscated.get(i);
+                if (id == null) {
+                    skipped.add(Map.of("id", encodedId, "reason", "Unreadable id"));
+                    continue;
+                }
                 Expense expense = expenseRepository.findById(id).orElse(null);
-                if (expense == null) continue;
+                if (expense == null) {
+                    skipped.add(Map.of("id", encodedId, "reason", "Bill not found"));
+                    continue;
+                }
                 if (!expense.isDeletable()) {
                     log.warn("Refusing to delete non-DRAFT expense {}", expense.getExpenseCode());
-                    blocked++;
+                    skipped.add(Map.of(
+                        "id", encodedId,
+                        "code", expense.getExpenseCode() != null ? expense.getExpenseCode() : "",
+                        "reason", "It is " + expense.getStatus() + ", not a draft. Cancel it instead of deleting it."
+                    ));
                     continue;
                 }
                 expenseRepository.deleteById(id);
-                deleted++;
+                deletedIds.add(encodedId);
             }
 
-            String msg = deleted + " expense(s) deleted successfully";
-            if (blocked > 0) {
-                msg += " — " + blocked + " skipped (only DRAFT expenses can be deleted; cancel paid ones instead)";
+            String msg = deletedIds.size() + " bill(s) deleted successfully";
+            if (!skipped.isEmpty()) {
+                msg += ", " + skipped.size() + " skipped";
             }
-            return ResponseEntity.ok(ApiResponse.success(200, msg, null));
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("deletedCount", deletedIds.size());
+            data.put("deletedIds", deletedIds);
+            data.put("skipped", skipped);
+            return ResponseEntity.ok(ApiResponse.success(200, msg, data));
         } catch (DataIntegrityViolationException e) {
             log.warn("Expense delete blocked by FK: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(

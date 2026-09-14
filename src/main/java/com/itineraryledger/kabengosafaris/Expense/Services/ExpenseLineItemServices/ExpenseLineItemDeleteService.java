@@ -16,8 +16,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -44,34 +46,63 @@ public class ExpenseLineItemDeleteService {
         try {
             Long expenseId = idObfuscator.decodeId(expenseIdObfuscated);
 
+            /* index-aligned with itemIds, so a skipped entry names the id the caller sent */
             List<Long> ids = new ArrayList<>();
             for (String s : itemIds) {
-                try { ids.add(idObfuscator.decodeId(s)); }
-                catch (Exception e) { log.warn("Failed to decode line-item id: {}", s); }
+                try {
+                    ids.add(idObfuscator.decodeId(s));
+                } catch (Exception e) {
+                    log.warn("Failed to decode line-item id: {}", s);
+                    ids.add(null);
+                }
             }
-            if (ids.isEmpty()) {
+            if (ids.stream().allMatch(java.util.Objects::isNull)) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400, "No valid line item IDs provided", "INVALID_IDS"));
             }
 
-            int deleted = 0;
+            /*
+             * Every refusal comes back named. This used to `continue` silently three times over,
+             * then answer 200 with a null body, so the caller was told its delete succeeded while
+             * the row stayed exactly where it was.
+             */
+            List<String> deletedIds = new ArrayList<>();
+            List<Map<String, Object>> skipped = new ArrayList<>();
             Set<Long> affectedExpenseIds = new HashSet<>();
-            for (Long id : ids) {
+
+            for (int i = 0; i < ids.size(); i++) {
+                Long id = ids.get(i);
+                String encodedId = itemIds.get(i);
+                if (id == null) {
+                    skipped.add(Map.of("id", encodedId, "reason", "Unreadable id"));
+                    continue;
+                }
                 ExpenseLineItem item = repository.findById(id).orElse(null);
-                if (item == null) continue;
+                if (item == null) {
+                    skipped.add(Map.of("id", encodedId, "reason", "Line item not found"));
+                    continue;
+                }
                 // Parent-scope guard so callers can't reach into a different expense's items.
-                if (!item.getExpense().getId().equals(expenseId)) continue;
+                if (!item.getExpense().getId().equals(expenseId)) {
+                    skipped.add(Map.of("id", encodedId, "reason", "It belongs to a different bill"));
+                    continue;
+                }
 
                 Expense parent = item.getExpense();
                 if (!parent.isEditable()) {
                     log.warn("Refusing to delete line item {} — parent expense not editable", id);
+                    skipped.add(Map.of(
+                        "id", encodedId,
+                        "reason", "The bill is " + parent.getStatus() + " and can no longer be edited"
+                    ));
                     continue;
                 }
 
                 affectedExpenseIds.add(parent.getId());
                 repository.deleteById(id);
-                deleted++;
+                deletedIds.add(encodedId);
             }
+            int deleted = deletedIds.size();
 
             if (deleted > 0) {
                 for (Long affected : affectedExpenseIds) {
@@ -79,8 +110,15 @@ public class ExpenseLineItemDeleteService {
                 }
             }
 
-            return ResponseEntity.ok(ApiResponse.success(200,
-                deleted + " line item(s) deleted successfully", null));
+            String msg = deleted + " line item(s) deleted successfully";
+            if (!skipped.isEmpty()) {
+                msg += ", " + skipped.size() + " skipped";
+            }
+            Map<String, Object> data = new HashMap<>();
+            data.put("deletedCount", deleted);
+            data.put("deletedIds", deletedIds);
+            data.put("skipped", skipped);
+            return ResponseEntity.ok(ApiResponse.success(200, msg, data));
         } catch (DataIntegrityViolationException e) {
             log.warn("Expense line-item delete blocked by FK", e);
             return ResponseEntity.status(HttpStatus.CONFLICT).body(
