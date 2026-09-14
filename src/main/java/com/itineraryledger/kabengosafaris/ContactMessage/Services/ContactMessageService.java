@@ -110,7 +110,8 @@ public class ContactMessageService {
                 "CONTACT_US_RECEIVED",
                 contactMessage.getEmail(),
                 "We have your message (" + contactMessage.getCode() + ")",
-                buildAcknowledgementVariables(contactMessage));
+                buildAcknowledgementVariables(contactMessage),
+                contactMessage.getPreferredLocale());
         } catch (Exception e) {
             log.error("Could not acknowledge contact message {}: {}",
                 contactMessage.getCode(), e.getMessage(), e);

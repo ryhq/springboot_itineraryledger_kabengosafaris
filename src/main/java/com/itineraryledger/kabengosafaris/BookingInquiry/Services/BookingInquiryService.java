@@ -334,11 +334,18 @@ public class BookingInquiryService {
      */
     private void sendInquiryAcknowledgement(BookingInquiry inquiry) {
         try {
+            /*
+             * The locale arrived with the form and was then dropped: a German family filled in the
+             * German site, "de" was stored on this inquiry, and the acknowledgement went out in
+             * English. It is translated on the way out now, the same way a PDF is, and falls back
+             * to English whenever that cannot be done.
+             */
             acknowledgements.send(
                 "BOOKING_INQUIRY_RECEIVED",
                 inquiry.getEmail(),
                 "We have your safari enquiry (" + inquiry.getCode() + ")",
-                buildAcknowledgementVariables(inquiry));
+                buildAcknowledgementVariables(inquiry),
+                inquiry.getPreferredLocale());
         } catch (Exception e) {
             log.error("Could not acknowledge inquiry {}: {}", inquiry.getCode(), e.getMessage(), e);
         }

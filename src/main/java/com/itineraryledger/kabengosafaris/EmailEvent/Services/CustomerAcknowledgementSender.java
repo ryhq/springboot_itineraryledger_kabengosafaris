@@ -1,12 +1,15 @@
 package com.itineraryledger.kabengosafaris.EmailEvent.Services;
 
 import com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyIdentityService;
+import com.itineraryledger.kabengosafaris.Translation.Services.TranslationService;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices.EmailSendingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -29,6 +32,7 @@ public class CustomerAcknowledgementSender {
     private final EmailTemplateRenderer renderer;
     private final EmailSendingService emailSendingService;
     private final CompanyIdentityService company;
+    private final TranslationService translationService;
 
     /**
      * How the public site addresses one itinerary, e.g. {@code /safaris/{code}}.
@@ -47,10 +51,12 @@ public class CustomerAcknowledgementSender {
 
     public CustomerAcknowledgementSender(EmailTemplateRenderer renderer,
                                         EmailSendingService emailSendingService,
-                                        CompanyIdentityService company) {
+                                        CompanyIdentityService company,
+                                        TranslationService translationService) {
         this.renderer = renderer;
         this.emailSendingService = emailSendingService;
         this.company = company;
+        this.translationService = translationService;
     }
 
     /**
@@ -60,6 +66,24 @@ public class CustomerAcknowledgementSender {
      * a persistence session, so a lazy association read in here would fail where nobody is looking.
      */
     public void send(String eventName, String toEmail, String subject, Map<String, String> variables) {
+        send(eventName, toEmail, subject, variables, null);
+    }
+
+    /**
+     * The same, in the reader's own language.
+     *
+     * <p>A German family enquired through the German site, "de" was stored on the inquiry, and the
+     * acknowledgement went out in English: nothing carried the language as far as the email. The
+     * template stays in English and is translated on the way out, the same way a PDF is
+     * (PdfGenerationBaseService) -- one English template per event, not one per language.
+     *
+     * <p>Failure is silent and total by design. No language, English, an unsupported language, a
+     * translation engine that is down or slow: every one of them sends the English original. An
+     * acknowledgement that arrives in the wrong language is a small disappointment; one that never
+     * arrives because the translator was unreachable is a customer who thinks the form is broken.
+     */
+    public void send(String eventName, String toEmail, String subject,
+                     Map<String, String> variables, String language) {
         if (toEmail == null || toEmail.isBlank()) {
             log.error("No address to acknowledge {} to; nobody will be told we received their submission",
                 eventName);
@@ -71,13 +95,64 @@ public class CustomerAcknowledgementSender {
         CompletableFuture.runAsync(() -> {
             try {
                 String html = renderer.renderTemplate(eventName, payload);
-                emailSendingService.sendHtmlEmail(toEmail, subject, html);
-                log.info("Acknowledged {} to {}", eventName, toEmail);
+                String body = translated(html, language);
+                String heading = translatedSubject(subject, language);
+                emailSendingService.sendHtmlEmail(toEmail, heading, body);
+                log.info("Acknowledged {} to {}{}", eventName, toEmail,
+                    body.equals(html) ? "" : " in " + language);
             } catch (Exception e) {
                 log.error("Could not acknowledge {} to {}. They have no way of knowing we received it: {}",
                     eventName, toEmail, e.getMessage(), e);
             }
         });
+    }
+
+
+    /**
+     * The body in the reader's language, or the English original if anything at all goes wrong.
+     *
+     * <p>translateHtml already returns the input unchanged for English, a blank language or one
+     * the installation does not support, and it keeps the document structure intact rather than
+     * translating tag names. The catch is for the rest: the engine being down, slow, or refusing.
+     */
+    private String translated(String html, String language) {
+        if (language == null || language.isBlank() || "en".equalsIgnoreCase(language)) {
+            return html;
+        }
+        try {
+            String out = translationService.translateHtml(html, language);
+            return out == null || out.isBlank() ? html : out;
+        } catch (Exception e) {
+            log.warn("Could not translate this acknowledgement into {}; sending it in English: {}",
+                language, e.getMessage());
+            return html;
+        }
+    }
+
+    /**
+     * The subject line, translated around anything in brackets.
+     *
+     * <p>A reference like "(INQ-0001-09-26)" must survive untouched: it is what the customer quotes
+     * back and what we search on, and a machine translator will happily rewrite it -- one was seen
+     * turning a bracketed token into a Wikipedia category. So the brackets are held back, the words
+     * are translated, and the reference is put back exactly as it was.
+     */
+    private String translatedSubject(String subject, String language) {
+        if (subject == null || subject.isBlank()
+            || language == null || language.isBlank() || "en".equalsIgnoreCase(language)) {
+            return subject;
+        }
+        Matcher reference = Pattern.compile("\\s*\\(([^)]*)\\)\\s*$").matcher(subject);
+        String words = reference.find() ? subject.substring(0, reference.start()).trim() : subject;
+        String tail = reference.reset().find() ? " (" + reference.group(1) + ")" : "";
+        try {
+            String out = translationService.translatePlainText(words, "en", language);
+            return out == null || out.isBlank() ? subject : out.trim() + tail;
+        } catch (Exception e) {
+            log.warn("Could not translate this subject into {}; sending it in English: {}",
+                language, e.getMessage());
+            return subject;
+        }
     }
 
     /** The company's details in the forms a customer-facing template wants them. */

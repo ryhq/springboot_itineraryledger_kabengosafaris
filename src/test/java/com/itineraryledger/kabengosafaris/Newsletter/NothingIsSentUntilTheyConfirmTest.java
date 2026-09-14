@@ -94,7 +94,7 @@ class NothingIsSentUntilTheyConfirmTest {
             "the form must not claim they are subscribed; that trains people to ignore the email that matters");
 
         ArgumentCaptor<String> event = ArgumentCaptor.forClass(String.class);
-        verify(acknowledgements).send(event.capture(), anyString(), anyString(), any());
+        verify(acknowledgements).send(event.capture(), anyString(), anyString(), any(), any());
         assertEquals("NEWSLETTER_CONFIRM", event.getValue(),
             "the ONLY email an unconfirmed address may receive");
     }
@@ -111,7 +111,7 @@ class NothingIsSentUntilTheyConfirmTest {
         assertEquals(SubscriptionStatus.ACTIVE, pending.getStatus());
         assertNotNull(pending.getConfirmedAt());
         verify(acknowledgements).send(org.mockito.ArgumentMatchers.eq("NEWSLETTER_WELCOME"),
-            anyString(), anyString(), any());
+            anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -125,7 +125,7 @@ class NothingIsSentUntilTheyConfirmTest {
         Map<String, Object> answer = service.confirm("tok-2");
 
         assertEquals("already_confirmed", answer.get("status"));
-        verify(acknowledgements, never()).send(anyString(), anyString(), anyString(), any());
+        verify(acknowledgements, never()).send(anyString(), anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -136,7 +136,7 @@ class NothingIsSentUntilTheyConfirmTest {
         assertEquals("invalid", service.confirm("nonsense").get("status"));
         assertEquals("invalid", service.confirm(null).get("status"));
         assertEquals("invalid", service.confirm("   ").get("status"));
-        verify(acknowledgements, never()).send(anyString(), anyString(), anyString(), any());
+        verify(acknowledgements, never()).send(anyString(), anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -156,7 +156,7 @@ class NothingIsSentUntilTheyConfirmTest {
             + "again without ever agreeing to it");
         assertNull(gone.getUnsubscribedAt());
         verify(acknowledgements).send(org.mockito.ArgumentMatchers.eq("NEWSLETTER_CONFIRM"),
-            anyString(), anyString(), any());
+            anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -173,7 +173,7 @@ class NothingIsSentUntilTheyConfirmTest {
 
         assertEquals(SubscriptionStatus.ACTIVE, active.getStatus());
         verify(acknowledgements, never()).send(
-            org.mockito.ArgumentMatchers.eq("NEWSLETTER_CONFIRM"), anyString(), anyString(), any());
+            org.mockito.ArgumentMatchers.eq("NEWSLETTER_CONFIRM"), anyString(), anyString(), any(), any());
         assertEquals("confirmation_sent", answer.get("status"),
             "the same answer either way, so the form cannot be used to ask who is on the list");
     }

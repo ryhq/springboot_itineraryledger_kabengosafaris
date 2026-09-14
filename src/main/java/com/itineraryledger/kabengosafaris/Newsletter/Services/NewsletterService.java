@@ -243,7 +243,7 @@ public class NewsletterService {
             return;
         }
         acknowledgements.send("NEWSLETTER_CONFIRM", sub.getEmail(),
-            "Please confirm your subscription", v);
+            "Please confirm your subscription", v, sub.getPreferredLocale());
     }
 
     /** Sent once, the moment they confirm. */
@@ -257,7 +257,7 @@ public class NewsletterService {
         v.put("preferredLocale", sub.getPreferredLocale() != null ? sub.getPreferredLocale() : "en");
         v.put("unsubscribeUrl", unsubscribeUrl(sub));
         acknowledgements.send("NEWSLETTER_WELCOME", sub.getEmail(),
-            "Welcome to our safari news", v);
+            "Welcome to our safari news", v, sub.getPreferredLocale());
     }
 
     private void linkToCustomer(NewsletterSubscription subscription, String email) {
