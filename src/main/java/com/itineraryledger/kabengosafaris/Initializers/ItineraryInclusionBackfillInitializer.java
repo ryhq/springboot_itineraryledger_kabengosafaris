@@ -27,6 +27,11 @@ import lombok.extern.slf4j.Slf4j;
  * <p>Runs once in effect: an itinerary that already has rows is skipped, so this is a no-op on
  * every later boot.
  *
+ * <p>An itinerary with no typed text at all is given the standard house promise rather than left
+ * empty. Three live itineraries were in that state and had been showing no "what's included"
+ * section on the public website for as long as they had existed — which is the fault that started
+ * all of this.
+ *
  * <p><strong>All or nothing per itinerary.</strong> {@link ItineraryInclusionReader} falls back to
  * the old text columns only while an itinerary has ZERO rows, so linking three of an itinerary's
  * four lines would stop the fallback and silently drop the fourth. Three itineraries have their
@@ -50,15 +55,22 @@ public class ItineraryInclusionBackfillInitializer implements ApplicationRunner 
     @Override
     public void run(ApplicationArguments args) {
         try {
+            /*
+             * Scalar columns only. The first version of this filtered on getInclusionList(), which
+             * is a LAZY collection on an entity that findAll() has already detached — so every
+             * itinerary threw LazyInitializationException, the outer catch below swallowed it, and
+             * the sweep reported a failure into a log nobody was reading. The result was 62 live
+             * itineraries silently left on their old text. Whether an itinerary already has rows is
+             * asked of the repository instead, inside the transaction that does the work.
+             */
             List<Long> candidates = itineraries.findAll().stream()
-                .filter(i -> i.getInclusionList() == null || i.getInclusionList().isEmpty())
-                .filter(i -> notBlank(i.getInclusions()) || notBlank(i.getExclusions()))
                 .map(Itinerary::getId)
                 .toList();
 
             if (candidates.isEmpty()) return;
 
             int converted = 0;
+            int seeded = 0;
             int leftAsProse = 0;
             int failed = 0;
             int created = 0;
@@ -68,7 +80,9 @@ public class ItineraryInclusionBackfillInitializer implements ApplicationRunner 
                     ItineraryInclusionBackfill.Outcome outcome = backfill.convert(id);
                     switch (outcome.result()) {
                         case CONVERTED -> converted++;
+                        case SEEDED_STANDARD -> seeded++;
                         case LEFT_AS_PROSE -> leftAsProse++;
+                        case ALREADY_DONE -> { /* a later boot; nothing to do */ }
                     }
                     created += outcome.itemsCreated();
                 } catch (Exception e) {
@@ -78,17 +92,14 @@ public class ItineraryInclusionBackfillInitializer implements ApplicationRunner 
                 }
             }
 
-            log.info("INCLUSION BACKFILL: {} itinerar{} converted, {} left as prose for a human to "
-                + "split, {} failed, {} new catalogue line(s) created",
-                converted, converted == 1 ? "y" : "ies", leftAsProse, failed, created);
+            if (converted + seeded + leftAsProse + failed == 0) return;
+            log.info("INCLUSION BACKFILL: {} converted from typed text, {} given the standard set, "
+                + "{} left as prose for a human to split, {} failed, {} new catalogue line(s) created",
+                converted, seeded, leftAsProse, failed, created);
         } catch (Exception e) {
             log.error("INCLUSION BACKFILL: sweep failed, itineraries keep their typed text: {}",
                 e.getMessage(), e);
         }
-    }
-
-    private static boolean notBlank(String value) {
-        return value != null && !value.isBlank();
     }
 
     /**
@@ -116,12 +127,33 @@ public class ItineraryInclusionBackfillInitializer implements ApplicationRunner 
 
         public record Outcome(Result result, int itemsCreated) {}
 
-        public enum Result { CONVERTED, LEFT_AS_PROSE }
+        public enum Result {
+            /** Typed text turned into rows. */
+            CONVERTED,
+            /**
+             * Had no text at all, so it was given the house promise.
+             *
+             * <p>Three live itineraries were in this state, and it is the fault that started all
+             * of this: they showed no "what's included" section on the website at all, because
+             * nobody had pasted the paragraph into them. A new itinerary gets the standard set
+             * automatically now; these never would have.
+             */
+            SEEDED_STANDARD,
+            /** One of its lines is a paragraph, so all of it stays for a human. */
+            LEFT_AS_PROSE,
+            /** Already has rows — a later boot. */
+            ALREADY_DONE
+        }
 
         @Transactional(propagation = Propagation.REQUIRES_NEW)
         public Outcome convert(Long itineraryId) {
             Itinerary itinerary = itineraries.findById(itineraryId).orElse(null);
-            if (itinerary == null) return new Outcome(Result.LEFT_AS_PROSE, 0);
+            if (itinerary == null) return new Outcome(Result.ALREADY_DONE, 0);
+
+            /* Inside the transaction, so the collection is readable. */
+            if (itinerary.getInclusionList() != null && !itinerary.getInclusionList().isEmpty()) {
+                return new Outcome(Result.ALREADY_DONE, 0);
+            }
 
             List<String> included = ItineraryInclusionReader.splitLines(itinerary.getInclusions());
             List<String> excluded = ItineraryInclusionReader.splitLines(itinerary.getExclusions());
@@ -130,6 +162,28 @@ public class ItineraryInclusionBackfillInitializer implements ApplicationRunner 
              * Decided before anything is written. One paragraph anywhere and the whole itinerary
              * stays on the fallback, because the fallback is all-or-nothing per itinerary.
              */
+            if (included.isEmpty() && excluded.isEmpty()) {
+                /*
+                 * Nothing typed, ever. Give it the house promise rather than leaving it printing a
+                 * price with no statement of what it covers — which is what these three have been
+                 * doing on the public website all along.
+                 */
+                int position = 1;
+                for (InclusionItem item
+                        : inclusionItems.findByIsActiveTrueAndIsStandardTrueOrderByDisplayOrderAscIdAsc()) {
+                    itinerary.addInclusion(ItineraryInclusion.builder()
+                        .inclusionItem(item)
+                        .isIncluded(!Boolean.FALSE.equals(item.getDefaultIncluded()))
+                        .sortOrder(position++)
+                        .build());
+                }
+                if (position == 1) return new Outcome(Result.ALREADY_DONE, 0);
+                itineraries.save(itinerary);
+                log.info("INCLUSION BACKFILL: {} had nothing at all; given the standard {} line(s)",
+                    itinerary.getCode(), position - 1);
+                return new Outcome(Result.SEEDED_STANDARD, 0);
+            }
+
             boolean anyProse = included.stream().anyMatch(l -> l.length() > LINE_LIMIT)
                 || excluded.stream().anyMatch(l -> l.length() > LINE_LIMIT);
             if (anyProse) {

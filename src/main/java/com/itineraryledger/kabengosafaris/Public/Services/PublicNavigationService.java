@@ -98,7 +98,7 @@ public class PublicNavigationService {
 
             // Itineraries (as safaris for public) - return id and name for active itineraries
             List<Itinerary> activeItinerariesList = itineraryRepository.findAll(
-                ItinerarySpecification.isActive(true),
+                ItinerarySpecification.isActiveAndPublished(),
                 Sort.by(Sort.Direction.ASC, "name")
             );
             List<Map<String, String>> itineraryNavItems = activeItinerariesList.stream().map(i -> {

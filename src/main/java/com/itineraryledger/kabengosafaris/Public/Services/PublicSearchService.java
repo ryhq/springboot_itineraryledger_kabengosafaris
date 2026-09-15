@@ -165,7 +165,7 @@ public class PublicSearchService {
             results.put("accommodationsTotalItems", accPage.getTotalElements());
 
             // Safaris (Itineraries) — safe VARCHAR fields only (description, highlights are TEXT)
-            Specification<Itinerary> itinSpec = ItinerarySpecification.isActive(true)
+            Specification<Itinerary> itinSpec = ItinerarySpecification.isActiveAndPublished()
                 .and(safeSearch(searchKeyword, "name", "code", "startLocation", "endLocation"));
             Page<Itinerary> itinPage = itineraryRepository.findAll(itinSpec,
                 PageRequest.of(0, limit, Sort.by("name").ascending()));

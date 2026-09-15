@@ -162,6 +162,22 @@ public class Itinerary {
         pax.setItinerary(this);
     }
 
+    /**
+     * Whether the public website may show this at all.
+     *
+     * <p>Published AND active. Anything else is work in progress: a DRAFT is being built, a
+     * COMPLETE one is ready to publish but nobody has said so yet, and an ARCHIVED one was
+     * deliberately withdrawn. Publishing is a person deciding this company will sell the trip, and
+     * until that decision is made the trip is not for sale.
+     *
+     * <p>The in-memory twin of {@code ItinerarySpecification.isActiveAndPublished()}. The two must
+     * agree, and a test asserts they do.
+     */
+    @Transient
+    public boolean isPubliclyVisible() {
+        return Boolean.TRUE.equals(isActive) && status == ItineraryStatus.PUBLISHED;
+    }
+
     public void addInclusion(ItineraryInclusion inclusion) {
         inclusionList.add(inclusion);
         inclusion.setItinerary(this);

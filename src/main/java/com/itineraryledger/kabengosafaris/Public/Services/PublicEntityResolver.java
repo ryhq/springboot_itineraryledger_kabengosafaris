@@ -75,12 +75,22 @@ public class PublicEntityResolver {
      * Resolve Itinerary by identifier: id → code
      */
     public Optional<Itinerary> resolveItinerary(String identifier) {
+        /*
+         * Published only, and this is the one that mattered most.
+         *
+         * The list endpoints filtered on isActive alone, which already showed drafts — but this
+         * resolves by CODE, and a code is guessable: ITI-6D6N-1070 is a day count and a serial.
+         * Anybody could read a trip that had never been published, priced and described as though
+         * it were for sale. Filtering the lists without filtering this would have looked fixed and
+         * left the door open.
+         */
         try {
             Long id = idObfuscator.decodeId(identifier);
-            Optional<Itinerary> byId = itineraryRepository.findById(id);
+            Optional<Itinerary> byId = itineraryRepository.findById(id)
+                .filter(Itinerary::isPubliclyVisible);
             if (byId.isPresent()) return byId;
         } catch (Exception ignored) {}
 
-        return itineraryRepository.findByCode(identifier);
+        return itineraryRepository.findByCode(identifier).filter(Itinerary::isPubliclyVisible);
     }
 }

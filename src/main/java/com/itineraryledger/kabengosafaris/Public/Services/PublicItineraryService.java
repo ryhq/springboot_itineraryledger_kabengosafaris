@@ -100,7 +100,7 @@ public class PublicItineraryService {
             Sort sort = Sort.by(dir, sortField);
             Pageable pageable = PageRequest.of(page, size, sort);
 
-            Specification<Itinerary> spec = ItinerarySpecification.isActive(true);
+            Specification<Itinerary> spec = ItinerarySpecification.isActiveAndPublished();
             if (tripType != null) spec = spec.and(ItinerarySpecification.hasTripType(tripType));
             if (budgetCategory != null) spec = spec.and(ItinerarySpecification.hasBudgetCategory(budgetCategory));
             if (keyword != null && !keyword.isEmpty()) spec = spec.and(ItinerarySpecification.searchKeyword(keyword));
@@ -197,7 +197,7 @@ public class PublicItineraryService {
         List<Itinerary> all = (ids == null || ids.isEmpty())
             ? Collections.emptyList()
             : itineraryRepository.findAllById(ids).stream()
-                .filter(i -> Boolean.TRUE.equals(i.getIsActive()))
+                .filter(Itinerary::isPubliclyVisible)
                 .sorted(Comparator.comparing(Itinerary::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                 .collect(Collectors.toList());
 
@@ -247,9 +247,9 @@ public class PublicItineraryService {
                 countById.put(id, ((Number) r[1]).longValue());
             }
 
-            // Only publicly-visible itineraries (match the list endpoint: active).
+            // Only publicly-visible itineraries — published, not merely active.
             Map<Long, Itinerary> byId = itineraryRepository.findAllById(orderedIds).stream()
-                .filter(it -> Boolean.TRUE.equals(it.getIsActive()))
+                .filter(Itinerary::isPubliclyVisible)
                 .collect(Collectors.toMap(Itinerary::getId, it -> it));
 
             List<Itinerary> ranked = orderedIds.stream()
@@ -290,7 +290,8 @@ public class PublicItineraryService {
     public ResponseEntity<ApiResponse<?>> getItineraryByIdentifier(String identifier, String lang) {
         try {
             Itinerary itinerary = entityResolver.resolveItinerary(identifier).orElse(null);
-            if (itinerary == null || !Boolean.TRUE.equals(itinerary.getIsActive())) {
+            /* Belt as well as braces: the resolver filters too, and both are cheap. */
+            if (itinerary == null || !itinerary.isPubliclyVisible()) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Safari not found", "SAFARI_NOT_FOUND"));
             }
 

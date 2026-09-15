@@ -83,7 +83,7 @@ public class PublicHomepageService {
 
             // Safaris (Itineraries exposed as Safaris - first page, limited)
             Page<Itinerary> itineraryPage = itineraryRepository.findAll(
-                ItinerarySpecification.isActive(true),
+                ItinerarySpecification.isActiveAndPublished(),
                 PageRequest.of(0, DEFAULT_SAFARIS_LIMIT, Sort.by("createdAt").descending())
             );
             // Batch-fetch cost summaries so homepage cards can show a "from" price (like /public/safaris)
