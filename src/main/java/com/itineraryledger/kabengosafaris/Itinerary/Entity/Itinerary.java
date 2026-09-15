@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Itinerary.Entity;
 
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Entity.ItineraryDay;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryInclusion.Entity.ItineraryInclusion;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryPax.Entity.ItineraryPax;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
@@ -129,6 +130,19 @@ public class Itinerary {
     @Builder.Default
     private List<ItineraryPax> paxList = new ArrayList<>();
 
+    /**
+     * What this trip's price covers, and what it does not.
+     *
+     * <p>Ordered by the row's own sortOrder rather than the catalogue's, so dragging one item in
+     * the catalogue does not silently reorder the printed promise on every itinerary. @BatchSize
+     * because the public list endpoint reads this for 65 rows at a time.
+     */
+    @OneToMany(mappedBy = "itinerary", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @OrderBy("sortOrder ASC, id ASC")
+    @org.hibernate.annotations.BatchSize(size = 50)
+    private List<ItineraryInclusion> inclusionList = new ArrayList<>();
+
     // ========================
     // HELPER METHODS
     // ========================
@@ -146,6 +160,16 @@ public class Itinerary {
     public void addPax(ItineraryPax pax) {
         paxList.add(pax);
         pax.setItinerary(this);
+    }
+
+    public void addInclusion(ItineraryInclusion inclusion) {
+        inclusionList.add(inclusion);
+        inclusion.setItinerary(this);
+    }
+
+    public void removeInclusion(ItineraryInclusion inclusion) {
+        inclusionList.remove(inclusion);
+        inclusion.setItinerary(null);
     }
 
     public void removePax(ItineraryPax pax) {

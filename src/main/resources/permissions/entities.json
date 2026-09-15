@@ -48,6 +48,7 @@
     "HERO",
     "HERO_IMAGE",
     "IMAGE_SETTING",
+    "INCLUSION_ITEM",
     "INVOICE",
     "INVOICE_DOCUMENT",
     "INVOICE_LINE_ITEM",
