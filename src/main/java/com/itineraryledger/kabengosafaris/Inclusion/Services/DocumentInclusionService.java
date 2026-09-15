@@ -52,6 +52,7 @@ public class DocumentInclusionService {
     private final SafariRepository safariRepository;
     private final InvoiceRepository invoiceRepository;
     private final InclusionSnapshotService snapshot;
+    private final InclusionAccuracyService accuracy;
     private final IdObfuscator idObfuscator;
 
     /* ================================================================== quote */
@@ -74,8 +75,23 @@ public class DocumentInclusionService {
                 .build())
             .toList();
 
-        return ok(rows, quote.getInclusionsSource(), quote.getInclusionsSyncedAt(),
+        ResponseEntity<ApiResponse<?>> response = ok(rows, quote.getInclusionsSource(),
+            quote.getInclusionsSyncedAt(),
             quote.getItinerary() != null ? quote.getItinerary().getCode() : null, "itinerary");
+
+        /*
+         * Computed on the read the screen already makes, rather than behind an endpoint the panel
+         * has to remember to call — a warning nobody fetches is a warning nobody sees. It reads
+         * collections already loaded, so it costs nothing extra.
+         *
+         * Only on the quote. That is where the promise is negotiated and where somebody can still
+         * change either half; on a safari the trip is sold and on an invoice the money is being
+         * collected, so a warning there would be noise about a decision already taken.
+         */
+        @SuppressWarnings("unchecked")
+        Map<String, Object> body = (Map<String, Object>) response.getBody().getData();
+        body.put("inclusionWarnings", accuracy.check(quote));
+        return response;
     }
 
     @AuditLogAnnotation(action = "SET_QUOTE_INCLUSIONS",

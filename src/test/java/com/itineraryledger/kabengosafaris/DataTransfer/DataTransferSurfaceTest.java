@@ -55,7 +55,21 @@ class DataTransferSurfaceTest {
          * appear in this list. The distinction is one word in a package name and the whole reason
          * this test exists.
          */
-        "ItineraryTransfer");
+        "ItineraryTransfer",
+        /*
+         * What a price covers: the catalogue of sentences an itinerary's promise is assembled from.
+         *
+         * Reference data by the same test as everything above it. A line is wording about the
+         * PRODUCT — "Private 4x4 safari vehicle with pop-up roof", "International flights & visas"
+         * — with no customer, no figure and no agreement in it. It travels because an itinerary
+         * names these lines, and an itinerary that arrived without them would state a trip and say
+         * nothing about what it includes.
+         *
+         * What is deliberately NOT here, and must never be: the quote, safari and invoice snapshots
+         * of the same wording. Those are what a named customer was told about a named price, they
+         * live beside FORBIDDEN classes for that reason, and the modules for them do not exist.
+         */
+        "InclusionTransfer");
 
     /** Never, whatever anybody names the class. */
     private static final List<String> FORBIDDEN = List.of(

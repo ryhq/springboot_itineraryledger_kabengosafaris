@@ -36,6 +36,9 @@ import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPar
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkActivity.Repository.ItineraryDayParkActivityRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.Entity.ItineraryDayParkTariff;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.ItineraryDayParkTariff.Repository.ItineraryDayParkTariffRepository;
+import com.itineraryledger.kabengosafaris.Inclusion.Repository.InclusionItemRepository;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryInclusion.Entity.ItineraryInclusion;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryInclusion.Repository.ItineraryInclusionRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryPax.Entity.ItineraryPax;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryPax.Repository.ItineraryPaxRepository;
 import com.itineraryledger.kabengosafaris.Park.Park;
@@ -95,6 +98,8 @@ public class ItineraryTransfer implements ModuleTransfer {
     private final AccommodationRoomStandardRepository roomStandards;
     private final AccommodationBoardTypeRepository boardTypes;
     private final ReferenceResolver resolver;
+    private final ItineraryInclusionRepository itineraryInclusions;
+    private final InclusionItemRepository inclusionItems;
     private final ObjectMapper mapper;
 
     @Override public String name() { return "itineraries"; }
@@ -105,7 +110,14 @@ public class ItineraryTransfer implements ModuleTransfer {
     @Override
     public List<String> requires() {
         return List.of("tariffs", "pax-categories", "seasons", "parks", "activities",
-            "park-activities", "accommodations");
+            "park-activities", "accommodations",
+            /*
+             * The promise. It used to travel for free, as two free-text columns Scalars copied
+             * without anybody deciding it should; the moment it became rows it would have stopped,
+             * and an imported itinerary would have arrived saying nothing about what its price
+             * covers.
+             */
+            "inclusions");
     }
 
     @Override
@@ -129,6 +141,22 @@ public class ItineraryTransfer implements ModuleTransfer {
                 paxRow.put("nation", p.getNationCategory() == null ? null : p.getNationCategory().getName());
                 paxRow.put("age", p.getAgeCategory() == null ? null : p.getAgeCategory().getName());
                 paxRows.add(paxRow);
+            }
+
+            /*
+             * By wording, not by id: a catalogue code is derived from a row id, so it means nothing
+             * in the receiving company. The sentence is the only stable name this has across an
+             * export, which is how the parks and room types beside it travel too.
+             */
+            ArrayNode inclusionRows = row.putArray("inclusions");
+            for (ItineraryInclusion line : itineraryInclusions
+                    .findByItineraryIdOrderBySortOrderAscIdAsc(itinerary.getId())) {
+                if (line.getInclusionItem() == null) continue;
+                ObjectNode lineRow = mapper.createObjectNode();
+                lineRow.put("item", line.getInclusionItem().getLabel());
+                lineRow.put("included", line.included());
+                lineRow.put("order", line.getSortOrder());
+                inclusionRows.add(lineRow);
             }
 
             ArrayNode dayRows = row.putArray("days");
@@ -252,6 +280,25 @@ public class ItineraryTransfer implements ModuleTransfer {
     }
 
     private void writePax(JsonNode row, Itinerary itinerary, TransferContext context) {
+        for (JsonNode line : row.path("inclusions")) {
+            String label = line.path("item").asText(null);
+            if (label == null || label.isBlank()) continue;
+            var item = inclusionItems.findByLabelIgnoringCaseAndSpace(label).orElse(null);
+            /*
+             * Refused, not skipped, exactly as a missing lodge or tariff is. An itinerary is all or
+             * nothing here, and one that arrived silently missing a line of its promise would look
+             * complete and be quoted from.
+             */
+            if (item == null) throw new Missing("no inclusion line called '" + label + "' here");
+
+            ItineraryInclusion entry = new ItineraryInclusion();
+            entry.setItinerary(itinerary);
+            entry.setInclusionItem(item);
+            entry.setIsIncluded(line.path("included").asBoolean(true));
+            entry.setSortOrder(line.path("order").asInt(0));
+            itineraryInclusions.save(entry);
+        }
+
         for (JsonNode p : row.path("pax")) {
             String nation = p.path("nation").asText(null);
             String age = p.path("age").asText(null);
