@@ -1,5 +1,8 @@
 package com.itineraryledger.kabengosafaris.Quote.Entity;
 
+import com.itineraryledger.kabengosafaris.Quote.QuoteInclusion.Entity.QuoteInclusion;
+import com.itineraryledger.kabengosafaris.Inclusion.Entity.InclusionsSource;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -140,6 +143,35 @@ public class Quote {
     @OneToMany(mappedBy = "quote", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<QuotePax> paxList = new ArrayList<>();
+
+    /**
+     * What this document tells the customer its price covers, copied from its parent and owned
+     * from that moment — the same rule as the day tree.
+     */
+    @OneToMany(mappedBy = "quote", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    @OrderBy("sortOrder ASC, id ASC")
+    @org.hibernate.annotations.BatchSize(size = 50)
+    private List<QuoteInclusion> inclusionList = new ArrayList<>();
+
+    public void addInclusion(QuoteInclusion inclusion) {
+        inclusionList.add(inclusion);
+        inclusion.setQuote(this);
+    }
+
+    /**
+     * Whether what this document says its price covers is still its parent's, or was changed here.
+     *
+     * <p>Null on anything created before the chain existed, which is what the reader's fallback is
+     * for — "not recorded" is distinguishable from "inherited and untouched".
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "inclusions_source", length = 20)
+    private InclusionsSource inclusionsSource;
+
+    @Column(name = "inclusions_synced_at")
+    private LocalDateTime inclusionsSyncedAt;
+
 
     // =====================================================================
     // MULTI-CURRENCY TOTALS

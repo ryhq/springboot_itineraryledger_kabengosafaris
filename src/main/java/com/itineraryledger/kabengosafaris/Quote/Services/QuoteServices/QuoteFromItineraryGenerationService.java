@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices;
 
+import com.itineraryledger.kabengosafaris.Inclusion.Services.InclusionSnapshotService;
+
 import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.ItineraryCostEstimationDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
@@ -66,6 +68,7 @@ public class QuoteFromItineraryGenerationService {
     private final CustomerRepository customerRepository;
     private final QuoteRepository quoteRepository;
     private final IdObfuscator idObfuscator;
+    private final InclusionSnapshotService inclusionSnapshot;
 
     @Autowired
     public QuoteFromItineraryGenerationService(
@@ -76,7 +79,8 @@ public class QuoteFromItineraryGenerationService {
             ItineraryRepository itineraryRepository,
             CustomerRepository customerRepository,
             QuoteRepository quoteRepository,
-            IdObfuscator idObfuscator
+            IdObfuscator idObfuscator,
+            InclusionSnapshotService inclusionSnapshot
     ) {
         this.costEstimationService = costEstimationService;
         this.quoteCreateService = quoteCreateService;
@@ -86,6 +90,7 @@ public class QuoteFromItineraryGenerationService {
         this.customerRepository = customerRepository;
         this.quoteRepository = quoteRepository;
         this.idObfuscator = idObfuscator;
+        this.inclusionSnapshot = inclusionSnapshot;
     }
 
     /**
@@ -246,8 +251,12 @@ public class QuoteFromItineraryGenerationService {
             Quote quote = quoteRepository.findById(decodedQuoteId).orElse(null);
             int itemsCreated;
             if (quote != null) {
-                copyPaxConfiguration(itinerary, quote);
-                copyDaysStructure(itinerary, quote);
+                /*
+                 * Through the shared method, not by repeating its two calls. This path used to
+                 * duplicate them, which meant every field added to the snapshot had to be added
+                 * in two places and would eventually be added in one.
+                 */
+                snapshotItineraryIntoQuote(itinerary, quote);
                 quoteRepository.save(quote);
                 // Items are derived from the new Quote tree × pax mix by the
                 // shared cost-estimation engine, so any future edits to the
@@ -559,6 +568,12 @@ public class QuoteFromItineraryGenerationService {
     public void snapshotItineraryIntoQuote(Itinerary itinerary, Quote quote) {
         copyPaxConfiguration(itinerary, quote);
         copyDaysStructure(itinerary, quote);
+        /*
+         * And what the price covers. A quote that states a figure without stating what the figure
+         * buys is the gap this closes — the quote sent to a real customer in September priced a
+         * 5,629 USD trip and said nothing anywhere about what it included.
+         */
+        inclusionSnapshot.itineraryToQuote(itinerary, quote);
     }
 
     private void copyPaxConfiguration(Itinerary itinerary, Quote quote) {

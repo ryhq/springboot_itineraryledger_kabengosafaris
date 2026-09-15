@@ -1,5 +1,8 @@
 package com.itineraryledger.kabengosafaris.Invoice.Entity;
 
+import com.itineraryledger.kabengosafaris.Invoice.InvoiceInclusion.Entity.InvoiceInclusion;
+import com.itineraryledger.kabengosafaris.Inclusion.Entity.InclusionsSource;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,6 +18,7 @@ import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
 import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
 import com.itineraryledger.kabengosafaris.User.User;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -28,6 +32,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
@@ -120,6 +125,35 @@ public class Invoice {
     @OneToMany(mappedBy = "invoice", fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
     private List<InvoiceLineItem> lineItems = new ArrayList<>();
+
+    /**
+     * What this document tells the customer its price covers, copied from its parent and owned
+     * from that moment — the same rule as the day tree.
+     */
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    @OrderBy("sortOrder ASC, id ASC")
+    @org.hibernate.annotations.BatchSize(size = 50)
+    private List<InvoiceInclusion> inclusionList = new ArrayList<>();
+
+    public void addInclusion(InvoiceInclusion inclusion) {
+        inclusionList.add(inclusion);
+        inclusion.setInvoice(this);
+    }
+
+    /**
+     * Whether what this document says its price covers is still its parent's, or was changed here.
+     *
+     * <p>Null on anything created before the chain existed, which is what the reader's fallback is
+     * for — "not recorded" is distinguishable from "inherited and untouched".
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "inclusions_source", length = 20)
+    private InclusionsSource inclusionsSource;
+
+    @Column(name = "inclusions_synced_at")
+    private LocalDateTime inclusionsSyncedAt;
+
 
     // =====================================================================
     // MULTI-CURRENCY TOTALS

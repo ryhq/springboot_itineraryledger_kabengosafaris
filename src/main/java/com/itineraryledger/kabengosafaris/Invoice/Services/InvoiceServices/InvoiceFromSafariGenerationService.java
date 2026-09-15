@@ -1,5 +1,8 @@
 package com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceServices;
 
+import com.itineraryledger.kabengosafaris.Inclusion.Services.InclusionSnapshotService;
+import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
+
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.ItineraryCostEstimationDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.CreateInvoiceDTO;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.CreateInvoiceFromSafariDTO;
@@ -58,6 +61,7 @@ public class InvoiceFromSafariGenerationService {
     private final QuoteRepository quoteRepository;
     private final QuoteItemRepository quoteItemRepository;
     private final IdObfuscator idObfuscator;
+    private final InclusionSnapshotService inclusionSnapshot;
 
     @Autowired
     public InvoiceFromSafariGenerationService(
@@ -68,7 +72,8 @@ public class InvoiceFromSafariGenerationService {
             SafariRepository safariRepository,
             QuoteRepository quoteRepository,
             QuoteItemRepository quoteItemRepository,
-            IdObfuscator idObfuscator
+            IdObfuscator idObfuscator,
+            InclusionSnapshotService inclusionSnapshot
     ) {
         this.costEstimationService = costEstimationService;
         this.invoiceRepository = invoiceRepository;
@@ -78,6 +83,7 @@ public class InvoiceFromSafariGenerationService {
         this.quoteRepository = quoteRepository;
         this.quoteItemRepository = quoteItemRepository;
         this.idObfuscator = idObfuscator;
+        this.inclusionSnapshot = inclusionSnapshot;
     }
 
     /**
@@ -306,6 +312,28 @@ public class InvoiceFromSafariGenerationService {
                 itemsCreated = createInvoiceLineItemsFromEstimation(invoiceId, costEstimation, condenseLineItems, multiplier);
             }
 
+
+            /*
+             * What the price covers, carried onto the bill.
+             *
+             * Re-read rather than threaded through CreateInvoiceDTO, the same shape the quote
+             * generator uses when it re-reads its Quote. Safari's rows first, the quote's as a
+             * fallback for a trip booked before the chain existed — and neither present is simply
+             * an invoice that says nothing, never an exception: an invoice that cannot be raised is
+             * worse than one that states a little less than it might.
+             */
+            try {
+                Invoice created = invoiceRepository.findById(idObfuscator.decodeId(invoiceId)).orElse(null);
+                if (created != null) {
+                    int lines = inclusionSnapshot.toInvoice(safari, latestQuote, created);
+                    invoiceRepository.save(created);
+                    log.info("Invoice {} carries {} inclusion line(s)",
+                            invoiceDTO.getInvoiceCode(), lines);
+                }
+            } catch (Exception e) {
+                log.error("Invoice {} was raised without what its price covers: {}",
+                        invoiceDTO.getInvoiceCode(), e.getMessage(), e);
+            }
 
             log.info("Successfully generated invoice: {} with {} items for safari: {}",
                     invoiceDTO.getInvoiceCode(), itemsCreated, dto.getSafariId());

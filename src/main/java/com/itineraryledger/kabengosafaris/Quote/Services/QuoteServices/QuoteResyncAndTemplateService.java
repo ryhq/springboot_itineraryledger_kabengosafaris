@@ -1,5 +1,10 @@
 package com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices;
 
+import com.itineraryledger.kabengosafaris.Inclusion.Entity.InclusionItem;
+import com.itineraryledger.kabengosafaris.Inclusion.Repository.InclusionItemRepository;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryInclusion.Entity.ItineraryInclusion;
+import com.itineraryledger.kabengosafaris.Quote.QuoteInclusion.Entity.QuoteInclusion;
+
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Entity.ItineraryDay;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayAccommodation.Entity.ItineraryDayAccommodation;
@@ -20,6 +25,7 @@ import com.itineraryledger.kabengosafaris.Quote.QuotePax.Entity.QuotePax;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -56,6 +62,7 @@ public class QuoteResyncAndTemplateService {
     private final QuoteFromItineraryGenerationService quoteFromItineraryGenerationService;
     private final QuoteCostEstimationService quoteCostEstimationService;
     private final IdObfuscator idObfuscator;
+    private final InclusionItemRepository inclusionItems;
 
     // =====================================================================
     // 1. Save Quote → new Itinerary template
@@ -155,6 +162,13 @@ public class QuoteResyncAndTemplateService {
 
             copyQuotePaxIntoItinerary(quote, fresh);
             copyQuoteDaysIntoItinerary(quote, fresh);
+            /*
+             * And the promise. This used to be dropped: a quote whose wording had been negotiated
+             * with a customer, saved as a template, came back with no statement of what its price
+             * covered at all — and the next quote generated from that template inherited the
+             * silence.
+             */
+            List<String> createdLines = copyQuoteInclusionsIntoItinerary(quote, fresh);
 
             Itinerary saved = itineraryRepository.save(fresh);
             saved.setCode(saved.generateCode());
@@ -167,6 +181,12 @@ public class QuoteResyncAndTemplateService {
             body.put("itineraryId", idObfuscator.encodeId(saved.getId()));
             body.put("itineraryCode", saved.getCode());
             body.put("itineraryName", saved.getName());
+            /*
+             * Said out loud rather than done quietly. A line the quote carried that the catalogue
+             * has never seen is added to it, and adding to a shared catalogue as a side effect of
+             * saving a template is exactly the kind of thing somebody should be told about.
+             */
+            body.put("createdInclusionItems", createdLines);
             return ResponseEntity.status(HttpStatus.CREATED).body(
                     ApiResponse.success(201,
                             "Quote saved as new Itinerary template (status DRAFT). Publish from the Itinerary view when ready.",
@@ -207,8 +227,12 @@ public class QuoteResyncAndTemplateService {
                         ApiResponse.error(404, "Source itinerary no longer exists", "ITINERARY_NOT_FOUND"));
             }
 
-            // Wipe existing snapshot — orphanRemoval=true on Quote.days /
-            // Quote.paxList drops the child rows on flush.
+            /*
+             * Wipe existing snapshot — orphanRemoval=true on Quote.days / Quote.paxList drops the
+             * child rows on flush. The inclusion rows are cleared by the snapshot itself rather
+             * than here, so that one method owns clearing and re-writing them and the two cannot
+             * get out of step.
+             */
             if (quote.getDays() != null) quote.getDays().clear();
             if (quote.getPaxList() != null) quote.getPaxList().clear();
             quoteRepository.saveAndFlush(quote);
@@ -227,6 +251,8 @@ public class QuoteResyncAndTemplateService {
             body.put("itineraryCode", itinerary.getCode());
             body.put("daysSnapshotted", quote.getDays() != null ? quote.getDays().size() : 0);
             body.put("paxSnapshotted", quote.getPaxList() != null ? quote.getPaxList().size() : 0);
+            body.put("inclusionsSnapshotted",
+                    quote.getInclusionList() != null ? quote.getInclusionList().size() : 0);
             body.put("itemsWritten", items);
             return ResponseEntity.ok(ApiResponse.success(200,
                     "Quote re-synced from itinerary — all previous customisations have been discarded.",
@@ -241,6 +267,67 @@ public class QuoteResyncAndTemplateService {
     // =====================================================================
     // Quote → Itinerary deep-copy helpers (inverse of QuoteFromItinerary*)
     // =====================================================================
+
+    /**
+     * The quote's promise, resolved back onto catalogue lines.
+     *
+     * <p>Three steps, in order: the breadcrumb id if that catalogue row still exists and is
+     * enabled; failing that an exact match on the wording, because the row may have been recreated;
+     * failing that a new catalogue line, marked not-standard so it never lands on another trip by
+     * itself.
+     *
+     * <p>Creating a catalogue row from here is machinery, and it earns its place only because the
+     * alternative is the bug being fixed: wording negotiated on a quote silently vanishing when
+     * that quote becomes a template. Every creation is logged and returned to the caller.
+     *
+     * @return the labels of any catalogue lines this created
+     */
+    private List<String> copyQuoteInclusionsIntoItinerary(Quote quote, Itinerary fresh) {
+        List<String> created = new ArrayList<>();
+        if (quote.getInclusionList() == null) return created;
+
+        int order = 1;
+        for (QuoteInclusion row : quote.getInclusionList()) {
+            if (row.getLabel() == null || row.getLabel().isBlank()) continue;
+
+            InclusionItem item = row.getInclusionItem();
+            if (item == null || Boolean.FALSE.equals(item.getIsActive())) {
+                item = inclusionItems.findByLabelIgnoringCaseAndSpace(row.getLabel()).orElse(null);
+            }
+            if (item == null || Boolean.FALSE.equals(item.getIsActive())) {
+                InclusionItem fresher = inclusionItems.saveAndFlush(InclusionItem.builder()
+                        .label(row.getLabel().trim())
+                        .category(row.getCategory() != null ? row.getCategory() : "Trip-specific")
+                        .displayOrder(maxOrder() + 1)
+                        .isActive(true)
+                        .isSystem(false)
+                        /* Not standard: it was written for one trip, not for every trip. */
+                        .isStandard(false)
+                        .defaultIncluded(row.included())
+                        .claimAppliesTo(row.getClaimAppliesTo())
+                        .internalNotes("Created from quote " + quote.getQuoteCode()
+                                + " when it was saved as an itinerary template.")
+                        .build());
+                fresher.setCode(fresher.generateCode());
+                item = inclusionItems.save(fresher);
+                created.add(item.getLabel());
+                log.info("Saved Quote {} as a template: added \"{}\" to the inclusion catalogue as {}",
+                        quote.getQuoteCode(), item.getLabel(), item.getCode());
+            }
+
+            fresh.addInclusion(ItineraryInclusion.builder()
+                    .inclusionItem(item)
+                    .isIncluded(row.getIsIncluded())
+                    .sortOrder(order++)
+                    .build());
+        }
+        return created;
+    }
+
+    private int maxOrder() {
+        Integer max = inclusionItems.findMaxDisplayOrder();
+        return max != null ? max : 0;
+    }
 
     private void copyQuotePaxIntoItinerary(Quote quote, Itinerary itinerary) {
         if (quote.getPaxList() == null) return;

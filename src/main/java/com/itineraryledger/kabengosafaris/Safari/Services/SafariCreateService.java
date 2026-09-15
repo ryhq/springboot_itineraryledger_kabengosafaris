@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.Safari.Services;
 
+import com.itineraryledger.kabengosafaris.Inclusion.Services.InclusionSnapshotService;
+
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
 import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerRepository;
@@ -65,6 +67,7 @@ public class SafariCreateService {
     private final UserRepository userRepository;
     private final QuoteRepository quoteRepository;
     private final IdObfuscator idObfuscator;
+    private final InclusionSnapshotService inclusionSnapshot;
 
     @Autowired
     public SafariCreateService(
@@ -73,7 +76,8 @@ public class SafariCreateService {
             CustomerRepository customerRepository,
             UserRepository userRepository,
             QuoteRepository quoteRepository,
-            IdObfuscator idObfuscator
+            IdObfuscator idObfuscator,
+            InclusionSnapshotService inclusionSnapshot
     ) {
         this.safariRepository = safariRepository;
         this.itineraryRepository = itineraryRepository;
@@ -81,6 +85,7 @@ public class SafariCreateService {
         this.userRepository = userRepository;
         this.quoteRepository = quoteRepository;
         this.idObfuscator = idObfuscator;
+        this.inclusionSnapshot = inclusionSnapshot;
     }
 
     /**
@@ -207,6 +212,9 @@ public class SafariCreateService {
 
             // Deep copy days with all nested entities
             copyDaysStructure(itinerary, safari, dto.getStartDate());
+
+            /* Booked straight off the template, so the template's promise is the one to carry. */
+            inclusionSnapshot.itineraryToSafari(itinerary, safari);
 
             // Save the Safari to get the ID (cascade will save all nested entities)
             Safari savedSafari = safariRepository.save(safari);
@@ -570,6 +578,17 @@ public class SafariCreateService {
 
             // Deep-copy Quote day-tree → SafariDay tree, computing actualDate
             copyQuoteDaysStructure(quote, safari, startDate);
+
+            /*
+             * From the QUOTE, not from quote.getItinerary(). The two disagree the moment anybody
+             * edits the quote, and what the customer accepted is the quote — a trip delivered
+             * against the template's promise instead is a trip delivered against something the
+             * customer never saw. A legacy quote with no rows falls back to the itinerary, so a
+             * trip booked before this existed still carries something.
+             */
+            if (inclusionSnapshot.quoteToSafari(quote, safari) == 0 && itinerary != null) {
+                inclusionSnapshot.itineraryToSafari(itinerary, safari);
+            }
 
             Safari savedSafari = safariRepository.save(safari);
             savedSafari.setCode(savedSafari.generateCode());
