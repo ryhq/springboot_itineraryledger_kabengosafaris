@@ -311,9 +311,79 @@ public class TranslationService {
 
         // Translate via active provider (no caching here - handled by caller)
         TranslationProvider provider = providerFactory.getActiveProvider();
-        String result = provider.translate(content, sourceLanguage, targetLanguage);
+        String result = translateKeepingNumbers(provider, content, sourceLanguage, targetLanguage);
         statsService.recordTranslation(providerFactory.getActiveAccountId(), content.length());
         return result;
+    }
+
+
+    /**
+     * Translate without ever letting the engine see a number.
+     *
+     * <p>A German quote for a family of four came back reading "Steuersatz ()18.00 Uhr% nur in der
+     * unterkunft". The engine had read the tax rate 18.00 as a clock time and written "18.00 Uhr",
+     * half past six in the evening. Comparing digits does not catch that: 18.00 and 18.00 Uhr hold
+     * the same digits. The inserted WORD is the damage.
+     *
+     * <p>So every number is replaced by a marker before the text is sent, and put back afterwards.
+     * The engine translates prose around markers it cannot interpret, and a figure cannot be
+     * reinterpreted as a time, a date or anything else.
+     *
+     * <p>If a marker does not come back, the engine has eaten a number, and the original is
+     * returned untouched. On a document whose whole purpose is figures, a sentence in the wrong
+     * language can still be read; a price that is not the price cannot.
+     */
+    private String translateKeepingNumbers(TranslationProvider provider, String content,
+                                           String sourceLanguage, String targetLanguage)
+            throws TranslationProviderException {
+        java.util.LinkedHashMap<String, String> numbers = new java.util.LinkedHashMap<>();
+        String masked = maskNumbers(content, numbers);
+
+        String translated = provider.translate(masked, sourceLanguage, targetLanguage);
+        if (translated == null || translated.isBlank()) {
+            return content;
+        }
+        return restoreNumbers(content, translated, numbers);
+    }
+
+    /** Numbers out, markers in. The map is filled with marker to original. */
+    public static String maskNumbers(String content, java.util.Map<String, String> numbers) {
+        java.util.regex.Matcher m =
+            java.util.regex.Pattern.compile("\\d+(?:[.,]\\d+)*").matcher(content);
+        StringBuilder masked = new StringBuilder();
+        int i = 0;
+        while (m.find()) {
+            /* letters, not an index: a marker like #0# is itself a number to misread */
+            String marker = "#N" + letters(i++) + "#";
+            numbers.put(marker, m.group());
+            m.appendReplacement(masked, java.util.regex.Matcher.quoteReplacement(marker));
+        }
+        m.appendTail(masked);
+        return masked.toString();
+    }
+
+    /** 0 -> A, 25 -> Z, 26 -> AA. A marker has to carry no digits of its own. */
+    private static String letters(int index) {
+        StringBuilder out = new StringBuilder();
+        int n = index;
+        do {
+            out.insert(0, (char) ('A' + (n % 26)));
+            n = n / 26 - 1;
+        } while (n >= 0);
+        return out.toString();
+    }
+
+    /** Markers back to numbers, or the original if the engine lost one. */
+    public static String restoreNumbers(String original, String translated,
+                                 java.util.Map<String, String> numbers) {
+        String out = translated;
+        for (java.util.Map.Entry<String, String> e : numbers.entrySet()) {
+            if (!out.contains(e.getKey())) {
+                return original;
+            }
+            out = out.replace(e.getKey(), e.getValue());
+        }
+        return out;
     }
 
     /**
@@ -333,7 +403,7 @@ public class TranslationService {
 
             try {
                 TranslationProvider chunkProvider = providerFactory.getActiveProvider();
-                String translatedChunk = chunkProvider.translate(chunk, sourceLanguage, targetLanguage);
+                String translatedChunk = translateKeepingNumbers(chunkProvider, chunk, sourceLanguage, targetLanguage);
                 statsService.recordTranslation(providerFactory.getActiveAccountId(), chunk.length());
                 translatedContent.append(translatedChunk);
                 log.debug("Segment chunk {}/{} translated successfully", i + 1, chunks.size());
@@ -542,7 +612,7 @@ public class TranslationService {
 
         // Translate via active provider
         TranslationProvider provider = providerFactory.getActiveProvider();
-        String translatedContent = provider.translate(content, sourceLanguage, targetLanguage);
+        String translatedContent = translateKeepingNumbers(provider, content, sourceLanguage, targetLanguage);
         statsService.recordTranslation(providerFactory.getActiveAccountId(), content.length());
 
         // Store in cache asynchronously (non-blocking)
@@ -580,7 +650,7 @@ public class TranslationService {
                     log.debug("Chunk {}/{} retrieved from cache", i + 1, chunks.size());
                 } else {
                     TranslationProvider chunkProvider = providerFactory.getActiveProvider();
-                    translatedChunk = chunkProvider.translate(chunk, sourceLanguage, targetLanguage);
+                    translatedChunk = translateKeepingNumbers(chunkProvider, chunk, sourceLanguage, targetLanguage);
                     statsService.recordTranslation(providerFactory.getActiveAccountId(), chunk.length());
 
                     if (settingsService.isCacheEnabled()) {
