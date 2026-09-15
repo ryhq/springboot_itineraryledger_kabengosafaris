@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.itineraryledger.kabengosafaris.Inclusion.DTOs.InclusionLineDTO;
 import com.itineraryledger.kabengosafaris.Inclusion.Entity.InclusionItem;
 import com.itineraryledger.kabengosafaris.Inclusion.Entity.InclusionsSource;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
@@ -160,6 +161,53 @@ public class InclusionSnapshotService {
 
         if (order > 1) stamp(invoice::setInclusionsSource, invoice::setInclusionsSyncedAt);
         return order - 1;
+    }
+
+    /* ----------------------------------------------------------- for documents */
+
+    /**
+     * The lines a PDF prints, built in one place for all four document types.
+     *
+     * <p>Four near-identical loops would otherwise sit in four get-services, and the one that got
+     * forgotten would be the one whose document silently printed nothing.
+     */
+    public List<InclusionLineDTO> linesOf(Itinerary itinerary) {
+        if (itinerary == null) return List.of();
+        return safe(itinerary.getInclusionList()).stream()
+            .filter(row -> usable(row.getInclusionItem()))
+            .map(row -> InclusionLineDTO.builder()
+                .label(row.getInclusionItem().getLabel())
+                .category(row.getInclusionItem().getCategory())
+                .isIncluded(row.getIsIncluded())
+                .build())
+            .toList();
+    }
+
+    public List<InclusionLineDTO> linesOf(Quote quote) {
+        if (quote == null) return List.of();
+        return safe(quote.getInclusionList()).stream()
+            .map(row -> InclusionLineDTO.builder()
+                .label(row.getLabel()).category(row.getCategory()).isIncluded(row.getIsIncluded())
+                .build())
+            .toList();
+    }
+
+    public List<InclusionLineDTO> linesOf(Safari safari) {
+        if (safari == null) return List.of();
+        return safe(safari.getInclusionList()).stream()
+            .map(row -> InclusionLineDTO.builder()
+                .label(row.getLabel()).category(row.getCategory()).isIncluded(row.getIsIncluded())
+                .build())
+            .toList();
+    }
+
+    public List<InclusionLineDTO> linesOf(Invoice invoice) {
+        if (invoice == null) return List.of();
+        return safe(invoice.getInclusionList()).stream()
+            .map(row -> InclusionLineDTO.builder()
+                .label(row.getLabel()).category(row.getCategory()).isIncluded(row.getIsIncluded())
+                .build())
+            .toList();
     }
 
     /* --------------------------------------------------------------- shared */

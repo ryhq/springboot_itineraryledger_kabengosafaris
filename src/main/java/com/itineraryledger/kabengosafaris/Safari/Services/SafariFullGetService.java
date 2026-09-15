@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.Safari.Services;
 
+import com.itineraryledger.kabengosafaris.Inclusion.Services.InclusionSnapshotService;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -62,6 +64,7 @@ public class SafariFullGetService {
     private final SafariDayParkActivityRepository parkActivityRepository;
     private final SafariDayParkTariffRepository parkTariffRepository;
     private final IdObfuscator idObfuscator;
+    private final InclusionSnapshotService inclusionSnapshot;
 
     @Autowired
     public SafariFullGetService(
@@ -73,7 +76,8 @@ public class SafariFullGetService {
         SafariDayParkRepository dayParkRepository,
         SafariDayParkActivityRepository parkActivityRepository,
         SafariDayParkTariffRepository parkTariffRepository,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        InclusionSnapshotService inclusionSnapshot
     ) {
         this.safariRepository = safariRepository;
         this.dayRepository = dayRepository;
@@ -84,6 +88,7 @@ public class SafariFullGetService {
         this.parkActivityRepository = parkActivityRepository;
         this.parkTariffRepository = parkTariffRepository;
         this.idObfuscator = idObfuscator;
+        this.inclusionSnapshot = inclusionSnapshot;
     }
 
     /**
@@ -176,6 +181,13 @@ public class SafariFullGetService {
         dto.setCarCount(safari.getCarCount());
         dto.setDescription(safari.getDescription());
         dto.setHighlights(safari.getHighlights());
+        /*
+         * What the price covers, snapshotted onto this document when it was produced. Never read
+         * live from the catalogue: a customer holds a copy of this, and an edit that changed what
+         * our copy says would make ours the one that looked altered.
+         */
+        dto.setInclusions(inclusionSnapshot.linesOf(safari));
+
         dto.setStartLocation(safari.getStartLocation());
         dto.setEndLocation(safari.getEndLocation());
         dto.setSpecialRequests(safari.getSpecialRequests());

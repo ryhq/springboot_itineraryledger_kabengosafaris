@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.Itinerary.Services;
 
+import com.itineraryledger.kabengosafaris.Inclusion.Services.InclusionSnapshotService;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -62,6 +64,7 @@ public class ItineraryFullGetService {
     private final ItineraryDayParkActivityRepository parkActivityRepository;
     private final ItineraryDayParkTariffRepository parkTariffRepository;
     private final IdObfuscator idObfuscator;
+    private final InclusionSnapshotService inclusionSnapshot;
 
     @Autowired
     public ItineraryFullGetService(
@@ -73,7 +76,8 @@ public class ItineraryFullGetService {
         ItineraryDayParkRepository dayParkRepository,
         ItineraryDayParkActivityRepository parkActivityRepository,
         ItineraryDayParkTariffRepository parkTariffRepository,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        InclusionSnapshotService inclusionSnapshot
     ) {
         this.itineraryRepository = itineraryRepository;
         this.dayRepository = dayRepository;
@@ -84,6 +88,7 @@ public class ItineraryFullGetService {
         this.parkActivityRepository = parkActivityRepository;
         this.parkTariffRepository = parkTariffRepository;
         this.idObfuscator = idObfuscator;
+        this.inclusionSnapshot = inclusionSnapshot;
     }
 
     /**
@@ -173,6 +178,13 @@ public class ItineraryFullGetService {
         dto.setCarCount(itinerary.getCarCount());
         dto.setDescription(itinerary.getDescription());
         dto.setHighlights(itinerary.getHighlights());
+        /*
+         * What the price covers, snapshotted onto this document when it was produced. Never read
+         * live from the catalogue: a customer holds a copy of this, and an edit that changed what
+         * our copy says would make ours the one that looked altered.
+         */
+        dto.setInclusions(inclusionSnapshot.linesOf(itinerary));
+
         dto.setStartLocation(itinerary.getStartLocation());
         dto.setEndLocation(itinerary.getEndLocation());
         dto.setIsActive(itinerary.getIsActive());

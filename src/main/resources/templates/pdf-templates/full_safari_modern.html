@@ -1531,6 +1531,54 @@
     <!-- ========================================
          FOOTER
          ======================================== -->
+      <!--
+        What this price covers.
+
+        Two lists, each stated on this document rather than derived from the other: a line sits
+        under "Not included" because somebody put it there. The wording was snapshotted when this
+        document was produced, so editing the inclusion catalogue afterwards never changes what a
+        document already sent to a customer says.
+      -->
+      <div
+        class="inclusions-box"
+        th:if="${!#lists.isEmpty(safari.inclusionsList) or !#lists.isEmpty(safari.exclusionsList)}"
+        style="margin: 14pt 0 10pt; page-break-inside: avoid"
+      >
+        <h4 style="margin: 0 0 6pt; font-size: 11pt">What this price covers</h4>
+        <table style="width: 100%; border-collapse: collapse">
+          <tr>
+            <td style="width: 50%; vertical-align: top; padding-right: 12pt">
+              <div th:if="${!#lists.isEmpty(safari.inclusionsList)}">
+                <p style="margin: 0 0 3pt; font-size: 9.5pt; font-weight: bold">Included</p>
+                <ul style="margin: 0; padding-left: 14pt; font-size: 9.5pt">
+                  <li
+                    th:each="line : ${safari.inclusionsList}"
+                    th:text="${line}"
+                    style="margin-bottom: 2pt"
+                  >
+                    An included line
+                  </li>
+                </ul>
+              </div>
+            </td>
+            <td style="width: 50%; vertical-align: top">
+              <div th:if="${!#lists.isEmpty(safari.exclusionsList)}">
+                <p style="margin: 0 0 3pt; font-size: 9.5pt; font-weight: bold">Not included</p>
+                <ul style="margin: 0; padding-left: 14pt; font-size: 9.5pt">
+                  <li
+                    th:each="line : ${safari.exclusionsList}"
+                    th:text="${line}"
+                    style="margin-bottom: 2pt"
+                  >
+                    A line this price does not cover
+                  </li>
+                </ul>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
+
     <footer class="document-footer">
       <div class="footer-brand-name">[[${company.name}]]</div>
       <div class="footer-tagline">"Dream  ●  Explore  ●  Discover"</div>

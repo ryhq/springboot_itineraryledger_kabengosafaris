@@ -44,6 +44,8 @@ public class PdfDocumentSeeder {
     public boolean seed(String documentName) {
         PdfDocument document = pdfDocumentRepository.findByName(documentName).orElse(null);
 
+        String variablesJson = PdfDocumentVariables.getVariablesForDocument(documentName);
+
         if (document == null) {
             document = pdfDocumentRepository.save(PdfDocument.builder()
                 .name(documentName)
@@ -52,9 +54,24 @@ public class PdfDocumentSeeder {
                 .dataSourceClass(PdfDocumentVariables.getDataSourceClass(documentName))
                 .rootVariableName(PdfDocumentVariables.getRootVariableName(documentName))
                 .enabled(true)
-                .variablesJson(PdfDocumentVariables.getVariablesForDocument(documentName))
+                .variablesJson(variablesJson)
                 .build());
             log.info("Created PDF document: {} ({})", documentName, document.getDisplayName());
+        } else if (!java.util.Objects.equals(document.getVariablesJson(), variablesJson)) {
+            /*
+             * The variable catalogue is refreshed on an existing row, which it never used to be.
+             * It was written only at creation, so on every install that already had these rows a
+             * variable added to a schema could never appear — the template editor's picker went on
+             * offering the list it was seeded with years earlier, and the only symptom was somebody
+             * typing a variable name by hand and getting it wrong. Same fix, same reasoning, as
+             * EmailEventInitializer.
+             *
+             * Only the catalogue. The templates and the enabled flag are the customer's.
+             */
+            log.warn("PDF document {} had a stale variable catalogue; refreshing it from the schema. "
+                + "Its templates and enabled flag are untouched.", documentName);
+            document.setVariablesJson(variablesJson);
+            document = pdfDocumentRepository.save(document);
         }
 
         /*

@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices;
 
+import com.itineraryledger.kabengosafaris.Inclusion.Services.InclusionSnapshotService;
+
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDate;
@@ -48,16 +50,19 @@ public class QuoteFullGetService {
     private final QuoteRepository quoteRepository;
     private final QuoteItemRepository quoteItemRepository;
     private final IdObfuscator idObfuscator;
+    private final InclusionSnapshotService inclusionSnapshot;
 
     @Autowired
     public QuoteFullGetService(
         QuoteRepository quoteRepository,
         QuoteItemRepository quoteItemRepository,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        InclusionSnapshotService inclusionSnapshot
     ) {
         this.quoteRepository = quoteRepository;
         this.quoteItemRepository = quoteItemRepository;
         this.idObfuscator = idObfuscator;
+        this.inclusionSnapshot = inclusionSnapshot;
     }
 
     /**
@@ -132,6 +137,13 @@ public class QuoteFullGetService {
         dto.setQuoteCode(quote.getQuoteCode());
         dto.setTitle(quote.getTitle());
         dto.setDescription(quote.getDescription());
+        /*
+         * What the price covers, snapshotted onto this document when it was produced. Never read
+         * live from the catalogue: a customer holds a copy of this, and an edit that changed what
+         * our copy says would make ours the one that looked altered.
+         */
+        dto.setInclusions(inclusionSnapshot.linesOf(quote));
+
         dto.setStatus(quote.getStatus());
         dto.setStatusDisplayName(quote.getStatus() != null ? quote.getStatus().getDisplayName() : null);
         dto.setVersion(quote.getVersion());

@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.Invoice.DTOs;
 
+import com.itineraryledger.kabengosafaris.Inclusion.DTOs.InclusionLineDTO;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
 import lombok.AllArgsConstructor;
@@ -244,4 +246,42 @@ public class FullInvoiceDTO {
         return com.itineraryledger.kabengosafaris.GlobalEnums.LineCategoryScope.describe(
             discountAppliesTo, com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceItemType.class);
     }
+
+    // =====================================================================
+    // WHAT THE PRICE COVERS
+    // =====================================================================
+
+    /**
+     * The lines this document states about its own price, snapshotted when it was produced.
+     *
+     * <p>Never read live from the catalogue: a customer holds a copy of this document, and a
+     * catalogue edit that changed what our copy says would make ours the one that looked altered.
+     */
+    private java.util.List<InclusionLineDTO> inclusions;
+
+    /**
+     * What is included, as plain lines.
+     *
+     * <p>A getter rather than a stored field, the same shape as {@code highlightsList}: SpEL
+     * resolves getters, so a template can iterate a value nothing has to store or keep in step.
+     */
+    public java.util.List<String> getInclusionsList() {
+        return linesWhere(true);
+    }
+
+    /** What is not included, as plain lines. Stated on the document, never derived from the above. */
+    public java.util.List<String> getExclusionsList() {
+        return linesWhere(false);
+    }
+
+    private java.util.List<String> linesWhere(boolean included) {
+        if (inclusions == null || inclusions.isEmpty()) return java.util.List.of();
+        return inclusions.stream()
+            .filter(line -> line != null && line.isIncluded() == included)
+            .map(InclusionLineDTO::getLabel)
+            .filter(label -> label != null && !label.isBlank())
+            .map(String::trim)
+            .toList();
+    }
+
 }

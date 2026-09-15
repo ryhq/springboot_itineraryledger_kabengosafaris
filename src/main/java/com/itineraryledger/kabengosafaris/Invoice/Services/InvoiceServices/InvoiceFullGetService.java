@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceServices;
 
+import com.itineraryledger.kabengosafaris.Inclusion.Services.InclusionSnapshotService;
+
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Currency;
@@ -51,6 +53,7 @@ public class InvoiceFullGetService {
     private final InvoiceLineItemRepository invoiceLineItemRepository;
     private final BankAccountRepository bankAccountRepository;
     private final IdObfuscator idObfuscator;
+    private final InclusionSnapshotService inclusionSnapshot;
     private final InvoicePaymentAggregationService paymentAggregationService;
 
     @Autowired
@@ -59,12 +62,14 @@ public class InvoiceFullGetService {
         InvoiceLineItemRepository invoiceLineItemRepository,
         BankAccountRepository bankAccountRepository,
         IdObfuscator idObfuscator,
+        InclusionSnapshotService inclusionSnapshot,
         InvoicePaymentAggregationService paymentAggregationService
     ) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceLineItemRepository = invoiceLineItemRepository;
         this.bankAccountRepository = bankAccountRepository;
         this.idObfuscator = idObfuscator;
+        this.inclusionSnapshot = inclusionSnapshot;
         this.paymentAggregationService = paymentAggregationService;
     }
 
@@ -140,6 +145,13 @@ public class InvoiceFullGetService {
         dto.setInvoiceCode(invoice.getInvoiceCode());
         dto.setTitle(invoice.getTitle());
         dto.setDescription(invoice.getDescription());
+        /*
+         * What the price covers, snapshotted onto this document when it was produced. Never read
+         * live from the catalogue: a customer holds a copy of this, and an edit that changed what
+         * our copy says would make ours the one that looked altered.
+         */
+        dto.setInclusions(inclusionSnapshot.linesOf(invoice));
+
         dto.setStatus(invoice.getStatus());
         dto.setStatusDisplayName(invoice.getStatus() != null ? invoice.getStatus().getDisplayName() : null);
 
