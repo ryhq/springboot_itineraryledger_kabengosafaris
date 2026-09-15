@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.ContactMessage.DTOs;
 
+import com.itineraryledger.kabengosafaris.Attribution.AttributionRequest;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -30,4 +32,11 @@ public class ContactMessageRequest {
     private String message;
 
     private String locale = "en";
+
+    /**
+     * How the visitor reached us, collected by the page from the URL and the referrer.
+     * Optional: a form posted without it simply records nothing rather than failing.
+     */
+    private AttributionRequest attribution;
+
 }

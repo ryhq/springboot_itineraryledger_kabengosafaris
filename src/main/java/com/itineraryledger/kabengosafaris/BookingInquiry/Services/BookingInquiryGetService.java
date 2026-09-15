@@ -1,5 +1,8 @@
 package com.itineraryledger.kabengosafaris.BookingInquiry.Services;
 
+import com.itineraryledger.kabengosafaris.Attribution.AcquisitionChannel;
+import com.itineraryledger.kabengosafaris.Attribution.AttributionService;
+
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -42,6 +45,7 @@ public class BookingInquiryGetService {
     private final IdObfuscator idObfuscator;
     private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+    private final AttributionService attributionService;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "code", "firstName", "lastName", "email", "country", "status",
@@ -54,12 +58,14 @@ public class BookingInquiryGetService {
         BookingInquiryRepository repository,
         IdObfuscator idObfuscator,
         com.itineraryledger.kabengosafaris.Response.ListStats listStats,
-        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation,
+        AttributionService attributionService
     ) {
         this.repository = repository;
         this.idObfuscator = idObfuscator;
         this.listStats = listStats;
         this.recordNavigation = recordNavigation;
+        this.attributionService = attributionService;
     }
 
     public ResponseEntity<ApiResponse<?>> getInquiryById(String idObfuscated) {
@@ -201,7 +207,11 @@ public class BookingInquiryGetService {
             .and(BookingInquirySpecification.byTripTypes(filter.allTripTypes()))
             .and(BookingInquirySpecification.byCountries(filter.allCountries()))
             .and(BookingInquirySpecification.startingAfter(filter.getStartingAfter()))
-            .and(BookingInquirySpecification.startingBefore(filter.getStartingBefore()));
+            .and(BookingInquirySpecification.startingBefore(filter.getStartingBefore()))
+            .and(BookingInquirySpecification.byChannels(filter.allChannels()))
+            .and(BookingInquirySpecification.byCampaigns(filter.getCampaigns()))
+            .and(BookingInquirySpecification.bySources(filter.getSources()))
+            .and(BookingInquirySpecification.byTracking(filter.getTracking()));
 
         if (filter.getEmail() != null && !filter.getEmail().isEmpty()) {
             spec = spec.and(BookingInquirySpecification.byEmail(filter.getEmail()));
@@ -263,6 +273,15 @@ public class BookingInquiryGetService {
             .count("travellingSoon", BookingInquirySpecification.travellingWithin(30))
             .count("noPhone", BookingInquirySpecification.missingPhone())
             .count("converted", BookingInquirySpecification.converted(true))
+            /*
+             * Where they came from. The breakdown is what a campaign report groups by;
+             * `paid` is the subset that cost money, and `untracked` is the honest
+             * counter beside it — leads that carry no arrival at all, so nobody reads
+             * the percentages as if they covered everything.
+             */
+            .breakdown("byChannel", AcquisitionChannel.values(), BookingInquirySpecification::byChannel)
+            .count("paid", BookingInquirySpecification.paidChannels())
+            .count("untracked", BookingInquirySpecification.untracked())
             .recency(BookingInquirySpecification::createdAfter)
             .build();
     }
@@ -310,6 +329,7 @@ public class BookingInquiryGetService {
             .status(inquiry.getStatus())
             .statusDisplayName(inquiry.getStatus() != null ? inquiry.getStatus().getDisplayName() : null)
             .source(inquiry.getSource())
+            .attribution(attributionService.toDto(inquiry.getAttribution()))
             .preferredLocale(inquiry.getPreferredLocale())
             .itineraryName(inquiry.getItineraryName())
             .adminNotes(inquiry.getAdminNotes())
@@ -343,6 +363,10 @@ public class BookingInquiryGetService {
             .status(inquiry.getStatus())
             .statusDisplayName(inquiry.getStatus() != null ? inquiry.getStatus().getDisplayName() : null)
             .itineraryName(inquiry.getItineraryName())
+            .channel(inquiry.getAttribution() != null ? inquiry.getAttribution().getChannel() : null)
+            .channelDisplayName(inquiry.getAttribution() != null && inquiry.getAttribution().getChannel() != null
+                ? inquiry.getAttribution().getChannel().getDisplayName() : null)
+            .campaign(inquiry.getAttribution() != null ? inquiry.getAttribution().getCampaign() : null)
             .createdAt(inquiry.getCreatedAt())
             .build();
 

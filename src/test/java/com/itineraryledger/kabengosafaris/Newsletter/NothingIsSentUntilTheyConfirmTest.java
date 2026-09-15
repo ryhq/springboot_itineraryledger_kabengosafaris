@@ -69,7 +69,9 @@ class NothingIsSentUntilTheyConfirmTest {
             mock(NotificationSettingGetterServices.class),
             mock(EmailTemplateRenderer.class),
             mock(EmailSendingService.class),
-            acknowledgements);
+            acknowledgements,
+            /* Real, not a mock: these tests post no arrival tags, so it must return null. */
+            new com.itineraryledger.kabengosafaris.Attribution.AttributionService());
 
         ReflectionTestUtils.setField(service, "apiBaseUrl", "https://api.example.test");
         ReflectionTestUtils.setField(service, "confirmExpiryDays", 14);

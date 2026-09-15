@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.ContactMessage.Services;
 
+import com.itineraryledger.kabengosafaris.Attribution.AttributionService;
+
 import com.itineraryledger.kabengosafaris.ContactMessage.DTOs.ContactMessageRequest;
 import com.itineraryledger.kabengosafaris.ContactMessage.Entity.ContactMessage;
 import com.itineraryledger.kabengosafaris.ContactMessage.Repository.ContactMessageRepository;
@@ -33,19 +35,22 @@ public class ContactMessageService {
     private final EmailTemplateRenderer emailTemplateRenderer;
     private final EmailSendingService emailSendingService;
     private final CustomerAcknowledgementSender acknowledgements;
+    private final AttributionService attributionService;
 
     public ContactMessageService(ContactMessageRepository contactMessageRepository,
                                  CustomerEmailRepository customerEmailRepository,
                                  NotificationSettingGetterServices notificationSettingGetterServices,
                                  EmailTemplateRenderer emailTemplateRenderer,
                                  EmailSendingService emailSendingService,
-                                 CustomerAcknowledgementSender acknowledgements) {
+                                 CustomerAcknowledgementSender acknowledgements,
+                                 AttributionService attributionService) {
         this.contactMessageRepository = contactMessageRepository;
         this.customerEmailRepository = customerEmailRepository;
         this.notificationSettingGetterServices = notificationSettingGetterServices;
         this.emailTemplateRenderer = emailTemplateRenderer;
         this.emailSendingService = emailSendingService;
         this.acknowledgements = acknowledgements;
+        this.attributionService = attributionService;
     }
 
     @Transactional
@@ -56,6 +61,7 @@ public class ContactMessageService {
         contactMessage.setName(request.getName().trim());
         contactMessage.setEmail(email);
         contactMessage.setSource("WEBSITE");
+        contactMessage.setAttribution(attributionService.from(request.getAttribution()));
         contactMessage.setPreferredLocale(request.getLocale() != null ? request.getLocale() : "en");
 
         if (request.getPhone() != null && !request.getPhone().isBlank()) {

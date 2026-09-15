@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.BookingInquiry.Services;
 
+import com.itineraryledger.kabengosafaris.Attribution.AttributionService;
+
 import com.itineraryledger.kabengosafaris.BookingInquiry.DTOs.BookingInquiryRequest;
 import com.itineraryledger.kabengosafaris.BookingInquiry.Entity.BookingInquiry;
 import com.itineraryledger.kabengosafaris.BookingInquiry.Repository.BookingInquiryRepository;
@@ -45,6 +47,7 @@ public class BookingInquiryService {
     private final EmailTemplateRenderer emailTemplateRenderer;
     private final EmailSendingService emailSendingService;
     private final CustomerAcknowledgementSender acknowledgements;
+    private final AttributionService attributionService;
 
     public BookingInquiryService(BookingInquiryRepository inquiryRepository,
                                  CustomerEmailRepository customerEmailRepository,
@@ -54,7 +57,8 @@ public class BookingInquiryService {
                                  NotificationSettingGetterServices notificationSettingGetterServices,
                                  EmailTemplateRenderer emailTemplateRenderer,
                                  EmailSendingService emailSendingService,
-                                 CustomerAcknowledgementSender acknowledgements) {
+                                 CustomerAcknowledgementSender acknowledgements,
+                                 AttributionService attributionService) {
         this.inquiryRepository = inquiryRepository;
         this.customerEmailRepository = customerEmailRepository;
         this.idObfuscator = idObfuscator;
@@ -64,6 +68,7 @@ public class BookingInquiryService {
         this.emailTemplateRenderer = emailTemplateRenderer;
         this.emailSendingService = emailSendingService;
         this.acknowledgements = acknowledgements;
+        this.attributionService = attributionService;
     }
 
     @Transactional
@@ -75,6 +80,13 @@ public class BookingInquiryService {
         inquiry.setLastName(request.getLastName().trim());
         inquiry.setEmail(email);
         inquiry.setSource("WEBSITE");
+        /*
+         * `source` stays the literal it has always been: it is parsed into CustomerSource
+         * when this inquiry is converted, so a channel name written into it would fall back
+         * to WEBSITE and lose exactly what we are trying to record. The channel goes beside
+         * it, derived on the server from tags the browser merely carried.
+         */
+        inquiry.setAttribution(attributionService.from(request.getAttribution()));
         inquiry.setPreferredLocale(request.getLocale() != null ? request.getLocale() : "en");
 
         if (request.getPhone() != null && !request.getPhone().isBlank()) {

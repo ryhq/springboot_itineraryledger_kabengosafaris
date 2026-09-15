@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.BookingInquiry.Specifications;
 
+import com.itineraryledger.kabengosafaris.Attribution.AcquisitionChannel;
+
 import java.time.LocalDateTime;
 
 import org.springframework.data.jpa.domain.Specification;
@@ -156,4 +158,74 @@ public class BookingInquirySpecification {
             ? cb.isNotNull(root.get("customer"))
             : cb.isNull(root.get("customer"));
     }
+
+    /* ---------- where the lead came from ---------- */
+
+    public static Specification<BookingInquiry> byChannel(AcquisitionChannel channel) {
+        return (root, query, cb) -> channel == null
+            ? cb.conjunction()
+            : cb.equal(root.get("attribution").get("channel"), channel);
+    }
+
+    public static Specification<BookingInquiry> byChannels(java.util.List<AcquisitionChannel> channels) {
+        return (root, query, cb) -> channels == null || channels.isEmpty()
+            ? cb.conjunction()
+            : root.get("attribution").get("channel").in(channels);
+    }
+
+    /**
+     * The campaign is matched whole, not by prefix: a campaign name is an exact
+     * label chosen when the ad was set up, and a LIKE would fold "serengeti-jul"
+     * into "serengeti-july-retarget" and quietly merge two budgets.
+     */
+    public static Specification<BookingInquiry> byCampaigns(java.util.List<String> campaigns) {
+        return (root, query, cb) -> campaigns == null || campaigns.isEmpty()
+            ? cb.conjunction()
+            : root.get("attribution").get("campaign").in(campaigns);
+    }
+
+    public static Specification<BookingInquiry> bySources(java.util.List<String> sources) {
+        return (root, query, cb) -> sources == null || sources.isEmpty()
+            ? cb.conjunction()
+            : cb.lower(root.get("attribution").get("source")).in(
+                sources.stream().map(v -> v.toLowerCase().trim()).toList());
+    }
+
+    /** Everything that cost money, so the spend question can be asked in one click. */
+    public static Specification<BookingInquiry> paidChannels() {
+        java.util.List<AcquisitionChannel> paid = java.util.Arrays.stream(AcquisitionChannel.values())
+            .filter(AcquisitionChannel::isPaid)
+            .toList();
+        return (root, query, cb) -> root.get("attribution").get("channel").in(paid);
+    }
+
+    /**
+     * "paid" and "untracked", OR'd with each other and AND'd with everything else.
+     *
+     * An unknown value narrows nothing rather than erroring: a bookmark from an older
+     * panel should show a list, not a 400.
+     */
+    public static Specification<BookingInquiry> byTracking(java.util.List<String> tracking) {
+        if (tracking == null || tracking.isEmpty()) return (root, query, cb) -> cb.conjunction();
+
+        boolean paid = tracking.contains("paid");
+        boolean untracked = tracking.contains("untracked");
+        if (paid && untracked) {
+            /* Every lead is one or the other or neither, so asking for both narrows nothing. */
+            return (root, query, cb) -> cb.conjunction();
+        }
+        if (paid) return paidChannels();
+        if (untracked) return untracked();
+        return (root, query, cb) -> cb.conjunction();
+    }
+
+    /**
+     * Leads with no arrival recorded at all: taken before this shipped, entered by
+     * hand, or from a browser with storage blocked. Counted separately so a channel
+     * breakdown is never mistaken for a complete one.
+     */
+    public static Specification<BookingInquiry> untracked() {
+        return (root, query, cb) -> cb.isNull(root.get("attribution").get("channel"));
+    }
+
 }

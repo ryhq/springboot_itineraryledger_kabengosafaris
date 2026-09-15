@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.BookingInquiry.DTOs;
 
+import com.itineraryledger.kabengosafaris.Attribution.AttributionRequest;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -60,4 +62,11 @@ public class BookingInquiryRequest {
     private String safariIdentifier;
 
     private String locale = "en";
+
+    /**
+     * How the visitor reached us, collected by the page from the URL and the referrer.
+     * Optional: a form posted without it simply records nothing rather than failing.
+     */
+    private AttributionRequest attribution;
+
 }

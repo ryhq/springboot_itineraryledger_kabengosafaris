@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.Newsletter.Services;
 
+import com.itineraryledger.kabengosafaris.Attribution.AttributionService;
+
 import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerEmailRepository;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices.EmailSendingService;
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.CustomerAcknowledgementSender;
@@ -32,6 +34,7 @@ public class NewsletterService {
     private final EmailTemplateRenderer emailTemplateRenderer;
     private final EmailSendingService emailSendingService;
     private final CustomerAcknowledgementSender acknowledgements;
+    private final AttributionService attributionService;
 
     /**
      * Where the confirm and unsubscribe links point.
@@ -53,13 +56,15 @@ public class NewsletterService {
                             NotificationSettingGetterServices notificationSettingGetterServices,
                             EmailTemplateRenderer emailTemplateRenderer,
                             EmailSendingService emailSendingService,
-                            CustomerAcknowledgementSender acknowledgements) {
+                            CustomerAcknowledgementSender acknowledgements,
+                            AttributionService attributionService) {
         this.subscriptionRepository = subscriptionRepository;
         this.customerEmailRepository = customerEmailRepository;
         this.notificationSettingGetterServices = notificationSettingGetterServices;
         this.emailTemplateRenderer = emailTemplateRenderer;
         this.emailSendingService = emailSendingService;
         this.acknowledgements = acknowledgements;
+        this.attributionService = attributionService;
     }
 
     /*
@@ -99,6 +104,13 @@ public class NewsletterService {
             if (request.getLocale() != null && !request.getLocale().isBlank()) {
                 sub.setPreferredLocale(request.getLocale());
             }
+            /*
+             * A returning subscriber converted for whatever brought them back, so the last
+             * touch is taken; what first introduced them is kept, because a campaign should
+             * not be able to claim an introduction that happened before it ran.
+             */
+            sub.setAttribution(attributionService.merge(
+                sub.getAttribution(), attributionService.from(request.getAttribution())));
             if (sub.getConfirmToken() == null || sub.getConfirmToken().isBlank()) {
                 sub.setConfirmToken(newToken());
             }
@@ -116,6 +128,7 @@ public class NewsletterService {
         subscription.setConfirmToken(newToken());
         subscription.setPreferredLocale(request.getLocale() != null ? request.getLocale() : "en");
         subscription.setSource("WEBSITE");
+        subscription.setAttribution(attributionService.from(request.getAttribution()));
 
         if (request.getName() != null && !request.getName().isBlank()) {
             subscription.setName(request.getName().trim());

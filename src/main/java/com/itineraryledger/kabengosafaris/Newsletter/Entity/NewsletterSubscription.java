@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Newsletter.Entity;
 
 import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
+import com.itineraryledger.kabengosafaris.Attribution.Attribution;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -98,4 +99,18 @@ public class NewsletterSubscription {
     public boolean isActive() {
         return status == SubscriptionStatus.ACTIVE;
     }
+
+    /**
+     * How they arrived. Null for every lead taken before this was captured, and for
+     * anything created by hand in the office, so the panel can say "not recorded"
+     * instead of quietly reporting it as direct traffic.
+     */
+    @Embedded
+    private Attribution attribution;
+
+    /* This class writes its own accessors; there is no Lombok on it. */
+    public Attribution getAttribution() { return attribution; }
+
+    public void setAttribution(Attribution attribution) { this.attribution = attribution; }
+
 }

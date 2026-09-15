@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.ContactMessage.Entity;
 
 import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
+import com.itineraryledger.kabengosafaris.Attribution.Attribution;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -80,4 +81,13 @@ public class ContactMessage {
     private LocalDateTime updatedAt;
 
     private LocalDateTime respondedAt;
+
+    /**
+     * How they arrived. Null for every lead taken before this was captured, and for
+     * anything created by hand in the office, so the panel can say "not recorded"
+     * instead of quietly reporting it as direct traffic.
+     */
+    @Embedded
+    private Attribution attribution;
+
 }

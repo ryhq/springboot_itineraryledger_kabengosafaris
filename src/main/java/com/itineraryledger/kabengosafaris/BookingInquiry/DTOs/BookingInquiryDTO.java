@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.BookingInquiry.DTOs;
 
+import com.itineraryledger.kabengosafaris.Attribution.AttributionDTO;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -48,6 +50,13 @@ public class BookingInquiryDTO {
     private InquiryStatus status;
     private String statusDisplayName;
     private String source;
+
+    /**
+     * How they actually got here. Null when nothing was recorded, which is every
+     * inquiry taken before this shipped and everything entered by hand in the office
+     * — the panel says so rather than reporting it as direct traffic.
+     */
+    private AttributionDTO attribution;
     private String preferredLocale;
     private String itineraryId;
     private String itineraryName;

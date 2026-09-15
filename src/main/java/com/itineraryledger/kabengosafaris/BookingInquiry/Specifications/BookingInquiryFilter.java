@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.BookingInquiry.Specifications;
 
+import com.itineraryledger.kabengosafaris.Attribution.AcquisitionChannel;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -53,6 +55,26 @@ public class BookingInquiryFilter {
      */
     private List<String> queues;
 
+    /* Where they came from. Multi-value like every other dimension: OR inside, AND across. */
+    private AcquisitionChannel channel;
+    private List<AcquisitionChannel> channels;
+
+    /** Exact campaign labels, so one ad's leads can be counted against that ad's spend. */
+    private List<String> campaigns;
+
+    /** Exact utm_source values, for when a platform runs several campaigns. */
+    private List<String> sources;
+
+    /**
+     * Whether the click was bought, and whether anything was recorded at all.
+     *
+     * A dimension of its own rather than another work queue: the queues are OR'd
+     * together, so "waiting over 3 days" plus "came from an ad" would return the
+     * union of the two and answer neither question. Here it ANDs, and "paid" and
+     * "untracked" cannot both be true, so OR inside the dimension is free.
+     */
+    private List<String> tracking;
+
     private LocalDateTime createdAfter;
     private LocalDateTime createdBefore;
 
@@ -85,6 +107,13 @@ public class BookingInquiryFilter {
         List<String> out = new ArrayList<>();
         if (countries != null) countries.stream().filter(c -> c != null && !c.isBlank()).forEach(out::add);
         if (country != null && !country.isBlank() && !out.contains(country)) out.add(country);
+        return out;
+    }
+
+    public List<AcquisitionChannel> allChannels() {
+        List<AcquisitionChannel> out = new ArrayList<>();
+        if (channels != null) channels.stream().filter(Objects::nonNull).forEach(out::add);
+        if (channel != null && !out.contains(channel)) out.add(channel);
         return out;
     }
 

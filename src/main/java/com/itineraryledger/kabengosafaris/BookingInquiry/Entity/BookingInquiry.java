@@ -6,6 +6,7 @@ import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripInterest;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.TripType;
 import com.itineraryledger.kabengosafaris.Park.Park;
+import com.itineraryledger.kabengosafaris.Attribution.Attribution;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -153,4 +154,13 @@ public class BookingInquiry {
     public int getTotalTravelers() {
         return (adults != null ? adults : 0) + (children != null ? children : 0);
     }
+
+    /**
+     * How they arrived. Null for every lead taken before this was captured, and for
+     * anything created by hand in the office, so the panel can say "not recorded"
+     * instead of quietly reporting it as direct traffic.
+     */
+    @Embedded
+    private Attribution attribution;
+
 }
