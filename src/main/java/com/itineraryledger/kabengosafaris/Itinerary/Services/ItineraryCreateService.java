@@ -1,5 +1,9 @@
 package com.itineraryledger.kabengosafaris.Itinerary.Services;
 
+import com.itineraryledger.kabengosafaris.Inclusion.Entity.InclusionItem;
+import com.itineraryledger.kabengosafaris.Inclusion.Repository.InclusionItemRepository;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryInclusion.Entity.ItineraryInclusion;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,14 +30,17 @@ public class ItineraryCreateService {
 
     private final ItineraryRepository itineraryRepository;
     private final IdObfuscator idObfuscator;
+    private final InclusionItemRepository inclusionItems;
 
     @Autowired
     public ItineraryCreateService(
         ItineraryRepository itineraryRepository,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        InclusionItemRepository inclusionItems
     ) {
         this.itineraryRepository = itineraryRepository;
         this.idObfuscator = idObfuscator;
+        this.inclusionItems = inclusionItems;
     }
 
     /**
@@ -47,6 +54,19 @@ public class ItineraryCreateService {
         log.info("Creating new itinerary: {}", createItineraryDTO.getName());
 
         try {
+            /*
+             * What the price covers moved out of these two columns and into rows of its own. A
+             * caller still sending the text is told where it went rather than having it quietly
+             * written to a column nothing reads any more.
+             */
+            if (createItineraryDTO.getInclusions() != null || createItineraryDTO.getExclusions() != null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                    "What a trip's price covers is now a list of catalogue lines. Create the "
+                    + "itinerary without these fields, then set them with "
+                    + "PUT /api/itineraries/{id}/inclusions.",
+                    "INCLUSIONS_MOVED"));
+            }
+
             // Validate name uniqueness
             if (itineraryRepository.existsByNameIgnoreCase(createItineraryDTO.getName())) {
                 return ResponseEntity.badRequest().body(
@@ -74,8 +94,6 @@ public class ItineraryCreateService {
                 .carCount(createItineraryDTO.getCarCount() != null ? createItineraryDTO.getCarCount() : 1)
                 .description(createItineraryDTO.getDescription())
                 .highlights(createItineraryDTO.getHighlights())
-                .inclusions(createItineraryDTO.getInclusions())
-                .exclusions(createItineraryDTO.getExclusions())
                 .startLocation(createItineraryDTO.getStartLocation())
                 .endLocation(createItineraryDTO.getEndLocation())
                 .build();
@@ -86,6 +104,22 @@ public class ItineraryCreateService {
             // Generate and set code after saving (requires ID)
             String code = itinerary.generateCode();
             itinerary.setCode(code);
+
+            /*
+             * A new trip starts with the house promise, so nobody has to remember to add it — the
+             * three itineraries that showed no "what's included" section on the website were
+             * simply ones nobody had pasted it into. Anything marked as not standard is left out,
+             * so a trip-specific line never appears on paperwork it has nothing to do with.
+             */
+            int position = 1;
+            for (InclusionItem item : inclusionItems.findByIsActiveTrueAndIsStandardTrueOrderByDisplayOrderAscIdAsc()) {
+                itinerary.addInclusion(ItineraryInclusion.builder()
+                    .inclusionItem(item)
+                    .isIncluded(!Boolean.FALSE.equals(item.getDefaultIncluded()))
+                    .sortOrder(position++)
+                    .build());
+            }
+
             itinerary = itineraryRepository.save(itinerary);
 
             // Convert to DTO

@@ -55,9 +55,16 @@ public class PublicItineraryDTO {
     @Translatable private String startLocation;
     @Translatable private String endLocation;
 
-    // What's included / not included (one item per line; delivered as a list)
-    private java.util.List<String> inclusions;
-    private java.util.List<String> exclusions;
+    /*
+     * What's included / not included, as a list.
+     *
+     * @Translatable, which they were not. PublicTranslationService has handled a translatable
+     * List<String> since the blog's bullet blocks, but these two were never annotated — so a
+     * German visitor read "Jede Kabengo-Safari beinhaltet" as a heading over eight bullets still
+     * in English. Two annotations is the whole of that fix.
+     */
+    @Translatable private java.util.List<String> inclusions;
+    @Translatable private java.util.List<String> exclusions;
 
     // Counts
     private Integer carCount;

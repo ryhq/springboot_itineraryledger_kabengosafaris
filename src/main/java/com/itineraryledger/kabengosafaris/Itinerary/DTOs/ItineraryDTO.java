@@ -42,8 +42,19 @@ public class ItineraryDTO {
     private Integer carCount;
     @Translatable private String description;
     @Translatable private String highlights;
+    /*
+     * The legacy typed text, kept read-only. It is still the answer for an itinerary the backfill
+     * left alone — three trips whose whole promise was typed as one paragraph — and the panel
+     * shows it so a line nobody could match is visible to whoever can retype it, rather than lost.
+     * Nothing writes these any more: both create and update refuse them with INCLUSIONS_MOVED.
+     */
     private String inclusions;
     private String exclusions;
+
+    /** What the price covers, resolved: catalogue rows where there are any, the text where not. */
+    private java.util.List<String> inclusionItems;
+    private java.util.List<String> exclusionItems;
+    private Integer inclusionsCount;
     @Translatable private String startLocation;
     @Translatable private String endLocation;
     private Boolean isActive;

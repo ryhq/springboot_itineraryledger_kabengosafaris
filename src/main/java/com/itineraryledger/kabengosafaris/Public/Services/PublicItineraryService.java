@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.Public.Services;
 
+import com.itineraryledger.kabengosafaris.Inclusion.Services.ItineraryInclusionReader;
+
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.ItineraryCostSummaryDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Entity.ItineraryCostSummary;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Repository.ItineraryCostSummaryRepository;
@@ -53,6 +55,7 @@ public class PublicItineraryService {
     private final ItineraryDayParkRepository itineraryDayParkRepository;
     private final ItineraryDayActivityRepository itineraryDayActivityRepository;
     private final ItineraryDayAccommodationRepository itineraryDayAccommodationRepository;
+    private final ItineraryInclusionReader inclusionReader;
 
     public PublicItineraryService(
             ItineraryRepository itineraryRepository,
@@ -63,7 +66,8 @@ public class PublicItineraryService {
             SafariRepository safariRepository,
             ItineraryDayParkRepository itineraryDayParkRepository,
             ItineraryDayActivityRepository itineraryDayActivityRepository,
-            ItineraryDayAccommodationRepository itineraryDayAccommodationRepository) {
+            ItineraryDayAccommodationRepository itineraryDayAccommodationRepository,
+            ItineraryInclusionReader inclusionReader) {
         this.itineraryRepository = itineraryRepository;
         this.costSummaryRepository = costSummaryRepository;
         this.entityResolver = entityResolver;
@@ -73,6 +77,7 @@ public class PublicItineraryService {
         this.itineraryDayParkRepository = itineraryDayParkRepository;
         this.itineraryDayActivityRepository = itineraryDayActivityRepository;
         this.itineraryDayAccommodationRepository = itineraryDayAccommodationRepository;
+        this.inclusionReader = inclusionReader;
     }
 
     public ResponseEntity<ApiResponse<?>> getItineraries(Integer page, Integer size, String sortBy, String sortDirection,
@@ -359,8 +364,14 @@ public class PublicItineraryService {
                 && itinerary.getTotalNights() != null && itinerary.getTotalNights() == 0)
             .description(itinerary.getDescription())
             .highlights(itinerary.getHighlights())
-            .inclusions(splitLines(itinerary.getInclusions()))
-            .exclusions(splitLines(itinerary.getExclusions()))
+            /*
+             * Through the reader, so the catalogue rows win and an itinerary the backfill left
+             * alone still answers with the text it has always served. nullIfEmpty keeps the wire
+             * shape exactly as splitLines left it — the website hides the whole section when both
+             * are absent, and a change from null to [] here would make it appear empty instead.
+             */
+            .inclusions(nullIfEmpty(inclusionReader.included(itinerary)))
+            .exclusions(nullIfEmpty(inclusionReader.excluded(itinerary)))
             .startLocation(itinerary.getStartLocation())
             .endLocation(itinerary.getEndLocation())
             .carCount(itinerary.getCarCount())
@@ -497,12 +508,12 @@ public class PublicItineraryService {
         return builder.build();
     }
 
-    /** Split a newline-separated TEXT field into a trimmed list (null if empty). */
-    private List<String> splitLines(String text) {
-        if (text == null || text.isBlank()) return null;
-        List<String> out = Arrays.stream(text.split("\\r?\\n"))
-            .map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
-        return out.isEmpty() ? null : out;
+    /**
+     * Null rather than an empty list, because the website hides the whole "What's included"
+     * section when both are absent — and an empty array would leave a heading over nothing.
+     */
+    private List<String> nullIfEmpty(List<String> lines) {
+        return lines == null || lines.isEmpty() ? null : lines;
     }
 
     /**

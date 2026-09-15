@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.Itinerary.Services;
 
+import com.itineraryledger.kabengosafaris.Inclusion.Services.ItineraryInclusionReader;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -51,14 +53,17 @@ public class ItineraryGetService {
 
     private final ItineraryRepository itineraryRepository;
     private final IdObfuscator idObfuscator;
+    private final ItineraryInclusionReader inclusionReader;
 
     @Autowired
     public ItineraryGetService(
         ItineraryRepository itineraryRepository,
-        IdObfuscator idObfuscator
+        IdObfuscator idObfuscator,
+        ItineraryInclusionReader inclusionReader
     ) {
         this.itineraryRepository = itineraryRepository;
         this.idObfuscator = idObfuscator;
+        this.inclusionReader = inclusionReader;
     }
 
     /**
@@ -357,6 +362,10 @@ public class ItineraryGetService {
         dto.setHighlights(itinerary.getHighlights());
         dto.setInclusions(itinerary.getInclusions());
         dto.setExclusions(itinerary.getExclusions());
+        dto.setInclusionItems(inclusionReader.included(itinerary));
+        dto.setExclusionItems(inclusionReader.excluded(itinerary));
+        dto.setInclusionsCount(itinerary.getInclusionList() != null
+            ? itinerary.getInclusionList().size() : 0);
         dto.setStartLocation(itinerary.getStartLocation());
         dto.setEndLocation(itinerary.getEndLocation());
         dto.setIsActive(itinerary.getIsActive());

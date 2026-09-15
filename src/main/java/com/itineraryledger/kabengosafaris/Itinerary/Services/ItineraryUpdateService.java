@@ -182,12 +182,6 @@ public class ItineraryUpdateService {
         if (updateItineraryDTO.getHighlights() != null) {
             itinerary.setHighlights(updateItineraryDTO.getHighlights());
         }
-        if (updateItineraryDTO.getInclusions() != null) {
-            itinerary.setInclusions(updateItineraryDTO.getInclusions());
-        }
-        if (updateItineraryDTO.getExclusions() != null) {
-            itinerary.setExclusions(updateItineraryDTO.getExclusions());
-        }
         if (updateItineraryDTO.getStartLocation() != null) {
             itinerary.setStartLocation(updateItineraryDTO.getStartLocation());
         }

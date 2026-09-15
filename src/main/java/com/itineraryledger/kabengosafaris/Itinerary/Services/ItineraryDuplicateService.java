@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.Itinerary.Services;
 
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryInclusion.Entity.ItineraryInclusion;
+
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.DuplicateItineraryDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
@@ -120,6 +122,11 @@ public class ItineraryDuplicateService {
                 .carCount(source.getCarCount())
                 .description(source.getDescription())
                 .highlights(source.getHighlights())
+                /*
+                 * The legacy columns still travel, because an itinerary the backfill could not
+                 * match is still answering from them and a copy that lost them would print
+                 * nothing. The rows are copied below.
+                 */
                 .inclusions(source.getInclusions())
                 .exclusions(source.getExclusions())
                 .startLocation(source.getStartLocation())
@@ -131,6 +138,21 @@ public class ItineraryDuplicateService {
                 .build();
 
             Counts counts = new Counts();
+
+            /*
+             * Copied unconditionally, with no flag of its own. The existing options gate structural
+             * DEPTH — days, parks, tariffs, accommodations, pax. What the price covers is an
+             * itinerary-level field in the same class as description and highlights, and a copy
+             * that silently lost it is the same defect as a quote saved as a template losing it.
+             */
+            for (ItineraryInclusion row : source.getInclusionList()) {
+                copy.addInclusion(ItineraryInclusion.builder()
+                    .inclusionItem(row.getInclusionItem())
+                    .isIncluded(row.getIsIncluded())
+                    .sortOrder(row.getSortOrder())
+                    .build());
+                counts.inclusions++;
+            }
 
             if (options.days()) {
                 for (ItineraryDay day : source.getDays()) {
@@ -301,13 +323,13 @@ public class ItineraryDuplicateService {
     /* ------------------------------- reporting ------------------------------ */
 
     private static class Counts {
-        int days, parks, parkActivities, parkTariffs, activities, stays, paxBands;
+        int days, parks, parkActivities, parkTariffs, activities, stays, paxBands, inclusions;
 
         @Override
         public String toString() {
             return days + " days, " + parks + " park visits, " + parkTariffs + " tariffs, "
                 + (activities + parkActivities) + " activities, " + stays + " stays, "
-                + paxBands + " pax bands";
+                + paxBands + " pax bands, " + inclusions + " inclusion lines";
         }
     }
 
@@ -326,6 +348,9 @@ public class ItineraryDuplicateService {
         if (activities > 0) copied.add(plural(activities, "activity", "activities"));
         if (counts.stays > 0) copied.add(plural(counts.stays, "stay", "stays"));
         if (counts.paxBands > 0) copied.add(plural(counts.paxBands, "pax band", "pax bands"));
+        if (counts.inclusions > 0) {
+            copied.add(plural(counts.inclusions, "inclusion line", "inclusion lines"));
+        }
 
         List<String> left = new ArrayList<>();
         if (!options.days() && !source.getDays().isEmpty()) left.add("the days");
