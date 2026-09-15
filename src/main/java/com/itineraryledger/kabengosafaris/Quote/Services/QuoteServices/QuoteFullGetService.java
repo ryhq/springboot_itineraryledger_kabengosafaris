@@ -143,6 +143,9 @@ public class QuoteFullGetService {
         dto.setIsStoRate(quote.getIsStoRate());
         dto.setTaxPercentage(quote.getTaxPercentage());
         dto.setTaxAppliesTo(quote.getTaxAppliesTo());
+        /* the discount's scope travels with the tax's, or the document prints a figure
+           beside a sentence that contradicts it */
+        dto.setDiscountAppliesTo(quote.getDiscountAppliesTo());
         dto.setDiscountPercentage(quote.getDiscountPercentage());
         dto.setDiscountReason(quote.getDiscountReason());
         dto.setAgentCommissionPercentage(quote.getAgentCommissionPercentage());

@@ -148,6 +148,9 @@ public class InvoiceFullGetService {
         // ========================
         dto.setTaxPercentage(invoice.getTaxPercentage());
         dto.setTaxAppliesTo(invoice.getTaxAppliesTo());
+        /* the discount's scope travels with the tax's, or the document prints a figure
+           beside a sentence that contradicts it */
+        dto.setDiscountAppliesTo(invoice.getDiscountAppliesTo());
         dto.setDiscountPercentage(invoice.getDiscountPercentage());
         dto.setDiscountReason(invoice.getDiscountReason());
         dto.setAgentCommissionPercentage(invoice.getAgentCommissionPercentage());
