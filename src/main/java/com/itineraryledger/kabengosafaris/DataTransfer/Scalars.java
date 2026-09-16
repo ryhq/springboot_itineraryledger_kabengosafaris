@@ -125,6 +125,28 @@ public final class Scalars {
          */
         copy.remove(notColumnsOf(entity.getClass()));
 
+        /*
+         * A nested array or object can never populate a scalar column, so drop it rather than hand
+         * it to Jackson.
+         *
+         * Everything still in `copy` at this point is a simple column with a setter — that is what
+         * notColumnsOf leaves behind — and a module is free to reuse one of those names for its own
+         * nested data, which it then writes itself. ItineraryTransfer does exactly that: the
+         * itinerary's promise used to be the free-text column `inclusions` and is now an array of
+         * rows under the same key, written by writeInclusions. Without this line Jackson was asked
+         * to build a String out of a JSON array and threw, and because the throw happens per
+         * itinerary inside one transaction it took the whole bundle with it — every itinerary import
+         * answered 500, in both companies, with the message naming fourteen fields and blaming none.
+         *
+         * Silent, like the unknown-field tolerance above: the module that wrote the container is the
+         * one that reads it back, and this is not the place to second-guess it.
+         */
+        List<String> containers = new ArrayList<>();
+        copy.fields().forEachRemaining(field -> {
+            if (field.getValue().isContainerNode()) containers.add(field.getKey());
+        });
+        containers.forEach(copy::remove);
+
         try {
             /*
              * Unknown fields ignored, and it has to be said explicitly: the default is to throw, so

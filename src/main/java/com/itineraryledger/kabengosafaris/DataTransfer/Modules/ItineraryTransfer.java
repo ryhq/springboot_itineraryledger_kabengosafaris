@@ -132,7 +132,13 @@ public class ItineraryTransfer implements ModuleTransfer {
     public JsonNode export(boolean includeImages, List<TransferFile> files) {
         ArrayNode rows = mapper.createArrayNode();
         for (Itinerary itinerary : itineraries.findAll()) {
-            ObjectNode row = Scalars.of(mapper, itinerary);
+            /*
+             * The two legacy columns are excluded by name. `inclusions` is about to be reused for
+             * the rows below, and leaving the old String in first made the row's shape depend on
+             * the order two lines happened to run in; `exclusions` has no reader left at all now
+             * that the not-included side is rows that say so.
+             */
+            ObjectNode row = Scalars.of(mapper, itinerary, "inclusions", "exclusions");
             row.put("code", itinerary.getCode());
 
             ArrayNode paxRows = row.putArray("pax");
@@ -157,6 +163,24 @@ public class ItineraryTransfer implements ModuleTransfer {
                 lineRow.put("included", line.included());
                 lineRow.put("order", line.getSortOrder());
                 inclusionRows.add(lineRow);
+            }
+
+            /*
+             * The handful of itineraries the backfill left alone — their promise is a paragraph, not
+             * a list, and splitting prose into lines is a person's job. They have no rows, so the
+             * array above is empty and the text is all they have. Carried under its own key rather
+             * than the shared one, so an itinerary is never ambiguous about which of the two it is
+             * speaking with, and read back by ItineraryInclusionReader's existing fallback.
+             *
+             * These keys go away with the V18 that drops the columns.
+             */
+            if (inclusionRows.isEmpty()) {
+                if (itinerary.getInclusions() != null) {
+                    row.put("legacyInclusions", itinerary.getInclusions());
+                }
+                if (itinerary.getExclusions() != null) {
+                    row.put("legacyExclusions", itinerary.getExclusions());
+                }
             }
 
             ArrayNode dayRows = row.putArray("days");
@@ -241,13 +265,27 @@ public class ItineraryTransfer implements ModuleTransfer {
                  */
                 days.deleteAll(days.findByItineraryIdOrderByDayNumberAsc(existing.getId()));
                 pax.deleteAll(pax.findByItineraryId(existing.getId()));
+                /*
+                 * The promise is replaced with the rest of the tree. Without this a second import
+                 * over the same itinerary appended a whole second copy of the list, so the trip
+                 * printed every line twice and read as though somebody had been careless with it.
+                 */
+                itineraryInclusions.deleteByItineraryId(existing.getId());
             }
 
             try {
                 Itinerary target = existing != null && !codeTakenByAnother ? existing : new Itinerary();
-                Scalars.apply(mapper, row, target, "code", "status");
+                /*
+                 * `inclusions` is excluded here as well as guarded in Scalars. Belt and braces on
+                 * purpose: the guard keeps any future module out of the same hole, and this line
+                 * says at the call site that the key is nested data this class writes itself.
+                 */
+                Scalars.apply(mapper, row, target, "code", "status", "inclusions", "exclusions");
                 /* Never published on arrival: see the class note. */
                 target.setStatus(Itinerary.ItineraryStatus.DRAFT);
+                /* Whatever prose came with an itinerary that has no rows; null for one that has. */
+                target.setInclusions(textOrNull(row, "legacyInclusions"));
+                target.setExclusions(textOrNull(row, "legacyExclusions"));
                 target = itineraries.save(target);
 
                 if (target.getCode() == null) {
@@ -255,6 +293,7 @@ public class ItineraryTransfer implements ModuleTransfer {
                     target = itineraries.save(target);
                 }
 
+                writeInclusions(row, target);
                 writePax(row, target, context);
                 writeDays(row, target, context);
 
@@ -279,7 +318,12 @@ public class ItineraryTransfer implements ModuleTransfer {
         }
     }
 
-    private void writePax(JsonNode row, Itinerary itinerary, TransferContext context) {
+    private static String textOrNull(JsonNode row, String field) {
+        JsonNode value = row.path(field);
+        return value.isTextual() ? value.asText() : null;
+    }
+
+    private void writeInclusions(JsonNode row, Itinerary itinerary) {
         for (JsonNode line : row.path("inclusions")) {
             String label = line.path("item").asText(null);
             if (label == null || label.isBlank()) continue;
@@ -298,7 +342,9 @@ public class ItineraryTransfer implements ModuleTransfer {
             entry.setSortOrder(line.path("order").asInt(0));
             itineraryInclusions.save(entry);
         }
+    }
 
+    private void writePax(JsonNode row, Itinerary itinerary, TransferContext context) {
         for (JsonNode p : row.path("pax")) {
             String nation = p.path("nation").asText(null);
             String age = p.path("age").asText(null);
