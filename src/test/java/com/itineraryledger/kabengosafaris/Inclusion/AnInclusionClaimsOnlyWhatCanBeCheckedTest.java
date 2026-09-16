@@ -87,6 +87,19 @@ class AnInclusionClaimsOnlyWhatCanBeCheckedTest {
         assertEquals(null, scopeOfSeed("Optional activities (e.g. balloon safari, cultural visits)"),
             "scoping optional activities to ACTIVITY contradicts every included game drive");
 
+        /*
+         * These two shipped with a scope and had to be corrected against live data. Real quotes
+         * carry only ACCOMMODATION, PARK_FEE, ACTIVITY and TRANSPORT items: the guide and the
+         * flying-doctors cover are inside the day rate and are never billed as lines of their own,
+         * so both claims reported "nothing of that kind on this quote" on every quote there is.
+         * Exactly the failure this class was written to prevent, caught one step later than it
+         * should have been.
+         */
+        assertEquals(null, scopeOfSeed("Professional multilingual safari guide"),
+            "a guide is never a separate line, so a GUIDE claim fires on every quote");
+        assertEquals(null, scopeOfSeed("Flying-doctors emergency evacuation cover"),
+            "cover is bundled, so an INSURANCE claim fires on every quote");
+
         /* And the one that is deliberately NOT the obvious category. */
         assertEquals("VISA", scopeOfSeed("International flights & visas"),
             "VISA, not TRANSPORT — an internal hopper is a TRANSPORT line and is routinely included");

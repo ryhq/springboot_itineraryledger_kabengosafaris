@@ -55,7 +55,13 @@ public class InclusionItemInitializer implements ApplicationRunner {
     private static final List<Seed> SEEDS = List.of(
         /* --- what a Kabengo safari includes, in the order they have always printed --- */
         new Seed("Private 4×4 safari vehicle with pop-up roof", "Transport", true, "TRANSPORT"),
-        new Seed("Professional multilingual safari guide", "Guiding", true, "GUIDE"),
+        /*
+         * Null, not GUIDE. Checked against real quotes: they only ever carry ACCOMMODATION,
+         * PARK_FEE, ACTIVITY and TRANSPORT items. The guide is inside the day rate and is never
+         * billed as a line of its own, so a GUIDE claim reported "nothing of that kind on this
+         * quote" on every quote ever written.
+         */
+        new Seed("Professional multilingual safari guide", "Guiding", true, null),
         new Seed("All park, conservation & crater-service fees", "Park & conservation fees", true, "PARK_FEE"),
         new Seed("Accommodation with meals as listed in the itinerary", "Accommodation & meals", true, "ACCOMMODATION,MEALS"),
         new Seed("Airport transfers on arrival & departure", "Transport", true, "TRANSPORT"),
@@ -63,7 +69,8 @@ public class InclusionItemInitializer implements ApplicationRunner {
         new Seed("Drinking water on game drives", "Provisions", true, null),
         /* Tax is not a QuoteItemType — it is a percentage over other lines. */
         new Seed("Government taxes & levies", "Taxes", true, null),
-        new Seed("Flying-doctors emergency evacuation cover", "Safety & cover", true, "INSURANCE"),
+        /* Null for the same reason: cover is bundled, never an INSURANCE line. */
+        new Seed("Flying-doctors emergency evacuation cover", "Safety & cover", true, null),
 
         /* --- what it does not, same order --- */
         /*

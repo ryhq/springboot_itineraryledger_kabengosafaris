@@ -336,14 +336,57 @@ public class TranslationService {
     private String translateKeepingNumbers(TranslationProvider provider, String content,
                                            String sourceLanguage, String targetLanguage)
             throws TranslationProviderException {
+        /*
+         * Entities first, then numbers. &#39; and &#160; carry digits of their own, and masking
+         * numbers first would replace those digits and leave a broken entity behind.
+         */
+        java.util.LinkedHashMap<String, String> entities = new java.util.LinkedHashMap<>();
+        String withoutEntities = maskEntities(content, entities);
+
         java.util.LinkedHashMap<String, String> numbers = new java.util.LinkedHashMap<>();
-        String masked = maskNumbers(content, numbers);
+        String masked = maskNumbers(withoutEntities, numbers);
 
         String translated = provider.translate(masked, sourceLanguage, targetLanguage);
         if (translated == null || translated.isBlank()) {
             return content;
         }
-        return restoreNumbers(content, translated, numbers);
+        return restoreEntities(restoreNumbers(content, translated, numbers), entities);
+    }
+
+    /**
+     * HTML entities out, markers in.
+     *
+     * <p>Thymeleaf escapes on the way into the HTML, so "conservation &amp; crater fees" reaches
+     * the translator as "conservation &amp;amp; crater fees" — and the engine helpfully translates
+     * the entity, handing back "&amp; amp;". A German quote printed "Alle Park, Erhaltung &amp; amp;
+     * Kraterservice Gebühren" to a customer.
+     *
+     * <p>An entity is markup, not prose, and nothing in it is anybody's language. The same argument
+     * as {@link #maskNumbers}: hide what must not change, translate the rest, put it back.
+     */
+    public static String maskEntities(String content, java.util.Map<String, String> entities) {
+        java.util.regex.Matcher m = java.util.regex.Pattern
+            .compile("&(?:#\\d+|#[xX][0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]{1,31});")
+            .matcher(content);
+        StringBuilder masked = new StringBuilder();
+        int i = 0;
+        while (m.find()) {
+            /* Letters only, for the same reason the number markers use them. */
+            String marker = "#E" + letters(i++) + "#";
+            entities.put(marker, m.group());
+            m.appendReplacement(masked, java.util.regex.Matcher.quoteReplacement(marker));
+        }
+        m.appendTail(masked);
+        return masked.toString();
+    }
+
+    /** Markers back to entities. A marker the engine lost simply stays as it is. */
+    public static String restoreEntities(String translated, java.util.Map<String, String> entities) {
+        String out = translated;
+        for (java.util.Map.Entry<String, String> e : entities.entrySet()) {
+            out = out.replace(e.getKey(), e.getValue());
+        }
+        return out;
     }
 
     /** Numbers out, markers in. The map is filled with marker to original. */
