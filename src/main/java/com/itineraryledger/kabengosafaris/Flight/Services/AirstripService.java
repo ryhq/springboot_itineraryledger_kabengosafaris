@@ -51,7 +51,13 @@ public class AirstripService {
                                                  Integer page, Integer size, String sortBy, String sortDirection) {
         Specification<Airstrip> spec = buildSpec(keyword, region, isActive);
 
-        String sortField = SORTABLE.contains(sortBy) ? sortBy : "name";
+        /*
+         * The null check is NOT redundant. SORTABLE is a List.of, which forbids nulls and
+         * throws NullPointerException from contains(null) rather than answering false — and
+         * sortBy is null on every request that does not ask for a sort, which is most of them.
+         * Without it the whole listing answers 500.
+         */
+        String sortField = sortBy != null && SORTABLE.contains(sortBy) ? sortBy : "name";
         Sort sort = Sort.by("desc".equalsIgnoreCase(sortDirection) ? Sort.Direction.DESC : Sort.Direction.ASC, sortField);
         Pageable pageable = PageRequest.of(page == null ? 0 : page, clamp(size), sort);
 
