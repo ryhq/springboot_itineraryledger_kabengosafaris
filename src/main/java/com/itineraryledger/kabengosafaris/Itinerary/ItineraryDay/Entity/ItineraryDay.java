@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayAccommodation.Entity.ItineraryDayAccommodation;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayActivity.Entity.ItineraryDayActivity;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayFlight.Entity.ItineraryDayFlight;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayPark.Entity.ItineraryDayPark;
 import jakarta.persistence.*;
 import lombok.*;
@@ -148,6 +149,17 @@ public class ItineraryDay {
     @Builder.Default
     private List<ItineraryDayAccommodation> accommodations = new ArrayList<>();
 
+    /**
+     * The flights taken on this day.
+     *
+     * <p>Ordered like the parks rather than left to insertion order: a day with an outbound and a
+     * connection reads wrong if they print in whatever sequence somebody happened to add them.
+     */
+    @OneToMany(mappedBy = "itineraryDay", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @OrderBy("sortOrder ASC")
+    private List<ItineraryDayFlight> flights = new ArrayList<>();
+
     // ========================
     // HELPER METHODS
     // ========================
@@ -180,6 +192,16 @@ public class ItineraryDay {
     public void removeAccommodation(ItineraryDayAccommodation accommodation) {
         accommodations.remove(accommodation);
         accommodation.setItineraryDay(null);
+    }
+
+    public void addFlight(ItineraryDayFlight flight) {
+        flights.add(flight);
+        flight.setItineraryDay(this);
+    }
+
+    public void removeFlight(ItineraryDayFlight flight) {
+        flights.remove(flight);
+        flight.setItineraryDay(null);
     }
 
     /**
