@@ -109,6 +109,18 @@ public class CurrencyGroupedCostDTO {
     /**
      * Add accommodation costs
      */
+    // ========================
+    // FLIGHTS
+    // ========================
+
+    /** STO total for flights. Already includes the markup; see addFlightCost. */
+    @Builder.Default
+    private BigDecimal flightsSto = BigDecimal.ZERO;
+
+    /** Rack total for flights, which equals the STO total: flights carry no rack multiplier. */
+    @Builder.Default
+    private BigDecimal flightsRack = BigDecimal.ZERO;
+
     public void addAccommodationCost(BigDecimal sto, BigDecimal rack) {
         this.accommodationSto = (this.accommodationSto != null ? this.accommodationSto : BigDecimal.ZERO)
             .add(sto != null ? sto : BigDecimal.ZERO);
@@ -133,6 +145,24 @@ public class CurrencyGroupedCostDTO {
         this.activitiesSto = (this.activitiesSto != null ? this.activitiesSto : BigDecimal.ZERO)
             .add(sto != null ? sto : BigDecimal.ZERO);
         this.activitiesRack = (this.activitiesRack != null ? this.activitiesRack : BigDecimal.ZERO)
+            .add(rack != null ? rack : BigDecimal.ZERO);
+    }
+
+    /**
+     * Air fares, their per-person taxes, and the markup added to the fare.
+     *
+     * <p>Its own category rather than folded into transport or activities, because a flight is the
+     * one line on a safari the client can price-check against a public timetable, and an operator
+     * reconciling an airline's invoice needs the figure on its own.
+     *
+     * <p>Note both numbers are the SELLING price. A flight has no rack multiplier — that is an
+     * accommodation rule and applying it to a fare would price a 316 seat at 411 — so sto and rack
+     * carry the same figure and the markup is already inside it.
+     */
+    public void addFlightCost(BigDecimal sto, BigDecimal rack) {
+        this.flightsSto = (this.flightsSto != null ? this.flightsSto : BigDecimal.ZERO)
+            .add(sto != null ? sto : BigDecimal.ZERO);
+        this.flightsRack = (this.flightsRack != null ? this.flightsRack : BigDecimal.ZERO)
             .add(rack != null ? rack : BigDecimal.ZERO);
     }
 }

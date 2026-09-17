@@ -318,6 +318,8 @@ public class PerPaxCostAggregator {
                     .parkFeesRack(BigDecimal.ZERO)
                     .activitiesSto(BigDecimal.ZERO)
                     .activitiesRack(BigDecimal.ZERO)
+                    .flightsSto(BigDecimal.ZERO)
+                    .flightsRack(BigDecimal.ZERO)
                     .grandTotalSto(BigDecimal.ZERO)
                     .grandTotalRack(BigDecimal.ZERO)
                     .build()
@@ -333,6 +335,13 @@ public class PerPaxCostAggregator {
                 totals.addParkFeeCost(stoPrice, rackPrice);
             } else if (item.getItemType() == CostItemType.ACTIVITY) {
                 totals.addActivityCost(stoPrice, rackPrice);
+            } else if (item.getItemType() == CostItemType.FLIGHT) {
+                /*
+                 * Without this branch a flight line renders on the day and is absent from the day's
+                 * total, which is the worst of both: a number on screen that the sum does not agree
+                 * with, and nothing to say why.
+                 */
+                totals.addFlightCost(stoPrice, rackPrice);
             }
         }
 

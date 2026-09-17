@@ -281,8 +281,8 @@ public class FlightFareService {
 
     private Specification<FlightFare> buildSpec(String keyword, String flightRouteId, String airlineId,
                                                 Boolean isActive, Boolean includeRetired, Boolean missingNetFare) {
-        Long route = idObfuscator.decodeId(flightRouteId);
-        Long airline = idObfuscator.decodeId(airlineId);
+        Long route = optionalId(flightRouteId);
+        Long airline = optionalId(airlineId);
         return (root, query, cb) -> {
             List<Predicate> and = new ArrayList<>();
             /*
@@ -317,6 +317,19 @@ public class FlightFareService {
             else if (Boolean.FALSE.equals(missingNetFare)) and.add(cb.isNotNull(root.get("netFare")));
             return and.isEmpty() ? cb.conjunction() : cb.and(and.toArray(new Predicate[0]));
         };
+    }
+
+    /**
+     * Decode an optional filter id, or null when it was not supplied.
+     *
+     * <p>{@code IdObfuscator.decodeId} throws "Hash cannot be null or empty" on a null, and every id
+     * here is an OPTIONAL query parameter that is absent on most requests — so calling it directly
+     * turns the unfiltered listing, which is the one the panel opens with, into a 400. Same shape as
+     * the List.of(...).contains(null) trap next door: a helper that rejects null, handed the null
+     * that absence produces.
+     */
+    private Long optionalId(String obfuscated) {
+        return obfuscated == null || obfuscated.isBlank() ? null : idObfuscator.decodeId(obfuscated);
     }
 
     private int clamp(Integer size) { return size == null || size < 1 ? 50 : Math.min(size, 100); }
