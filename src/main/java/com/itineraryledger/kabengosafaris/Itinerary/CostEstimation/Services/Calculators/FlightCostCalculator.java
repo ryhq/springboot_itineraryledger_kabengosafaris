@@ -178,7 +178,7 @@ public class FlightCostCalculator {
             .stoTotalPrice(priced.totalSelling())
             .rackTotalPrice(priced.totalSelling())
             .currency(priced.currency())
-            .notes(flightNote(priced, children))
+            .notes(flightNote(priced, children, flight.getMarkupSource()))
             .exclusionReason(exclusionReason)
             .build();
     }
@@ -191,11 +191,21 @@ public class FlightCostCalculator {
         return lower.contains("child") || lower.contains("infant") || lower.contains("youth");
     }
 
-    private String flightNote(FlightFarePricer.PricedFlight priced, int children) {
+    /**
+     * @param resolvedSource where the markup came from, as worked out once when the DTO was built.
+     *                       The pricer is handed that already-resolved markup as this line's own, so
+     *                       it would report "this flight" for every flight — naming the airline's 13%
+     *                       as a per-trip override, which is exactly the disagreement between the
+     *                       cost sheet and the panel that resolving the cascade in one place was
+     *                       meant to prevent.
+     */
+    private String flightNote(FlightFarePricer.PricedFlight priced, int children, String resolvedSource) {
         StringBuilder note = new StringBuilder();
         note.append("Fare ").append(priced.currency()).append(' ').append(priced.netPerAdult());
         if (priced.markup().isNone()) note.append(", no markup");
-        else note.append(", markup from ").append(priced.markup().source());
+        else note.append(", markup from ")
+            .append(resolvedSource == null || resolvedSource.isBlank()
+                ? priced.markup().source() : resolvedSource);
         note.append(", tax ").append(priced.taxPerPerson()).append(" per person (never marked up)");
         if (children > 0) {
             note.append(". ").append(children).append(" child fare(s) at ")

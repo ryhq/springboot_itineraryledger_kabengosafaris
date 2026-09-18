@@ -78,6 +78,40 @@ class EveryCostTypeReachesTheTotalTest {
     }
 
     @Test
+    @DisplayName("every category actually moves the grand total")
+    void everyCategoryFeedsTheGrandTotal() {
+        /*
+         * Found in production, with the first flight ever attached to a real trip. The day showed a
+         * 764.16 flight line, flightsSto agreed with it, and grandTotalSto was the figure from
+         * before the flight existed — because calculateGrandTotals() named three categories and
+         * flights were the fourth.
+         *
+         * Adding a category is three edits — the field, the adder, and the sum — and nothing but
+         * this test holds them together. Each category is checked on its own, so the failure
+         * message names the one that was forgotten.
+         */
+        record Category(String name, java.util.function.BiConsumer<CurrencyGroupedCostDTO, BigDecimal> add) {}
+
+        List<Category> categories = List.of(
+            new Category("accommodation", (t, v) -> t.addAccommodationCost(v, v)),
+            new Category("park fees", (t, v) -> t.addParkFeeCost(v, v)),
+            new Category("activities", (t, v) -> t.addActivityCost(v, v)),
+            new Category("flights", (t, v) -> t.addFlightCost(v, v)));
+
+        for (Category category : categories) {
+            CurrencyGroupedCostDTO totals = CurrencyGroupedCostDTO.builder().currency("USD").build();
+            category.add().accept(totals, new BigDecimal("100"));
+            totals.calculateGrandTotals();
+
+            assertEquals(0, totals.getGrandTotalSto().compareTo(new BigDecimal("100")),
+                () -> category.name() + " does not reach grandTotalSto — the line shows on the day "
+                    + "and the total disagrees with it");
+            assertEquals(0, totals.getGrandTotalRack().compareTo(new BigDecimal("100")),
+                () -> category.name() + " does not reach grandTotalRack");
+        }
+    }
+
+    @Test
     @DisplayName("FLIGHT is its own category, not folded into activities")
     void flightIsNotAnActivity() {
         CurrencyGroupedCostDTO totals = CurrencyGroupedCostDTO.builder().currency("USD").build();

@@ -96,14 +96,27 @@ public class CurrencyGroupedCostDTO {
     /**
      * Recalculate grand totals from individual components
      */
+    /**
+     * ⚠️ EVERY category must be named here, and the compiler will not say so.
+     *
+     * <p>Flights reached their own total and not this one: the day showed a 764.16 flight line, the
+     * flightsSto figure agreed with it, and the grand total was the number from before the flight
+     * was added. A cost sheet that disagrees with its own arithmetic is worse than one that is
+     * simply wrong, because nothing about it looks broken.
+     *
+     * <p>Adding a category means three edits, not one — the field, the adder, and this sum — and
+     * only a test holds them together.
+     */
     public void calculateGrandTotals() {
         this.grandTotalSto = (accommodationSto != null ? accommodationSto : BigDecimal.ZERO)
             .add(parkFeesSto != null ? parkFeesSto : BigDecimal.ZERO)
-            .add(activitiesSto != null ? activitiesSto : BigDecimal.ZERO);
+            .add(activitiesSto != null ? activitiesSto : BigDecimal.ZERO)
+            .add(flightsSto != null ? flightsSto : BigDecimal.ZERO);
 
         this.grandTotalRack = (accommodationRack != null ? accommodationRack : BigDecimal.ZERO)
             .add(parkFeesRack != null ? parkFeesRack : BigDecimal.ZERO)
-            .add(activitiesRack != null ? activitiesRack : BigDecimal.ZERO);
+            .add(activitiesRack != null ? activitiesRack : BigDecimal.ZERO)
+            .add(flightsRack != null ? flightsRack : BigDecimal.ZERO);
     }
 
     /**
