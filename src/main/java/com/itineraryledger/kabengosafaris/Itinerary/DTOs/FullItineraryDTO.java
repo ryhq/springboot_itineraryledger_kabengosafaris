@@ -131,6 +131,54 @@ public class FullItineraryDTO {
         private List<DayActivityDTO> activities;
         private List<DayAccommodationDTO> accommodations;
         private List<DayParkDTO> parks;
+        private List<DayFlightDTO> flights;
+    }
+
+    /**
+     * A flight on a day.
+     *
+     * <p>Carries the fare's own figures rather than a rate id, because the cost engine needs the net
+     * fare, the tax and the markup that is actually in force, and the markup is a cascade — this
+     * line's, then the fare's, then the airline's. Resolving it once when the DTO is built means the
+     * calculator and the panel cannot disagree about which one applied.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class DayFlightDTO {
+        private String id;
+        private String flightRouteId;
+        private String flightFareId;
+        private String airlineName;
+        /** "ARS → ZNZ". */
+        private String sectorLabel;
+        private String originCode;
+        private String destinationCode;
+        private String etd;
+        private String eta;
+        /** Null on 71 of Air Excel's 350 rows; "AM" on seven of those. */
+        private String departureLabel;
+        private BigDecimal netFare;
+        private BigDecimal taxesAndFees;
+        private BigDecimal childPercent;
+        private String currency;
+        /** PERCENT or AMOUNT, already resolved down the cascade. */
+        private String markupType;
+        private BigDecimal markupValue;
+        /** "this flight", "the fare" or the airline's name — so a quote can say where it came from. */
+        private String markupSource;
+        private Integer passengerCount;
+        private Integer sortOrder;
+        private String notes;
+        private Boolean isAlternative;
+        private Boolean isIncludedInPrice;
+        /** The sector is flown on request only, which warns but never blocks. */
+        private Boolean isOnRequest;
+        private Integer minimumSeats;
+        /** Which months it flies, so the calculator can warn about an out-of-season date. */
+        private String operatingMonths;
     }
 
     /**

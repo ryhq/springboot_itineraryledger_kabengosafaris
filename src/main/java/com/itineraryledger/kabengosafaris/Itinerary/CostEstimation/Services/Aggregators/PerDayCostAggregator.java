@@ -6,6 +6,7 @@ import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.DayCostD
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.CostItemType;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Calculators.AccommodationCostCalculator;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Calculators.ActivityCostCalculator;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Calculators.FlightCostCalculator;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Calculators.ParkTariffCostCalculator;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Core.SeasonResolverService;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.FullItineraryDTO;
@@ -36,6 +37,7 @@ public class PerDayCostAggregator {
     private final AccommodationCostCalculator accommodationCostCalculator;
     private final ParkTariffCostCalculator parkTariffCostCalculator;
     private final ActivityCostCalculator activityCostCalculator;
+    private final FlightCostCalculator flightCostCalculator;
     private final SeasonResolverService seasonResolverService;
 
     /**
@@ -76,11 +78,16 @@ public class PerDayCostAggregator {
                 day, dayDate, globalSeason, paxList, carCount
             );
 
+            List<CostLineItemDTO> flightItems = flightCostCalculator.calculateForDay(
+                day, dayDate, paxList
+            );
+
             // Combine all line items
             List<CostLineItemDTO> allItems = new ArrayList<>();
             allItems.addAll(accommodationItems);
             allItems.addAll(parkFeeItems);
             allItems.addAll(activityItems);
+            allItems.addAll(flightItems);
 
             /*
              * Priced, and kept out of allItems on purpose.
@@ -97,6 +104,8 @@ public class PerDayCostAggregator {
                 day, dayDate, globalSeason, paxList, carCount));
             excludedItems.addAll(activityCostCalculator.calculateExcludedForDay(
                 day, dayDate, globalSeason, paxList, carCount));
+            excludedItems.addAll(flightCostCalculator.calculateExcludedForDay(
+                day, dayDate, paxList));
 
             // Calculate totals by currency
             List<CurrencyGroupedCostDTO> totalsByCurrency = calculateTotalsByCurrency(allItems);

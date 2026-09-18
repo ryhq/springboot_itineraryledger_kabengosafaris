@@ -16,6 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
 import com.itineraryledger.kabengosafaris.Itinerary.Repository.ItineraryRepository;
+import com.itineraryledger.kabengosafaris.Flight.CostEstimation.FlightFarePricer;
+import com.itineraryledger.kabengosafaris.Flight.Repository.FlightFareRepository;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayFlight.Entity.ItineraryDayFlight;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayFlight.Repository.ItineraryDayFlightRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.FullItineraryDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.FullItineraryDTO.*;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Entity.ItineraryDay;
@@ -63,6 +67,8 @@ public class ItineraryFullGetService {
     private final ItineraryDayParkRepository dayParkRepository;
     private final ItineraryDayParkActivityRepository parkActivityRepository;
     private final ItineraryDayParkTariffRepository parkTariffRepository;
+    private final ItineraryDayFlightRepository dayFlightRepository;
+    private final FlightFareRepository flightFareRepository;
     private final IdObfuscator idObfuscator;
     private final InclusionSnapshotService inclusionSnapshot;
 
@@ -76,6 +82,8 @@ public class ItineraryFullGetService {
         ItineraryDayParkRepository dayParkRepository,
         ItineraryDayParkActivityRepository parkActivityRepository,
         ItineraryDayParkTariffRepository parkTariffRepository,
+        ItineraryDayFlightRepository dayFlightRepository,
+        FlightFareRepository flightFareRepository,
         IdObfuscator idObfuscator,
         InclusionSnapshotService inclusionSnapshot
     ) {
@@ -87,6 +95,8 @@ public class ItineraryFullGetService {
         this.dayParkRepository = dayParkRepository;
         this.parkActivityRepository = parkActivityRepository;
         this.parkTariffRepository = parkTariffRepository;
+        this.dayFlightRepository = dayFlightRepository;
+        this.flightFareRepository = flightFareRepository;
         this.idObfuscator = idObfuscator;
         this.inclusionSnapshot = inclusionSnapshot;
     }
@@ -295,7 +305,70 @@ public class ItineraryFullGetService {
                 .collect(Collectors.toList()));
         }
 
+        // Day Flights
+        List<ItineraryDayFlight> flights = dayFlightRepository.findByItineraryDayIdOrderBySortOrderAscIdAsc(day.getId());
+        if (!flights.isEmpty()) {
+            dto.setFlights(flights.stream()
+                .map(this::convertDayFlightToDTO)
+                .collect(Collectors.toList()));
+        }
+
         return dto;
+    }
+
+    /**
+     * A flight on a day, with its fare and the markup actually in force.
+     *
+     * <p>The markup is resolved HERE, once, rather than left for the calculator: it is a cascade
+     * from this line to the fare to the airline, and resolving it in two places is how the cost
+     * sheet and the panel come to disagree about which one applied.
+     *
+     * <p>A line with a route but no chosen fare still prices. An itinerary is a product and has no
+     * dates, so the planner picks the sector and the office picks the departure later; until then
+     * the cheapest live fare for that sector is the honest figure, and the DTO carries it.
+     */
+    private FullItineraryDTO.DayFlightDTO convertDayFlightToDTO(ItineraryDayFlight flight) {
+        var route = flight.getFlightRoute();
+        var airline = route == null ? null : route.getAirline();
+
+        var fare = flight.getFlightFare();
+        if (fare == null && route != null) {
+            fare = flightFareRepository.findLiveForRoute(route.getId()).stream().findFirst().orElse(null);
+        }
+
+        var markup = FlightFarePricer.resolveMarkup(
+            flight.getMarkupType(), flight.getMarkupValue(), fare, airline);
+
+        return FullItineraryDTO.DayFlightDTO.builder()
+            .id(idObfuscator.encodeId(flight.getId()))
+            .flightRouteId(route == null ? null : idObfuscator.encodeId(route.getId()))
+            .flightFareId(fare == null ? null : idObfuscator.encodeId(fare.getId()))
+            .airlineName(airline == null ? null : airline.getName())
+            .sectorLabel(route == null ? null : route.getSectorLabel())
+            .originCode(route == null || route.getOriginAirstrip() == null
+                ? null : route.getOriginAirstrip().getCode())
+            .destinationCode(route == null || route.getDestinationAirstrip() == null
+                ? null : route.getDestinationAirstrip().getCode())
+            .etd(fare == null || fare.getEtd() == null ? null : fare.getEtd().toString())
+            .eta(fare == null || fare.getEta() == null ? null : fare.getEta().toString())
+            .departureLabel(fare == null ? null : fare.getDepartureLabel())
+            .netFare(fare == null ? null : fare.getNetFare())
+            .taxesAndFees(fare == null ? null : fare.getTaxesAndFees())
+            .childPercent(fare == null ? null : fare.getChildPercent())
+            .currency(fare == null ? null : fare.getCurrency())
+            .markupType(markup.isNone() ? null : markup.type().name())
+            .markupValue(markup.value())
+            .markupSource(markup.source())
+            .passengerCount(flight.getPassengerCount())
+            .sortOrder(flight.getSortOrder())
+            .notes(flight.getNotes())
+            .isAlternative(flight.getIsAlternative())
+            .isIncludedInPrice(flight.getIsIncludedInPrice())
+            .isOnRequest(route == null ? null : route.getIsOnRequest())
+            .minimumSeats(fare != null && fare.getMinimumSeats() != null
+                ? fare.getMinimumSeats() : (route == null ? null : route.getMinimumSeats()))
+            .operatingMonths(fare == null ? null : fare.getOperatingMonths())
+            .build();
     }
 
     /**

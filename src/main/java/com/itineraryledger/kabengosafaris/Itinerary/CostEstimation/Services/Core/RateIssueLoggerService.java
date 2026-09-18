@@ -58,6 +58,36 @@ public class RateIssueLoggerService {
     }
 
     /**
+     * Log a warning whose wording is already written.
+     *
+     * <p>The other methods here compose a sentence from a type and a name, which suits a rate lookup
+     * that either found a row or did not. A flight fails in more ways than that — no net fare loaded,
+     * the sector is on request only, the party is under the minimum seats, the date falls outside the
+     * months the route flies — and FlightFarePricer has already said which, in words a person can
+     * act on. Rebuilding that sentence from an enum would lose the detail that makes it useful.
+     *
+     * <p>Typed MISSING so it lands with the other unquotable lines on the Cost tab and sets
+     * hasIncompleteRates, which is what an office needs to see before a quote goes out.
+     */
+    public void logStated(
+            CostItemType itemType,
+            String itemName,
+            String itemId,
+            Integer dayNumber,
+            String message
+    ) {
+        issues.add(RateIssueLogDTO.builder()
+            .issueType(RateIssueType.MISSING)
+            .itemType(itemType)
+            .itemName(itemName)
+            .itemId(itemId)
+            .dayNumber(dayNumber)
+            .message(message)
+            .build());
+        log.warn("Rate issue: {}", message);
+    }
+
+    /**
      * Log an inactive rate issue.
      *
      * @param itemType Type of item
