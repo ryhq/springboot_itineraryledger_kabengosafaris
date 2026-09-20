@@ -63,6 +63,17 @@ public class QuoteCostEstimationService {
     private final IdObfuscator idObfuscator;
 
     /**
+     * The item types this service produces, and therefore the only ones it may remove.
+     *
+     * <p>Everything else on a quote was put there by a person. FLIGHT is derived now — it comes off
+     * the day tree like the other three — so it belongs here; TRANSPORT does not, because a road
+     * transfer is still typed by hand.
+     */
+    private static final java.util.Set<QuoteItemType> DERIVED_TYPES = java.util.Set.of(
+        QuoteItemType.ACCOMMODATION, QuoteItemType.PARK_FEE, QuoteItemType.ACTIVITY,
+        QuoteItemType.FLIGHT);
+
+    /**
      * Recalculate a Quote's items from its current day-tree × pax mix.
      * Idempotent: drops existing items and rebuilds from scratch.
      */
@@ -128,8 +139,19 @@ public class QuoteCostEstimationService {
         }
         ItineraryCostEstimationDTO estimation = (ItineraryCostEstimationDTO) data;
 
-        // 3. Drop existing items and write fresh ones from the estimation
-        quoteItemRepository.deleteByQuoteId(quoteId);
+        /*
+         * 3. Drop the DERIVED items and write them fresh. Only the derived ones.
+         *
+         * This used to delete every row on the quote and then rewrite only the three types cost
+         * estimation produces, and recalc fires on EVERY edit to the quote's day tree — eight call
+         * sites. So a line somebody typed by hand, which is how flights have been quoted until now,
+         * was silently destroyed the next time anyone touched a day. No error, no warning, and the
+         * only evidence was a total that quietly dropped.
+         *
+         * A hand-written line is somebody's decision and is not this method's to remove. It survives
+         * now; only what this method can regenerate is replaced.
+         */
+        quoteItemRepository.deleteByQuoteIdAndItemTypeIn(quoteId, DERIVED_TYPES);
         quoteItemRepository.flush();
         int written = persistItems(quote, estimation);
 
@@ -440,6 +462,7 @@ public class QuoteCostEstimationService {
         BigDecimal accommodationMultiplier = computeMarkupMultiplier(quote, QuoteItemType.ACCOMMODATION);
         BigDecimal parkFeeMultiplier = computeMarkupMultiplier(quote, QuoteItemType.PARK_FEE);
         BigDecimal activityMultiplier = computeMarkupMultiplier(quote, QuoteItemType.ACTIVITY);
+        BigDecimal flightMultiplier = computeMarkupMultiplier(quote, QuoteItemType.FLIGHT);
         boolean condense = Boolean.TRUE.equals(quote.getCondenseItems());
         /*
          * displayOrder is 1-based and unique within a quote, which is what the

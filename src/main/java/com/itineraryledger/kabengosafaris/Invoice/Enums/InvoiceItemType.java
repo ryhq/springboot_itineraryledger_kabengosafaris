@@ -11,6 +11,12 @@ public enum InvoiceItemType {
     PARK_FEE("Park Fee", "National park entrance fees and conservation fees"),
     ACTIVITY("Activity", "Safari activities like game drives, balloon rides, etc."),
     TRANSPORT("Transport", "Vehicle rental, transfers, flights"),
+    /*
+     * Its own type rather than filed under TRANSPORT, which still covers road transfers. A flight is
+     * the one line a client can price-check against a public timetable, an operator reconciling an
+     * airline invoice needs it separate, and the two are marked up differently.
+     */
+    FLIGHT("Flight", "Air fares, their taxes and the markup on them"),
     GUIDE("Guide", "Tour guide services"),
     MEALS("Meals", "Breakfast, lunch, dinner"),
     EQUIPMENT("Equipment", "Camping gear, binoculars, etc."),
