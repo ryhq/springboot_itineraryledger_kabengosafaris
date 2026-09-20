@@ -50,6 +50,14 @@ public class ItineraryCostEstimationDTO {
     private CostBreakdown accommodationCosts;
     private CostBreakdown parkFeeCosts;
     private CostBreakdown activityCosts;
+    /**
+     * Air fares, their per-person taxes and the markup on the fare.
+     *
+     * <p>A fourth category rather than lines folded into transport: a flight is the one thing on a
+     * quote a client can check against a public timetable, and an operator reconciling an airline's
+     * invoice needs the figure on its own.
+     */
+    private CostBreakdown flightCosts;
 
     // ========================
     // DAY-BY-DAY BREAKDOWN

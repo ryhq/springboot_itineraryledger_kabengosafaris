@@ -7,6 +7,9 @@ import com.itineraryledger.kabengosafaris.Activity.ChargingBasis;
 import com.itineraryledger.kabengosafaris.Activity.ActivityRepository;
 import com.itineraryledger.kabengosafaris.ActivityTariffRate.ActivityTariffRate;
 import com.itineraryledger.kabengosafaris.ActivityTariffRate.Repositories.ActivityTariffRateRepository;
+import com.itineraryledger.kabengosafaris.Flight.CostEstimation.FlightFarePricer;
+import com.itineraryledger.kabengosafaris.Flight.Entity.FlightFare;
+import com.itineraryledger.kabengosafaris.Flight.Enums.MarkupType;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.FullItineraryDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.ItineraryCostEstimationDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.ItineraryCostEstimationDTO.*;
@@ -191,6 +194,9 @@ public class ItineraryCostEstimationService {
                 itinerary, startDate, applicableSeason, useStoRate, carCount, warnings
             );
 
+            // 6d. Flight costs
+            CostBreakdown flightCosts = calculateFlightCosts(itinerary, startDate, warnings);
+
             // 7. Calculate totals by currency (multi-currency support)
             Map<String, BigDecimal> subtotalByCurrency = new HashMap<>();
 
@@ -217,6 +223,20 @@ public class ItineraryCostEstimationService {
             // Aggregate activity costs by currency
             if (activityCosts.getItems() != null) {
                 for (CostLineItem item : activityCosts.getItems()) {
+                    String itemCurrency = item.getCurrency() != null ? item.getCurrency() : DEFAULT_CURRENCY;
+                    subtotalByCurrency.merge(itemCurrency,
+                        item.getTotalPrice() != null ? item.getTotalPrice() : BigDecimal.ZERO,
+                        BigDecimal::add);
+                }
+            }
+
+            /*
+             * Aggregate flights by currency. Easy to forget, and the failure is quiet: the flight
+             * would appear in its own breakdown and be missing from the subtotal the quote is built
+             * from — the same shape as the grand-total bug this module already had once.
+             */
+            if (flightCosts.getItems() != null) {
+                for (CostLineItem item : flightCosts.getItems()) {
                     String itemCurrency = item.getCurrency() != null ? item.getCurrency() : DEFAULT_CURRENCY;
                     subtotalByCurrency.merge(itemCurrency,
                         item.getTotalPrice() != null ? item.getTotalPrice() : BigDecimal.ZERO,
@@ -255,6 +275,7 @@ public class ItineraryCostEstimationService {
                 .parkFeeCosts(parkFeeCosts)
                 .accommodationCosts(accommodationCosts)
                 .activityCosts(activityCosts)
+                .flightCosts(flightCosts)
                 .daySummaries(daySummaries)
                 .currency(currency)
                 .subtotal(subtotal)
@@ -778,6 +799,112 @@ public class ItineraryCostEstimationService {
      *
      * @param carCount Number of vehicles for PER_VEHICLE activities
      */
+    /**
+     * Air fares for the whole trip.
+     *
+     * <p>Every figure comes from {@link FlightFarePricer} — the same one the itinerary Cost tab
+     * uses — so the quote and the Cost tab cannot disagree about what a flight costs. This walks the
+     * day tree and nothing more.
+     *
+     * <p>Alternatives and lines switched off are skipped, exactly as they are everywhere else: an
+     * option on a trip must not change what the trip costs.
+     */
+    private CostBreakdown calculateFlightCosts(
+            FullItineraryDTO itinerary,
+            LocalDate startDate,
+            List<String> warnings
+    ) {
+        List<CostLineItem> items = new ArrayList<>();
+        BigDecimal total = BigDecimal.ZERO;
+        String currency = DEFAULT_CURRENCY;
+
+        if (itinerary.getDays() == null) {
+            return CostBreakdown.builder()
+                .total(BigDecimal.ZERO).currency(currency).itemCount(0).items(items).build();
+        }
+
+        int adults = 0;
+        int children = 0;
+        if (itinerary.getPaxList() != null) {
+            for (FullItineraryDTO.PaxDTO pax : itinerary.getPaxList()) {
+                int count = pax.getCount() == null ? 0 : pax.getCount();
+                String age = pax.getAgeCategoryName() == null ? "" : pax.getAgeCategoryName().toLowerCase();
+                if (age.contains("child") || age.contains("infant") || age.contains("youth")) children += count;
+                else adults += count;
+            }
+        }
+
+        for (FullItineraryDTO.DayDTO day : itinerary.getDays()) {
+            if (day.getFlights() == null) continue;
+            LocalDate dayDate = startDate == null ? null
+                : startDate.plusDays((day.getDayNumber() == null ? 1 : day.getDayNumber()) - 1);
+
+            for (FullItineraryDTO.DayFlightDTO flight : day.getFlights()) {
+                if (Boolean.TRUE.equals(flight.getIsAlternative())) continue;
+                if (Boolean.FALSE.equals(flight.getIsIncludedInPrice())) continue;
+
+                int seatAdults = adults;
+                int seatChildren = children;
+                if (flight.getPassengerCount() != null && flight.getPassengerCount() > 0) {
+                    seatAdults = flight.getPassengerCount();
+                    seatChildren = 0;
+                }
+                if (seatAdults + seatChildren == 0) continue;
+
+                FlightFare fare = FlightFare.builder()
+                    .netFare(flight.getNetFare())
+                    .taxesAndFees(flight.getTaxesAndFees() == null ? BigDecimal.ZERO : flight.getTaxesAndFees())
+                    .childPercent(flight.getChildPercent())
+                    .currency(flight.getCurrency() == null ? DEFAULT_CURRENCY : flight.getCurrency())
+                    .operatingMonths(flight.getOperatingMonths())
+                    .minimumSeats(flight.getMinimumSeats())
+                    .validFrom(LocalDate.MIN).validTo(LocalDate.MAX)
+                    .build();
+
+                MarkupType markupType = null;
+                if (flight.getMarkupType() != null && !flight.getMarkupType().isBlank()) {
+                    try {
+                        markupType = MarkupType.valueOf(flight.getMarkupType());
+                    } catch (IllegalArgumentException ignored) {
+                        /* An unrecognised stored value means no markup, not a failed estimate. */
+                    }
+                }
+
+                var priced = FlightFarePricer.price(fare, null, seatAdults, seatChildren,
+                    markupType, flight.getMarkupValue(), dayDate);
+                warnings.addAll(priced.warnings());
+
+                String name = ((flight.getAirlineName() == null ? "Flight" : flight.getAirlineName())
+                    + " " + (flight.getSectorLabel() == null ? "" : flight.getSectorLabel())
+                    + (flight.getEtd() == null ? "" : ", " + flight.getEtd())).trim();
+
+                items.add(CostLineItem.builder()
+                    .dayNumber(day.getDayNumber())
+                    .itemType("FLIGHT")
+                    .itemName(name)
+                    .referenceId(flight.getFlightFareId())
+                    .quantity(seatAdults + seatChildren)
+                    .unitPrice(priced.sellingPerAdult())
+                    .totalPrice(priced.totalSelling())
+                    .currency(priced.currency())
+                    .paxCategory("Per Person")
+                    .notes("Fare " + priced.currency() + " " + priced.netPerAdult()
+                        + ", markup from " + (flight.getMarkupSource() == null
+                            ? priced.markup().source() : flight.getMarkupSource())
+                        + ", tax " + priced.taxPerPerson() + " per person (never marked up)")
+                    /* A flight with no net fare is priced at nothing and says so, like a missing rate. */
+                    .rateFound(priced.isPriceable())
+                    .build());
+
+                total = total.add(priced.totalSelling());
+                currency = priced.currency();
+            }
+        }
+
+        return CostBreakdown.builder()
+            .total(total).currency(currency).itemCount(items.size()).items(items).build();
+    }
+
     private CostBreakdown calculateActivityCosts(
             FullItineraryDTO itinerary,
             LocalDate startDate,
