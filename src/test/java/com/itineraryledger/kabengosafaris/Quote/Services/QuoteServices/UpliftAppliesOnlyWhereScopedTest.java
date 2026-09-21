@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices;
 
+import com.itineraryledger.kabengosafaris.Flight.Repository.FlightFareRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryCostEstimationService;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
 import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemType;
@@ -38,7 +39,8 @@ class UpliftAppliesOnlyWhereScopedTest {
             mock(QuoteItemRepository.class),
             mock(ItineraryCostEstimationService.class),
             mock(QuoteTotalsCalculationService.class),
-            mock(IdObfuscator.class)
+            mock(IdObfuscator.class),
+            mock(FlightFareRepository.class)
         );
     }
 

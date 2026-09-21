@@ -1,5 +1,9 @@
 package com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices;
 
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayFlight.Entity.QuoteDayFlight;
+import com.itineraryledger.kabengosafaris.Flight.Repository.FlightFareRepository;
+import com.itineraryledger.kabengosafaris.Flight.CostEstimation.FlightFarePricer;
+import com.itineraryledger.kabengosafaris.Flight.CostEstimation.DayFlightDTOMapper;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.FullItineraryDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.ItineraryCostEstimationDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.ItineraryCostEstimationDTO.CostLineItem;
@@ -61,6 +65,7 @@ public class QuoteCostEstimationService {
     private final ItineraryCostEstimationService itineraryCostEstimationService;
     private final QuoteTotalsCalculationService totalsCalculationService;
     private final IdObfuscator idObfuscator;
+    private final FlightFareRepository flightFareRepository;
 
     /**
      * The item types this service produces, and therefore the only ones it may remove.
@@ -433,6 +438,41 @@ public class QuoteCostEstimationService {
             }
         }
         d.setParks(parks);
+
+        /*
+         * Flights.
+         *
+         * This is the half of the engine that is easy to leave out. The quote does not price off
+         * the itinerary: recalculate() builds THIS synthetic DTO from the quote's own day tree and
+         * feeds it to the same engine, precisely so that editing a quote's days re-prices the
+         * quote. A flight the office adds to a quote day — or removes from one — therefore reaches
+         * the cost sheet only through here. Without this block the flight appears in the day tree,
+         * prints on the document, and contributes nothing to the total.
+         */
+        List<FullItineraryDTO.DayFlightDTO> flights = new ArrayList<>();
+        if (day.getFlights() != null) {
+            for (QuoteDayFlight f : day.getFlights()) {
+                var route = f.getFlightRoute();
+                var airline = route == null ? null : route.getAirline();
+
+                var fare = f.getFlightFare();
+                if (fare == null && route != null) {
+                    fare = flightFareRepository.findLiveForRoute(route.getId())
+                        .stream().findFirst().orElse(null);
+                }
+
+                var markup = FlightFarePricer.resolveMarkup(
+                    f.getMarkupType(), f.getMarkupValue(), fare, airline);
+
+                flights.add(DayFlightDTOMapper.map(
+                    new DayFlightDTOMapper.LineValues(
+                        f.getId(), f.getPassengerCount(), f.getSortOrder(),
+                        f.getNotes(), f.getIsAlternative(), f.getIsIncludedInPrice()),
+                    route, fare, markup, idObfuscator::encodeId));
+            }
+        }
+        d.setFlights(flights);
+
         return d;
     }
 

@@ -1151,6 +1151,39 @@
                     </div>
                 </div>
 
+                <!-- Flights -->
+                <!--
+                  The safari's copy shows the booking status, which the itinerary's does not: an
+                  itinerary is a product and nothing has been reserved on it, whereas this is a
+                  trip that is running and PENDING here means somebody still has to buy the seat.
+                -->
+                <div th:if="${day.flights != null and !day.flights.isEmpty()}" class="day-section">
+                    <h4>Flights</h4>
+                    <div th:each="flight : ${day.flights}" class="activity-card">
+                        <div class="activity-header">
+                            <span class="activity-name"
+                                  th:text="${flight.sectorLabel != null ? flight.sectorLabel : 'Flight'}">ARS to ZNZ</span>
+                            <span th:if="${flight.airlineName != null}" class="activity-duration"
+                                  th:text="${flight.airlineName}">Air Excel</span>
+                        </div>
+                        <div class="text-small" th:if="${flight.etd != null or flight.departureLabel != null}">
+                            <span class="text-muted">Departs: </span>
+                            <span th:if="${flight.etd != null}" th:text="${flight.etd}">09:00</span>
+                            <span th:if="${flight.etd == null and flight.departureLabel != null}"
+                                  th:text="${flight.departureLabel}">AM</span>
+                            <span th:if="${flight.eta != null}"> - <span th:text="${flight.eta}">10:15</span></span>
+                        </div>
+                        <div class="text-small" th:if="${flight.isAlternative != null and flight.isAlternative}">
+                            <span class="text-muted">Alternative — not in the price</span>
+                        </div>
+                        <div class="text-small" th:if="${flight.isOnRequest != null and flight.isOnRequest}">
+                            <span class="text-muted">On request only</span>
+                        </div>
+                        <div class="text-small" th:if="${flight.notes != null and !#strings.isEmpty(flight.notes)}"
+                             th:text="${flight.notes}">Notes</div>
+                    </div>
+                </div>
+
                 <!-- Standalone Activities -->
                 <div th:if="${day.activities != null and !day.activities.isEmpty()}" class="day-section">
                     <h4>Activities</h4>

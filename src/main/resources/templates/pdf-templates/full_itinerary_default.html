@@ -1008,6 +1008,63 @@
               </div>
             </div>
 
+            <!-- Flights -->
+            <!--
+              Placed before the day's activities because it is what the day starts with: a party
+              that flies to Zanzibar in the morning reads the flight first. The FARE is deliberately
+              absent — this is the document a client reads, and the price belongs on the cost sheet,
+              once, rather than in two places that can disagree.
+            -->
+            <div
+              th:if="${day.flights != null and !day.flights.isEmpty()}"
+            >
+              <h4 class="sub-heading">Flights</h4>
+              <ul class="activity-list">
+                <li th:each="flight : ${day.flights}">
+                  <span
+                    th:text="${flight.sectorLabel != null ? flight.sectorLabel : 'Flight'}"
+                    >ARS to ZNZ</span
+                  >
+                  <span th:if="${flight.airlineName != null}" class="text-muted">
+                    - <span th:text="${flight.airlineName}">Air Excel</span></span
+                  >
+                  <span th:if="${flight.etd != null}" class="text-muted">
+                    (<span th:text="${flight.etd}">09:00</span>
+                    <span th:if="${flight.eta != null}">
+                      - <span th:text="${flight.eta}">10:15</span></span
+                    >)
+                  </span>
+                  <!-- Seventy-one of Air Excel's rows give no time at all, and seven say only "AM". -->
+                  <span
+                    th:if="${flight.etd == null and flight.departureLabel != null}"
+                    class="text-muted"
+                  >
+                    (<span th:text="${flight.departureLabel}">AM</span>)
+                  </span>
+                  <span
+                    class="alternative-badge"
+                    th:if="${flight.isAlternative != null and flight.isAlternative}"
+                    >Alternative</span
+                  >
+                  <span
+                    th:if="${flight.isOnRequest != null and flight.isOnRequest}"
+                    class="text-muted"
+                    >(On request)</span
+                  >
+                  <span
+                    th:if="${flight.isIncludedInPrice != null and !flight.isIncludedInPrice}"
+                    class="text-muted"
+                    style="color: #e74c3c;"
+                    >(Extra cost)</span
+                  >
+                  <span
+                    th:if="${flight.notes != null and !#strings.isEmpty(flight.notes)}"
+                    class="text-muted text-small"
+                  > - <span th:text="${flight.notes}">Notes...</span></span>
+                </li>
+              </ul>
+            </div>
+
             <!-- Standalone Activities -->
             <div
               th:if="${day.activities != null and !day.activities.isEmpty()}"

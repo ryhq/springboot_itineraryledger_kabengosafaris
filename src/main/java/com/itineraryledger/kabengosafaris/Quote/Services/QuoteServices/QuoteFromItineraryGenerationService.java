@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices;
 
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayFlight.Entity.QuoteDayFlight;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayFlight.Entity.ItineraryDayFlight;
 import com.itineraryledger.kabengosafaris.Inclusion.Services.InclusionSnapshotService;
 
 import com.itineraryledger.kabengosafaris.Customer.Repository.CustomerRepository;
@@ -618,6 +620,7 @@ public class QuoteFromItineraryGenerationService {
 
             copyDayActivities(itineraryDay, quoteDay);
             copyDayAccommodations(itineraryDay, quoteDay);
+            copyDayFlights(itineraryDay, quoteDay);
             copyDayParks(itineraryDay, quoteDay);
 
             quoteDay.setQuote(quote);
@@ -659,6 +662,35 @@ public class QuoteFromItineraryGenerationService {
                     .notes(itineraryAccommodation.getNotes())
                     .build();
             quoteDay.addAccommodation(quoteAccommodation);
+        }
+    }
+
+    /**
+     * The flights, with the markup decision that was made about this trip.
+     *
+     * <p>The chosen fare travels as a reference, not as a copy of its figures: the price is frozen
+     * in the quote's own line items when the quote is generated, and copying the numbers here too
+     * would give one price two homes and no rule for which wins.
+     *
+     * <p>markupType/markupValue DO travel, because they are a decision — "flat 50 on this sector
+     * for this client" — and losing them would quietly re-price the flight at the airline default.
+     */
+    private void copyDayFlights(ItineraryDay itineraryDay, QuoteDay quoteDay) {
+        if (itineraryDay.getFlights() == null || itineraryDay.getFlights().isEmpty()) {
+            return;
+        }
+        for (ItineraryDayFlight source : itineraryDay.getFlights()) {
+            quoteDay.addFlight(QuoteDayFlight.builder()
+                    .flightRoute(source.getFlightRoute())
+                    .flightFare(source.getFlightFare())
+                    .passengerCount(source.getPassengerCount())
+                    .isAlternative(source.getIsAlternative())
+                    .isIncludedInPrice(source.getIsIncludedInPrice())
+                    .markupType(source.getMarkupType())
+                    .markupValue(source.getMarkupValue())
+                    .sortOrder(source.getSortOrder())
+                    .notes(source.getNotes())
+                    .build());
         }
     }
 

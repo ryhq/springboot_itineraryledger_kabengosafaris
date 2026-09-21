@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Quote.QuoteDay.Entity;
 
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayFlight.Entity.QuoteDayFlight;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.Entity.QuoteDayAccommodation;
@@ -129,6 +130,12 @@ public class QuoteDay {
     @Builder.Default
     private List<QuoteDayAccommodation> accommodations = new ArrayList<>();
 
+    /** The flights taken on this day, ordered so an outbound and a connection print in sequence. */
+    @OneToMany(mappedBy = "quoteDay", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @OrderBy("sortOrder ASC")
+    private List<QuoteDayFlight> flights = new ArrayList<>();
+
     public void addActivity(QuoteDayActivity activity) {
         activities.add(activity);
         activity.setQuoteDay(this);
@@ -152,6 +159,16 @@ public class QuoteDay {
     public void addAccommodation(QuoteDayAccommodation accommodation) {
         accommodations.add(accommodation);
         accommodation.setQuoteDay(this);
+    }
+
+    public void addFlight(QuoteDayFlight flight) {
+        flights.add(flight);
+        flight.setQuoteDay(this);
+    }
+
+    public void removeFlight(QuoteDayFlight flight) {
+        flights.remove(flight);
+        flight.setQuoteDay(null);
     }
 
     public void removeAccommodation(QuoteDayAccommodation accommodation) {

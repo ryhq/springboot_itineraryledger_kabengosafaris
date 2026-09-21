@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Safari.CostEstimation.Services.Aggregators;
 
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Calculators.FlightCostCalculator;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CostLineItemDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CurrencyGroupedCostDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.DayCostDetailDTO;
@@ -33,6 +34,7 @@ import java.util.Map;
 public class SafariPerDayCostAggregator {
 
     private final SafariAccommodationCostCalculator safariAccommodationCostCalculator;
+    private final FlightCostCalculator flightCostCalculator;
     private final SafariParkTariffCostCalculator safariParkTariffCostCalculator;
     private final SafariActivityCostCalculator safariActivityCostCalculator;
     private final SeasonResolverService seasonResolverService;
@@ -71,11 +73,21 @@ public class SafariPerDayCostAggregator {
                 day, day.getDate(), globalSeason, paxList, carCount
             );
 
+            /*
+             * Flights, priced by the itinerary's own calculator rather than a safari copy of it.
+             * The seat arithmetic is identical and the two documents must agree to the cent; the
+             * only safari-shaped part is turning this safari's pax into an adult/child pair.
+             */
+            List<CostLineItemDTO> flightItems = flightCostCalculator.calculateForDay(
+                day.getFlights(), day.getDayNumber(), day.getDate(), seats(paxList)
+            );
+
             // Combine all line items
             List<CostLineItemDTO> allItems = new ArrayList<>();
             allItems.addAll(accommodationItems);
             allItems.addAll(parkFeeItems);
             allItems.addAll(activityItems);
+            allItems.addAll(flightItems);
 
             /*
              * Priced, and kept out of allItems on purpose.
@@ -92,6 +104,8 @@ public class SafariPerDayCostAggregator {
                 day, day.getDate(), globalSeason, paxList, carCount));
             excludedItems.addAll(safariActivityCostCalculator.calculateExcludedForDay(
                 day, day.getDate(), globalSeason, paxList, carCount));
+            excludedItems.addAll(flightCostCalculator.calculateExcludedForDay(
+                day.getFlights(), day.getDayNumber(), day.getDate(), seats(paxList)));
 
             // Calculate totals by currency
             List<CurrencyGroupedCostDTO> totalsByCurrency = calculateTotalsByCurrency(allItems);
@@ -209,5 +223,26 @@ public class SafariPerDayCostAggregator {
         result.forEach(CurrencyGroupedCostDTO::calculateGrandTotals);
 
         return result;
+    }
+
+    /**
+     * The party, split into adults and children, for the flight calculator.
+     *
+     * <p>A seat is the only thing on a safari day priced per person by AGE — a child flies at 70%
+     * of the fare. Beds go by room, park fees by their own tariff bands, so no other calculator
+     * here needs the split, and the flight calculator takes it as a plain pair rather than a
+     * safari type so the itinerary side can hand it the same thing.
+     */
+    private FlightCostCalculator.Seats seats(List<FullSafariDTO.PaxDTO> paxList) {
+        int adults = 0;
+        int children = 0;
+        if (paxList != null) {
+            for (FullSafariDTO.PaxDTO pax : paxList) {
+                int count = pax.getCount() == null ? 0 : pax.getCount();
+                if (FlightCostCalculator.isChild(pax.getAgeCategoryName())) children += count;
+                else adults += count;
+            }
+        }
+        return new FlightCostCalculator.Seats(adults, children);
     }
 }

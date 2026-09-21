@@ -905,6 +905,22 @@
               </div>
             </div>
 
+            <!-- Flights -->
+            <div class="activity-block" th:if="${day.flights != null and !day.flights.isEmpty()}">
+              <div class="activity-heading">Flights</div>
+              <ul class="activity-list">
+                <li th:each="flight : ${day.flights}">
+                  <span th:text="${flight.sectorLabel != null ? flight.sectorLabel : 'Flight'}">ARS to ZNZ</span>
+                  <span th:if="${flight.airlineName != null}" class="activity-time"> - <span th:text="${flight.airlineName}">Air Excel</span></span>
+                  <span th:if="${flight.etd != null}" class="activity-time"> (<span th:text="${flight.etd}">09:00</span><span th:if="${flight.eta != null}"> - <span th:text="${flight.eta}">10:15</span></span>)</span>
+                  <span th:if="${flight.etd == null and flight.departureLabel != null}" class="activity-time"> (<span th:text="${flight.departureLabel}">AM</span>)</span>
+                  <span th:if="${flight.isAlternative != null and flight.isAlternative}" class="activity-optional">Alternative</span>
+                  <span th:if="${flight.isOnRequest != null and flight.isOnRequest}" class="activity-optional">On request</span>
+                  <span th:if="${flight.isIncludedInPrice != null and !flight.isIncludedInPrice}" class="extra-cost"> (Extra cost)</span>
+                </li>
+              </ul>
+            </div>
+
             <!-- Standalone Activities -->
             <div class="activity-block" th:if="${day.activities != null and !day.activities.isEmpty()}">
               <div class="activity-heading">Activities</div>

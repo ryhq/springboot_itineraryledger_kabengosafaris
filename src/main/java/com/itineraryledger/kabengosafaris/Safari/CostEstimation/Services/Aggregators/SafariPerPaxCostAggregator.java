@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Safari.CostEstimation.Services.Aggregators;
 
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Calculators.FlightCostCalculator;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CostLineItemDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CurrencyGroupedCostDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.PaxCategoryCostDTO;
@@ -32,6 +33,7 @@ import java.util.*;
 public class SafariPerPaxCostAggregator {
 
     private final SafariAccommodationCostCalculator safariAccommodationCostCalculator;
+    private final FlightCostCalculator flightCostCalculator;
     private final SafariParkTariffCostCalculator safariParkTariffCostCalculator;
     private final SafariActivityCostCalculator safariActivityCostCalculator;
     private final SeasonResolverService seasonResolverService;
@@ -86,11 +88,16 @@ public class SafariPerPaxCostAggregator {
                     day, day.getDate(), globalSeason, paxList, carCount
                 );
 
+                List<CostLineItemDTO> flightItems = flightCostCalculator.calculateForDay(
+                    day.getFlights(), day.getDayNumber(), day.getDate(), seats(paxList)
+                );
+
                 // Combine all line items
                 List<CostLineItemDTO> allItems = new ArrayList<>();
                 allItems.addAll(accommodationItems);
                 allItems.addAll(parkFeeItems);
                 allItems.addAll(activityItems);
+                allItems.addAll(flightItems);
 
                 // Distribute costs to pax categories
                 distributeItemsToPax(allItems, paxCostMap, paxList, totalPax, carCount);
@@ -314,5 +321,28 @@ public class SafariPerPaxCostAggregator {
         result.forEach(CurrencyGroupedCostDTO::calculateGrandTotals);
 
         return result;
+    }
+
+    /**
+     * The party, split into adults and children, for the flight calculator.
+     *
+     * <p>Note what this means for the per-pax view: a flight line is priced for the whole party
+     * and then distributed by {@code distributeItemsToPax} like every other per-person cost, so a
+     * child's share is the ADULT-weighted average rather than that child's own 70% fare. That is
+     * the existing behaviour of this whole aggregator, not something flights introduce, and the
+     * per-day view and the grand total are unaffected — but it is worth knowing before anybody
+     * quotes a single child off this screen.
+     */
+    private FlightCostCalculator.Seats seats(List<FullSafariDTO.PaxDTO> paxList) {
+        int adults = 0;
+        int children = 0;
+        if (paxList != null) {
+            for (FullSafariDTO.PaxDTO pax : paxList) {
+                int count = pax.getCount() == null ? 0 : pax.getCount();
+                if (FlightCostCalculator.isChild(pax.getAgeCategoryName())) children += count;
+                else adults += count;
+            }
+        }
+        return new FlightCostCalculator.Seats(adults, children);
     }
 }

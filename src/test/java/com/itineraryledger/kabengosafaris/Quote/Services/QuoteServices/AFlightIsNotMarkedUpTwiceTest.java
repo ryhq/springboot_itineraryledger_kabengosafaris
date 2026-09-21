@@ -32,8 +32,10 @@ import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemTypeScope;
  */
 class AFlightIsNotMarkedUpTwiceTest {
 
+    /* Nulls throughout: computeMarkupMultiplier is arithmetic over the Quote it is handed and
+     * touches no collaborator, so wiring mocks would only obscure that. */
     private final QuoteCostEstimationService service = new QuoteCostEstimationService(
-        null, null, null, null, null);
+        null, null, null, null, null, null);
 
     private Quote quoteWithUplift(String scope) {
         Quote quote = new Quote();

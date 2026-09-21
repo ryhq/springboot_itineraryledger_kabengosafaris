@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
 import com.itineraryledger.kabengosafaris.Itinerary.Repository.ItineraryRepository;
+import com.itineraryledger.kabengosafaris.Flight.CostEstimation.DayFlightDTOMapper;
 import com.itineraryledger.kabengosafaris.Flight.CostEstimation.FlightFarePricer;
 import com.itineraryledger.kabengosafaris.Flight.Repository.FlightFareRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayFlight.Entity.ItineraryDayFlight;
@@ -339,36 +340,11 @@ public class ItineraryFullGetService {
         var markup = FlightFarePricer.resolveMarkup(
             flight.getMarkupType(), flight.getMarkupValue(), fare, airline);
 
-        return FullItineraryDTO.DayFlightDTO.builder()
-            .id(idObfuscator.encodeId(flight.getId()))
-            .flightRouteId(route == null ? null : idObfuscator.encodeId(route.getId()))
-            .flightFareId(fare == null ? null : idObfuscator.encodeId(fare.getId()))
-            .airlineName(airline == null ? null : airline.getName())
-            .sectorLabel(route == null ? null : route.getSectorLabel())
-            .originCode(route == null || route.getOriginAirstrip() == null
-                ? null : route.getOriginAirstrip().getCode())
-            .destinationCode(route == null || route.getDestinationAirstrip() == null
-                ? null : route.getDestinationAirstrip().getCode())
-            .etd(fare == null || fare.getEtd() == null ? null : fare.getEtd().toString())
-            .eta(fare == null || fare.getEta() == null ? null : fare.getEta().toString())
-            .departureLabel(fare == null ? null : fare.getDepartureLabel())
-            .netFare(fare == null ? null : fare.getNetFare())
-            .taxesAndFees(fare == null ? null : fare.getTaxesAndFees())
-            .childPercent(fare == null ? null : fare.getChildPercent())
-            .currency(fare == null ? null : fare.getCurrency())
-            .markupType(markup.isNone() ? null : markup.type().name())
-            .markupValue(markup.value())
-            .markupSource(markup.source())
-            .passengerCount(flight.getPassengerCount())
-            .sortOrder(flight.getSortOrder())
-            .notes(flight.getNotes())
-            .isAlternative(flight.getIsAlternative())
-            .isIncludedInPrice(flight.getIsIncludedInPrice())
-            .isOnRequest(route == null ? null : route.getIsOnRequest())
-            .minimumSeats(fare != null && fare.getMinimumSeats() != null
-                ? fare.getMinimumSeats() : (route == null ? null : route.getMinimumSeats()))
-            .operatingMonths(fare == null ? null : fare.getOperatingMonths())
-            .build();
+        return DayFlightDTOMapper.map(
+            new DayFlightDTOMapper.LineValues(
+                flight.getId(), flight.getPassengerCount(), flight.getSortOrder(),
+                flight.getNotes(), flight.getIsAlternative(), flight.getIsIncludedInPrice()),
+            route, fare, markup, idObfuscator::encodeId);
     }
 
     /**

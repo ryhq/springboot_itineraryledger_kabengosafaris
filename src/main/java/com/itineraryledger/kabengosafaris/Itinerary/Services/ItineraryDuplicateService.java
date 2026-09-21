@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Itinerary.Services;
 
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayFlight.Entity.ItineraryDayFlight;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryInclusion.Entity.ItineraryInclusion;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
@@ -248,6 +249,29 @@ public class ItineraryDuplicateService {
                     .notes(stay.getNotes())
                     .build());
                 counts.stays++;
+            }
+        }
+
+
+        /*
+         * Flights ride with the accommodations rather than behind their own flag. The existing
+         * options gate structural DEPTH — whether to bring the days, the parks, the beds — and a
+         * flight is part of what a day IS. A copy that silently arrives without its Zanzibar leg
+         * looks complete and is not, which is how the inclusion work lost data twice.
+         */
+        if (options.accommodations()) {
+            for (ItineraryDayFlight flight : day.getFlights()) {
+                copy.addFlight(ItineraryDayFlight.builder()
+                    .flightRoute(flight.getFlightRoute())
+                    .flightFare(flight.getFlightFare())
+                    .passengerCount(flight.getPassengerCount())
+                    .isAlternative(flight.getIsAlternative())
+                    .isIncludedInPrice(flight.getIsIncludedInPrice())
+                    .markupType(flight.getMarkupType())
+                    .markupValue(flight.getMarkupValue())
+                    .sortOrder(flight.getSortOrder())
+                    .notes(flight.getNotes())
+                    .build());
             }
         }
 

@@ -1,5 +1,7 @@
 package com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices;
 
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayFlight.Entity.QuoteDayFlight;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayFlight.Entity.ItineraryDayFlight;
 import com.itineraryledger.kabengosafaris.Inclusion.Entity.InclusionItem;
 import com.itineraryledger.kabengosafaris.Inclusion.Repository.InclusionItemRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryInclusion.Entity.ItineraryInclusion;
@@ -366,6 +368,7 @@ public class QuoteResyncAndTemplateService {
 
             copyDayActivities(qd, id);
             copyDayAccommodations(qd, id);
+        copyDayFlights(qd, id);
             copyDayParks(qd, id);
 
             itinerary.addDay(id);
@@ -402,6 +405,30 @@ public class QuoteResyncAndTemplateService {
                     .notes(acc.getNotes())
                     .build();
             id.addAccommodation(ia);
+        }
+    }
+
+    /**
+     * Flights, when a quote is saved back as a reusable itinerary.
+     *
+     * <p>Without this the template arrives looking complete and flightless, and the next trip built
+     * from it quietly loses its Zanzibar leg — the same silent drop this service already had once
+     * with the inclusion lines.
+     */
+    private void copyDayFlights(QuoteDay qd, ItineraryDay id) {
+        if (qd.getFlights() == null) return;
+        for (QuoteDayFlight f : qd.getFlights()) {
+            id.addFlight(ItineraryDayFlight.builder()
+                    .flightRoute(f.getFlightRoute())
+                    .flightFare(f.getFlightFare())
+                    .passengerCount(f.getPassengerCount())
+                    .isAlternative(f.getIsAlternative())
+                    .isIncludedInPrice(f.getIsIncludedInPrice())
+                    .markupType(f.getMarkupType())
+                    .markupValue(f.getMarkupValue())
+                    .sortOrder(f.getSortOrder())
+                    .notes(f.getNotes())
+                    .build());
         }
     }
 

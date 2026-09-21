@@ -1007,6 +1007,45 @@
               </div>
             </div>
 
+            <!-- Flights -->
+            <div th:if="${day.flights != null and !day.flights.isEmpty()}"
+                 style="margin-bottom: 18px;">
+              <div style="font-size: 9pt; color: #2c2c2c; font-weight: 600; margin-bottom: 10px; page-break-after: avoid;">Flights</div>
+
+              <th:block th:each="flight : ${day.flights}">
+                <div style="padding: 12px 15px; margin-bottom: 10px; background: #f7f7f7; border-left: 4px solid #3498db; border-radius: 4px;">
+                  <div style="display: table; width: 100%; margin-bottom: 8px;">
+                    <div style="display: table-cell; vertical-align: middle; width: 70%;">
+                      <span style="font-size: 10pt; font-weight: 700; color: #2c2c2c;"
+                            th:text="${flight.sectorLabel != null ? flight.sectorLabel : 'Flight'}">ARS to ZNZ</span>
+
+                      <span th:if="${flight.isAlternative != null and flight.isAlternative}"
+                            style="display: inline-block; background: #fff8e1; color: #b36b00; font-size: 7pt; padding: 2px 6px; border-radius: 3px; margin-left: 6px; font-weight: 600;">ALTERNATIVE</span>
+
+                      <span th:if="${flight.isOnRequest != null and flight.isOnRequest}"
+                            style="display: inline-block; background: #fff8e1; color: #b36b00; font-size: 7pt; padding: 2px 6px; border-radius: 3px; margin-left: 6px; font-weight: 600;">ON REQUEST</span>
+
+                      <span th:if="${flight.isIncludedInPrice != null and flight.isIncludedInPrice}"
+                            style="display: inline-block; background: {{companyAccentSoft}}; color: {{companyAccent}}; font-size: 7pt; padding: 2px 6px; border-radius: 3px; margin-left: 6px; font-weight: 600;">INCLUDED</span>
+                    </div>
+                    <div style="display: table-cell; vertical-align: middle; width: 30%; text-align: right; font-size: 8pt; color: #6b6b6b;">
+                      <span th:if="${flight.airlineName != null}" th:text="${flight.airlineName}">Air Excel</span>
+                    </div>
+                  </div>
+
+                  <div style="font-size: 8pt; color: #6b6b6b;"
+                       th:if="${flight.etd != null or flight.departureLabel != null}">
+                    <span th:if="${flight.etd != null}" th:text="${flight.etd}">09:00</span><span th:if="${flight.eta != null}" th:text="${' - ' + flight.eta}"> - 10:15</span>
+                    <span th:if="${flight.etd == null and flight.departureLabel != null}" th:text="${flight.departureLabel}">AM</span>
+                  </div>
+
+                  <div style="font-size: 8pt; color: #6b6b6b; margin-top: 4px;"
+                       th:if="${flight.notes != null and !#strings.isEmpty(flight.notes)}"
+                       th:text="${flight.notes}">Notes</div>
+                </div>
+              </th:block>
+            </div>
+
             <!-- Structured Activities List -->
             <div th:if="${day.activities != null and !day.activities.isEmpty()}"
                  style="margin-bottom: 18px;">

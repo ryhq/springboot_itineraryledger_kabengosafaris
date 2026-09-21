@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Safari.DTOs;
 
+import com.itineraryledger.kabengosafaris.Itinerary.DTOs.FullItineraryDTO;
 import com.itineraryledger.kabengosafaris.Inclusion.DTOs.InclusionLineDTO;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -162,6 +163,18 @@ public class FullSafariDTO {
         private List<DayActivityDTO> activities;
         private List<DayAccommodationDTO> accommodations;
         private List<DayParkDTO> parks;
+        /*
+         * The itinerary's flight DTO, reused rather than copied.
+         *
+         * <p>Every other child here has a safari-specific DTO because the safari carries operational
+         * state the itinerary has no idea about — a booking status, an actual room number. A flight
+         * row's booking status is a column on the entity, not something the COST engine reads, and
+         * the cost engine is the only thing this DTO feeds. So the two would be the same twenty-odd
+         * fields, three of which (netFare, taxesAndFees, the resolved markup) are arithmetic inputs
+         * that must not drift between the itinerary's cost sheet and the safari's. Sharing the type
+         * is what makes drifting impossible rather than merely unlikely.
+         */
+        private List<FullItineraryDTO.DayFlightDTO> flights;
     }
 
     /**

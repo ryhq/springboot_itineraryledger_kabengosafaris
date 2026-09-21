@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Safari.SafariDay.Entity;
 
+import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayFlight.Entity.SafariDayFlight;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
 import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayAccommodation.Entity.SafariDayAccommodation;
@@ -197,6 +198,12 @@ public class SafariDay {
     @Builder.Default
     private List<SafariDayAccommodation> accommodations = new ArrayList<>();
 
+    /** The flights taken on this day, ordered so an outbound and a connection print in sequence. */
+    @OneToMany(mappedBy = "safariDay", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @OrderBy("sortOrder ASC")
+    private List<SafariDayFlight> flights = new ArrayList<>();
+
     // ========================
     // HELPER METHODS
     // ========================
@@ -224,6 +231,16 @@ public class SafariDay {
     public void addAccommodation(SafariDayAccommodation accommodation) {
         accommodations.add(accommodation);
         accommodation.setSafariDay(this);
+    }
+
+    public void addFlight(SafariDayFlight flight) {
+        flights.add(flight);
+        flight.setSafariDay(this);
+    }
+
+    public void removeFlight(SafariDayFlight flight) {
+        flights.remove(flight);
+        flight.setSafariDay(null);
     }
 
     public void removeAccommodation(SafariDayAccommodation accommodation) {

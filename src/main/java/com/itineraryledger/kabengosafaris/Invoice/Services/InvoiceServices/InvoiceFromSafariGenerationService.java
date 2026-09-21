@@ -502,11 +502,19 @@ public class InvoiceFromSafariGenerationService {
         List<ItineraryCostEstimationDTO.CostLineItem> accommodation = items(costEstimation.getAccommodationCosts());
         List<ItineraryCostEstimationDTO.CostLineItem> parkFees = items(costEstimation.getParkFeeCosts());
         List<ItineraryCostEstimationDTO.CostLineItem> activities = items(costEstimation.getActivityCosts());
+        List<ItineraryCostEstimationDTO.CostLineItem> flights = items(costEstimation.getFlightCosts());
 
         if (condense) {
             if (createCondensedLineItem(invoiceId, accommodation, InvoiceItemType.ACCOMMODATION, "Accommodation", multiplier)) itemsCreated++;
             if (createCondensedLineItem(invoiceId, parkFees, InvoiceItemType.PARK_FEE, "Park Fees", multiplier)) itemsCreated++;
             if (createCondensedLineItem(invoiceId, activities, InvoiceItemType.ACTIVITY, "Activities", multiplier)) itemsCreated++;
+            /*
+             * Flights are condensed like everything else, but the breakdown text matters more
+             * here than elsewhere: the client is being billed for a seat whose fare and tax the
+             * airline will also print on a ticket they hold. A single "Flights 764.16" with no
+             * sectors behind it is the line that generates a phone call.
+             */
+            if (createCondensedLineItem(invoiceId, flights, InvoiceItemType.FLIGHT, "Flights", multiplier)) itemsCreated++;
         } else {
             for (ItineraryCostEstimationDTO.CostLineItem li : accommodation) {
                 createInvoiceLineItemFromLineItem(invoiceId, li, InvoiceItemType.ACCOMMODATION, multiplier);
@@ -518,6 +526,10 @@ public class InvoiceFromSafariGenerationService {
             }
             for (ItineraryCostEstimationDTO.CostLineItem li : activities) {
                 createInvoiceLineItemFromLineItem(invoiceId, li, InvoiceItemType.ACTIVITY, multiplier);
+                itemsCreated++;
+            }
+            for (ItineraryCostEstimationDTO.CostLineItem li : flights) {
+                createInvoiceLineItemFromLineItem(invoiceId, li, InvoiceItemType.FLIGHT, multiplier);
                 itemsCreated++;
             }
         }

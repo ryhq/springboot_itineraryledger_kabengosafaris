@@ -45,16 +45,7 @@ public class FlightCostCalculator {
             LocalDate dayDate,
             List<FullItineraryDTO.PaxDTO> paxList
     ) {
-        List<CostLineItemDTO> items = new ArrayList<>();
-        if (day.getFlights() == null || day.getFlights().isEmpty()) return items;
-
-        for (FullItineraryDTO.DayFlightDTO flight : day.getFlights()) {
-            if (Boolean.TRUE.equals(flight.getIsAlternative())) continue;
-            if (Boolean.FALSE.equals(flight.getIsIncludedInPrice())) continue;
-            CostLineItemDTO item = price(flight, day, dayDate, paxList, null);
-            if (item != null) items.add(item);
-        }
-        return items;
+        return calculateForDay(day.getFlights(), day.getDayNumber(), dayDate, headCount(paxList));
     }
 
     /**
@@ -69,10 +60,51 @@ public class FlightCostCalculator {
             LocalDate dayDate,
             List<FullItineraryDTO.PaxDTO> paxList
     ) {
-        List<CostLineItemDTO> items = new ArrayList<>();
-        if (day.getFlights() == null || day.getFlights().isEmpty()) return items;
+        return calculateExcludedForDay(day.getFlights(), day.getDayNumber(), dayDate, headCount(paxList));
+    }
 
-        for (FullItineraryDTO.DayFlightDTO flight : day.getFlights()) {
+    // ---- the pax-agnostic core, shared with the safari side ---------------------------------
+
+    /**
+     * Adults and children, however the caller's own pax DTO spells them.
+     *
+     * <p>An itinerary's pax and a safari's pax are different classes holding the same two columns,
+     * so the day-tree callers reduce their own list to this and everything below is shared. That
+     * is what keeps there from being a second copy of the seat arithmetic on the safari side —
+     * the failure this whole module was built to avoid.
+     */
+    public record Seats(int adults, int children) {
+        public int total() { return adults + children; }
+    }
+
+    public List<CostLineItemDTO> calculateForDay(
+            List<FullItineraryDTO.DayFlightDTO> flights,
+            Integer dayNumber,
+            LocalDate dayDate,
+            Seats seats
+    ) {
+        List<CostLineItemDTO> items = new ArrayList<>();
+        if (flights == null || flights.isEmpty()) return items;
+
+        for (FullItineraryDTO.DayFlightDTO flight : flights) {
+            if (Boolean.TRUE.equals(flight.getIsAlternative())) continue;
+            if (Boolean.FALSE.equals(flight.getIsIncludedInPrice())) continue;
+            CostLineItemDTO item = price(flight, dayNumber, dayDate, seats, null);
+            if (item != null) items.add(item);
+        }
+        return items;
+    }
+
+    public List<CostLineItemDTO> calculateExcludedForDay(
+            List<FullItineraryDTO.DayFlightDTO> flights,
+            Integer dayNumber,
+            LocalDate dayDate,
+            Seats seats
+    ) {
+        List<CostLineItemDTO> items = new ArrayList<>();
+        if (flights == null || flights.isEmpty()) return items;
+
+        for (FullItineraryDTO.DayFlightDTO flight : flights) {
             ExclusionReason reason = null;
             if (Boolean.TRUE.equals(flight.getIsAlternative())) {
                 reason = ExclusionReason.ALTERNATIVE_ACCOMMODATION;
@@ -80,34 +112,40 @@ public class FlightCostCalculator {
                 reason = ExclusionReason.NOT_INCLUDED_IN_PRICE;
             }
             if (reason == null) continue;
-            CostLineItemDTO item = price(flight, day, dayDate, paxList, reason);
+            CostLineItemDTO item = price(flight, dayNumber, dayDate, seats, reason);
             if (item != null) items.add(item);
         }
         return items;
     }
 
+    private Seats headCount(List<FullItineraryDTO.PaxDTO> paxList) {
+        int adults = 0;
+        int children = 0;
+        if (paxList != null) {
+            for (FullItineraryDTO.PaxDTO pax : paxList) {
+                int count = pax.getCount() == null ? 0 : pax.getCount();
+                if (isChild(pax.getAgeCategoryName())) children += count;
+                else adults += count;
+            }
+        }
+        return new Seats(adults, children);
+    }
+
     // ---- one line -------------------------------------------------------------------------------
 
     private CostLineItemDTO price(FullItineraryDTO.DayFlightDTO flight,
-                                  FullItineraryDTO.DayDTO day,
+                                  Integer dayNumber,
                                   LocalDate dayDate,
-                                  List<FullItineraryDTO.PaxDTO> paxList,
+                                  Seats seats,
                                   ExclusionReason exclusionReason) {
 
-        int adults = 0;
-        int children = 0;
         /*
          * A flight is per SEAT, so the split between adults and children matters — a child flies at
          * 70% of the fare. Everything else on a day is per room or per vehicle and can work from a
          * head count, which is why no other calculator needs this.
          */
-        if (paxList != null) {
-            for (FullItineraryDTO.PaxDTO pax : paxList) {
-                int count = pax.getCount() == null ? 0 : pax.getCount();
-                if (isChild(pax)) children += count;
-                else adults += count;
-            }
-        }
+        int adults = seats == null ? 0 : seats.adults();
+        int children = seats == null ? 0 : seats.children();
         /* An explicit passenger count on the line overrides the trip's pax — a positioning leg some
          * of the party takes, or one seat bought for a guide. Treated as adults: it is a seat count
          * and nobody typing it means "and some of them are children". */
@@ -157,11 +195,11 @@ public class FlightCostCalculator {
          */
         for (String warning : priced.warnings()) {
             rateIssueLogger.logStated(CostItemType.FLIGHT, name.trim(), flight.getFlightFareId(),
-                day.getDayNumber(), warning);
+                dayNumber, warning);
         }
 
         return CostLineItemDTO.builder()
-            .dayNumber(day.getDayNumber())
+            .dayNumber(dayNumber)
             .itemType(CostItemType.FLIGHT)
             .itemName(name.trim())
             .itemId(flight.getFlightFareId())
@@ -184,8 +222,7 @@ public class FlightCostCalculator {
     }
 
     /** True for a pax band the office has named as a child or an infant. */
-    private boolean isChild(FullItineraryDTO.PaxDTO pax) {
-        String age = pax.getAgeCategoryName();
+    public static boolean isChild(String age) {
         if (age == null) return false;
         String lower = age.toLowerCase();
         return lower.contains("child") || lower.contains("infant") || lower.contains("youth");

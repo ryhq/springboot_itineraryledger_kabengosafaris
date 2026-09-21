@@ -1,5 +1,8 @@
 package com.itineraryledger.kabengosafaris.Safari.Services;
 
+import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayFlight.Entity.SafariDayFlight;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayFlight.Entity.QuoteDayFlight;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayFlight.Entity.ItineraryDayFlight;
 import com.itineraryledger.kabengosafaris.Inclusion.Services.InclusionSnapshotService;
 
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogAnnotation;
@@ -319,6 +322,7 @@ public class SafariCreateService {
 
             // Copy accommodations
             copyDayAccommodations(itineraryDay, safariDay);
+            copyDayFlights(itineraryDay, safariDay);
 
             // Copy parks (with nested activities and tariffs)
             copyDayParks(itineraryDay, safariDay);
@@ -656,6 +660,7 @@ public class SafariCreateService {
 
             copyQuoteDayActivities(quoteDay, safariDay);
             copyQuoteDayAccommodations(quoteDay, safariDay);
+            copyQuoteDayFlights(quoteDay, safariDay);
             copyQuoteDayParks(quoteDay, safariDay);
 
             safari.addDay(safariDay);
@@ -699,6 +704,61 @@ public class SafariCreateService {
                     .bookingStatus(SafariDayAccommodation.BookingStatus.PENDING)
                     .build();
             safariDay.addAccommodation(safariAccommodation);
+        }
+    }
+
+    /**
+     * Flights from the itinerary, for a safari built straight from the template.
+     *
+     * <p>Every seat arrives PENDING, whatever the itinerary said. A trip that has been sold has not
+     * had its seats held, and a row that arrives claiming otherwise is how a party reaches an
+     * airstrip without one — the same rule the accommodation rows follow.
+     */
+    private void copyDayFlights(ItineraryDay itineraryDay, SafariDay safariDay) {
+        if (itineraryDay.getFlights() == null || itineraryDay.getFlights().isEmpty()) {
+            return;
+        }
+        for (ItineraryDayFlight source : itineraryDay.getFlights()) {
+            safariDay.addFlight(SafariDayFlight.builder()
+                    .flightRoute(source.getFlightRoute())
+                    .flightFare(source.getFlightFare())
+                    .passengerCount(source.getPassengerCount())
+                    .isAlternative(source.getIsAlternative())
+                    .isIncludedInPrice(source.getIsIncludedInPrice())
+                    .markupType(source.getMarkupType())
+                    .markupValue(source.getMarkupValue())
+                    .sortOrder(source.getSortOrder())
+                    .notes(source.getNotes())
+                    .bookingStatus(SafariDayFlight.BookingStatus.PENDING)
+                    .build());
+        }
+    }
+
+    /**
+     * Flights from the QUOTE, which is the path that matters when one exists.
+     *
+     * <p>The quote is what the customer accepted. Reading the itinerary here instead would give the
+     * safari the template's current flights rather than the ones that were sold — the same mistake
+     * that full_safari_modern.html makes by reaching through to the itinerary's highlights, and the
+     * reason the accommodation copy beside this one exists in two versions too.
+     */
+    private void copyQuoteDayFlights(QuoteDay quoteDay, SafariDay safariDay) {
+        if (quoteDay.getFlights() == null || quoteDay.getFlights().isEmpty()) {
+            return;
+        }
+        for (QuoteDayFlight source : quoteDay.getFlights()) {
+            safariDay.addFlight(SafariDayFlight.builder()
+                    .flightRoute(source.getFlightRoute())
+                    .flightFare(source.getFlightFare())
+                    .passengerCount(source.getPassengerCount())
+                    .isAlternative(source.getIsAlternative())
+                    .isIncludedInPrice(source.getIsIncludedInPrice())
+                    .markupType(source.getMarkupType())
+                    .markupValue(source.getMarkupValue())
+                    .sortOrder(source.getSortOrder())
+                    .notes(source.getNotes())
+                    .bookingStatus(SafariDayFlight.BookingStatus.PENDING)
+                    .build());
         }
     }
 

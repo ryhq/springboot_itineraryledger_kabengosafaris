@@ -229,6 +229,32 @@
               </th:block>
             </div>
 
+            <!-- flights -->
+            <!--
+              The driver's copy needs this more than the client's does: it is the difference between
+              a transfer to the airstrip and a day of game driving, and the minimum-seat and
+              on-request notes are the ones that get somebody stranded.
+            -->
+            <div class="row" th:if="${day.flights != null and !day.flights.isEmpty()}">
+              <div class="row-label">Flights</div>
+              <table class="sched">
+                <tr th:each="flight : ${day.flights}">
+                  <td class="t">
+                    <span th:if="${flight.etd != null}" th:text="${flight.etd}">09:00</span><span th:if="${flight.eta != null}" th:text="${'-' + flight.eta}">-10:15</span>
+                    <span th:if="${flight.etd == null and flight.departureLabel != null}" th:text="${flight.departureLabel}">AM</span>
+                  </td>
+                  <td class="a">
+                    <span th:text="${flight.sectorLabel != null ? flight.sectorLabel : 'Flight'}">ARS to ZNZ</span>
+                    <span th:if="${flight.airlineName != null}" th:text="${' · ' + flight.airlineName}"> · Air Excel</span>
+                    <span class="tag opt" th:if="${flight.isAlternative != null and flight.isAlternative}"> · alternative</span>
+                    <span class="tag opt" th:if="${flight.isOnRequest != null and flight.isOnRequest}"> · on request</span>
+                    <span class="tag" th:if="${flight.minimumSeats != null}" th:text="${' · min ' + flight.minimumSeats + ' seats'}"></span>
+                    <span class="tag" th:if="${flight.notes != null and !#strings.isEmpty(flight.notes)}" th:text="${' · ' + flight.notes}"></span>
+                  </td>
+                </tr>
+              </table>
+            </div>
+
             <!-- standalone activities -->
             <div class="row" th:if="${day.activities != null and !day.activities.isEmpty()}">
               <div class="row-label">Activities</div>

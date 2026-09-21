@@ -1,5 +1,11 @@
 package com.itineraryledger.kabengosafaris.Safari.Services;
 
+import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayFlight.Repository.SafariDayFlightRepository;
+import com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayFlight.Entity.SafariDayFlight;
+import com.itineraryledger.kabengosafaris.Itinerary.DTOs.FullItineraryDTO;
+import com.itineraryledger.kabengosafaris.Flight.Repository.FlightFareRepository;
+import com.itineraryledger.kabengosafaris.Flight.CostEstimation.FlightFarePricer;
+import com.itineraryledger.kabengosafaris.Flight.CostEstimation.DayFlightDTOMapper;
 import com.itineraryledger.kabengosafaris.Inclusion.Services.InclusionSnapshotService;
 
 import java.util.ArrayList;
@@ -65,6 +71,8 @@ public class SafariFullGetService {
     private final SafariDayParkTariffRepository parkTariffRepository;
     private final IdObfuscator idObfuscator;
     private final InclusionSnapshotService inclusionSnapshot;
+    private final SafariDayFlightRepository dayFlightRepository;
+    private final FlightFareRepository flightFareRepository;
 
     @Autowired
     public SafariFullGetService(
@@ -77,7 +85,9 @@ public class SafariFullGetService {
         SafariDayParkActivityRepository parkActivityRepository,
         SafariDayParkTariffRepository parkTariffRepository,
         IdObfuscator idObfuscator,
-        InclusionSnapshotService inclusionSnapshot
+        InclusionSnapshotService inclusionSnapshot,
+        SafariDayFlightRepository dayFlightRepository,
+        FlightFareRepository flightFareRepository
     ) {
         this.safariRepository = safariRepository;
         this.dayRepository = dayRepository;
@@ -89,6 +99,8 @@ public class SafariFullGetService {
         this.parkTariffRepository = parkTariffRepository;
         this.idObfuscator = idObfuscator;
         this.inclusionSnapshot = inclusionSnapshot;
+        this.dayFlightRepository = dayFlightRepository;
+        this.flightFareRepository = flightFareRepository;
     }
 
     /**
@@ -318,7 +330,46 @@ public class SafariFullGetService {
             .collect(Collectors.toList());
         dto.setParks(parkDTOs);
 
+        // ========================
+        // NESTED: DAY FLIGHTS
+        // ========================
+        dto.setFlights(dayFlightRepository
+            .findBySafariDayIdOrderBySortOrderAscIdAsc(day.getId()).stream()
+            .map(this::convertDayFlightToDTO)
+            .collect(Collectors.toList()));
+
         return dto;
+    }
+
+    /**
+     * A flight on a safari day, in the shape the cost engine reads.
+     *
+     * <p>The markup cascade is resolved here, once — line, then fare, then airline — for the same
+     * reason the itinerary side does it here rather than in the calculator: resolved in two places,
+     * the cost sheet and the panel eventually disagree about which one applied.
+     *
+     * <p>A safari HAS dates, unlike an itinerary, so a line with no chosen departure is a looser
+     * end here than there. It still prices off the cheapest live fare rather than nothing — the
+     * warnings the pricer raises say so on the Cost tab — because a running trip with a blank
+     * where a flight should be is the worse failure.
+     */
+    private FullItineraryDTO.DayFlightDTO convertDayFlightToDTO(SafariDayFlight flight) {
+        var route = flight.getFlightRoute();
+        var airline = route == null ? null : route.getAirline();
+
+        var fare = flight.getFlightFare();
+        if (fare == null && route != null) {
+            fare = flightFareRepository.findLiveForRoute(route.getId()).stream().findFirst().orElse(null);
+        }
+
+        var markup = FlightFarePricer.resolveMarkup(
+            flight.getMarkupType(), flight.getMarkupValue(), fare, airline);
+
+        return DayFlightDTOMapper.map(
+            new DayFlightDTOMapper.LineValues(
+                flight.getId(), flight.getPassengerCount(), flight.getSortOrder(),
+                flight.getNotes(), flight.getIsAlternative(), flight.getIsIncludedInPrice()),
+            route, fare, markup, idObfuscator::encodeId);
     }
 
     /**
