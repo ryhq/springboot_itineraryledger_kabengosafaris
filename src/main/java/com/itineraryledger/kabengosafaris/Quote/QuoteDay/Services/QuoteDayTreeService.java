@@ -1,5 +1,10 @@
 package com.itineraryledger.kabengosafaris.Quote.QuoteDay.Services;
 
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayFlight.Repository.QuoteDayFlightRepository;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayFlight.Entity.QuoteDayFlight;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.DTOs.QuoteDayTreeDTO.DayFlightDTO;
+import com.itineraryledger.kabengosafaris.Flight.Repository.FlightFareRepository;
+import com.itineraryledger.kabengosafaris.Flight.CostEstimation.FlightFarePricer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -59,6 +64,8 @@ public class QuoteDayTreeService {
     private final QuoteDayParkTariffRepository parkTariffRepository;
     private final QuoteDayAccommodationRepository accommodationRepository;
     private final QuoteDayActivityRepository dayActivityRepository;
+    private final QuoteDayFlightRepository flightRepository;
+    private final FlightFareRepository flightFareRepository;
     private final IdObfuscator idObfuscator;
 
     public ResponseEntity<ApiResponse<?>> getDayTree(String quoteIdObfuscated) {
@@ -125,6 +132,11 @@ public class QuoteDayTreeService {
             dto.setAccommodations(stays.stream().map(this::toStay).collect(Collectors.toList()));
         }
 
+        List<QuoteDayFlight> flights = flightRepository.findByQuoteDayIdOrderBySortOrderAscIdAsc(day.getId());
+        if (!flights.isEmpty()) {
+            dto.setFlights(flights.stream().map(this::toFlight).collect(Collectors.toList()));
+        }
+
         List<QuoteDayPark> parks = quoteDayParkRepository.findByQuoteDayIdOrderBySortOrderAsc(day.getId());
         if (!parks.isEmpty()) {
             dto.setParks(parks.stream().map(this::toPark).collect(Collectors.toList()));
@@ -174,6 +186,44 @@ public class QuoteDayTreeService {
             .notes(activity.getNotes())
             .isIncludedInPrice(activity.getIsIncludedInPrice())
             .isOptional(activity.getIsOptional())
+            .build();
+    }
+
+    /**
+     * The markup cascade is resolved here, as it is everywhere else a flight is read — line, then
+     * fare, then airline — so the panel and the cost sheet cannot name different sources for the
+     * same figure.
+     */
+    private DayFlightDTO toFlight(QuoteDayFlight flight) {
+        var route = flight.getFlightRoute();
+        var fare = flight.getFlightFare();
+        if (fare == null && route != null) {
+            /* No departure picked yet: the cheapest live one is what this day would cost today. */
+            fare = flightFareRepository.findLiveForRoute(route.getId()).stream().findFirst().orElse(null);
+        }
+        var priced = FlightFarePricer.price(fare, route == null ? null : route.getAirline(),
+            1, 0, flight.getMarkupType(), flight.getMarkupValue(), null);
+
+        return DayFlightDTO.builder()
+            .id(idObfuscator.encodeId(flight.getId()))
+            .flightRouteId(route == null ? null : idObfuscator.encodeId(route.getId()))
+            .flightFareId(flight.getFlightFare() == null
+                ? null : idObfuscator.encodeId(flight.getFlightFare().getId()))
+            .airlineName(route == null || route.getAirline() == null ? null : route.getAirline().getName())
+            .sectorLabel(route == null ? null : route.getSectorLabel())
+            .etd(fare == null || fare.getEtd() == null ? null : fare.getEtd().toString())
+            .eta(fare == null || fare.getEta() == null ? null : fare.getEta().toString())
+            .departureLabel(fare == null ? null : fare.getDepartureLabel())
+            .displayName(flight.getDisplayName())
+            .passengerCount(flight.getPassengerCount())
+            .isAlternative(flight.getIsAlternative())
+            .isIncludedInPrice(flight.getIsIncludedInPrice())
+            .markupType(flight.getMarkupType() == null ? null : flight.getMarkupType().name())
+            .markupValue(flight.getMarkupValue())
+            .markupSource(priced.markup().source())
+            .sortOrder(flight.getSortOrder())
+            .notes(flight.getNotes())
+            .sellingPerAdult(priced.sellingPerAdult())
             .build();
     }
 

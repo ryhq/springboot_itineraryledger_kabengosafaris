@@ -51,6 +51,40 @@ public class QuoteDayTreeDTO {
     private List<DayActivityDTO> activities;
     private List<DayAccommodationDTO> accommodations;
     private List<DayParkDTO> parks;
+    private List<DayFlightDTO> flights;
+
+    /**
+     * A flight on this day of the quote.
+     *
+     * <p>This is the tree the day workspace reads, so anything the panel shows for a flight has to
+     * be here. It was the last place flights were missing, and the symptom was silent: the section
+     * rendered, the endpoints worked, and every quote simply reported no flights.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class DayFlightDTO {
+        private String id;
+        private String flightRouteId;
+        private String flightFareId;
+        private String airlineName;
+        private String sectorLabel;
+        private String etd;
+        private String eta;
+        private String departureLabel;
+        private String displayName;
+        private Integer passengerCount;
+        private Boolean isAlternative;
+        private Boolean isIncludedInPrice;
+        private String markupType;
+        private BigDecimal markupValue;
+        private String markupSource;
+        private Integer sortOrder;
+        private String notes;
+        private BigDecimal sellingPerAdult;
+    }
 
     @Data
     @NoArgsConstructor
