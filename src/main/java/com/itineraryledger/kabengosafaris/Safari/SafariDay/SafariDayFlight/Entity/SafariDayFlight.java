@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Safari.SafariDay.SafariDayFlight.Entity;
 
+import com.itineraryledger.kabengosafaris.Flight.FlightLabels;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -137,5 +138,10 @@ public class SafariDayFlight {
     /** True once the seat is actually ours, which is the only state worth relying on. */
     public boolean isTicketed() {
         return bookingStatus == BookingStatus.TICKETED;
+    }
+
+    /** "Air Excel ARS to ZNZ, 14:00" — see {@link FlightLabels}, which all three day trees share. */
+    public String getDisplayName() {
+        return FlightLabels.displayName(flightRoute, flightFare);
     }
 }

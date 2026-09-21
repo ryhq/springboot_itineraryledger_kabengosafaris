@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayFlight.Entity;
 
+import com.itineraryledger.kabengosafaris.Flight.FlightLabels;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -105,5 +106,10 @@ public class QuoteDayFlight {
 
     public boolean isPrimary() {
         return !Boolean.TRUE.equals(isAlternative);
+    }
+
+    /** "Air Excel ARS to ZNZ, 14:00" — see {@link FlightLabels}, which all three day trees share. */
+    public String getDisplayName() {
+        return FlightLabels.displayName(flightRoute, flightFare);
     }
 }

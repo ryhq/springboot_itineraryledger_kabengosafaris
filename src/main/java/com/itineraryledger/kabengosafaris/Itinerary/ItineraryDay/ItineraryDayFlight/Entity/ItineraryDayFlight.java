@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayFlight.Entity;
 
+import com.itineraryledger.kabengosafaris.Flight.FlightLabels;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -116,12 +117,8 @@ public class ItineraryDayFlight {
     }
 
     /** "Air Excel ARS → ZNZ, 12:30" — how a day reads on a driver's sheet. */
+    /** "Air Excel ARS to ZNZ, 14:00" — see {@link FlightLabels}, which all three day trees share. */
     public String getDisplayName() {
-        if (flightRoute == null) return "Flight";
-        StringBuilder out = new StringBuilder();
-        if (flightRoute.getAirline() != null) out.append(flightRoute.getAirline().getName()).append(' ');
-        out.append(flightRoute.getSectorLabel());
-        if (flightFare != null && flightFare.getEtd() != null) out.append(", ").append(flightFare.getEtd());
-        return out.toString();
+        return FlightLabels.displayName(flightRoute, flightFare);
     }
 }
