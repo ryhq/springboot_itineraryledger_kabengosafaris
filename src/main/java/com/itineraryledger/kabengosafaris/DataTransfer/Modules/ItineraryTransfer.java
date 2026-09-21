@@ -1,5 +1,11 @@
 package com.itineraryledger.kabengosafaris.DataTransfer.Modules;
 
+import com.itineraryledger.kabengosafaris.Flight.Repository.FlightFareRepository;
+import com.itineraryledger.kabengosafaris.Flight.Repository.FlightRouteRepository;
+import com.itineraryledger.kabengosafaris.Flight.Repository.AirstripRepository;
+import com.itineraryledger.kabengosafaris.Flight.Repository.AirlineRepository;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayFlight.Repository.ItineraryDayFlightRepository;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.ItineraryDayFlight.Entity.ItineraryDayFlight;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
@@ -100,6 +106,11 @@ public class ItineraryTransfer implements ModuleTransfer {
     private final ReferenceResolver resolver;
     private final ItineraryInclusionRepository itineraryInclusions;
     private final InclusionItemRepository inclusionItems;
+    private final ItineraryDayFlightRepository dayFlights;
+    private final AirlineRepository airlines;
+    private final AirstripRepository airstrips;
+    private final FlightRouteRepository flightRoutes;
+    private final FlightFareRepository flightFares;
     private final ObjectMapper mapper;
 
     @Override public String name() { return "itineraries"; }
@@ -110,7 +121,7 @@ public class ItineraryTransfer implements ModuleTransfer {
     @Override
     public List<String> requires() {
         return List.of("tariffs", "pax-categories", "seasons", "parks", "activities",
-            "park-activities", "accommodations",
+            "park-activities", "accommodations", "flights",
             /*
              * The promise. It used to travel for free, as two free-text columns Scalars copied
              * without anybody deciding it should; the moment it became rows it would have stopped,
@@ -226,6 +237,31 @@ public class ItineraryTransfer implements ModuleTransfer {
                     stayRow.put("roomStandard", stay.getRoomStandard() == null ? null : stay.getRoomStandard().getName());
                     stayRow.put("boardType", stay.getBoardType() == null ? null : stay.getBoardType().getName());
                     stayRows.add(stayRow);
+                }
+
+                /*
+                 * The sector by NAME — airline plus both airstrip codes — never by id, and the
+                 * chosen departure by the same three columns that identify it in the fare table.
+                 * A row id means nothing in the receiving company.
+                 */
+                ArrayNode flightRows = dayRow.putArray("flights");
+                for (ItineraryDayFlight flight : dayFlights
+                        .findByItineraryDayIdOrderBySortOrderAscIdAsc(day.getId())) {
+                    if (flight.getFlightRoute() == null) continue;
+                    ObjectNode flightRow = Scalars.of(mapper, flight);
+                    var route = flight.getFlightRoute();
+                    flightRow.put("airline", route.getAirline() == null ? null : route.getAirline().getName());
+                    flightRow.put("origin", route.getOriginAirstrip() == null
+                        ? null : route.getOriginAirstrip().getCode());
+                    flightRow.put("destination", route.getDestinationAirstrip() == null
+                        ? null : route.getDestinationAirstrip().getCode());
+                    var fare = flight.getFlightFare();
+                    flightRow.put("fareValidFrom", fare == null || fare.getValidFrom() == null
+                        ? null : fare.getValidFrom().toString());
+                    flightRow.put("fareEtd", fare == null || fare.getEtd() == null
+                        ? null : fare.getEtd().toString());
+                    flightRow.put("fareOperatingMonths", fare == null ? null : fare.getOperatingMonths());
+                    flightRows.add(flightRow);
                 }
 
                 dayRows.add(dayRow);
@@ -362,10 +398,44 @@ public class ItineraryTransfer implements ModuleTransfer {
         }
     }
 
+    /**
+     * The exporter's chosen departure, if this company happens to have the same one.
+     *
+     * <p>Matched on the three columns that identify a published departure — the contract window,
+     * the time, and the operating months — because that is what the fare table's own unique
+     * constraint uses. Null when there is no match, which is a legitimate answer: see the note at
+     * the call site.
+     */
+    private com.itineraryledger.kabengosafaris.Flight.Entity.FlightFare matchFare(
+            Long routeId, JsonNode flightRow) {
+        String validFrom = flightRow.path("fareValidFrom").asText(null);
+        if (validFrom == null) return null;
+        String etd = flightRow.path("fareEtd").asText(null);
+        String months = flightRow.path("fareOperatingMonths").asText(null);
+
+        for (var fare : flightFares.findByFlightRouteIdOrderByEtdAsc(routeId)) {
+            boolean sameWindow = validFrom.equals(String.valueOf(fare.getValidFrom()));
+            boolean sameTime = etd == null
+                ? fare.getEtd() == null
+                : fare.getEtd() != null && etd.equals(fare.getEtd().toString());
+            boolean sameMonths = months == null
+                ? fare.getOperatingMonths() == null
+                : months.equals(fare.getOperatingMonths());
+            if (sameWindow && sameTime && sameMonths) return fare;
+        }
+        return null;
+    }
+
     private void writeDays(JsonNode row, Itinerary itinerary, TransferContext context) {
         for (JsonNode dayRow : row.path("days")) {
             ItineraryDay day = new ItineraryDay();
-            Scalars.apply(mapper, dayRow, day, "parks", "activities", "accommodations");
+            /*
+             * "flights" is excluded here as well as guarded inside Scalars. The day entity has no
+             * scalar of that name today, so the guard alone would do — but "inclusions" had no
+             * business colliding with a column either, until it did, and that took down every
+             * itinerary import in both companies. Naming it costs a word.
+             */
+            Scalars.apply(mapper, dayRow, day, "parks", "activities", "accommodations", "flights");
             day.setItinerary(itinerary);
             day = days.save(day);
 
@@ -456,6 +526,46 @@ public class ItineraryTransfer implements ModuleTransfer {
                 stay.setRoomStandard(standard);
                 stay.setBoardType(board);
                 dayAccommodations.save(stay);
+            }
+
+            /*
+             * A sector this company has not got refuses the itinerary, exactly as a missing lodge
+             * does: a trip that arrives silently missing its Zanzibar leg looks complete and gets
+             * quoted from.
+             *
+             * A missing DEPARTURE does not refuse it. Two companies negotiate their own contracts
+             * with the same airline, so the exporter's 12:30 row may simply not exist here — the
+             * flight keeps its sector, loses the chosen departure, and the day prices off the
+             * cheapest live fare and says so. That is the same state a planner leaves behind when
+             * they pick a sector before the dates are real.
+             */
+            for (JsonNode flightRow : dayRow.path("flights")) {
+                String airlineName = flightRow.path("airline").asText(null);
+                String originCode = flightRow.path("origin").asText(null);
+                String destinationCode = flightRow.path("destination").asText(null);
+                String label = airlineName + " " + originCode + " to " + destinationCode;
+
+                var airline = airlineName == null ? null
+                    : airlines.findByNameIgnoreCase(airlineName).orElse(null);
+                var origin = originCode == null ? null
+                    : airstrips.findByCodeIgnoreCase(originCode).orElse(null);
+                var destination = destinationCode == null ? null
+                    : airstrips.findByCodeIgnoreCase(destinationCode).orElse(null);
+                if (airline == null || origin == null || destination == null) {
+                    throw new Missing("no flight sector '" + label + "' here");
+                }
+                var route = flightRoutes.findByAirlineIdAndOriginAirstripIdAndDestinationAirstripId(
+                    airline.getId(), origin.getId(), destination.getId()).orElse(null);
+                if (route == null) throw new Missing("no flight sector '" + label + "' here");
+
+                ItineraryDayFlight flight = new ItineraryDayFlight();
+                Scalars.apply(mapper, flightRow, flight,
+                    "airline", "origin", "destination",
+                    "fareValidFrom", "fareEtd", "fareOperatingMonths");
+                flight.setItineraryDay(day);
+                flight.setFlightRoute(route);
+                flight.setFlightFare(matchFare(route.getId(), flightRow));
+                dayFlights.save(flight);
             }
         }
     }

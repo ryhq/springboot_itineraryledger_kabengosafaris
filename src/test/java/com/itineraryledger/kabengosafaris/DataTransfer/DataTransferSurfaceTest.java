@@ -69,7 +69,24 @@ class DataTransferSurfaceTest {
          * of the same wording. Those are what a named customer was told about a named price, they
          * live beside FORBIDDEN classes for that reason, and the modules for them do not exist.
          */
-        "InclusionTransfer");
+        "InclusionTransfer",
+        /*
+         * Airlines, airstrips, sectors and fares.
+         *
+         * Inventory by the same test as the lodges: an airline is a supplier, a sector is a thing
+         * the company sells a seat on, and a fare is what that seat costs. No customer, no
+         * agreement, nobody's money. It travels because an itinerary can name a sector, and one
+         * that arrived without the catalogue would refuse every flying trip in the bundle.
+         *
+         * <p>One thing here is more commercially loaded than a lodge rate, and it was thought
+         * about rather than waved through: the airline's default MARKUP is this company's own
+         * margin policy, not a supplier's price. It travels — accommodation STO rates are more
+         * revealing still, and these bundles move between companies the same operator owns — but
+         * the import deliberately refuses to overwrite an airline that already exists, so
+         * receiving a bundle can never silently re-price flights the receiving company is already
+         * selling. See FlightTransfer.
+         */
+        "FlightTransfer");
 
     /** Never, whatever anybody names the class. */
     private static final List<String> FORBIDDEN = List.of(
