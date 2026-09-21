@@ -63,6 +63,10 @@ public class FlightRouteService {
      *
      * The dotted paths are property paths, not SQL — Spring Data joins them for us.
      */
+    /** Words that join two place names on screen and name nothing themselves. */
+    private static final java.util.Set<String> JOINERS =
+        java.util.Set.of("to", "and", "-", "->", "→", "via");
+
     private static final java.util.Map<String, String> SORT_PATHS = java.util.Map.of(
         "id", "id",
         "createdAt", "createdAt",
@@ -242,14 +246,28 @@ public class FlightRouteService {
                  * Searching a sector means searching its ends, which live on another table — so the
                  * join is here and the result is distinct, or a two-ended match returns the row twice.
                  */
-                String like = "%" + keyword.trim().toLowerCase() + "%";
                 var o = root.join("originAirstrip");
                 var d = root.join("destinationAirstrip");
                 var al = root.join("airline");
-                and.add(cb.or(
-                    cb.like(cb.lower(o.get("code")), like), cb.like(cb.lower(o.get("name")), like),
-                    cb.like(cb.lower(d.get("code")), like), cb.like(cb.lower(d.get("name")), like),
-                    cb.like(cb.lower(al.get("name")), like)));
+
+                /*
+                 * Every WORD has to match something, rather than the whole phrase matching one
+                 * field. A sector is displayed as "Arusha to Zanzibar", so that is what people
+                 * type — and as a single LIKE it matched nothing at all, because no column holds
+                 * both ends. Split into words, each must appear somewhere, and the pair narrows
+                 * to the one sector instead of every flight touching Arusha.
+                 *
+                 * The joining words are dropped. "to" is in the label we print and in no airstrip
+                 * name, so requiring it would reject the very phrase the screen suggests.
+                 */
+                for (String word : keyword.trim().toLowerCase().split("\\s+")) {
+                    if (word.isEmpty() || JOINERS.contains(word)) continue;
+                    String like = "%" + word + "%";
+                    and.add(cb.or(
+                        cb.like(cb.lower(o.get("code")), like), cb.like(cb.lower(o.get("name")), like),
+                        cb.like(cb.lower(d.get("code")), like), cb.like(cb.lower(d.get("name")), like),
+                        cb.like(cb.lower(al.get("name")), like)));
+                }
                 if (query != null) query.distinct(true);
             }
             if (airline != null) and.add(cb.equal(root.get("airline").get("id"), airline));
