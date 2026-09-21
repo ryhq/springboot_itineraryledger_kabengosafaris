@@ -478,15 +478,24 @@ public class QuoteCostEstimationService {
                 ? estimation.getParkFeeCosts().getItems() : null;
         List<CostLineItem> activities = estimation.getActivityCosts() != null
                 ? estimation.getActivityCosts().getItems() : null;
+        List<CostLineItem> flights = estimation.getFlightCosts() != null
+                ? estimation.getFlightCosts().getItems() : null;
 
         if (condense) {
             written += writeCondensed(quote, accommodation, QuoteItemType.ACCOMMODATION, "Accommodation", accommodationMultiplier, written + 1);
             written += writeCondensed(quote, parkFees, QuoteItemType.PARK_FEE, "Park Fees", parkFeeMultiplier, written + 1);
             written += writeCondensed(quote, activities, QuoteItemType.ACTIVITY, "Activities", activityMultiplier, written + 1);
+            written += writeCondensed(quote, flights, QuoteItemType.FLIGHT, "Flights", flightMultiplier, written + 1);
         } else {
             written += writePerLine(quote, accommodation, QuoteItemType.ACCOMMODATION, accommodationMultiplier, written + 1);
             written += writePerLine(quote, parkFees, QuoteItemType.PARK_FEE, parkFeeMultiplier, written + 1);
             written += writePerLine(quote, activities, QuoteItemType.ACTIVITY, activityMultiplier, written + 1);
+            /*
+             * Flights last, so they read as the leg they are rather than mixed among the beds and
+             * the park fees. Their multiplier is 1 unless somebody has explicitly scoped the uplift
+             * to FLIGHT — see upliftCovers, and the double-markup it exists to prevent.
+             */
+            written += writePerLine(quote, flights, QuoteItemType.FLIGHT, flightMultiplier, written + 1);
         }
         return written;
     }
@@ -568,12 +577,38 @@ public class QuoteCostEstimationService {
     BigDecimal computeMarkupMultiplier(Quote quote, QuoteItemType type) {
         BigDecimal commission = quote.getAgentCommissionPercentage() != null
                 ? quote.getAgentCommissionPercentage() : BigDecimal.ZERO;
-        BigDecimal uplift = QuoteItemTypeScope.covers(quote.getMarginUpliftAppliesTo(), type)
-                && quote.getMarginUpliftPercentage() != null
+        BigDecimal uplift = upliftCovers(quote, type) && quote.getMarginUpliftPercentage() != null
                 ? quote.getMarginUpliftPercentage() : BigDecimal.ZERO;
         BigDecimal totalPct = commission.add(uplift);
         if (totalPct.signum() == 0) return BigDecimal.ONE;
         return BigDecimal.ONE.add(totalPct.divide(BigDecimal.valueOf(100), 6, java.math.RoundingMode.HALF_UP));
+    }
+
+    /**
+     * Does the quote's margin uplift reach this category?
+     *
+     * <p>For everything except a flight this is the shared scope rule, where a BLANK scope means
+     * "the whole quote" — {@code covers(null, …)} answers true, deliberately, because an uplift
+     * somebody set without narrowing it is meant to apply to all of it.
+     *
+     * <p>⚠️ A FLIGHT is the exception, and it has to be, because the default is the wrong way round
+     * for it. A flight already carries a markup of its own — the airline's percentage or a flat fee
+     * per ticket, resolved on the fare and baked into the line before it ever reaches here. Nearly
+     * every quote leaves marginUpliftAppliesTo empty. So the moment FLIGHT joined the enum, every
+     * one of those quotes would have started adding the category uplift ON TOP of the fare markup,
+     * with nothing changed and nobody told.
+     *
+     * <p>So the uplift reaches a flight only when somebody names FLIGHT explicitly — an opt-in, not
+     * an opt-out. This is the same inversion that produced the inclusion-claim defect: a helper
+     * whose "unset means everything" default is right for the cases it was written for and exactly
+     * wrong for the one added later.
+     */
+    private boolean upliftCovers(Quote quote, QuoteItemType type) {
+        String scope = quote.getMarginUpliftAppliesTo();
+        if (type == QuoteItemType.FLIGHT) {
+            return scope != null && !scope.isBlank() && QuoteItemTypeScope.covers(scope, type);
+        }
+        return QuoteItemTypeScope.covers(scope, type);
     }
 
     /**
