@@ -153,6 +153,12 @@ public class QuoteFullGetService {
         // PRICING DETAILS
         // ========================
         dto.setIsStoRate(quote.getIsStoRate());
+        /*
+         * The record screen reads this endpoint, so a quote priced for one vehicle and a quote
+         * priced for two looked identical on it — including the one whose activity lines had just
+         * halved.
+         */
+        dto.setCarCount(quote.getCarCount());
         dto.setTaxPercentage(quote.getTaxPercentage());
         dto.setTaxAppliesTo(quote.getTaxAppliesTo());
         /* the discount's scope travels with the tax's, or the document prints a figure

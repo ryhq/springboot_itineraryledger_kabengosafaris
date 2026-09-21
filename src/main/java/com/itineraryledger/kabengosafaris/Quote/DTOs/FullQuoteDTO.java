@@ -51,6 +51,8 @@ public class FullQuoteDTO {
     // PRICING DETAILS
     // ========================
     private Boolean isStoRate;
+    /** Vehicles this quote is priced for — its own, not the itinerary's current figure. */
+    private Integer carCount;
     private BigDecimal taxPercentage;
 
     /** Which line categories the tax applies to. Null = all of them. */
