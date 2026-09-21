@@ -103,6 +103,9 @@ public class QuoteUpdateService {
                 if (updateDTO.getIsStoRate() != null && !updateDTO.getIsStoRate().equals(quote.getIsStoRate())) {
                     blockedFields.add("isStoRate");
                 }
+                if (updateDTO.getCarCount() != null && !updateDTO.getCarCount().equals(quote.getCarCount())) {
+                    blockedFields.add("carCount");
+                }
                 if (updateDTO.getTaxPercentage() != null && !updateDTO.getTaxPercentage().equals(quote.getTaxPercentage())) {
                     blockedFields.add("taxPercentage");
                 }
@@ -161,6 +164,9 @@ public class QuoteUpdateService {
                 }
                 if (updateDTO.getIsStoRate() != null && !updateDTO.getIsStoRate().equals(quote.getIsStoRate())) {
                     blockedFields.add("isStoRate");
+                }
+                if (updateDTO.getCarCount() != null && !updateDTO.getCarCount().equals(quote.getCarCount())) {
+                    blockedFields.add("carCount");
                 }
                 if (updateDTO.getTaxPercentage() != null && !updateDTO.getTaxPercentage().equals(quote.getTaxPercentage())) {
                     blockedFields.add("taxPercentage");
@@ -289,6 +295,16 @@ public class QuoteUpdateService {
             if (updateDTO.getIsStoRate() != null
                     && !updateDTO.getIsStoRate().equals(quote.getIsStoRate())) {
                 quote.setIsStoRate(updateDTO.getIsStoRate());
+                needsItemsRecalc = true;
+            }
+            /*
+             * Vehicles are priced per car per day, so this moves the total and the derived line
+             * items have to be rebuilt — unlike the tax, which is applied over the items that
+             * already exist.
+             */
+            if (updateDTO.getCarCount() != null
+                    && !updateDTO.getCarCount().equals(quote.getCarCount())) {
+                quote.setCarCount(updateDTO.getCarCount());
                 needsItemsRecalc = true;
             }
             if (updateDTO.getTaxPercentage() != null) {
@@ -463,6 +479,7 @@ public class QuoteUpdateService {
             .discounts(quote.getDiscounts())
             .grandTotals(quote.getGrandTotals())
             .isStoRate(quote.getIsStoRate())
+            .carCount(quote.getCarCount())
             .taxPercentage(quote.getTaxPercentage())
             .taxAppliesTo(quote.getTaxAppliesTo())
             .discountPercentage(quote.getDiscountPercentage())

@@ -43,6 +43,19 @@ public class UpdateQuoteDTO {
 
     private LocalDate safariStartDate;
     private Boolean isStoRate;
+    /**
+     * How many vehicles this quote is priced for.
+     *
+     * <p>Copied from the itinerary when the quote is generated, and independent of it afterwards —
+     * that is the whole reason the quote carries its own column. It was missing here, so the
+     * snapshot could never be corrected: a party of six quoted off an eight-guest itinerary paid
+     * for two Land Cruisers with no way to say otherwise short of editing the product.
+     *
+     * <p>A price change, so the same rules apply as to the tax and the discount: it cannot be
+     * edited on a quote the customer is already holding.
+     */
+    private Integer carCount;
+
     private BigDecimal taxPercentage;
 
     /** Which line categories the tax applies to ("ACCOMMODATION" / "ACCOMMODATION,ACTIVITY"). Null = all. */

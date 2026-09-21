@@ -27,8 +27,8 @@ import org.junit.jupiter.api.Test;
  * application tries to write the value — which for anything seeded at boot means the application
  * never starts.
  *
- * That has now happened twice: asset_kind when the email logos were added, and category when the bill
- * reminders were. The second one took a failed deploy and a canary rollback to find, because the only
+ * That has now happened three times: asset_kind when the email logos were added, category when the bill
+ * reminders were, and item_type when flights became a line on a quote and an invoice. The second one took a failed deploy and a canary rollback to find, because the only
  * test that boots the Spring context is @Disabled for want of a real MySQL — so nothing here notices
  * that the application cannot start.
  *
@@ -53,6 +53,16 @@ class EnumColumnsAcceptTheirValuesTest {
             com.itineraryledger.kabengosafaris.CompanyProfile.Entity.CompanyAsset.AssetKind.class);
         WRITERS.put("expenses.status",
             com.itineraryledger.kabengosafaris.Expense.Enums.ExpenseStatus.class);
+        /*
+         * And a third time, with FLIGHT. The Java constants shipped in the commit that taught the
+         * engines to price a flight; V20 is the migration that should have gone with them. Between
+         * the two, every attempt to write a flight line failed at the database and a quote's
+         * recalculate answered 500 with nothing in it to name the column.
+         */
+        WRITERS.put("quote_items.item_type",
+            com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemType.class);
+        WRITERS.put("invoice_line_items.item_type",
+            com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceItemType.class);
     }
 
     /** The last definition each `table.column` was given, migrations applied in order. */

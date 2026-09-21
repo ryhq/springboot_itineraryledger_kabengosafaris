@@ -272,6 +272,7 @@ public class QuoteGetService {
             .discounts(quote.getDiscounts())
             .grandTotals(quote.getGrandTotals())
             .isStoRate(quote.getIsStoRate())
+            .carCount(quote.getCarCount())
             .taxPercentage(quote.getTaxPercentage())
             .taxAppliesTo(quote.getTaxAppliesTo())
             .discountPercentage(quote.getDiscountPercentage())
