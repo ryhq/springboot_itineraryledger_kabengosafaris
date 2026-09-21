@@ -52,6 +52,7 @@ public class FlightFareService {
     private final FlightRouteRepository routes;
     private final ItineraryDayFlightRepository dayFlights;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> SORTABLE = List.of("etd", "netFare", "validFrom", "id", "createdAt");
     private static final String[] MONTH_NAMES = {
@@ -89,14 +90,32 @@ public class FlightFareService {
     }
 
     @Transactional(readOnly = true)
-    public ResponseEntity<ApiResponse<?>> getById(String id) {
+    /**
+     * One record, plus where it sits in the list you came from.
+     *
+     * <p>The filters are taken again rather than ignored: the arrows have to walk the SAME
+     * set that was on screen. Paging from a filtered list into records that were never in it
+     * is worse than having no arrows, which is the house rule for every other module.
+     */
+    public ResponseEntity<ApiResponse<?>> getById(String id, String keyword, String flightRouteId, String airlineId, Boolean isActive, Boolean includeRetired, Boolean missingNetFare,
+                                                  String sortBy, String sortDirection) {
         Long decoded = idObfuscator.decodeId(id);
         FlightFare fare = decoded == null ? null : repository.findById(decoded).orElse(null);
         if (fare == null) {
             return ResponseEntity.status(404).body(ApiResponse.error(404, "No flight fare with that id", "FLIGHT_FARE_NOT_FOUND"));
         }
+        String navSortBy = sortBy != null && SORTABLE.contains(sortBy) ? sortBy : "etd";
+        Map<String, Object> nav = recordNavigation.navigate(FlightFare.class,
+            buildSpec(keyword, flightRouteId, airlineId, isActive, includeRetired, missingNetFare), navSortBy, !"desc".equalsIgnoreCase(sortDirection), decoded);
+        Long nextRaw = (Long) nav.get("nextRawId");
+        Long prevRaw = (Long) nav.get("previousRawId");
+
         Map<String, Object> payload = new HashMap<>();
         payload.put("flightFare", toDTO(fare));
+        payload.put("nextId", nextRaw == null ? null : idObfuscator.encodeId(nextRaw));
+        payload.put("previousId", prevRaw == null ? null : idObfuscator.encodeId(prevRaw));
+        payload.put("position", nav.get("position"));
+        payload.put("total", nav.get("total"));
         return ResponseEntity.ok(ApiResponse.success(200, "Flight fare retrieved successfully", payload));
     }
 

@@ -55,8 +55,18 @@ public class FlightFareController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_FLIGHT_FARE')")
-    public ResponseEntity<ApiResponse<?>> getById(@PathVariable String id) {
-        return service.getById(id);
+    public ResponseEntity<ApiResponse<?>> getById(
+        @PathVariable String id,
+        /* The list's filters, so the record arrows walk the same set that was on screen. */
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String flightRouteId,
+        @RequestParam(required = false) String airlineId,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) Boolean includeRetired,
+        @RequestParam(required = false) Boolean missingNetFare,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection) {
+        return service.getById(id, keyword, flightRouteId, airlineId, isActive, includeRetired, missingNetFare, sortBy, sortDirection);
     }
 
     /** A price list, all at once. Reports per-row outcomes so a bad line names itself. */

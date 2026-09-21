@@ -50,8 +50,30 @@ public class FlightRouteService {
     private final FlightFareRepository fares;
     private final ItineraryDayFlightRepository dayFlights;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
-    private static final List<String> SORTABLE = List.of("id", "createdAt");
+    /*
+     * What the table may sort by, in the DTO's own names, mapped to the entity path underneath.
+     *
+     * It used to be id and createdAt alone, so every other column's sort arrow quietly did
+     * nothing: the request asked for "airlineName", the service did not recognise it, and the
+     * rows came back in id order looking sorted. A control that appears to work is worse than
+     * one that is absent, which is why the two name columns are marked unsortable on the panel
+     * side rather than pretending.
+     *
+     * The dotted paths are property paths, not SQL — Spring Data joins them for us.
+     */
+    private static final java.util.Map<String, String> SORT_PATHS = java.util.Map.of(
+        "id", "id",
+        "createdAt", "createdAt",
+        "sectorLabel", "originAirstrip.code",
+        "airlineName", "airline.name",
+        "originName", "originAirstrip.name",
+        "destinationName", "destinationAirstrip.name",
+        "isOnRequest", "isOnRequest",
+        "minimumSeats", "minimumSeats"
+    );
+    private static final List<String> SORTABLE = List.copyOf(SORT_PATHS.keySet());
 
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<?>> getAll(String keyword, String airlineId, String originAirstripId,
@@ -66,7 +88,7 @@ public class FlightRouteService {
          * sortBy is null on every request that does not ask for a sort, which is most of them.
          * Without it the whole listing answers 500.
          */
-        String sortField = sortBy != null && SORTABLE.contains(sortBy) ? sortBy : "id";
+        String sortField = SORT_PATHS.getOrDefault(sortBy == null ? "" : sortBy, "id");
         Sort sort = Sort.by("desc".equalsIgnoreCase(sortDirection) ? Sort.Direction.DESC : Sort.Direction.ASC, sortField);
         Pageable pageable = PageRequest.of(page == null ? 0 : page, clamp(size), sort);
 
@@ -78,20 +100,39 @@ public class FlightRouteService {
         payload.put("totalPages", found.getTotalPages());
         payload.put("pageSize", found.getSize());
         payload.put("validSortFields", SORTABLE);
-        payload.put("currentSortBy", sortField);
+        /* The name the caller may send back, not the entity path it resolved to. */
+        payload.put("currentSortBy", SORT_PATHS.containsKey(sortBy == null ? "" : sortBy) ? sortBy : "id");
         payload.put("currentSortDirection", sortDirection);
         return ResponseEntity.ok(ApiResponse.success(200, "Flight routes retrieved successfully", payload));
     }
 
     @Transactional(readOnly = true)
-    public ResponseEntity<ApiResponse<?>> getById(String id) {
+    /**
+     * One record, plus where it sits in the list you came from.
+     *
+     * <p>The filters are taken again rather than ignored: the arrows have to walk the SAME
+     * set that was on screen. Paging from a filtered list into records that were never in it
+     * is worse than having no arrows, which is the house rule for every other module.
+     */
+    public ResponseEntity<ApiResponse<?>> getById(String id, String keyword, String airlineId, String originAirstripId, String destinationAirstripId, Boolean isOnRequest, Boolean isActive,
+                                                  String sortBy, String sortDirection) {
         Long decoded = idObfuscator.decodeId(id);
         FlightRoute route = decoded == null ? null : repository.findById(decoded).orElse(null);
         if (route == null) {
             return ResponseEntity.status(404).body(ApiResponse.error(404, "No flight route with that id", "FLIGHT_ROUTE_NOT_FOUND"));
         }
+        String navSortBy = SORT_PATHS.getOrDefault(sortBy == null ? "" : sortBy, "id");
+        Map<String, Object> nav = recordNavigation.navigate(FlightRoute.class,
+            buildSpec(keyword, airlineId, originAirstripId, destinationAirstripId, isOnRequest, isActive), navSortBy, !"desc".equalsIgnoreCase(sortDirection), decoded);
+        Long nextRaw = (Long) nav.get("nextRawId");
+        Long prevRaw = (Long) nav.get("previousRawId");
+
         Map<String, Object> payload = new HashMap<>();
         payload.put("flightRoute", toDTO(route));
+        payload.put("nextId", nextRaw == null ? null : idObfuscator.encodeId(nextRaw));
+        payload.put("previousId", prevRaw == null ? null : idObfuscator.encodeId(prevRaw));
+        payload.put("position", nav.get("position"));
+        payload.put("total", nav.get("total"));
         return ResponseEntity.ok(ApiResponse.success(200, "Flight route retrieved successfully", payload));
     }
 

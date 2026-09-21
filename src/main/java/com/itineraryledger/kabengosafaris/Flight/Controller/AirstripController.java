@@ -46,8 +46,15 @@ public class AirstripController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('PERM_READ_AIRSTRIP')")
-    public ResponseEntity<ApiResponse<?>> getById(@PathVariable String id) {
-        return service.getById(id);
+    public ResponseEntity<ApiResponse<?>> getById(
+        @PathVariable String id,
+        /* The list's filters, so the record arrows walk the same set that was on screen. */
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String region,
+        @RequestParam(required = false) Boolean isActive,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(required = false) String sortDirection) {
+        return service.getById(id, keyword, region, isActive, sortBy, sortDirection);
     }
 
     @PostMapping

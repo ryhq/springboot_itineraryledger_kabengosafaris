@@ -43,6 +43,7 @@ public class AirstripService {
     private final AirstripRepository repository;
     private final FlightRouteRepository routes;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> SORTABLE = List.of("code", "name", "region", "country", "createdAt");
 
@@ -76,7 +77,15 @@ public class AirstripService {
     }
 
     @Transactional(readOnly = true)
-    public ResponseEntity<ApiResponse<?>> getById(String id) {
+    /**
+     * One record, plus where it sits in the list you came from.
+     *
+     * <p>The filters are taken again rather than ignored: the arrows have to walk the SAME
+     * set that was on screen. Paging from a filtered list into records that were never in it
+     * is worse than having no arrows, which is the house rule for every other module.
+     */
+    public ResponseEntity<ApiResponse<?>> getById(String id, String keyword, String region, Boolean isActive,
+                                                  String sortBy, String sortDirection) {
         /*
          * Written as a branch rather than map/orElseGet on purpose: the two arms infer
          * ApiResponse<Object> and ApiResponse<String> respectively, and neither widens to the
@@ -88,8 +97,18 @@ public class AirstripService {
             return ResponseEntity.status(404)
                 .body(ApiResponse.error(404, "No airstrip with that id", "AIRSTRIP_NOT_FOUND"));
         }
+        String navSortBy = sortBy != null && SORTABLE.contains(sortBy) ? sortBy : "code";
+        Map<String, Object> nav = recordNavigation.navigate(Airstrip.class,
+            buildSpec(keyword, region, isActive), navSortBy, !"desc".equalsIgnoreCase(sortDirection), decoded);
+        Long nextRaw = (Long) nav.get("nextRawId");
+        Long prevRaw = (Long) nav.get("previousRawId");
+
         Map<String, Object> payload = new HashMap<>();
         payload.put("airstrip", toDTO(strip));
+        payload.put("nextId", nextRaw == null ? null : idObfuscator.encodeId(nextRaw));
+        payload.put("previousId", prevRaw == null ? null : idObfuscator.encodeId(prevRaw));
+        payload.put("position", nav.get("position"));
+        payload.put("total", nav.get("total"));
         return ResponseEntity.ok(ApiResponse.success(200, "Airstrip retrieved successfully", payload));
     }
 

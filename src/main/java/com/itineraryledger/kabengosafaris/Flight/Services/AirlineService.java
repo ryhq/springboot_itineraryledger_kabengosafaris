@@ -45,6 +45,7 @@ public class AirlineService {
     private final AirlineRepository repository;
     private final FlightRouteRepository routes;
     private final IdObfuscator idObfuscator;
+    private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
 
     private static final List<String> SORTABLE = List.of("name", "code", "createdAt");
 
@@ -76,14 +77,32 @@ public class AirlineService {
     }
 
     @Transactional(readOnly = true)
-    public ResponseEntity<ApiResponse<?>> getById(String id) {
+    /**
+     * One record, plus where it sits in the list you came from.
+     *
+     * <p>The filters are taken again rather than ignored: the arrows have to walk the SAME
+     * set that was on screen. Paging from a filtered list into records that were never in it
+     * is worse than having no arrows, which is the house rule for every other module.
+     */
+    public ResponseEntity<ApiResponse<?>> getById(String id, String keyword, Boolean isActive,
+                                                  String sortBy, String sortDirection) {
         Long decoded = idObfuscator.decodeId(id);
         Airline airline = decoded == null ? null : repository.findById(decoded).orElse(null);
         if (airline == null) {
             return ResponseEntity.status(404).body(ApiResponse.error(404, "No airline with that id", "AIRLINE_NOT_FOUND"));
         }
+        String navSortBy = sortBy != null && SORTABLE.contains(sortBy) ? sortBy : "name";
+        Map<String, Object> nav = recordNavigation.navigate(Airline.class,
+            buildSpec(keyword, isActive), navSortBy, !"desc".equalsIgnoreCase(sortDirection), decoded);
+        Long nextRaw = (Long) nav.get("nextRawId");
+        Long prevRaw = (Long) nav.get("previousRawId");
+
         Map<String, Object> payload = new HashMap<>();
         payload.put("airline", toDTO(airline));
+        payload.put("nextId", nextRaw == null ? null : idObfuscator.encodeId(nextRaw));
+        payload.put("previousId", prevRaw == null ? null : idObfuscator.encodeId(prevRaw));
+        payload.put("position", nav.get("position"));
+        payload.put("total", nav.get("total"));
         return ResponseEntity.ok(ApiResponse.success(200, "Airline retrieved successfully", payload));
     }
 
