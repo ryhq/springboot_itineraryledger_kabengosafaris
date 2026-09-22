@@ -28,6 +28,9 @@ public class CompanyProfileDTO {
     private String vrn;
     private String registrationNumber;
     private String licenceNumber;
+    private java.time.LocalDate licenceExpiry;
+    /** Days until it lapses; negative once it has. Null when no expiry is recorded. */
+    private Long licenceDaysRemaining;
     private String defaultCurrency;
     private String timezone;
     private String locale;

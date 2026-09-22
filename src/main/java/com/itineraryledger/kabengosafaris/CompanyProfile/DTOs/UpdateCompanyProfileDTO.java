@@ -34,6 +34,16 @@ public class UpdateCompanyProfileDTO {
     @Size(max = 100, message = "Licence number cannot exceed 100 characters")
     private String licenceNumber;
 
+    /**
+     * When the licence lapses, as ISO yyyy-MM-dd.
+     *
+     * <p>A String rather than a LocalDate so this field obeys the SAME rule as every other field
+     * on this form: absent leaves it alone, "" clears it, a value sets it. Typed as a date it
+     * could be set and never unset, because null already means "not supplied" — the clearing
+     * problem this codebase has hit before on dates and enums.
+     */
+    private String licenceExpiry;
+
     @Size(max = 3, message = "Currency must be a 3-letter code")
     private String defaultCurrency;
 

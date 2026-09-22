@@ -279,6 +279,8 @@ public class CompanyProfileGetService {
             .vrn(profile.getVrn())
             .registrationNumber(profile.getRegistrationNumber())
             .licenceNumber(profile.getLicenceNumber())
+            .licenceExpiry(profile.getLicenceExpiry())
+            .licenceDaysRemaining(profile.daysUntilLicenceExpiry())
             .defaultCurrency(profile.getDefaultCurrency())
             .timezone(profile.getTimezone())
             .locale(profile.getLocale())
@@ -412,6 +414,9 @@ public class CompanyProfileGetService {
         return base + "/api/public/company/assets/" + kind.name().toLowerCase().replace('_', '-');
     }
 
+    /** How long before expiry the page starts saying so. Long enough to renew without rushing. */
+    private static final int LICENCE_WARNING_DAYS = 60;
+
     // ------------------------------------------------------------------ completeness
 
     /**
@@ -475,6 +480,37 @@ public class CompanyProfileGetService {
                         + "the borrowed mark may be the wrong ink for the background it lands on."
                     : slot.getValue()[1],
                 "ASSETS"));
+        }
+
+        /*
+         * The licence, which is the one fact here that goes stale on its own.
+         *
+         * Only asked for when a number is present: plenty of companies hold no tour operator
+         * licence, and their profile is complete without one. Once a number IS present the date
+         * matters, because every invoice and voucher prints the number and nothing else in the
+         * system knows it stops being true. A lapsed licence on a document is worse than a blank
+         * one — it reads as trading on a licence that has expired.
+         */
+        if (has(profile == null ? null : profile.getLicenceNumber())) {
+            total++;
+            Long daysLeft = profile.daysUntilLicenceExpiry();
+            if (daysLeft == null) {
+                gaps.add(gap("licenceExpiry", "Licence expiry date", "RECOMMENDED",
+                    "The licence number prints on documents but nothing knows when it lapses, "
+                        + "so nothing can warn you before it does.", "IDENTITY"));
+            } else if (daysLeft < 0) {
+                gaps.add(gap("licenceExpiry", "The licence has expired", "BLOCKING",
+                    "Documents are printing licence " + profile.getLicenceNumber() + ", which lapsed "
+                        + Math.abs(daysLeft) + " day(s) ago. Renew it and put the new number here.",
+                    "IDENTITY"));
+            } else if (daysLeft <= LICENCE_WARNING_DAYS) {
+                gaps.add(gap("licenceExpiry", "The licence expires soon", "RECOMMENDED",
+                    "Licence " + profile.getLicenceNumber() + " lapses in " + daysLeft
+                        + " day(s). Every document printed after that carries a dead number.",
+                    "IDENTITY"));
+            } else {
+                filled++;
+            }
         }
 
         // --- the one thing that lives in another module

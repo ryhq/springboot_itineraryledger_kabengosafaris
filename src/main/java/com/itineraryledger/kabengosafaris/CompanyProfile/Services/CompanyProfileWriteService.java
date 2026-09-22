@@ -69,6 +69,7 @@ public class CompanyProfileWriteService {
         patch(dto.getVrn(), profile::setVrn);
         patch(dto.getRegistrationNumber(), profile::setRegistrationNumber);
         patch(dto.getLicenceNumber(), profile::setLicenceNumber);
+        patch(dto.getLicenceExpiry(), v -> profile.setLicenceExpiry(parseDate(v, "licenceExpiry")));
         patch(dto.getDefaultCurrency(), v -> profile.setDefaultCurrency(v == null ? null : v.toUpperCase()));
         patch(dto.getTimezone(), profile::setTimezone);
         patch(dto.getLocale(), profile::setLocale);
@@ -400,6 +401,22 @@ public class CompanyProfileWriteService {
         payload.put("company", getService.toDTO(profile));
         payload.put("completeness", getService.completeness(profile));
         return ResponseEntity.ok(ApiResponse.success(200, message, payload));
+    }
+
+    /**
+     * An ISO date, or null when the caller is clearing it.
+     *
+     * <p>Refuses a value it cannot read rather than silently storing nothing: a typo in an expiry
+     * date that quietly becomes "no expiry" turns the whole warning off, which is the one outcome
+     * this field exists to prevent.
+     */
+    private java.time.LocalDate parseDate(String value, String field) {
+        if (value == null) return null;
+        try {
+            return java.time.LocalDate.parse(value);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new IllegalArgumentException(field + " must be a date as yyyy-MM-dd, not \"" + value + "\"");
+        }
     }
 
     private void patch(String value, Consumer<String> setter) {

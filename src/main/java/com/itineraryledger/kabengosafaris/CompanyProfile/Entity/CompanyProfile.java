@@ -74,6 +74,28 @@ public class CompanyProfile {
     @Column(name = "licence_number", length = 100)
     private String licenceNumber;
 
+    /**
+     * When that licence stops being true.
+     *
+     * <p>A tour operator licence is renewed yearly, so the number alone is a half-fact: documents
+     * go on printing it long after it lapses, and the first anybody hears is from the authority or
+     * a client. Null means nobody has recorded a date, not that it never expires.
+     */
+    @Column(name = "licence_expiry")
+    private java.time.LocalDate licenceExpiry;
+
+    /** Days until the licence lapses; negative once it has. Null when there is nothing to judge. */
+    public Long daysUntilLicenceExpiry() {
+        if (licenceExpiry == null) return null;
+        return java.time.temporal.ChronoUnit.DAYS.between(java.time.LocalDate.now(), licenceExpiry);
+    }
+
+    /** True once the recorded expiry is in the past. */
+    public boolean licenceLapsed() {
+        Long d = daysUntilLicenceExpiry();
+        return d != null && d < 0;
+    }
+
     /* ------------------------------------------------------------------- regional */
 
     /** ISO 4217. What a figure means when nobody says otherwise. */
