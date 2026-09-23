@@ -55,6 +55,7 @@ public class EmailComposeService {
     private final EmailFolderRepository emailFolderRepository;
     private final EmailAccountRepository emailAccountRepository;
     private final EmailStorageService emailStorageService;
+    private final com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.EmailAttachmentRepository emailAttachmentRepository;
     private final EmailContactService emailContactService;
     private final ObjectMapper objectMapper;
     private final IdObfuscator idObfuscator;
@@ -672,12 +673,67 @@ public class EmailComposeService {
                 .build();
 
             EmailMessage saved = emailMessageRepository.save(emailMessage);
+            /*
+             * The files themselves, as rows.
+             *
+             * Setting hasAttachments and attachmentCount without writing these was the whole bug:
+             * the list drew a paperclip from the flag while the reader listed the ROWS and found
+             * none. Twenty-three sent messages said they carried something and could not show it,
+             * one of them a proposal with four documents on it.
+             *
+             * The count is taken from what was actually stored rather than from what was handed
+             * in, so a file that fails to save leaves an honest message instead of a paperclip
+             * with nothing behind it.
+             */
+            int stored = persistAttachments(saved, attachments, account.getId());
+            if (stored != (attachments == null ? 0 : attachments.size())) {
+                saved.setHasAttachments(stored > 0);
+                saved.setAttachmentCount(stored);
+                saved = emailMessageRepository.save(saved);
+            }
             emailFolderRepository.incrementMessageCount(sentFolder.getId(), 1);
             return saved;
         } catch (Exception e) {
             log.warn("Failed to save sent copy for account {}: {}", account.getEmail(), e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Store each uploaded file and record it against the message.
+     *
+     * @return how many were actually stored, which is what the flag and the count are set from.
+     *         A file that throws is logged and skipped rather than failing the send: the mail has
+     *         already gone out by this point, and losing the sent copy over a disk error would be
+     *         a worse outcome than a record that is one attachment short and says so.
+     */
+    private int persistAttachments(EmailMessage message, List<MultipartFile> attachments, Long accountId) {
+        if (attachments == null || attachments.isEmpty()) return 0;
+        int stored = 0;
+        for (MultipartFile file : attachments) {
+            if (file == null || file.isEmpty()) continue;
+            String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "attachment";
+            String storageName = message.getId() + "_" + originalName;
+            try {
+                byte[] bytes = file.getBytes();
+                emailStorageService.saveAttachment(accountId, storageName, bytes);
+                emailAttachmentRepository.save(
+                    com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailAttachment.builder()
+                        .emailMessage(message)
+                        .fileName(storageName)
+                        .originalFileName(originalName)
+                        .mimeType(file.getContentType())
+                        .fileSize(file.getSize())
+                        .storagePath("attachments")
+                        .isInline(false)
+                        .build());
+                stored++;
+            } catch (Exception e) {
+                log.warn("Could not store attachment {} on message {}: {}",
+                    originalName, message.getId(), e.getMessage());
+            }
+        }
+        return stored;
     }
 
     private MimeMessage buildMimeMessage(JavaMailSender mailSender, EmailAccount account, ComposeEmailDTO dto, List<MultipartFile> attachments, EmailMessage replyTo) throws Exception {

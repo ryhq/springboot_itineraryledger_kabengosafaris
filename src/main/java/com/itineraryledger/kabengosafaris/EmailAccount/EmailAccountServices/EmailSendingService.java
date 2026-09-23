@@ -393,7 +393,13 @@ public class EmailSendingService {
                 snippet = subject != null && subject.length() > 200 ? subject.substring(0, 200) : subject;
             }
 
-            boolean hasAttachment = pdfBytes != null;
+            /*
+             * The row below is only written when there is a NAME to write as well, so the flag has
+             * to agree with it. Flagging on the bytes alone put a paperclip on messages that could
+             * never list anything: the list draws from this boolean, the reader draws from the
+             * rows, and a PDF arriving without a filename was enough to make them disagree.
+             */
+            boolean hasAttachment = pdfBytes != null && pdfFileName != null;
 
             // Create metadata record
             EmailMessage emailMessage = EmailMessage.builder()
@@ -504,7 +510,13 @@ public class EmailSendingService {
             mimeMessage.writeTo(baos);
 
             // Extract snippet from HTML body
-            boolean hasAttachment = pdfBytes != null;
+            /*
+             * The row below is only written when there is a NAME to write as well, so the flag has
+             * to agree with it. Flagging on the bytes alone put a paperclip on messages that could
+             * never list anything: the list draws from this boolean, the reader draws from the
+             * rows, and a PDF arriving without a filename was enough to make them disagree.
+             */
+            boolean hasAttachment = pdfBytes != null && pdfFileName != null;
             String snippet = extractSnippet(htmlContent, 200);
             if (snippet == null || snippet.isBlank()) {
                 snippet = subject != null && subject.length() > 200 ? subject.substring(0, 200) : subject;

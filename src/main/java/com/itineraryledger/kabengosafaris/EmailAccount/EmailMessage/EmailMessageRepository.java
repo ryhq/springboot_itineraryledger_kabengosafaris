@@ -87,4 +87,13 @@ public interface EmailMessageRepository extends JpaRepository<EmailMessage, Long
 
     @Query("SELECT m.id FROM EmailMessage m WHERE m.emailAccount.id = :accountId AND m.folder.id = :folderId ORDER BY m.id DESC LIMIT 1")
     Optional<Long> findLastIdInFolder(@Param("accountId") Long accountId, @Param("folderId") Long folderId);
+
+    /** Messages that claim an attachment and have no row to show for it. */
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT m FROM EmailMessage m
+        WHERE m.hasAttachments = true
+          AND NOT EXISTS (SELECT 1 FROM EmailAttachment a WHERE a.emailMessage = m)
+        """)
+    java.util.List<com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.EmailMessage>
+        findFlaggedWithNoAttachmentRows();
 }
