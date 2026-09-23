@@ -75,4 +75,26 @@ public class UpdateCompanyProfileDTO {
 
     @Size(max = 160, message = "The font stack cannot exceed 160 characters")
     private String brandFont;
+
+    /**
+     * The public website's origin, e.g. https://example.com.
+     *
+     * <p>Rejected unless it is http(s) and carries no path: this value is dialled, not printed, and
+     * a trailing "/en" on it would send every cache call to a 404 that looks exactly like success.
+     */
+    @jakarta.validation.constraints.Pattern(
+        regexp = "^$|^https?://[^/\\s?#]+/?$",
+        message = "The website must be an address like https://example.com, with no path after it")
+    @Size(max = 300, message = "The website address cannot exceed 300 characters")
+    private String websiteUrl;
+
+    /**
+     * The website's cache secret. Write-only: sent to set or replace it, "" to remove it, absent to
+     * leave whatever is stored alone. It is never read back by anything.
+     */
+    @Size(max = 200, message = "The secret cannot exceed 200 characters")
+    private String websiteCacheSecret;
+
+    /** Whether saving public content should clear the website by itself. Absent leaves it alone. */
+    private Boolean websiteCacheAuto;
 }

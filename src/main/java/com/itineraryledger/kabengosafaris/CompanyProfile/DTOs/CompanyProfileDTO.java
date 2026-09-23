@@ -40,6 +40,22 @@ public class CompanyProfileDTO {
     private String brandRadius;
     private String brandFont;
 
+    /** The public website's origin. Blank means this installation has no site to talk to. */
+    private String websiteUrl;
+    /**
+     * Whether a cache secret is stored — never the secret itself.
+     *
+     * <p>A credential that can be read back is a credential that leaks over a shoulder, into a
+     * screenshot, or through a browser's saved form data. The page shows "set" or "not set" and
+     * offers to replace it; nothing offers to reveal it.
+     */
+    private boolean websiteCacheSecretSet;
+    /** Whether saving public content clears the website by itself. */
+    private Boolean websiteCacheAuto;
+    private LocalDateTime websiteCacheLastCalledAt;
+    private Boolean websiteCacheLastOk;
+    private String websiteCacheLastDetail;
+
     private List<CompanyEmailDTO> emails;
     private List<CompanyPhoneDTO> phones;
     private List<CompanyAddressDTO> addresses;

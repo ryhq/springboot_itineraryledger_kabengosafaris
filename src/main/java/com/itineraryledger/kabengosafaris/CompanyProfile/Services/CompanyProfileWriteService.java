@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.itineraryledger.kabengosafaris.EmailAccount.Components.EncryptionUtil;
 import com.itineraryledger.kabengosafaris.CompanyProfile.DTOs.*;
 import com.itineraryledger.kabengosafaris.CompanyProfile.Entity.*;
 import com.itineraryledger.kabengosafaris.CompanyProfile.Repository.CompanyProfileRepository;
@@ -77,6 +78,21 @@ public class CompanyProfileWriteService {
         patch(dto.getBrandAccent(), v -> profile.setBrandAccent(v == null ? null : v.toLowerCase()));
         patch(dto.getBrandRadius(), profile::setBrandRadius);
         patch(dto.getBrandFont(), profile::setBrandFont);
+
+        /*
+         * The website's origin is stored without its trailing slash so every caller can append a
+         * path without wondering whether it will produce a double slash.
+         */
+        patch(dto.getWebsiteUrl(), v -> profile.setWebsiteUrl(
+            v == null ? null : v.replaceAll("/+$", "")));
+        /*
+         * Encrypted on the way in, and never decrypted for any reader — only for the one call that
+         * dials the website. "" removes it, which is how somebody turns cache clearing off for good
+         * without having to remember what they typed.
+         */
+        patch(dto.getWebsiteCacheSecret(), v -> profile.setWebsiteCacheSecret(
+            v == null ? null : EncryptionUtil.encrypt(v)));
+        if (dto.getWebsiteCacheAuto() != null) profile.setWebsiteCacheAuto(dto.getWebsiteCacheAuto());
 
         profileRepository.save(profile);
         identityService.invalidate();

@@ -58,6 +58,15 @@ public class SecurityConfigurations {
     }
 
     @Bean
+    public com.itineraryledger.kabengosafaris.WebsiteCache.WebsiteCacheFilter websiteCacheFilter(
+        com.itineraryledger.kabengosafaris.WebsiteCache.WebsiteCacheService cacheService,
+        com.itineraryledger.kabengosafaris.CompanyProfile.Repository.CompanyProfileRepository profileRepository
+    ) {
+        return new com.itineraryledger.kabengosafaris.WebsiteCache.WebsiteCacheFilter(
+            cacheService, profileRepository);
+    }
+
+    @Bean
     public DynamicPermissionFilter dynamicPermissionFilter(
         EndpointPermissionService endpointPermissionService
     ) {
@@ -119,7 +128,8 @@ public class SecurityConfigurations {
         JwtAuthenticationFilter jwtAuthenticationFilter,
         DynamicPermissionFilter dynamicPermissionFilter,
         com.itineraryledger.kabengosafaris.Feature.FeatureGateFilter featureGateFilter,
-        com.itineraryledger.kabengosafaris.Security.RateLimit.RateLimitFilter rateLimitFilter
+        com.itineraryledger.kabengosafaris.Security.RateLimit.RateLimitFilter rateLimitFilter,
+        com.itineraryledger.kabengosafaris.WebsiteCache.WebsiteCacheFilter websiteCacheFilter
     ) throws Exception {
         return httpSecurity
         // Configure CORS inline using a custom configuration source
@@ -263,6 +273,13 @@ public class SecurityConfigurations {
          * nothing.
          */
         .addFilterBefore(rateLimitFilter, com.itineraryledger.kabengosafaris.Feature.FeatureGateFilter.class)
+        /*
+         * The website cache trigger is OUTERMOST of the three, because it is the only one that does
+         * its work on the way back out. It has to see the status the client will actually get: a
+         * save refused by the permission filter, the feature gate or the rate limiter changed
+         * nothing, and clearing a website because of it would be a lie told at some expense.
+         */
+        .addFilterBefore(websiteCacheFilter, com.itineraryledger.kabengosafaris.Security.RateLimit.RateLimitFilter.class)
         .build();
     }
     

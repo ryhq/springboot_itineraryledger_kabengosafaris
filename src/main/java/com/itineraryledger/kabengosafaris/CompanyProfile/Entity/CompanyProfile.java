@@ -127,6 +127,53 @@ public class CompanyProfile {
     @Column(name = "brand_font", length = 160)
     private String brandFont;
 
+    /* ----------------------------------------------------------------- website */
+
+    /**
+     * The public website's origin, e.g. https://example.com — scheme and host, no path.
+     *
+     * <p>Deliberately NOT the "website" link in the links collection. That one is for printing on a
+     * letterhead and may be a pretty form with a locale on the end; this one is dialled by a machine
+     * and has to be the real origin the site is served from. Blank means this installation has no
+     * website to talk to, and every cache call becomes a no-op rather than an error.
+     */
+    @Column(name = "website_url", length = 300)
+    private String websiteUrl;
+
+    /**
+     * The shared secret the website requires before it will throw a cached page away, stored
+     * encrypted.
+     *
+     * <p>Never returned by any endpoint. The profile payload carries only whether one is set, so a
+     * screenshot of the Settings page, or a browser tab left open on a shared machine, cannot leak
+     * it. Rotating means pasting a new value in both places; there is no way to read the old one
+     * back, which is what a credential should do.
+     */
+    @Column(name = "website_cache_secret", length = 512)
+    private String websiteCacheSecret;
+
+    /** Whether saving public content should clear the website by itself. Off = the button only. */
+    @Column(name = "website_cache_auto", nullable = false)
+    @Builder.Default
+    private Boolean websiteCacheAuto = true;
+
+    @Column(name = "website_cache_last_called_at")
+    private LocalDateTime websiteCacheLastCalledAt;
+
+    /** Whether the website answered the last call. Null until one has been made. */
+    @Column(name = "website_cache_last_ok")
+    private Boolean websiteCacheLastOk;
+
+    /** What it said, or why nobody answered. The only honest record of cache state we have. */
+    @Column(name = "website_cache_last_detail", length = 500)
+    private String websiteCacheLastDetail;
+
+    /** True once a URL and a secret are both present — the two things a cache call needs. */
+    public boolean websiteCacheConfigured() {
+        return websiteUrl != null && !websiteUrl.isBlank()
+            && websiteCacheSecret != null && !websiteCacheSecret.isBlank();
+    }
+
     /* --------------------------------------------------------------- collections */
 
     @OneToMany(mappedBy = "companyProfile", cascade = CascadeType.ALL, orphanRemoval = true)

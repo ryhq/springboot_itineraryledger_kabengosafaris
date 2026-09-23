@@ -288,6 +288,14 @@ public class CompanyProfileGetService {
             .brandAccent(profile.getBrandAccent())
             .brandRadius(profile.getBrandRadius())
             .brandFont(profile.getBrandFont())
+            .websiteUrl(profile.getWebsiteUrl())
+            // Whether, never what. The secret leaves this process exactly once, towards the website.
+            .websiteCacheSecretSet(profile.getWebsiteCacheSecret() != null
+                && !profile.getWebsiteCacheSecret().isBlank())
+            .websiteCacheAuto(profile.getWebsiteCacheAuto())
+            .websiteCacheLastCalledAt(profile.getWebsiteCacheLastCalledAt())
+            .websiteCacheLastOk(profile.getWebsiteCacheLastOk())
+            .websiteCacheLastDetail(profile.getWebsiteCacheLastDetail())
             .emails(profile.getEmails().stream().sorted(byOrder(CompanyEmail::getIsPrimary, CompanyEmail::getDisplayOrder, CompanyEmail::getId)).map(this::toDTO).toList())
             .phones(profile.getPhones().stream().sorted(byOrder(CompanyPhone::getIsPrimary, CompanyPhone::getDisplayOrder, CompanyPhone::getId)).map(this::toDTO).toList())
             .addresses(profile.getAddresses().stream().sorted(byOrder(CompanyAddress::getIsPrimary, CompanyAddress::getDisplayOrder, CompanyAddress::getId)).map(this::toDTO).toList())
