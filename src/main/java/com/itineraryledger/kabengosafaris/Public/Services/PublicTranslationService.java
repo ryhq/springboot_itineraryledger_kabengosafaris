@@ -33,6 +33,15 @@ public class PublicTranslationService {
     private final Map<Class<?>, List<Field>> translatableFieldsCache = new ConcurrentHashMap<>();
 
     /**
+     * Preferred display names for locale codes the provider labels poorly.
+     * LibreTranslate returns "Ukranian" (misspelt) for uk, and unknown codes fall back to
+     * their upper-cased code — this map wins over both.
+     */
+    private static final Map<String, String> PREFERRED_LANGUAGE_NAMES = Map.of(
+            "uk", "Ukrainian"
+    );
+
+    /**
      * Parse an Accept-Language header value into a clean 2-char language code.
      * Examples: "fr-FR,fr;q=0.9,en;q=0.8" → "fr", "sw" → "sw", null → "en"
      */
@@ -192,7 +201,8 @@ public class PublicTranslationService {
             for (String code : supportedCodes) {
                 Map<String, String> entry = new HashMap<>();
                 entry.put("code", code);
-                entry.put("name", nameMap.getOrDefault(code, code.toUpperCase()));
+                entry.put("name", PREFERRED_LANGUAGE_NAMES.getOrDefault(code,
+                        nameMap.getOrDefault(code, code.toUpperCase())));
                 supported.add(entry);
             }
 
@@ -212,7 +222,7 @@ public class PublicTranslationService {
             response.put("languages", supportedCodes.stream().map(code -> {
                 Map<String, String> entry = new HashMap<>();
                 entry.put("code", code);
-                entry.put("name", code.toUpperCase());
+                entry.put("name", PREFERRED_LANGUAGE_NAMES.getOrDefault(code, code.toUpperCase()));
                 return entry;
             }).toList());
             response.put("defaultSourceLanguage", settingsService.getDefaultSourceLanguage());
