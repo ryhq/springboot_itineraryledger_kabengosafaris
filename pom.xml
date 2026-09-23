@@ -10,7 +10,16 @@
 	</parent>
 	<groupId>com.itineraryledger</groupId>
 	<artifactId>kabengosafaris</artifactId>
-	<version>1.0.0</version>
+	<!--
+		Maven's CI-friendly version. The number lives in the <revision> property below so a build can
+		override it with -Drevision=..., which is how the workflow stamps the version it worked out
+		from the git tags. Editing a version by hand is a step somebody forgets: this one sat at
+		1.0.0 across several releases that changed real behaviour.
+
+		The property's value is the FALLBACK, for a local build and for the very first tagged
+		release. After that the tags lead and this number stops mattering.
+	-->
+	<version>${revision}</version>
 	<name>kabengosafaris</name>
 	<description>Kabengo Safaris Application</description>
 	<url/>
@@ -27,6 +36,7 @@
 		<url/>
 	</scm>
 	<properties>
+		<revision>1.0.0</revision>
 		<git.sha>local</git.sha>
 		<java.version>21</java.version>
 	</properties>

@@ -305,8 +305,22 @@ public class EmailComposeService {
             draft.setFileName(fileName);
             draft.setFileSize((long) baos.size());
             draft.setMessageId(mimeMessage.getMessageID());
-            draft.setHasAttachments(attachments != null && !attachments.isEmpty());
-            draft.setAttachmentCount(attachments != null ? attachments.size() : 0);
+            emailMessageRepository.save(draft);
+
+            /*
+             * Replace the attachment rows, do not add to them.
+             *
+             * An edit rebuilds the whole .eml from the files handed in THIS time, so any row from
+             * the previous save now describes a file that is no longer in the message. Left in
+             * place they would accumulate: edit a draft three times and the reader lists the first
+             * attachment three times, only one of which can be opened.
+             *
+             * Like the send path, the flag and the count come from what was actually stored.
+             */
+            emailAttachmentRepository.deleteByEmailMessageId(draft.getId());
+            int stored = persistAttachments(draft, attachments, accountId);
+            draft.setHasAttachments(stored > 0);
+            draft.setAttachmentCount(stored);
             emailMessageRepository.save(draft);
 
             return ResponseEntity.ok(ApiResponse.success(200, "Draft updated successfully",
@@ -590,6 +604,26 @@ public class EmailComposeService {
                 .build();
 
             emailMessage = emailMessageRepository.save(emailMessage);
+
+            /*
+             * The files as rows, exactly as the sent copy does it.
+             *
+             * The draft already carried them inside its .eml, so sending it would have delivered
+             * them correctly — but the reader lists the ROWS, and with none it showed a paperclip
+             * and an empty attachment list. On a draft that is worse than on a sent message: the
+             * whole point of a draft is that somebody opens it to check what is about to go out,
+             * and they would have concluded the file was missing and attached it a second time.
+             *
+             * Same rule as the send path: the flag and the count come from what was actually
+             * stored, never from what was handed in.
+             */
+            int stored = persistAttachments(emailMessage, attachments, accountId);
+            if (stored != (attachments == null ? 0 : attachments.size())) {
+                emailMessage.setHasAttachments(stored > 0);
+                emailMessage.setAttachmentCount(stored);
+                emailMessage = emailMessageRepository.save(emailMessage);
+            }
+
             emailFolderRepository.incrementMessageCount(draftsFolder.getId(), 1);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(

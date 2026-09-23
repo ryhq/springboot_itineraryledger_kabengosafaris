@@ -24,8 +24,24 @@ jobs:
       canary: ${{ steps.plan.outputs.canary }}
       rest: ${{ steps.plan.outputs.rest }}
       artifact: release-${{ github.sha }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The version is worked out from the tags, so the tags have to be here. Without this the
+          # checkout is shallow and every release looks like the first one.
+          fetch-depth: 0
+
+      - name: Work out the version
+        id: version
+        # Patch by default; [minor] or [major] in any commit since the last tag moves the other
+        # digits. See scripts/next-version.sh for the whole rule.
+        run: |
+          set -e
+          v=$(./scripts/next-version.sh)
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "Releasing v$v"
+          echo "### Version \`v$v\`" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -41,8 +57,9 @@ jobs:
         run: ./mvnw -q clean test
 
       - name: Build the release
-        # -Dgit.sha stamps the commit into the jar, so /api/public/version can name it later.
-        run: ./mvnw -q package -DskipTests -Dgit.sha=${{ github.sha }}
+        # -Dgit.sha stamps the commit and -Drevision the version, so /api/public/version can name
+        # both later. Neither is written back into the repository: the git tag is the record.
+        run: ./mvnw -q package -DskipTests -Dgit.sha=${{ github.sha }} -Drevision=${{ steps.version.outputs.version }}
 
       - name: Hand it over
         uses: actions/upload-artifact@v4
@@ -107,6 +124,36 @@ jobs:
       publicHealthUrl: ${{ matrix.company.publicHealthUrl }}
       artifact: ${{ needs.build.outputs.artifact }}
     secrets: inherit
+
+  # The version becomes real only once every company is actually running it.
+  #
+  # Tagging in the build job would have been simpler and wrong: a release that fails on the canary
+  # would still burn a number, and the next push would claim a version nobody ever ran. The tag is
+  # the record of what shipped, so it is written when shipping has finished.
+  tag:
+    needs: [build, canary, everyone-else]
+    if: success()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Mark the release
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -e
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "v$VERSION already exists — nothing to do"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$VERSION" -m "Released to every company from ${GITHUB_SHA}"
+          git push origin "v$VERSION"
+          echo "Tagged v$VERSION" >> "$GITHUB_STEP_SUMMARY"
 
   report:
     needs: [build, canary, everyone-else]
