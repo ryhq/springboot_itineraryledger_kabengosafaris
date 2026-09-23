@@ -24,7 +24,7 @@ class WebsiteCacheTagsTest {
     void everyPathTagIsInTheCatalogue() {
         List<String> paths = List.of(
             "/api/itineraries", "/api/parks", "/api/activities", "/api/accommodations",
-            "/api/heroes", "/api/testimonies", "/api/blogs", "/api/faqs", "/api/company",
+            "/api/heroes", "/api/testimonies", "/api/blogs", "/api/faqs",
             "/api/park-activities", "/api/park-images", "/api/hero-images");
         for (String path : paths) {
             Set<String> tags = WebsiteCacheTags.forPath(path);
@@ -34,6 +34,30 @@ class WebsiteCacheTagsTest {
                     path + " produces \"" + tag + "\", which the catalogue does not list — the "
                         + "website would be asked to clear a label nothing wears");
             }
+        }
+    }
+
+    @Test
+    @DisplayName("every tag a caller may ask for is one some write can also produce")
+    void everyCatalogueTagIsReachable() {
+        /*
+         * The reverse of the test above, and the one that was missing. A label in the catalogue that
+         * no write produces is a label nothing on the website wears either — the panel offers a
+         * button for it, the website answers "cleared", and nothing is cleared. That is worse than
+         * having no button, because the page then looks current and is not. "brand" sat here for
+         * exactly one afternoon on that basis.
+         */
+        Set<String> reachable = new java.util.LinkedHashSet<>();
+        for (String path : List.of(
+                "/api/itineraries", "/api/parks", "/api/activities", "/api/accommodations",
+                "/api/heroes", "/api/testimonies", "/api/blogs", "/api/faqs")) {
+            reachable.addAll(WebsiteCacheTags.forPath(path));
+        }
+        for (String tag : WebsiteCacheTags.CATALOGUE) {
+            if (tag.equals(WebsiteCacheTags.ALL)) continue;   // every fetch carries it by definition
+            assertTrue(reachable.contains(tag),
+                "\"" + tag + "\" is offered but no write produces it — either the websites do not "
+                    + "label anything with it, or BY_PATH is missing an endpoint");
         }
     }
 
@@ -52,6 +76,14 @@ class WebsiteCacheTagsTest {
         // "/api/park" must not be satisfied by "/api/parks", and vice versa.
         assertTrue(WebsiteCacheTags.forPath("/api/parkings").isEmpty());
         assertTrue(WebsiteCacheTags.forPath("/api/companies").isEmpty());
+    }
+
+    @Test
+    @DisplayName("the company record clears nothing, because no site reads it")
+    void companyRecordClearsNothing() {
+        assertTrue(WebsiteCacheTags.forPath("/api/company").isEmpty(),
+            "neither website fetches the company record, so clearing for it would be a no-op "
+                + "reported as a success");
     }
 
     @Test

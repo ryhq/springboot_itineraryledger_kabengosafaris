@@ -38,12 +38,20 @@ public final class WebsiteCacheTags {
     public static final String HEROES = "heroes";
     public static final String BLOG = "blog";
     public static final String FAQS = "faqs";
-    /** The company's own name, logo, colours and contact details, which sit in the site's layout. */
-    public static final String BRAND = "brand";
+    /*
+     * There is deliberately no BRAND tag.
+     *
+     * The obvious one to add is the company's name, logo and contact details in the site's header
+     * and footer — except neither website reads those from this API. Both carry their own copy in
+     * jsonld.tsx and their translation files, so a "company details" label would be accepted,
+     * reported as cleared, and clear nothing: the page would then look current and be wrong, which
+     * is the one answer a cache must never give. It goes in when a site actually fetches the
+     * company record, and not before.
+     */
 
     /** Every tag a caller may ask for, in the order the Settings page should offer them. */
     public static final List<String> CATALOGUE = List.of(
-        ALL, SAFARIS, PARKS, ACCOMMODATIONS, ACTIVITIES, TESTIMONIES, HEROES, BLOG, FAQS, BRAND);
+        ALL, SAFARIS, PARKS, ACCOMMODATIONS, ACTIVITIES, TESTIMONIES, HEROES, BLOG, FAQS);
 
     /**
      * Which admin endpoints change which public pages.
@@ -83,10 +91,7 @@ public final class WebsiteCacheTags {
         Map.entry("/api/testimony-images", List.of(TESTIMONIES)),
         Map.entry("/api/blogs", List.of(BLOG)),
         Map.entry("/api/blog-images", List.of(BLOG)),
-        Map.entry("/api/faqs", List.of(FAQS)),
-
-        // The company record is the site's header, footer and every logo on it.
-        Map.entry("/api/company", List.of(BRAND))
+        Map.entry("/api/faqs", List.of(FAQS))
     );
 
     /** The tags a write to this path should clear, or empty when a visitor could not tell. */
