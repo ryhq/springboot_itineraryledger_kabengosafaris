@@ -389,10 +389,21 @@ public class PublicItineraryService {
             List<PublicItineraryDTO.PublicItineraryDayDTO> dayDTOs = new ArrayList<>();
             List<String> allDayImages = new ArrayList<>();
 
-            // Nights per lodge across the trip (non-alternative day-accommodations).
+            /*
+             * Nights per lodge across the trip, counted SEPARATELY for the lodge a night is priced
+             * on and for a lodge offered as an alternative.
+             *
+             * One shared tally would be wrong in both directions: a lodge that is primary on two
+             * nights and offered as an alternative on a third would claim three priced nights, and
+             * an alternative offered twice would inherit whatever the primary happened to have.
+             */
             java.util.Map<Long, Integer> nightsByAcc = new java.util.HashMap<>();
+            java.util.Map<Long, Integer> nightsByAlternativeAcc = new java.util.HashMap<>();
             for (ItineraryDay d : sortedDays) {
                 if (d.getAccommodations() != null) {
+                    d.getAccommodations().stream()
+                        .filter(a -> Boolean.TRUE.equals(a.getIsAlternative()) && a.getAccommodation() != null)
+                        .forEach(a -> nightsByAlternativeAcc.merge(a.getAccommodation().getId(), 1, Integer::sum));
                     d.getAccommodations().stream()
                         .filter(a -> !Boolean.TRUE.equals(a.getIsAlternative()) && a.getAccommodation() != null)
                         .forEach(a -> nightsByAcc.merge(a.getAccommodation().getId(), 1, Integer::sum));
@@ -461,9 +472,23 @@ public class PublicItineraryService {
 
                 // Accommodations
                 if (day.getAccommodations() != null && !day.getAccommodations().isEmpty()) {
+                    /*
+                     * Both the lodge the night is priced on and the ones offered instead.
+                     *
+                     * Alternatives were filtered out here, which made the public page a narrower
+                     * trip than the one the office actually sells: day one of the fourteen-day
+                     * Northern Tanzania trip offers Outpost Lodge or Kahawa House, and a reader
+                     * only ever saw Outpost. Showing both widens what a traveller can picture and
+                     * gives every offered lodge a page worth landing on.
+                     *
+                     * Sorted so the priced lodge leads. The flag travels with each entry; naming
+                     * the difference is the website's job, not this method's.
+                     */
                     List<PublicItineraryDTO.DayAccommodationDTO> accDTOs = day.getAccommodations().stream()
-                        .filter(da -> !Boolean.TRUE.equals(da.getIsAlternative()))
+                        .filter(da -> da.getAccommodation() != null)
+                        .sorted(Comparator.comparing(da -> Boolean.TRUE.equals(da.getIsAlternative())))
                         .map(da -> {
+                            boolean alternative = Boolean.TRUE.equals(da.getIsAlternative());
                             dayAccommodationIds.add(da.getAccommodation().getId());
                             return PublicItineraryDTO.DayAccommodationDTO.builder()
                                 .accommodationSlug(da.getAccommodation().getSlug())
@@ -472,7 +497,10 @@ public class PublicItineraryService {
                                 .board(da.getBoardType() != null ? da.getBoardType().getName() : null)
                                 .roomType(da.getRoomType() != null ? da.getRoomType().getName() : null)
                                 .roomStandard(da.getRoomStandard() != null ? da.getRoomStandard().getName() : null)
-                                .nights(nightsByAcc.get(da.getAccommodation().getId()))
+                                .nights(alternative
+                                    ? nightsByAlternativeAcc.get(da.getAccommodation().getId())
+                                    : nightsByAcc.get(da.getAccommodation().getId()))
+                                .isAlternative(alternative)
                                 .build();
                         })
                         .collect(Collectors.toList());

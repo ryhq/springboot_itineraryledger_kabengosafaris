@@ -158,7 +158,16 @@ public class PublicItineraryDTO {
         private String board;         // board type display name, e.g. "Full Board"
         private String roomType;      // e.g. "Deluxe Double"
         private String roomStandard;  // e.g. "Deluxe"
-        private Integer nights;       // consecutive nights at this lodge on this trip
+        private Integer nights;       // nights at this lodge on this trip, on its own footing
+        /**
+         * True when this is a lodge the trip OFFERS for that night rather than the one it is
+         * priced on.
+         *
+         * <p>Always sent, including as false, so the website never has to infer "primary" from a
+         * missing field. The price shown for the trip is the primary's; an alternative is a
+         * different lodge at a different price, which is exactly why a traveller wants to see it.
+         */
+        private Boolean isAlternative;
     }
 
     @Data

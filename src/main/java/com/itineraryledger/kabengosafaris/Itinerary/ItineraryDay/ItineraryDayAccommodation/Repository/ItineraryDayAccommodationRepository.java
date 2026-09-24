@@ -50,13 +50,24 @@ public interface ItineraryDayAccommodationRepository extends JpaRepository<Itine
     List<Object[]> countActiveItinerariesByAccommodationIds(@Param("accIds") List<Long> accIds);
 
     /**
-     * Distinct ACTIVE itinerary ids that stay at a given accommodation (excluding
-     * backup/alternative lodging). Powers the public "safaris that stay here" carousel.
+     * Distinct ACTIVE itinerary ids that stay at a given accommodation, whether it is the lodge the
+     * trip is priced on or one offered as an alternative. Powers the public "safaris that stay
+     * here" carousel.
+     *
+     * <p>Alternatives used to be excluded, on the reasoning that a backup is not really where the
+     * trip stays. Measured against the live catalogue that reasoning cost far more than it saved:
+     * 43 of 64 lodge pages showed an empty carousel, and a lodge like Kahawa House — offered on
+     * day one of a published fourteen-day trip — appeared on no trip at all. A traveller who
+     * searched for it found a page that ranked, described the property, and then had nothing to
+     * sell them.
+     *
+     * <p>An alternative is a lodge we would genuinely put somebody in on that trip, at a different
+     * price. That is a real answer to "which safaris stay here", so it belongs in the carousel;
+     * the itinerary page is where the distinction between the two is drawn.
      */
     @Query("SELECT DISTINCT da.itineraryDay.itinerary.id " +
            "FROM ItineraryDayAccommodation da " +
            "WHERE da.accommodation.id = :accommodationId " +
-           "AND da.itineraryDay.itinerary.isActive = true " +
-           "AND (da.isAlternative IS NULL OR da.isAlternative = false)")
+           "AND da.itineraryDay.itinerary.isActive = true")
     List<Long> findActiveItineraryIdsByAccommodationId(@Param("accommodationId") Long accommodationId);
 }
