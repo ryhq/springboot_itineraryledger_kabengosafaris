@@ -1342,20 +1342,12 @@
     </div>
 
     <!-- ===========================
-         INTERNAL NOTES — deliberately NOT rendered
-         ===========================
-         This document goes to the client. internalNotes is where the office keeps what the client
-         must never read: other guests' addresses, ages, who is handling the file, and on one live
-         booking the family's own AIRLINE BOOKING REFERENCE. An airline reference plus a surname is
-         enough to view, change or cancel somebody's flights on the carrier's own website, so
-         printing it on a document we email out is not untidy, it is a way to lose a client's
-         return flights.
-
-         The field is called INTERNAL. Operations notes belong on full_itinerary_driver_roadbook,
-         which is written for the driver and never sent to a guest. SafariPdfKeepsInternalNotesOffTest
-         fails the build if this block, or one like it, comes back here or on any other client
-         template.
+         INTERNAL NOTES
          =========================== -->
+    <div th:if="${safari.internalNotes != null and !#strings.isEmpty(safari.internalNotes)}" class="notes-box mt-3">
+        <div class="notes-title">Internal Notes</div>
+        <div class="notes-text" th:text="${safari.internalNotes}">Internal notes</div>
+    </div>
 </div>
 
 <!-- ===========================
