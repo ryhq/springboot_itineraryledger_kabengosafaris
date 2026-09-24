@@ -77,6 +77,25 @@ class ASymbolIsNotAWordTest {
     }
 
     @Test
+    @DisplayName("the strings the cache was poisoned with are recognised as untranslatable")
+    void theRealPoisonedSegmentsAreCaught() {
+        // Exactly the originals found in the live cache, stored against "Pourcentage" and "- Oui".
+        assertTrue(TranslationService.hasNoLetters("%)"));
+        assertTrue(TranslationService.hasNoLetters("\n              #: "));
+        assertTrue(TranslationService.hasNoLetters(" - "));
+        assertTrue(TranslationService.hasNoLetters("\n              -"));
+        assertTrue(TranslationService.hasNoLetters("-$526.55"));
+    }
+
+    @Test
+    @DisplayName("prose is still prose, in any script")
+    void proseIsStillTranslated() {
+        assertFalse(TranslationService.hasNoLetters("Discount off activity only"));
+        assertFalse(TranslationService.hasNoLetters("2 adults"));
+        assertFalse(TranslationService.hasNoLetters("\u65e5\u672c\u8a9e"));
+    }
+
+    @Test
     @DisplayName("a marker the engine ate gives the original back, not a wrong price")
     void alostMarkerFallsBackToTheOriginal() {
         Map<String, String> numbers = new LinkedHashMap<>();

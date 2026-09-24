@@ -232,6 +232,18 @@ public class TranslationService {
         for (int i = 0; i < textSegments.size(); i++) {
             String segmentText = textSegments.get(i).text;
 
+            /*
+             * Above the cache on purpose. A segment with no letter in it has no translation, and
+             * the cache already holds the proof: "%)" was stored against "Pourcentage" and "#: "
+             * against "- Oui", both of which reached a customer's quote. Checking after the lookup
+             * would let those rows keep winning. Checking here makes them unreachable, so the
+             * 4,000-odd good French entries do not have to be thrown away to escape five bad ones.
+             */
+            if (hasNoLetters(segmentText)) {
+                translatedSegments[i] = segmentText;
+                continue;
+            }
+
             if (settingsService.isCacheEnabled()) {
                 Optional<String> cached = getFromCache(segmentText, sourceLanguage, targetLanguage);
                 if (cached.isPresent()) {
@@ -342,7 +354,7 @@ public class TranslationService {
          * there is no answer. A segment with no letter in it is punctuation, a figure or a code,
          * and every one of those is already correct in the target language.
          */
-        if (content.chars().noneMatch(Character::isLetter)) {
+        if (hasNoLetters(content)) {
             return content;
         }
 
@@ -423,6 +435,15 @@ public class TranslationService {
         }
         m.appendTail(masked);
         return masked.toString();
+    }
+
+    /**
+     * Punctuation, a figure or a code, and every one of those is already correct in the target
+     * language. Asked to translate one, an engine answers with a word rather than admit there is
+     * no answer, which is where "Pourcentage" and "Oui" came from.
+     */
+    public static boolean hasNoLetters(String text) {
+        return text == null || text.chars().noneMatch(Character::isLetter);
     }
 
     /** 0 -> A, 25 -> Z, 26 -> AA. A marker has to carry no digits of its own. */
