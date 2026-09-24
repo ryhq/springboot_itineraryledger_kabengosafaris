@@ -337,6 +337,16 @@ public class TranslationService {
                                            String sourceLanguage, String targetLanguage)
             throws TranslationProviderException {
         /*
+         * Nothing to say in any language. A cell holding "#:" came back from French as "- Oui",
+         * because an engine asked to translate a symbol will answer with a word rather than admit
+         * there is no answer. A segment with no letter in it is punctuation, a figure or a code,
+         * and every one of those is already correct in the target language.
+         */
+        if (content.chars().noneMatch(Character::isLetter)) {
+            return content;
+        }
+
+        /*
          * Entities first, then numbers. &#39; and &#160; carry digits of their own, and masking
          * numbers first would replace those digits and leave a broken entity behind.
          */
@@ -389,10 +399,20 @@ public class TranslationService {
         return out;
     }
 
-    /** Numbers out, markers in. The map is filled with marker to original. */
+    /**
+     * Numbers out, markers in. The map is filled with marker to original.
+     *
+     * <p>A quantity carries its symbol with it. A French quote printed "Remise (38.76Pourcentage
+     * hors activite seulement" because 38.76 was masked and the bare % left behind, so the engine
+     * read the symbol as a word and wrote it out in full. Same for a leading currency sign: $526.55
+     * is one amount, not a dollar sign next to a number.
+     *
+     * <p>So the marker absorbs an optional leading currency symbol and an optional trailing percent.
+     * The engine then cannot see a symbol to translate, and the amount comes back exactly as it left.
+     */
     public static String maskNumbers(String content, java.util.Map<String, String> numbers) {
         java.util.regex.Matcher m =
-            java.util.regex.Pattern.compile("\\d+(?:[.,]\\d+)*").matcher(content);
+            java.util.regex.Pattern.compile("[$\u20ac\u00a3]?\\d+(?:[.,]\\d+)*(?:\\s?%)?").matcher(content);
         StringBuilder masked = new StringBuilder();
         int i = 0;
         while (m.find()) {

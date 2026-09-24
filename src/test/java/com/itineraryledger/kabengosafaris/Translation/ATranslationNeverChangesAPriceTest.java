@@ -33,7 +33,8 @@ class ATranslationNeverChangesAPriceTest {
             "Tax (18.00%) on accommodation only, total 14,203.49", numbers);
 
         assertFalse(masked.matches(".*\\d.*"), "a digit survived into the request: " + masked);
-        assertTrue(numbers.containsValue("18.00"), numbers.toString());
+        /* The rate travels with its sign: a bare % left behind comes back as the word. */
+        assertTrue(numbers.containsValue("18.00%"), numbers.toString());
         assertTrue(numbers.containsValue("14,203.49"), numbers.toString());
     }
 
