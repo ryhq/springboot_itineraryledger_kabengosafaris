@@ -458,7 +458,7 @@ public class EmailComposeService {
                 mailSender.send(mimeMessage);
 
                 // Save .eml copy to SENT folder
-                sentCopy = saveSentCopy(account, mimeMessage, dto, attachments, replyTo);
+                sentCopy = saveSentCopy(account, mimeMessage, dto, attachments, replyTo, null);
             }
 
             // Auto-harvest contacts from recipients
@@ -553,7 +553,7 @@ public class EmailComposeService {
         try {
             MimeMessage mimeMessage = buildMimeMessage(
                     new JavaMailSenderImpl(), account, dto, attachments, replyTo);
-            return saveSentCopy(account, mimeMessage, dto, attachments, replyTo);
+            return saveSentCopy(account, mimeMessage, dto, attachments, replyTo, response.getId());
         } catch (Exception e) {
             log.warn("Failed to persist .eml for Resend API send from {}: {}",
                     account.getEmail(), e.getMessage());
@@ -642,7 +642,11 @@ public class EmailComposeService {
      * could not point anything at it — no availability request, no follow-up, no "open the thread".
      * Null still means the copy could not be filed, which is a warning rather than a failed send.
      */
-    private EmailMessage saveSentCopy(EmailAccount account, MimeMessage mimeMessage, ComposeEmailDTO dto, List<MultipartFile> attachments, EmailMessage replyTo) {
+    /**
+     * @param resendEmailId the id Resend gave this send, or null when it went out over SMTP.
+     *                      The delivery webhook is keyed on it; see the field below.
+     */
+    private EmailMessage saveSentCopy(EmailAccount account, MimeMessage mimeMessage, ComposeEmailDTO dto, List<MultipartFile> attachments, EmailMessage replyTo, String resendEmailId) {
         try {
             Long accountId = account.getId();
             String fileName = emailStorageService.generateEmlFileName(mimeMessage.getMessageID());
@@ -676,6 +680,18 @@ public class EmailComposeService {
                 .emailAccount(account)
                 .folder(sentFolder)
                 .messageId(mimeMessage.getMessageID())
+                /*
+                 * What lets the delivery webhook find this row again.
+                 *
+                 * Resend hands back an id on send and reports delivery against it later. The
+                 * events path has always stored it; compose logged it and threw it away, so a
+                 * message typed by hand could never be matched and sat on SENT for ever while
+                 * the same account's automated mail turned Delivered. The mail was arriving --
+                 * only the confirmation had nowhere to land.
+                 *
+                 * Null on the SMTP path, which gets no such callback and must stay on SENT.
+                 */
+                .resendEmailId(resendEmailId)
                 .inReplyTo(inReplyTo)
                 .references(references)
                 .threadId(threadId)
