@@ -1231,7 +1231,7 @@
          ======================================== -->
     <div class="footer-section">
       <p class="footer-brand">[[${company.name}]]</p>
-      <p class="footer-tagline">"Dream  ●  Expolre  ●  Discover"</p>
+      <p class="footer-tagline" th:if="${company.tagline != null and !#strings.isEmpty(company.tagline)}" th:text="${company.tagline}">Company tagline</p>
 
       <table class="footer-contact-table">
         <tr>

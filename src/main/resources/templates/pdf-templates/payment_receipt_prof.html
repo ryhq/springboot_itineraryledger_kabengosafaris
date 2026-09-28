@@ -439,7 +439,7 @@
     <!-- ========== FOOTER ========== -->
     <div class="doc-footer">
       <div class="ftr-brand">[[${company.name}]]</div>
-      <div class="ftr-tagline">Dream &nbsp;|&nbsp; Explore &nbsp;|&nbsp; Discover</div>
+      <div class="ftr-tagline" th:if="${company.tagline != null and !#strings.isEmpty(company.tagline)}" th:text="${company.tagline}">Company tagline</div>
       <div class="ftr-contact">
         <span>[[${company.website}]]</span><span class="sep">|</span>
         <span>[[${company.email}]]</span><span class="sep">|</span>

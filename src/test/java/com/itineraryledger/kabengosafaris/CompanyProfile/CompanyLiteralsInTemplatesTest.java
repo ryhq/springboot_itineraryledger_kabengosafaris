@@ -55,6 +55,13 @@ class CompanyLiteralsInTemplatesTest {
         FORBIDDEN.put(Pattern.compile("P\\.?\\s?O\\.?\\s?Box\\s+\\d+"), "{{companyAddress}} / ${company.address}");
         FORBIDDEN.put(Pattern.compile("Arusha,\\s*Tanzania"), "{{companyAddress}} / ${company.address}");
         FORBIDDEN.put(Pattern.compile("(&copy;|©)\\s*20\\d\\d"), "{{currentYear}} / ${company.year}");
+        /*
+         * The tagline is the company's line, not the template's. Thirteen templates carried it as
+         * text, six of them spelling it "Expolre", and that typo printed on every quote, invoice
+         * and itinerary for as long as anybody can remember. Nobody proof-reads a footer.
+         */
+        FORBIDDEN.put(Pattern.compile("Dream\\b.{0,40}?\\bDiscover", Pattern.CASE_INSENSITIVE),
+            "${company.tagline}");
     }
 
     @Test
