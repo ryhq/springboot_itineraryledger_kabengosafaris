@@ -163,6 +163,14 @@ public class PerDayCostAggregator {
                 grandTotal.addAccommodationCost(dayTotal.getAccommodationSto(), dayTotal.getAccommodationRack());
                 grandTotal.addParkFeeCost(dayTotal.getParkFeesSto(), dayTotal.getParkFeesRack());
                 grandTotal.addActivityCost(dayTotal.getActivitiesSto(), dayTotal.getActivitiesRack());
+
+                /*
+                 * The flight too. Every other cost type was rolled up here and this one was not, so
+                 * a sector showed its full price on the day and added nothing to the total: a
+                 * 12-day trip with one Kogatende to Zanzibar leg quoted 1,548.38 short, on screen,
+                 * with the line item visible above the number that ignored it.
+                 */
+                grandTotal.addFlightCost(dayTotal.getFlightsSto(), dayTotal.getFlightsRack());
             }
         }
 
