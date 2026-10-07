@@ -284,9 +284,42 @@ public class EmailComposeService {
             // Delete old .eml file
             emailStorageService.deleteEmlFile(accountId, draft.getStoragePath(), draft.getFileName());
 
+            /*
+             * Editing a reply must not un-reply it.
+             *
+             * This rebuilds the .eml from scratch, so passing null here stripped the In-Reply-To
+             * and References headers a threaded draft was saved with, and the row below then
+             * overwrote its message id. Opening a drafted reply, fixing a typo and saving turned
+             * it back into a new conversation, silently.
+             *
+             * The draft already knows what it answers, so prefer that over anything the client
+             * sends; the caller is editing a body, not re-targeting the thread.
+             */
+            EmailMessage replyTo = null;
+            String threadSource = draft.getInReplyTo() != null && !draft.getInReplyTo().isBlank()
+                ? draft.getInReplyTo()
+                : null;
+            if (threadSource != null) {
+                replyTo = emailMessageRepository
+                    .findByEmailAccountIdAndMessageId(accountId, threadSource)
+                    .orElse(null);
+            }
+            if (replyTo == null && dto.getInReplyToMessageId() != null && !dto.getInReplyToMessageId().isBlank()) {
+                try {
+                    EmailMessage candidate = emailMessageRepository
+                        .findById(idObfuscator.decodeId(dto.getInReplyToMessageId())).orElse(null);
+                    if (candidate != null && candidate.getEmailAccount().getId().equals(accountId)) {
+                        replyTo = candidate;
+                    }
+                } catch (Exception e) {
+                    log.warn("Draft update names an unreadable inReplyToMessageId {}: {}",
+                        dto.getInReplyToMessageId(), e.getMessage());
+                }
+            }
+
             // Build new MimeMessage
             JavaMailSender mailSender = createMailSender(account);
-            MimeMessage mimeMessage = buildMimeMessage(mailSender, account, dto, attachments, null);
+            MimeMessage mimeMessage = buildMimeMessage(mailSender, account, dto, attachments, replyTo);
 
             // Save new .eml
             String fileName = emailStorageService.generateEmlFileName(mimeMessage.getMessageID());
@@ -305,6 +338,16 @@ public class EmailComposeService {
             draft.setFileName(fileName);
             draft.setFileSize((long) baos.size());
             draft.setMessageId(mimeMessage.getMessageID());
+            /* Keep the thread the draft was saved into; a new message id does not start a new one. */
+            if (replyTo != null) {
+                draft.setInReplyTo(replyTo.getMessageId());
+                draft.setReferences(replyTo.getReferences() != null
+                    ? replyTo.getReferences() + " " + replyTo.getMessageId()
+                    : replyTo.getMessageId());
+                draft.setThreadId(replyTo.getThreadId());
+            } else if (draft.getThreadId() == null) {
+                draft.setThreadId(mimeMessage.getMessageID());
+            }
             emailMessageRepository.save(draft);
 
             /*
@@ -564,8 +607,39 @@ public class EmailComposeService {
     private ResponseEntity<ApiResponse<?>> saveDraft(EmailAccount account, ComposeEmailDTO dto, List<MultipartFile> attachments) {
         try {
             Long accountId = account.getId();
+
+            /*
+             * A drafted reply has to be a reply.
+             *
+             * This passed null for the original and set no threading on the row, so a draft written
+             * against an incoming message arrived at the other end as a brand new conversation:
+             * no In-Reply-To, no References, and a thread of its own in our list. The subject said
+             * RE: and nothing else agreed. Whoever received it saw an orphan, and on a supplier
+             * thread with four people copied that is how an answer gets lost.
+             *
+             * The send path has always resolved this; only the draft path did not. Same resolution,
+             * same headers, so a draft threads exactly where sending it would have.
+             */
+            EmailMessage replyTo = null;
+            if (dto.getInReplyToMessageId() != null && !dto.getInReplyToMessageId().isBlank()) {
+                try {
+                    Long originalId = idObfuscator.decodeId(dto.getInReplyToMessageId());
+                    EmailMessage candidate = emailMessageRepository.findById(originalId).orElse(null);
+                    /* Another account's message is not ours to thread onto. */
+                    if (candidate != null && candidate.getEmailAccount().getId().equals(accountId)) {
+                        replyTo = candidate;
+                    } else {
+                        log.warn("Draft names inReplyToMessageId {} which is not a message on account {}; "
+                            + "saving it unthreaded", dto.getInReplyToMessageId(), accountId);
+                    }
+                } catch (Exception e) {
+                    log.warn("Draft names an unreadable inReplyToMessageId {}: {}; saving it unthreaded",
+                        dto.getInReplyToMessageId(), e.getMessage());
+                }
+            }
+
             JavaMailSender mailSender = createMailSender(account);
-            MimeMessage mimeMessage = buildMimeMessage(mailSender, account, dto, attachments, null);
+            MimeMessage mimeMessage = buildMimeMessage(mailSender, account, dto, attachments, replyTo);
 
             String fileName = emailStorageService.generateEmlFileName(mimeMessage.getMessageID());
             emailStorageService.saveEmlFromMimeMessage(accountId, "drafts", fileName, mimeMessage);
@@ -581,10 +655,25 @@ public class EmailComposeService {
                     ApiResponse.error(500, "Drafts folder not found", "DRAFTS_FOLDER_MISSING"));
             }
 
+            /* Same three fields the sent copy sets, derived the same way. */
+            String inReplyTo = null;
+            String references = null;
+            String threadId = mimeMessage.getMessageID();
+            if (replyTo != null) {
+                inReplyTo = replyTo.getMessageId();
+                references = replyTo.getReferences() != null
+                    ? replyTo.getReferences() + " " + replyTo.getMessageId()
+                    : replyTo.getMessageId();
+                threadId = replyTo.getThreadId();
+            }
+
             EmailMessage emailMessage = EmailMessage.builder()
                 .emailAccount(account)
                 .folder(draftsFolder)
                 .messageId(mimeMessage.getMessageID())
+                .inReplyTo(inReplyTo)
+                .references(references)
+                .threadId(threadId)
                 .fromAddress(account.getEmail())
                 .fromName(account.getName())
                 .toAddresses(dto.getToAddresses() != null ? objectMapper.writeValueAsString(dto.getToAddresses()) : null)
