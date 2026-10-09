@@ -17,6 +17,15 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Table;
 
 /**
  * That every Java enum value is one the database column will actually accept.
@@ -63,6 +72,20 @@ class EnumColumnsAcceptTheirValuesTest {
             com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemType.class);
         WRITERS.put("invoice_line_items.item_type",
             com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceItemType.class);
+        /*
+         * A fourth and a fifth, found together. ON_HOLD was added so an invoice could be corrected
+         * in place instead of being argued with by a credit note; it deployed clean and failed on
+         * the first hold. Looking for others turned up PENDING_CONFIRMATION, which V12 has needed
+         * since double opt-in shipped: every subscription on both public newsletter forms has been
+         * failing at commit ever since, on a page nobody signs up on often enough to notice.
+         *
+         * The curated list did not catch the newsletter one, because nobody had listed that column.
+         * That is what everyEnumColumnIsChecked below is for.
+         */
+        WRITERS.put("invoices.status",
+            com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus.class);
+        WRITERS.put("newsletter_subscriptions.status",
+            com.itineraryledger.kabengosafaris.Newsletter.Entity.SubscriptionStatus.class);
     }
 
     /** The last definition each `table.column` was given, migrations applied in order. */
@@ -163,5 +186,85 @@ class EnumColumnsAcceptTheirValuesTest {
         assertTrue(widened.isEmpty(),
             "These enum columns have been widened by a migration but no Java enum is checked against "
                 + "them. Add them to WRITERS: " + widened);
+    }
+
+    @Test
+    @DisplayName("and the same check, over every enum column, found rather than listed")
+    void everyEnumColumnIsChecked() throws Exception {
+        /*
+         * WRITERS carries intent: somebody decided that column was worth watching. Its weakness is
+         * that a column nobody thought about is a column nobody checks, which is exactly how
+         * newsletter_subscriptions.status went four migrations with a value it would refuse.
+         *
+         * So this walks the entities instead of a list. Every @Enumerated(STRING) field is matched
+         * to its table and column by the same naming rules Hibernate used to generate the baseline,
+         * and checked against what the migrations leave the column accepting. A column the mapping
+         * cannot resolve is skipped rather than guessed at, which is why the curated list stays.
+         */
+        Map<String, Set<String>> columns = columnsAfterEveryMigration();
+        List<String> problems = new ArrayList<>();
+        int checked = 0;
+
+        for (Class<?> entity : entities()) {
+            String table = tableOf(entity);
+            for (java.lang.reflect.Field field : fieldsOf(entity)) {
+                Enumerated enumerated = field.getAnnotation(Enumerated.class);
+                if (enumerated == null || enumerated.value() != EnumType.STRING) continue;
+                if (!field.getType().isEnum()) continue;
+
+                Set<String> accepted = columns.get(table + "." + columnOf(field));
+                if (accepted == null) continue; // a varchar column, or one this mapping cannot place
+
+                checked++;
+                for (Object constant : field.getType().getEnumConstants()) {
+                    String name = ((Enum<?>) constant).name();
+                    if (!accepted.contains(name)) {
+                        problems.add(entity.getSimpleName() + "." + field.getName() + " writes " + name
+                            + " but " + table + "." + columnOf(field) + " accepts " + accepted);
+                    }
+                }
+            }
+        }
+
+        assertTrue(checked > 20, "only resolved " + checked + " enum columns; the entity scan is broken");
+        assertTrue(problems.isEmpty(),
+            "Rejected at write time, as a truncation error raised on commit rather than where the "
+                + "field was set, so nothing in the message names the column: " + problems);
+    }
+
+    private static List<Class<?>> entities() throws ClassNotFoundException {
+        ClassPathScanningCandidateComponentProvider scanner =
+            new ClassPathScanningCandidateComponentProvider(false);
+        scanner.addIncludeFilter(new AnnotationTypeFilter(Entity.class));
+
+        List<Class<?>> found = new ArrayList<>();
+        for (BeanDefinition definition
+                : scanner.findCandidateComponents("com.itineraryledger.kabengosafaris")) {
+            found.add(Class.forName(definition.getBeanClassName()));
+        }
+        return found;
+    }
+
+    private static List<java.lang.reflect.Field> fieldsOf(Class<?> type) {
+        List<java.lang.reflect.Field> fields = new ArrayList<>();
+        for (Class<?> c = type; c != null && c != Object.class; c = c.getSuperclass()) {
+            fields.addAll(List.of(c.getDeclaredFields()));
+        }
+        return fields;
+    }
+
+    private static String tableOf(Class<?> entity) {
+        Table table = entity.getAnnotation(Table.class);
+        return table != null && !table.name().isBlank() ? table.name() : snake(entity.getSimpleName());
+    }
+
+    private static String columnOf(java.lang.reflect.Field field) {
+        Column column = field.getAnnotation(Column.class);
+        return column != null && !column.name().isBlank() ? column.name() : snake(field.getName());
+    }
+
+    /** Spring Boot's default physical naming strategy, which is what produced the baseline. */
+    private static String snake(String name) {
+        return name.replaceAll("([a-z0-9])([A-Z])", "$1_$2").toLowerCase();
     }
 }
