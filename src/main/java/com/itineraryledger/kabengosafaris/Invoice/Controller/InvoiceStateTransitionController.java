@@ -118,6 +118,40 @@ public class InvoiceStateTransitionController {
     }
 
     /**
+     * Unlock an invoice for correction (SENT/PARTIALLY_PAID/OVERDUE/PAID → ON_HOLD)
+     * POST /api/invoices/{id}/state/hold
+     *
+     * Body: { "reason": "why this document is being reopened" } — required.
+     * Payments are untouched; only the lock comes off.
+     */
+    @PostMapping("/hold")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_INVOICE')")
+    public ResponseEntity<ApiResponse<?>> holdInvoice(
+            @PathVariable String id,
+            @Valid @RequestBody InvoiceStateTransitionDTO dto
+    ) {
+        log.info("POST /api/invoices/{}/state/hold", id);
+        return stateTransitionService.holdInvoice(id, dto);
+    }
+
+    /**
+     * Put a corrected invoice back into the workflow (ON_HOLD → SENT/PARTIALLY_PAID/PAID/OVERDUE)
+     * POST /api/invoices/{id}/state/release
+     *
+     * The status is recomputed from the payments against the corrected total, so the caller does
+     * not choose it and cannot choose one the money does not support.
+     */
+    @PostMapping("/release")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_INVOICE')")
+    public ResponseEntity<ApiResponse<?>> releaseInvoice(
+            @PathVariable String id,
+            @RequestBody(required = false) InvoiceStateTransitionDTO dto
+    ) {
+        log.info("POST /api/invoices/{}/state/release", id);
+        return stateTransitionService.releaseInvoice(id, dto);
+    }
+
+    /**
      * Cancel invoice (any non-PAID/non-CANCELLED → CANCELLED)
      * POST /api/invoices/{id}/state/cancel
      */

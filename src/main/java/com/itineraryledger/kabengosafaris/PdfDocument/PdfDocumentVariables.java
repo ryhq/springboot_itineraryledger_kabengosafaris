@@ -86,7 +86,7 @@ public class PdfDocumentVariables {
             case "FULL_QUOTE" -> "com.itineraryledger.kabengosafaris.Quote.DTOs.FullQuoteDTO";
             case "FULL_SAFARI" -> "com.itineraryledger.kabengosafaris.Safari.DTOs.FullSafariDTO";
             case "FULL_INVOICE" -> "com.itineraryledger.kabengosafaris.Invoice.DTOs.FullInvoiceDTO";
-            case "FULL_CREDIT_NOTE" -> "com.itineraryledger.kabengosafaris.CreditNote.DTOs.CreditNoteDTO";
+            case "FULL_CREDIT_NOTE" -> "com.itineraryledger.kabengosafaris.CreditNote.DTOs.FullCreditNoteDTO";
             case "PAYMENT_RECEIPT" -> "com.itineraryledger.kabengosafaris.Invoice.DTOs.PaymentReceiptDTO";
             case "FULL_COST_ESTIMATION" -> "com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.FullCostEstimationDTO";
             default -> "";

@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
  * - QuotePdfGenerationService
  * - SafariPdfGenerationService
  * - InvoicePdfGenerationService
+ * - CreditNotePdfGenerationService
  *
  * This service maintains backward compatibility with existing controllers
  * while using the new modular architecture.
@@ -33,6 +34,7 @@ public class PdfGenerationService {
     private final QuotePdfGenerationService quotePdfService;
     private final SafariPdfGenerationService safariPdfService;
     private final InvoicePdfGenerationService invoicePdfService;
+    private final CreditNotePdfGenerationService creditNotePdfService;
 
     // =====================================================================
     // GENERIC PDF GENERATION (delegates to specialized services)
@@ -84,6 +86,7 @@ public class PdfGenerationService {
             case "FULL_QUOTE" -> quotePdfService.generateQuotePdf(dataId, templateIdObfuscated, language);
             case "FULL_SAFARI" -> safariPdfService.generateSafariPdf(dataId, templateIdObfuscated, language);
             case "FULL_INVOICE" -> invoicePdfService.generateInvoicePdf(dataId, templateIdObfuscated, language);
+            case "FULL_CREDIT_NOTE" -> creditNotePdfService.generateCreditNotePdf(dataId, templateIdObfuscated, language);
             default -> {
                 log.warn("Unknown document type: {}", documentName);
                 yield ResponseEntity.status(404).body(
@@ -124,6 +127,7 @@ public class PdfGenerationService {
             case "FULL_QUOTE" -> quotePdfService.previewQuotePdf(dataId, templateIdObfuscated, language);
             case "FULL_SAFARI" -> safariPdfService.previewSafariPdf(dataId, templateIdObfuscated, language);
             case "FULL_INVOICE" -> invoicePdfService.previewInvoicePdf(dataId, templateIdObfuscated, language);
+            case "FULL_CREDIT_NOTE" -> creditNotePdfService.previewCreditNotePdf(dataId, templateIdObfuscated, language);
             default -> {
                 log.warn("Unknown document type: {}", documentName);
                 yield ResponseEntity.status(404).body(
@@ -236,6 +240,13 @@ public class PdfGenerationService {
     @Transactional(readOnly = true)
     public ResponseEntity<?> generateInvoicePdf(String invoiceIdObfuscated, String templateIdObfuscated, String language) {
         return invoicePdfService.generateInvoicePdf(invoiceIdObfuscated, templateIdObfuscated, language);
+    }
+
+    /**
+     * Generate credit note PDF (convenience delegate)
+     */
+    public ResponseEntity<?> generateCreditNotePdf(String creditNoteIdObfuscated, String templateIdObfuscated, String language) {
+        return creditNotePdfService.generateCreditNotePdf(creditNoteIdObfuscated, templateIdObfuscated, language);
     }
 
     @Transactional

@@ -45,19 +45,23 @@ public class PdfDocumentSeeder {
         PdfDocument document = pdfDocumentRepository.findByName(documentName).orElse(null);
 
         String variablesJson = PdfDocumentVariables.getVariablesForDocument(documentName);
+        String dataSourceClass = PdfDocumentVariables.getDataSourceClass(documentName);
+        String rootVariableName = PdfDocumentVariables.getRootVariableName(documentName);
 
         if (document == null) {
             document = pdfDocumentRepository.save(PdfDocument.builder()
                 .name(documentName)
                 .displayName(PdfDocumentVariables.getDisplayName(documentName))
                 .description(PdfDocumentVariables.getDescription(documentName))
-                .dataSourceClass(PdfDocumentVariables.getDataSourceClass(documentName))
-                .rootVariableName(PdfDocumentVariables.getRootVariableName(documentName))
+                .dataSourceClass(dataSourceClass)
+                .rootVariableName(rootVariableName)
                 .enabled(true)
                 .variablesJson(variablesJson)
                 .build());
             log.info("Created PDF document: {} ({})", documentName, document.getDisplayName());
-        } else if (!java.util.Objects.equals(document.getVariablesJson(), variablesJson)) {
+        } else if (!java.util.Objects.equals(document.getVariablesJson(), variablesJson)
+                || !java.util.Objects.equals(document.getDataSourceClass(), dataSourceClass)
+                || !java.util.Objects.equals(document.getRootVariableName(), rootVariableName)) {
             /*
              * The variable catalogue is refreshed on an existing row, which it never used to be.
              * It was written only at creation, so on every install that already had these rows a
@@ -66,11 +70,17 @@ public class PdfDocumentSeeder {
              * typing a variable name by hand and getting it wrong. Same fix, same reasoning, as
              * EmailEventInitializer.
              *
-             * Only the catalogue. The templates and the enabled flag are the customer's.
+             * The model the template is written against goes with it. FULL_CREDIT_NOTE was seeded
+             * pointing at CreditNoteDTO, which has no customer, no invoice and no line items, so
+             * the row described a model its own template could not have been rendered from.
+             *
+             * Only these three. The templates and the enabled flag are the customer's.
              */
-            log.warn("PDF document {} had a stale variable catalogue; refreshing it from the schema. "
-                + "Its templates and enabled flag are untouched.", documentName);
+            log.warn("PDF document {} described a stale model; refreshing its catalogue, data source "
+                + "and root variable from the schema. Its templates and enabled flag are untouched.", documentName);
             document.setVariablesJson(variablesJson);
+            document.setDataSourceClass(dataSourceClass);
+            document.setRootVariableName(rootVariableName);
             document = pdfDocumentRepository.save(document);
         }
 

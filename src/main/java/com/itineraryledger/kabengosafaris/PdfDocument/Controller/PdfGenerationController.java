@@ -414,6 +414,42 @@ public class PdfGenerationController {
     }
 
     /**
+     * Generate credit note PDF (convenience endpoint)
+     * Supports optional language parameter for translation
+     *
+     * @param creditNoteId The obfuscated credit note ID
+     * @param templateId Optional template ID to use
+     * @param language Optional target language code (e.g., "fr", "de", "es")
+     *                 If not provided or "en", PDF is generated in English
+     */
+    @GetMapping("/credit-note/{creditNoteId}")
+    @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
+    public ResponseEntity<?> generateCreditNotePdf(
+        @PathVariable String creditNoteId,
+        @RequestParam(required = false) String templateId,
+        @RequestParam(required = false) String language
+    ) {
+        log.info("GET /api/pdf/credit-note/{} - Generating credit note PDF{}",
+            creditNoteId, language != null ? ", language: " + language : "");
+        return generationService.generateCreditNotePdf(creditNoteId, templateId, language);
+    }
+
+    /**
+     * Preview credit note PDF (convenience endpoint)
+     */
+    @GetMapping("/credit-note/{creditNoteId}/preview")
+    @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
+    public ResponseEntity<ApiResponse<?>> previewCreditNotePdf(
+        @PathVariable String creditNoteId,
+        @RequestParam(required = false) String templateId,
+        @RequestParam(required = false) String language
+    ) {
+        log.info("GET /api/pdf/credit-note/{}/preview - Preview credit note{}",
+            creditNoteId, language != null ? ", language: " + language : "");
+        return generationService.previewPdf("FULL_CREDIT_NOTE", creditNoteId, templateId, language);
+    }
+
+    /**
      * Validate HTML content for PDF generation compatibility
      *
      * This endpoint allows testing HTML content to ensure it's valid XHTML

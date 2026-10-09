@@ -75,6 +75,13 @@ public class InvoiceDTO {
     private InvoiceStatus status;
     private String statusDisplayName;
 
+    /** Set only while the invoice is ON_HOLD: what it was, and why it was unlocked. */
+    private InvoiceStatus statusBeforeHold;
+    private String holdReason;
+
+    /** Whether the record can be edited right now, so the panel does not have to know the rules. */
+    private Boolean isEditable;
+
     // Additional
     private String internalNotes;
     private String customerNotes;

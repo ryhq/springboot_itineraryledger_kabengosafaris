@@ -6,6 +6,8 @@ import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
 import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
 import com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceRepository;
 import com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceServices.InvoiceCreateService;
+import com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceServices.InvoicePaymentAggregationService;
+import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +16,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Invoice State Transition Service - Manages invoice workflow state transitions
@@ -23,6 +27,9 @@ import java.time.LocalDate;
  *   DRAFT → SENT → PARTIALLY_PAID → PAID
  *                        ↕
  *                     OVERDUE
+ *
+ * Correction State:
+ *   ON_HOLD (from SENT / PARTIALLY_PAID / OVERDUE / PAID, released back by what has been paid)
  *
  * Exception State:
  *   CANCELLED (from any non-PAID state)
@@ -37,6 +44,7 @@ public class InvoiceStateTransitionService {
     private final IdObfuscator idObfuscator;
     private final InvoiceCreateService invoiceCreateService;
     private final InvoiceCustomerEmailService invoiceCustomerEmailService;
+    private final InvoicePaymentAggregationService paymentAggregationService;
 
     // ========================
     // CORE JOURNEY - SENDING
@@ -332,6 +340,188 @@ public class InvoiceStateTransitionService {
                 ApiResponse.error(500, "Failed to cancel invoice", "CANCEL_INVOICE_FAILED")
             );
         }
+    }
+
+    // ========================
+    // CORRECTION - HOLD AND RELEASE
+    // ========================
+
+    /**
+     * Unlock an invoice for correction (SENT/PARTIALLY_PAID/OVERDUE/PAID → ON_HOLD)
+     *
+     * Nothing about the money moves. The payments stay exactly where they are and the status the
+     * invoice came from is remembered, so the hold is reversible and visible rather than a quiet
+     * reopening of a document the customer is already holding.
+     */
+    public ResponseEntity<ApiResponse<?>> holdInvoice(String idObfuscated, InvoiceStateTransitionDTO dto) {
+        log.info("Holding invoice for correction: {}", idObfuscated);
+
+        try {
+            if (dto == null || dto.getReason() == null || dto.getReason().isBlank()) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400,
+                        "A reason is required to unlock an invoice the customer already has",
+                        "REASON_REQUIRED")
+                );
+            }
+
+            Invoice invoice = findInvoice(idObfuscated);
+            if (invoice == null) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(404, "Invoice not found", "INVOICE_NOT_FOUND")
+                );
+            }
+
+            InvoiceStatus currentStatus = invoice.getStatus();
+            if (currentStatus == InvoiceStatus.ON_HOLD) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invoice is already on hold", "ALREADY_ON_HOLD")
+                );
+            }
+
+            if (!currentStatus.canBeHeld()) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400,
+                        String.format("Cannot hold an invoice in state %s. A %s invoice is edited directly.",
+                            currentStatus.getDisplayName(), currentStatus.getDisplayName()),
+                        "INVALID_STATE_TRANSITION")
+                );
+            }
+
+            invoice.setStatusBeforeHold(currentStatus);
+            invoice.setHoldReason(dto.getReason().trim());
+            invoice.setStatus(InvoiceStatus.ON_HOLD);
+
+            invoice = invoiceRepository.save(invoice);
+            InvoiceDTO invoiceDTO = invoiceCreateService.convertToDTO(invoice);
+
+            log.info("Invoice {} held for correction (was {}): {}",
+                invoice.getInvoiceCode(), currentStatus, dto.getReason());
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200,
+                    String.format("Invoice unlocked for correction. It was %s and payments are untouched.",
+                        currentStatus.getDisplayName()),
+                    invoiceDTO)
+            );
+
+        } catch (Exception e) {
+            log.error("Error holding invoice", e);
+            return ResponseEntity.internalServerError().body(
+                ApiResponse.error(500, "Failed to hold invoice", "HOLD_INVOICE_FAILED")
+            );
+        }
+    }
+
+    /**
+     * Put a corrected invoice back into the workflow (ON_HOLD → SENT/PARTIALLY_PAID/PAID/OVERDUE)
+     *
+     * The status is recomputed from what has actually been paid against the corrected total, never
+     * restored from what it was. A correction usually changes the total, and the status it had
+     * before the correction was a statement about a figure that no longer exists.
+     */
+    public ResponseEntity<ApiResponse<?>> releaseInvoice(String idObfuscated, InvoiceStateTransitionDTO dto) {
+        log.info("Releasing invoice from hold: {}", idObfuscated);
+
+        try {
+            Invoice invoice = findInvoice(idObfuscated);
+            if (invoice == null) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(404, "Invoice not found", "INVOICE_NOT_FOUND")
+                );
+            }
+
+            if (invoice.getStatus() != InvoiceStatus.ON_HOLD) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400,
+                        String.format("Cannot release an invoice in state %s. It must be on hold.",
+                            invoice.getStatus().getDisplayName()),
+                        "INVALID_STATE_TRANSITION")
+                );
+            }
+
+            InvoiceStatus before = invoice.getStatusBeforeHold();
+            InvoiceStatus released = statusFromPayments(invoice, before);
+
+            /*
+             * A correction that raises the total above what has been paid makes an invoice unpaid
+             * again, so the paid date has to go with it or the document contradicts its own status.
+             */
+            if (released == InvoiceStatus.PAID) {
+                if (invoice.getPaidDate() == null) {
+                    invoice.setPaidDate(LocalDate.now());
+                }
+            } else {
+                invoice.setPaidDate(null);
+            }
+
+            invoice.setStatus(released);
+            invoice.setStatusBeforeHold(null);
+            invoice.setHoldReason(null);
+
+            invoice = invoiceRepository.save(invoice);
+            InvoiceDTO invoiceDTO = invoiceCreateService.convertToDTO(invoice);
+
+            String message = String.format("Invoice released as %s", released.getDisplayName());
+            BigDecimal overpaid = overpayment(invoice);
+            if (overpaid != null) {
+                /* say it rather than silently marking it PAID: somebody is owed this back */
+                message += String.format(". The correction leaves %s paid over the new total",
+                    overpaid.toPlainString());
+            }
+
+            log.info("Invoice {} released from hold as {} (was {} before the hold)",
+                invoice.getInvoiceCode(), released, before);
+
+            return ResponseEntity.ok().body(
+                ApiResponse.success(200, message, invoiceDTO)
+            );
+
+        } catch (Exception e) {
+            log.error("Error releasing invoice", e);
+            return ResponseEntity.internalServerError().body(
+                ApiResponse.error(500, "Failed to release invoice", "RELEASE_INVOICE_FAILED")
+            );
+        }
+    }
+
+    /**
+     * What the payments say this invoice now is.
+     *
+     * {@code before} only decides the untouched case: an invoice nobody has paid goes back to
+     * whichever of SENT or OVERDUE it was, because both mean the same thing about the money.
+     */
+    private InvoiceStatus statusFromPayments(Invoice invoice, InvoiceStatus before) {
+        List<Price> paidAmounts = paymentAggregationService.computeAmountsPaid(invoice);
+        List<Price> balances = paymentAggregationService.computeBalances(invoice);
+
+        boolean anyPaid = paidAmounts.stream()
+            .anyMatch(p -> p.getTotalPrice() != null && p.getTotalPrice().compareTo(BigDecimal.ZERO) > 0);
+        boolean settled = !balances.isEmpty() && balances.stream()
+            .allMatch(b -> b.getTotalPrice() != null && b.getTotalPrice().compareTo(BigDecimal.ZERO) <= 0);
+
+        if (settled) {
+            return InvoiceStatus.PAID;
+        }
+        if (anyPaid) {
+            return InvoiceStatus.PARTIALLY_PAID;
+        }
+        return before == InvoiceStatus.OVERDUE ? InvoiceStatus.OVERDUE : InvoiceStatus.SENT;
+    }
+
+    /** How much has been paid beyond the corrected total, or null when nothing has. */
+    private BigDecimal overpayment(Invoice invoice) {
+        BigDecimal worst = null;
+        for (Price balance : paymentAggregationService.computeBalances(invoice)) {
+            BigDecimal amount = balance.getTotalPrice();
+            if (amount != null && amount.compareTo(BigDecimal.ZERO) < 0) {
+                BigDecimal over = amount.negate();
+                if (worst == null || over.compareTo(worst) > 0) {
+                    worst = over;
+                }
+            }
+        }
+        return worst;
     }
 
     // ========================

@@ -309,6 +309,21 @@ public class Invoice {
     @Builder.Default
     private InvoiceStatus status = InvoiceStatus.DRAFT;
 
+    /**
+     * What the invoice was before it was put on hold, and why.
+     *
+     * The release recomputes the status from the payments rather than restoring this blindly, since
+     * the correction may have changed the total the payments are measured against. It is kept so
+     * that a held invoice can still say what it was, and so the reason for unlocking a document the
+     * customer already holds is on the record rather than in somebody's memory.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status_before_hold", length = 50)
+    private InvoiceStatus statusBeforeHold;
+
+    @Column(name = "hold_reason", length = 500)
+    private String holdReason;
+
     // =====================================================================
     // ADDITIONAL FIELDS
     // =====================================================================
