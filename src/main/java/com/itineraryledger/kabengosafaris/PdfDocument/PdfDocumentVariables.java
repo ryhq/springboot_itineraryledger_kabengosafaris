@@ -39,6 +39,7 @@ public class PdfDocumentVariables {
             case "FULL_SAFARI" -> loadSchema("full-safari-schema.json");
             case "FULL_INVOICE" -> loadSchema("full-invoice-schema.json");
             case "FULL_CREDIT_NOTE" -> loadSchema("full-credit-note-schema.json");
+            case "INVOICE_PAYMENT_REQUEST" -> loadSchema("invoice-payment-request-schema.json");
             case "PAYMENT_RECEIPT" -> loadSchema("payment-receipt-schema.json");
             case "FULL_COST_ESTIMATION" -> loadSchema("full-cost-estimation-schema.json");
             default -> "[]";
@@ -55,6 +56,7 @@ public class PdfDocumentVariables {
             case "FULL_SAFARI" -> "Full Safari Document";
             case "FULL_INVOICE" -> "Full Safari Invoice";
             case "FULL_CREDIT_NOTE" -> "Full Credit Note";
+            case "INVOICE_PAYMENT_REQUEST" -> "Invoice Payment Request";
             case "PAYMENT_RECEIPT" -> "Payment Receipt";
             case "FULL_COST_ESTIMATION" -> "Full Cost Estimation";
             default -> documentName;
@@ -71,6 +73,7 @@ public class PdfDocumentVariables {
             case "FULL_SAFARI" -> "Complete safari booking document with actual dates, customer information, real-time tracking (current phase, day number), operational fields (payment tracking, waiver management), and all nested data. Ideal for confirmed safari bookings and operational management.";
             case "FULL_INVOICE" -> "Complete invoice document with line items, multi-currency support, payment tracking (amounts paid, balances), tax and discount calculations, bank account details, and due dates. Ideal for billing and payment collection.";
             case "FULL_CREDIT_NOTE" -> "Complete credit note document with credited line items, multi-currency support, original invoice reference, credit reason, and customer details. Ideal for refund and credit documentation.";
+            case "INVOICE_PAYMENT_REQUEST" -> "One payer's share of an invoice several people are splitting: their amount, their payment reference, what they have already sent and what is left. Addressed to that payer rather than to the lead traveller.";
             case "PAYMENT_RECEIPT" -> "Payment receipt document with payment amount, method, reference, invoice details, customer information, and remaining balance. Ideal for payment confirmation and record-keeping.";
             case "FULL_COST_ESTIMATION" -> "Complete costing for an itinerary: every chargeable line day by day and by passenger band, in operator (STO) and published (rack) prices, with per-currency totals, margin, per-head figures and any pricing gaps. Ships an internal costing sheet and a client price sheet.";
             default -> "";
@@ -87,6 +90,7 @@ public class PdfDocumentVariables {
             case "FULL_SAFARI" -> "com.itineraryledger.kabengosafaris.Safari.DTOs.FullSafariDTO";
             case "FULL_INVOICE" -> "com.itineraryledger.kabengosafaris.Invoice.DTOs.FullInvoiceDTO";
             case "FULL_CREDIT_NOTE" -> "com.itineraryledger.kabengosafaris.CreditNote.DTOs.FullCreditNoteDTO";
+            case "INVOICE_PAYMENT_REQUEST" -> "com.itineraryledger.kabengosafaris.Invoice.DTOs.FullInvoiceShareDTO";
             case "PAYMENT_RECEIPT" -> "com.itineraryledger.kabengosafaris.Invoice.DTOs.PaymentReceiptDTO";
             case "FULL_COST_ESTIMATION" -> "com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.FullCostEstimationDTO";
             default -> "";
@@ -107,6 +111,7 @@ public class PdfDocumentVariables {
             // From FullInvoiceDTO
             case "FULL_INVOICE" -> "invoice";
             case "FULL_CREDIT_NOTE" -> "creditNote";
+            case "INVOICE_PAYMENT_REQUEST" -> "share";
             case "PAYMENT_RECEIPT" -> "receipt";
             // deliberately not "itinerary": a safari costing fills the same document
             case "FULL_COST_ESTIMATION" -> "costing";
@@ -149,6 +154,7 @@ public class PdfDocumentVariables {
             "FULL_SAFARI",
             "FULL_INVOICE",
             "FULL_CREDIT_NOTE",
+            "INVOICE_PAYMENT_REQUEST",
             "PAYMENT_RECEIPT",
             "FULL_COST_ESTIMATION"
         };

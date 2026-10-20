@@ -1,0 +1,182 @@
+[
+  {
+    "path": "id",
+    "type": "String",
+    "description": "Obfuscated share ID",
+    "isRequired": true
+  },
+  {
+    "path": "payerName",
+    "type": "String",
+    "description": "The person this request is addressed to",
+    "isRequired": true
+  },
+  {
+    "path": "payerEmail",
+    "type": "String",
+    "description": "Where the request is sent",
+    "isRequired": false
+  },
+  {
+    "path": "amount",
+    "type": "BigDecimal",
+    "description": "What this payer owes",
+    "isRequired": true
+  },
+  {
+    "path": "currency",
+    "type": "String",
+    "description": "ISO 4217 currency of the share",
+    "isRequired": true
+  },
+  {
+    "path": "formattedAmount",
+    "type": "String",
+    "description": "amount with its currency symbol, ready to print",
+    "isRequired": false
+  },
+  {
+    "path": "amountPaid",
+    "type": "BigDecimal",
+    "description": "What this payer has already sent, summed from their payments",
+    "isRequired": false
+  },
+  {
+    "path": "formattedAmountPaid",
+    "type": "String",
+    "description": "amountPaid, formatted",
+    "isRequired": false
+  },
+  {
+    "path": "balance",
+    "type": "BigDecimal",
+    "description": "amount minus amountPaid. Negative means they have overpaid",
+    "isRequired": false
+  },
+  {
+    "path": "formattedBalance",
+    "type": "String",
+    "description": "balance, formatted",
+    "isRequired": false
+  },
+  {
+    "path": "status",
+    "type": "String",
+    "description": "UNPAID, PARTIALLY_PAID or PAID",
+    "isRequired": false
+  },
+  {
+    "path": "statusDisplayName",
+    "type": "String",
+    "description": "That status in words: 'Awaiting payment', 'Part paid', 'Paid in full'",
+    "isRequired": false
+  },
+  {
+    "path": "settled",
+    "type": "Boolean",
+    "description": "True when nothing is outstanding. Use it to print a receipt tone instead of a demand",
+    "isRequired": false
+  },
+  {
+    "path": "shareReference",
+    "type": "String",
+    "description": "What this payer should quote on their transfer so the money can be matched",
+    "isRequired": false
+  },
+  {
+    "path": "notes",
+    "type": "String",
+    "description": "Free text on the share",
+    "isRequired": false
+  },
+  {
+    "path": "invoiceCode",
+    "type": "String",
+    "description": "The invoice this share belongs to",
+    "isRequired": false
+  },
+  {
+    "path": "invoiceTitle",
+    "type": "String",
+    "description": "Title of that invoice",
+    "isRequired": false
+  },
+  {
+    "path": "issueDate",
+    "type": "LocalDate",
+    "description": "When the invoice was issued",
+    "isRequired": false
+  },
+  {
+    "path": "dueDate",
+    "type": "LocalDate",
+    "description": "When the invoice falls due",
+    "isRequired": false
+  },
+  {
+    "path": "paymentTerms",
+    "type": "String",
+    "description": "The invoice's payment terms",
+    "isRequired": false
+  },
+  {
+    "path": "billedToName",
+    "type": "String",
+    "description": "The lead traveller the invoice itself is addressed to",
+    "isRequired": false
+  },
+  {
+    "path": "safariName",
+    "type": "String",
+    "description": "The trip being paid for",
+    "isRequired": false
+  },
+  {
+    "path": "invoiceTotal",
+    "type": "BigDecimal",
+    "description": "The whole invoice in this share's currency, for proportion",
+    "isRequired": false
+  },
+  {
+    "path": "formattedInvoiceTotal",
+    "type": "String",
+    "description": "invoiceTotal, formatted",
+    "isRequired": false
+  },
+  {
+    "path": "payers",
+    "type": "List<PayerLineDTO>",
+    "description": "Every payer on this invoice: payerName, amount, currency, formattedAmount, status, isThisPayer. Access with: th:each='payer : ${share.payers}'",
+    "isRequired": false
+  },
+  {
+    "path": "payerCount",
+    "type": "Integer",
+    "description": "How many payers are splitting this invoice",
+    "isRequired": false
+  },
+  {
+    "path": "generatedAt",
+    "type": "LocalDateTime",
+    "description": "When this document was produced",
+    "isRequired": false
+  },
+  {
+    "path": "inclusions",
+    "type": "List<InclusionLineDTO>",
+    "description": "The lines this invoice states about its own price, snapshotted when it was raised. Each has label, category and isIncluded.",
+    "isRequired": false
+  },
+  {
+    "path": "inclusionsList",
+    "type": "List<String>",
+    "description": "What the price covers, as plain lines. Access with: th:each='line : ${share.inclusionsList}'",
+    "isRequired": false
+  },
+  {
+    "path": "exclusionsList",
+    "type": "List<String>",
+    "description": "What the price does not cover, as plain lines. Stated on the document, never derived from the included list.",
+    "isRequired": false
+  }
+]

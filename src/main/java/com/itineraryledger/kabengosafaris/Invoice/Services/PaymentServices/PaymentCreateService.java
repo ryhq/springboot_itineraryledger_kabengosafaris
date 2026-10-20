@@ -47,6 +47,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PaymentCreateService {
 
     private final PaymentRepository paymentRepository;
+    private final com.itineraryledger.kabengosafaris.Invoice.Repository.InvoiceShareRepository invoiceShareRepository;
     private final InvoiceRepository invoiceRepository;
     private final UserRepository userRepository;
     private final BankAccountRepository bankAccountRepository;
@@ -208,8 +209,31 @@ public class PaymentCreateService {
             // BUILD AND SAVE PAYMENT
             // ========================
 
+            /*
+             * Which payer this money came from, when the invoice is split between several.
+             *
+             * Null is the ordinary case and nothing downstream changes. When it is set the share
+             * must belong to THIS invoice: attaching a payment to a share of some other invoice
+             * would credit the wrong group's balance and post the receipt to a stranger.
+             */
+            com.itineraryledger.kabengosafaris.Invoice.Entity.InvoiceShare share = null;
+            if (dto.getShareId() != null && !dto.getShareId().isBlank()) {
+                share = invoiceShareRepository.findById(idObfuscator.decodeId(dto.getShareId()))
+                    .orElse(null);
+                if (share == null) {
+                    return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                        "No such invoice share: " + dto.getShareId(), "INVOICE_SHARE_NOT_FOUND"));
+                }
+                if (share.getInvoice() == null
+                    || !share.getInvoice().getId().equals(invoice.getId())) {
+                    return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                        "That share belongs to a different invoice.", "SHARE_INVOICE_MISMATCH"));
+                }
+            }
+
             Payment payment = Payment.builder()
                 .invoice(invoice)
+                .share(share)
                 .amount(dto.getAmount())
                 .currency(paymentCurrency)
                 .invoiceCurrency(invoiceCurrency)
@@ -386,6 +410,12 @@ public class PaymentCreateService {
                 dto.setSafariId(idObfuscator.encodeId(payment.getInvoice().getSafari().getId()));
                 dto.setSafariName(payment.getInvoice().getSafari().getName());
             }
+        }
+
+        // The payer behind a split invoice, so a payments list can say who actually sent what
+        if (payment.getShare() != null) {
+            dto.setShareId(idObfuscator.encodeId(payment.getShare().getId()));
+            dto.setSharePayerName(payment.getShare().resolvedPayerName());
         }
 
         // Set bank account

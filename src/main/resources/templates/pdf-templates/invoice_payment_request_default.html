@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title th:text="${'Payment request ' + (share.invoiceCode != null ? share.invoiceCode : '')}">Payment Request</title>
+    <style>
+      /* ========================================
+           COMPANY - PAYMENT REQUEST (ONE SHARE)
+           Accent: {{companyAccent}} · darkened: {{companyAccentDark}}
+           ======================================== */
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 10pt;
+        line-height: 1.7;
+        color: #2c2c2c;
+        background: #fff;
+      }
+
+      @page {
+        size: A4 portrait;
+        margin: 18mm 15mm 22mm 15mm;
+      }
+
+      @page {
+        @bottom-right {
+          content: counter(page) " of " counter(pages);
+          font-size: 9pt;
+          color: {{companyAccent}};
+        }
+        @bottom-left { content: element(footer-running); }
+      }
+
+      .footer-running {
+        position: running(footer-running);
+        font-size: 8pt;
+        color: #6b6b6b;
+      }
+
+      .masthead {
+        border-bottom: 2px solid {{companyAccent}};
+        padding-bottom: 10px;
+        margin-bottom: 22px;
+      }
+      .company-name {
+        font-size: 15pt;
+        font-weight: bold;
+        color: {{companyAccentDark}};
+        letter-spacing: 0.4px;
+      }
+      .company-tagline { font-size: 8.5pt; color: #6b6b6b; }
+      .doc-type {
+        float: right;
+        text-align: right;
+        font-size: 13pt;
+        font-weight: bold;
+        letter-spacing: 2px;
+        color: {{companyAccentDark}};
+        text-transform: uppercase;
+      }
+      .doc-meta { font-size: 8.5pt; color: #6b6b6b; font-weight: normal; letter-spacing: 0; }
+      .clear { clear: both; }
+
+      .addressed {
+        margin-bottom: 20px;
+      }
+      .addressed .label {
+        font-size: 7.5pt;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #8a8a8a;
+      }
+      .addressed .name { font-size: 13pt; font-weight: bold; color: #2c2c2c; }
+      .addressed .email { font-size: 9pt; color: #6b6b6b; }
+
+      .amount-box {
+        border: 1px solid #e0ddd6;
+        border-left: 4px solid {{companyAccent}};
+        padding: 16px 18px;
+        margin-bottom: 20px;
+        background: #fbfaf8;
+      }
+      .amount-box .caption {
+        font-size: 8pt;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #8a8a8a;
+      }
+      .amount-box .figure {
+        font-size: 24pt;
+        font-weight: bold;
+        color: {{companyAccentDark}};
+        line-height: 1.2;
+      }
+      .amount-box .status { font-size: 9.5pt; color: #6b6b6b; }
+
+      table.facts { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+      table.facts td {
+        padding: 5px 0;
+        font-size: 9.5pt;
+        border-bottom: 1px solid #f0eee9;
+        vertical-align: top;
+      }
+      table.facts td.key { color: #6b6b6b; width: 38%; }
+      table.facts td.val { text-align: right; }
+
+      .section-title {
+        font-size: 8.5pt;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: {{companyAccentDark}};
+        border-bottom: 1px solid #e0ddd6;
+        padding-bottom: 4px;
+        margin-bottom: 8px;
+      }
+
+      table.payers { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+      table.payers th {
+        font-size: 7.5pt;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #8a8a8a;
+        text-align: left;
+        padding: 4px 6px;
+        border-bottom: 1px solid #e0ddd6;
+      }
+      table.payers td {
+        font-size: 9.5pt;
+        padding: 5px 6px;
+        border-bottom: 1px solid #f4f2ee;
+      }
+      table.payers td.num { text-align: right; }
+      table.payers tr.mine td { font-weight: bold; background: #fbfaf8; }
+
+      .note {
+        font-size: 9pt;
+        color: #4a4a4a;
+        background: #fbfaf8;
+        border: 1px solid #f0eee9;
+        padding: 10px 12px;
+        margin-bottom: 16px;
+      }
+      .footer-note { font-size: 8.5pt; color: #6b6b6b; margin-top: 24px; }
+    </style>
+  </head>
+
+  <body>
+    <div class="footer-running">
+      <span th:text="${company.website}">company.example</span>
+      &#183;
+      <span th:text="${company.name}">Company</span>
+    </div>
+
+    <div class="masthead">
+      <div class="doc-type">
+        <span th:text="${share.settled} ? 'Payment Received' : 'Payment Request'">Payment Request</span>
+        <div class="doc-meta" th:if="${share.invoiceCode != null}">
+          #: <span th:text="${share.invoiceCode}">INV-000120</span>
+        </div>
+        <div class="doc-meta" th:if="${share.shareReference != null}">
+          Ref: <span th:text="${share.shareReference}">SCHARFEN-02</span>
+        </div>
+      </div>
+      <div class="company-name" th:text="${company.name}">Company</div>
+      <div class="company-tagline" th:if="${company.tagline != null}" th:text="${company.tagline}">Tagline</div>
+      <div class="clear"></div>
+    </div>
+
+    <div class="addressed">
+      <div class="label">For the attention of</div>
+      <div class="name" th:text="${share.payerName}">Familie Vogt</div>
+      <div class="email" th:if="${share.payerEmail != null}" th:text="${share.payerEmail}">payer@example.com</div>
+    </div>
+
+    <!--
+      The balance, not the share amount. Somebody who has already part paid must be asked for
+      what is left, never for the whole thing again, and somebody who has settled gets told so
+      rather than chased.
+    -->
+    <div class="amount-box">
+      <div class="caption" th:text="${share.settled} ? 'Your share, settled in full' : 'Amount now due from you'">Amount now due from you</div>
+      <div class="figure"
+           th:text="${share.settled}
+                    ? (share.formattedAmount != null ? share.formattedAmount : share.amount)
+                    : (share.formattedBalance != null ? share.formattedBalance : share.balance)">$3,653.80</div>
+      <div class="status">
+        <span th:text="${share.statusDisplayName}">Awaiting payment</span><span
+              th:if="${share.dueDate != null and !share.settled}"
+              th:text="${' · due ' + #temporals.format(share.dueDate, 'dd MMMM yyyy')}"> &#183; due 15 January 2027</span>
+      </div>
+    </div>
+
+    <table class="facts">
+      <tr th:if="${share.safariName != null}">
+        <td class="key">Trip</td>
+        <td class="val" th:text="${share.safariName}">Northern Circuit</td>
+      </tr>
+      <tr th:if="${share.invoiceTitle != null}">
+        <td class="key">Invoice</td>
+        <td class="val" th:text="${share.invoiceTitle}">8 Days Northern Circuit</td>
+      </tr>
+      <tr th:if="${share.billedToName != null}">
+        <td class="key">Booked by</td>
+        <td class="val" th:text="${share.billedToName}">Ms Sarah Scharfen</td>
+      </tr>
+      <tr>
+        <td class="key">Your share of the trip</td>
+        <td class="val" th:text="${share.formattedAmount != null ? share.formattedAmount : share.amount}">$3,653.80</td>
+      </tr>
+      <tr th:if="${share.amountPaid != null}">
+        <td class="key">Already received from you</td>
+        <td class="val" th:text="${share.formattedAmountPaid != null ? share.formattedAmountPaid : share.amountPaid}">$0.00</td>
+      </tr>
+      <tr th:if="${share.invoiceTotal != null}">
+        <td class="key">
+          Whole trip<span th:if="${share.payerCount != null}" th:text="${', split ' + share.payerCount + ' ways'}">, split 6 ways</span>
+        </td>
+        <td class="val" th:text="${share.formattedInvoiceTotal != null ? share.formattedInvoiceTotal : share.invoiceTotal}">$21,922.80</td>
+      </tr>
+    </table>
+
+    <!--
+      Who else is paying, and how much each. A group that organised itself already knows these
+      numbers; printing them is what stops one person having to field "what did everyone else
+      pay" by email. Amounts only, never anybody else's contact details.
+    -->
+    <div th:if="${share.payers != null and share.payerCount != null and share.payerCount > 1}">
+      <div class="section-title">How the trip is split</div>
+      <table class="payers">
+        <tr>
+          <th>Paying</th>
+          <th style="text-align: right;">Share</th>
+          <th style="text-align: right;">Status</th>
+        </tr>
+        <tr th:each="payer : ${share.payers}" th:class="${payer.isThisPayer} ? 'mine' : ''">
+          <td th:text="${payer.payerName}">Familie Vogt</td>
+          <td class="num" th:text="${payer.formattedAmount != null ? payer.formattedAmount : payer.amount}">$3,653.80</td>
+          <td class="num" th:text="${payer.status}">UNPAID</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="note" th:if="${share.shareReference != null and !share.settled}">
+      Please quote <strong th:text="${share.shareReference}">SCHARFEN-02</strong> as the reference
+      on your transfer. It is how your payment is matched to your share, and without it we may not
+      be able to tell whose money has arrived.
+    </div>
+
+    <div class="note" th:if="${share.paymentTerms != null}" th:text="${share.paymentTerms}">
+      Payment terms.
+    </div>
+
+    <div class="note" th:if="${share.notes != null}" th:text="${share.notes}">Notes.</div>
+
+    <!--
+      What the money buys, and what it does not.
+
+      Carried here rather than left on the invoice because the person reading this is usually not
+      the person who booked. Asking somebody for a four-figure sum against a document they have
+      never seen, without saying what it covers, leaves them no way to find out except to go back
+      and ask the organiser, which is the errand this whole document exists to remove. Guarded,
+      so an invoice raised before inclusions were snapshotted prints no empty heading.
+    -->
+    <div th:if="${!#lists.isEmpty(share.inclusionsList) or !#lists.isEmpty(share.exclusionsList)}">
+      <div class="section-title">What this price covers</div>
+      <table class="payers">
+        <tr>
+          <td style="vertical-align: top; width: 50%; padding-right: 12px;">
+            <div th:if="${!#lists.isEmpty(share.inclusionsList)}">
+              <div style="font-size: 8pt; text-transform: uppercase; letter-spacing: 1px; color: #8a8a8a;">Included</div>
+              <div th:each="line : ${share.inclusionsList}" th:text="${line}" style="font-size: 9pt;">Included line</div>
+            </div>
+          </td>
+          <td style="vertical-align: top; width: 50%;">
+            <div th:if="${!#lists.isEmpty(share.exclusionsList)}">
+              <div style="font-size: 8pt; text-transform: uppercase; letter-spacing: 1px; color: #8a8a8a;">Not included</div>
+              <div th:each="line : ${share.exclusionsList}" th:text="${line}" style="font-size: 9pt;">Excluded line</div>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="footer-note">
+      Pay us directly rather than through the person who organised the trip. Contact
+      <span th:text="${company.email}">info@example.com</span><span
+            th:if="${company.phone != null}" th:text="${' or ' + company.phone}"> or +000</span>
+      for bank details or with any question about this request.
+    </div>
+  </body>
+</html>

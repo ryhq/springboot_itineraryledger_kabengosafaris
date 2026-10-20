@@ -24,6 +24,15 @@ public class CreatePaymentDTO {
     @NotBlank(message = "Invoice ID is required")
     private String invoiceId;
 
+    /**
+     * Which share of a split invoice this money settles. Optional.
+     *
+     * <p>Left out, the payment belongs to the invoice at large and behaves exactly as it always
+     * has. Set, the receipt is addressed and posted to that share's payer instead of the invoice
+     * customer, which is the whole reason shares exist.
+     */
+    private String shareId;
+
     @NotNull(message = "Amount is required")
     private BigDecimal amount;
 

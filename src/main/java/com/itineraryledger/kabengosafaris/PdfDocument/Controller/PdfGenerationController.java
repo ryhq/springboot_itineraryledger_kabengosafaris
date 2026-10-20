@@ -450,6 +450,36 @@ public class PdfGenerationController {
     }
 
     /**
+     * One payer's request for their share of a group invoice.
+     *
+     * <p>Addressed to that payer, not to the lead traveller the invoice names, and showing their
+     * amount and reference rather than an itemisation of what everybody else is contributing.
+     */
+    @GetMapping("/invoice-share/{shareId}")
+    @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
+    public ResponseEntity<?> generateInvoiceSharePdf(
+        @PathVariable String shareId,
+        @RequestParam(required = false) String templateId,
+        @RequestParam(required = false) String language
+    ) {
+        log.info("GET /api/pdf/invoice-share/{} - Generating payment request{}",
+            shareId, language != null ? ", language: " + language : "");
+        return generationService.generatePdf("INVOICE_PAYMENT_REQUEST", shareId, templateId, language);
+    }
+
+    @GetMapping("/invoice-share/{shareId}/preview")
+    @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
+    public ResponseEntity<ApiResponse<?>> previewInvoiceSharePdf(
+        @PathVariable String shareId,
+        @RequestParam(required = false) String templateId,
+        @RequestParam(required = false) String language
+    ) {
+        log.info("GET /api/pdf/invoice-share/{}/preview - Preview payment request{}",
+            shareId, language != null ? ", language: " + language : "");
+        return generationService.previewPdf("INVOICE_PAYMENT_REQUEST", shareId, templateId, language);
+    }
+
+    /**
      * Validate HTML content for PDF generation compatibility
      *
      * This endpoint allows testing HTML content to ensure it's valid XHTML

@@ -46,4 +46,24 @@ public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpec
     BigDecimal sumBaseAmountByInvoiceIdAndInvoiceCurrency(
         @Param("invoiceId") Long invoiceId,
         @Param("invoiceCurrency") String invoiceCurrency);
+
+    /**
+     * The same sum, narrowed to one share of a split invoice.
+     *
+     * <p>Deliberately a second query rather than a change to the one above: the invoice's own
+     * balance must keep counting every payment against it, share or no share, because that is
+     * what drives its status. A share's balance is a view of a subset, never a replacement.
+     */
+    @Query("SELECT COALESCE(SUM(COALESCE(p.baseAmount, p.amount)), 0) " +
+           "FROM Payment p " +
+           "WHERE p.share.id = :shareId " +
+           "  AND COALESCE(p.invoiceCurrency, p.currency) = :currency")
+    BigDecimal sumBaseAmountByShareIdAndCurrency(
+        @Param("shareId") Long shareId,
+        @Param("currency") String currency);
+
+    /** Payments recorded against a share, newest first, for its own statement. */
+    List<Payment> findByShareIdOrderByPaymentDateDescIdDesc(Long shareId);
+
+    long countByShareId(Long shareId);
 }

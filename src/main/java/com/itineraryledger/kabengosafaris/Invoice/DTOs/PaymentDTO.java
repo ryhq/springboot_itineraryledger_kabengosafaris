@@ -25,6 +25,10 @@ public class PaymentDTO {
     // Invoice relationship
     private String invoiceId;
     private String invoiceCode;
+
+    /** The payer this money was recorded against, when the invoice is split. Null otherwise. */
+    private String shareId;
+    private String sharePayerName;
     private String invoiceTitle;
     /* whose money it was and which trip it paid for — a cross-invoice list is
        unreadable without them */

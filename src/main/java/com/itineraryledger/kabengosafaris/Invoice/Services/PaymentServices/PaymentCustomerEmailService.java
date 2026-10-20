@@ -73,9 +73,23 @@ public class PaymentCustomerEmailService {
             return;
         }
 
-        String customerEmail = invoice.getCustomer().getPrimaryEmail();
+        /*
+         * Who this receipt is actually for.
+         *
+         * A payment carrying a share was sent by one member of a group, not by the person the
+         * invoice is addressed to. Without this, six families each transferring their own money
+         * would receive six receipts in the organiser's name, every one of them delivered to the
+         * organiser's inbox and none to the person who paid. The share's own address wins, then
+         * its linked customer's, then the invoice customer's, so a share nobody gave an address
+         * for still lands somewhere visible rather than nowhere.
+         */
+        String customerEmail = payment.getShare() != null
+            ? payment.getShare().resolvedPayerEmail()
+            : invoice.getCustomer().getPrimaryEmail();
         if (customerEmail == null || customerEmail.isBlank()) {
-            log.warn("Cannot send payment receipt - customer has no email for invoice {}", invoice.getInvoiceCode());
+            log.warn("Cannot send payment receipt - no email for {} on invoice {}",
+                payment.getShare() != null ? "share " + payment.getShare().getId() : "customer",
+                invoice.getInvoiceCode());
             return;
         }
 
@@ -151,8 +165,14 @@ public class PaymentCustomerEmailService {
     private Map<String, String> buildPaymentReceiptVariables(Payment payment, Invoice invoice) {
         Map<String, String> v = new HashMap<>();
 
-        // Required variables
-        v.put("customerName", invoice.getCustomer().getDisplayName());
+        /*
+         * Greet whoever sent the money. A receipt opening "Dear Sarah" for a transfer somebody
+         * else made reads as a mistake to the person who made it, and as a privacy leak to
+         * Sarah, who learns what the others paid.
+         */
+        v.put("customerName", payment.getShare() != null
+            ? payment.getShare().resolvedPayerName()
+            : invoice.getCustomer().getDisplayName());
         v.put("invoiceCode", invoice.getInvoiceCode());
         v.put("invoiceTitle", invoice.getTitle());
         v.put("paymentAmount", formatAmount(payment.getAmount(), payment.getCurrency()));

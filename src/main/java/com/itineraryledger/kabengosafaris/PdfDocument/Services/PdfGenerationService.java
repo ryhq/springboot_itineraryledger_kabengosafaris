@@ -35,6 +35,7 @@ public class PdfGenerationService {
     private final SafariPdfGenerationService safariPdfService;
     private final InvoicePdfGenerationService invoicePdfService;
     private final CreditNotePdfGenerationService creditNotePdfService;
+    private final InvoiceSharePdfGenerationService invoiceSharePdfService;
 
     // =====================================================================
     // GENERIC PDF GENERATION (delegates to specialized services)
@@ -87,6 +88,7 @@ public class PdfGenerationService {
             case "FULL_SAFARI" -> safariPdfService.generateSafariPdf(dataId, templateIdObfuscated, language);
             case "FULL_INVOICE" -> invoicePdfService.generateInvoicePdf(dataId, templateIdObfuscated, language);
             case "FULL_CREDIT_NOTE" -> creditNotePdfService.generateCreditNotePdf(dataId, templateIdObfuscated, language);
+            case "INVOICE_PAYMENT_REQUEST" -> invoiceSharePdfService.generateInvoiceSharePdf(dataId, templateIdObfuscated, language);
             default -> {
                 log.warn("Unknown document type: {}", documentName);
                 yield ResponseEntity.status(404).body(
@@ -128,6 +130,7 @@ public class PdfGenerationService {
             case "FULL_SAFARI" -> safariPdfService.previewSafariPdf(dataId, templateIdObfuscated, language);
             case "FULL_INVOICE" -> invoicePdfService.previewInvoicePdf(dataId, templateIdObfuscated, language);
             case "FULL_CREDIT_NOTE" -> creditNotePdfService.previewCreditNotePdf(dataId, templateIdObfuscated, language);
+            case "INVOICE_PAYMENT_REQUEST" -> invoiceSharePdfService.previewInvoiceSharePdf(dataId, templateIdObfuscated, language);
             default -> {
                 log.warn("Unknown document type: {}", documentName);
                 yield ResponseEntity.status(404).body(

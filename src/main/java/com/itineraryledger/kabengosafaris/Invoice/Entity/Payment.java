@@ -46,6 +46,20 @@ public class Payment {
     private Invoice invoice;
 
     /**
+     * Which share of the invoice this money was for, when the invoice is being split between
+     * several payers.
+     *
+     * <p>Null is the ordinary case and behaves exactly as it always did: the payment belongs to
+     * the invoice as a whole and the receipt is addressed to the invoice's customer. When it is
+     * set, the receipt is addressed and sent to that share's payer instead, which is the entire
+     * point of recording it. The invoice's own balance is unaffected either way, because it has
+     * always been the sum of every payment against it and still is.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "share_id")
+    private InvoiceShare share;
+
+    /**
      * Payment amount
      */
     @Column(nullable = false, precision = 15, scale = 2)
