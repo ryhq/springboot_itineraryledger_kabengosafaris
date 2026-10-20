@@ -6,6 +6,7 @@ import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.PaxCateg
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.CostItemType;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Calculators.AccommodationCostCalculator;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Calculators.ActivityCostCalculator;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Calculators.FlightCostCalculator;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Calculators.ParkTariffCostCalculator;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Core.SeasonResolverService;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.FullItineraryDTO;
@@ -35,6 +36,7 @@ public class PerPaxCostAggregator {
     private final AccommodationCostCalculator accommodationCostCalculator;
     private final ParkTariffCostCalculator parkTariffCostCalculator;
     private final ActivityCostCalculator activityCostCalculator;
+    private final FlightCostCalculator flightCostCalculator;
     private final SeasonResolverService seasonResolverService;
 
     /**
@@ -92,11 +94,23 @@ public class PerPaxCostAggregator {
                     day, dayDate, globalSeason, paxList, carCount
                 );
 
+                /*
+                 * The flight. Every other cost type was rolled up here and this one was not, so
+                 * "By pax category" quietly reported a trip without its air legs while "By day"
+                 * reported the same trip with them. On a fly-in itinerary the sector can be most
+                 * of the price, and nothing warned: hasIncompleteRates stayed false because no
+                 * rate was missing, it was simply never asked for.
+                 */
+                List<CostLineItemDTO> flightItems = flightCostCalculator.calculateForDay(
+                    day, dayDate, paxList
+                );
+
                 // Combine all line items
                 List<CostLineItemDTO> allItems = new ArrayList<>();
                 allItems.addAll(accommodationItems);
                 allItems.addAll(parkFeeItems);
                 allItems.addAll(activityItems);
+                allItems.addAll(flightItems);
 
                 // Distribute costs to pax categories
                 distributeItemsToPax(allItems, paxCostMap, paxList, totalPax, carCount);
