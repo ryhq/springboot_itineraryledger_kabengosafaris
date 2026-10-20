@@ -66,10 +66,6 @@ public class BackupSettingsInitializer implements ApplicationRunner, Ordered {
     @Value("${backup.database.username:${spring.datasource.username:root}}")
     private String databaseUsername;
 
-    /** The other half of the credential, so a mismatch can be recognised and repaired. */
-    @Value("${spring.datasource.username:}")
-    private String datasourceUsername;
-
     @Value("${backup.database.include.routines:true}")
     private Boolean includeRoutines;
 
@@ -187,35 +183,41 @@ public class BackupSettingsInitializer implements ApplicationRunner, Ordered {
     }
 
     /**
-     * Correct a stored backup username that cannot possibly authenticate.
+     * Keep the stored backup username equal to the user whose password will be sent with it.
      *
      * <p>mysqldump is handed {@code spring.datasource.password} and nothing else, so the only
-     * username that can work is the one that password belongs to. The stored setting said
-     * {@code root} -- the old hardcoded default, seeded before the properties file named a user
-     * and never revisited, because createOrUpdateSetting skips keys that already exist.
+     * username that can authenticate is the one that password belongs to. There is no separate
+     * backup password to pair a different user with, which is why this value is derived rather
+     * than left to drift: a name that is not the datasource user is not a configuration choice,
+     * it is a credential that cannot work.
      *
-     * <p>Pairing root with somebody else's password fails on every attempt. On these installs it
-     * failed as MySQL error 1698, because root authenticates by unix socket, but any mismatch
-     * fails. It went unnoticed for two months because the scheduler reported success regardless;
-     * that half is fixed separately, and this is the half that makes the backup actually run.
+     * <p>It had drifted twice, in two different ways. The seeded default was once the literal
+     * {@code root}, which on these installs failed as MySQL error 1698 because root authenticates
+     * by unix socket. And the property itself read {@code ${DB_USERNAME:kabengosafaris}}, so an
+     * installation that configures its datasource through {@code SPRING_DATASOURCE_USERNAME}
+     * seeded a name belonging to no one. Either way the row is written once by
+     * createOrUpdateSetting, which skips keys that already exist, so nothing ever corrected it
+     * and the scheduler reported success regardless. Two companies went over two months with no
+     * database backup.
      *
-     * <p>Narrow on purpose. It only touches the exact stale default, only when the datasource
-     * user is something else, so a deployment that deliberately dumps as root with a matching
-     * password is left alone. Repairing in place rather than waiting to be noticed follows
-     * PermissionCatalogueRepairInitializer.
+     * <p>Repairing in place rather than waiting to be noticed follows
+     * PermissionCatalogueRepairInitializer. {@code BACKUP_DB_USERNAME} is honoured, because it
+     * feeds the same property this compares against; what it will not do is leave a stored value
+     * that the password cannot belong to.
      */
     private void repairUnusableDatabaseUsername() {
-        if (datasourceUsername == null || datasourceUsername.isBlank()
-            || "root".equals(datasourceUsername)) {
+        if (databaseUsername == null || databaseUsername.isBlank()) {
+            log.warn("No backup database username could be resolved; mysqldump has no user to "
+                + "connect as and the database half of the backup will not run.");
             return;
         }
         backupSettingsRepository.findBySettingKey("backup.database.username")
-            .filter(setting -> "root".equals(setting.getSettingValue()))
+            .filter(setting -> !databaseUsername.equals(setting.getSettingValue()))
             .ifPresent(setting -> {
-                log.warn("Backup was set to dump as 'root' while the only password available is "
+                log.warn("Backup was set to dump as '{}' while the only password available is "
                     + "{}'s, so it could never authenticate. Repointing it at '{}'.",
-                    datasourceUsername, datasourceUsername);
-                setting.setSettingValue(datasourceUsername);
+                    setting.getSettingValue(), databaseUsername, databaseUsername);
+                setting.setSettingValue(databaseUsername);
                 backupSettingsRepository.save(setting);
             });
     }

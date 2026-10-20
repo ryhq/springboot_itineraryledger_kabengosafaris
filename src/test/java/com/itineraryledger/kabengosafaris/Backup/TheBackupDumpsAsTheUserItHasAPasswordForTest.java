@@ -63,20 +63,23 @@ class TheBackupDumpsAsTheUserItHasAPasswordForTest {
         assertTrue(source.contains("repairUnusableDatabaseUsername"),
             "createOrUpdateSetting only creates, so a bad value seeded once survives every "
             + "restart and every release; it has to be corrected in place");
-        assertTrue(source.contains("\"root\".equals(setting.getSettingValue())"),
-            "the repair must target the exact stale default and nothing else");
-        assertTrue(source.contains("\"root\".equals(datasourceUsername)"),
-            "an install that genuinely runs as root with a matching password must be left alone");
+        assertTrue(source.contains("!databaseUsername.equals(setting.getSettingValue())"),
+            "the repair must compare the stored name against the resolved one rather than "
+            + "against a single known-bad literal. It first matched only \"root\", and missed "
+            + "Jatelo entirely, where the seeded name was \"kabengosafaris\" and just as unusable");
     }
 
     @Test
-    @DisplayName("the shipped properties name a real user for both halves")
+    @DisplayName("the shipped properties take the backup username from the datasource, not a second variable")
     void thePropertiesAgree() throws Exception {
         String properties = Files.readString(PROPERTIES);
-        assertTrue(properties.contains("backup.database.username=${DB_USERNAME:"),
-            "the properties file should name the same DB_USERNAME the datasource uses, so a "
-            + "fresh install never seeds a username the password does not match");
-        assertTrue(properties.contains("spring.datasource.username=${DB_USERNAME:"),
-            "and that is the same variable the datasource reads");
+
+        assertTrue(properties.contains("backup.database.username=${BACKUP_DB_USERNAME:${spring.datasource.username}}"),
+            "the username must be derived from the datasource property itself. Keyed off "
+            + "DB_USERNAME it was right only on an install that happened to use that variable: "
+            + "Jatelo sets SPRING_DATASOURCE_USERNAME, so DB_USERNAME was unset and the backup "
+            + "seeded the hardcoded fallback, a user that exists on the other company");
+        assertFalse(properties.contains("backup.database.username=${DB_USERNAME:"),
+            "a second variable for one half of a credential is how the two halves drifted apart");
     }
 }
