@@ -170,9 +170,18 @@
             <td></td>
             <td class="amt" th:text="${row.formattedTotalPrice != null ? row.formattedTotalPrice : (row.currency + ' ' + #numbers.formatDecimal(row.totalPrice, 1, 'COMMA', 2, 'POINT'))}">EUR 20,000.00</td>
           </tr>
+          <!-- What each traveller's share of that total comes to, at the headcount quoted. -->
+          <tr th:if="${quote.perGuestTotals != null and quote.totalPax != null and quote.totalPax > 1}">
+            <td style="color: #666;" th:text="${quote.perGuestBasisLabel}">Per guest, based on 6 travelling</td>
+            <td></td>
+            <td class="amt" style="color: #666;">
+              <span th:each="perGuest : ${quote.perGuestTotals}"
+                    th:if="${perGuest.currency == row.currency}"
+                    th:text="${perGuest.formattedTotalPrice != null ? perGuest.formattedTotalPrice : perGuest.totalPrice}">EUR 3,333.33</span>
+            </td>
+          </tr>
         </table>
 
-        [[${company.phoneSecondary}]]
         <table class="pay-table" th:unless="${quote.depositPercentage != null and quote.depositPercentage gt 0}">
           <tr>
             <th>Payment</th>
@@ -183,6 +192,16 @@
             <td>Full payment</td>
             <td class="pay-due" th:text="${quote.fullPaymentDueDate != null ? #temporals.format(quote.fullPaymentDueDate, 'dd MMM yyyy') : 'Before arrival'}">24 Dec 2026</td>
             <td class="amt" th:text="${row.formattedTotalPrice != null ? row.formattedTotalPrice : (row.currency + ' ' + #numbers.formatDecimal(row.totalPrice, 1, 'COMMA', 2, 'POINT'))}">EUR 20,000.00</td>
+          </tr>
+          <!-- What each traveller's share of that total comes to, at the headcount quoted. -->
+          <tr th:if="${quote.perGuestTotals != null and quote.totalPax != null and quote.totalPax > 1}">
+            <td style="color: #666;" th:text="${quote.perGuestBasisLabel}">Per guest, based on 6 travelling</td>
+            <td></td>
+            <td class="amt" style="color: #666;">
+              <span th:each="perGuest : ${quote.perGuestTotals}"
+                    th:if="${perGuest.currency == row.currency}"
+                    th:text="${perGuest.formattedTotalPrice != null ? perGuest.formattedTotalPrice : perGuest.totalPrice}">EUR 3,333.33</span>
+            </td>
           </tr>
         </table>
       </th:block>

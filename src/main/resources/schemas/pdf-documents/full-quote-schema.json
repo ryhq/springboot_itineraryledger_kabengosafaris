@@ -531,6 +531,36 @@
     ]
   },
   {
+    "path": "totalPax",
+    "type": "Integer",
+    "description": "How many people the quote is priced for, summed across the pax bands. Needed by any template that wants to divide the total.",
+    "isRequired": false
+  },
+  {
+    "path": "paxBands",
+    "type": "List<PaxBandDTO>",
+    "description": "The pax bands behind that headcount. Each has nationCategoryName, ageCategoryName, count and a derived label (e.g. 'Non-Resident Adult'). Access with: th:each='band : ${quote.paxBands}'",
+    "isRequired": false
+  },
+  {
+    "path": "perGuestTotals",
+    "type": "List<PriceDTO>",
+    "description": "The grand total divided by totalPax, one entry per currency. Divides the quote's own grand total, so the two figures always reconcile. Access with: th:each='perGuest : ${quote.perGuestTotals}'",
+    "isRequired": false
+  },
+  {
+    "path": "perGuestIsExact",
+    "type": "Boolean",
+    "description": "True when the whole party sits in one pax band, so the per-guest figure is a price. False when the party is mixed, which makes it an average.",
+    "isRequired": false
+  },
+  {
+    "path": "perGuestBasisLabel",
+    "type": "String",
+    "description": "The sentence to print beside the per-guest figure, e.g. 'Per guest, based on 6 travelling' or 'Average per guest, based on 6 travelling'. Already accounts for perGuestIsExact.",
+    "isRequired": false
+  },
+  {
     "path": "inclusionsList",
     "type": "List<String>",
     "description": "What this price covers, one line each, in print order. Access with: th:each='line : ${quote.inclusionsList}'. Snapshotted when this document was produced, so editing the inclusion catalogue afterwards never changes what a document already sent says.",

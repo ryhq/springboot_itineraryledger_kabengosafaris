@@ -828,6 +828,23 @@
               <span th:text="${grandTotal.formattedTotalPrice != null ? grandTotal.formattedTotalPrice : grandTotal.totalPrice}">$2,700.00</span>
             </td>
           </tr>
+
+          <!--
+            The first thing anybody does with a party total is divide it, so do the division here
+            rather than leave them to it. This divides the grand total directly above, so the two
+            figures can never disagree, and the label names the headcount it was worked out for:
+            vehicles and per-group charges spread across the party, so one more traveller makes
+            the same trip cost less each, not the same.
+          -->
+          <tr th:if="${quote.perGuestTotals != null and quote.totalPax != null and quote.totalPax > 1}">
+            <td class="totals-label" style="color: #666; font-weight: normal;"
+                th:text="${quote.perGuestBasisLabel}">Per guest, based on 6 travelling</td>
+            <td class="totals-amount" style="color: #666; font-weight: normal;">
+              <span th:each="perGuest : ${quote.perGuestTotals}"
+                    th:if="${perGuest.currency == grandTotal.currency}"
+                    th:text="${perGuest.formattedTotalPrice != null ? perGuest.formattedTotalPrice : perGuest.totalPrice}">$450.00</span>
+            </td>
+          </tr>
         </table>
       </div>
     </section>

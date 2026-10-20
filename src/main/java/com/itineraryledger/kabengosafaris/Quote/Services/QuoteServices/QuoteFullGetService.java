@@ -314,6 +314,11 @@ public class QuoteFullGetService {
         }
 
         // ========================
+        // WHO IS TRAVELLING, AND WHAT EACH OF THEM COSTS
+        // ========================
+        applyPerGuest(quote, dto);
+
+        // ========================
         // SUMMARY STATISTICS
         // ========================
         dto.setTotalItemsCount(items.size());
@@ -349,6 +354,66 @@ public class QuoteFullGetService {
             .prices(priceDTOs)
             .isActive(item.getIsActive())
             .build();
+    }
+
+    /**
+     * Put the headcount, the bands and the per-guest figure on the DTO.
+     *
+     * <p>The quote already carries its pax bands; nothing was ever reading them into the model the
+     * PDF binds, so no quote template could divide and none of them printed a per-guest price.
+     *
+     * <p>The division is of the quote's own grand total, so the figure reconciles with the total
+     * printed beside it. Where the party spans more than one band it is an average and
+     * {@code perGuestIsExact} says so, because a resident child and a non-resident adult are not
+     * the same money and a reader must not multiply the average by their own headcount.
+     */
+    private void applyPerGuest(Quote quote, FullQuoteDTO dto) {
+        if (quote.getPaxList() == null || quote.getPaxList().isEmpty()) {
+            return;
+        }
+
+        List<PaxBandDTO> bands = quote.getPaxList().stream()
+            .map(pax -> PaxBandDTO.builder()
+                .nationCategoryName(pax.getNationCategory() != null
+                    ? pax.getNationCategory().getName() : null)
+                .ageCategoryName(pax.getAgeCategory() != null
+                    ? pax.getAgeCategory().getName() : null)
+                .count(pax.getCount())
+                .build())
+            .collect(Collectors.toList());
+        dto.setPaxBands(bands);
+
+        int totalPax = quote.getPaxList().stream()
+            .map(pax -> pax.getCount() == null ? 0 : pax.getCount())
+            .reduce(0, Integer::sum);
+        if (totalPax <= 0) {
+            return;
+        }
+        dto.setTotalPax(totalPax);
+        dto.setPerGuestIsExact(bands.size() == 1);
+
+        if (quote.getGrandTotals() == null || quote.getGrandTotals().isEmpty()) {
+            return;
+        }
+        BigDecimal headcount = BigDecimal.valueOf(totalPax);
+        List<PriceDTO> perGuest = quote.getGrandTotals().stream()
+            .filter(total -> total.getTotalPrice() != null)
+            .map(total -> {
+                BigDecimal each = total.getTotalPrice()
+                    .divide(headcount, 2, java.math.RoundingMode.HALF_UP);
+                return PriceDTO.builder()
+                    .currency(total.getCurrency())
+                    .quantity(totalPax)
+                    .unitPrice(each)
+                    .totalPrice(each)
+                    .formattedUnitPrice(formatPrice(total.getCurrency(), each))
+                    .formattedTotalPrice(formatPrice(total.getCurrency(), each))
+                    .build();
+            })
+            .collect(Collectors.toList());
+        if (!perGuest.isEmpty()) {
+            dto.setPerGuestTotals(perGuest);
+        }
     }
 
     /**

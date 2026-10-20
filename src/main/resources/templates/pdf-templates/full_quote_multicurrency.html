@@ -1143,6 +1143,31 @@
                 </th:block>
               </tr>
 
+              <!--
+                The same division as the single-currency quote, one column per currency. It
+                divides the Grand Total row directly above, so the two can never disagree, and
+                the label names the headcount it was worked out for: vehicles and per-group
+                charges spread across the party, so one more traveller makes the trip cost less
+                each rather than the same.
+              -->
+              <tr th:if="${quote.perGuestTotals != null and quote.totalPax != null and quote.totalPax > 1}">
+                <th:block th:with="colspanCount=${3 + currencies.size()}">
+                  <td th:attr="colspan=${colspanCount}" class="summary-label"
+                      style="color: #666; font-weight: normal;"
+                      th:text="${quote.perGuestBasisLabel}">Per guest, based on 6 travelling</td>
+                </th:block>
+                <th:block th:each="currencyCol : ${currencies}">
+                  <td class="text-right summary-value"
+                      th:attr="style=${'width: ' + currencyColWidth + '%; color: #666; font-weight: normal;'}">
+                    <th:block th:each="perGuest : ${quote.perGuestTotals}">
+                      <th:block th:if="${perGuest.currency == currencyCol}">
+                        <span class="price-amount" th:text="${perGuest.formattedTotalPrice != null ? perGuest.formattedTotalPrice : perGuest.totalPrice}">$450.00</span>
+                      </th:block>
+                    </th:block>
+                  </td>
+                </th:block>
+              </tr>
+
             </tbody>
           </table>
         </div>
