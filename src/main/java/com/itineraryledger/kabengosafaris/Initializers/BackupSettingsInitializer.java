@@ -58,8 +58,17 @@ public class BackupSettingsInitializer implements ApplicationRunner, Ordered {
     @Value("${backup.database.name:}")
     private String databaseName;
 
-    @Value("${backup.database.username:root}")
+    /*
+     * Defaults to the datasource user, because the password mysqldump is handed is the
+     * datasource password and nothing else. A username that does not belong to that password
+     * cannot authenticate, whatever it is.
+     */
+    @Value("${backup.database.username:${spring.datasource.username:root}}")
     private String databaseUsername;
+
+    /** The other half of the credential, so a mismatch can be recognised and repaired. */
+    @Value("${spring.datasource.username:}")
+    private String datasourceUsername;
 
     @Value("${backup.database.include.routines:true}")
     private Boolean includeRoutines;
@@ -169,11 +178,46 @@ public class BackupSettingsInitializer implements ApplicationRunner, Ordered {
 
         try {
             initializeBackupSettings();
+            repairUnusableDatabaseUsername();
             printEndBanner(true);
         } catch (Exception e) {
             log.error("Error during Backup Settings initialization", e);
             printEndBanner(false);
         }
+    }
+
+    /**
+     * Correct a stored backup username that cannot possibly authenticate.
+     *
+     * <p>mysqldump is handed {@code spring.datasource.password} and nothing else, so the only
+     * username that can work is the one that password belongs to. The stored setting said
+     * {@code root} -- the old hardcoded default, seeded before the properties file named a user
+     * and never revisited, because createOrUpdateSetting skips keys that already exist.
+     *
+     * <p>Pairing root with somebody else's password fails on every attempt. On these installs it
+     * failed as MySQL error 1698, because root authenticates by unix socket, but any mismatch
+     * fails. It went unnoticed for two months because the scheduler reported success regardless;
+     * that half is fixed separately, and this is the half that makes the backup actually run.
+     *
+     * <p>Narrow on purpose. It only touches the exact stale default, only when the datasource
+     * user is something else, so a deployment that deliberately dumps as root with a matching
+     * password is left alone. Repairing in place rather than waiting to be noticed follows
+     * PermissionCatalogueRepairInitializer.
+     */
+    private void repairUnusableDatabaseUsername() {
+        if (datasourceUsername == null || datasourceUsername.isBlank()
+            || "root".equals(datasourceUsername)) {
+            return;
+        }
+        backupSettingsRepository.findBySettingKey("backup.database.username")
+            .filter(setting -> "root".equals(setting.getSettingValue()))
+            .ifPresent(setting -> {
+                log.warn("Backup was set to dump as 'root' while the only password available is "
+                    + "{}'s, so it could never authenticate. Repointing it at '{}'.",
+                    datasourceUsername, datasourceUsername);
+                setting.setSettingValue(datasourceUsername);
+                backupSettingsRepository.save(setting);
+            });
     }
 
     private void printStartBanner() {
