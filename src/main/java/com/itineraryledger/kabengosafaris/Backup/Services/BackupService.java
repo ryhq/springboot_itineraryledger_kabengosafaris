@@ -365,10 +365,23 @@ public class BackupService {
 
     /**
      * Compress as ZIP with configurable compression level (0-9)
+     *
+     * <p>Joined with {@link File}, not concatenated. These three compressors used to build the
+     * path as {@code targetDir + backupName}, which is correct only while the configured storage
+     * path happens to end in a slash. The default property does; the production override
+     * ({@code APP_BACKUP_DIR}) does not, so every nightly backup landed as a SIBLING of the
+     * backups directory with the two names mashed together:
+     * {@code /opt/<app>/backupsapp_backup_20261020_020001.zip}.
+     *
+     * <p>That cost more than tidiness. Retention scans the storage directory, and the files were
+     * never in it, so "maximum backups to retain" pruned nothing: 65 of them, 7.8 GB, had piled
+     * up on Kabengo and filled the disk to 100%, which is how a deploy failed with
+     * {@code tar: Wrote only 4608 of 10240 bytes}. One missing separator, two symptoms, and the
+     * setting that should have caught it was looking in the right place at the wrong files.
      */
     private String compressAsZip(String sourceDir, String targetDir, String backupName, int level)
             throws IOException {
-        String zipFilePath = targetDir + backupName + ".zip";
+        String zipFilePath = new File(targetDir, backupName + ".zip").getPath();
         Path sourcePath = Paths.get(sourceDir);
 
         // Clamp level to valid range
@@ -410,7 +423,7 @@ public class BackupService {
      */
     private String compressAsTarGz(String sourceDir, String targetDir, String backupName, int level)
             throws IOException {
-        String tarGzFilePath = targetDir + backupName + ".tar.gz";
+        String tarGzFilePath = new File(targetDir, backupName + ".tar.gz").getPath();
         Path sourcePath = Paths.get(sourceDir);
 
         int gzipLevel = Math.max(Deflater.NO_COMPRESSION, Math.min(level, Deflater.BEST_COMPRESSION));
@@ -460,7 +473,7 @@ public class BackupService {
      */
     private String compressAsTar(String sourceDir, String targetDir, String backupName)
             throws IOException {
-        String tarFilePath = targetDir + backupName + ".tar";
+        String tarFilePath = new File(targetDir, backupName + ".tar").getPath();
         Path sourcePath = Paths.get(sourceDir);
 
         try (FileOutputStream fos = new FileOutputStream(tarFilePath);
