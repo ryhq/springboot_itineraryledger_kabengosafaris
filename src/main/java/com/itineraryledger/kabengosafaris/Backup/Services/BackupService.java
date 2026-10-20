@@ -111,35 +111,79 @@ public class BackupService {
                 }
             }
 
-            // Compress backup if enabled
+            /*
+             * Which enabled halves actually produced anything.
+             *
+             * This used to be unconditional: whatever happened above, the result was marked
+             * successful, so a mysqldump refused by the server logged an ERROR and the scheduler
+             * logged "Scheduled backup completed successfully" 400ms later. Both companies ran
+             * that way for over two months. Kabengo wrote a 138 MB archive every night wrapped
+             * around a zero-byte .sql; Jatelo wrote nothing at all. Nobody was told, because the
+             * failure notification is behind this flag and the flag said everything was fine.
+             *
+             * A backup missing the database is not a backup. It is a copy of the templates.
+             */
+            List<String> missing = new ArrayList<>();
+            if (backupSettings.isDatabaseBackupEnabled() && !result.isDatabaseBackupSuccess()) {
+                missing.add("database");
+            }
+            if (backupSettings.isFilesBackupEnabled() && !result.isFilesBackupSuccess()) {
+                missing.add("files");
+            }
+            boolean complete = missing.isEmpty();
+
+            /*
+             * A partial archive is kept rather than thrown away -- half a backup can still be
+             * worth something, and deleting the evidence makes the next diagnosis harder -- but
+             * it is NOT allowed to look like a whole one. The suffix travels with the file, so it
+             * is visible in the folder, in the listing and to whoever reaches for it at the worst
+             * possible moment. It keeps the configured prefix, so retention still manages it.
+             */
+            String artifactName = complete ? backupFileName : backupFileName + "_PARTIAL";
+
             String finalBackupPath;
             if (backupSettings.isCompressionEnabled()) {
                 log.info("Compressing backup...");
-                finalBackupPath = compressBackup(tempBackupDir, storagePath, backupFileName);
+                finalBackupPath = compressBackup(tempBackupDir, storagePath, artifactName);
                 result.setCompressed(true);
                 log.info("✓ Backup compressed: {}", finalBackupPath);
             } else {
                 // Move temp directory to final location
-                finalBackupPath = new File(storagePath, backupFileName).getPath() + "/";
+                finalBackupPath = new File(storagePath, artifactName).getPath() + "/";
                 Files.move(Paths.get(tempBackupDir), Paths.get(finalBackupPath),
                         StandardCopyOption.REPLACE_EXISTING);
                 result.setCompressed(false);
             }
 
             result.setBackupPath(finalBackupPath);
-            result.setSuccess(true);
-            result.setMessage("Backup completed successfully");
+            result.setSuccess(complete);
+            result.setMessage(complete
+                ? "Backup completed successfully"
+                : "Backup incomplete: the " + String.join(" and ", missing)
+                  + (missing.size() == 1 ? " half" : " halves")
+                  + " failed. The archive was kept as " + new File(finalBackupPath).getName()
+                  + " but must not be relied on to restore from.");
 
             // Clean up old backups if auto-cleanup is enabled
             if (backupSettings.isAutoCleanupEnabled()) {
                 cleanupOldBackups();
             }
 
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║              ✓ BACKUP PROCESS COMPLETED SUCCESSFULLY               ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            if (complete) {
+                log.info("╔════════════════════════════════════════════════════════════════════╗");
+                log.info("║                                                                    ║");
+                log.info("║              ✓ BACKUP PROCESS COMPLETED SUCCESSFULLY               ║");
+                log.info("║                                                                    ║");
+                log.info("╚════════════════════════════════════════════════════════════════════╝");
+            } else {
+                result.setError(result.getMessage());
+                log.error("╔════════════════════════════════════════════════════════════════════╗");
+                log.error("║                                                                    ║");
+                log.error("║              ✗ BACKUP INCOMPLETE - DO NOT RELY ON IT               ║");
+                log.error("║                                                                    ║");
+                log.error("╚════════════════════════════════════════════════════════════════════╝");
+                log.error("{}", result.getMessage());
+            }
 
         } catch (Exception e) {
             log.error("Backup process failed", e);
