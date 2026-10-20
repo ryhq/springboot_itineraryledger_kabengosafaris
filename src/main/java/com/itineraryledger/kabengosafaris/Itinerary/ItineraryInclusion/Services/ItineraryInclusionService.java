@@ -169,8 +169,19 @@ public class ItineraryInclusionService {
             stances.add(!Boolean.FALSE.equals(row.getIsIncluded()));
         }
 
-        /* orphanRemoval deletes what is cleared; the new rows are written in the order given. */
+        /*
+         * orphanRemoval deletes what is cleared; the new rows are written in the order given.
+         *
+         * The flush between the two halves is load-bearing. Hibernate orders inserts before
+         * orphan deletes within a flush, so re-adding an item the itinerary already had hit the
+         * unique key on (itinerary_id, inclusion_item_id) and the whole call came back
+         * "A record with this information already exists". Since almost every edit keeps most of
+         * the list, that made the endpoint fail for the common case and work only when the new
+         * list shared nothing with the old one. Flushing the clear first puts the deletes on the
+         * wire ahead of the inserts.
+         */
         itinerary.getInclusionList().clear();
+        itineraryRepository.saveAndFlush(itinerary);
         for (int i = 0; i < resolved.size(); i++) {
             itinerary.addInclusion(ItineraryInclusion.builder()
                 .inclusionItem(resolved.get(i))
