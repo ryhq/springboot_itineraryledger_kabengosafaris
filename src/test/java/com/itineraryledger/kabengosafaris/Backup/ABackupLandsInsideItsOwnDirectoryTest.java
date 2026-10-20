@@ -67,27 +67,74 @@ class ABackupLandsInsideItsOwnDirectoryTest {
     }
 
     @Test
-    @DisplayName("no compressor builds its output path by gluing strings together")
-    void noCompressorConcatenatesItsPath() throws Exception {
-        String source = Files.readString(SOURCE);
-
+    @DisplayName("nothing anywhere in the backup package builds a path by gluing strings together")
+    void nothingConcatenatesAPath() throws Exception {
         /*
-         * Catches the shape rather than the three known lines, so a fourth compression format
-         * added later cannot quietly reintroduce it.
+         * The whole package, not the three compressors that were caught first. Writing, listing,
+         * downloading, deleting and cleaning up all have to agree on where a backup lives, and
+         * they only agree if every one of them joins onto the CONFIGURED directory the same way.
+         * The compressors were simply the ones that wrote, so they were the ones that showed.
+         *
+         * Catches the shape, so a new format, a new export or a fourth place that touches the
+         * folder cannot quietly reintroduce it.
          */
-        Matcher matcher = Pattern.compile(
-            "String\\s+\\w*(?:[Ff]ile)?Path\\s*=\\s*targetDir\\s*\\+").matcher(source);
+        Pattern glue = Pattern.compile(
+            "\\b(?:storagePath|targetDir|outputDir|tempBackupDir|backupDir|sourceDir)\\s*\\+\\s*[\"\\w]");
 
         List<String> offences = new ArrayList<>();
-        while (matcher.find()) {
-            int line = (int) source.substring(0, matcher.start()).lines().count() + 1;
-            offences.add("BackupService.java:" + line);
+        for (Path file : backupSources()) {
+            String source = Files.readString(file);
+            Matcher matcher = glue.matcher(source);
+            while (matcher.find()) {
+                String before = source.substring(0, matcher.start());
+                /* a line that is only talking about the bug in a comment is not the bug */
+                String line = before.substring(before.lastIndexOf('\n') + 1);
+                if (line.trim().startsWith("*") || line.trim().startsWith("//")) continue;
+                offences.add(file.getFileName() + ":" + (before.lines().count() + 1));
+            }
         }
 
         if (!offences.isEmpty()) {
-            fail("these build a backup path by concatenating targetDir, which drops the separator "
-                + "whenever the configured path does not end in one: " + offences
-                + "\nUse new File(targetDir, name).getPath() instead.");
+            fail("these build a backup path by concatenation, which drops the separator whenever "
+                + "the configured directory does not end in one: " + offences
+                + "\nUse new File(dir, name).getPath() or Paths.get(dir, name) instead.");
+        }
+    }
+
+    @Test
+    @DisplayName("every reader of the configured directory resolves against it, never beside it")
+    void everyAccessPathResolvesAgainstTheConfiguredDirectory() throws Exception {
+        /*
+         * A backup is only usable if the half that writes it and the halves that find it agree.
+         * Listing, downloading and deleting each take a filename from the outside world and must
+         * resolve it against the configured directory -- which also keeps "../" from escaping it.
+         */
+        record Access(String file, String mustContain) {}
+        List<Access> required = List.of(
+            new Access("BackupGetService.java", "new File(storagePath, filename)"),
+            new Access("BackupDeleteService.java", "new File(storagePath, filename)"),
+            new Access("BackupDownloadController.java", "Paths.get(storagePath, filename)"));
+
+        List<String> wrong = new ArrayList<>();
+        for (Access access : required) {
+            Path file = backupSources().stream()
+                .filter(p -> p.getFileName().toString().equals(access.file()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("missing source file " + access.file()));
+            if (!Files.readString(file).contains(access.mustContain())) {
+                wrong.add(access.file() + " no longer resolves with " + access.mustContain());
+            }
+        }
+
+        assertTrue(wrong.isEmpty(), () -> "a backup written into the configured directory would "
+            + "not be found by: " + wrong);
+    }
+
+    /** Every java source under the Backup package. */
+    private static List<Path> backupSources() throws Exception {
+        try (var walk = Files.walk(
+                Path.of("src/main/java/com/itineraryledger/kabengosafaris/Backup"))) {
+            return walk.filter(p -> p.toString().endsWith(".java")).toList();
         }
     }
 }

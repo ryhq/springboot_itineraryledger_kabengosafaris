@@ -79,7 +79,12 @@ public class BackupService {
             }
 
             // Create temporary directory for this backup
-            String tempBackupDir = new File(storagePath, backupFileName + "_temp").getPath() + "/";
+            /*
+             * No trailing separator. Everything below joins onto this with File, so the
+             * convention "remember to end it with a slash" -- which is what put two months of
+             * backups beside their own folder instead of in it -- is not relied on anywhere.
+             */
+            String tempBackupDir = new File(storagePath, backupFileName + "_temp").getPath();
             File tempDir = new File(tempBackupDir);
             tempDir.mkdirs();
 
@@ -215,7 +220,7 @@ public class BackupService {
             String dbHost = backupSettings.getDatabaseHost();
             Integer dbPort = backupSettings.getDatabasePort();
             String dbUser = backupSettings.getDatabaseUsername();
-            String backupFile = outputDir + "database_" + timestamp + ".sql";
+            String backupFile = new File(outputDir, "database_" + timestamp + ".sql").getPath();
 
             // Build mysqldump command
             List<String> command = new ArrayList<>();
@@ -284,7 +289,7 @@ public class BackupService {
      */
     private String backupFiles(String outputDir) {
         try {
-            String filesOutputDir = outputDir + "files/";
+            String filesOutputDir = new File(outputDir, "files").getPath();
             Files.createDirectories(Paths.get(filesOutputDir));
 
             Map<String, Boolean> fileInclusions = getFileInclusionSettings();
