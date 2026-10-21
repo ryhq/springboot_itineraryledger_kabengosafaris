@@ -46,9 +46,38 @@ public class PdfGenerationController {
             request.getLanguage() != null ? ", language: " + request.getLanguage() : "",
             Boolean.TRUE.equals(request.getSaveToDocuments()) ? ", saving to documents" : "");
 
+        /*
+         * A costing has two subjects. The itinerary's prices the product at its reference party
+         * and files on the itinerary; the quote's prices the party actually travelling and files
+         * on the quote. The request says which, because the two kinds of id are not tellable
+         * apart once obfuscated.
+         */
+        boolean costing = "FULL_COST_ESTIMATION".equals(request.getDocumentType());
+        boolean quoteSubject = "QUOTE".equalsIgnoreCase(request.getSubjectKind());
+
+        if (costing && quoteSubject) {
+            if (Boolean.TRUE.equals(request.getSaveToDocuments())) {
+                return generationService.generateAndSaveQuoteCostingPdf(
+                    request.getDataId(),
+                    request.getTemplateId(),
+                    request.getLanguage(),
+                    request.getStartDate(),
+                    request.getQuoteDocumentType(),
+                    request.getDocumentTitle(),
+                    request.getDocumentVersion(),
+                    request.getDocumentNotes()
+                );
+            }
+            return generationService.generateQuoteCostingPdf(
+                request.getDataId(),
+                request.getTemplateId(),
+                request.getLanguage(),
+                request.getStartDate()
+            );
+        }
+
         // A costing files against the itinerary it prices, and carries its date
-        if (Boolean.TRUE.equals(request.getSaveToDocuments())
-                && "FULL_COST_ESTIMATION".equals(request.getDocumentType())) {
+        if (Boolean.TRUE.equals(request.getSaveToDocuments()) && costing) {
             return generationService.generateAndSaveCostEstimationPdf(
                 request.getDataId(),
                 request.getTemplateId(),
@@ -132,6 +161,16 @@ public class PdfGenerationController {
         log.info("POST /api/pdf/preview - Preview for {} / {}{}",
             request.getDocumentType(), request.getDataId(),
             request.getLanguage() != null ? ", language: " + request.getLanguage() : "");
+        if ("FULL_COST_ESTIMATION".equals(request.getDocumentType())
+                && "QUOTE".equalsIgnoreCase(request.getSubjectKind())) {
+            return generationService.previewQuoteCostingPdf(
+                request.getDataId(),
+                request.getTemplateId(),
+                request.getLanguage(),
+                request.getStartDate()
+            );
+        }
+
         return generationService.previewPdf(
             request.getDocumentType(),
             request.getDataId(),
@@ -265,6 +304,29 @@ public class PdfGenerationController {
      * @param language Optional target language code (e.g., "fr", "de", "es")
      *                 If not provided or "en", preview is in English
      */
+    /**
+     * The costing for a quote, priced at the party that is travelling.
+     *
+     * <p>GET /api/pdf/quote/{quoteId}/costing — the symmetric twin of
+     * /api/pdf/itinerary/{id} with FULL_COST_ESTIMATION, which prices the product at its
+     * reference party instead. Both exist because both are real questions.
+     */
+    @GetMapping("/quote/{quoteId}/costing")
+    @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
+    public ResponseEntity<?> generateQuoteCostingPdf(
+        @PathVariable String quoteId,
+        @RequestParam(required = false) String templateId,
+        @RequestParam(required = false) String language,
+        @RequestParam(required = false)
+        @org.springframework.format.annotation.DateTimeFormat(
+            iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+        java.time.LocalDate startDate
+    ) {
+        log.info("GET /api/pdf/quote/{}/costing - Costing a quote{}", quoteId,
+            startDate != null ? ", priced for " + startDate : "");
+        return generationService.generateQuoteCostingPdf(quoteId, templateId, language, startDate);
+    }
+
     @GetMapping("/quote/{quoteId}/preview")
     @PreAuthorize("hasAuthority('PERM_GENERATE_PDF')")
     public ResponseEntity<ApiResponse<?>> previewQuotePdf(

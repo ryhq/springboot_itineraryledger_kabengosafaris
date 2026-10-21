@@ -111,6 +111,21 @@
         ]
     },
     {
+        "path": "quoteTotals",
+        "type": "List<QuoteTotalsDTO>",
+        "description": "QUOTE SUBJECT ONLY — what the customer is actually charged, per currency, read from the quote's own stored totals rather than recomputed. Empty for an itinerary or a safari. The tables above are what the trip costs; this is what was quoted, and the gap between them is the tax, discount and uplift the quote carries. Access: th:each='quoted : ${costing.quoteTotals}'",
+        "isRequired": false,
+        "children": [
+            {"path": "currency", "type": "String", "description": "Currency code, e.g. 'USD'"},
+            {"path": "subtotal", "type": "BigDecimal", "description": "The quote's line items added up, before tax or discount"},
+            {"path": "taxAmount", "type": "BigDecimal", "description": "Tax as quoted"},
+            {"path": "discountAmount", "type": "BigDecimal", "description": "Discount as quoted, a positive number to be subtracted"},
+            {"path": "grandTotal", "type": "BigDecimal", "description": "What the customer pays — the same figure the quotation PDF prints"},
+            {"path": "perGuest", "type": "BigDecimal", "description": "grandTotal divided by the travelling party, safe to print"},
+            {"path": "taxPercentage", "type": "BigDecimal", "description": "The rate that produced taxAmount, so a document can name it"}
+        ]
+    },
+    {
         "path": "dayCostDetails",
         "type": "List<DayCostDetailDTO>",
         "description": "The costing day by day, in order. Access with: th:each='day : ${costing.dayCostDetails}'",

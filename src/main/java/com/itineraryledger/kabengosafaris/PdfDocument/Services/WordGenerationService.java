@@ -65,6 +65,14 @@ public class WordGenerationService {
         return switch (documentName) {
             case "FULL_COST_ESTIMATION" ->
                 costEstimationWordService.generateCostEstimationDocx(dataId, templateIdObfuscated, language, engine, startDate);
+            case "QUOTE_COST_ESTIMATION" ->
+                /*
+                 * Not a document type of its own: the same FULL_COST_ESTIMATION templates, told
+                 * that dataId is a quote. The dispatcher needs a distinct key because a switch
+                 * over the document name is all it is given, and the two kinds of obfuscated id
+                 * are indistinguishable.
+                 */
+                costEstimationWordService.generateQuoteCostingDocx(dataId, templateIdObfuscated, language, engine, startDate);
             case "FULL_ITINERARY" -> itineraryWordService.generateItineraryDocx(dataId, templateIdObfuscated, language, engine);
             case "FULL_QUOTE" -> quoteWordService.generateQuoteDocx(dataId, templateIdObfuscated, language, engine);
             case "FULL_SAFARI" -> safariWordService.generateSafariDocx(dataId, templateIdObfuscated, language, engine);

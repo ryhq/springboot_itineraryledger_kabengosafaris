@@ -6,6 +6,10 @@ import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Cost
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.ItineraryDocumentDTOs.ItineraryDocumentDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.Entity.ItineraryDocument;
 import com.itineraryledger.kabengosafaris.Itinerary.Services.ItineraryDocumentServices.ItineraryDocumentCreateService;
+import com.itineraryledger.kabengosafaris.Quote.DTOs.QuoteDocumentDTOs.QuoteDocumentDTO;
+import com.itineraryledger.kabengosafaris.Quote.Entity.QuoteDocument;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteDocumentServices.QuoteDocumentCreateService;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteCostingDocumentService;
 import com.itineraryledger.kabengosafaris.PdfDocument.Repository.PdfDocumentRepository;
 import com.itineraryledger.kabengosafaris.PdfDocument.Repository.PdfTemplateRepository;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
@@ -42,6 +46,8 @@ public class CostEstimationPdfGenerationService extends PdfGenerationBaseService
 
     private final CostEstimationDocumentService costingService;
     private final ItineraryDocumentCreateService itineraryDocumentCreateService;
+    private final QuoteCostingDocumentService quoteCostingService;
+    private final QuoteDocumentCreateService quoteDocumentCreateService;
 
     public CostEstimationPdfGenerationService(
             PdfDocumentRepository pdfDocumentRepository,
@@ -53,12 +59,16 @@ public class CostEstimationPdfGenerationService extends PdfGenerationBaseService
             AuditLogService auditLogService,
             TranslationService translationService,
             CostEstimationDocumentService costingService,
-            ItineraryDocumentCreateService itineraryDocumentCreateService
+            ItineraryDocumentCreateService itineraryDocumentCreateService,
+            QuoteCostingDocumentService quoteCostingService,
+            QuoteDocumentCreateService quoteDocumentCreateService
     ) {
         super(pdfDocumentRepository, pdfTemplateRepository, renderer, generator, validationService,
               idObfuscator, auditLogService, translationService);
         this.costingService = costingService;
         this.itineraryDocumentCreateService = itineraryDocumentCreateService;
+        this.quoteCostingService = quoteCostingService;
+        this.quoteDocumentCreateService = quoteDocumentCreateService;
     }
 
     @Transactional(readOnly = true)
@@ -228,5 +238,183 @@ public class CostEstimationPdfGenerationService extends PdfGenerationBaseService
                 ApiResponse.error(500, "Failed to generate and file the costing: " + e.getMessage(), "PDF_SAVE_FAILED")
             );
         }
+    }
+    // =====================================================================
+    // The same costing, for a quote
+    // =====================================================================
+
+    /*
+     * Same document type, same two templates, same engine. What changes is the party: an
+     * itinerary prices at its reference party of two, and a quote prices the people who are
+     * actually going. Nothing below re-implements the costing; it swaps which builder fills the
+     * model and where a kept copy is filed.
+     */
+
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> generateQuoteCostingPdf(
+            String quoteIdObfuscated,
+            String templateIdObfuscated,
+            String language,
+            LocalDate startDate
+    ) {
+        try {
+            FullCostEstimationDTO costing = quoteCostingService.build(quoteIdObfuscated, startDate);
+            if (costing == null) {
+                return notCostable(quoteIdObfuscated);
+            }
+            return generatePdfInternal(
+                DOCUMENT,
+                costing,
+                templateIdObfuscated,
+                language,
+                data -> ((FullCostEstimationDTO) data).getSubjectCode()
+            );
+        } catch (Exception e) {
+            log.error("Failed to generate costing PDF for quote: {}", quoteIdObfuscated, e);
+            logPdfError("GENERATE_PDF", DOCUMENT, quoteIdObfuscated, templateIdObfuscated, e);
+            return ResponseEntity.status(500).body(
+                ApiResponse.error(500, "Failed to generate the costing: " + e.getMessage(), "PDF_GENERATION_FAILED")
+            );
+        }
+    }
+
+    /** The rendered HTML for a quote's costing, before anything becomes a file. */
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<?>> previewQuoteCostingPdf(
+            String quoteIdObfuscated,
+            String templateIdObfuscated,
+            String language,
+            LocalDate startDate
+    ) {
+        try {
+            FullCostEstimationDTO costing = quoteCostingService.build(quoteIdObfuscated, startDate);
+            if (costing == null) {
+                return notCostable(quoteIdObfuscated);
+            }
+            return previewPdfInternal(DOCUMENT, costing, templateIdObfuscated, language);
+        } catch (Exception e) {
+            log.error("Failed to preview costing for quote: {}", quoteIdObfuscated, e);
+            return ResponseEntity.status(500).body(
+                ApiResponse.error(500, "Failed to preview the costing: " + e.getMessage(), "PDF_PREVIEW_FAILED")
+            );
+        }
+    }
+
+    /**
+     * Generates it and files it against the QUOTE, not the itinerary.
+     *
+     * A costing taken from a quote is about one customer's party and belongs on their record. On
+     * the itinerary it would sit among the product's own costings, each a different party, and
+     * nobody could tell them apart.
+     */
+    @Transactional
+    public ResponseEntity<?> generateAndSaveQuoteCostingPdf(
+            String quoteIdObfuscated,
+            String templateIdObfuscated,
+            String language,
+            LocalDate startDate,
+            QuoteDocument.DocumentType quoteDocumentType,
+            String title,
+            String version,
+            String notes
+    ) {
+        try {
+            FullCostEstimationDTO costing = quoteCostingService.build(quoteIdObfuscated, startDate);
+            if (costing == null) {
+                return notCostable(quoteIdObfuscated);
+            }
+
+            Long quoteId;
+            try {
+                quoteId = idObfuscator.decodeId(quoteIdObfuscated);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Invalid quote ID", "INVALID_QUOTE_ID")
+                );
+            }
+
+            ResponseEntity<?> pdfResponse = generateQuoteCostingPdf(
+                quoteIdObfuscated, templateIdObfuscated, language, startDate);
+            if (!pdfResponse.getStatusCode().is2xxSuccessful()) {
+                return pdfResponse;
+            }
+
+            byte[] pdfBytes = (byte[]) pdfResponse.getBody();
+            if (pdfBytes == null || pdfBytes.length == 0) {
+                return ResponseEntity.status(500).body(
+                    ApiResponse.error(500, "The generated costing was empty", "EMPTY_PDF")
+                );
+            }
+
+            QuoteDocument.DocumentType docType = quoteDocumentType != null
+                ? quoteDocumentType
+                : QuoteDocument.DocumentType.QUOTE_PDF;
+
+            String code = costing.getSubjectCode() != null ? costing.getSubjectCode() : "QUOTE";
+            String pricedFor = costing.getStartDate() != null ? costing.getStartDate().toString() : "today";
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String languageSuffix = (language != null && !language.isBlank() && !"en".equalsIgnoreCase(language))
+                ? "_" + language.toLowerCase()
+                : "";
+
+            String fileName = String.format("costing_%s_for_%s%s_%s.pdf",
+                code, pricedFor, languageSuffix, timestamp);
+
+            String documentTitle = title != null && !title.isBlank()
+                ? title
+                : String.format("Costing - %s (priced for %s)",
+                    costing.getSubjectName() != null ? costing.getSubjectName() : code, pricedFor);
+
+            QuoteDocumentDTO saved = quoteDocumentCreateService.saveGeneratedDocument(
+                quoteId,
+                pdfBytes,
+                fileName,
+                docType,
+                documentTitle,
+                String.format("Priced for %s. %s",
+                    pricedFor,
+                    Boolean.TRUE.equals(costing.getHasIncompleteRates())
+                        ? costing.getRateIssueCount() + " item(s) could not be priced — the totals are partial."
+                        : "Every item priced."),
+                version,
+                notes
+            );
+
+            if (saved == null) {
+                log.warn("Costing generated but not filed for quote: {}", quoteIdObfuscated);
+                return pdfResponse;
+            }
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", fileName);
+            headers.setContentLength(pdfBytes.length);
+            headers.set("X-Document-Saved", "true");
+            headers.set("X-Document-Id", saved.getId());
+            headers.set("X-Document-Url", saved.getDocumentUrl());
+
+            return ResponseEntity.ok().headers(headers).body(pdfBytes);
+
+        } catch (Exception e) {
+            log.error("Failed to generate and file the costing for quote: {}", quoteIdObfuscated, e);
+            return ResponseEntity.status(500).body(
+                ApiResponse.error(500, "Failed to generate and file the costing: " + e.getMessage(), "PDF_SAVE_FAILED")
+            );
+        }
+    }
+
+    /**
+     * One refusal, worded for the two reasons it happens: the quote is gone, or it predates the
+     * day snapshot and there is nothing to price day by day.
+     */
+    private <T> ResponseEntity<T> notCostable(String quoteIdObfuscated) {
+        @SuppressWarnings("unchecked")
+        ResponseEntity<T> response = (ResponseEntity<T>) ResponseEntity.status(404).body(
+            ApiResponse.error(404,
+                "Nothing to cost for quote " + quoteIdObfuscated
+                    + " — it may not exist, or it carries no day snapshot to price.",
+                "COSTING_NOT_AVAILABLE")
+        );
+        return response;
     }
 }

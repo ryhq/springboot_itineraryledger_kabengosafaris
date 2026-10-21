@@ -170,6 +170,44 @@ public class PdfGenerationService {
             itineraryId, templateId, language, startDate, documentType, title, version, notes);
     }
 
+    /**
+     * The same costing for a quote: priced at the party that is travelling, filed on the quote.
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> generateQuoteCostingPdf(
+            String quoteId,
+            String templateId,
+            String language,
+            java.time.LocalDate startDate
+    ) {
+        return costEstimationPdfService.generateQuoteCostingPdf(quoteId, templateId, language, startDate);
+    }
+
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<?>> previewQuoteCostingPdf(
+            String quoteId,
+            String templateId,
+            String language,
+            java.time.LocalDate startDate
+    ) {
+        return costEstimationPdfService.previewQuoteCostingPdf(quoteId, templateId, language, startDate);
+    }
+
+    @Transactional
+    public ResponseEntity<?> generateAndSaveQuoteCostingPdf(
+            String quoteId,
+            String templateId,
+            String language,
+            java.time.LocalDate startDate,
+            com.itineraryledger.kabengosafaris.Quote.Entity.QuoteDocument.DocumentType documentType,
+            String title,
+            String version,
+            String notes
+    ) {
+        return costEstimationPdfService.generateAndSaveQuoteCostingPdf(
+            quoteId, templateId, language, startDate, documentType, title, version, notes);
+    }
+
     @Transactional
     public ResponseEntity<?> generateAndSaveItineraryPdf(
             String itineraryIdObfuscated,

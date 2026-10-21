@@ -248,7 +248,17 @@ public class QuoteCostEstimationService {
     // Synthetic DTO builder — maps the Quote tree onto FullItineraryDTO
     // =====================================================================
 
-    private FullItineraryDTO buildSyntheticDTO(Quote quote) {
+    /**
+     * The quote's own day tree, in the shape the pricing engine reads.
+     *
+     * <p>Public because two things need the same projection and must not each grow their own: the
+     * line items written by {@link #recalculate(Long)}, and the costing document, which prices a
+     * quote through {@code CostEstimationOrchestrator.estimateFrom}. Projecting twice is how a
+     * costing sheet and the quotation it accompanies come to disagree by a room or a vehicle.
+     *
+     * <p>Reads lazy collections off the entity, so the caller must hold a transaction.
+     */
+    public FullItineraryDTO buildSyntheticDTO(Quote quote) {
         FullItineraryDTO dto = new FullItineraryDTO();
         // Carry the source Itinerary identity over so the pricing engine's
         // log/output reads sensibly; the engine doesn't otherwise care.

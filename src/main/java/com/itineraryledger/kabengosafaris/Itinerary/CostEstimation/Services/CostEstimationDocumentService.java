@@ -80,12 +80,12 @@ public class CostEstimationDocumentService {
             .carCount(byDay.getCarCount())
             .startDate(byDay.getStartDate() != null ? byDay.getStartDate() : pricingDate)
             .endDate(byDay.getEndDate())
-            .estimatedAt(readable(byDay.getEstimatedAt()))
+            .estimatedAt(readableTimestamp(byDay.getEstimatedAt()))
             .totalPax(totalPax)
             .dayCostDetails(byDay.getDayCostDetails() != null ? byDay.getDayCostDetails() : new ArrayList<>())
             .paxCostDetails(byPax != null && byPax.getPaxCostDetails() != null
                 ? byPax.getPaxCostDetails() : new ArrayList<>())
-            .totals(withMargins(byDay.getGrandTotalsByCurrency(), totalPax))
+            .totals(totalsWithMargins(byDay.getGrandTotalsByCurrency(), totalPax))
             .hasIncompleteRates(Boolean.TRUE.equals(byDay.getHasIncompleteRates()))
             .rateIssues(byDay.getRateIssues() != null ? byDay.getRateIssues() : new ArrayList<>())
             .rateIssueCount(byDay.getRateIssues() != null ? byDay.getRateIssues().size() : 0)
@@ -101,7 +101,7 @@ public class CostEstimationDocumentService {
      * when a price was worked out. Falls back to the original if it will not
      * parse, because a strange date beats no date.
      */
-    private String readable(String isoTimestamp) {
+    public String readableTimestamp(String isoTimestamp) {
         if (isoTimestamp == null || isoTimestamp.isBlank()) return null;
         try {
             return java.time.LocalDateTime.parse(isoTimestamp)
@@ -141,10 +141,13 @@ public class CostEstimationDocumentService {
     /**
      * Copies each currency block and adds the numbers a document is judged on.
      *
+     * <p>Public because a quote's costing is shaped by {@code QuoteCostingDocumentService} and
+     * must arrive at the same margin arithmetic rather than a second copy of it.
+     *
      * Margin is a percentage of RACK, not of cost: it answers "how much of the
      * selling price is ours", which is the question a quote is argued over.
      */
-    private List<FullCostEstimationDTO.CostTotalsDTO> withMargins(
+    public List<FullCostEstimationDTO.CostTotalsDTO> totalsWithMargins(
         List<CurrencyGroupedCostDTO> source,
         int totalPax
     ) {

@@ -58,6 +58,22 @@ public class WordGenerationController {
             request.getEngine() != null ? ", engine: " + request.getEngine() : "",
             Boolean.TRUE.equals(request.getSaveToDocuments()) ? ", saving to documents" : "");
 
+        /*
+         * A costing over a quote prices the travelling party rather than the blueprint's. The
+         * request says which subject it means; the id cannot.
+         */
+        if ("FULL_COST_ESTIMATION".equals(request.getDocumentType())
+                && "QUOTE".equalsIgnoreCase(request.getSubjectKind())) {
+            return generationService.generateDocx(
+                "QUOTE_COST_ESTIMATION",
+                request.getDataId(),
+                request.getTemplateId(),
+                request.getLanguage(),
+                request.getEngine(),
+                request.getStartDate()
+            );
+        }
+
         if (Boolean.TRUE.equals(request.getSaveToDocuments()) && "FULL_ITINERARY".equals(request.getDocumentType())) {
             return generationService.generateAndSaveItineraryDocx(
                 request.getDataId(),

@@ -116,4 +116,16 @@ public class GeneratePdfRequestDTO {
      * documents. Null prices for today.
      */
     private java.time.LocalDate startDate;
+
+    /**
+     * FULL_COST_ESTIMATION only: what {@code dataId} refers to, "ITINERARY" (the default) or
+     * "QUOTE".
+     *
+     * <p>The costing is one document type with two subjects. An itinerary prices at its reference
+     * party, which is right for a product sheet; a quote prices the party that is actually
+     * travelling, with its own rooms and vehicles. The id alone cannot say which is meant --
+     * obfuscated ids from different tables are indistinguishable, and a quote id happily decodes
+     * to some other itinerary -- so the caller states it rather than the server guessing.
+     */
+    private String subjectKind;
 }

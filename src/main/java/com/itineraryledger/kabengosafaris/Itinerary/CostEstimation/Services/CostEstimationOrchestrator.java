@@ -97,6 +97,49 @@ public class CostEstimationOrchestrator {
                 );
             }
 
+            return estimateFrom(itinerary, startDate, mode);
+
+        } catch (Exception e) {
+            log.error("Failed to estimate costs for itinerary: {}", itineraryIdObfuscated, e);
+            return ResponseEntity.status(500).body(
+                ApiResponse.error(500, "Failed to estimate costs: " + e.getMessage(), "COST_ESTIMATION_FAILED")
+            );
+        }
+    }
+
+    /**
+     * The same estimate, for a day tree that has already been assembled.
+     *
+     * <p>Everything below step one is arithmetic over a {@link FullItineraryDTO} and never asks
+     * where it came from. A quote carries its own snapshot of days, rooms, pax and vehicles --
+     * deliberately, so that editing a quote cannot reprice the product it was built from -- and
+     * {@code QuoteCostEstimationService} already projects that snapshot into this shape to write
+     * the quote's line items. Letting a caller hand the projection straight in is what allows a
+     * quote to be costed by the same engine, on the same figures, rather than by a second one
+     * that would drift.
+     *
+     * @param itinerary the assembled day tree; for a quote, its projection
+     * @param startDate the date to price for, today when null, because seasons change the answer
+     * @param mode PER_DAY or PER_PAX, PER_DAY when null
+     */
+    public ResponseEntity<ApiResponse<?>> estimateFrom(
+            FullItineraryDTO itinerary,
+            LocalDate startDate,
+            CalculationMode mode
+    ) {
+        if (itinerary == null) {
+            return ResponseEntity.status(404).body(
+                ApiResponse.error(404, "Nothing to price", "ITINERARY_NOT_FOUND")
+            );
+        }
+        try {
+            if (startDate == null) {
+                startDate = LocalDate.now();
+            }
+            if (mode == null) {
+                mode = CalculationMode.PER_DAY;
+            }
+
             // 2. Clear rate issue logger for this estimation
             rateIssueLoggerService.clear();
 
@@ -146,9 +189,8 @@ public class CostEstimationOrchestrator {
             return ResponseEntity.ok(
                 ApiResponse.success(200, "Cost estimation calculated successfully", response)
             );
-
         } catch (Exception e) {
-            log.error("Failed to estimate costs for itinerary: {}", itineraryIdObfuscated, e);
+            log.error("Failed to estimate costs for the supplied day tree", e);
             return ResponseEntity.status(500).body(
                 ApiResponse.error(500, "Failed to estimate costs: " + e.getMessage(), "COST_ESTIMATION_FAILED")
             );

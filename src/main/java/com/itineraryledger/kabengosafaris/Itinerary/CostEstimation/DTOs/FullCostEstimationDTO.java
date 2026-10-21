@@ -107,6 +107,22 @@ public class FullCostEstimationDTO {
     @Builder.Default
     private List<ItineraryCostSummaryDTO> savedSummary = new ArrayList<>();
 
+    /* ----------------------------- quote only ---------------------------- */
+
+    /**
+     * What the customer is actually being charged, when the subject is a quote.
+     *
+     * <p>The tables above are the cost of the trip, line by line. A quotation is that plus the
+     * commercial layer the quote carries in its own right: tax, a discount, an agent commission,
+     * a margin uplift. Printing the cost total alone on a document that sits beside the quotation
+     * would show the client a different number from the one they were quoted, and nobody reading
+     * either would be able to say which was wrong.
+     *
+     * <p>Null for an itinerary or a safari, where no such layer exists.
+     */
+    @Builder.Default
+    private List<QuoteTotalsDTO> quoteTotals = new ArrayList<>();
+
     /**
      * Totals for one currency, with the margin worked out.
      *
@@ -142,5 +158,32 @@ public class FullCostEstimationDTO {
 
         /** grandTotalRack ÷ totalPax — the per-head selling price. */
         private BigDecimal rackPerPax;
+    }
+
+    /**
+     * One currency's worth of the quotation itself: what was quoted, not what it costs.
+     *
+     * <p>Taken from the quote's own stored totals rather than recomputed, so this document and
+     * the quotation PDF can only ever print the same figure.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class QuoteTotalsDTO {
+        private String currency;
+
+        /** The line items added up, before anything commercial is applied. */
+        private BigDecimal subtotal;
+        private BigDecimal taxAmount;
+        private BigDecimal discountAmount;
+        private BigDecimal grandTotal;
+
+        /** grandTotal ÷ totalPax, the figure the quotation prints under its own total. */
+        private BigDecimal perGuest;
+
+        /** The tax rate that produced taxAmount, so the document can say what it is. */
+        private BigDecimal taxPercentage;
     }
 }
