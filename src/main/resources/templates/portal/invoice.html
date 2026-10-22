@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!--
+  What is owed, and what has arrived.
+
+  The warning about bank details is not boilerplate. Intercepting an invoice and substituting an
+  account number is the standard fraud against tour operators, it is carried out by email, and
+  the client is the person in a position to notice. Saying it on the page they read the figure
+  from is the only place it is any use.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{portal/_layout :: layout('Your invoice', ~{::section})}">
+<body>
+<section>
+
+  <h1>Your invoice</h1>
+  <p class="lede" th:if="${page.invoice != null}">
+    <span th:text="${page.invoice.code}">INV-000000</span><span
+      th:if="${page.invoice.status != null}" th:text="' · ' + ${page.invoice.status}"> · Partially paid</span>
+  </p>
+
+  <div class="card" th:if="${page.invoice != null}">
+    <table class="figures">
+      <tr th:each="total : ${page.invoice.total}">
+        <td>Invoice total</td>
+        <td class="num" th:text="${total.formatted}">USD 18,313.40</td>
+      </tr>
+      <tr th:each="paid : ${page.invoice.paid}">
+        <td style="color:var(--muted)">Received so far</td>
+        <td class="num" th:text="${paid.formatted}">USD 5,000.00</td>
+      </tr>
+      <tr th:each="balance : ${page.invoice.balance}" class="total">
+        <td th:text="${page.invoice.settled} ? 'Settled in full' : 'Still to pay'">Still to pay</td>
+        <td class="num" th:text="${balance.formatted}">USD 13,313.40</td>
+      </tr>
+    </table>
+
+    <p style="margin:12px 0 0; font-size:13px; color:var(--muted)"
+       th:if="${page.invoice.dueDate != null and !page.invoice.settled}">
+      Due by
+      <span th:text="${#temporals.format(page.invoice.dueDate, 'd MMMM yyyy')}">15 January 2027</span>.
+    </p>
+  </div>
+
+  <div class="note warn" th:if="${page.invoice != null}">
+    <strong>We will never email you changed bank details.</strong>
+    If you receive a message that appears to come from us asking you to pay a different account,
+    it did not come from us. Telephone us before sending anything.
+  </div>
+
+  <div class="card" th:if="${page.invoice == null}">
+    <p style="margin:0">
+      There is no invoice yet. One is raised when the trip is confirmed, and it will appear here.
+    </p>
+  </div>
+
+</section>
+</body>
+</html>

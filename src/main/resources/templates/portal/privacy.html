@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!--
+  What we collect and how long we keep it, readable without verifying.
+
+  Consent you have to prove your identity to read is not consent. The text comes from the company
+  record rather than being written into this page, because it is also served to both public
+  websites and because the version somebody agreed to has to stay retrievable afterwards.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{portal/_layout :: layout('Privacy', ~{::section})}">
+<body>
+<section>
+
+  <h1>What we collect</h1>
+
+  <!--
+    Rendered on the server from stored text with every character escaped. It is marked utext
+    because the markup was produced by LegalDocumentService, not by whoever typed the notice.
+  -->
+  <div class="card" th:if="${page.privacyHtml != null}">
+    <div th:utext="${page.privacyHtml}"><p>The notice.</p></div>
+    <p style="margin:16px 0 0; font-size:12.5px; color:var(--muted)"
+       th:if="${page.privacyVersion != null}"
+       th:text="'Version ' + ${page.privacyVersion}">Version 2026-10</p>
+  </div>
+
+  <div class="card" th:if="${page.privacyHtml == null}">
+    <p style="margin:0">
+      No privacy notice has been published yet. Ask us and we will send you one.
+    </p>
+  </div>
+
+  <!--
+    Stated here as well as in the notice, because this is the part that is specific to this page
+    and the part somebody will actually want when they are looking at it.
+  -->
+  <div class="card">
+    <h2 style="margin-top:0">This page in particular</h2>
+    <ul class="plain">
+      <li>A cookie keeps you signed in on this browser. It holds nothing but a random value.</li>
+      <li>We record which sections you open, from which address, so we can answer you when
+        something is not where you expected it.</li>
+      <li>That record is destroyed three months after your trip ends, or three months after a
+        booking does not go ahead.</li>
+      <li>Your quotation, invoice and receipts are kept: they are the record of a transaction.</li>
+      <li>Ask us at any time for a copy of what is held about you, or for it to be erased.</li>
+    </ul>
+  </div>
+
+</section>
+</body>
+</html>

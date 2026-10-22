@@ -1,0 +1,26 @@
+[
+  {
+    "name": "recipientName",
+    "description": "What to call them: their own name, or their first name from the customer record",
+    "isRequired": true
+  },
+  {
+    "name": "accessCode",
+    "description": "The six digits they type into the page they already have open. Never a link: a clickable one would be spent by the first mail scanner or preview bot that touches the message",
+    "isRequired": true
+  },
+  {
+    "name": "expiryMinutes",
+    "description": "How many minutes the code is good for",
+    "isRequired": true,
+    "defaultValue": "15"
+  },
+  {
+    "name": "tripName",
+    "description": "The trip this code opens, so somebody with two bookings knows which one"
+  },
+  {
+    "name": "portalUrl",
+    "description": "Their trip page, for the case where they came to the email first. Blank when no portal address is configured"
+  }
+]

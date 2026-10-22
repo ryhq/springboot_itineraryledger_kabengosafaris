@@ -56,7 +56,32 @@ public enum Feature {
         "Translating documents and email into a client's language. Needs a provider account, so it is "
             + "usually fixed per deployment rather than switched on here.",
         "SYSTEM",
-        List.of("/api/translation", "/api/translation-accounts", "/api/translation-settings"));
+        List.of("/api/translation", "/api/translation-accounts", "/api/translation-settings")),
+
+    /**
+     * The one feature that is off until somebody turns it on.
+     *
+     * <p>Every other flag here defaults to on, because a module that vanishes for existing
+     * companies on the release that introduces it is a support call nobody can explain. This one
+     * is the opposite case: switching it on publishes a surface customers can reach, with their
+     * personal details behind it, and that is a decision a company makes deliberately after
+     * reading what it collects and how long it keeps it. A client portal nobody asked for is not
+     * a missing menu item, it is an exposure.
+     */
+    CLIENT_PORTAL(
+        "client-portal",
+        "Client portal",
+        "One link per client per trip: they read their itinerary, quotation and invoice, and "
+            + "verify with a code sent to the address we already hold. Off until a company "
+            + "decides to publish to its customers.",
+        "SALES",
+        List.of("/portal", "/api/portal", "/api/portal-admin")) {
+
+        @Override
+        public boolean isEnabledByDefault() {
+            return false;
+        }
+    };
 
     private final String key;
     private final String label;

@@ -288,12 +288,18 @@
         reading the two could say which one to pay. Taken from the quote's own stored totals, so
         the two documents cannot disagree.
       -->
-      <table class="price" th:each="quoted : ${costing.quoteTotals}"
+      <table class="grid" th:each="quoted : ${costing.quoteTotals}"
              th:if="${costing.subjectKind == 'QUOTE'}" style="margin-top: 10pt">
         <caption>
           Quoted
           <span class="unit">— as it appears on <span th:text="${costing.subjectCode}">QT-0000</span></span>
         </caption>
+        <thead>
+          <tr>
+            <th>What is being charged</th>
+            <th class="num">Amount</th>
+          </tr>
+        </thead>
         <tbody>
           <tr th:if="${quoted.subtotal != null}">
             <td>Subtotal</td>

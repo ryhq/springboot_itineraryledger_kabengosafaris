@@ -1,0 +1,59 @@
+<!--
+  A client's trip was opened on a browser that has not been used before.
+
+  This is the cheapest control in the portal and the most valuable one. A link that has been
+  forwarded, or an inbox somebody else is reading, produces no error anywhere: the page works
+  exactly as it should for whoever is holding it. This email is the only thing in the whole
+  design that tells a client something happened that they did not do.
+
+  So it has to be short enough to be read on a phone in two seconds, specific enough to be
+  recognised ("that was me, on the laptop"), and it has to end with something they can act on
+  without replying to anybody.
+
+  Not alarming by default. Most of these are the client themselves on a second device, and an
+  email that reads like a security incident every time somebody opens their own holiday is an
+  email they will learn to ignore, which costs us the one time it mattered.
+-->
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.55; color: #1f2421">
+
+  <p style="margin: 0 0 14px">Hello {{recipientName}},</p>
+
+  <p style="margin: 0 0 18px">
+    {{#tripName}}<strong style="color: #374151">{{tripName}}</strong> was{{/tripName}}
+    opened on a device we have not seen before.
+  </p>
+
+  <table style="border-collapse: collapse; width: 100%; background-color: {{companyAccentSoft}}; border-left: 4px solid {{companyAccentDark}}">
+    <tbody>
+      <tr>
+        <td style="padding: 12px 16px; font-size: 13px; color: #374151">
+          <strong style="color: #1f2421">{{deviceLabel}}</strong>{{#ipAddress}}<br>from {{ipAddress}}{{/ipAddress}}{{#openedAt}}<br>{{openedAt}}{{/openedAt}}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="margin: 18px 0 0; font-size: 13px; color: #374151">
+    If that was you, there is nothing to do.
+  </p>
+
+  <p style="margin: 10px 0 0; font-size: 13px; color: #374151">
+    If it was not, open your trip page and end that session. Every device that has been used is
+    listed there and you can remove any of them yourself.
+    {{#portalUrl}}<br><a href="{{portalUrl}}" style="color: {{companyAccentDark}}">{{portalUrl}}</a>{{/portalUrl}}
+  </p>
+
+  <p style="margin: 18px 0 0; font-size: 13px; color: #6b7280">
+    Tell us either way if something looks wrong. We can withdraw the link entirely and send you a
+    new one.
+  </p>
+
+  <p style="margin: 14px 0 0">
+    Kind regards,<br>
+    {{companyName}}
+  </p>
+
+  <p style="margin: 18px 0 0; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280">
+    {{companyName}}{{#companyPhone}} · {{companyPhone}}{{/companyPhone}}{{#companyEmail}} · {{companyEmail}}{{/companyEmail}}{{#companyWebsite}} · {{companyWebsite}}{{/companyWebsite}}
+  </p>
+</div>

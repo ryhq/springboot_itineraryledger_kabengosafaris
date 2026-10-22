@@ -79,7 +79,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
         new RateLimitRule("POST", "/api/public/newsletter/subscribe", 10, Duration.ofHours(1), false,
             "newsletter sign-ups"),
         new RateLimitRule("POST", "/api/public/testimonies", 5, Duration.ofHours(1), false,
-            "testimonials"));
+            "testimonials"),
+        /*
+         * The client portal. Asking for a code is unauthenticated work that sends mail to an
+         * address somebody else owns, so it is counted against the inbox as well as the caller:
+         * the interesting attack is many machines and one victim.
+         *
+         * Verifying is counted because six digits is a million, and a million guesses is an
+         * afternoon if each one is free. The per-code attempt counter caps a single code; this
+         * caps asking for new ones and starting again.
+         */
+        new RateLimitRule("POST", "/api/portal/access/request", 10, Duration.ofHours(1), true,
+            "portal access codes"),
+        new RateLimitRule("POST", "/api/portal/access/verify", 10, Duration.ofMinutes(15), true,
+            "portal verification attempts"));
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,

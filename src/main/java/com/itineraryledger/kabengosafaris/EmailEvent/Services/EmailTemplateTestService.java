@@ -237,6 +237,12 @@ public class EmailTemplateTestService {
             case "BOOKING_INQUIRY_RECEIVED":
                 return generateBookingInquiryReceivedTestData(user);
 
+            case "PORTAL_ACCESS_CODE":
+                return generatePortalAccessCodeTestData(user);
+
+            case "PORTAL_NEW_DEVICE":
+                return generatePortalNewDeviceTestData(user);
+
             case "SEND_QUOTE":
                 return generateQuoteSentTestData(user);
 
@@ -755,6 +761,34 @@ public class EmailTemplateTestService {
         variables.put("itineraryDescription", "Six nights on safari and three on the coast.");
         variables.put("whatsappUrl", "https://wa.me/255700987654");
         return new TestEmailData(variables, "[TEST] We have your safari enquiry (" + code + ")");
+    }
+
+    /**
+     * The access code, with a code that is obviously a sample.
+     *
+     * <p>000000 rather than six plausible digits: a test email that looks exactly like a real one
+     * is a test email somebody eventually tries to use, and then reports as broken.
+     */
+    private TestEmailData generatePortalAccessCodeTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        variables.put("recipientName", user.getFirstName());
+        variables.put("accessCode", "000000");
+        variables.put("expiryMinutes", "15");
+        variables.put("tripName", "8 Days Northern Circuit");
+        variables.put("portalUrl", "https://example.test/portal/sample");
+        return new TestEmailData(variables, "[TEST] Your access code");
+    }
+
+    private TestEmailData generatePortalNewDeviceTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        variables.put("recipientName", user.getFirstName());
+        variables.put("deviceLabel", "Chrome on Windows");
+        variables.put("ipAddress", "203.0.113.42");
+        variables.put("openedAt", LocalDateTime.now()
+            .format(DateTimeFormatter.ofPattern("d MMMM yyyy 'at' HH:mm")));
+        variables.put("tripName", "8 Days Northern Circuit");
+        variables.put("portalUrl", "https://example.test/portal/sample");
+        return new TestEmailData(variables, "[TEST] Your trip was opened on a new device");
     }
 
     private TestEmailData generateQuoteSentTestData(User user) {

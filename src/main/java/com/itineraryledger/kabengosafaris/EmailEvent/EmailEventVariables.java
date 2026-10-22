@@ -46,6 +46,9 @@ public class EmailEventVariables {
             case "NEWSLETTER_WELCOME" -> loadSchema("newsletter-welcome-schema.json");
             case "CONTACT_US_RECEIVED" -> loadSchema("contact-us-received-schema.json");
             case "BOOKING_INQUIRY_RECEIVED" -> loadSchema("booking-inquiry-received-schema.json");
+            /* the client portal: a code to type, and a warning when a new browser opens the trip */
+            case "PORTAL_ACCESS_CODE" -> loadSchema("portal-access-code-schema.json");
+            case "PORTAL_NEW_DEVICE" -> loadSchema("portal-new-device-schema.json");
             case "BOOKING_INQUIRY" -> loadSchema("booking-inquiry-schema.json");
             case "CONTACT_US" -> loadSchema("contact-us-schema.json");
             case "SEND_QUOTE" -> loadSchema("quote-sent-schema.json");
@@ -81,6 +84,8 @@ public class EmailEventVariables {
             case "NEWSLETTER_WELCOME" -> "Newsletter: welcome";
             case "CONTACT_US_RECEIVED" -> "Contact us: we have your message";
             case "BOOKING_INQUIRY_RECEIVED" -> "Booking inquiry: we have your enquiry";
+            case "PORTAL_ACCESS_CODE" -> "Client portal: your access code";
+            case "PORTAL_NEW_DEVICE" -> "Client portal: opened on a new device";
             case "BOOKING_INQUIRY" -> "Booking Inquiry";
             case "CONTACT_US" -> "Contact Us";
             case "SEND_QUOTE" -> "Quote Sent to Customer";

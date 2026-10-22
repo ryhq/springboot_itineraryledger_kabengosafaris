@@ -193,6 +193,24 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
         );
 
         // ========================================
+        // Client portal
+        // ========================================
+
+        initializeEvent(
+            "PORTAL_ACCESS_CODE",
+            "The six digits a client types into their trip page to see their quotation or invoice. "
+                + "Deliberately not a link: a clickable one is spent by the first mail scanner or "
+                + "chat preview bot that touches the message, and it logs wherever it goes."
+        );
+
+        initializeEvent(
+            "PORTAL_NEW_DEVICE",
+            "Sent when a client's trip is opened on a browser that has not been used before. The "
+                + "cheapest and most valuable control in the portal: a forwarded link being used "
+                + "by somebody else produces no error anywhere, and this is how anybody finds out."
+        );
+
+        // ========================================
         // Quote Events
         // ========================================
 

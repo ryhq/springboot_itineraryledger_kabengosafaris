@@ -1,0 +1,70 @@
+<!--
+  The access code for a client's trip page.
+
+  A code, not a link, and the difference is the whole security design. A clickable login link
+  travels through email, and email is full of machines that click things: scanners in corporate
+  mail gateways, preview bots in chat apps, antivirus that fetches every URL to check it. Any of
+  them can spend a one-time link before the client reaches it, and all of them log it where it
+  goes. Six digits typed into a page the client opened themselves cannot be spent by a machine
+  that merely read the message.
+
+  So there is deliberately no button here, and the code must be the most legible thing on the
+  page. Everything else is context: which trip, how long it lasts, and what to do if they did not
+  ask for it.
+
+  Every rule is inline, and the accent arrives as {{companyAccent}}: a mail client throws away a
+  stylesheet, and a colour written into CSS here would be one company's green in every company's
+  inbox.
+-->
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.55; color: #1f2421">
+
+  <p style="margin: 0 0 14px">Hello {{recipientName}},</p>
+
+  <p style="margin: 0 0 18px">
+    Here is the code for{{#tripName}} <strong style="color: #374151">{{tripName}}</strong>{{/tripName}}.
+    Type it into the page you already have open.
+  </p>
+
+  <table style="border-collapse: collapse; margin: 0 0 18px">
+    <tbody>
+      <tr>
+        <td style="background-color: {{companyAccentSoft}}; border-left: 4px solid {{companyAccentDark}}; padding: 16px 26px">
+          <div style="font-size: 30px; font-weight: 700; letter-spacing: 8px; color: {{companyAccentDark}}; font-family: 'Courier New', Courier, monospace">
+            {{accessCode}}
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="margin: 0 0 16px; font-size: 13px; color: #374151">
+    It works for {{expiryMinutes}} minutes and once only. Asking for another one replaces it.
+  </p>
+
+  <p style="margin: 0 0 16px; font-size: 13px; color: #374151">
+    We will never ask you for this code by phone, by message, or in a reply to this email. Nobody
+    here needs it.
+  </p>
+
+  {{#portalUrl}}
+  <p style="margin: 0 0 16px; font-size: 13px; color: #6b7280">
+    If you have closed the page, open it again at
+    <a href="{{portalUrl}}" style="color: {{companyAccentDark}}">{{portalUrl}}</a> and ask for a
+    fresh code.
+  </p>
+  {{/portalUrl}}
+
+  <p style="margin: 18px 0 0; font-size: 13px; color: #6b7280">
+    If you did not ask for this, nothing has happened and nobody has seen anything. The code
+    expires on its own. Tell us if it keeps arriving.
+  </p>
+
+  <p style="margin: 14px 0 0">
+    Kind regards,<br>
+    {{companyName}}
+  </p>
+
+  <p style="margin: 18px 0 0; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280">
+    {{companyName}}{{#companyPhone}} · {{companyPhone}}{{/companyPhone}}{{#companyEmail}} · {{companyEmail}}{{/companyEmail}}{{#companyWebsite}} · {{companyWebsite}}{{/companyWebsite}}
+  </p>
+</div>

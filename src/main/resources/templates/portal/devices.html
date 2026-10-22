@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<!--
+  The devices that have been trusted, and the button that ends one.
+
+  A trusted browser is only safe because this page exists. Somebody who forwarded their link by
+  accident, or who opened the trip on a hotel computer and walked away, has no other way of
+  undoing it, and nothing else in the portal would ever tell them it happened.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{portal/_layout :: layout('Your devices', ~{::section})}">
+<body>
+<section>
+
+  <h1>Your devices</h1>
+  <p class="lede">
+    Every browser that has been used to open this trip. If you do not recognise one, end it.
+  </p>
+
+  <div class="card" th:each="device : ${page.devices}">
+    <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap">
+      <div>
+        <strong th:text="${device.label}">Chrome on Windows</strong>
+        <span th:if="${device.current}" style="font-size:12px;color:var(--accent-dark)"> &#183; this one</span>
+        <div style="font-size:13px;color:var(--muted)">
+          <span th:if="${device.ipAddress != null}" th:text="${device.ipAddress}">203.0.113.42</span><span
+            th:if="${device.lastSeenAt != null}"
+            th:text="' · last used ' + ${#temporals.format(device.lastSeenAt, 'd MMM yyyy, HH:mm')}"> · last used 21 Oct</span>
+        </div>
+      </div>
+      <form th:action="@{'/api/portal/devices/' + ${device.id} + '/revoke'}" method="post">
+        <input type="hidden" name="token" th:value="${page.journeyToken}" />
+        <button type="submit" class="quiet"
+                th:text="${device.current} ? 'Sign out here' : 'End this one'">End this one</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card" th:if="${#lists.isEmpty(page.devices)}">
+    <p style="margin:0">No other browser is signed in.</p>
+  </div>
+
+  <p style="font-size:13px;color:var(--muted)">
+    We email you whenever your trip is opened on a browser we have not seen before. If one of
+    those arrives and it was not you, end every device here and tell us: we can withdraw the link
+    entirely and send you a new one.
+  </p>
+
+</section>
+</body>
+</html>

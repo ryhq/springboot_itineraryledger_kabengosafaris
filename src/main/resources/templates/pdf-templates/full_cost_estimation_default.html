@@ -325,6 +325,17 @@
           Quoted on <span th:text="${costing.subjectCode}">QT-0000</span>
           <span th:if="${multi}" th:text="${' · ' + quoted.currency}"> · USD</span>
         </caption>
+        <!--
+          Two columns where the table above has four. The cost table compares STO against rack;
+          this one is a single figure that is not ours to split, so the header says which column
+          the number is in rather than leaving two blank cells to be read as zeroes.
+        -->
+        <thead>
+          <tr>
+            <th>What the customer is charged</th>
+            <th class="num">Amount</th>
+          </tr>
+        </thead>
         <tbody>
           <tr th:if="${quoted.subtotal != null}">
             <td>Subtotal</td>

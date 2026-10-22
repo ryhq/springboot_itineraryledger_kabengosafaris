@@ -85,6 +85,73 @@ public class SecurityConfigurations {
             .build();
     }
 
+    /**
+     * The client portal: a different kind of caller, so a different chain.
+     *
+     * <p>Everything else here authenticates a member of staff holding a JWT. A client holds no
+     * account and no password, and their session is a stored secret in a cookie, because this
+     * application mints a fresh JWT signing key on every restart by design and a client's trip is
+     * nine months away.
+     *
+     * <p>So this chain deliberately carries <strong>neither</strong> the JWT filter nor the
+     * dynamic permission filter. A portal request has no {@code User} principal and no
+     * {@code PERM_} authority to check, and running those two over it would mean a non-staff
+     * caller is evaluated by staff rules, which is how somebody eventually gets an answer they
+     * should not have.
+     *
+     * <p>Authorisation instead happens in one place, {@code PortalAccessService.resolve}, which
+     * every portal endpoint asks the same question: what may the holder of this link and this
+     * cookie see. The chain itself permits the requests and refuses nothing, which is honest
+     * about where the decision is made rather than spreading it over two mechanisms.
+     *
+     * <p>Two filters it does carry. The <strong>feature gate</strong>, so a company without the
+     * portal answers 404 rather than serving it; it could not be reached under
+     * {@code /api/public/}, which the gate skips, and that is why the portal has its own path
+     * space. And the <strong>rate limiter</strong>, because asking for a verification code is
+     * unauthenticated work that sends an email.
+     */
+    @Bean
+    @org.springframework.core.annotation.Order(2)
+    public SecurityFilterChain clientPortalFilterChain(
+        HttpSecurity http,
+        com.itineraryledger.kabengosafaris.Feature.FeatureGateFilter featureGateFilter,
+        com.itineraryledger.kabengosafaris.Security.RateLimit.RateLimitFilter rateLimitFilter
+    ) throws Exception {
+        return http
+            .securityMatcher("/portal/**", "/api/portal/**")
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+            /*
+             * CSRF off here matches the rest of this API, and the portal does not rely on it:
+             * the session cookie is SameSite=Lax, so a form posted from another origin does not
+             * carry it, and every state change is a POST.
+             */
+            .csrf(csrf -> csrf.disable())
+            .httpBasic(basic -> basic.disable())
+            .formLogin(form -> form.disable())
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .headers(headers -> headers
+                .frameOptions(frame -> frame.deny())
+                /*
+                 * The portal renders no client-supplied markup and loads nothing from anywhere
+                 * else. Saying so costs one header and removes the whole class of injected
+                 * script, which matters more here than anywhere else in the application: these
+                 * pages carry somebody's personal details and are opened on machines we know
+                 * nothing about.
+                 */
+                .contentSecurityPolicy(csp -> csp.policyDirectives(
+                    "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
+                    + "script-src 'self'; object-src 'none'; base-uri 'none'; "
+                    + "form-action 'self'; frame-ancestors 'none'"))
+                .referrerPolicy(referrer -> referrer.policy(
+                    org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter
+                        .ReferrerPolicy.SAME_ORIGIN)))
+            .addFilterBefore(rateLimitFilter,
+                org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(featureGateFilter,
+                com.itineraryledger.kabengosafaris.Security.RateLimit.RateLimitFilter.class)
+            .build();
+    }
+
     @org.springframework.beans.factory.annotation.Value("${app.management.base.url:}")
     private String managementBaseUrl;
 
@@ -122,7 +189,7 @@ public class SecurityConfigurations {
     }
 
     @Bean
-    @org.springframework.core.annotation.Order(2)
+    @org.springframework.core.annotation.Order(3)
     public SecurityFilterChain securityFilterChain(
         HttpSecurity httpSecurity,
         JwtAuthenticationFilter jwtAuthenticationFilter,

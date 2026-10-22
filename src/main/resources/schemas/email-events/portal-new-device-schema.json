@@ -1,0 +1,28 @@
+[
+  {
+    "name": "recipientName",
+    "description": "What to call them",
+    "isRequired": true
+  },
+  {
+    "name": "deviceLabel",
+    "description": "Something they recognise, e.g. 'Chrome on Windows'. Not a fingerprint",
+    "isRequired": true
+  },
+  {
+    "name": "ipAddress",
+    "description": "The address it was opened from, so an unfamiliar one is visible"
+  },
+  {
+    "name": "openedAt",
+    "description": "When it happened"
+  },
+  {
+    "name": "tripName",
+    "description": "Which booking was opened"
+  },
+  {
+    "name": "portalUrl",
+    "description": "Their trip page, where they can see every device and end any of them"
+  }
+]

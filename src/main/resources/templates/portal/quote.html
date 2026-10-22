@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<!--
+  The quotation, as the client is entitled to see it.
+
+  Published figures only. There is no operator cost on this page and there is no field for one in
+  the model behind it, which is the difference between a rule and a hope: a template cannot print
+  a margin it was never given.
+
+  The per-guest line is here because it is the number a group actually discusses, and the
+  sentence under it is here because that number is only true at this party size. Six people in
+  two vehicles is not three times two people in one, and a client who multiplies will be wrong in
+  whichever direction hurts.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{portal/_layout :: layout('Your quotation', ~{::section})}">
+<body>
+<section>
+
+  <h1>Your quotation</h1>
+  <p class="lede" th:if="${page.quote != null}">
+    <span th:text="${page.quote.code}">QT-0000</span><span
+      th:if="${page.quote.status != null}" th:text="' · ' + ${page.quote.status}"> · Sent</span>
+  </p>
+
+  <div class="note warn" th:if="${page.quote != null and page.quote.expired}">
+    This quotation has passed its validity date. The trip is still available, but the price needs
+    confirming before anything is booked. Tell us and we will refresh it.
+  </div>
+
+  <div class="card" th:if="${page.quote != null}">
+    <table class="figures">
+      <tr th:each="total : ${page.quote.totals}" class="total">
+        <td>Total for the party</td>
+        <td class="num" th:text="${total.formatted}">USD 18,313.40</td>
+      </tr>
+      <tr th:each="each : ${page.quote.perGuest}">
+        <td style="color:var(--muted)">
+          Per guest<span th:if="${page.quote.travellers != null}"
+                         th:text="' (' + ${page.quote.travellers} + ' travelling)'"> (6 travelling)</span>
+        </td>
+        <td class="num" th:text="${each.formatted}">USD 3,052.23</td>
+      </tr>
+    </table>
+
+    <p style="margin:12px 0 0; font-size:13px; color:var(--muted)"
+       th:if="${page.quote.travellers != null and page.quote.travellers > 1}">
+      The per-guest figure holds at this party size. Vehicles and the fees charged per group are
+      shared across everybody, so adding a traveller changes it rather than simply adding a share.
+      Ask us and we will price the size you want.
+    </p>
+
+    <p style="margin:12px 0 0; font-size:13px; color:var(--muted)"
+       th:if="${page.quote.validTo != null}">
+      Valid until
+      <span th:text="${#temporals.format(page.quote.validTo, 'd MMMM yyyy')}">4 December 2026</span>.
+    </p>
+  </div>
+
+  <div class="card" th:if="${page.quote != null and page.quote.notes != null}">
+    <p style="margin:0" th:text="${page.quote.notes}">Anything we wrote for you.</p>
+  </div>
+
+  <h2 th:if="${page.quote != null and (!#lists.isEmpty(page.quote.included) or !#lists.isEmpty(page.quote.notIncluded))}">
+    What this price covers
+  </h2>
+
+  <div class="card two"
+       th:if="${page.quote != null and (!#lists.isEmpty(page.quote.included) or !#lists.isEmpty(page.quote.notIncluded))}">
+    <div th:if="${!#lists.isEmpty(page.quote.included)}">
+      <strong style="font-size:13px">Included</strong>
+      <ul class="plain">
+        <li th:each="line : ${page.quote.included}" th:text="${line}">A thing included</li>
+      </ul>
+    </div>
+    <div th:if="${!#lists.isEmpty(page.quote.notIncluded)}">
+      <strong style="font-size:13px">Not included</strong>
+      <ul class="plain">
+        <li th:each="line : ${page.quote.notIncluded}" th:text="${line}">A thing not included</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" th:if="${page.quote == null}">
+    <p style="margin:0">There is no quotation on this booking yet.</p>
+  </div>
+
+</section>
+</body>
+</html>

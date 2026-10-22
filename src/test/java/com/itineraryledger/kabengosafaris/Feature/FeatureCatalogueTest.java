@@ -128,8 +128,21 @@ class FeatureCatalogueTest {
 
         FeatureService service = new FeatureService(broken, new MockEnvironment());
 
+        /*
+         * A database that cannot answer must not change anybody's product, in either direction.
+         *
+         * This used to assert that every feature stays ON, which was the same thing while every
+         * default was on. It is not any more: the client portal defaults OFF, because switching
+         * it on publishes a surface customers can reach with their personal details behind it,
+         * and a failed read is the last moment to make that decision on a company's behalf.
+         *
+         * So the rule is each feature's own default, which is also the stricter statement: a
+         * broken read is not an event that turns anything on or off.
+         */
         for (Feature feature : Feature.values()) {
-            assertTrue(service.isEnabled(feature), feature.getKey() + " must stay on when the read fails");
+            assertEquals(feature.isEnabledByDefault(), service.isEnabled(feature),
+                feature.getKey() + " must fall back to its own default when the read fails, "
+                    + "not to on and not to off");
         }
     }
 
@@ -148,7 +161,16 @@ class FeatureCatalogueTest {
      * the controllers finds the same mappings in a second.
      */
     private Set<String> mappedPaths() throws IOException {
-        Pattern classLevel = Pattern.compile("@RequestMapping\\(\"(/api/[a-z0-9-]+)\"\\)");
+        /*
+         * Class-level mappings are matched at any first segment, not just /api.
+         *
+         * Every controller in this application answered under /api until the client portal, which
+         * serves pages to a customer's browser at /portal and is owned by a feature flag like
+         * anything else. Restricted to /api, this guard reported that flag as gating nothing,
+         * which was wrong in the one direction that matters: it would have had somebody delete a
+         * path from the catalogue and leave the pages reachable with the switch off.
+         */
+        Pattern classLevel = Pattern.compile("@RequestMapping\\(\"(/[a-z0-9-]+)\"\\)");
         Pattern methodLevel = Pattern.compile("@(?:Get|Post|Put|Patch|Delete)Mapping\\(\"(/api/[a-z0-9-]+)");
         Set<String> paths = new TreeSet<>();
 

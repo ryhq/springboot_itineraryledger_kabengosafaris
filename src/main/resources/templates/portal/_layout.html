@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<!--
+  The shell every client page sits in.
+
+  Three things it is responsible for, each of which would otherwise be forgotten on one page out
+  of seven.
+
+  NOINDEX. These pages carry somebody's trip, their prices and eventually their invoice. A search
+  engine that finds one has published it, and the link in a client's email is exactly the kind of
+  URL that leaks into a referrer header.
+
+  THE BRAND FROM THE RECORD. Colours and the mark come from the company profile, never from CSS
+  written here: one codebase serves more than one company, and a hardcoded green is one company's
+  green in everybody's portal.
+
+  THE TIER. The navigation only offers what this caller may actually open, because a link that
+  bounces them to a verification page every time is a worse experience than no link.
+
+  No external anything: no font, no script, no analytics. The content policy on this chain
+  forbids it, and that is the point. A page with somebody's passport details on it is the last
+  place to be loading a third party's JavaScript.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="en" th:fragment="layout(title, content)">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow, noarchive" />
+  <meta name="referrer" content="same-origin" />
+  <title th:text="${title} + ' · ' + ${page.companyName}">Your trip</title>
+  <style th:inline="css">
+    :root {
+      --accent: [[${page.accent != null ? page.accent : '#1f6f4a'}]];
+      --accent-dark: [[${page.accentDark != null ? page.accentDark : '#164c34'}]];
+      --accent-soft: [[${page.accentSoft != null ? page.accentSoft : '#f1f6f3'}]];
+      --ink: #1f2421;
+      --muted: #667085;
+      --line: #e3e8e5;
+      --bg: #fbfcfb;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    header.masthead {
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      padding: 14px 0;
+    }
+
+    .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand img { height: 30px; width: auto; }
+    .brand .name { font-weight: 700; color: var(--accent-dark); letter-spacing: 0.2px; }
+
+    nav.tabs {
+      display: flex; flex-wrap: wrap; gap: 4px;
+      margin-top: 12px;
+    }
+    nav.tabs a {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      text-decoration: none;
+      color: var(--muted);
+      border: 1px solid transparent;
+    }
+    nav.tabs a:hover { color: var(--accent-dark); border-color: var(--line); }
+    nav.tabs a.on { color: #fff; background: var(--accent-dark); }
+
+    main { padding: 24px 0 56px; }
+
+    h1 { font-size: 23px; line-height: 1.25; margin: 0 0 6px; color: var(--accent-dark); }
+    h2 { font-size: 16px; margin: 26px 0 8px; }
+    p { margin: 0 0 12px; }
+    .lede { color: var(--muted); margin: 0 0 20px; }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin: 0 0 14px;
+    }
+
+    .note {
+      background: var(--accent-soft);
+      border-left: 3px solid var(--accent);
+      padding: 12px 14px;
+      border-radius: 0 8px 8px 0;
+      margin: 0 0 16px;
+      font-size: 14px;
+    }
+    .warn { background: #fdf6ec; border-left-color: #b4791f; }
+
+    table.figures { width: 100%; border-collapse: collapse; }
+    table.figures td { padding: 7px 0; border-bottom: 1px solid #f1f4f2; }
+    table.figures td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    table.figures tr.total td { font-weight: 700; border-bottom: none; padding-top: 12px; }
+
+    .day { border-left: 2px solid var(--line); padding: 0 0 18px 16px; position: relative; }
+    .day:last-child { padding-bottom: 0; }
+    .day .n {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
+    }
+    .day h3 { margin: 2px 0 6px; font-size: 15.5px; }
+    .day .meta { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+    label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 4px; }
+    input[type=text], input[type=email] {
+      width: 100%; padding: 11px 12px; font-size: 16px;
+      border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink);
+    }
+    input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .code-input { letter-spacing: 8px; font-family: "Courier New", monospace; font-size: 20px; }
+
+    button, .button {
+      display: inline-block; border: 0; cursor: pointer;
+      background: var(--accent-dark); color: #fff;
+      padding: 11px 20px; border-radius: 8px;
+      font-size: 15px; font-weight: 600; text-decoration: none;
+    }
+    button.quiet, .button.quiet {
+      background: #fff; color: var(--muted); border: 1px solid var(--line); font-weight: 500;
+    }
+
+    ul.plain { margin: 0; padding-left: 18px; }
+    ul.plain li { margin-bottom: 4px; }
+
+    .two { display: flex; flex-wrap: wrap; gap: 20px; }
+    .two > div { flex: 1 1 240px; }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 18px 0 40px;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    footer a { color: var(--muted); }
+
+    @media (max-width: 520px) {
+      h1 { font-size: 20px; }
+      .card { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="brand">
+      <img th:if="${page.logoUrl != null}" th:src="${page.logoUrl}" alt="" />
+      <span class="name" th:text="${page.companyName}">Company</span>
+    </div>
+
+    <nav class="tabs" th:with="base='/portal/' + ${page.journeyToken}">
+      <a th:href="${base}" th:classappend="${title == 'Your trip'} ? 'on'">Your trip</a>
+      <!--
+        Only what they can open. These three need a code, and before it is given they are not
+        shown at all: a client clicking "Invoice" and landing on a verification form four times
+        learns to distrust the whole page.
+      -->
+      <a th:if="${page.verified and page.quote != null}" th:href="${base} + '/quote'"
+         th:classappend="${title == 'Your quotation'} ? 'on'">Quotation</a>
+      <a th:if="${page.verified and page.invoice != null}" th:href="${base} + '/invoice'"
+         th:classappend="${title == 'Your invoice'} ? 'on'">Invoice</a>
+      <a th:if="${page.verified}" th:href="${base} + '/documents'"
+         th:classappend="${title == 'Documents'} ? 'on'">Documents</a>
+      <a th:if="${page.verified}" th:href="${base} + '/devices'"
+         th:classappend="${title == 'Your devices'} ? 'on'">Devices</a>
+      <a th:unless="${page.verified}" th:href="${base} + '/verify'">See your quotation</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div th:replace="${content}">page content</div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap" th:with="base='/portal/' + ${page.journeyToken}">
+    <p style="margin:0 0 6px">
+      <span th:text="${page.companyName}">Company</span>
+    </p>
+    <p style="margin:0">
+      <a th:href="${base} + '/privacy'">What we collect, and for how long</a>
+      <span th:if="${page.verified}">
+        &#183;
+        <!-- a form, not a link: signing out changes something, and a link that changes
+             something is a link a preview bot can press -->
+        <form th:action="@{/api/portal/access/sign-out}" method="post" style="display:inline">
+          <input type="hidden" name="token" th:value="${page.journeyToken}" />
+          <button type="submit" class="quiet"
+                  style="padding:0;border:0;background:none;color:var(--muted);text-decoration:underline;font-size:12.5px">
+            Sign out of this browser
+          </button>
+        </form>
+      </span>
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

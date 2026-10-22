@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<!--
+  The trip, and the one page that opens without a code.
+
+  Deliberate: a client showing their family where they are going should not have to perform a
+  verification first, and there is nothing on this page that a forwarded link should not reach.
+  No price, no personal detail, no document. Everything that has one of those is a tab away and
+  behind a code.
+
+  specialNotes is absent by construction, not by omission here: the view model has no field for
+  it. That is the field the office writes "confirm before quoting" into, and it has already
+  reached a client once on a printed itinerary.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{portal/_layout :: layout('Your trip', ~{::section})}">
+<body>
+<section>
+
+  <div class="note" th:if="${notice != null}" th:text="${notice}">Something happened.</div>
+
+  <h1 th:text="${page.trip != null ? page.trip.name : 'Your trip'}">Your trip</h1>
+
+  <p class="lede" th:if="${page.trip != null and page.trip.totalDays != null}">
+    <span th:text="${page.trip.totalDays}">8</span> days
+    <span th:if="${page.trip.totalNights != null}">
+      / <span th:text="${page.trip.totalNights}">7</span> nights</span><span
+      th:if="${page.trip.startDate != null}">, starting
+      <span th:text="${#temporals.format(page.trip.startDate, 'd MMMM yyyy')}">30 December 2026</span></span>
+  </p>
+
+  <!--
+    The nudge towards verifying, placed where somebody who wants the price will look. Phrased as
+    an offer rather than a wall, because most people arriving here are the right person and have
+    simply not proved it yet.
+  -->
+  <div class="note" th:unless="${page.verified}">
+    <strong>Your quotation and invoice are not shown here.</strong>
+    They are behind a short code we send to the address we already hold for this booking.
+    <a th:href="'/portal/' + ${page.journeyToken} + '/verify'">See your quotation</a>.
+  </div>
+
+  <div class="card" th:if="${page.trip != null and page.trip.summary != null}">
+    <p style="margin:0" th:text="${page.trip.summary}">What the trip is.</p>
+  </div>
+
+  <h2 th:if="${page.trip != null and !#lists.isEmpty(page.trip.days)}">Day by day</h2>
+
+  <div class="card" th:if="${page.trip != null and !#lists.isEmpty(page.trip.days)}">
+    <div class="day" th:each="day : ${page.trip.days}">
+      <div class="n">
+        Day <span th:text="${day.dayNumber}">1</span><span
+          th:if="${day.date != null}" th:text="' · ' + ${#temporals.format(day.date, 'EEE d MMM')}"> · Wed 30 Dec</span>
+      </div>
+      <h3 th:text="${day.title}">Arrive in Arusha</h3>
+
+      <p th:if="${day.description != null}" th:text="${day.description}">What happens.</p>
+
+      <div class="meta" th:if="${day.morning != null}">
+        <strong>Morning.</strong> <span th:text="${day.morning}">Game drive.</span>
+      </div>
+      <div class="meta" th:if="${day.afternoon != null}">
+        <strong>Afternoon.</strong> <span th:text="${day.afternoon}">Transfer.</span>
+      </div>
+      <div class="meta" th:if="${day.evening != null}">
+        <strong>Evening.</strong> <span th:text="${day.evening}">Dinner at the lodge.</span>
+      </div>
+
+      <div class="meta" th:if="${!#lists.isEmpty(day.parks)}">
+        <span th:text="${#strings.listJoin(day.parks, ' · ')}">Serengeti</span>
+      </div>
+
+      <div class="meta">
+        <span th:if="${day.stay != null}">Staying at <strong th:text="${day.stay}">The lodge</strong></span>
+        <span th:if="${day.stay == null and !day.overnight}">No overnight stay</span>
+        <span th:if="${day.meals != null}" th:text="' · ' + ${day.meals}"> · Breakfast, dinner</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" th:if="${page.trip == null or #lists.isEmpty(page.trip.days)}">
+    <p style="margin:0">
+      The day by day plan is not ready yet. We will add it here as soon as it is, and you do not
+      need a new link: this page is always the current version.
+    </p>
+  </div>
+
+</section>
+</body>
+</html>
