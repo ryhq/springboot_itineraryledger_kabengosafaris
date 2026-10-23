@@ -10,6 +10,7 @@ import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.QuoteDayPa
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.QuoteDayParkActivity.Repository.QuoteDayParkActivityRepository;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.Repository.QuoteDayParkRepository;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteCostEstimationService;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteEditPolicy;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 public class QuoteDayParkActivityService {
 
     private final QuoteDayParkRepository quoteDayParkRepository;
+    private final QuoteEditPolicy editPolicy;
     private final QuoteDayParkActivityRepository quoteDayParkActivityRepository;
     private final ParkActivityRepository parkActivityRepository;
     private final QuoteCostEstimationService quoteCostEstimationService;
@@ -85,6 +87,10 @@ public class QuoteDayParkActivityService {
             if (parkVisit == null) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Quote day park not found", "QUOTE_DAY_PARK_NOT_FOUND"));
             }
+
+            // The quotation itself decides whether its prices may move. See QuoteEditPolicy.
+            ResponseEntity<ApiResponse<?>> refused = editPolicy.refusalFor(parkVisit.getQuoteDay(), QuoteEditPolicy.Actor.STAFF);
+            if (refused != null) return refused;
             Long parkId = parkVisit.getPark().getId();
             Long activityId = idObfuscator.decodeId(dto.getActivityId());
             if (activityId == null) {
@@ -129,6 +135,10 @@ public class QuoteDayParkActivityService {
             if (row == null) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Not found", "QDPA_NOT_FOUND"));
             }
+
+            // The quotation itself decides whether its prices may move. See QuoteEditPolicy.
+            ResponseEntity<ApiResponse<?>> refused = editPolicy.refusalFor(row.getQuoteDayPark().getQuoteDay(), QuoteEditPolicy.Actor.STAFF);
+            if (refused != null) return refused;
             if (dto.getSortOrder() != null) row.setSortOrder(dto.getSortOrder());
             if (dto.getDurationHours() != null) row.setDurationHours(dto.getDurationHours());
             if (dto.getStartTime() != null) row.setStartTime(dto.getStartTime());
@@ -157,6 +167,12 @@ public class QuoteDayParkActivityService {
                 return ResponseEntity.badRequest().body(
                         ApiResponse.error(400, "Ordered ID list is required", "EMPTY_PAYLOAD"));
             }
+
+            // Reordering moves what is charged, so it is an edit like any other.
+            QuoteDayPark reorderVisit = quoteDayParkRepository.findById(dayParkId).orElse(null);
+            ResponseEntity<ApiResponse<?>> refused = editPolicy.refusalFor(
+                reorderVisit == null ? null : reorderVisit.getQuoteDay(), QuoteEditPolicy.Actor.STAFF);
+            if (refused != null) return refused;
             int updated = 0; int n = 0;
             Long owningQuoteId = null;
             for (String obf : orderedIds) {
@@ -191,6 +207,10 @@ public class QuoteDayParkActivityService {
             if (row == null) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Not found", "QDPA_NOT_FOUND"));
             }
+
+            // The quotation itself decides whether its prices may move. See QuoteEditPolicy.
+            ResponseEntity<ApiResponse<?>> refused = editPolicy.refusalFor(row.getQuoteDayPark().getQuoteDay(), QuoteEditPolicy.Actor.STAFF);
+            if (refused != null) return refused;
             Long quoteId = row.getQuoteDayPark().getQuoteDay().getQuote().getId();
             quoteDayParkActivityRepository.delete(row);
             quoteCostEstimationService.triggerRecalc(quoteId);

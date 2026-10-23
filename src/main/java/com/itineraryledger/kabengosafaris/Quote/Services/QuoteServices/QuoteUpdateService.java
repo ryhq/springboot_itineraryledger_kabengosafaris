@@ -38,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 public class QuoteUpdateService {
 
     private final QuoteRepository quoteRepository;
+    private final QuoteEditPolicy quoteEditPolicy;
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
     private final IdObfuscator idObfuscator;
@@ -73,21 +74,17 @@ public class QuoteUpdateService {
                 );
             }
 
-            // WORKFLOW ENFORCEMENT: Check status-based edit restrictions
             QuoteStatus status = quote.getStatus();
 
-            // ACCEPTED, REJECTED, EXPIRED, CANCELLED, CONVERTED quotes cannot be edited at all
-            if (status == QuoteStatus.ACCEPTED || status == QuoteStatus.REJECTED ||
-                status == QuoteStatus.EXPIRED || status == QuoteStatus.CANCELLED ||
-                status == QuoteStatus.CONVERTED) {
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(
-                        400,
-                        String.format("Cannot edit %s quote. Create a new version instead.", status.getDisplayName()),
-                        "EDIT_BLOCKED"
-                    )
-                );
-            }
+            /*
+             * The same question the day tree asks, asked in the same place, so the header and
+             * the prices cannot disagree about whether this quotation is open. Everything below
+             * is about WHICH fields a SENT quote may change, which is this service's own rule
+             * and nobody else's.
+             */
+            ResponseEntity<ApiResponse<?>> refused =
+                quoteEditPolicy.refusalFor(quote, QuoteEditPolicy.Actor.STAFF);
+            if (refused != null) return refused;
 
             // SENT quotes can only edit display fields
             if (status == QuoteStatus.SENT) {

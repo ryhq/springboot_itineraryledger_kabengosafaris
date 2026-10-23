@@ -10,6 +10,7 @@ import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayActivity.Entity
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayActivity.Repository.QuoteDayActivityRepository;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.Repository.QuoteDayRepository;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteCostEstimationService;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteEditPolicy;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 public class QuoteDayActivityService {
 
     private final QuoteDayRepository quoteDayRepository;
+    private final QuoteEditPolicy editPolicy;
     private final QuoteDayActivityRepository quoteDayActivityRepository;
     private final ActivityRepository activityRepository;
     private final QuoteCostEstimationService quoteCostEstimationService;
@@ -85,6 +87,10 @@ public class QuoteDayActivityService {
             if (day == null) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Quote day not found", "QUOTE_DAY_NOT_FOUND"));
             }
+
+            // The quotation itself decides whether its prices may move. See QuoteEditPolicy.
+            ResponseEntity<ApiResponse<?>> refused = editPolicy.refusalFor(day, QuoteEditPolicy.Actor.STAFF);
+            if (refused != null) return refused;
             Long activityId = idObfuscator.decodeId(dto.getActivityId());
             Activity activity = activityId == null ? null : activityRepository.findById(activityId).orElse(null);
             if (activity == null) {
@@ -123,6 +129,10 @@ public class QuoteDayActivityService {
             if (row == null) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Not found", "QDACT_NOT_FOUND"));
             }
+
+            // The quotation itself decides whether its prices may move. See QuoteEditPolicy.
+            ResponseEntity<ApiResponse<?>> refused = editPolicy.refusalFor(row.getQuoteDay(), QuoteEditPolicy.Actor.STAFF);
+            if (refused != null) return refused;
             if (dto.getActivityId() != null) {
                 Long activityId = idObfuscator.decodeId(dto.getActivityId());
                 Activity activity = activityId == null ? null : activityRepository.findById(activityId).orElse(null);
@@ -160,6 +170,12 @@ public class QuoteDayActivityService {
                 return ResponseEntity.badRequest().body(
                         ApiResponse.error(400, "Ordered ID list is required", "EMPTY_PAYLOAD"));
             }
+
+            // Reordering moves what is charged on which day, so it is an edit like any other.
+            QuoteDay reorderDay = quoteDayRepository.findById(dayId).orElse(null);
+            ResponseEntity<ApiResponse<?>> refused =
+                editPolicy.refusalFor(reorderDay, QuoteEditPolicy.Actor.STAFF);
+            if (refused != null) return refused;
             int updated = 0; int n = 0;
             Long owningQuoteId = null;
             for (String obf : orderedIds) {
@@ -194,6 +210,10 @@ public class QuoteDayActivityService {
             if (row == null) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Not found", "QDACT_NOT_FOUND"));
             }
+
+            // The quotation itself decides whether its prices may move. See QuoteEditPolicy.
+            ResponseEntity<ApiResponse<?>> refused = editPolicy.refusalFor(row.getQuoteDay(), QuoteEditPolicy.Actor.STAFF);
+            if (refused != null) return refused;
             Long quoteId = row.getQuoteDay().getQuote().getId();
             quoteDayActivityRepository.delete(row);
             quoteCostEstimationService.triggerRecalc(quoteId);

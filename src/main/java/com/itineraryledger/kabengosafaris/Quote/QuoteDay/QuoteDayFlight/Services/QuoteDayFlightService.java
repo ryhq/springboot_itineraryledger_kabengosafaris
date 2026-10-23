@@ -24,6 +24,8 @@ import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayFlight.DTOs.Upd
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayFlight.Entity.QuoteDayFlight;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayFlight.Repository.QuoteDayFlightRepository;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.Repository.QuoteDayRepository;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteCostEstimationService;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteEditPolicy;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 
@@ -50,6 +52,8 @@ public class QuoteDayFlightService {
 
     private final QuoteDayFlightRepository repository;
     private final QuoteDayRepository days;
+    private final QuoteCostEstimationService quoteCostEstimationService;
+    private final QuoteEditPolicy editPolicy;
     private final FlightRouteRepository routes;
     private final FlightFareRepository fares;
     private final IdObfuscator idObfuscator;
@@ -79,6 +83,10 @@ public class QuoteDayFlightService {
         if (day == null) {
             return ResponseEntity.status(404).body(ApiResponse.error(404, "No day with that id", "DAY_NOT_FOUND"));
         }
+
+        // The quotation itself decides whether its prices may move. See QuoteEditPolicy.
+        ResponseEntity<ApiResponse<?>> refused = editPolicy.refusalFor(day, QuoteEditPolicy.Actor.STAFF);
+        if (refused != null) return refused;
         Long routeId = idObfuscator.decodeId(dto.getFlightRouteId());
         FlightRoute route = routeId == null ? null : routes.findById(routeId).orElse(null);
         if (route == null) {
@@ -126,12 +134,17 @@ public class QuoteDayFlightService {
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("flight", toDTO(repository.save(flight)));
+        recalcFor(day);
         return ResponseEntity.status(201).body(ApiResponse.success(201, "Flight added to the day", payload));
     }
 
     public ResponseEntity<ApiResponse<?>> update(String id, UpdateQuoteDayFlightDTO dto) {
         QuoteDayFlight flight = find(id);
         if (flight == null) return notFound();
+
+        ResponseEntity<ApiResponse<?>> refused =
+            editPolicy.refusalFor(flight.getQuoteDay(), QuoteEditPolicy.Actor.STAFF);
+        if (refused != null) return refused;
 
         if (dto.getFlightRouteId() != null) {
             Long routeId = idObfuscator.decodeId(dto.getFlightRouteId());
@@ -185,7 +198,20 @@ public class QuoteDayFlightService {
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("flight", toDTO(repository.save(flight)));
+        recalcFor(flight.getQuoteDay());
         return ResponseEntity.ok(ApiResponse.success(200, "Flight updated", payload));
+    }
+
+    /**
+     * Ask for a new price, because FLIGHT is a derived type and this service never used to.
+     *
+     * <p>Every other day-tree service calls {@code triggerRecalc} on every write. This one did
+     * not, so adding, editing or removing a sector changed the itinerary and left the total
+     * standing at whatever it was — a quotation that silently disagreed with its own contents.
+     */
+    private void recalcFor(QuoteDay day) {
+        if (day == null || day.getQuote() == null) return;
+        quoteCostEstimationService.triggerRecalc(day.getQuote().getId());
     }
 
     /** Exactly one primary per day: the same rule the accommodation lines follow. */
@@ -208,15 +234,40 @@ public class QuoteDayFlightService {
     public ResponseEntity<ApiResponse<?>> delete(List<String> ids) {
         List<String> deleted = new ArrayList<>();
         List<Map<String, Object>> skipped = new ArrayList<>();
+        java.util.Set<Long> touched = new java.util.LinkedHashSet<>();
         for (String id : ids) {
             QuoteDayFlight flight = find(id);
             if (flight == null) {
                 skipped.add(Map.of("id", id, "reason", "No flight with that id"));
                 continue;
             }
+
+            /*
+             * Per-row rather than refusing the batch: the caller asked for several, and the
+             * house contract is to say what happened to each. One frozen quotation must not
+             * stop the others going.
+             */
+            QuoteEditPolicy.Decision decision =
+                editPolicy.canEditDayTree(flight.getQuoteDay(), QuoteEditPolicy.Actor.STAFF);
+            if (!decision.allowed()) {
+                skipped.add(Map.of("id", id, "reason", decision.message()));
+                continue;
+            }
+
+            /*
+             * FLIGHT is in DERIVED_TYPES, so the price depends on it — and this was the one
+             * mutation in the day tree that never asked for a recalculation. Removing a sector
+             * left the old total standing.
+             */
+            Long quoteId = flight.getQuoteDay() == null || flight.getQuoteDay().getQuote() == null
+                ? null : flight.getQuoteDay().getQuote().getId();
             repository.delete(flight);
+            if (quoteId != null) touched.add(quoteId);
             deleted.add(id);
         }
+        // Once per quotation, not once per sector: ten removals are one new price.
+        for (Long quoteId : touched) quoteCostEstimationService.triggerRecalc(quoteId);
+
         Map<String, Object> report = new HashMap<>();
         report.put("deletedCount", deleted.size());
         report.put("deletedIds", deleted);

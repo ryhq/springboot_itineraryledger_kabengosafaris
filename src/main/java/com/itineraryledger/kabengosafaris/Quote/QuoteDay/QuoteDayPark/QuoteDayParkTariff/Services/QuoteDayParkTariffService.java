@@ -10,6 +10,7 @@ import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.QuoteDayPa
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.QuoteDayParkTariff.Repository.QuoteDayParkTariffRepository;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.Repository.QuoteDayParkRepository;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteCostEstimationService;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteEditPolicy;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 public class QuoteDayParkTariffService {
 
     private final QuoteDayParkRepository quoteDayParkRepository;
+    private final QuoteEditPolicy editPolicy;
     private final QuoteDayParkTariffRepository quoteDayParkTariffRepository;
     private final ParkTariffRepository parkTariffRepository;
     private final QuoteCostEstimationService quoteCostEstimationService;
@@ -85,6 +87,10 @@ public class QuoteDayParkTariffService {
             if (parkVisit == null) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Quote day park not found", "QUOTE_DAY_PARK_NOT_FOUND"));
             }
+
+            // The quotation itself decides whether its prices may move. See QuoteEditPolicy.
+            ResponseEntity<ApiResponse<?>> refused = editPolicy.refusalFor(parkVisit.getQuoteDay(), QuoteEditPolicy.Actor.STAFF);
+            if (refused != null) return refused;
             Long parkId = parkVisit.getPark().getId();
             Long tariffId = idObfuscator.decodeId(dto.getTariffId());
             if (tariffId == null) {
@@ -124,6 +130,10 @@ public class QuoteDayParkTariffService {
             if (row == null) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Not found", "QDPT_NOT_FOUND"));
             }
+
+            // The quotation itself decides whether its prices may move. See QuoteEditPolicy.
+            ResponseEntity<ApiResponse<?>> refused = editPolicy.refusalFor(row.getQuoteDayPark().getQuoteDay(), QuoteEditPolicy.Actor.STAFF);
+            if (refused != null) return refused;
             if (dto.getNotes() != null) row.setNotes(dto.getNotes());
             if (dto.getIsIncludedInPrice() != null) row.setIsIncludedInPrice(dto.getIsIncludedInPrice());
             QuoteDayParkTariff saved = quoteDayParkTariffRepository.save(row);
@@ -147,6 +157,10 @@ public class QuoteDayParkTariffService {
             if (row == null) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Not found", "QDPT_NOT_FOUND"));
             }
+
+            // The quotation itself decides whether its prices may move. See QuoteEditPolicy.
+            ResponseEntity<ApiResponse<?>> refused = editPolicy.refusalFor(row.getQuoteDayPark().getQuoteDay(), QuoteEditPolicy.Actor.STAFF);
+            if (refused != null) return refused;
             Long quoteId = row.getQuoteDayPark().getQuoteDay().getQuote().getId();
             quoteDayParkTariffRepository.delete(row);
             quoteCostEstimationService.triggerRecalc(quoteId);

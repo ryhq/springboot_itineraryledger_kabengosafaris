@@ -16,6 +16,7 @@ import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.E
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.Repository.QuoteDayAccommodationRepository;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.Repository.QuoteDayRepository;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteCostEstimationService;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteEditPolicy;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
 public class QuoteDayAccommodationService {
 
     private final QuoteDayRepository quoteDayRepository;
+    private final QuoteEditPolicy editPolicy;
     private final QuoteDayAccommodationRepository quoteDayAccommodationRepository;
     private final AccommodationRepository accommodationRepository;
     private final AccommodationRoomTypeRepository roomTypeRepository;
@@ -96,6 +98,10 @@ public class QuoteDayAccommodationService {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Quote day not found", "QUOTE_DAY_NOT_FOUND"));
             }
 
+            // The quotation itself decides whether its prices may move. See QuoteEditPolicy.
+            ResponseEntity<ApiResponse<?>> refused = editPolicy.refusalFor(day, QuoteEditPolicy.Actor.STAFF);
+            if (refused != null) return refused;
+
             Accommodation acc = lookupAccommodation(dto.getAccommodationId());
             AccommodationRoomType rt = lookupRoomType(dto.getRoomTypeId());
             AccommodationRoomStandard rs = lookupRoomStandard(dto.getRoomStandardId());
@@ -137,6 +143,10 @@ public class QuoteDayAccommodationService {
             if (row == null) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Not found", "QDA_NOT_FOUND"));
             }
+
+            // The quotation itself decides whether its prices may move. See QuoteEditPolicy.
+            ResponseEntity<ApiResponse<?>> refused = editPolicy.refusalFor(row.getQuoteDay(), QuoteEditPolicy.Actor.STAFF);
+            if (refused != null) return refused;
             if (dto.getAccommodationId() != null) {
                 Accommodation acc = lookupAccommodation(dto.getAccommodationId());
                 if (acc == null) return notFound("Accommodation");
@@ -182,6 +192,10 @@ public class QuoteDayAccommodationService {
             if (row == null) {
                 return ResponseEntity.status(404).body(ApiResponse.error(404, "Not found", "QDA_NOT_FOUND"));
             }
+
+            // The quotation itself decides whether its prices may move. See QuoteEditPolicy.
+            ResponseEntity<ApiResponse<?>> refused = editPolicy.refusalFor(row.getQuoteDay(), QuoteEditPolicy.Actor.STAFF);
+            if (refused != null) return refused;
             Long quoteId = row.getQuoteDay().getQuote().getId();
             quoteDayAccommodationRepository.delete(row);
             quoteCostEstimationService.triggerRecalc(quoteId);
