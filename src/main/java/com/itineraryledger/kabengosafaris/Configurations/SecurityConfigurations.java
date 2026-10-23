@@ -115,7 +115,8 @@ public class SecurityConfigurations {
     public SecurityFilterChain clientPortalFilterChain(
         HttpSecurity http,
         com.itineraryledger.kabengosafaris.Feature.FeatureGateFilter featureGateFilter,
-        com.itineraryledger.kabengosafaris.Security.RateLimit.RateLimitFilter rateLimitFilter
+        com.itineraryledger.kabengosafaris.Security.RateLimit.RateLimitFilter rateLimitFilter,
+        com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalOriginService portalOrigin
     ) throws Exception {
         return http
             .securityMatcher("/portal/**", "/api/portal/**")
@@ -132,7 +133,13 @@ public class SecurityConfigurations {
              */
             .cors(cors -> cors.configurationSource(request -> {
                 CorsConfiguration portal = new CorsConfiguration();
-                portal.setAllowedOrigins(portalOrigins());
+                /*
+                 * Resolved per request, not once at startup, because the portal's hostname is a
+                 * setting on the company record. Configured at boot it would mean a restart
+                 * every time somebody pointed the portal somewhere new, which is exactly the
+                 * kind of coupling that gets worked around with a wildcard.
+                 */
+                portal.setAllowedOrigins(portalOrigins(portalOrigin.get()));
                 portal.setAllowedMethods(List.of("GET", "POST", "HEAD", "OPTIONS"));
                 portal.setAllowedHeaders(List.of("Content-Type", "Accept", PORTAL_SESSION_HEADER));
                 portal.setAllowCredentials(false);
@@ -220,11 +227,19 @@ public class SecurityConfigurations {
      * is included too, so the pages work during a cutover and so a developer running the panel
      * locally against a live API is not mysteriously refused.
      */
-    private List<String> portalOrigins() {
+    private List<String> portalOrigins(String fromTheCompanyRecord) {
         java.util.LinkedHashSet<String> origins = new java.util.LinkedHashSet<>();
+        if (fromTheCompanyRecord != null && !fromTheCompanyRecord.isBlank()) {
+            origins.add(fromTheCompanyRecord.trim().replaceAll("/+$", ""));
+        }
         if (portalBaseUrl != null && !portalBaseUrl.isBlank()) {
             origins.add(portalBaseUrl.trim().replaceAll("/+$", ""));
         }
+        /*
+         * The panel's own origin too, so the portal can be looked at before a company has a
+         * hostname of its own, and so a developer running the panel against a live API is not
+         * mysteriously refused.
+         */
         origins.addAll(allowedOrigins());
         return List.copyOf(origins);
     }

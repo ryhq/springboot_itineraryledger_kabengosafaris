@@ -45,6 +45,9 @@ public class CompanyProfileDTO {
 
     /** RESPOND, CHOOSE_OFFERED or CHOOSE_CATALOGUE; null means the shipped default. */
     private String portalEditingLevel;
+
+    /** where customers open their own trip; blank means the API's own address */
+    private String portalUrl;
     /**
      * Whether a cache secret is stored — never the secret itself.
      *

@@ -63,6 +63,7 @@ public class PortalAccessService {
     private final PortalActivityService activity;
     private final CustomerAcknowledgementSender sender;
     private final LegalDocumentService legalDocuments;
+    private final PortalOriginService portalOrigin;
     private final RateLimiter rateLimiter;
 
     @Value("${portal.code.expiry.minutes:15}")
@@ -75,12 +76,11 @@ public class PortalAccessService {
     private int deviceLifetimeDays;
 
     /**
-     * Where the client's own pages live.
+     * The fallback address: this API's own, where the server-rendered pages live.
      *
-     * <p>Falls back to this API's own public address, because that is where the portal is
-     * served from: the pages are rendered here, so the base is already known and asking an
-     * operator to configure it again is asking them to get it wrong. The property exists for the
-     * case where a friendlier hostname is pointed at the same application.
+     * <p>The real answer is on the company record, because the React pages are served from a
+     * hostname of the company's choosing. Asking an operator to state it in a root-owned
+     * environment file, on two servers, is how it ends up stated differently in two places.
      */
     @Value("${portal.base.url:${app.base.url:}}")
     private String portalBaseUrl;
@@ -361,13 +361,22 @@ public class PortalAccessService {
         return journey.getCustomer() == null ? null : journey.getCustomer().getPreferredLanguage();
     }
 
-    /** The address we print in an email. Blank when nobody has configured where the portal lives. */
+    /**
+     * The address we print in an email.
+     *
+     * <p>The company's own portal hostname when it has set one, and this API's address
+     * otherwise, which is where the server-rendered pages are. Never blank: a client who is
+     * told about a trip page and given no address is worse off than one told nothing.
+     */
     public String linkFor(PortalJourney journey) {
-        if (portalBaseUrl == null || portalBaseUrl.isBlank()) return "";
-        String base = portalBaseUrl.endsWith("/")
-            ? portalBaseUrl.substring(0, portalBaseUrl.length() - 1)
-            : portalBaseUrl;
-        return base + "/portal/" + journey.getToken();
+        return portalBase() + "/portal/" + journey.getToken();
+    }
+
+    /** Where the portal lives, without a trailing slash. Company first, this API second. */
+    public String portalBase() {
+        String configured = portalOrigin.get();
+        String base = configured != null && !configured.isBlank() ? configured : portalBaseUrl;
+        return base == null ? "" : base.replaceAll("/+$", "");
     }
 
     private String trim(String value, int max) {

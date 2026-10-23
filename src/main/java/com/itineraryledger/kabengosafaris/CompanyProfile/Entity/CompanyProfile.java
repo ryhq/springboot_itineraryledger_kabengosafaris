@@ -153,6 +153,19 @@ public class CompanyProfile {
     private String portalEditingLevel;
 
     /**
+     * Where customers open their own trip, e.g. {@code https://mytrip.example.com}.
+     *
+     * <p>Two jobs, which is why it lives on the record rather than in a server environment file:
+     * it is the address printed in the emails, and it is the origin a browser is allowed to call
+     * this API from. Both are the company's business, and keeping them here means pointing the
+     * portal at a new hostname is a setting rather than a root login and a restart.
+     *
+     * <p>Blank falls back to this API's own address, where the server-rendered pages live.
+     */
+    @Column(name = "portal_url", length = 255)
+    private String portalUrl;
+
+    /**
      * The shared secret the website requires before it will throw a cached page away, stored
      * encrypted.
      *

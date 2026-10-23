@@ -19,6 +19,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.itineraryledger.kabengosafaris.CompanyProfile.DTOs.CompanyCompletenessDTO;
 import com.itineraryledger.kabengosafaris.CompanyProfile.Entity.*;
 import com.itineraryledger.kabengosafaris.CompanyProfile.Repository.CompanyProfileRepository;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalOriginService;
 import com.itineraryledger.kabengosafaris.CompanyProfile.Services.*;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 
@@ -160,7 +161,8 @@ class CompanyProfileWriteRulesTest {
         when(repository.save(any(CompanyProfile.class))).thenAnswer(i -> i.getArgument(0));
 
         CompanyProfileWriteService writeService = new CompanyProfileWriteService(
-            repository, getService(bank("1")), mock(CompanyIdentityService.class), mock(IdObfuscator.class));
+            repository, getService(bank("1")), mock(CompanyIdentityService.class),
+            mock(PortalOriginService.class), mock(IdObfuscator.class));
         ReflectionTestUtils.setField(writeService, "fallbackCompanyName", "Test Tours");
 
         CompanyAssetService service = new CompanyAssetService(

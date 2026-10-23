@@ -19,6 +19,7 @@ import com.itineraryledger.kabengosafaris.CompanyProfile.Repository.CompanyProfi
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalOriginService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,6 +43,7 @@ public class CompanyProfileWriteService {
     private final CompanyProfileRepository profileRepository;
     private final CompanyProfileGetService getService;
     private final CompanyIdentityService identityService;
+    private final PortalOriginService portalOriginService;
     private final IdObfuscator idObfuscator;
 
     @Value("${app.company.name:}")
@@ -79,6 +81,9 @@ public class CompanyProfileWriteService {
         patch(dto.getBrandRadius(), profile::setBrandRadius);
         patch(dto.getBrandFont(), profile::setBrandFont);
         patch(dto.getPortalEditingLevel(), profile::setPortalEditingLevel);
+        /* stored without a trailing slash, so every caller can append a path safely */
+        patch(dto.getPortalUrl(), v -> profile.setPortalUrl(
+            v == null ? null : v.trim().replaceAll("/+$", "")));
 
         /*
          * The website's origin is stored without its trailing slash so every caller can append a
@@ -97,6 +102,8 @@ public class CompanyProfileWriteService {
 
         profileRepository.save(profile);
         identityService.invalidate();
+        /* the portal's address is cached for CORS; a change must not wait it out */
+        portalOriginService.invalidate();
         log.info("Company profile updated: {}", profile.displayName());
 
         return respond("Company profile updated successfully", profile);
@@ -409,6 +416,8 @@ public class CompanyProfileWriteService {
     private ResponseEntity<ApiResponse<?>> saved(String message, CompanyProfile profile) {
         profileRepository.save(profile);
         identityService.invalidate();
+        /* the portal's address is cached for CORS; a change must not wait it out */
+        portalOriginService.invalidate();
         return respond(message, profile);
     }
 

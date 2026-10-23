@@ -91,6 +91,9 @@ public class UpdateCompanyProfileDTO {
     /** The client portal's default editing level. */
     private String portalEditingLevel;
 
+    /** The client portal's public address. */
+    private String portalUrl;
+
     /**
      * The website's cache secret. Write-only: sent to set or replace it, "" to remove it, absent to
      * leave whatever is stored alone. It is never read back by anything.
