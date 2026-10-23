@@ -2,23 +2,29 @@
 <!--
   The shell every client page sits in.
 
-  Three things it is responsible for, each of which would otherwise be forgotten on one page out
+  This is the first thing a customer sees of us that is not a PDF, so it is held to the standard
+  of the website rather than of an internal tool: real type, real spacing, the company's own
+  colour, and a header that looks deliberate on a phone.
+
+  Four things it is responsible for, each of which would otherwise be forgotten on one page out
   of seven.
 
   NOINDEX. These pages carry somebody's trip, their prices and eventually their invoice. A search
   engine that finds one has published it, and the link in a client's email is exactly the kind of
   URL that leaks into a referrer header.
 
-  THE BRAND FROM THE RECORD. Colours and the mark come from the company profile, never from CSS
-  written here: one codebase serves more than one company, and a hardcoded green is one company's
-  green in everybody's portal.
+  THE BRAND FROM THE RECORD. Colours arrive as a block of custom properties built and validated
+  in Java. They are NOT interpolated here: Thymeleaf's CSS inlining escapes what it writes, so
+  `#1c7a58` becomes `\#1c7a58`, every property silently fails, and the page renders with no
+  accent and invisible buttons. That shipped once.
 
   THE TIER. The navigation only offers what this caller may actually open, because a link that
-  bounces them to a verification page every time is a worse experience than no link.
+  bounces them to a verification page every time is worse than no link.
 
-  No external anything: no font, no script, no analytics. The content policy on this chain
-  forbids it, and that is the point. A page with somebody's passport details on it is the last
-  place to be loading a third party's JavaScript.
+  NOTHING FROM ANYWHERE ELSE. No web font, no script, no analytics, no icon CDN. The content
+  policy on this chain forbids it and that is the point: a page with somebody's passport details
+  on it is the last place to be loading a third party's JavaScript. The system font stack is also
+  simply faster, which matters more on a phone in a lodge than any typeface does.
 -->
 <html xmlns:th="http://www.thymeleaf.org" lang="en" th:fragment="layout(title, content)">
 <head>
@@ -26,130 +32,305 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow, noarchive" />
   <meta name="referrer" content="same-origin" />
+  <meta name="color-scheme" content="light" />
   <title th:text="${title} + ' · ' + ${page.companyName}">Your trip</title>
-  <style th:inline="css">
+
+  <!-- the company's colours, already validated; see PortalViewService.brandCss -->
+  <style th:utext="${page.brandCss}">:root{--accent:#1f6f4a;--accent-dark:#164c34;--accent-soft:#f1f6f3;}</style>
+
+  <style>
     :root {
-      --accent: [[${page.accent != null ? page.accent : '#1f6f4a'}]];
-      --accent-dark: [[${page.accentDark != null ? page.accentDark : '#164c34'}]];
-      --accent-soft: [[${page.accentSoft != null ? page.accentSoft : '#f1f6f3'}]];
-      --ink: #1f2421;
-      --muted: #667085;
-      --line: #e3e8e5;
-      --bg: #fbfcfb;
+      --ink: #15201b;
+      --body: #46524b;
+      --muted: #7b8780;
+      --line: #e4e9e6;
+      --line-soft: #eef2f0;
+      --bg: #f7f9f8;
+      --card: #ffffff;
+      --radius: 14px;
+      --shadow: 0 1px 2px rgba(21, 32, 27, .04), 0 8px 24px -12px rgba(21, 32, 27, .10);
     }
 
     * { box-sizing: border-box; }
 
+    html { -webkit-text-size-adjust: 100%; }
+
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      font-size: 15px;
-      line-height: 1.6;
-      color: var(--ink);
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+      color: var(--body);
       background: var(--bg);
+      -webkit-font-smoothing: antialiased;
     }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+
+    /* ---------------------------------------------------------------- header */
 
     header.masthead {
-      background: #fff;
+      background: var(--card);
       border-bottom: 1px solid var(--line);
-      padding: 14px 0;
+      padding: 18px 0 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
-    .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
-
-    .brand { display: flex; align-items: center; gap: 10px; }
-    .brand img { height: 30px; width: auto; }
-    .brand .name { font-weight: 700; color: var(--accent-dark); letter-spacing: 0.2px; }
+    .brand { display: flex; align-items: center; gap: 11px; }
+    .brand img { height: 34px; width: auto; display: block; }
+    .brand .name {
+      font-size: 17px;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+    }
 
     nav.tabs {
-      display: flex; flex-wrap: wrap; gap: 4px;
-      margin-top: 12px;
+      display: flex;
+      gap: 2px;
+      margin-top: 14px;
+      overflow-x: auto;
+      scrollbar-width: none;
     }
+    nav.tabs::-webkit-scrollbar { display: none; }
     nav.tabs a {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 13px;
+      position: relative;
+      white-space: nowrap;
+      padding: 9px 13px 13px;
+      font-size: 14.5px;
+      font-weight: 500;
       text-decoration: none;
       color: var(--muted);
-      border: 1px solid transparent;
+      border-bottom: 2px solid transparent;
     }
-    nav.tabs a:hover { color: var(--accent-dark); border-color: var(--line); }
-    nav.tabs a.on { color: #fff; background: var(--accent-dark); }
+    nav.tabs a:hover { color: var(--ink); }
+    nav.tabs a.on { color: var(--accent-dark); border-bottom-color: var(--accent); font-weight: 600; }
 
-    main { padding: 24px 0 56px; }
+    /* ------------------------------------------------------------------ type */
 
-    h1 { font-size: 23px; line-height: 1.25; margin: 0 0 6px; color: var(--accent-dark); }
-    h2 { font-size: 16px; margin: 26px 0 8px; }
-    p { margin: 0 0 12px; }
-    .lede { color: var(--muted); margin: 0 0 20px; }
+    main { padding: 32px 0 64px; }
+
+    h1 {
+      font-size: 28px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin: 0 0 8px;
+      color: var(--ink);
+      font-weight: 680;
+    }
+    h2 {
+      font-size: 15px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 32px 0 12px;
+      font-weight: 600;
+    }
+    h3 { font-size: 16.5px; margin: 2px 0 6px; color: var(--ink); font-weight: 620; }
+    p { margin: 0 0 14px; }
+    .lede { font-size: 16.5px; color: var(--muted); margin: 0 0 24px; }
+    strong { color: var(--ink); font-weight: 600; }
+    a { color: var(--accent-dark); }
+
+    /* ----------------------------------------------------------------- cards */
 
     .card {
-      background: #fff;
+      background: var(--card);
       border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 16px 18px;
-      margin: 0 0 14px;
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      margin: 0 0 16px;
+      box-shadow: var(--shadow);
     }
+    .card > :last-child { margin-bottom: 0; }
 
     .note {
       background: var(--accent-soft);
-      border-left: 3px solid var(--accent);
-      padding: 12px 14px;
-      border-radius: 0 8px 8px 0;
-      margin: 0 0 16px;
-      font-size: 14px;
+      border: 1px solid var(--line);
+      border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      margin: 0 0 18px;
+      font-size: 15px;
+      color: var(--ink);
     }
-    .warn { background: #fdf6ec; border-left-color: #b4791f; }
+    .warn { background: #fdf7ec; border-color: #ead7b0; }
+
+    /* --------------------------------------------------------------- figures */
 
     table.figures { width: 100%; border-collapse: collapse; }
-    table.figures td { padding: 7px 0; border-bottom: 1px solid #f1f4f2; }
-    table.figures td.num { text-align: right; font-variant-numeric: tabular-nums; }
-    table.figures tr.total td { font-weight: 700; border-bottom: none; padding-top: 12px; }
+    table.figures td { padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+    table.figures tr:last-child td { border-bottom: none; }
+    table.figures td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      color: var(--ink);
+    }
+    table.figures tr.total td {
+      font-weight: 680;
+      font-size: 18px;
+      color: var(--ink);
+      padding-top: 14px;
+    }
 
-    .day { border-left: 2px solid var(--line); padding: 0 0 18px 16px; position: relative; }
+    /* ------------------------------------------------------------------ days */
+
+    .day { position: relative; padding: 0 0 24px 26px; }
     .day:last-child { padding-bottom: 0; }
+    .day::before {
+      content: "";
+      position: absolute;
+      left: 4px; top: 7px; bottom: 0;
+      width: 2px;
+      background: var(--line);
+    }
+    .day:last-child::before { bottom: auto; height: 0; }
+    .day::after {
+      content: "";
+      position: absolute;
+      left: 0; top: 5px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
     .day .n {
-      font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 600;
     }
-    .day h3 { margin: 2px 0 6px; font-size: 15.5px; }
-    .day .meta { font-size: 13px; color: var(--muted); margin-top: 6px; }
+    .day .meta { font-size: 14.5px; color: var(--muted); margin-top: 8px; }
+    .day .meta strong { color: var(--body); }
 
-    label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 4px; }
+    /* ----------------------------------------------------------------- forms */
+
+    label { display: block; font-size: 14px; font-weight: 550; color: var(--ink); margin: 0 0 6px; }
+
     input[type=text], input[type=email] {
-      width: 100%; padding: 11px 12px; font-size: 16px;
-      border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink);
+      width: 100%;
+      padding: 13px 14px;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      transition: border-color .12s ease, box-shadow .12s ease;
     }
-    input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-    .code-input { letter-spacing: 8px; font-family: "Courier New", monospace; font-size: 20px; }
+    input[type=text]:hover, input[type=email]:hover { border-color: #cfd8d3; }
+    input[type=text]:focus, input[type=email]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(31, 111, 74, .18);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+    .code-input {
+      letter-spacing: 0.45em;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 22px;
+      text-align: center;
+      padding: 14px;
+    }
+    .field { margin-bottom: 16px; }
+    .field:last-of-type { margin-bottom: 20px; }
+
+    .check {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      font-size: 14.5px;
+      font-weight: 400;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .check input { width: auto; margin-top: 4px; accent-color: var(--accent); }
+
+    /* --------------------------------------------------------------- buttons */
 
     button, .button {
-      display: inline-block; border: 0; cursor: pointer;
-      background: var(--accent-dark); color: #fff;
-      padding: 11px 20px; border-radius: 8px;
-      font-size: 15px; font-weight: 600; text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      background: var(--accent-dark);
+      color: #fff;
+      padding: 13px 22px;
+      border-radius: 10px;
+      font-size: 15.5px;
+      font-family: inherit;
+      font-weight: 600;
+      text-decoration: none;
+      transition: filter .12s ease, box-shadow .12s ease;
     }
+    button:hover, .button:hover { filter: brightness(1.08); }
+    button:active, .button:active { filter: brightness(.95); }
+    button:focus-visible, .button:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(31, 111, 74, .35);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+    }
+    button.wide { width: 100%; }
     button.quiet, .button.quiet {
-      background: #fff; color: var(--muted); border: 1px solid var(--line); font-weight: 500;
+      background: #fff;
+      color: var(--body);
+      border-color: var(--line);
+      font-weight: 550;
     }
+    button.quiet:hover { background: var(--bg); filter: none; }
+    button.link {
+      background: none; border: 0; padding: 0;
+      color: var(--muted); font-size: 13.5px; font-weight: 500;
+      text-decoration: underline; text-underline-offset: 2px;
+    }
+    button.link:hover { color: var(--ink); filter: none; }
 
-    ul.plain { margin: 0; padding-left: 18px; }
-    ul.plain li { margin-bottom: 4px; }
+    /* ------------------------------------------------------------------ misc */
 
-    .two { display: flex; flex-wrap: wrap; gap: 20px; }
+    ul.plain { margin: 0; padding-left: 20px; }
+    ul.plain li { margin-bottom: 6px; }
+
+    .two { display: flex; flex-wrap: wrap; gap: 24px; }
     .two > div { flex: 1 1 240px; }
+
+    .rows { display: flex; flex-direction: column; }
+    .row {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 14px; flex-wrap: wrap;
+      padding: 14px 0; border-bottom: 1px solid var(--line-soft);
+    }
+    .row:first-child { padding-top: 0; }
+    .row:last-child { padding-bottom: 0; border-bottom: none; }
+    .row .sub { font-size: 13.5px; color: var(--muted); }
+
+    .pill {
+      display: inline-block;
+      font-size: 12px; font-weight: 600;
+      padding: 2px 9px; border-radius: 999px;
+      background: var(--accent-soft); color: var(--accent-dark);
+    }
 
     footer {
       border-top: 1px solid var(--line);
-      padding: 18px 0 40px;
-      font-size: 12.5px;
+      background: var(--card);
+      padding: 24px 0 48px;
+      font-size: 13.5px;
       color: var(--muted);
     }
     footer a { color: var(--muted); }
+    .footer-links { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
 
-    @media (max-width: 520px) {
-      h1 { font-size: 20px; }
-      .card { padding: 14px; }
+    @media (max-width: 560px) {
+      h1 { font-size: 23px; }
+      main { padding: 24px 0 48px; }
+      .card { padding: 16px; border-radius: 12px; }
+      .wrap { padding: 0 16px; }
     }
   </style>
 </head>
@@ -165,9 +346,9 @@
     <nav class="tabs" th:with="base='/portal/' + ${page.journeyToken}">
       <a th:href="${base}" th:classappend="${title == 'Your trip'} ? 'on'">Your trip</a>
       <!--
-        Only what they can open. These three need a code, and before it is given they are not
-        shown at all: a client clicking "Invoice" and landing on a verification form four times
-        learns to distrust the whole page.
+        Only what they can open. These need a code, and before it is given they are not shown at
+        all: a client clicking "Invoice" and landing on a verification form four times learns to
+        distrust the whole page.
       -->
       <a th:if="${page.verified and page.quote != null}" th:href="${base} + '/quote'"
          th:classappend="${title == 'Your quotation'} ? 'on'">Quotation</a>
@@ -177,7 +358,8 @@
          th:classappend="${title == 'Documents'} ? 'on'">Documents</a>
       <a th:if="${page.verified}" th:href="${base} + '/devices'"
          th:classappend="${title == 'Your devices'} ? 'on'">Devices</a>
-      <a th:unless="${page.verified}" th:href="${base} + '/verify'">See your quotation</a>
+      <a th:unless="${page.verified}" th:href="${base} + '/verify'"
+         th:classappend="${title == 'See your quotation'} ? 'on'">See your quotation</a>
     </nav>
   </div>
 </header>
@@ -190,24 +372,16 @@
 
 <footer>
   <div class="wrap" th:with="base='/portal/' + ${page.journeyToken}">
-    <p style="margin:0 0 6px">
-      <span th:text="${page.companyName}">Company</span>
-    </p>
-    <p style="margin:0">
+    <strong th:text="${page.companyName}" style="color: var(--ink)">Company</strong>
+    <div class="footer-links">
       <a th:href="${base} + '/privacy'">What we collect, and for how long</a>
-      <span th:if="${page.verified}">
-        &#183;
-        <!-- a form, not a link: signing out changes something, and a link that changes
-             something is a link a preview bot can press -->
-        <form th:action="@{/api/portal/access/sign-out}" method="post" style="display:inline">
-          <input type="hidden" name="token" th:value="${page.journeyToken}" />
-          <button type="submit" class="quiet"
-                  style="padding:0;border:0;background:none;color:var(--muted);text-decoration:underline;font-size:12.5px">
-            Sign out of this browser
-          </button>
-        </form>
-      </span>
-    </p>
+      <!-- a form, not a link: signing out changes something, and a link that changes something
+           is a link a preview bot can press -->
+      <form th:if="${page.verified}" th:action="@{/api/portal/access/sign-out}" method="post">
+        <input type="hidden" name="token" th:value="${page.journeyToken}" />
+        <button type="submit" class="link">Sign out of this browser</button>
+      </form>
+    </div>
   </div>
 </footer>
 

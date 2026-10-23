@@ -29,10 +29,15 @@ public final class PortalView {
     /** The whole page model, with whichever parts this caller has earned. */
     public record Page(
         String companyName,
-        /** the brand, because a page that hardcodes a colour is as wrong as one that hardcodes a name */
-        String accent,
-        String accentDark,
-        String accentSoft,
+        /**
+         * The brand as a block of CSS custom properties, built and validated in Java.
+         *
+         * <p>Not interpolated into the stylesheet by the template engine. Thymeleaf's CSS
+         * inlining escapes the output, so {@code #1c7a58} arrives as {@code \#1c7a58}, every
+         * custom property is invalid, and the result is a page whose buttons are white text on
+         * no background: invisible, with nothing in any log to say why.
+         */
+        String brandCss,
         String logoUrl,
         String journeyToken,
         boolean verified,

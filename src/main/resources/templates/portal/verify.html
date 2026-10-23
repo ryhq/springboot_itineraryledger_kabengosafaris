@@ -28,47 +28,53 @@
   </div>
 
   <div class="note warn" th:if="${failed}">
-    That code was not right, or it has expired. Ask for another one below.
+    That code was not right, or it has expired. Ask for another one and try again.
   </div>
 
   <div class="card">
     <form th:action="@{/api/portal/access/request}" method="post">
       <input type="hidden" name="token" th:value="${page.journeyToken}" />
-      <label for="email">Your email address</label>
-      <input type="email" id="email" name="email" required autocomplete="email"
-             placeholder="the address we write to" />
-      <p style="margin:12px 0 0"><button type="submit">Send me a code</button></p>
+      <div class="field">
+        <label for="email">Your email address</label>
+        <input type="email" id="email" name="email" required autocomplete="email"
+               placeholder="the address we write to" />
+      </div>
+      <button type="submit" class="wide">Send me a code</button>
     </form>
   </div>
+
+  <h2>Then enter it</h2>
 
   <div class="card">
     <form th:action="@{/api/portal/access/verify}" method="post">
       <input type="hidden" name="token" th:value="${page.journeyToken}" />
 
-      <label for="vemail">Your email address</label>
-      <input type="email" id="vemail" name="email" required autocomplete="email" />
+      <div class="field">
+        <label for="vemail">Your email address</label>
+        <input type="email" id="vemail" name="email" required autocomplete="email" />
+      </div>
 
-      <label for="code" style="margin-top:12px">The six digits</label>
-      <input type="text" id="code" name="code" required inputmode="numeric" maxlength="6"
-             autocomplete="one-time-code" class="code-input" />
+      <div class="field">
+        <label for="code">The six digits</label>
+        <input type="text" id="code" name="code" required inputmode="numeric" maxlength="6"
+               autocomplete="one-time-code" class="code-input" placeholder="000000" />
+      </div>
 
-      <p style="margin:14px 0 0; font-size:13.5px; color:var(--muted)">
-        <!--
-          Checked by default because most people are on their own phone or laptop. Unticking it is
-          the hotel-computer case, and it gives a session that dies with the browser instead of
-          sitting on a shared machine for a month.
-        -->
-        <label style="display:flex; gap:8px; align-items:flex-start; color:var(--muted)">
-          <input type="checkbox" name="remember" value="1" checked style="width:auto;margin-top:3px" />
-          <span>Remember this browser for a month. Untick it on a shared or public computer.</span>
-        </label>
-      </p>
+      <!--
+        Ticked by default because most people are on their own phone or laptop. Unticking it is
+        the hotel-computer case, and it gives a session that dies with the browser instead of
+        sitting on a shared machine for a month.
+      -->
+      <label class="check" style="margin-bottom:20px">
+        <input type="checkbox" name="remember" value="1" checked />
+        <span>Remember this browser for a month. Untick it on a shared or public computer.</span>
+      </label>
 
-      <p style="margin:14px 0 0"><button type="submit">Open my quotation</button></p>
+      <button type="submit" class="wide">Open my quotation</button>
     </form>
   </div>
 
-  <p style="font-size:13px; color:var(--muted)">
+  <p style="font-size:14px; color:var(--muted)">
     We will never ask you for this code by phone, by message, or in a reply to an email. Nobody
     here needs it.
   </p>

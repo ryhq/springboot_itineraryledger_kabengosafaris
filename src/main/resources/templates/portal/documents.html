@@ -8,18 +8,17 @@
   <p class="lede">Everything we have sent you for this trip, in one place.</p>
 
   <div class="card" th:if="${!#lists.isEmpty(page.documents)}">
-    <table class="figures">
-      <tr th:each="document : ${page.documents}">
-        <td>
+    <div class="rows">
+      <div class="row" th:each="document : ${page.documents}">
+        <div>
           <a th:href="'/portal/' + ${page.journeyToken} + '/documents/' + ${document.id} + '/file'"
-             th:text="${document.title}">Quotation</a>
-          <div style="font-size:12.5px;color:var(--muted)"
-               th:if="${document.createdAt != null}"
+             th:text="${document.title}" style="font-weight:600">Quotation</a>
+          <div class="sub" th:if="${document.createdAt != null}"
                th:text="${#temporals.format(document.createdAt, 'd MMMM yyyy')}">21 October 2026</div>
-        </td>
-        <td class="num" style="font-size:12.5px;color:var(--muted)" th:text="${document.kind}">QUOTE</td>
-      </tr>
-    </table>
+        </div>
+        <span class="pill" th:text="${document.kind}">QUOTE</span>
+      </div>
+    </div>
   </div>
 
   <div class="card" th:if="${#lists.isEmpty(page.documents)}">

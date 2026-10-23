@@ -16,22 +16,24 @@
     Every browser that has been used to open this trip. If you do not recognise one, end it.
   </p>
 
-  <div class="card" th:each="device : ${page.devices}">
-    <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap">
-      <div>
-        <strong th:text="${device.label}">Chrome on Windows</strong>
-        <span th:if="${device.current}" style="font-size:12px;color:var(--accent-dark)"> &#183; this one</span>
-        <div style="font-size:13px;color:var(--muted)">
-          <span th:if="${device.ipAddress != null}" th:text="${device.ipAddress}">203.0.113.42</span><span
-            th:if="${device.lastSeenAt != null}"
-            th:text="' · last used ' + ${#temporals.format(device.lastSeenAt, 'd MMM yyyy, HH:mm')}"> · last used 21 Oct</span>
+  <div class="card" th:if="${!#lists.isEmpty(page.devices)}">
+    <div class="rows">
+      <div class="row" th:each="device : ${page.devices}">
+        <div>
+          <strong th:text="${device.label}">Chrome on Windows</strong>
+          <span th:if="${device.current}" class="pill" style="margin-left:6px">this one</span>
+          <div class="sub">
+            <span th:if="${device.ipAddress != null}" th:text="${device.ipAddress}">203.0.113.42</span><span
+              th:if="${device.lastSeenAt != null}"
+              th:text="' · last used ' + ${#temporals.format(device.lastSeenAt, 'd MMM yyyy, HH:mm')}"> · last used 21 Oct</span>
+          </div>
         </div>
+        <form th:action="@{'/api/portal/devices/' + ${device.id} + '/revoke'}" method="post">
+          <input type="hidden" name="token" th:value="${page.journeyToken}" />
+          <button type="submit" class="quiet"
+                  th:text="${device.current} ? 'Sign out here' : 'End this one'">End this one</button>
+        </form>
       </div>
-      <form th:action="@{'/api/portal/devices/' + ${device.id} + '/revoke'}" method="post">
-        <input type="hidden" name="token" th:value="${page.journeyToken}" />
-        <button type="submit" class="quiet"
-                th:text="${device.current} ? 'Sign out here' : 'End this one'">End this one</button>
-      </form>
     </div>
   </div>
 

@@ -68,9 +68,7 @@ public class PortalViewService {
 
         return new PortalView.Page(
             brand.name(),
-            brand.accent(),
-            brand.accentDark(),
-            brand.accentSoft(),
+            brandCss(brand),
             brand.logoUrl(),
             journey.getToken(),
             verified,
@@ -82,6 +80,36 @@ public class PortalViewService {
             verified ? devices(journey, access.device()) : List.of(),
             privacy == null ? null : legal.renderHtml(privacy.getBody()),
             privacy == null ? null : privacy.getVersion());
+    }
+
+    /**
+     * The company's colours, as CSS custom properties, built here rather than in the template.
+     *
+     * <p>The template engine cannot do this. Its CSS inlining escapes what it writes, so a hex
+     * colour comes out as {@code \#1c7a58}, which is not a colour: every property silently
+     * fails and the page renders with no accent and invisible buttons. Nothing logs it, because
+     * from the server's point of view the page rendered perfectly.
+     *
+     * <p>Each value is checked against what a colour can look like before it goes anywhere near
+     * a page. The company record is edited by staff rather than by the public, so this is not
+     * the first line of defence; it is the one that means a typo produces the default instead of
+     * a broken stylesheet, and that nothing typed into a settings field can close a style block.
+     */
+    private String brandCss(CompanyIdentityService.Snapshot brand) {
+        return ":root{"
+            + "--accent:" + colour(brand.accent(), "#1f6f4a") + ";"
+            + "--accent-dark:" + colour(brand.accentDark(), "#164c34") + ";"
+            + "--accent-soft:" + colour(brand.accentSoft(), "#f1f6f3") + ";"
+            + "}";
+    }
+
+    /** A hex, rgb() or named colour, or the fallback. Nothing else reaches the page. */
+    private String colour(String value, String fallback) {
+        if (value == null) return fallback;
+        String trimmed = value.trim();
+        return trimmed.matches("#[0-9a-fA-F]{3,8}|rgba?\\([0-9.,%\\s]+\\)|[a-zA-Z]{3,20}")
+            ? trimmed
+            : fallback;
     }
 
     // ----------------------------------------------------------------- the trip
