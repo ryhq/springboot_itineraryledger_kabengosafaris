@@ -71,8 +71,15 @@ public class PortalAccessService {
     @Value("${portal.device.lifetime.days:30}")
     private int deviceLifetimeDays;
 
-    /** Where the client's own page lives, for the links inside the emails we send them. */
-    @Value("${portal.base.url:}")
+    /**
+     * Where the client's own pages live.
+     *
+     * <p>Falls back to this API's own public address, because that is where the portal is
+     * served from: the pages are rendered here, so the base is already known and asking an
+     * operator to configure it again is asking them to get it wrong. The property exists for the
+     * case where a friendlier hostname is pointed at the same application.
+     */
+    @Value("${portal.base.url:${app.base.url:}}")
     private String portalBaseUrl;
 
     /**
