@@ -52,9 +52,10 @@ public class PortalOriginService {
         try {
             value = companyProfiles.findAll().stream()
                 .findFirst()
-                .map(profile -> profile.getPortalUrl())
-                .filter(url -> url != null && !url.isBlank())
-                .map(url -> url.trim().replaceAll("/+$", ""))
+                .map(profile -> {
+                    String configured = clean(profile.getPortalUrl());
+                    return configured != null ? configured : derivedFrom(profile.getWebsiteUrl());
+                })
                 .orElse(null);
         } catch (Exception e) {
             log.warn("Could not read the portal address from the company record: {}", e.getMessage());
@@ -62,6 +63,41 @@ public class PortalOriginService {
 
         cached.set(new Cached(value, System.currentTimeMillis()));
         return value;
+    }
+
+    /** An address with a scheme and no trailing slash, or null when there is nothing usable. */
+    private String clean(String url) {
+        if (url == null || url.isBlank()) return null;
+        String trimmed = url.trim().replaceAll("/+$", "");
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    /**
+     * {@code mytrip.} in front of the company's own domain, when nobody has said otherwise.
+     *
+     * <p>The alternative fallback is this API's address, and a client who is sent
+     * {@code api.<something>.com/portal/…} has been told, accurately, that they are looking at
+     * our plumbing. Both companies already serve the portal at {@code mytrip.} their own domain,
+     * so the guess is the answer in every case we have, and an explicit setting overrides it the
+     * moment it is not.
+     *
+     * <p>The website field is not tidy -- it holds {@code www.kabengosafaris.com} for one company
+     * and {@code jateloafricantravels.com/en} for the other -- so the scheme, any path and a
+     * leading {@code www.} all come off before the subdomain goes on. A value that leaves nothing
+     * recognisable behind returns null rather than a hostname nobody can reach.
+     */
+    private String derivedFrom(String websiteUrl) {
+        String cleaned = clean(websiteUrl);
+        if (cleaned == null) return null;
+
+        String host = cleaned.replaceFirst("^[a-zA-Z][a-zA-Z0-9+.-]*://", "");
+        host = host.split("[/?#]", 2)[0];
+        host = host.replaceFirst("^www\\.", "");
+
+        // A host worth building a link from has a dot in it and nothing a URL may not contain.
+        if (!host.matches("[A-Za-z0-9.-]+") || !host.contains(".")) return null;
+
+        return "https://mytrip." + host.toLowerCase();
     }
 
     /** Called when the company record is written, so a change does not wait out the cache. */

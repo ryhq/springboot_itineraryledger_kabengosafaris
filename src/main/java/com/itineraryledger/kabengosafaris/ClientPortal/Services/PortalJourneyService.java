@@ -13,6 +13,8 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Enums.JourneyStatus;
 import com.itineraryledger.kabengosafaris.ClientPortal.Enums.ParticipantRole;
 import com.itineraryledger.kabengosafaris.ClientPortal.Enums.EditingLevel;
 import com.itineraryledger.kabengosafaris.ClientPortal.Enums.ProposalState;
+import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalAccessEventRepository;
+import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalCodeRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalDeviceRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalJourneyRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalParticipantRepository;
@@ -48,6 +50,8 @@ public class PortalJourneyService {
     private final PortalJourneyRepository journeys;
     private final PortalParticipantRepository participants;
     private final PortalDeviceRepository devices;
+    private final PortalCodeRepository codes;
+    private final PortalAccessEventRepository events;
     private final PortalTokens tokens;
     private final PortalActivityService activity;
     private final CompanyProfileRepository companyProfiles;
@@ -137,6 +141,32 @@ public class PortalJourneyService {
         activity.record(journey, null, null, "JOURNEY_REVOKED", reason, null, null);
         log.info("Revoked portal journey {}: {}", journey.getId(), reason);
         return journeys.save(journey);
+    }
+
+    /**
+     * Destroy the link and everything recorded about who used it.
+     *
+     * <p>Different from {@link #revoke}, and the difference is the point. Revoking keeps the
+     * journey: the address stops working, but who opened it and when is still on file, which is
+     * what you want when a link reached the wrong person and somebody may have to answer for it.
+     * Deleting is for a link that should never have existed — the wrong customer, a test, a
+     * quotation raised twice — where keeping an access log about the wrong person is itself the
+     * problem.
+     *
+     * <p>Children go first and in order, because a participant owns devices and codes and the
+     * database will not let a row go while something points at it. Afterwards the quotation can
+     * be published again and gets a brand-new token: nothing a client already holds can be made
+     * to work again by accident.
+     */
+    @Transactional
+    public void delete(PortalJourney journey) {
+        Long id = journey.getId();
+        events.deleteEveryEventOf(id);
+        codes.deleteEveryCodeOf(id);
+        devices.deleteEveryDeviceOf(id);
+        participants.deleteEveryParticipantOf(id);
+        journeys.delete(journey);
+        log.info("Deleted portal journey {} and everything recorded about it", id);
     }
 
     /** Put a revoked or closed journey back into service. */

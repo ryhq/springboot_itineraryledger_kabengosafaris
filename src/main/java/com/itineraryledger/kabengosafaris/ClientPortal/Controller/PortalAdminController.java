@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -126,6 +127,26 @@ public class PortalAdminController {
         return ResponseEntity.ok(ApiResponse.success(200,
             "Withdrawn. Every device signed in on this link has been signed out.",
             toDTO(journeyService.revoke(journey, reason))));
+    }
+
+    /**
+     * Destroy the link and its whole record.
+     *
+     * <p>DELETE rather than another POST verb because that is what it is, and it takes
+     * PERM_DELETE_QUOTE rather than PERM_UPDATE_QUOTE: withdrawing a link is day-to-day work,
+     * throwing away who opened it is not.
+     */
+    @DeleteMapping("/journeys/{id}")
+    @PreAuthorize("hasAuthority('PERM_DELETE_QUOTE')")
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> delete(@PathVariable String id) {
+        PortalJourney journey = journey(id);
+        if (journey == null) return notFound();
+
+        journeyService.delete(journey);
+        return ResponseEntity.ok(ApiResponse.success(200,
+            "Deleted. Publishing again will issue a new link, and the old one will never work.",
+            null));
     }
 
     @PostMapping("/journeys/{id}/reopen")
