@@ -88,6 +88,9 @@ public class UpdateCompanyProfileDTO {
     @Size(max = 300, message = "The website address cannot exceed 300 characters")
     private String websiteUrl;
 
+    /** The client portal's default editing level. */
+    private String portalEditingLevel;
+
     /**
      * The website's cache secret. Write-only: sent to set or replace it, "" to remove it, absent to
      * leave whatever is stored alone. It is never read back by anything.

@@ -56,6 +56,14 @@ public final class PortalView {
         String name,
         String code,
         String summary,
+        /**
+         * The photograph at the top of the page.
+         *
+         * <p>An absolute URL to a PUBLISHED image module, which is why it can be a plain src: a
+         * park or accommodation photograph is already on the public website and carries nothing
+         * private. Client DOCUMENTS are the opposite and are streamed through the API instead.
+         */
+        String heroImageUrl,
         Integer totalDays,
         Integer totalNights,
         LocalDate startDate,
@@ -68,6 +76,8 @@ public final class PortalView {
     public record Day(
         Integer dayNumber,
         LocalDate date,
+        /** the night's lodge, or failing that the park they are in. Published media only */
+        String imageUrl,
         String title,
         String description,
         String morning,

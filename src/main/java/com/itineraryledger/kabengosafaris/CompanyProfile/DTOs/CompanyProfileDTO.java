@@ -42,6 +42,9 @@ public class CompanyProfileDTO {
 
     /** The public website's origin. Blank means this installation has no site to talk to. */
     private String websiteUrl;
+
+    /** RESPOND, CHOOSE_OFFERED or CHOOSE_CATALOGUE; null means the shipped default. */
+    private String portalEditingLevel;
     /**
      * Whether a cache secret is stored — never the secret itself.
      *

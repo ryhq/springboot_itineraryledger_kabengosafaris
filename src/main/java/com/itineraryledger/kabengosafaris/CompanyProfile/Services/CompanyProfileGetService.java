@@ -289,6 +289,7 @@ public class CompanyProfileGetService {
             .brandRadius(profile.getBrandRadius())
             .brandFont(profile.getBrandFont())
             .websiteUrl(profile.getWebsiteUrl())
+            .portalEditingLevel(profile.getPortalEditingLevel())
             // Whether, never what. The secret leaves this process exactly once, towards the website.
             .websiteCacheSecretSet(profile.getWebsiteCacheSecret() != null
                 && !profile.getWebsiteCacheSecret().isBlank())

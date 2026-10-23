@@ -11,11 +11,13 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalParticipant;
 import com.itineraryledger.kabengosafaris.ClientPortal.Enums.JourneyStatus;
 import com.itineraryledger.kabengosafaris.ClientPortal.Enums.ParticipantRole;
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.EditingLevel;
 import com.itineraryledger.kabengosafaris.ClientPortal.Enums.ProposalState;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalDeviceRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalJourneyRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalParticipantRepository;
 import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
+import com.itineraryledger.kabengosafaris.CompanyProfile.Repository.CompanyProfileRepository;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
 
 import lombok.RequiredArgsConstructor;
@@ -48,6 +50,7 @@ public class PortalJourneyService {
     private final PortalDeviceRepository devices;
     private final PortalTokens tokens;
     private final PortalActivityService activity;
+    private final CompanyProfileRepository companyProfiles;
 
     /**
      * Create the link for a quotation, or return the one this client already has.
@@ -170,6 +173,54 @@ public class PortalJourneyService {
         journey.setLocked(locked);
         activity.record(journey, null, null, locked ? "JOURNEY_LOCKED" : "JOURNEY_UNLOCKED",
             null, null, null);
+        return journeys.save(journey);
+    }
+
+    /**
+     * How far this client may reach, resolved most specific first.
+     *
+     * <p>The journey's own setting, then the company's, then the shipped default. One method
+     * rather than the question being asked differently in three places, because a permission
+     * answered inconsistently is a permission that does not exist.
+     *
+     * <p>A frozen journey is RESPOND whatever anything else says. Freezing is the control for a
+     * request that looks wrong, and it would be worth nothing if the level could contradict it.
+     */
+    @Transactional(readOnly = true)
+    public EditingLevel levelOf(PortalJourney journey) {
+        if (journey == null) return EditingLevel.CHOOSE_OFFERED;
+        if (Boolean.TRUE.equals(journey.getLocked())) return EditingLevel.RESPOND;
+        if (journey.getEditingLevel() != null) return journey.getEditingLevel();
+
+        try {
+            return companyProfiles.findAll().stream()
+                .findFirst()
+                .map(profile -> parse(profile.getPortalEditingLevel()))
+                .orElse(EditingLevel.CHOOSE_OFFERED);
+        } catch (Exception e) {
+            /* an unreadable company record must not widen what a client may do */
+            log.warn("Could not read the company's portal editing level: {}", e.getMessage());
+            return EditingLevel.CHOOSE_OFFERED;
+        }
+    }
+
+    /** An unknown or absent name is the shipped default, never the most permissive level. */
+    private EditingLevel parse(String name) {
+        if (name == null || name.isBlank()) return EditingLevel.CHOOSE_OFFERED;
+        try {
+            return EditingLevel.valueOf(name.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            log.warn("'{}' is not an editing level; using the default", name);
+            return EditingLevel.CHOOSE_OFFERED;
+        }
+    }
+
+    /** Set or clear this one journey's level. Null hands it back to the company default. */
+    @Transactional
+    public PortalJourney setEditingLevel(PortalJourney journey, EditingLevel level) {
+        journey.setEditingLevel(level);
+        activity.record(journey, null, null, "JOURNEY_LEVEL",
+            level == null ? "company default" : level.name(), null, null);
         return journeys.save(journey);
     }
 

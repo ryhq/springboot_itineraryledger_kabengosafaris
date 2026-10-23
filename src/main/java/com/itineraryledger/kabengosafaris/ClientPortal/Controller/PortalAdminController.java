@@ -22,6 +22,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalAccessEvent;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalDevice;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalParticipant;
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.EditingLevel;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalAccessEventRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalDeviceRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalJourneyRepository;
@@ -151,6 +152,37 @@ public class PortalAdminController {
             toDTO(journeyService.setLocked(journey, locked))));
     }
 
+    /**
+     * How far this one client may reach into their own quotation.
+     *
+     * <p>Null hands it back to the company default, which is what most journeys should be on.
+     * Setting it here is for the exception: a request that looks wrong is dropped to RESPOND, or
+     * a client you know well is given the catalogue.
+     */
+    @PostMapping("/journeys/{id}/editing-level")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE')")
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> editingLevel(@PathVariable String id,
+                                                       @RequestBody Map<String, String> body) {
+        PortalJourney journey = journey(id);
+        if (journey == null) return notFound();
+
+        String wanted = body == null ? null : body.get("level");
+        EditingLevel level = null;
+        if (wanted != null && !wanted.isBlank() && !"INHERIT".equalsIgnoreCase(wanted)) {
+            try {
+                level = EditingLevel.valueOf(wanted.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                    "Unknown editing level: " + wanted, "INVALID_EDITING_LEVEL"));
+            }
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(200,
+            level == null ? "Back to the company default" : level.getDisplayName(),
+            toDTO(journeyService.setEditingLevel(journey, level))));
+    }
+
     /** End one browser's session from the office, for a client who has rung up worried. */
     @PostMapping("/journeys/{id}/devices/{deviceId}/revoke")
     @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE')")
@@ -248,6 +280,9 @@ public class PortalAdminController {
             journey.getStatus() == null ? null : journey.getStatus().getDisplayName(),
             journey.getProposalState() == null ? null : journey.getProposalState().getDisplayName(),
             Boolean.TRUE.equals(journey.getLocked()),
+            journey.getEditingLevel() == null ? null : journey.getEditingLevel().name(),
+            journeyService.levelOf(journey).name(),
+            journeyService.levelOf(journey).getDisplayName(),
             journey.getCustomer() == null ? null : journey.getCustomer().getFullName(),
             journey.getQuote() == null ? null : journey.getQuote().getQuoteCode(),
             journey.getCreatedAt(),

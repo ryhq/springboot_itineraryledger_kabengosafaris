@@ -13,7 +13,10 @@ import com.itineraryledger.kabengosafaris.ClientPortal.DTOs.PortalView;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalDevice;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalDeviceRepository;
+import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationImageRepository;
 import com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyIdentityService;
+import com.itineraryledger.kabengosafaris.Itinerary.ItineraryImage.Repository.ItineraryImageRepository;
+import com.itineraryledger.kabengosafaris.Park.Repositories.ParkImageRepository;
 import com.itineraryledger.kabengosafaris.Inclusion.DTOs.InclusionLineDTO;
 import com.itineraryledger.kabengosafaris.Inclusion.Services.InclusionSnapshotService;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
@@ -57,6 +60,18 @@ public class PortalViewService {
     private final LegalDocumentService legal;
     private final PortalDeviceRepository devices;
     private final IdObfuscator idObfuscator;
+    private final ItineraryImageRepository itineraryImages;
+    private final AccommodationImageRepository accommodationImages;
+    private final ParkImageRepository parkImages;
+
+    /**
+     * This API's own public address, for building image URLs.
+     *
+     * <p>The portal is served from a different hostname, so a relative path would resolve
+     * against that one and every photograph would be a broken box.
+     */
+    @org.springframework.beans.factory.annotation.Value("${app.base.url:}")
+    private String apiBaseUrl;
 
     @Transactional(readOnly = true)
     public PortalView.Page build(PortalAccessService.Access access) {
@@ -135,6 +150,7 @@ public class PortalViewService {
                 itinerary == null ? quote.getTitle() : itinerary.getName(),
                 itinerary == null ? null : itinerary.getCode(),
                 itinerary == null ? quote.getDescription() : itinerary.getDescription(),
+                hero(itinerary, days),
                 days.size(),
                 Math.max(0, days.size() - 1),
                 start,
@@ -148,6 +164,7 @@ public class PortalViewService {
         /* No snapshot: show the product, which is at least honest about what they enquired on. */
         return new PortalView.Trip(
             itinerary.getName(), itinerary.getCode(), itinerary.getDescription(),
+            hero(itinerary, List.of()),
             itinerary.getTotalDays(), itinerary.getTotalNights(),
             null, null, itinerary.getStartLocation(), itinerary.getEndLocation(), List.of());
     }
@@ -187,9 +204,77 @@ public class PortalViewService {
          * printed itinerary.
          */
         return new PortalView.Day(
-            day.getDayNumber(), date, day.getTitle(), day.getDescription(),
+            day.getDayNumber(), date, dayImage(day), day.getTitle(), day.getDescription(),
             day.getMorningActivities(), day.getAfternoonActivities(), day.getEveningActivities(),
             day.getMealsIncluded(), Boolean.TRUE.equals(day.getIsOvernight()), stay, parks);
+    }
+
+    /**
+     * The photograph at the top of the page.
+     *
+     * <p>The itinerary's own primary image if it has one, because that is the picture the office
+     * chose for this trip. Otherwise the first day that has one, so a product nobody has
+     * photographed still looks like somewhere rather than like a form.
+     */
+    private String hero(Itinerary itinerary, List<PortalView.Day> days) {
+        if (itinerary != null) {
+            String own = itineraryImages.findPrimaryByItineraryId(itinerary.getId())
+                .filter(image -> Boolean.TRUE.equals(image.getIsActive()))
+                .map(image -> imageUrl("itinerary-images", image.getFileName()))
+                .orElse(null);
+            if (own != null) return own;
+        }
+        return days.stream()
+            .map(PortalView.Day::imageUrl)
+            .filter(java.util.Objects::nonNull)
+            .findFirst()
+            .orElse(null);
+    }
+
+    /**
+     * A picture for one day: where they sleep, or failing that where they are.
+     *
+     * <p>The lodge first, because that is the thing a client is choosing between and the thing
+     * they want to see. The park second. Only PUBLISHED image modules are used, which is why
+     * these can be plain {@code src} attributes on a page: those photographs are already on the
+     * public website. Client documents are the opposite and are streamed through the API.
+     */
+    private String dayImage(QuoteDay day) {
+        if (day.getAccommodations() != null) {
+            for (QuoteDayAccommodation stay : day.getAccommodations()) {
+                if (Boolean.TRUE.equals(stay.getIsAlternative())) continue;
+                if (stay.getAccommodation() == null) continue;
+                String url = accommodationImages
+                    .findPrimaryByAccommodationId(stay.getAccommodation().getId())
+                    .filter(image -> Boolean.TRUE.equals(image.getIsActive()))
+                    .map(image -> imageUrl("accommodation-images", image.getFileName()))
+                    .orElse(null);
+                if (url != null) return url;
+            }
+        }
+        if (day.getParks() != null) {
+            for (QuoteDayPark park : day.getParks()) {
+                if (park.getPark() == null) continue;
+                String url = parkImages.findPrimaryByParkId(park.getPark().getId())
+                    .filter(image -> Boolean.TRUE.equals(image.getIsActive()))
+                    .map(image -> imageUrl("park-images", image.getFileName()))
+                    .orElse(null);
+                if (url != null) return url;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Absolute, because the portal is served from a different hostname than this API.
+     *
+     * <p>By file name rather than by id: an obfuscated id is re-salted on every restart, so a
+     * URL built from one stops resolving after the next deploy, and a page that was fine
+     * yesterday fills with broken images.
+     */
+    private String imageUrl(String module, String fileName) {
+        if (fileName == null || apiBaseUrl == null || apiBaseUrl.isBlank()) return null;
+        return apiBaseUrl.replaceAll("/+$", "") + "/api/" + module + "/file/" + fileName;
     }
 
     // ----------------------------------------------------------------- the money

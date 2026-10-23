@@ -78,6 +78,7 @@ public class CompanyProfileWriteService {
         patch(dto.getBrandAccent(), v -> profile.setBrandAccent(v == null ? null : v.toLowerCase()));
         patch(dto.getBrandRadius(), profile::setBrandRadius);
         patch(dto.getBrandFont(), profile::setBrandFont);
+        patch(dto.getPortalEditingLevel(), profile::setPortalEditingLevel);
 
         /*
          * The website's origin is stored without its trailing slash so every caller can append a

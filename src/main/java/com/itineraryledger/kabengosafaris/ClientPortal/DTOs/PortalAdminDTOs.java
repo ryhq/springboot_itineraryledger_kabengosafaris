@@ -23,6 +23,11 @@ public final class PortalAdminDTOs {
         String status,
         String proposalState,
         boolean locked,
+        /** what this journey sets, or null when it inherits */
+        String editingLevel,
+        /** what that actually resolves to, which is the answer somebody needs */
+        String effectiveLevel,
+        String effectiveLevelLabel,
         String customerName,
         String quoteCode,
         LocalDateTime createdAt,

@@ -141,6 +141,18 @@ public class CompanyProfile {
     private String websiteUrl;
 
     /**
+     * How far a client may reach into their own quotation, company-wide.
+     *
+     * <p>One of {@code RESPOND}, {@code CHOOSE_OFFERED} or {@code CHOOSE_CATALOGUE}. A journey
+     * may override it; null here means the shipped default, which is CHOOSE_OFFERED.
+     *
+     * <p>Held on the company rather than in a settings table of its own because it is one value
+     * and this is already the record that says how this company sells.
+     */
+    @Column(name = "portal_editing_level", length = 30)
+    private String portalEditingLevel;
+
+    /**
      * The shared secret the website requires before it will throw a cached page away, stored
      * encrypted.
      *
