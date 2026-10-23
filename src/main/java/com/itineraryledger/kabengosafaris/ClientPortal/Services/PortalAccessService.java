@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.ClientPortal.Services;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -20,6 +21,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalJourneyR
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalParticipantRepository;
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.CustomerAcknowledgementSender;
 import com.itineraryledger.kabengosafaris.Legal.Services.LegalDocumentService;
+import com.itineraryledger.kabengosafaris.Security.RateLimit.RateLimiter;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +63,7 @@ public class PortalAccessService {
     private final PortalActivityService activity;
     private final CustomerAcknowledgementSender sender;
     private final LegalDocumentService legalDocuments;
+    private final RateLimiter rateLimiter;
 
     @Value("${portal.code.expiry.minutes:15}")
     private int codeExpiryMinutes;
@@ -169,6 +172,23 @@ public class PortalAccessService {
         }
 
         PortalParticipant participant = found.get();
+
+        /*
+         * A limit per inbox, counted here rather than in the filter.
+         *
+         * The rate limiter reads an email from a request PARAMETER, which works for the
+         * server-rendered form and not at all for the React pages, whose address arrives in a
+         * JSON body that a filter must not consume. So the per-caller limit still comes from the
+         * filter and the per-victim one lives here, where the address is already parsed. Without
+         * it, many machines can fill one person's inbox from one booking, which is the attack
+         * the filter's own comment says it exists to stop.
+         */
+        long wait = rateLimiter.check("portal-email:" + participant.getEmail(), 5, Duration.ofHours(1));
+        if (wait > 0) {
+            log.warn("Too many portal codes requested for a participant on journey {}; {}s to wait",
+                journey.getId(), wait);
+            return;
+        }
 
         /* A new code kills the old one, so two live codes never exist for one person. */
         codeRepository.spendEveryOutstandingCode(participant.getId(), LocalDateTime.now());

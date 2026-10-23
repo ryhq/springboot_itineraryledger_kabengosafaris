@@ -121,6 +121,25 @@ public class SecurityConfigurations {
             .securityMatcher("/portal/**", "/api/portal/**")
             .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
             /*
+             * The portal is served from its own hostname, so the browser asks before it calls.
+             *
+             * Credentials are deliberately OFF. The session is a token the page sends in a
+             * header, not a cookie, because the panel's hostname and this API's are different
+             * registrable domains for at least one company and a SameSite cookie would simply
+             * never arrive. A header the browser does not attach by itself is also why nothing
+             * here needs a CSRF token: a page on another origin can make the request, but it
+             * cannot make the browser add the one header that matters.
+             */
+            .cors(cors -> cors.configurationSource(request -> {
+                CorsConfiguration portal = new CorsConfiguration();
+                portal.setAllowedOrigins(portalOrigins());
+                portal.setAllowedMethods(List.of("GET", "POST", "HEAD", "OPTIONS"));
+                portal.setAllowedHeaders(List.of("Content-Type", "Accept", PORTAL_SESSION_HEADER));
+                portal.setAllowCredentials(false);
+                portal.setMaxAge(1800L);
+                return portal;
+            }))
+            /*
              * CSRF off here matches the rest of this API, and the portal does not rely on it:
              * the session cookie is SameSite=Lax, so a form posted from another origin does not
              * carry it, and every state change is a POST.
@@ -185,6 +204,28 @@ public class SecurityConfigurations {
                 + "are both empty). The panel will be refused by the browser until one is set.");
         }
         log.info("CORS: credentialed requests allowed from {}", origins);
+        return List.copyOf(origins);
+    }
+
+    /** The one header a portal page sends to say who it is. Not a cookie; see the chain above. */
+    public static final String PORTAL_SESSION_HEADER = "X-Portal-Session";
+
+    @org.springframework.beans.factory.annotation.Value("${portal.base.url:}")
+    private String portalBaseUrl;
+
+    /**
+     * Where the client portal is served from.
+     *
+     * <p>Usually my.&lt;domain&gt;, carrying the same build as the panel. The management origin
+     * is included too, so the pages work during a cutover and so a developer running the panel
+     * locally against a live API is not mysteriously refused.
+     */
+    private List<String> portalOrigins() {
+        java.util.LinkedHashSet<String> origins = new java.util.LinkedHashSet<>();
+        if (portalBaseUrl != null && !portalBaseUrl.isBlank()) {
+            origins.add(portalBaseUrl.trim().replaceAll("/+$", ""));
+        }
+        origins.addAll(allowedOrigins());
         return List.copyOf(origins);
     }
 

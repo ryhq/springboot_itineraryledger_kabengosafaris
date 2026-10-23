@@ -2,6 +2,7 @@ package com.itineraryledger.kabengosafaris.ClientPortal.Controller;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,7 +44,7 @@ public class PortalAccessController {
      * address and something else for an unknown one is a tool for discovering who our customers
      * are, one address at a time.
      */
-    @PostMapping("/access/request")
+    @PostMapping(value = "/access/request", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public String requestCode(@RequestParam String token,
                               @RequestParam String email,
                               HttpServletRequest request) {
@@ -62,7 +63,7 @@ public class PortalAccessController {
      * <p>{@code remember} false is the shared-computer case: the session still works, and it dies
      * when the browser closes rather than sitting on a hotel machine for a month.
      */
-    @PostMapping("/access/verify")
+    @PostMapping(value = "/access/verify", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public String verify(@RequestParam String token,
                          @RequestParam String email,
                          @RequestParam String code,
@@ -94,7 +95,7 @@ public class PortalAccessController {
     }
 
     /** The client ending one of their own sessions from the devices page. */
-    @PostMapping("/devices/{deviceId}/revoke")
+    @PostMapping(value = "/devices/{deviceId}/revoke", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public String revokeDevice(@PathVariable String deviceId,
                                @RequestParam String token,
                                HttpServletRequest request,
@@ -119,7 +120,7 @@ public class PortalAccessController {
     }
 
     /** Sign out of this browser without ending anything else. */
-    @PostMapping("/access/sign-out")
+    @PostMapping(value = "/access/sign-out", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public String signOut(@RequestParam String token,
                           HttpServletRequest request,
                           HttpServletResponse response) {

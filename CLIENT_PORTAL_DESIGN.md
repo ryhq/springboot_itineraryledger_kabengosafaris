@@ -36,6 +36,38 @@ on the same rails.
 A stranger never reaches the customiser. The portal is only ever for somebody who has already
 asked for something concrete.
 
+## Where the portal runs
+
+**React pages built from the panel's own source, served from `my.<domain>`.**
+
+The first attempt server-rendered them from the API with Thymeleaf, for three good reasons: a
+same-origin session cookie, no third build, and the company's branding already available where
+the PDFs are rendered. It was the wrong call, and seeing it decided the matter. A page hand-made
+in a template engine, next to an application that already has a component library and a brand
+system, looks exactly like what it is, and this is the first thing a customer sees of the
+company that is not a PDF.
+
+So the pages live in the panel's repository, use its components and its brand tokens, and are
+deployed by the same build to a second hostname. One codebase, one artifact, two addresses.
+
+**Why a second hostname rather than a route on `management.<domain>`.** The panel keeps a staff
+token in local storage. A page designed to be opened by strangers on unknown devices must not
+share an origin with that, so `my.<domain>` serves the same files from the same directory and the
+browser keeps the two apart. It costs one DNS record and one virtual host per company, and no
+change to CI at all.
+
+**The session is a header, not a cookie.** `management.kabengosafaris.com` and
+`api.kabengosafaris.ryhqtech.com` are different registrable domains, so a `SameSite` cookie is
+never sent: a cookie would have worked for one company and silently not for the other. Verifying
+returns the session in the body and the page sends it as `X-Portal-Session`. A header the browser
+does not attach by itself is also what removes the need for a CSRF token.
+
+**The server-rendered pages remain** at `api.<domain>/portal/…`, sharing every service, view model
+and access check with the JSON surface. They are the fallback for a company with no portal
+hostname yet. Both front ends resolve access through the same `PortalAccessService`, and a test
+fails the build if either starts deciding for itself or if the two claim one path without saying
+what each consumes, which is a startup failure rather than a bug.
+
 ## What the client may change
 
 The quotation, never the itinerary. The itinerary is the blueprint that the next client will be
