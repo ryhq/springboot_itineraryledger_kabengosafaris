@@ -135,7 +135,23 @@ jobs:
             if [ "$ready" != "1" ]; then
               echo "::error::$COMPANY never went ready — rolling back"
               echo "--- what it says is wrong:"; curl -s --max-time 5 "$HEALTH" || echo "(no answer)"
-              echo "--- last 40 log lines:"; journalctl -u "$SERVICE" -n 40 --no-pager 2>/dev/null || true
+              # Three sources, because the one we had was silent. `journalctl` without sudo
+              # prints nothing for a unit the deploy user does not own, which is exactly what
+              # happened on 2026-10-23: a failed start with no stated reason, and a guess
+              # standing in for a log. The application's own file is the reliable one.
+              echo "--- last 60 log lines:"
+              sudo -n journalctl -u "$SERVICE" -n 60 --no-pager 2>/dev/null \
+                || journalctl -u "$SERVICE" -n 60 --no-pager 2>/dev/null \
+                || echo "(the journal is not readable from here)"
+              for f in "$APP_DIR/logs/application.log" /srv/"$SERVICE"/logs/application.log \
+                       /var/log/"$SERVICE"/application.log; do
+                if [ -r "$f" ]; then
+                  echo "--- $f (last 80):"; tail -n 80 "$f"
+                  echo "--- first fatal line in it:"
+                  grep -m 5 -E "ERROR|Caused by|FlywayException|APPLICATION FAILED" "$f" | tail -5
+                  break
+                fi
+              done
               if [ -n "$PREVIOUS" ] && [ -f "$PREVIOUS" ]; then
                 ln -sfn "$PREVIOUS" app.jar
                 sudo -n /usr/bin/systemctl restart "$SERVICE"
