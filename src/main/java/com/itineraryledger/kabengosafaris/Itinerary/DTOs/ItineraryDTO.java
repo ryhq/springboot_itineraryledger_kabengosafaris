@@ -40,6 +40,9 @@ public class ItineraryDTO {
     private Integer totalNights;
     private Boolean isDayTrip;
     private Integer carCount;
+
+    /** Null when this product follows the company's portal editing level, which is the norm. */
+    private String portalEditingLevel;
     @Translatable private String description;
     @Translatable private String highlights;
     /*

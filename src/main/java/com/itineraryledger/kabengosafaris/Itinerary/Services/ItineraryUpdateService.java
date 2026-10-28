@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Itinerary.Services;
 
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.EditingLevel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -173,6 +174,31 @@ public class ItineraryUpdateService {
             itinerary.setTotalNights(updateItineraryDTO.getTotalNights());
             daysOrNightsChanged = true;
         }
+        /*
+         * "INHERIT" rather than null to clear it, because null means "not sent" everywhere else
+         * on this DTO. Without a word for clearing, a product narrowed once could never be
+         * handed back to the company default from the panel.
+         */
+        if (updateItineraryDTO.getPortalEditingLevel() != null) {
+            String level = updateItineraryDTO.getPortalEditingLevel().trim();
+            if (level.isEmpty() || level.equalsIgnoreCase("INHERIT")) {
+                itinerary.setPortalEditingLevel(null);
+            } else {
+                try {
+                    EditingLevel chosen = EditingLevel.valueOf(level.toUpperCase(java.util.Locale.ROOT));
+                    /* a level nothing enforces must not be settable; see EditingLevel.isAvailable() */
+                    if (chosen.isAvailable()) {
+                        itinerary.setPortalEditingLevel(chosen);
+                    } else {
+                        log.warn("'{}' is not available yet; leaving the itinerary as it was", level);
+                    }
+                } catch (IllegalArgumentException e) {
+                    /* an unreadable level must not widen what a client may do */
+                    log.warn("'{}' is not an editing level; leaving the itinerary as it was", level);
+                }
+            }
+        }
+
         if (updateItineraryDTO.getCarCount() != null) {
             itinerary.setCarCount(updateItineraryDTO.getCarCount());
         }
@@ -242,6 +268,8 @@ public class ItineraryUpdateService {
         dto.setTotalNights(itinerary.getTotalNights());
         dto.setIsDayTrip(itinerary.getTotalDays() == 1 && itinerary.getTotalNights() == 0);
         dto.setCarCount(itinerary.getCarCount());
+        dto.setPortalEditingLevel(itinerary.getPortalEditingLevel() == null ? null
+            : itinerary.getPortalEditingLevel().name());
         dto.setDescription(itinerary.getDescription());
         dto.setHighlights(itinerary.getHighlights());
         dto.setInclusions(itinerary.getInclusions());

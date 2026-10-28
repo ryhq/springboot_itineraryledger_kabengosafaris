@@ -47,8 +47,29 @@ public final class PortalView {
         Invoice invoice,
         List<Document> documents,
         List<Device> devices,
+        Proposal proposal,
         String privacyHtml,
         String privacyVersion
+    ) {}
+
+    /**
+     * Where this quotation stands, and what the client may do about it right now.
+     *
+     * <p>The three booleans are computed here rather than inferred from {@code state} by the
+     * page. A front end that works out for itself when a button is allowed is a second copy of
+     * the rule, and the second copy is the one that goes stale: a button offered when the answer
+     * is no produces an error the client cannot act on, and one withheld when the answer is yes
+     * produces a telephone call.
+     */
+    public record Proposal(
+        String state,
+        String stateLabel,
+        /** What to tell the client it means, in their terms rather than ours. */
+        String sentence,
+        boolean mayEdit,
+        boolean mayDecide,
+        /** False for an invited reader, who may read everything and decide nothing. */
+        boolean isLead
     ) {}
 
     /** The trip itself. The open tier: no money anywhere in it. */
@@ -96,6 +117,36 @@ public final class PortalView {
      * <p>Published figures only. There is no field here for operator cost, margin, commission or
      * uplift, because there is no reading of the brief under which a client sees those.
      */
+    /**
+     * One night's options: what they have, and what else we offered for it.
+     *
+     * <p>On the quotation rather than on the trip, because the trip page is the open tier and
+     * the alternatives are part of what was quoted. Ids are obfuscated and are minted by this
+     * run of the application for this page; they are a way of naming a row in the next request,
+     * never a claim that the row is theirs. That is proved again on the way back in.
+     */
+    public record DayChoice(
+        Integer dayNumber,
+        String dayTitle,
+        List<StayOption> stays,
+        /** Optional ones only. What is part of the trip is not a line to be deleted. */
+        List<ActivityOption> activities
+    ) {}
+
+    public record StayOption(
+        String id,
+        String name,
+        String roomType,
+        String board,
+        Integer rooms,
+        boolean chosen
+    ) {}
+
+    public record ActivityOption(String id, String name, boolean included) {}
+
+    /** One kind of traveller and how many of them. The count is theirs; the kind is not. */
+    public record PartyLine(String id, String label, Integer count) {}
+
     public record Quote(
         String code,
         String title,
@@ -103,6 +154,16 @@ public final class PortalView {
         LocalDate validFrom,
         LocalDate validTo,
         boolean expired,
+        /**
+         * Whether the controls are drawn at all, and why not when they are not.
+         *
+         * <p>Both come from the one method the edits themselves ask, so a control cannot appear
+         * and then refuse.
+         */
+        boolean editable,
+        String notEditableBecause,
+        List<DayChoice> dayChoices,
+        List<PartyLine> party,
         Integer travellers,
         List<Money> totals,
         List<Money> perGuest,

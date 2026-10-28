@@ -1,0 +1,7 @@
+[
+  { "name": "recipientName", "description": "What to call them", "isRequired": true },
+  { "name": "tripName", "description": "Which trip" },
+  { "name": "quoteTotal", "description": "What it comes to now, formatted with its currency" },
+  { "name": "changeSummary", "description": "What we changed, one per line. Empty when we changed nothing and are simply handing it back" },
+  { "name": "portalUrl", "description": "Their trip page, where they accept, decline or change it again" }
+]

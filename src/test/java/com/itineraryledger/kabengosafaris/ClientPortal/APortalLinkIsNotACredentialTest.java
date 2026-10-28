@@ -118,7 +118,14 @@ class APortalLinkIsNotACredentialTest {
          * template.
          */
         String source = sourceWithoutComments(VIEW_SERVICE);
-        assertTrue(source.contains("verified ? quote(journey.getQuote()) : null"),
+        /*
+         * A pattern rather than the exact call, for the quotation only. It gained an argument
+         * when clients were given something to edit, and the literal this used to match would
+         * have had to be retyped for a change that did not touch the gate. What is being
+         * protected is the gate: built for a verified caller, null for everybody else.
+         */
+        assertTrue(java.util.regex.Pattern.compile("verified \\? quote\\(.*?\\) : null")
+                .matcher(source).find(),
             "the quotation must only be built for a verified caller");
         assertTrue(source.contains("verified ? invoice(journey.getInvoice()) : null"),
             "and the invoice");

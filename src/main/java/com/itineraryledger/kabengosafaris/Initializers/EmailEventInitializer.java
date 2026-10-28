@@ -210,6 +210,46 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
                 + "by somebody else produces no error anywhere, and this is how anybody finds out."
         );
 
+        initializeEvent(
+            "PORTAL_PROPOSAL_SUBMITTED",
+            "To the office when a client has finished putting their trip together and would like "
+                + "us to look. Leads with what they CHANGED rather than with the trip: a proposal "
+                + "that moved a room count and one that rebuilt the second week want different "
+                + "people, and a notification that does not say which costs a click to find out."
+        );
+
+        initializeEvent(
+            "PORTAL_QUOTE_AGREED",
+            "To the office when a customer accepts in the portal. Load-bearing rather than "
+                + "informational: pressing Accept deliberately does NOT move the quotation's own "
+                + "status, because that path is audited and the audit row needs a real person. If "
+                + "this does not arrive, somebody who has said yes is in a state nobody watches."
+        );
+
+        initializeEvent(
+            "PORTAL_QUOTE_DECLINED",
+            "To the office when a customer declines. Declining is final and is not 'waiting on "
+                + "us', so it appears in nothing the panel nags about: without this a lost "
+                + "customer is perfectly silent. Carries the reason they gave, which is usually "
+                + "the most useful line in the message."
+        );
+
+        initializeEvent(
+            "PORTAL_PROPOSAL_IN_REVIEW",
+            "To the client when a member of staff takes their proposal over, so they are read "
+                + "only until it comes back. The page says so too, but only if they open it, and "
+                + "the moment they are likeliest to open it is the moment they want to change one "
+                + "more thing. This is the difference between 'they are working on it' and 'the "
+                + "website has stopped letting me do anything'."
+        );
+
+        initializeEvent(
+            "PORTAL_PROPOSAL_RETURNED",
+            "To the client when we hand it back. Leads with what WE changed, because that is what "
+                + "they will open the page to find out and saying it here is what makes the page "
+                + "worth opening. Names all three ways out: accept, decline, or change it again."
+        );
+
         // ========================================
         // Quote Events
         // ========================================

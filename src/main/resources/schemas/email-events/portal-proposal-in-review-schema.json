@@ -1,0 +1,6 @@
+[
+  { "name": "recipientName", "description": "What to call them", "isRequired": true },
+  { "name": "tripName", "description": "Which trip" },
+  { "name": "consultantName", "description": "Who here has it, or the company name when the handover was automatic. Always supplied: this renderer has no inverted sections, so an unset variable would print as itself", "isRequired": true },
+  { "name": "portalUrl", "description": "Their trip page, which they can still read" }
+]

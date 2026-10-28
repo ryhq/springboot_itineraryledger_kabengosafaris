@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,8 +15,13 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.itineraryledger.kabengosafaris.ClientPortal.DTOs.PortalOutcome;
 import com.itineraryledger.kabengosafaris.ClientPortal.DTOs.PortalView;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalAccessService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalChangeLogService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalCommentService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalEditingService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalProposalService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalActivityService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalViewService;
 import com.itineraryledger.kabengosafaris.Configurations.SecurityConfigurations;
@@ -55,6 +61,10 @@ public class PortalApiController {
 
     private final PortalAccessService access;
     private final PortalViewService views;
+    private final PortalChangeLogService changeLog;
+    private final PortalProposalService proposals;
+    private final PortalEditingService editing;
+    private final PortalCommentService comments;
     private final PortalActivityService activity;
     private final QuoteDocumentRepository quoteDocuments;
     private final QuoteDocumentStorageService documentStorage;
@@ -147,6 +157,247 @@ public class PortalApiController {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("session", result.deviceToken());
         return ResponseEntity.ok(ApiResponse.success(200, "Verified", payload));
+    }
+
+    /**
+     * Every round of this quotation, and what moved in each.
+     *
+     * <p>The verified tier, because a change list is mostly about money. The same service answers
+     * the office's Portal tab, so the two sides are reading one list rather than two summaries
+     * that can disagree about what was agreed.
+     */
+    @GetMapping("/{token}/changes")
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<?>> changes(
+        @PathVariable String token,
+        @RequestHeader(value = SecurityConfigurations.PORTAL_SESSION_HEADER, required = false) String session,
+        HttpServletRequest request
+    ) {
+        PortalAccessService.Access resolved = access.resolve(token, session);
+        if (resolved.journey() == null || !resolved.canReadTrip()) {
+            return gone();
+        }
+        if (!resolved.canReadPrivate()) {
+            return ResponseEntity.status(401).body(ApiResponse.error(401,
+                "Please enter a code first", "PORTAL_NOT_VERIFIED"));
+        }
+
+        activity.record(resolved.journey(), resolved.participant(), resolved.device(),
+            "CHANGES", null, PortalPageController.clientAddress(request),
+            request.getHeader("User-Agent"));
+
+        return ResponseEntity.ok(ApiResponse.success(200, "Changes retrieved",
+            changeLog.forQuote(resolved.journey().getQuote())));
+    }
+
+    /**
+     * "Please look at this", "yes", and "no".
+     *
+     * <p>One endpoint for the three, because they are one decision with three answers and three
+     * endpoints would be three places to forget the same four checks. The action is in the body
+     * rather than the path so that an unknown one is a 400 from this method, not a 404 from the
+     * router that reads like a broken link.
+     *
+     * <p>Submitting does not lock the client out. That is the property the whole loop is built
+     * on and it is stated again here because this is where somebody would quietly remove it.
+     */
+    @PostMapping(value = "/{token}/proposal", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<?>> proposal(
+        @PathVariable String token,
+        @RequestBody Map<String, String> body,
+        @RequestHeader(value = SecurityConfigurations.PORTAL_SESSION_HEADER, required = false) String session
+    ) {
+        PortalAccessService.Access resolved = access.resolve(token, session);
+        if (resolved.journey() == null || !resolved.canReadTrip()) {
+            return gone();
+        }
+        if (!resolved.canReadPrivate()) {
+            return ResponseEntity.status(401).body(ApiResponse.error(401,
+                "Please enter a code first", "PORTAL_NOT_VERIFIED"));
+        }
+        /*
+         * Only whether they are the lead, and nothing else.
+         *
+         * canAct() would be the obvious call and it is the wrong one here: it also folds in
+         * whether the journey is frozen or closed, so a frozen booking would tell the lead
+         * traveller that they are not the lead traveller. Every other reason belongs to the
+         * state machine, which has a sentence for each of them.
+         *
+         * A reader may look at everything the lead can look at and decide none of it. Somebody
+         * invited to read a honeymoon itinerary must not be able to accept it.
+         */
+        if (resolved.participant() == null || !resolved.participant().mayAct()) {
+            return ResponseEntity.status(403).body(ApiResponse.error(403,
+                "Only the lead traveller on this booking can do that.", "PORTAL_NOT_THE_LEAD"));
+        }
+
+        String action = String.valueOf(body.getOrDefault("action", "")).toUpperCase();
+        PortalOutcome outcome = switch (action) {
+            case "SUBMIT" -> proposals.submit(resolved.journey(), resolved.participant());
+            case "AGREE" -> proposals.agree(resolved.journey(), resolved.participant());
+            case "DECLINE" -> proposals.decline(resolved.journey(), resolved.participant(),
+                body.get("reason"));
+            default -> null;
+        };
+
+        if (outcome == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                "That is not something you can do here.", "PORTAL_UNKNOWN_ACTION"));
+        }
+        if (!outcome.done()) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, outcome.message(), outcome.code()));
+        }
+        return ResponseEntity.ok(ApiResponse.success(200, outcome.message(), null));
+    }
+
+    /**
+     * The four things a client may change about their own quotation.
+     *
+     * <p>One endpoint, for the reason the proposal endpoint is one: they are four answers to
+     * one question and four endpoints would be four places to forget the same checks. Every
+     * one of them is refused unless the quotation may change, the client's level reaches that
+     * far, and the row named is on this booking.
+     *
+     * <p>The id is in the body and is decoded here, which is safe in a way a stored id is not:
+     * it was minted by the page the client is looking at, in this run of the application. It is
+     * still only a request. Whether the row is theirs is proved in the service, by walking back
+     * from the row to the quotation on their journey.
+     */
+    @PostMapping(value = "/{token}/edit", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> edit(
+        @PathVariable String token,
+        @RequestBody Map<String, Object> body,
+        @RequestHeader(value = SecurityConfigurations.PORTAL_SESSION_HEADER, required = false) String session
+    ) {
+        PortalAccessService.Access resolved = access.resolve(token, session);
+        if (resolved.journey() == null || !resolved.canReadTrip()) {
+            return gone();
+        }
+        if (!resolved.canReadPrivate()) {
+            return ResponseEntity.status(401).body(ApiResponse.error(401,
+                "Please enter a code first", "PORTAL_NOT_VERIFIED"));
+        }
+        if (resolved.participant() == null || !resolved.participant().mayAct()) {
+            return ResponseEntity.status(403).body(ApiResponse.error(403,
+                "Only the lead traveller on this booking can change it.", "PORTAL_NOT_THE_LEAD"));
+        }
+
+        Long rowId;
+        try {
+            rowId = idObfuscator.decodeId(String.valueOf(body.get("id")));
+        } catch (Exception e) {
+            /* an id we cannot read and an id that is not theirs get the same answer */
+            return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                "That is not on this booking.", "NOT_ON_THIS_BOOKING"));
+        }
+
+        String action = String.valueOf(body.getOrDefault("action", "")).toUpperCase();
+        PortalOutcome outcome = switch (action) {
+            case "STAY" -> editing.chooseStay(resolved.journey(), resolved.participant(), rowId);
+            case "ROOMS" -> editing.setRooms(resolved.journey(), resolved.participant(),
+                rowId, asInteger(body.get("value")));
+            case "ACTIVITY" -> editing.setActivityIncluded(resolved.journey(),
+                resolved.participant(), rowId, Boolean.TRUE.equals(body.get("value")));
+            case "PARTY" -> editing.setPartySize(resolved.journey(), resolved.participant(),
+                rowId, asInteger(body.get("value")));
+            default -> null;
+        };
+
+        if (outcome == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                "That is not something you can change here.", "PORTAL_UNKNOWN_ACTION"));
+        }
+        if (!outcome.done()) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, outcome.message(), outcome.code()));
+        }
+        return ResponseEntity.ok(ApiResponse.success(200, outcome.message(), null));
+    }
+
+    /** JSON hands back a Number or a String depending on who wrote the caller. */
+    private Integer asInteger(Object value) {
+        if (value instanceof Number number) return number.intValue();
+        try {
+            return value == null ? null : Integer.valueOf(String.valueOf(value).trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * What has been said about this quotation, part by part.
+     *
+     * <p>Only what is visible to them, filtered in the query rather than here. The same thread
+     * carries the office talking among themselves, and a filter applied in a controller is a
+     * filter somebody refactors out of one of two call sites.
+     */
+    @GetMapping("/{token}/comments")
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<?>> comments(
+        @PathVariable String token,
+        @RequestHeader(value = SecurityConfigurations.PORTAL_SESSION_HEADER, required = false) String session
+    ) {
+        PortalAccessService.Access resolved = access.resolve(token, session);
+        if (resolved.journey() == null || !resolved.canReadTrip()) return gone();
+        if (!resolved.canReadPrivate()) {
+            return ResponseEntity.status(401).body(ApiResponse.error(401,
+                "Please enter a code first", "PORTAL_NOT_VERIFIED"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(200, "Comments retrieved",
+            comments.forClient(resolved.journey().getQuote())));
+    }
+
+    /**
+     * Say something about one part of the trip.
+     *
+     * <p>Deliberately NOT gated on who holds the pen. Editing is about not overwriting each
+     * other's work; a question is never a conflict. A client who can see their quotation and is
+     * told they may not ask about it has been handed a document with a closed door beside it,
+     * which is the position the portal exists to get them out of.
+     *
+     * <p>Any verified participant may comment, including an invited reader. They may not decide
+     * anything, but somebody invited onto a honeymoon is exactly the person who knows the
+     * flight gets in at midnight.
+     */
+    @PostMapping(value = "/{token}/comments", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> comment(
+        @PathVariable String token,
+        @RequestBody Map<String, Object> body,
+        @RequestHeader(value = SecurityConfigurations.PORTAL_SESSION_HEADER, required = false) String session
+    ) {
+        PortalAccessService.Access resolved = access.resolve(token, session);
+        if (resolved.journey() == null || !resolved.canReadTrip()) return gone();
+        if (!resolved.canReadPrivate()) {
+            return ResponseEntity.status(401).body(ApiResponse.error(401,
+                "Please enter a code first", "PORTAL_NOT_VERIFIED"));
+        }
+
+        Long targetId = null;
+        Object raw = body.get("targetId");
+        if (raw != null && !String.valueOf(raw).isBlank()) {
+            try {
+                targetId = idObfuscator.decodeId(String.valueOf(raw));
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                    "That is not on this booking.", "NOT_ON_THIS_BOOKING"));
+            }
+        }
+
+        PortalOutcome outcome = comments.addFromClient(
+            resolved.journey(), resolved.participant(),
+            body.get("anchor") == null ? null : String.valueOf(body.get("anchor")),
+            asInteger(body.get("dayNumber")),
+            targetId,
+            body.get("body") == null ? null : String.valueOf(body.get("body")));
+
+        if (!outcome.done()) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, outcome.message(), outcome.code()));
+        }
+        return ResponseEntity.ok(ApiResponse.success(200, outcome.message(), null));
     }
 
     /** End this browser's session, leaving every other device alone. */

@@ -1,0 +1,50 @@
+<!--
+  We have finished and handed the proposal back.
+
+  To the customer, and it leads with what WE changed, because that is the question they will
+  open the page to answer and because answering it in the email is what makes the page worth
+  opening. A message saying only "we have replied" makes them hunt for the difference, and a
+  client who cannot find what moved assumes nothing did.
+
+  Three ways out from here and the email names all three: accept, decline, or change something
+  and send it back again. It is a conversation, not an ultimatum.
+-->
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.55; color: #1f2421">
+
+  <p style="margin: 0 0 14px">Hello {{recipientName}},</p>
+
+  <p style="margin: 0 0 18px">
+    Your{{#tripName}} {{tripName}}{{/tripName}} proposal is back with you.
+  </p>
+
+  {{#changeSummary}}
+  <table style="border-collapse: collapse; width: 100%; background-color: {{companyAccentSoft}}; border-left: 4px solid {{companyAccentDark}}">
+    <tbody>
+      <tr>
+        <td style="padding: 12px 16px; font-size: 13px; color: #374151; white-space: pre-line">{{changeSummary}}</td>
+      </tr>
+    </tbody>
+  </table>
+  {{/changeSummary}}
+
+  {{#quoteTotal}}
+  <p style="margin: 18px 0 0; font-size: 15px">
+    It now comes to <strong>{{quoteTotal}}</strong>.
+  </p>
+  {{/quoteTotal}}
+
+  <p style="margin: 18px 0 0; font-size: 13px; color: #374151">
+    Have a look and tell us what you think. You can accept it, tell us it is not for you, or
+    change something and send it back again, as many times as you like.
+    {{#portalUrl}}<br><a href="{{portalUrl}}" style="color: {{companyAccentDark}}">{{portalUrl}}</a>{{/portalUrl}}
+  </p>
+
+  <p style="margin: 14px 0 0">
+    Kind regards,<br>
+    {{companyName}}
+  </p>
+
+  <p style="margin: 18px 0 0; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280">
+    {{companyName}}{{#companyPhone}} · {{companyPhone}}{{/companyPhone}}{{#companyEmail}} · {{companyEmail}}{{/companyEmail}}{{#companyWebsite}} · {{companyWebsite}}{{/companyWebsite}}
+  </p>
+</div>

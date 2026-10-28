@@ -358,6 +358,8 @@ public class ItineraryGetService {
         dto.setTotalNights(itinerary.getTotalNights());
         dto.setIsDayTrip(itinerary.getTotalDays() == 1 && itinerary.getTotalNights() == 0);
         dto.setCarCount(itinerary.getCarCount());
+        dto.setPortalEditingLevel(itinerary.getPortalEditingLevel() == null ? null
+            : itinerary.getPortalEditingLevel().name());
         dto.setDescription(itinerary.getDescription());
         dto.setHighlights(itinerary.getHighlights());
         dto.setInclusions(itinerary.getInclusions());

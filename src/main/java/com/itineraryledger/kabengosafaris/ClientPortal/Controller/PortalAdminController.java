@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.itineraryledger.kabengosafaris.ClientPortal.DTOs.PortalAdminDTOs;
+import com.itineraryledger.kabengosafaris.ClientPortal.DTOs.PortalOutcome;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalAccessEvent;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalDevice;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
@@ -28,9 +29,13 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalAccessEv
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalDeviceRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalJourneyRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalAccessService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalChangeLogService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalCommentService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalJourneyService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalProposalService;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
+import com.itineraryledger.kabengosafaris.User.User;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 
@@ -60,6 +65,9 @@ public class PortalAdminController {
     private final PortalAccessEventRepository events;
     private final PortalJourneyService journeyService;
     private final PortalAccessService accessService;
+    private final PortalChangeLogService changeLog;
+    private final PortalProposalService proposals;
+    private final PortalCommentService comments;
     private final QuoteRepository quotes;
     private final IdObfuscator idObfuscator;
 
@@ -74,6 +82,36 @@ public class PortalAdminController {
                 "This quotation has not been shared with the customer", null));
         }
         return ResponseEntity.ok(ApiResponse.success(200, "Portal journey retrieved", toDTO(journey)));
+    }
+
+    /**
+     * Every round of this quotation, and what moved in each.
+     *
+     * <p>Answered by the service that answers the client's own change list, from the same stored
+     * snapshots. That is the requirement and it is worth being blunt about why: a review where
+     * each side reads its own summary of what the other side did ends with both of them certain,
+     * and one of them wrong, about what was agreed.
+     *
+     * <p>Hung off the quotation rather than off the journey, because the revisions belong to the
+     * quotation. A quotation nobody has shared still has a history worth reading, and the office
+     * is entitled to it whether or not a client was ever given a link.
+     */
+    @GetMapping("/quotes/{quoteId}/changes")
+    @PreAuthorize("hasAuthority('PERM_READ_QUOTE')")
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<?>> changes(@PathVariable String quoteId) {
+        Quote quote;
+        try {
+            quote = quotes.findById(idObfuscator.decodeId(quoteId)).orElse(null);
+        } catch (Exception e) {
+            quote = null;
+        }
+        if (quote == null) {
+            return ResponseEntity.status(404).body(
+                ApiResponse.error(404, "Quote not found: " + quoteId, "QUOTE_NOT_FOUND"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(200, "Changes retrieved",
+            changeLog.forQuote(quote)));
     }
 
     /**
@@ -107,6 +145,154 @@ public class PortalAdminController {
         }
         return ResponseEntity.ok(ApiResponse.success(200,
             "The customer can now open this trip", toDTO(journey)));
+    }
+
+    /** The whole thread, including what we said among ourselves. */
+    @GetMapping("/quotes/{quoteId}/comments")
+    @PreAuthorize("hasAuthority('PERM_READ_QUOTE')")
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<?>> comments(@PathVariable String quoteId) {
+        Quote quote = quoteById(quoteId);
+        if (quote == null) {
+            return ResponseEntity.status(404).body(
+                ApiResponse.error(404, "Quote not found: " + quoteId, "QUOTE_NOT_FOUND"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(200, "Comments retrieved",
+            comments.forOffice(quote)));
+    }
+
+    /**
+     * Say something, to them or about it.
+     *
+     * <p>{@code visibleToClient} defaults to FALSE here, which is the opposite of the portal's
+     * default and is the only safe way round. A note typed in a hurry and published to the
+     * customer cannot be unpublished; one kept internal by mistake is a click away from being
+     * shared. The panel makes the choice explicit on the form, and this is the backstop.
+     */
+    @PostMapping("/quotes/{quoteId}/comments")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE')")
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> comment(@PathVariable String quoteId,
+                                                  @RequestBody Map<String, Object> body) {
+        Quote quote = quoteById(quoteId);
+        if (quote == null) {
+            return ResponseEntity.status(404).body(
+                ApiResponse.error(404, "Quote not found: " + quoteId, "QUOTE_NOT_FOUND"));
+        }
+
+        Long targetId = null;
+        Object raw = body.get("targetId");
+        if (raw != null && !String.valueOf(raw).isBlank()) {
+            try {
+                targetId = idObfuscator.decodeId(String.valueOf(raw));
+            } catch (Exception e) {
+                targetId = null;
+            }
+        }
+
+        User author = currentUser();
+        var saved = comments.addFromStaff(quote, journeyFor(quoteId),
+            body.get("anchor") == null ? null : String.valueOf(body.get("anchor")),
+            asInteger(body.get("dayNumber")),
+            targetId,
+            body.get("body") == null ? null : String.valueOf(body.get("body")),
+            Boolean.TRUE.equals(body.get("visibleToClient")),
+            author == null ? null : nameOf(author),
+            author == null ? null : author.getId());
+
+        if (saved == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                "That comment has nothing to attach to, or nothing in it.", "COMMENT_REFUSED"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(200,
+            Boolean.TRUE.equals(saved.getVisibleToClient())
+                ? "Added. The customer can see this."
+                : "Added. Only we can see this.",
+            comments.forOffice(quote)));
+    }
+
+    /** Dealt with, or not after all. Kept either way: the thread is the record of the review. */
+    @PostMapping("/quotes/{quoteId}/comments/{commentId}/resolve")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE')")
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> resolveComment(@PathVariable String quoteId,
+                                                         @PathVariable String commentId,
+                                                         @RequestParam(defaultValue = "true") boolean resolved) {
+        Quote quote = quoteById(quoteId);
+        if (quote == null) {
+            return ResponseEntity.status(404).body(
+                ApiResponse.error(404, "Quote not found: " + quoteId, "QUOTE_NOT_FOUND"));
+        }
+
+        User author = currentUser();
+        boolean done;
+        try {
+            done = comments.resolve(quote, idObfuscator.decodeId(commentId),
+                author == null ? null : nameOf(author), resolved);
+        } catch (Exception e) {
+            done = false;
+        }
+
+        if (!done) {
+            return ResponseEntity.status(404).body(
+                ApiResponse.error(404, "No such comment on this quotation", "COMMENT_NOT_FOUND"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(200,
+            resolved ? "Marked as dealt with" : "Reopened", comments.forOffice(quote)));
+    }
+
+    /**
+     * Take the quotation over from the customer, or hand it back.
+     *
+     * <p>Both are deliberate acts and neither happens by itself. Taking over is what makes a
+     * client's edits stop, so it cannot be a side effect of opening the tab; returning is what
+     * lets them start again, so it cannot be a side effect of saving.
+     *
+     * <p>{@code PERM_UPDATE_QUOTE}, like everything else here. A journey is an attribute of a
+     * quotation, and a permission name minted for two endpoints is one nobody grants on purpose.
+     */
+    /**
+     * Take the quotation over from the customer, or hand it back.
+     *
+     * <p>Both are deliberate acts and neither happens by itself. Taking over is what makes a
+     * client's edits stop, so it cannot be a side effect of opening the tab; returning is what
+     * lets them start again, so it cannot be a side effect of saving.
+     *
+     * <p>{@code PERM_UPDATE_QUOTE}, like everything else here. A journey is an attribute of a
+     * quotation, and a permission name minted for two endpoints is one nobody grants on purpose.
+     */
+    @PostMapping("/journeys/{id}/take-over")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE')")
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> takeOver(@PathVariable String id) {
+        return proposal(id, true);
+    }
+
+    @PostMapping("/journeys/{id}/return")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE')")
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> returnToClient(@PathVariable String id) {
+        return proposal(id, false);
+    }
+
+    /*
+     * Two mappings rather than one with the action in the path. A {action} variable here would
+     * sit alongside /revoke, /reopen, /lock and /editing-level and swallow every typo of them
+     * into this method, which is a 400 reading "no such action" where a 404 was the truth.
+     */
+    private ResponseEntity<ApiResponse<?>> proposal(String id, boolean take) {
+        PortalJourney journey = journey(id);
+        if (journey == null) return notFound();
+
+        PortalOutcome outcome = take
+            ? proposals.takeOver(journey)
+            : proposals.returnToClient(journey);
+
+        if (!outcome.done()) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, outcome.message(), outcome.code()));
+        }
+        return ResponseEntity.ok(ApiResponse.success(200, outcome.message(), toDTO(journey)));
     }
 
     /**
@@ -245,6 +431,46 @@ public class PortalAdminController {
 
     // ------------------------------------------------------------------ internals
 
+    /**
+     * JSON hands back a Number or a String depending on who wrote the caller, and neither is
+     * guaranteed to be an integer.
+     *
+     * <p>{@code Integer.valueOf} on a raw body value was a 500 waiting for somebody to type
+     * "2.5" into a day box. A bad number here means "no day", which the service then refuses
+     * with a sentence, rather than a stack trace with nothing in it for the operator.
+     */
+    private Integer asInteger(Object value) {
+        if (value instanceof Number number) return number.intValue();
+        try {
+            return value == null ? null : Integer.valueOf(String.valueOf(value).trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Quote quoteById(String quoteId) {
+        try {
+            return quotes.findById(idObfuscator.decodeId(quoteId)).orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** Null for a caller with no account, which cannot happen on this controller but costs nothing. */
+    private User currentUser() {
+        org.springframework.security.core.Authentication authentication =
+            org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) return null;
+        Object principal = authentication.getPrincipal();
+        return principal instanceof User user ? user : null;
+    }
+
+    private String nameOf(User user) {
+        String full = ((user.getFirstName() == null ? "" : user.getFirstName()) + " "
+            + (user.getLastName() == null ? "" : user.getLastName())).trim();
+        return full.isBlank() ? user.getUsername() : full;
+    }
+
     private PortalJourney journeyFor(String quoteId) {
         try {
             return journeys.findByQuoteId(idObfuscator.decodeId(quoteId)).orElse(null);
@@ -300,10 +526,15 @@ public class PortalAdminController {
             journey.getToken(),
             journey.getStatus() == null ? null : journey.getStatus().getDisplayName(),
             journey.getProposalState() == null ? null : journey.getProposalState().getDisplayName(),
+            journey.getProposalState() == null ? null : journey.getProposalState().name(),
+            journey.getProposalStateAt(),
+            journey.getProposalState() != null && journey.getProposalState().waitingOnUs(),
+            journey.getHeldFromRevision(),
             Boolean.TRUE.equals(journey.getLocked()),
             journey.getEditingLevel() == null ? null : journey.getEditingLevel().name(),
             journeyService.levelOf(journey).name(),
             journeyService.levelOf(journey).getDisplayName(),
+            journeyService.levelSourceOf(journey),
             journey.getCustomer() == null ? null : journey.getCustomer().getFullName(),
             journey.getQuote() == null ? null : journey.getQuote().getQuoteCode(),
             journey.getCreatedAt(),

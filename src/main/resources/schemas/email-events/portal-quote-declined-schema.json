@@ -1,0 +1,8 @@
+[
+  { "name": "customerName", "description": "Who declined", "isRequired": true },
+  { "name": "tripName", "description": "Which trip" },
+  { "name": "quoteCode", "description": "The quotation they declined" },
+  { "name": "declineReason", "description": "What they told us, if anything. Usually the most useful line in the message" },
+  { "name": "declinedAt", "description": "When" },
+  { "name": "panelUrl", "description": "Straight to the quotation" }
+]

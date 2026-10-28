@@ -59,6 +59,27 @@ public enum EditingLevel {
         return this != RESPOND;
     }
 
+    /**
+     * Whether this level can be chosen yet.
+     *
+     * <p>CHOOSE_CATALOGUE is designed and named and is not built: the portal-safe search over
+     * accommodation rates that it needs is phase three. Until then it is accepted by nothing
+     * and behaves exactly like CHOOSE_OFFERED, which is the worst possible state for a setting
+     * — an operator sets it, believes they have opened the catalogue to a client, and nothing
+     * whatever has happened.
+     *
+     * <p>So it cannot be set. This codebase's rule about facets applies to settings too: one
+     * that does nothing is worse than one that is absent, because the absent one is at least
+     * honest about it.
+     *
+     * <p><strong>To turn it on, flip this and nothing else.</strong>
+     * {@code TheCatalogueLevelIsNotOfferedUntilItWorksTest} fails the moment anything starts
+     * consulting {@link #allowsCatalogue()}, so phase three cannot forget.
+     */
+    public boolean isAvailable() {
+        return this != CHOOSE_CATALOGUE;
+    }
+
     /** Whether the client may reach past the alternatives already on their quotation. */
     public boolean allowsCatalogue() {
         return this == CHOOSE_CATALOGUE;

@@ -121,6 +121,8 @@ public class ItineraryDuplicateService {
                 .totalDays(source.getTotalDays())
                 .totalNights(source.getTotalNights())
                 .carCount(source.getCarCount())
+                /* a copy of a honeymoon is still a honeymoon */
+                .portalEditingLevel(source.getPortalEditingLevel())
                 .description(source.getDescription())
                 .highlights(source.getHighlights())
                 /*

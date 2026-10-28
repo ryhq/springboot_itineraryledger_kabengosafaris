@@ -1,0 +1,9 @@
+[
+  { "name": "customerName", "description": "Who sent it", "isRequired": true },
+  { "name": "tripName", "description": "Which trip they are putting together" },
+  { "name": "quoteCode", "description": "The quotation, so it can be found without searching" },
+  { "name": "quoteTotal", "description": "What it comes to now, formatted with its currency" },
+  { "name": "changeSummary", "description": "What they changed since we last saw it, one per line. Empty when nothing moved and they simply want an answer" },
+  { "name": "submittedAt", "description": "When they sent it" },
+  { "name": "panelUrl", "description": "Straight to the quotation's Portal tab" }
+]

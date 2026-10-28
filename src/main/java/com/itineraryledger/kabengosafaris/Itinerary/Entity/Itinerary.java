@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Itinerary.Entity;
 
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.EditingLevel;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryDay.Entity.ItineraryDay;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryInclusion.Entity.ItineraryInclusion;
 import com.itineraryledger.kabengosafaris.Itinerary.ItineraryPax.Entity.ItineraryPax;
@@ -98,6 +99,21 @@ public class Itinerary {
     @Builder.Default
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
+
+    /**
+     * How far a client may reach into a quotation built from this product.
+     *
+     * <p>The middle tier of the resolution: the journey's own setting wins, then this, then the
+     * company's. Null means inherit, which is the right answer for almost every itinerary.
+     *
+     * <p>It belongs on the product because the question is about the product. A honeymoon built
+     * around one lodge on one night has nothing to swap and a client rearranging it produces a
+     * trip we cannot deliver; a fourteen-day circuit with three alternatives a night is exactly
+     * what the portal is for. Deciding that once per itinerary beats deciding it per customer.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "portal_editing_level", length = 30)
+    private EditingLevel portalEditingLevel;
 
     @Column(name = "created_by")
     private Long createdBy; // User ID who created this itinerary

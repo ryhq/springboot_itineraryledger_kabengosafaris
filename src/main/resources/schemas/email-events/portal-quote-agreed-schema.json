@@ -1,0 +1,8 @@
+[
+  { "name": "customerName", "description": "Who accepted", "isRequired": true },
+  { "name": "tripName", "description": "Which trip" },
+  { "name": "quoteCode", "description": "The quotation they accepted" },
+  { "name": "quoteTotal", "description": "What they accepted it at, formatted with its currency" },
+  { "name": "agreedAt", "description": "When they accepted" },
+  { "name": "panelUrl", "description": "Straight to the quotation" }
+]

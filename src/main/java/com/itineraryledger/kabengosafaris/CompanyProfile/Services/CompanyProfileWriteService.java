@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.CompanyProfile.Services;
 
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.EditingLevel;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -80,7 +81,12 @@ public class CompanyProfileWriteService {
         patch(dto.getBrandAccent(), v -> profile.setBrandAccent(v == null ? null : v.toLowerCase()));
         patch(dto.getBrandRadius(), profile::setBrandRadius);
         patch(dto.getBrandFont(), profile::setBrandFont);
-        patch(dto.getPortalEditingLevel(), profile::setPortalEditingLevel);
+        /*
+         * A level nothing enforces must not be settable. CHOOSE_CATALOGUE is designed, named
+         * and not built, and a company that sets it would believe it had opened the catalogue
+         * to every client while nothing at all had changed. See EditingLevel.isAvailable().
+         */
+        patch(availableLevel(dto.getPortalEditingLevel()), profile::setPortalEditingLevel);
         /* stored without a trailing slash, so every caller can append a path safely */
         patch(dto.getPortalUrl(), v -> profile.setPortalUrl(
             v == null ? null : v.trim().replaceAll("/+$", "")));
@@ -442,6 +448,24 @@ public class CompanyProfileWriteService {
             return java.time.LocalDate.parse(value);
         } catch (java.time.format.DateTimeParseException e) {
             throw new IllegalArgumentException(field + " must be a date as yyyy-MM-dd, not \"" + value + "\"");
+        }
+    }
+
+    /**
+     * The level as given, or null when it is one nothing enforces yet.
+     *
+     * <p>Null means "not sent" to {@code patch}, so an unavailable level leaves the setting
+     * exactly as it was rather than silently clearing it. Refusing quietly rather than with an
+     * error because the panel does not offer the value at all: anything reaching here with it
+     * is a direct API call, and the honest answer to that is that nothing changed.
+     */
+    private String availableLevel(String name) {
+        if (name == null || name.isBlank()) return name;
+        try {
+            EditingLevel level = EditingLevel.valueOf(name.trim().toUpperCase(java.util.Locale.ROOT));
+            return level.isAvailable() ? name : null;
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 

@@ -1,0 +1,49 @@
+<!--
+  A client has finished putting their trip together and would like us to look at it.
+
+  To the office, not to the customer. The customer already saw "we have it" on the page they
+  pressed the button on; this is the one that makes somebody here act.
+
+  It leads with what CHANGED rather than with the trip, because that is the part nobody here
+  knows yet and the part that decides who picks it up and how long it takes. A notification
+  reading "a client submitted a proposal" costs a click to find out whether it is a room count
+  or a rebuilt second week.
+
+  The total is here for the same reason. A proposal that has moved the price by eleven dollars
+  and one that has moved it by four thousand want different people and different afternoons.
+-->
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.55; color: #1f2421">
+
+  <p style="margin: 0 0 14px">
+    <strong style="color: #374151">{{customerName}}</strong> has asked us to look at their
+    proposal{{#tripName}} for {{tripName}}{{/tripName}}.
+  </p>
+
+  {{#changeSummary}}
+  <table style="border-collapse: collapse; width: 100%; background-color: {{companyAccentSoft}}; border-left: 4px solid {{companyAccentDark}}">
+    <tbody>
+      <tr>
+        <td style="padding: 12px 16px; font-size: 13px; color: #374151; white-space: pre-line">{{changeSummary}}</td>
+      </tr>
+    </tbody>
+  </table>
+  {{/changeSummary}}
+
+  <table style="border-collapse: collapse; margin: 18px 0 0; font-size: 13px; color: #374151">
+    <tbody>
+      {{#quoteCode}}<tr><td style="padding: 2px 16px 2px 0; color: #6b7280">Quotation</td><td>{{quoteCode}}</td></tr>{{/quoteCode}}
+      {{#quoteTotal}}<tr><td style="padding: 2px 16px 2px 0; color: #6b7280">Now at</td><td><strong>{{quoteTotal}}</strong></td></tr>{{/quoteTotal}}
+      {{#submittedAt}}<tr><td style="padding: 2px 16px 2px 0; color: #6b7280">Sent</td><td>{{submittedAt}}</td></tr>{{/submittedAt}}
+    </tbody>
+  </table>
+
+  <p style="margin: 18px 0 0; font-size: 13px; color: #374151">
+    They can still change it until somebody here takes it over, so taking it over is the first
+    thing to do once you start.
+    {{#panelUrl}}<br><a href="{{panelUrl}}" style="color: {{companyAccentDark}}">Open the quotation</a>{{/panelUrl}}
+  </p>
+
+  <p style="margin: 18px 0 0; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280">
+    {{companyName}} · client portal
+  </p>
+</div>

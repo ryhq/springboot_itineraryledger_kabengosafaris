@@ -243,6 +243,21 @@ public class EmailTemplateTestService {
             case "PORTAL_NEW_DEVICE":
                 return generatePortalNewDeviceTestData(user);
 
+            case "PORTAL_PROPOSAL_SUBMITTED":
+                return generatePortalProposalSubmittedTestData(user);
+
+            case "PORTAL_QUOTE_AGREED":
+                return generatePortalQuoteAgreedTestData(user);
+
+            case "PORTAL_QUOTE_DECLINED":
+                return generatePortalQuoteDeclinedTestData(user);
+
+            case "PORTAL_PROPOSAL_IN_REVIEW":
+                return generatePortalProposalInReviewTestData(user);
+
+            case "PORTAL_PROPOSAL_RETURNED":
+                return generatePortalProposalReturnedTestData(user);
+
             case "SEND_QUOTE":
                 return generateQuoteSentTestData(user);
 
@@ -789,6 +804,76 @@ public class EmailTemplateTestService {
         variables.put("tripName", "8 Days Northern Circuit");
         variables.put("portalUrl", "https://example.test/portal/sample");
         return new TestEmailData(variables, "[TEST] Your trip was opened on a new device");
+    }
+
+    /*
+     * Sample data for the five review-loop events.
+     *
+     * The change summary is deliberately a realistic one rather than a single line. The whole
+     * reason these emails lead with what moved is that a list of four sentences reads very
+     * differently from one, and a preview that shows one tells nobody whether the layout holds.
+     */
+    private static final String SAMPLE_CHANGES = String.join("\n",
+        "Day 3: Kudu Lodge became Farm of Dreams Lodge",
+        "Day 3: Farm of Dreams Lodge, board Half Board became Full Board",
+        "Day 7: Hot air balloon added",
+        "Non-Resident, Child: 1 added",
+        "Total: USD 18,313.40 became USD 19,450.00");
+
+    private static final DateTimeFormatter SAMPLE_WHEN =
+        DateTimeFormatter.ofPattern("d MMMM yyyy 'at' HH:mm");
+
+    private TestEmailData generatePortalProposalSubmittedTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        variables.put("customerName", user.getFirstName() + " " + user.getLastName());
+        variables.put("tripName", "8 Days Northern Circuit");
+        variables.put("quoteCode", "QT-1042-0926-1");
+        variables.put("quoteTotal", "USD 19,450.00");
+        variables.put("changeSummary", SAMPLE_CHANGES);
+        variables.put("submittedAt", LocalDateTime.now().format(SAMPLE_WHEN));
+        variables.put("panelUrl", "https://example.test/quotes");
+        return new TestEmailData(variables, "[TEST] Proposal waiting: a customer");
+    }
+
+    private TestEmailData generatePortalQuoteAgreedTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        variables.put("customerName", user.getFirstName() + " " + user.getLastName());
+        variables.put("tripName", "8 Days Northern Circuit");
+        variables.put("quoteCode", "QT-1042-0926-1");
+        variables.put("quoteTotal", "USD 19,450.00");
+        variables.put("agreedAt", LocalDateTime.now().format(SAMPLE_WHEN));
+        variables.put("panelUrl", "https://example.test/quotes");
+        return new TestEmailData(variables, "[TEST] Accepted: a customer");
+    }
+
+    private TestEmailData generatePortalQuoteDeclinedTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        variables.put("customerName", user.getFirstName() + " " + user.getLastName());
+        variables.put("tripName", "8 Days Northern Circuit");
+        variables.put("quoteCode", "QT-1042-0926-1");
+        variables.put("declineReason", "The dates no longer work for us. We may look at next June.");
+        variables.put("declinedAt", LocalDateTime.now().format(SAMPLE_WHEN));
+        variables.put("panelUrl", "https://example.test/quotes");
+        return new TestEmailData(variables, "[TEST] Declined: a customer");
+    }
+
+    private TestEmailData generatePortalProposalInReviewTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        variables.put("recipientName", user.getFirstName());
+        variables.put("tripName", "8 Days Northern Circuit");
+        variables.put("consultantName", user.getFirstName() + " has");
+        variables.put("portalUrl", "https://example.test/portal/sample");
+        return new TestEmailData(variables, "[TEST] We are working on your proposal");
+    }
+
+    private TestEmailData generatePortalProposalReturnedTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        variables.put("recipientName", user.getFirstName());
+        variables.put("tripName", "8 Days Northern Circuit");
+        variables.put("quoteTotal", "USD 19,450.00");
+        variables.put("changeSummary", SAMPLE_CHANGES);
+        variables.put("portalUrl", "https://example.test/portal/sample");
+        return new TestEmailData(variables, "[TEST] Your proposal is back with you");
     }
 
     private TestEmailData generateQuoteSentTestData(User user) {

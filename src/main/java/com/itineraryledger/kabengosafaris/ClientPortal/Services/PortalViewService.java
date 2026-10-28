@@ -11,7 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.itineraryledger.kabengosafaris.ClientPortal.DTOs.PortalView;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalDevice;
+import com.itineraryledger.kabengosafaris.ClientPortal.DTOs.PortalOutcome;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayActivity.Entity.QuoteDayActivity;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.ProposalState;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalDeviceRepository;
 import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationImageRepository;
 import com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyIdentityService;
@@ -58,6 +61,7 @@ public class PortalViewService {
     private final InclusionSnapshotService inclusions;
     private final InvoicePaymentAggregationService payments;
     private final LegalDocumentService legal;
+    private final PortalEditingService editing;
     private final PortalDeviceRepository devices;
     private final IdObfuscator idObfuscator;
     private final ItineraryImageRepository itineraryImages;
@@ -89,12 +93,52 @@ public class PortalViewService {
             verified,
             verified ? access.participant().getDisplayName() : null,
             trip(journey),
-            verified ? quote(journey.getQuote()) : null,
+            verified ? quote(journey.getQuote(), journey) : null,
             verified ? invoice(journey.getInvoice()) : null,
             verified ? documents(journey) : List.of(),
             verified ? devices(journey, access.device()) : List.of(),
+            verified ? proposal(access) : null,
             privacy == null ? null : legal.renderHtml(privacy.getBody()),
             privacy == null ? null : privacy.getVersion());
+    }
+
+    /**
+     * Where the quotation stands, in the client's terms.
+     *
+     * <p>The sentences matter more than they look. A client who presses a button and is refused
+     * has learnt that the page is unreliable; a client who is told "we are looking at this and
+     * will come back to you" has been answered. Same state, same two seconds, opposite feeling
+     * about the company.
+     *
+     * <p>The booleans come from the state machine itself rather than being inferred here, so
+     * what the page offers and what the API will accept cannot drift apart.
+     */
+    private PortalView.Proposal proposal(PortalAccessService.Access access) {
+        PortalJourney journey = access.journey();
+        ProposalState state = journey.getProposalState();
+        if (state == null) return null;
+
+        boolean lead = access.participant() != null && access.participant().mayAct();
+        boolean actionable = journey.isActionable();
+
+        String sentence = switch (state) {
+            case OPEN_TO_CLIENT -> "This is with you. Tell us when you are happy with it.";
+            case SUBMITTED -> "We have it and will come back to you. You can still make changes "
+                + "until we start looking at it.";
+            case WITH_OPERATOR -> "We are working on this. You will be able to make changes "
+                + "again when we send it back.";
+            case RETURNED -> "This is back with you, with our answer.";
+            case AGREED -> "Agreed. We will confirm everything and tell you what happens next.";
+            case DECLINED -> "You have told us this is not for you. Get in touch any time.";
+        };
+
+        return new PortalView.Proposal(
+            state.name(),
+            state.getDisplayName(),
+            sentence,
+            lead && actionable && state.clientMayEdit(),
+            lead && actionable && state.clientMayDecide(),
+            lead);
     }
 
     /**
@@ -279,7 +323,7 @@ public class PortalViewService {
 
     // ----------------------------------------------------------------- the money
 
-    private PortalView.Quote quote(Quote quote) {
+    private PortalView.Quote quote(Quote quote, PortalJourney journey) {
         if (quote == null) return null;
 
         int travellers = 0;
@@ -313,12 +357,91 @@ public class PortalViewService {
          * customerNotes, never internalNotes. The two sit side by side on the entity and differ
          * by one word in the getter.
          */
+        /*
+         * The one method the edits themselves ask, so a control cannot be drawn that then
+         * refuses. A client who decides what they want and is then told no has been treated
+         * worse than one who was never offered the choice.
+         */
+        PortalOutcome refusal = editing.whyNotEditable(journey);
+
         return new PortalView.Quote(
             quote.getQuoteCode(), quote.getTitle(),
             quote.getStatus() == null ? null : quote.getStatus().getDisplayName(),
             quote.getValidFrom(), quote.getValidTo(), expired,
+            refusal == null,
+            refusal == null ? null : refusal.message(),
+            dayChoices(quote),
+            partyLines(quote),
             travellers == 0 ? null : travellers,
             totals, perGuest, included, notIncluded, quote.getCustomerNotes());
+    }
+
+    /**
+     * What they may choose between, night by night.
+     *
+     * <p>Only days that actually offer a choice appear. A day with one lodge and no optional
+     * activity has nothing to decide, and a list of fourteen days of which two are clickable
+     * buries the two.
+     */
+    private List<PortalView.DayChoice> dayChoices(Quote quote) {
+        List<PortalView.DayChoice> choices = new ArrayList<>();
+        if (quote.getDays() == null) return choices;
+
+        for (QuoteDay day : quote.getDays()) {
+            List<PortalView.StayOption> stays = new ArrayList<>();
+            if (day.getAccommodations() != null) {
+                for (QuoteDayAccommodation stay : day.getAccommodations()) {
+                    stays.add(new PortalView.StayOption(
+                        idObfuscator.encodeId(stay.getId()),
+                        stay.getAccommodation() == null ? null : stay.getAccommodation().getName(),
+                        stay.getRoomType() == null ? null : stay.getRoomType().getName(),
+                        stay.getBoardType() == null ? null : stay.getBoardType().getName(),
+                        stay.getRoomCount(),
+                        !Boolean.TRUE.equals(stay.getIsAlternative())));
+                }
+            }
+
+            List<PortalView.ActivityOption> optional = new ArrayList<>();
+            if (day.getActivities() != null) {
+                for (QuoteDayActivity act : day.getActivities()) {
+                    if (!Boolean.TRUE.equals(act.getIsOptional())) continue;
+                    optional.add(new PortalView.ActivityOption(
+                        idObfuscator.encodeId(act.getId()),
+                        act.getActivity() == null ? null : act.getActivity().getName(),
+                        Boolean.TRUE.equals(act.getIsIncludedInPrice())));
+                }
+            }
+
+            boolean worthShowing = stays.size() > 1 || !optional.isEmpty()
+                || (stays.size() == 1 && stays.get(0).rooms() != null);
+            if (!worthShowing) continue;
+
+            choices.add(new PortalView.DayChoice(
+                day.getDayNumber(), day.getTitle(), stays, optional));
+        }
+        return choices;
+    }
+
+    /**
+     * The travelling party, one line per kind of traveller.
+     *
+     * <p>The count is theirs to change; the kind is not. Which nationality band and which age
+     * band apply decides which tariff is charged, and a client guessing at it produces a price
+     * neither side can explain afterwards.
+     */
+    private List<PortalView.PartyLine> partyLines(Quote quote) {
+        List<PortalView.PartyLine> lines = new ArrayList<>();
+        if (quote.getPaxList() == null) return lines;
+
+        for (QuotePax pax : quote.getPaxList()) {
+            String nation = pax.getNationCategory() == null ? "" : pax.getNationCategory().getName();
+            String age = pax.getAgeCategory() == null ? "" : pax.getAgeCategory().getName();
+            lines.add(new PortalView.PartyLine(
+                idObfuscator.encodeId(pax.getId()),
+                (nation + " " + age).trim(),
+                pax.getCount()));
+        }
+        return lines;
     }
 
     private PortalView.Invoice invoice(Invoice invoice) {

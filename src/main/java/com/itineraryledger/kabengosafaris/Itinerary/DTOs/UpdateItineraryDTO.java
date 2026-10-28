@@ -38,6 +38,15 @@ public class UpdateItineraryDTO {
     @Min(value = 1, message = "Car count must be at least 1")
     private Integer carCount;
 
+    /**
+     * How far a client may reach into a quotation built from this product.
+     *
+     * <p>Null means inherit the company's setting, which is right for almost every itinerary.
+     * The string "INHERIT" clears a level that was set, since null cannot say "clear this"
+     * under the patch semantics every other field here follows.
+     */
+    private String portalEditingLevel;
+
     private String description;
     private String highlights;
 

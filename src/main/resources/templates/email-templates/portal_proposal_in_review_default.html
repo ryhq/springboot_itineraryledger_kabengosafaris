@@ -1,0 +1,39 @@
+<!--
+  We have taken the client's proposal over, so they are read only until we hand it back.
+
+  To the customer. The portal tells them this on the page, but only if they happen to open it,
+  and the moment they are most likely to open it is the moment they want to change one more
+  thing. Being told in advance is the difference between "they are working on it" and "the
+  website has stopped letting me do anything".
+
+  Short, and no apology. Somebody taking the pen is us doing the work they asked for.
+-->
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.55; color: #1f2421">
+
+  <p style="margin: 0 0 14px">Hello {{recipientName}},</p>
+
+  <p style="margin: 0 0 18px">
+    {{consultantName}} started working on your{{#tripName}} {{tripName}}{{/tripName}} proposal.
+  </p>
+
+  <p style="margin: 0 0 18px; font-size: 13px; color: #374151">
+    You can still read everything. Changing it is paused while we are in it, so that your edits
+    and ours do not land on top of each other, and it comes straight back to you when we are
+    done.
+  </p>
+
+  {{#portalUrl}}
+  <p style="margin: 0 0 18px; font-size: 13px">
+    <a href="{{portalUrl}}" style="color: {{companyAccentDark}}">{{portalUrl}}</a>
+  </p>
+  {{/portalUrl}}
+
+  <p style="margin: 14px 0 0">
+    Kind regards,<br>
+    {{companyName}}
+  </p>
+
+  <p style="margin: 18px 0 0; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280">
+    {{companyName}}{{#companyPhone}} · {{companyPhone}}{{/companyPhone}}{{#companyEmail}} · {{companyEmail}}{{/companyEmail}}{{#companyWebsite}} · {{companyWebsite}}{{/companyWebsite}}
+  </p>
+</div>

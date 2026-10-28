@@ -21,6 +21,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalParticip
 import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
 import com.itineraryledger.kabengosafaris.CompanyProfile.Repository.CompanyProfileRepository;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
+import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteRevisionService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,6 +56,7 @@ public class PortalJourneyService {
     private final PortalTokens tokens;
     private final PortalActivityService activity;
     private final CompanyProfileRepository companyProfiles;
+    private final QuoteRevisionService revisions;
 
     /**
      * Create the link for a quotation, or return the one this client already has.
@@ -107,6 +109,15 @@ public class PortalJourneyService {
         }
 
         ensureLead(journey, email, customer);
+
+        /*
+         * There has to be something to compare against before the client can change anything.
+         * Without a baseline the first edit they make has no "before", so the first thing the
+         * portal can tell them about their own change is nothing at all. Idempotent, so pointing
+         * an existing link at a newer quotation does not write a second one.
+         */
+        revisions.ensureBaseline(quote, journey);
+
         return journey;
     }
 
@@ -222,6 +233,21 @@ public class PortalJourneyService {
         if (Boolean.TRUE.equals(journey.getLocked())) return EditingLevel.RESPOND;
         if (journey.getEditingLevel() != null) return journey.getEditingLevel();
 
+        /*
+         * The product's own answer, between the journey's and the company's. A honeymoon built
+         * around one lodge and a fourteen-day circuit with three alternatives a night do not
+         * deserve the same freedom, and that is a fact about the product rather than about the
+         * customer in front of us.
+         */
+        try {
+            if (journey.getItinerary() != null && journey.getItinerary().getPortalEditingLevel() != null) {
+                return journey.getItinerary().getPortalEditingLevel();
+            }
+        } catch (Exception e) {
+            /* a lazy itinerary that will not load must not widen what a client may do */
+            log.warn("Could not read the itinerary's portal editing level: {}", e.getMessage());
+        }
+
         try {
             return companyProfiles.findAll().stream()
                 .findFirst()
@@ -232,6 +258,28 @@ public class PortalJourneyService {
             log.warn("Could not read the company's portal editing level: {}", e.getMessage());
             return EditingLevel.CHOOSE_OFFERED;
         }
+    }
+
+    /**
+     * Where the resolved level came from, for a screen that has to explain itself.
+     *
+     * <p>Without this the panel can only say "following the company", which became untrue the
+     * moment the product gained a level of its own: an operator reading it would go to Settings
+     * to change something that Settings does not decide.
+     */
+    public String levelSourceOf(PortalJourney journey) {
+        if (journey == null) return "COMPANY";
+        if (Boolean.TRUE.equals(journey.getLocked())) return "FROZEN";
+        if (journey.getEditingLevel() != null) return "JOURNEY";
+        try {
+            if (journey.getItinerary() != null
+                    && journey.getItinerary().getPortalEditingLevel() != null) {
+                return "ITINERARY";
+            }
+        } catch (Exception e) {
+            return "COMPANY";
+        }
+        return "COMPANY";
     }
 
     /** An unknown or absent name is the shipped default, never the most permissive level. */
@@ -248,6 +296,9 @@ public class PortalJourneyService {
     /** Set or clear this one journey's level. Null hands it back to the company default. */
     @Transactional
     public PortalJourney setEditingLevel(PortalJourney journey, EditingLevel level) {
+        /* a level nothing enforces must not be settable; see EditingLevel.isAvailable() */
+        if (level != null && !level.isAvailable()) return journey;
+
         journey.setEditingLevel(level);
         activity.record(journey, null, null, "JOURNEY_LEVEL",
             level == null ? "company default" : level.name(), null, null);
