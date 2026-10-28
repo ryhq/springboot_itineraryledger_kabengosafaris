@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.itineraryledger.kabengosafaris.ClientPortal.DTOs.PortalOutcome;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalParticipant;
+import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRate;
 import com.itineraryledger.kabengosafaris.ClientPortal.Enums.EditingLevel;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.Entity.QuoteDayAccommodation;
@@ -71,6 +72,7 @@ public class PortalEditingService {
     private final QuotePaxRepository party;
     private final QuoteCostEstimationService costEstimation;
     private final PortalJourneyService journeys;
+    private final PortalCatalogueService catalogue;
     private final PortalActivityService activity;
 
     // ----------------------------------------------------------------- the four edits
@@ -108,6 +110,76 @@ public class PortalEditingService {
         accommodations.save(chosen);
 
         return done(journey, by, "EDIT_STAY", nameOf(chosen),
+            "Changed. Your price below has been worked out again.");
+    }
+
+    /**
+     * Take something we never put on the quotation, from the catalogue.
+     *
+     * <p>Editing level CHOOSE_CATALOGUE only, and this is the single place that enforces it.
+     *
+     * <p>A swap rather than a replacement, exactly as {@link #chooseStay} is: what they had
+     * becomes an alternative instead of being deleted, so they can go back, and the change
+     * history reads as one swap rather than as a removal and an addition. The room count
+     * travels, because somebody who needed two rooms still needs two.
+     *
+     * <p>The option is a RATE, not an accommodation. Room types, standards and board types each
+     * belong to one accommodation, so "the same room, elsewhere" is not a thing that exists:
+     * what a client picks is one concrete combination we hold a price for on that night.
+     */
+    @Transactional
+    public PortalOutcome chooseFromCatalogue(PortalJourney journey, PortalParticipant by,
+                                             Long rowId, Long rateId) {
+        PortalOutcome refusal = whyNotEditable(journey);
+        if (refusal != null) return refusal;
+
+        if (!journeys.levelOf(journey).allowsCatalogue()) {
+            return PortalOutcome.refuse(
+                "You can choose between the options already on your quotation. Tell us if you "
+                    + "would like something else and we will look into it.",
+                "LEVEL_OFFERED_ONLY", journey);
+        }
+
+        QuoteDayAccommodation row = accommodations.findById(rowId).orElse(null);
+        if (!belongsTo(journey, row)) return notYours(journey);
+
+        AccommodationRate rate = catalogue.rateById(rateId);
+        if (rate == null) return notYours(journey);
+
+        /*
+         * Re-checked here rather than trusted from the list that produced it. The list was built
+         * for one row on one page; this request names a row and a rate and could name any pair.
+         * The region is what keeps the night drivable and the date is what makes the price real.
+         */
+        String region = row.getAccommodation() == null ? null : row.getAccommodation().getRegion();
+        String offered = rate.getAccommodation().getRegion();
+        if (region == null || offered == null || !region.equalsIgnoreCase(offered)) {
+            return PortalOutcome.refuse(
+                "That one is not near enough to the rest of that day. Tell us what you have in "
+                    + "mind and we will see whether the route can take it.",
+                "OUT_OF_REGION", journey);
+        }
+
+        for (QuoteDayAccommodation other :
+                accommodations.findByQuoteDayIdOrderByIdAsc(row.getQuoteDay().getId())) {
+            if (!Boolean.TRUE.equals(other.getIsAlternative())) {
+                other.setIsAlternative(true);
+                accommodations.save(other);
+            }
+        }
+
+        accommodations.save(QuoteDayAccommodation.builder()
+            .quoteDay(row.getQuoteDay())
+            .accommodation(rate.getAccommodation())
+            .roomType(rate.getRoomType())
+            .roomStandard(rate.getRoomStandard())
+            .boardType(rate.getBoardType())
+            .roomCount(row.getRoomCount() == null ? 1 : row.getRoomCount())
+            .isAlternative(false)
+            .build());
+
+        return done(journey, by, "EDIT_STAY_CATALOGUE",
+            rate.getAccommodation().getName(),
             "Changed. Your price below has been worked out again.");
     }
 

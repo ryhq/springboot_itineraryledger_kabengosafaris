@@ -1,8 +1,6 @@
 package com.itineraryledger.kabengosafaris.ClientPortal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -45,7 +43,7 @@ import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteRevi
  * and forget to switch the setting back on, and cannot switch the setting on before building
  * it. Either mistake fails here with a sentence saying which way round it is.
  */
-class TheCatalogueLevelIsNotOfferedUntilItWorksTest {
+class ALevelIsOfferedExactlyWhenSomethingEnforcesItTest {
 
     private static final Path MAIN = Path.of("src/main/java/com/itineraryledger/kabengosafaris");
 
@@ -66,22 +64,37 @@ class TheCatalogueLevelIsNotOfferedUntilItWorksTest {
     }
 
     @Test
-    @DisplayName("the catalogue level is not available, and the other two are")
-    void onlyTheBuiltLevelsAreAvailable() {
-        assertFalse(EditingLevel.CHOOSE_CATALOGUE.isAvailable(),
-            "it behaves exactly like CHOOSE_OFFERED, which is the worst state for a setting");
-        assertTrue(EditingLevel.RESPOND.isAvailable());
-        assertTrue(EditingLevel.CHOOSE_OFFERED.isAvailable());
+    @DisplayName("every level is available, because every level is now enforced by something")
+    void everyLevelIsEnforced() {
+        for (EditingLevel level : EditingLevel.values()) {
+            assertTrue(level.isAvailable(),
+                level + " is offered, so something had better be enforcing it");
+        }
     }
 
     @Test
-    @DisplayName("setting it on one booking leaves the booking alone")
-    void aJourneyCannotBeSetToIt() {
+    @DisplayName("the catalogue can now be opened to one booking, which is the point of it")
+    void aJourneyCanBeSetToTheCatalogue() {
         PortalJourney journey = journey();
         journeyService().setEditingLevel(journey, EditingLevel.CHOOSE_CATALOGUE);
 
-        assertNull(journey.getEditingLevel(),
-            "silently accepting it is how somebody comes to believe it is in force");
+        assertEquals(EditingLevel.CHOOSE_CATALOGUE, journey.getEditingLevel());
+    }
+
+    @Test
+    @DisplayName("a level that enforces nothing still cannot be set, which is the rule itself")
+    void anUnenforcedLevelIsStillRefused() {
+        PortalJourney journey = journey();
+        journey.setEditingLevel(EditingLevel.RESPOND);
+
+        /*
+         * There is no unenforced level today, so this exercises the guard rather than a value:
+         * setEditingLevel consults isAvailable(), and a level added tomorrow before it is wired
+         * up lands on that branch rather than on a customer's booking.
+         */
+        assertTrue(EditingLevel.CHOOSE_OFFERED.isAvailable());
+        journeyService().setEditingLevel(journey, EditingLevel.CHOOSE_OFFERED);
+        assertEquals(EditingLevel.CHOOSE_OFFERED, journey.getEditingLevel());
     }
 
     @Test

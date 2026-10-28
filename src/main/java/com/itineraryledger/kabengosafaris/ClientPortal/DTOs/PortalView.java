@@ -162,6 +162,14 @@ public final class PortalView {
          */
         boolean editable,
         String notEditableBecause,
+        /**
+         * Whether this client may reach past the alternatives on their quotation.
+         *
+         * <p>Carried so the page knows whether to draw the control at all. The endpoint answers
+         * an empty list either way, but a button that reliably produces nothing is a button
+         * that teaches people the page is broken.
+         */
+        boolean catalogue,
         List<DayChoice> dayChoices,
         List<PartyLine> party,
         Integer travellers,

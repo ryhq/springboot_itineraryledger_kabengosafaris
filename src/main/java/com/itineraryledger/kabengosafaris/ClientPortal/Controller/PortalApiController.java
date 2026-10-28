@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.ClientPortal.Controller;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpHeaders;
@@ -12,12 +13,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.itineraryledger.kabengosafaris.ClientPortal.DTOs.PortalOutcome;
 import com.itineraryledger.kabengosafaris.ClientPortal.DTOs.PortalView;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalAccessService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalCatalogueService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalChangeLogService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalCommentService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalEditingService;
@@ -26,6 +29,8 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalActivitySe
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalViewService;
 import com.itineraryledger.kabengosafaris.Configurations.SecurityConfigurations;
 import com.itineraryledger.kabengosafaris.Quote.Entity.QuoteDocument;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.Entity.QuoteDayAccommodation;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.Repository.QuoteDayAccommodationRepository;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteDocumentRepository;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteDocumentServices.QuoteDocumentStorageService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
@@ -64,6 +69,8 @@ public class PortalApiController {
     private final PortalChangeLogService changeLog;
     private final PortalProposalService proposals;
     private final PortalEditingService editing;
+    private final PortalCatalogueService catalogue;
+    private final QuoteDayAccommodationRepository dayAccommodations;
     private final PortalCommentService comments;
     private final PortalActivityService activity;
     private final QuoteDocumentRepository quoteDocuments;
@@ -302,6 +309,8 @@ public class PortalApiController {
                 resolved.participant(), rowId, Boolean.TRUE.equals(body.get("value")));
             case "PARTY" -> editing.setPartySize(resolved.journey(), resolved.participant(),
                 rowId, asInteger(body.get("value")));
+            case "CATALOGUE" -> editing.chooseFromCatalogue(resolved.journey(),
+                resolved.participant(), rowId, decodeOrNull(body.get("option")));
             default -> null;
         };
 
@@ -314,6 +323,63 @@ public class PortalApiController {
                 ApiResponse.error(400, outcome.message(), outcome.code()));
         }
         return ResponseEntity.ok(ApiResponse.success(200, outcome.message(), null));
+    }
+
+    /**
+     * What else they could sleep in on one night, at editing level CHOOSE_CATALOGUE.
+     *
+     * <p>Asked for one row at a time rather than for the whole trip, because the answer depends
+     * on where that night already is and what we hold a price for on that date. A whole-trip
+     * version would be fourteen region searches to answer a question about one of them.
+     *
+     * <p>The list is empty, not refused, when the level does not reach this far. The page does
+     * not offer the control in that case, and an empty list is the honest answer to a request
+     * that should not have been made rather than an error to handle twice.
+     */
+    @GetMapping("/{token}/catalogue")
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<?>> catalogue(
+        @PathVariable String token,
+        @RequestParam("row") String rowId,
+        @RequestHeader(value = SecurityConfigurations.PORTAL_SESSION_HEADER, required = false) String session
+    ) {
+        PortalAccessService.Access resolved = access.resolve(token, session);
+        if (resolved.journey() == null || !resolved.canReadTrip()) return gone();
+        if (!resolved.canReadPrivate()) {
+            return ResponseEntity.status(401).body(ApiResponse.error(401,
+                "Please enter a code first", "PORTAL_NOT_VERIFIED"));
+        }
+        if (editing.whyNotEditable(resolved.journey()) != null) {
+            return ResponseEntity.ok(ApiResponse.success(200, "Nothing to choose from", List.of()));
+        }
+
+        Long id = decodeOrNull(rowId);
+        QuoteDayAccommodation row = id == null ? null
+            : dayAccommodations.findById(id).orElse(null);
+
+        /*
+         * The row has to be on THIS booking, the same rule as every edit. A catalogue for
+         * somebody else's night would leak which region they are travelling in.
+         */
+        if (row == null || row.getQuoteDay() == null || row.getQuoteDay().getQuote() == null
+                || resolved.journey().getQuote() == null
+                || !row.getQuoteDay().getQuote().getId().equals(resolved.journey().getQuote().getId())) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                "That is not on this booking.", "NOT_ON_THIS_BOOKING"));
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(200, "Options retrieved",
+            catalogue.optionsFor(resolved.journey().getQuote(), row)));
+    }
+
+    /** An id we cannot read and an id that is not theirs get the same answer further in. */
+    private Long decodeOrNull(Object value) {
+        if (value == null || String.valueOf(value).isBlank()) return null;
+        try {
+            return idObfuscator.decodeId(String.valueOf(value));
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /** JSON hands back a Number or a String depending on who wrote the caller. */

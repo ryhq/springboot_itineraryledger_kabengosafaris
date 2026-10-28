@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Accommodation.Repositories;
 
+import java.util.List;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.Accommodation;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -16,6 +17,20 @@ public interface AccommodationRepository extends JpaRepository<Accommodation, Lo
      * Find accommodation by exact name
      */
     Optional<Accommodation> findByName(String name);
+
+    /**
+     * Everything live in one region, for the portal's catalogue.
+     *
+     * <p>The region is what keeps a swap deliverable. A client choosing from the catalogue is
+     * changing where they sleep on a night whose route is already fixed: the vehicle arrives
+     * from somewhere and leaves for somewhere, and a lodge four hours away is not an
+     * alternative, it is a different trip.
+     *
+     * <p>Case-insensitive because the column is free text and has been typed by hand for years.
+     */
+    @Query("select a from Accommodation a where a.isActive = true "
+        + "and lower(a.region) = lower(:region) order by a.name asc")
+    List<Accommodation> findLiveInRegion(@Param("region") String region);
 
     /**
      * Find accommodation by slug

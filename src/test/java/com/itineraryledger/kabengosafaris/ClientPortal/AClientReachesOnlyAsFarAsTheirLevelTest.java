@@ -26,6 +26,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Enums.EditingLevel;
 import com.itineraryledger.kabengosafaris.ClientPortal.Enums.JourneyStatus;
 import com.itineraryledger.kabengosafaris.ClientPortal.Enums.ProposalState;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalActivityService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalCatalogueService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalEditingService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalAccessEventRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalCodeRepository;
@@ -70,6 +71,7 @@ class AClientReachesOnlyAsFarAsTheirLevelTest {
     private QuotePaxRepository party;
     private QuoteCostEstimationService costEstimation;
     private PortalJourneyService journeys;
+    private PortalCatalogueService catalogue;
     private PortalEditingService service;
 
     private Quote theirQuote;
@@ -90,8 +92,9 @@ class AClientReachesOnlyAsFarAsTheirLevelTest {
         theirQuote = new Quote();
         theirQuote.setId(1L);
 
+        catalogue = mock(PortalCatalogueService.class);
         service = new PortalEditingService(policy, accommodations, activities, party,
-            costEstimation, journeys, mock(PortalActivityService.class));
+            costEstimation, journeys, catalogue, mock(PortalActivityService.class));
     }
 
     // ------------------------------------------------------------------ fixtures
@@ -251,6 +254,88 @@ class AClientReachesOnlyAsFarAsTheirLevelTest {
         verify(accommodations, never()).save(any());
     }
 
+    // ------------------------------------------------------------------ the catalogue
+
+    private com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRate
+            catalogueRate(String lodgeName, String region) {
+        Accommodation lodge = new Accommodation();
+        lodge.setId(77L);
+        lodge.setName(lodgeName);
+        lodge.setRegion(region);
+        lodge.setIsActive(true);
+
+        var rate = new com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRate();
+        rate.setId(900L);
+        rate.setAccommodation(lodge);
+        rate.setIsActive(true);
+        return rate;
+    }
+
+    @Test
+    @DisplayName("reaching into the catalogue needs the level that says so")
+    void theCatalogueIsNotOpenAtTheOfferedLevel() {
+        when(journeys.levelOf(any())).thenReturn(EditingLevel.CHOOSE_OFFERED);
+        QuoteDayAccommodation booked = stay(50L, theirQuote, "Kudu Lodge", false);
+        booked.getAccommodation().setRegion("Serengeti");
+        when(accommodations.findById(50L)).thenReturn(Optional.of(booked));
+
+        PortalOutcome outcome = service.chooseFromCatalogue(journey(), lead(), 50L, 900L);
+
+        assertFalse(outcome.done());
+        assertEquals("LEVEL_OFFERED_ONLY", outcome.code());
+        assertTrue(outcome.message().contains("Tell us"),
+            "a refusal with nothing to do about it is the telephone call this exists to avoid");
+    }
+
+    @Test
+    @DisplayName("at the catalogue level a swap keeps what they had, as an alternative")
+    void aCatalogueSwapDemotesRatherThanDeletes() {
+        when(journeys.levelOf(any())).thenReturn(EditingLevel.CHOOSE_CATALOGUE);
+
+        QuoteDayAccommodation booked = stay(50L, theirQuote, "Kudu Lodge", false);
+        booked.getAccommodation().setRegion("Serengeti");
+        booked.setRoomCount(2);
+        when(accommodations.findById(50L)).thenReturn(Optional.of(booked));
+        when(accommodations.findByQuoteDayIdOrderByIdAsc(3L)).thenReturn(List.of(booked));
+        when(catalogue.rateById(900L))
+            .thenReturn(catalogueRate("Farm of Dreams Lodge", "Serengeti"));
+
+        assertTrue(service.chooseFromCatalogue(journey(), lead(), 50L, 900L).done());
+
+        assertTrue(booked.getIsAlternative(), "they can go back to what they had");
+        verify(costEstimation).recalculate(1L);
+    }
+
+    @Test
+    @DisplayName("somewhere the vehicle cannot reach is refused, however good the rate")
+    void aLodgeOutsideTheRegionIsRefused() {
+        when(journeys.levelOf(any())).thenReturn(EditingLevel.CHOOSE_CATALOGUE);
+
+        QuoteDayAccommodation booked = stay(50L, theirQuote, "Kudu Lodge", false);
+        booked.getAccommodation().setRegion("Serengeti");
+        when(accommodations.findById(50L)).thenReturn(Optional.of(booked));
+        when(catalogue.rateById(900L)).thenReturn(catalogueRate("Zanzibar Beach", "Zanzibar"));
+
+        PortalOutcome outcome = service.chooseFromCatalogue(journey(), lead(), 50L, 900L);
+
+        assertFalse(outcome.done(), "the night's route is already fixed around where it is");
+        assertEquals("OUT_OF_REGION", outcome.code());
+    }
+
+    @Test
+    @DisplayName("a rate that is gone or switched off is refused like any other unknown id")
+    void aRateWeNoLongerHoldIsRefused() {
+        when(journeys.levelOf(any())).thenReturn(EditingLevel.CHOOSE_CATALOGUE);
+
+        QuoteDayAccommodation booked = stay(50L, theirQuote, "Kudu Lodge", false);
+        booked.getAccommodation().setRegion("Serengeti");
+        when(accommodations.findById(50L)).thenReturn(Optional.of(booked));
+        when(catalogue.rateById(900L)).thenReturn(null);
+
+        assertEquals("NOT_ON_THIS_BOOKING",
+            service.chooseFromCatalogue(journey(), lead(), 50L, 900L).code());
+    }
+
     // ------------------------------------------------------------------ activities
 
     @Test
@@ -350,9 +435,10 @@ class AClientReachesOnlyAsFarAsTheirLevelTest {
     /**
      * A fifth edit cannot be added without the gates.
      *
-     * <p>A list of the four methods would rot the moment somebody adds the fifth, and the
-     * fifth is exactly the one that will be written in a hurry against a customer asking for
-     * something today. Reading the source is the only check that still holds then, and the
+     * <p>A list of the methods would rot the moment somebody adds another, and that one is
+     * exactly the one that will be written in a hurry against a customer asking for something
+     * today. The catalogue swap was the fifth and it arrived this way: the count failed, which
+     * is what sent it here for a test of its own. Reading the source is the only check that still holds then, and the
      * failure names the method so the fix needs no detective work.
      */
     @Test
@@ -376,7 +462,7 @@ class AClientReachesOnlyAsFarAsTheirLevelTest {
             if (!body.contains("notYours(journey)")) offenders.add(m.group(1) + " (no ownership check)");
         }
 
-        assertEquals(4, found, "the four edits a client may make; a fifth needs a test of its own");
+        assertEquals(5, found, "the edits a client may make; another one needs a test of its own");
         assertTrue(offenders.isEmpty(),
             "these change a quotation without asking whether they may: " + offenders);
     }

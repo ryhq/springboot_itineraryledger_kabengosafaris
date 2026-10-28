@@ -62,6 +62,7 @@ public class PortalViewService {
     private final InvoicePaymentAggregationService payments;
     private final LegalDocumentService legal;
     private final PortalEditingService editing;
+    private final PortalJourneyService journeys;
     private final PortalDeviceRepository devices;
     private final IdObfuscator idObfuscator;
     private final ItineraryImageRepository itineraryImages;
@@ -370,6 +371,7 @@ public class PortalViewService {
             quote.getValidFrom(), quote.getValidTo(), expired,
             refusal == null,
             refusal == null ? null : refusal.message(),
+            refusal == null && journeys.levelOf(journey).allowsCatalogue(),
             dayChoices(quote),
             partyLines(quote),
             travellers == 0 ? null : travellers,

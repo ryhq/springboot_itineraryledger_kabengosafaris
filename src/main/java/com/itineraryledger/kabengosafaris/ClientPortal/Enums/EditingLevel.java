@@ -62,22 +62,19 @@ public enum EditingLevel {
     /**
      * Whether this level can be chosen yet.
      *
-     * <p>CHOOSE_CATALOGUE is designed and named and is not built: the portal-safe search over
-     * accommodation rates that it needs is phase three. Until then it is accepted by nothing
-     * and behaves exactly like CHOOSE_OFFERED, which is the worst possible state for a setting
-     * — an operator sets it, believes they have opened the catalogue to a client, and nothing
-     * whatever has happened.
+     * <p>Every level here is enforced by something, which was not true for a while:
+     * CHOOSE_CATALOGUE was designed, named, documented and offered in three dropdowns before
+     * anything consulted it, so setting it did exactly what CHOOSE_OFFERED did while an
+     * operator believed they had opened the catalogue. This application's rule about facets
+     * applies to settings too — one that does nothing is worse than one that is absent,
+     * because the absent one is at least honest about it.
      *
-     * <p>So it cannot be set. This codebase's rule about facets applies to settings too: one
-     * that does nothing is worse than one that is absent, because the absent one is at least
-     * honest about it.
-     *
-     * <p><strong>To turn it on, flip this and nothing else.</strong>
-     * {@code TheCatalogueLevelIsNotOfferedUntilItWorksTest} fails the moment anything starts
-     * consulting {@link #allowsCatalogue()}, so phase three cannot forget.
+     * <p>The method stays, and so does the rule. A level added here before it is enforced must
+     * return false until it is. {@code ALevelIsOfferedExactlyWhenSomethingEnforcesItTest} ties
+     * the two together in both directions, so neither half can ship without the other.
      */
     public boolean isAvailable() {
-        return this != CHOOSE_CATALOGUE;
+        return true;
     }
 
     /** Whether the client may reach past the alternatives already on their quotation. */
