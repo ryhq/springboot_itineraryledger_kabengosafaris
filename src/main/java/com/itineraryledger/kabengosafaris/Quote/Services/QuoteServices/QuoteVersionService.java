@@ -57,6 +57,7 @@ public class QuoteVersionService {
     private final QuoteTotalsCalculationService totalsCalculationService;
     private final ItineraryCostEstimationService costEstimationService;
     private final IdObfuscator idObfuscator;
+    private final QuoteTreeCopyService treeCopy;
     private final UserRepository userRepository;
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("MMM dd, yyyy");
@@ -201,7 +202,25 @@ public class QuoteVersionService {
                 newQuote.getQuoteCode(), newVersionNumber, original.getQuoteCode(), original.getVersion());
 
             // ============================================================
-            // Step 2: Items — re-generate if date changed, else deep copy
+            // Step 2: The trip itself — days, party, inclusions
+            // ============================================================
+            /*
+             * This was missing entirely, and it made every new version hollow. The line items
+             * were copied, so the document read correctly; the day tree was not, and the day
+             * tree is what the price is computed FROM. recalculate() skips a quote with no days,
+             * so a v2 could never be repriced: every edit to it changed the trip and left the
+             * total exactly where it was.
+             *
+             * Copied from the previous QUOTE, never re-snapshotted from the itinerary. After the
+             * first edit the two are different documents on purpose — the quotation's tree is
+             * the customer's own copy — and re-reading the itinerary would throw away every
+             * choice they had made.
+             */
+            int daysCopied = treeCopy.copyTree(original, newQuote);
+            newQuote = quoteRepository.save(newQuote);
+
+            // ============================================================
+            // Step 3: Items — re-generate if date changed, else deep copy
             // ============================================================
             int itemCount;
             if (dateChanged && original.getItinerary() != null) {
@@ -216,12 +235,12 @@ public class QuoteVersionService {
             log.info("{} items for new version {}", dateChanged ? "Re-generated " + itemCount : "Copied " + itemCount, newQuote.getQuoteCode());
 
             // ============================================================
-            // Step 3: Recalculate totals
+            // Step 4: Recalculate totals
             // ============================================================
             totalsCalculationService.recalculateTotals(newQuote.getId());
 
             // ============================================================
-            // Step 4: Link version chain
+            // Step 5: Link version chain
             // ============================================================
             original.setNextVersion(newQuote);
             quoteRepository.save(original);
@@ -230,13 +249,15 @@ public class QuoteVersionService {
             newQuote = quoteRepository.findById(newQuote.getId()).orElse(newQuote);
 
             // ============================================================
-            // Step 5: Response
+            // Step 6: Response
             // ============================================================
             QuoteDTO dto = convertToDTO(newQuote);
 
             String message = dateChanged
-                ? String.format("New version (v%d) created with new start date. %d items re-generated from cost estimation.", newVersionNumber, itemCount)
-                : String.format("New version (v%d) created. %d items copied from %s.", newVersionNumber, itemCount, original.getQuoteCode());
+                ? String.format("New version (v%d) created with new start date. %d days copied, %d items re-generated from cost estimation.",
+                    newVersionNumber, daysCopied, itemCount)
+                : String.format("New version (v%d) created. %d days and %d items copied from %s.",
+                    newVersionNumber, daysCopied, itemCount, original.getQuoteCode());
 
             return ResponseEntity.status(HttpStatus.CREATED).body(
                 ApiResponse.success(201, message, dto)
