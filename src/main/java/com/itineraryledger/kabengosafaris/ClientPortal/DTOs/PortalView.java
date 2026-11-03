@@ -47,9 +47,49 @@ public final class PortalView {
         Invoice invoice,
         List<Document> documents,
         List<Device> devices,
+        /**
+         * Everybody on this booking, and whether this caller may change the list.
+         *
+         * <p>Shown to readers too, deliberately. Somebody who can see a honeymoon quotation is
+         * entitled to know who else can, and a list only the lead can see is the forwarded-link
+         * problem with a better interface.
+         */
+        People people,
         Proposal proposal,
         String privacyHtml,
         String privacyVersion
+    ) {}
+
+    /**
+     * Who is on the booking, from the point of view of whoever is reading it.
+     *
+     * <p>{@code mayInvite} is computed here rather than from {@code isLead}, for the reason
+     * every other permission on this page is: a front end that works out for itself when a
+     * button is allowed is a second copy of the rule, and the second copy is the one that goes
+     * stale. It folds in the cap and whether the booking is still open.
+     */
+    public record People(
+        List<Person> list,
+        boolean mayInvite,
+        /** Why not, when not. Empty when they may. */
+        String mayNotInviteBecause,
+        int placesLeft
+    ) {}
+
+    public record Person(
+        String id,
+        String name,
+        String email,
+        /** LEAD or READER. The page says what each one means; it does not decide it. */
+        String role,
+        boolean lead,
+        /** Whether they have proved this address yet, which is not the same as being invited. */
+        boolean verified,
+        LocalDateTime invitedAt,
+        /** Whether the caller may take this person off. Never true for the lead. */
+        boolean removable,
+        /** True for the row belonging to whoever is reading the page. */
+        boolean you
     ) {}
 
     /**

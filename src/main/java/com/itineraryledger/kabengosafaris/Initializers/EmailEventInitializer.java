@@ -211,6 +211,14 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
         );
 
         initializeEvent(
+            "PORTAL_INVITATION",
+            "To somebody the lead traveller has added to their own booking, so that a group trip "
+                + "stops being run by forwarding one person's link. It goes to an address nobody "
+                + "here typed, which is why it leads with who invited them and carries the link "
+                + "alone: they verify their own address before any figure is shown."
+        );
+
+        initializeEvent(
             "PORTAL_PROPOSAL_SUBMITTED",
             "To the office when a client has finished putting their trip together and would like "
                 + "us to look. Leads with what they CHANGED rather than with the trip: a proposal "

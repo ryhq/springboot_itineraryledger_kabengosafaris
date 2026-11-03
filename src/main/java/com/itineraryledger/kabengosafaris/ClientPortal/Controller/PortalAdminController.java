@@ -28,9 +28,11 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Enums.EditingLevel;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalAccessEventRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalDeviceRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalJourneyRepository;
+import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalParticipantRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalAccessService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalChangeLogService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalCommentService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalInvitationService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalJourneyService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalProposalService;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
@@ -63,6 +65,8 @@ public class PortalAdminController {
     private final PortalJourneyRepository journeys;
     private final PortalDeviceRepository devices;
     private final PortalAccessEventRepository events;
+    private final PortalParticipantRepository participants;
+    private final PortalInvitationService invitations;
     private final PortalJourneyService journeyService;
     private final PortalAccessService accessService;
     private final PortalChangeLogService changeLog;
@@ -390,6 +394,42 @@ public class PortalAdminController {
             toDTO(journeyService.setEditingLevel(journey, level))));
     }
 
+    /**
+     * Take a reader off a booking from the office.
+     *
+     * <p>Staff need this because the request arrives by telephone at least as often as it
+     * arrives through the client's own page: the address was mistyped, or the person it belongs
+     * to has asked to be taken off and is not going to sign in to do it. It runs the same
+     * removal the lead's button runs, so the two cannot drift apart, and it ends that person's
+     * sessions at the same moment.
+     *
+     * <p>There is deliberately no endpoint here for inviting one. An invitation is the lead
+     * saying who may read their own booking; staff adding an address to it would be the office
+     * deciding who sees a customer's quotation, and the office already has Send.
+     */
+    @PostMapping("/journeys/{id}/participants/{participantId}/remove")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE')")
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> removeParticipant(@PathVariable String id,
+                                                            @PathVariable String participantId) {
+        PortalJourney journey = journey(id);
+        if (journey == null) return notFound();
+
+        PortalParticipant reader;
+        try {
+            reader = participants.findById(idObfuscator.decodeId(participantId)).orElse(null);
+        } catch (Exception e) {
+            reader = null;
+        }
+
+        PortalOutcome outcome = invitations.withdrawAsStaff(journey, reader);
+        if (!outcome.done()) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, outcome.message(), outcome.code()));
+        }
+        return ResponseEntity.ok(ApiResponse.success(200, outcome.message(), toDTO(journey)));
+    }
+
     /** End one browser's session from the office, for a client who has rung up worried. */
     @PostMapping("/journeys/{id}/devices/{deviceId}/revoke")
     @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE')")
@@ -501,9 +541,14 @@ public class PortalAdminController {
                 participant.getDisplayName(),
                 participant.getParticipantRole() == null ? null
                     : participant.getParticipantRole().getDisplayName(),
+                participant.getParticipantRole() == null ? null
+                    : participant.getParticipantRole().name(),
                 participant.isVerified(),
                 participant.getVerifiedAt(),
-                participant.getPolicyVersion()));
+                participant.getPolicyVersion(),
+                participant.getInvitedBy() == null ? null : participant.getInvitedBy().getEmail(),
+                participant.getInvitedAt(),
+                Boolean.TRUE.equals(participant.getIsActive())));
         }
 
         List<PortalAdminDTOs.Device> deviceRows = new ArrayList<>();

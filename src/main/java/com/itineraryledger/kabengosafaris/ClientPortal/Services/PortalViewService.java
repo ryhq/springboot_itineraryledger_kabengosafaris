@@ -14,6 +14,8 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalDevice;
 import com.itineraryledger.kabengosafaris.ClientPortal.DTOs.PortalOutcome;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayActivity.Entity.QuoteDayActivity;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
+import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalParticipant;
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.ParticipantRole;
 import com.itineraryledger.kabengosafaris.ClientPortal.Enums.ProposalState;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalDeviceRepository;
 import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationImageRepository;
@@ -63,6 +65,7 @@ public class PortalViewService {
     private final LegalDocumentService legal;
     private final PortalEditingService editing;
     private final PortalJourneyService journeys;
+    private final PortalInvitationService invitations;
     private final PortalDeviceRepository devices;
     private final IdObfuscator idObfuscator;
     private final ItineraryImageRepository itineraryImages;
@@ -98,9 +101,55 @@ public class PortalViewService {
             verified ? invoice(journey.getInvoice()) : null,
             verified ? documents(journey) : List.of(),
             verified ? devices(journey, access.device()) : List.of(),
+            verified ? people(access) : null,
             verified ? proposal(access) : null,
             privacy == null ? null : legal.renderHtml(privacy.getBody()),
             privacy == null ? null : privacy.getVersion());
+    }
+
+    /**
+     * Who else can open this booking.
+     *
+     * <p>Verified tier only. The list is addresses of the customer's own family and friends, and
+     * the open tier is whoever holds the link.
+     *
+     * <p>Every row carries whether it can be removed rather than leaving the page to work it out
+     * from the role: the lead's own row is not removable, the caller's row is marked so the page
+     * can say "you" instead of showing somebody a button that removes themselves, and a reader
+     * sees the same list with nothing to press.
+     */
+    private PortalView.People people(PortalAccessService.Access access) {
+        PortalJourney journey = access.journey();
+        PortalParticipant me = access.participant();
+        boolean lead = me != null && me.mayAct();
+
+        List<PortalView.Person> rows = new ArrayList<>();
+        for (PortalParticipant person : invitations.peopleOn(journey)) {
+            if (!Boolean.TRUE.equals(person.getIsActive())) continue;
+            boolean isLead = person.getParticipantRole() == ParticipantRole.LEAD;
+            rows.add(new PortalView.Person(
+                idObfuscator.encodeId(person.getId()),
+                person.getDisplayName() == null || person.getDisplayName().isBlank()
+                    ? person.getEmail() : person.getDisplayName(),
+                person.getEmail(),
+                person.getParticipantRole() == null ? null : person.getParticipantRole().name(),
+                isLead,
+                person.isVerified(),
+                person.getInvitedAt(),
+                lead && !isLead,
+                me != null && person.getId().equals(me.getId())));
+        }
+
+        int placesLeft = invitations.placesLeft(journey);
+        String because = !lead
+            ? "Only the lead traveller can add somebody to this booking."
+            : !journey.isOpenable()
+                ? "This booking is closed."
+                : placesLeft == 0
+                    ? "This booking already has as many readers as it can take."
+                    : null;
+
+        return new PortalView.People(rows, because == null, because, placesLeft);
     }
 
     /**

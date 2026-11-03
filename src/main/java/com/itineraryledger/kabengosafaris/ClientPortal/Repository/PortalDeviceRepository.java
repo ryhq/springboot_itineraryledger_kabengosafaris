@@ -29,6 +29,19 @@ public interface PortalDeviceRepository extends JpaRepository<PortalDevice, Long
         + " and d.revokedAt is null")
     int revokeEveryDeviceOf(@Param("journeyId") Long journeyId, @Param("at") LocalDateTime at);
 
+    /**
+     * End every live session belonging to one person, leaving the rest of the booking alone.
+     *
+     * <p>What makes taking a reader off the booking mean anything. Marking the participant
+     * inactive stops them verifying again; it does nothing at all to the browser they are
+     * already signed in on, which stays good for weeks.
+     */
+    @Modifying
+    @Query("update PortalDevice d set d.revokedAt = :at where d.participant.id = :participantId"
+        + " and d.revokedAt is null")
+    int revokeEveryDeviceOfParticipant(@Param("participantId") Long participantId,
+                                       @Param("at") LocalDateTime at);
+
     @Modifying
     @Query("delete from PortalDevice d where d.participant.journey.id = :journeyId")
     int deleteEveryDeviceOf(@Param("journeyId") Long journeyId);

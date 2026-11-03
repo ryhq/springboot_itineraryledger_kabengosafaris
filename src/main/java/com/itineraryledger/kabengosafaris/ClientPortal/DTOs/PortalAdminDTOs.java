@@ -61,9 +61,27 @@ public final class PortalAdminDTOs {
         String email,
         String displayName,
         String role,
+        /** LEAD or READER, beside the sentence, for the same reason the proposal state is. */
+        String roleKey,
         boolean verified,
         LocalDateTime verifiedAt,
-        String policyVersion
+        String policyVersion,
+        /**
+         * Who put them on the booking, and when.
+         *
+         * <p>Null for the lead, who was put there by us. For a reader this is the only record of
+         * where the address came from, which is the first question asked when somebody rings to
+         * say they are receiving emails about a trip that is not theirs.
+         */
+        String invitedByEmail,
+        LocalDateTime invitedAt,
+        /**
+         * False for somebody who has been taken off.
+         *
+         * <p>Kept in the list rather than filtered out of it: a reader who was removed is part
+         * of the history of who could see the booking, and the row is what carries that.
+         */
+        boolean active
     ) {}
 
     public record Device(

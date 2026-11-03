@@ -1,0 +1,20 @@
+[
+  {
+    "name": "recipientName",
+    "description": "What to call the person being invited: the name the lead typed, or their address when no name was given",
+    "isRequired": true
+  },
+  {
+    "name": "inviterName",
+    "description": "Who put them on the booking. Always supplied, because an unexplained message about a safari from a company the reader has never dealt with reads like something to delete",
+    "isRequired": true
+  },
+  {
+    "name": "tripName",
+    "description": "The trip they have been added to, so somebody travelling twice knows which"
+  },
+  {
+    "name": "portalUrl",
+    "description": "Their own link to the trip page. They verify their own address from there before any figure is shown, so this message carries no code and no session"
+  }
+]

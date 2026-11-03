@@ -24,6 +24,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalCatalogueS
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalChangeLogService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalCommentService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalEditingService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalInvitationService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalProposalService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalActivityService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalViewService;
@@ -72,6 +73,7 @@ public class PortalApiController {
     private final PortalCatalogueService catalogue;
     private final QuoteDayAccommodationRepository dayAccommodations;
     private final PortalCommentService comments;
+    private final PortalInvitationService invitations;
     private final PortalActivityService activity;
     private final QuoteDocumentRepository quoteDocuments;
     private final QuoteDocumentStorageService documentStorage;
@@ -336,6 +338,66 @@ public class PortalApiController {
      * not offer the control in that case, and an empty list is the honest answer to a request
      * that should not have been made rather than an error to handle twice.
      */
+    /**
+     * Putting somebody else on this booking, or taking them off again.
+     *
+     * <p>One endpoint for the two, like the proposal and the edits, because they are two answers
+     * to one question and two endpoints would be two places to forget the same three checks.
+     *
+     * <p>The address is read from the body and is the one piece of client-supplied text in the
+     * portal that reaches a third party. It is normalised and pattern-checked in the service, the
+     * booking is capped, and the rate is limited per booking: without those, a trip link is a way
+     * of sending mail from the company's own domain to any address somebody names.
+     */
+    @PostMapping(value = "/{token}/people", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> people(
+        @PathVariable String token,
+        @RequestBody Map<String, String> body,
+        @RequestHeader(value = SecurityConfigurations.PORTAL_SESSION_HEADER, required = false) String session,
+        HttpServletRequest request
+    ) {
+        PortalAccessService.Access resolved = access.resolve(token, session);
+        if (resolved.journey() == null || !resolved.canReadTrip()) {
+            return gone();
+        }
+        if (!resolved.canReadPrivate()) {
+            return ResponseEntity.status(401).body(ApiResponse.error(401,
+                "Please enter a code first", "PORTAL_NOT_VERIFIED"));
+        }
+        /*
+         * mayAct() rather than canAct(), for the reason the proposal endpoint uses it: canAct
+         * also folds in whether the quotation is frozen, and who may read a booking has nothing
+         * to do with whether its price may still change. A reader is refused by the service
+         * anyway; this is the answer that tells them why.
+         */
+        if (resolved.participant() == null || !resolved.participant().mayAct()) {
+            return ResponseEntity.status(403).body(ApiResponse.error(403,
+                "Only the lead traveller on this booking can change who else can see it.",
+                "PORTAL_NOT_THE_LEAD"));
+        }
+
+        String ip = PortalPageController.clientAddress(request);
+        String action = String.valueOf(body.getOrDefault("action", "")).toUpperCase();
+        PortalOutcome outcome = switch (action) {
+            case "INVITE" -> invitations.invite(resolved.journey(), resolved.participant(),
+                body.get("email"), body.get("name"), ip);
+            case "WITHDRAW" -> invitations.withdraw(resolved.journey(), resolved.participant(),
+                decodeOrNull(body.get("id")), ip);
+            default -> null;
+        };
+
+        if (outcome == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                "That is not something you can do here.", "PORTAL_UNKNOWN_ACTION"));
+        }
+        if (!outcome.done()) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, outcome.message(), outcome.code()));
+        }
+        return ResponseEntity.ok(ApiResponse.success(200, outcome.message(), null));
+    }
+
     @GetMapping("/{token}/catalogue")
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<?>> catalogue(

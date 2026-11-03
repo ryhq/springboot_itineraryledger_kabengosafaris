@@ -243,6 +243,9 @@ public class EmailTemplateTestService {
             case "PORTAL_NEW_DEVICE":
                 return generatePortalNewDeviceTestData(user);
 
+            case "PORTAL_INVITATION":
+                return generatePortalInvitationTestData(user);
+
             case "PORTAL_PROPOSAL_SUBMITTED":
                 return generatePortalProposalSubmittedTestData(user);
 
@@ -804,6 +807,20 @@ public class EmailTemplateTestService {
         variables.put("tripName", "8 Days Northern Circuit");
         variables.put("portalUrl", "https://example.test/portal/sample");
         return new TestEmailData(variables, "[TEST] Your trip was opened on a new device");
+    }
+
+    /*
+     * Sample data for an invitation. The recipient is NOT the person pressing the test button:
+     * this message goes to somebody the lead has named, so the preview uses a different name
+     * from the inviter or it reads as though they invited themselves.
+     */
+    private TestEmailData generatePortalInvitationTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        variables.put("recipientName", "Alex");
+        variables.put("inviterName", user.getFirstName());
+        variables.put("tripName", "8 Days Northern Circuit");
+        variables.put("portalUrl", "https://example.test/portal/sample");
+        return new TestEmailData(variables, "[TEST] You have been added to a trip");
     }
 
     /*

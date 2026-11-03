@@ -133,6 +133,31 @@ public class PortalNotifier {
             "Your proposal is back with you", variables);
     }
 
+    /**
+     * Somebody has been put on the booking by the lead traveller.
+     *
+     * <p>Carries the link and nothing else. Not a code, not a session, not a figure: the person
+     * who receives it proves their own address before they see a price, so this message forwarded
+     * on reaches no further than the trip page the original link already reaches.
+     *
+     * <p>It says who invited them, because an unexplained message about a safari from a company
+     * they have never dealt with reads exactly like the thing people are told to delete.
+     */
+    public void readerInvited(PortalJourney journey, PortalParticipant reader,
+                              PortalParticipant inviter) {
+        if (reader == null) return;
+
+        Map<String, String> variables = new LinkedHashMap<>();
+        variables.put("recipientName", nameOf(reader));
+        /* always supplied: this renderer has no inverted sections, so an absent one prints as itself */
+        variables.put("inviterName", inviter == null ? "The lead traveller" : nameOf(inviter));
+        variables.put("tripName", tripNameOf(journey));
+        variables.put("portalUrl", access.linkFor(journey));
+
+        toTheClient("PORTAL_INVITATION", journey, reader,
+            "You have been added to a trip", variables);
+    }
+
     // ----------------------------------------------------------------- the plumbing
 
     private void toTheOffice(String event, PortalJourney journey, String subject,
@@ -160,13 +185,15 @@ public class PortalNotifier {
         }
     }
 
-    private void toTheClient(String event, PortalJourney journey, PortalParticipant lead,
+    /* The recipient is whoever the message is about, which is not always the lead: an
+     * invitation goes to the person being invited. */
+    private void toTheClient(String event, PortalJourney journey, PortalParticipant recipient,
                              String subject, Map<String, String> variables) {
         try {
-            sender.send(event, lead.getEmail(), subject, variables, languageOf(journey));
+            sender.send(event, recipient.getEmail(), subject, variables, languageOf(journey));
         } catch (Exception e) {
             log.error("Could not tell {} about {} on journey {}: {}",
-                lead.getEmail(), event, journey.getId(), e.toString());
+                recipient.getEmail(), event, journey.getId(), e.toString());
         }
     }
 
