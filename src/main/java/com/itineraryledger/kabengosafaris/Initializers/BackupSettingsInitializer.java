@@ -581,7 +581,12 @@ public class BackupSettingsInitializer implements ApplicationRunner, Ordered {
                 "backup.notification.emails",
                 notificationEmails,
                 SettingDataType.STRING,
-                "Email addresses to send backup notifications (comma-separated: email1@example.com,email2@example.com)",
+                "Who hears from the system. Comma-separated: email1@example.com,email2@example.com. "
+                        + "This list started as the backup alerts and is no longer only that: it is "
+                        + "also where the client portal sends a proposal waiting for us, a customer "
+                        + "accepting and a customer declining. Accepting in the portal deliberately "
+                        + "does NOT move the quotation's own status, so if this is empty, somebody "
+                        + "who has said yes is sitting in a state nobody here is watching.",
                 BackupSetting.Category.NOTIFICATION,
                 false
         );
@@ -606,8 +611,23 @@ public class BackupSettingsInitializer implements ApplicationRunner, Ordered {
                                         String description, BackupSetting.Category category,
                                         Boolean requiresRestart) {
         try {
-            if (backupSettingsRepository.existsBySettingKey(settingKey)) {
-                log.debug("⊘ Setting already exists, skipping: {}", settingKey);
+            BackupSetting existing = backupSettingsRepository.findBySettingKey(settingKey).orElse(null);
+            if (existing != null) {
+                /*
+                 * The VALUE is the operator's and is never touched. The DESCRIPTION is ours, and
+                 * until now it was written once and then frozen for the life of the installation.
+                 *
+                 * That is how the notification list came to be labelled "backup notifications"
+                 * months after the client portal started sending a customer's acceptance to it.
+                 * The label is what somebody reads before deciding whether to fill a field in,
+                 * so a stale one does not merely look untidy: this one was telling people the
+                 * field did not concern them.
+                 */
+                if (description != null && !description.equals(existing.getDescription())) {
+                    existing.setDescription(description);
+                    backupSettingsRepository.save(existing);
+                    log.info("✎ Setting description brought up to date: {}", settingKey);
+                }
                 return;
             }
 
