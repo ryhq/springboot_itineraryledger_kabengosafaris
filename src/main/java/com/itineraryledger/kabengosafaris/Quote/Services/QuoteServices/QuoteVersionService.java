@@ -41,8 +41,9 @@ import lombok.extern.slf4j.Slf4j;
  *
  * Behavior:
  * - Unspecified params inherit from the original quote
- * - If startDate changes, items are re-generated from itinerary cost estimation (new season rates)
  * - If startDate is the same, items are deep-copied from the original
+ * - If startDate changes, the copied day tree is repriced at the new date through
+ *   QuoteCostEstimationService, so the new season's rates apply and the quote's markup survives
  * - Validity dates are always recalculated from today
  * - Auto-generates a changelog of what params changed
  */
@@ -56,6 +57,7 @@ public class QuoteVersionService {
     private final QuoteItemCreateService quoteItemCreateService;
     private final QuoteTotalsCalculationService totalsCalculationService;
     private final ItineraryCostEstimationService costEstimationService;
+    private final QuoteCostEstimationService quoteCostEstimation;
     private final IdObfuscator idObfuscator;
     private final QuoteTreeCopyService treeCopy;
     private final UserRepository userRepository;
@@ -223,8 +225,13 @@ public class QuoteVersionService {
             // Step 3: Items — re-generate if date changed, else deep copy
             // ============================================================
             int itemCount;
-            if (dateChanged && original.getItinerary() != null) {
-                log.info("Start date changed ({} -> {}), re-generating items from cost estimation",
+            if (dateChanged && daysCopied > 0) {
+                log.info("Start date changed ({} -> {}), repricing this version's own trip",
+                    original.getSafariStartDate(), resolvedStartDate);
+                itemCount = repriceAtTheNewDate(original, newQuote);
+            } else if (dateChanged && original.getItinerary() != null) {
+                log.info("Start date changed ({} -> {}) on a version with no day tree, "
+                    + "re-generating items from the itinerary",
                     original.getSafariStartDate(), resolvedStartDate);
                 itemCount = regenerateItemsFromCostEstimation(newQuote, resolvedStartDate, resolvedStoRate, resolvedCurrency);
             } else {
@@ -254,7 +261,7 @@ public class QuoteVersionService {
             QuoteDTO dto = convertToDTO(newQuote);
 
             String message = dateChanged
-                ? String.format("New version (v%d) created with new start date. %d days copied, %d items re-generated from cost estimation.",
+                ? String.format("New version (v%d) created with new start date. %d days copied, %d items repriced for the new season.",
                     newVersionNumber, daysCopied, itemCount)
                 : String.format("New version (v%d) created. %d days and %d items copied from %s.",
                     newVersionNumber, daysCopied, itemCount, original.getQuoteCode());
@@ -275,15 +282,48 @@ public class QuoteVersionService {
     // Item strategies
     // ============================================================
 
+    /**
+     * Reprice the new version at its new start date, through the one path that applies markup.
+     *
+     * <p>A new start date means new season rates, so the lines have to be priced again. The way
+     * that used to be done was to ask the ITINERARY estimator for a fresh estimate and write its
+     * figures straight onto the version — which dropped the agent's commission and the margin
+     * uplift, because those multipliers live in {@code QuoteCostEstimationService} and are applied
+     * to every other repricing in the application. A version created with a new date therefore
+     * came out at cost plus the default margin, under-priced, and looked completely normal.
+     *
+     * <p>It also threw away the customer's own trip: the itinerary is the product as it is sold to
+     * strangers, while the quotation's day tree is their copy of it, with their lodge swaps and
+     * their party in it.
+     *
+     * <p>Both are fixed by the same move. The version already carries the day tree (step 2) and
+     * already carries the new start date, so {@code recalculate} prices THAT, at the new date,
+     * with the markup applied — the identical path an ordinary edit takes.
+     *
+     * <p>The items are copied first and deliberately. {@code recalculate} replaces only the lines
+     * it can regenerate, so a hand-written line — a transfer, a negotiated supplement — survives
+     * into the new version instead of disappearing with the date change. It is also what we fall
+     * back to: if the estimator cannot answer, the version keeps v1's prices at v1's season, which
+     * is wrong in a way staff can see, rather than arriving with no lines at all.
+     */
+    private int repriceAtTheNewDate(Quote original, Quote newQuote) {
+        int copied = deepCopyItems(original, newQuote);
+        quoteItemRepository.flush();
+
+        int repriced = quoteCostEstimation.recalculate(newQuote.getId());
+        if (repriced == 0) {
+            log.warn("Quote {} could not be repriced for its new start date. It carries {} line(s) "
+                + "copied from {} at the OLD season's rates and must be checked before it is sent.",
+                newQuote.getQuoteCode(), copied, original.getQuoteCode());
+        }
+        return (int) quoteItemRepository.countByQuoteId(newQuote.getId());
+    }
+
     private int regenerateItemsFromCostEstimation(Quote newQuote, LocalDate startDate, Boolean useStoRate, String currency) {
         /*
-         * This path writes the estimator's figures straight onto the new version, WITHOUT the
-         * commission and uplift multipliers that QuoteCostEstimationService applies when a quote
-         * is priced normally. So a version created with a new start date comes out at cost plus
-         * the default margin only, with the markup silently gone from the prices.
-         *
-         * Not fixed here -- it needs this service to price through QuoteCostEstimationService like
-         * every other path -- but it is no longer silent.
+         * The legacy path, for a quote written before the day tree existed: there is nothing on
+         * the version to price, so the itinerary is all we have. It writes the estimator's figures
+         * without the commission and uplift multipliers, so say so rather than let it pass.
          */
         boolean hasMarkup = newQuote.getAgentCommissionPercentage() != null
             || newQuote.getMarginUpliftPercentage() != null;
