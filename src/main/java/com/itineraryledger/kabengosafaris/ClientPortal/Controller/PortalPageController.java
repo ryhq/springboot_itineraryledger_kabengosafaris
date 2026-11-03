@@ -14,6 +14,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.DTOs.PortalView;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalAccessService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalActivityService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalViewService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.PortalSection;
 import com.itineraryledger.kabengosafaris.Quote.Entity.QuoteDocument;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteDocumentRepository;
 import com.itineraryledger.kabengosafaris.Quote.Services.QuoteDocumentServices.QuoteDocumentStorageService;
@@ -58,22 +59,22 @@ public class PortalPageController {
     @GetMapping("/{token}")
     public String trip(@PathVariable String token, HttpServletRequest request, Model model,
                        @RequestParam(required = false) String notice) {
-        return render(token, request, model, "TRIP", notice, "portal/trip");
+        return render(token, request, model, PortalSection.TRIP, notice, "portal/trip");
     }
 
     @GetMapping("/{token}/quote")
     public String quote(@PathVariable String token, HttpServletRequest request, Model model) {
-        return renderPrivate(token, request, model, "QUOTE", "portal/quote");
+        return renderPrivate(token, request, model, PortalSection.QUOTE, "portal/quote");
     }
 
     @GetMapping("/{token}/invoice")
     public String invoice(@PathVariable String token, HttpServletRequest request, Model model) {
-        return renderPrivate(token, request, model, "INVOICE", "portal/invoice");
+        return renderPrivate(token, request, model, PortalSection.INVOICE, "portal/invoice");
     }
 
     @GetMapping("/{token}/documents")
     public String documents(@PathVariable String token, HttpServletRequest request, Model model) {
-        return renderPrivate(token, request, model, "DOCUMENTS", "portal/documents");
+        return renderPrivate(token, request, model, PortalSection.DOCUMENTS, "portal/documents");
     }
 
     /**
@@ -83,7 +84,7 @@ public class PortalPageController {
      */
     @GetMapping("/{token}/devices")
     public String devices(@PathVariable String token, HttpServletRequest request, Model model) {
-        return renderPrivate(token, request, model, "DEVICES", "portal/devices");
+        return renderPrivate(token, request, model, PortalSection.DEVICES, "portal/devices");
     }
 
     /**
@@ -128,7 +129,7 @@ public class PortalPageController {
         if (bytes == null || bytes.length == 0) return ResponseEntity.status(404).build();
 
         activity.record(resolved.journey(), resolved.participant(), resolved.device(),
-            "DOCUMENT", document.getTitle(), clientAddress(request),
+            PortalSection.DOCUMENT, document.getTitle(), clientAddress(request),
             request.getHeader("User-Agent"));
 
         MediaType type = document.getFileType() == null
@@ -155,7 +156,7 @@ public class PortalPageController {
     /** What we collect and how long we keep it. Open, because consent you must verify to read is not consent. */
     @GetMapping("/{token}/privacy")
     public String privacy(@PathVariable String token, HttpServletRequest request, Model model) {
-        return render(token, request, model, "PRIVACY", null, "portal/privacy");
+        return render(token, request, model, PortalSection.PRIVACY, null, "portal/privacy");
     }
 
     /** Where the code is typed. Deliberately says nothing about who the booking belongs to. */
@@ -170,14 +171,14 @@ public class PortalPageController {
         model.addAttribute("codeSent", sent != null);
         model.addAttribute("failed", failed != null);
         activity.record(resolved.journey(), resolved.participant(), resolved.device(),
-            "VERIFY_PAGE", null, clientAddress(request), request.getHeader("User-Agent"));
+            PortalSection.VERIFY_PAGE, null, clientAddress(request), request.getHeader("User-Agent"));
         return "portal/verify";
     }
 
     // ------------------------------------------------------------------ internals
 
     private String render(String token, HttpServletRequest request, Model model,
-                          String section, String notice, String view) {
+                          PortalSection section, String notice, String view) {
         PortalAccessService.Access resolved = resolve(token, request);
         if (resolved.journey() == null || !resolved.canReadTrip()) return gone(model);
 
@@ -195,7 +196,7 @@ public class PortalPageController {
      * almost always the right person who has simply not proved it yet.
      */
     private String renderPrivate(String token, HttpServletRequest request, Model model,
-                                 String section, String view) {
+                                 PortalSection section, String view) {
         PortalAccessService.Access resolved = resolve(token, request);
         if (resolved.journey() == null || !resolved.canReadTrip()) return gone(model);
         if (!resolved.canReadPrivate()) {
@@ -208,7 +209,7 @@ public class PortalPageController {
     }
 
     private void touchAndRecord(PortalAccessService.Access resolved, HttpServletRequest request,
-                                String section) {
+                                PortalSection section) {
         access.touch(resolved.device(), clientAddress(request));
         activity.record(resolved.journey(), resolved.participant(), resolved.device(),
             section, null, clientAddress(request), request.getHeader("User-Agent"));

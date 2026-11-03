@@ -32,6 +32,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalParticip
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalAccessService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalChangeLogService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalCommentService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalInsightService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalInvitationService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalJourneyService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalProposalService;
@@ -67,6 +68,7 @@ public class PortalAdminController {
     private final PortalAccessEventRepository events;
     private final PortalParticipantRepository participants;
     private final PortalInvitationService invitations;
+    private final PortalInsightService insights;
     private final PortalJourneyService journeyService;
     private final PortalAccessService accessService;
     private final PortalChangeLogService changeLog;
@@ -445,6 +447,22 @@ public class PortalAdminController {
                 ApiResponse.error(404, "That device is not on this journey", "DEVICE_NOT_FOUND"));
         }
         return ResponseEntity.ok(ApiResponse.success(200, "Signed out", toDTO(journey)));
+    }
+
+    /**
+     * What the log is worth knowing about this booking.
+     *
+     * <p>Beside the raw activity list rather than instead of it. The list answers "what exactly
+     * happened"; this answers "what should I do about it", and the two want different screens.
+     */
+    @GetMapping("/journeys/{id}/insight")
+    @PreAuthorize("hasAuthority('PERM_READ_QUOTE')")
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<?>> insight(@PathVariable String id) {
+        PortalJourney journey = journey(id);
+        if (journey == null) return notFound();
+        return ResponseEntity.ok(ApiResponse.success(200, "Insight retrieved",
+            insights.forJourney(journey)));
     }
 
     /** What the client has opened. Empties three months after the trip; see the retention job. */

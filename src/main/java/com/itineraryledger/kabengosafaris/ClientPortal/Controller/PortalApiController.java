@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.itineraryledger.kabengosafaris.ClientPortal.DTOs.PortalOutcome;
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.PortalSection;
 import com.itineraryledger.kabengosafaris.ClientPortal.DTOs.PortalView;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalAccessService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalCatalogueService;
@@ -28,6 +29,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalInvitation
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalProposalService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalActivityService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalViewService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.PortalSection;
 import com.itineraryledger.kabengosafaris.Configurations.SecurityConfigurations;
 import com.itineraryledger.kabengosafaris.Quote.Entity.QuoteDocument;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.Entity.QuoteDayAccommodation;
@@ -99,7 +101,7 @@ public class PortalApiController {
         PortalView.Page page = views.build(resolved);
         access.touch(resolved.device(), PortalPageController.clientAddress(request));
         activity.record(resolved.journey(), resolved.participant(), resolved.device(),
-            "TRIP", null, PortalPageController.clientAddress(request),
+            PortalSection.TRIP, null, PortalPageController.clientAddress(request),
             request.getHeader("User-Agent"));
 
         return ResponseEntity.ok(ApiResponse.success(200, "Trip retrieved", page));
@@ -192,7 +194,7 @@ public class PortalApiController {
         }
 
         activity.record(resolved.journey(), resolved.participant(), resolved.device(),
-            "CHANGES", null, PortalPageController.clientAddress(request),
+            PortalSection.CHANGES, null, PortalPageController.clientAddress(request),
             request.getHeader("User-Agent"));
 
         return ResponseEntity.ok(ApiResponse.success(200, "Changes retrieved",
@@ -338,6 +340,47 @@ public class PortalApiController {
      * not offer the control in that case, and an empty list is the honest answer to a request
      * that should not have been made rather than an error to handle twice.
      */
+    /**
+     * The client opened a section of their own portal.
+     *
+     * <p>Needed because the customer's portal is a single-page application: it fetches the whole
+     * page once, and every tab after that is a route change the server never sees. Without this,
+     * the access log holds one TRIP row per visit and nothing else, which makes "she says the
+     * invoice is not there" unanswerable and the per-section figures meaningless. The
+     * server-rendered pages have always recorded this; the React ones say so themselves.
+     *
+     * <p><strong>Only a section that means looking is accepted.</strong> The key arrives from
+     * the client, so without that rule a page could write PROPOSAL_AGREED into the log of its
+     * own booking and the office would read a row saying a customer accepted. Anything else is
+     * ignored silently: it is a page view, not a request worth an error.
+     */
+    @PostMapping(value = "/{token}/seen", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<?>> seen(
+        @PathVariable String token,
+        @RequestBody Map<String, String> body,
+        @RequestHeader(value = SecurityConfigurations.PORTAL_SESSION_HEADER, required = false) String session,
+        HttpServletRequest request
+    ) {
+        PortalAccessService.Access resolved = access.resolve(token, session);
+        if (resolved.journey() == null || !resolved.canReadTrip()) {
+            return gone();
+        }
+
+        PortalSection section = PortalSection.of(body.get("section"));
+        if (!section.isTheClientLooking()) {
+            return ResponseEntity.ok(ApiResponse.success(200, "Noted", null));
+        }
+        /* everything past the trip page needs a verified session to reach anyway */
+        if (section != PortalSection.TRIP && !resolved.canReadPrivate()) {
+            return ResponseEntity.ok(ApiResponse.success(200, "Noted", null));
+        }
+
+        activity.record(resolved.journey(), resolved.participant(), resolved.device(),
+            section, null, PortalPageController.clientAddress(request),
+            request.getHeader("User-Agent"));
+        return ResponseEntity.ok(ApiResponse.success(200, "Noted", null));
+    }
+
     /**
      * Putting somebody else on this booking, or taking them off again.
      *
@@ -608,7 +651,7 @@ public class PortalApiController {
         if (bytes == null || bytes.length == 0) return ResponseEntity.status(404).build();
 
         activity.record(resolved.journey(), resolved.participant(), resolved.device(),
-            "DOCUMENT", document.getTitle(), PortalPageController.clientAddress(request),
+            PortalSection.DOCUMENT, document.getTitle(), PortalPageController.clientAddress(request),
             request.getHeader("User-Agent"));
 
         MediaType type = document.getFileType() == null

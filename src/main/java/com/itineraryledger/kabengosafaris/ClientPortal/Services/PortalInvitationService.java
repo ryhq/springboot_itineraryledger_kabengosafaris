@@ -18,6 +18,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Enums.ParticipantRole;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalCodeRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalDeviceRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalParticipantRepository;
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.PortalSection;
 import com.itineraryledger.kabengosafaris.Security.RateLimit.RateLimiter;
 
 import lombok.RequiredArgsConstructor;
@@ -188,7 +189,7 @@ public class PortalInvitationService {
         participants.save(reader);
 
         notifier.readerInvited(journey, reader, inviter);
-        activity.record(journey, inviter, null, "INVITE_SENT", normalised, ipAddress, null);
+        activity.record(journey, inviter, null, PortalSection.INVITE_SENT, normalised, ipAddress, null);
 
         log.info("Journey {} invited a reader: {} people on the booking now",
             journey.getId(), countReaders(journey) + 1);
@@ -272,7 +273,7 @@ public class PortalInvitationService {
         int ended = devices.revokeEveryDeviceOfParticipant(reader.getId(), LocalDateTime.now());
         codes.spendEveryOutstandingCode(reader.getId(), LocalDateTime.now());
 
-        activity.record(journey, actor, null, "INVITE_WITHDRAWN", reader.getEmail(), ipAddress, null);
+        activity.record(journey, actor, null, PortalSection.INVITE_WITHDRAWN, reader.getEmail(), ipAddress, null);
         log.info("A reader was taken off journey {}; {} device(s) ended", journey.getId(), ended);
 
         return PortalOutcome.ok(nameFor(reader) + " can no longer open this trip.", journey);

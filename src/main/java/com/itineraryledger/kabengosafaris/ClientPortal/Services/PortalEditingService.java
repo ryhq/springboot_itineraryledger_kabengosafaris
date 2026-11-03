@@ -10,6 +10,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalParticipant;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRate;
 import com.itineraryledger.kabengosafaris.ClientPortal.Enums.EditingLevel;
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.PortalSection;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.Entity.QuoteDayAccommodation;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.Repository.QuoteDayAccommodationRepository;
@@ -109,7 +110,7 @@ public class PortalEditingService {
         chosen.setIsAlternative(false);
         accommodations.save(chosen);
 
-        return done(journey, by, "EDIT_STAY", nameOf(chosen),
+        return done(journey, by, PortalSection.EDIT_STAY, nameOf(chosen),
             "Changed. Your price below has been worked out again.");
     }
 
@@ -178,7 +179,7 @@ public class PortalEditingService {
             .isAlternative(false)
             .build());
 
-        return done(journey, by, "EDIT_STAY_CATALOGUE",
+        return done(journey, by, PortalSection.EDIT_STAY_CATALOGUE,
             rate.getAccommodation().getName(),
             "Changed. Your price below has been worked out again.");
     }
@@ -208,7 +209,7 @@ public class PortalEditingService {
         row.setRoomCount(rooms);
         accommodations.save(row);
 
-        return done(journey, by, "EDIT_ROOMS", nameOf(row) + " x" + rooms,
+        return done(journey, by, PortalSection.EDIT_ROOMS, nameOf(row) + " x" + rooms,
             "Changed. Your price below has been worked out again.");
     }
 
@@ -238,7 +239,7 @@ public class PortalEditingService {
         row.setIsIncludedInPrice(included);
         activities.save(row);
 
-        return done(journey, by, included ? "EDIT_ACTIVITY_ADDED" : "EDIT_ACTIVITY_DROPPED",
+        return done(journey, by, included ? PortalSection.EDIT_ACTIVITY_ADDED : PortalSection.EDIT_ACTIVITY_DROPPED,
             row.getActivity() == null ? null : row.getActivity().getName(),
             included ? "Added. Your price below has been worked out again."
                      : "Taken off. Your price below has been worked out again.");
@@ -277,7 +278,7 @@ public class PortalEditingService {
         row.setCount(count);
         party.save(row);
 
-        return done(journey, by, "EDIT_PARTY", label(row) + " x" + count,
+        return done(journey, by, PortalSection.EDIT_PARTY, label(row) + " x" + count,
             "Changed. Your price below has been worked out again.");
     }
 
@@ -358,7 +359,7 @@ public class PortalEditingService {
      * they were shown.
      */
     private PortalOutcome done(PortalJourney journey, PortalParticipant by,
-                               String section, String detail, String message) {
+                               PortalSection section, String detail, String message) {
         costEstimation.recalculate(journey.getQuote().getId());
         activity.record(journey, by, null, section, detail, null, null);
         return PortalOutcome.ok(message, journey);

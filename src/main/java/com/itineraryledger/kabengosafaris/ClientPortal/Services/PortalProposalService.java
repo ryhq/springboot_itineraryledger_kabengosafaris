@@ -12,6 +12,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalParticipant;
 import com.itineraryledger.kabengosafaris.ClientPortal.Enums.ProposalState;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalJourneyRepository;
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.PortalSection;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
 import com.itineraryledger.kabengosafaris.Quote.Entity.QuoteRevision;
 import com.itineraryledger.kabengosafaris.Quote.Enums.RevisionAuthor;
@@ -76,7 +77,7 @@ public class PortalProposalService {
 
         move(journey, ProposalState.SUBMITTED, null);
         record(journey, RevisionAuthor.CLIENT, RevisionReason.SUBMITTED, nameOf(by), null);
-        log(journey, by, "PROPOSAL_SUBMITTED");
+        log(journey, by, PortalSection.PROPOSAL_SUBMITTED);
         notifier.proposalSubmitted(journey);
 
         return PortalOutcome.ok(
@@ -99,7 +100,7 @@ public class PortalProposalService {
 
         move(journey, ProposalState.AGREED, null);
         record(journey, RevisionAuthor.CLIENT, RevisionReason.AGREED, nameOf(by), null);
-        log(journey, by, "PROPOSAL_AGREED");
+        log(journey, by, PortalSection.PROPOSAL_AGREED);
         notifier.quoteAgreed(journey);
 
         return PortalOutcome.ok(
@@ -120,7 +121,7 @@ public class PortalProposalService {
 
         move(journey, ProposalState.DECLINED, null);
         record(journey, RevisionAuthor.CLIENT, RevisionReason.DECLINED, nameOf(by), null);
-        log(journey, by, "PROPOSAL_DECLINED", reason);
+        log(journey, by, PortalSection.PROPOSAL_DECLINED, reason);
         notifier.quoteDeclined(journey, reason);
 
         return PortalOutcome.ok("Thank you for telling us. We will be in touch.", journey);
@@ -165,7 +166,7 @@ public class PortalProposalService {
         journey.setHeldFromRevision(claimed == null ? null
             : Long.valueOf(claimed.getRevisionNumber()));
         journeys.save(journey);
-        log(journey, null, "PROPOSAL_TAKEN_OVER");
+        log(journey, null, PortalSection.PROPOSAL_TAKEN_OVER);
         notifier.proposalInReview(journey, nameOf(staff));
 
         return PortalOutcome.ok("You have this one. The customer is read only until you send it back.",
@@ -193,7 +194,7 @@ public class PortalProposalService {
         move(journey, ProposalState.RETURNED, null);
         record(journey, RevisionAuthor.STAFF, RevisionReason.RETURNED,
             nameOf(staff), staff == null ? null : staff.getId());
-        log(journey, null, "PROPOSAL_RETURNED");
+        log(journey, null, PortalSection.PROPOSAL_RETURNED);
         notifier.proposalReturned(journey);
 
         return PortalOutcome.ok("Sent back to the customer.", journey);
@@ -242,11 +243,11 @@ public class PortalProposalService {
         return revisions.record(quote, author, reason, name, userId, journey);
     }
 
-    private void log(PortalJourney journey, PortalParticipant by, String section) {
+    private void log(PortalJourney journey, PortalParticipant by, PortalSection section) {
         log(journey, by, section, null);
     }
 
-    private void log(PortalJourney journey, PortalParticipant by, String section, String detail) {
+    private void log(PortalJourney journey, PortalParticipant by, PortalSection section, String detail) {
         activity.record(journey, by, null, section, detail, null, null);
     }
 

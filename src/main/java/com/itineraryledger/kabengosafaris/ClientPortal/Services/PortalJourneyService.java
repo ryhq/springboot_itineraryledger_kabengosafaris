@@ -18,6 +18,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalCodeRepo
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalDeviceRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalJourneyRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalParticipantRepository;
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.PortalSection;
 import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
 import com.itineraryledger.kabengosafaris.CompanyProfile.Repository.CompanyProfileRepository;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
@@ -149,7 +150,7 @@ public class PortalJourneyService {
         journey.setRevokedAt(LocalDateTime.now());
         journey.setRevokedReason(reason);
         devices.revokeEveryDeviceOf(journey.getId(), LocalDateTime.now());
-        activity.record(journey, null, null, "JOURNEY_REVOKED", reason, null, null);
+        activity.record(journey, null, null, PortalSection.JOURNEY_REVOKED, reason, null, null);
         log.info("Revoked portal journey {}: {}", journey.getId(), reason);
         return journeys.save(journey);
     }
@@ -187,7 +188,7 @@ public class PortalJourneyService {
         journey.setRevokedAt(null);
         journey.setRevokedReason(null);
         journey.setPurgeAfter(null);
-        activity.record(journey, null, null, "JOURNEY_REOPENED", null, null, null);
+        activity.record(journey, null, null, PortalSection.JOURNEY_REOPENED, null, null, null);
         return journeys.save(journey);
     }
 
@@ -212,7 +213,7 @@ public class PortalJourneyService {
     @Transactional
     public PortalJourney setLocked(PortalJourney journey, boolean locked) {
         journey.setLocked(locked);
-        activity.record(journey, null, null, locked ? "JOURNEY_LOCKED" : "JOURNEY_UNLOCKED",
+        activity.record(journey, null, null, locked ? PortalSection.JOURNEY_LOCKED : PortalSection.JOURNEY_UNLOCKED,
             null, null, null);
         return journeys.save(journey);
     }
@@ -300,7 +301,7 @@ public class PortalJourneyService {
         if (level != null && !level.isAvailable()) return journey;
 
         journey.setEditingLevel(level);
-        activity.record(journey, null, null, "JOURNEY_LEVEL",
+        activity.record(journey, null, null, PortalSection.JOURNEY_LEVEL,
             level == null ? "company default" : level.name(), null, null);
         return journeys.save(journey);
     }

@@ -18,6 +18,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalAccessEvent;
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.PortalSection;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
 
 /**
@@ -61,7 +62,7 @@ class RecordingAVisitCannotUndoTheVisitTest {
         PortalActivityService service = new PortalActivityService(writer);
 
         TransactionSynchronizationManager.initSynchronization();
-        service.record(journey(), null, null, "VERIFY_OK", null, "1.2.3.4", "agent");
+        service.record(journey(), null, null, PortalSection.VERIFY_OK, null, "1.2.3.4", "agent");
 
         verify(writer, never()).write(any(PortalAccessEvent.class));
 
@@ -79,7 +80,7 @@ class RecordingAVisitCannotUndoTheVisitTest {
         PortalActivityWriter writer = mock(PortalActivityWriter.class);
         PortalActivityService service = new PortalActivityService(writer);
 
-        service.record(journey(), null, null, "TRIP", null, "1.2.3.4", "agent");
+        service.record(journey(), null, null, PortalSection.TRIP, null, "1.2.3.4", "agent");
 
         verify(writer, times(1)).write(any(PortalAccessEvent.class));
     }
@@ -92,7 +93,7 @@ class RecordingAVisitCannotUndoTheVisitTest {
             .when(writer).write(any(PortalAccessEvent.class));
         PortalActivityService service = new PortalActivityService(writer);
 
-        assertDoesNotThrow(() -> service.record(journey(), null, null, "TRIP", null, null, null),
+        assertDoesNotThrow(() -> service.record(journey(), null, null, PortalSection.TRIP, null, null, null),
             "a page that will not load because the analytics failed is the worse outcome");
     }
 
@@ -102,7 +103,7 @@ class RecordingAVisitCannotUndoTheVisitTest {
         PortalActivityWriter writer = mock(PortalActivityWriter.class);
         PortalActivityService service = new PortalActivityService(writer);
 
-        service.record(null, null, null, "TRIP", null, null, null);
+        service.record(null, null, null, PortalSection.TRIP, null, null, null);
         service.record(journey(), null, null, null, null, null, null);
 
         verify(writer, never()).write(any(PortalAccessEvent.class));

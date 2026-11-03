@@ -94,6 +94,48 @@ public final class PortalAdminDTOs {
         LocalDateTime expiresAt
     ) {}
 
+    /**
+     * What the access log is worth knowing, rather than the log itself.
+     *
+     * <p>Every field is a count, a timestamp, or a sentence naming the count it came from. There
+     * is deliberately no score and no "interest level": an invented number wearing a figure's
+     * clothes is the one thing on this screen somebody might price a trip by.
+     */
+    public record Insight(
+        /** The question the whole thing exists for: has the customer opened it at all? */
+        boolean everOpened,
+        LocalDateTime firstOpenedAt,
+        /** The last thing THEY did. Our own clicks on their journey are not activity. */
+        LocalDateTime lastSeenAt,
+        /** Null when they have never done anything, rather than a misleading zero. */
+        Long daysSinceLastSeen,
+        long reads,
+        long actions,
+        List<SectionCount> sections,
+        List<PersonActivity> people,
+        /** Sentences for a consultant: what to do about this booking today. */
+        List<String> signals
+    ) {}
+
+    public record SectionCount(
+        String key,
+        String label,
+        /** READING or DECIDING. The panel groups on it rather than guessing from the key. */
+        String kind,
+        long count,
+        LocalDateTime lastAt
+    ) {}
+
+    public record PersonActivity(
+        String email,
+        String role,
+        boolean verified,
+        boolean active,
+        long events,
+        LocalDateTime firstAt,
+        LocalDateTime lastAt
+    ) {}
+
     /** One line of the access log, for the panel's activity list. */
     public record Activity(
         String section,

@@ -11,6 +11,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.DTOs.PortalComment;
 import com.itineraryledger.kabengosafaris.ClientPortal.DTOs.PortalOutcome;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalParticipant;
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.PortalSection;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
 import com.itineraryledger.kabengosafaris.Quote.Entity.QuoteProposalComment;
 import com.itineraryledger.kabengosafaris.Quote.Enums.CommentAnchor;
@@ -114,7 +115,7 @@ public class PortalCommentService {
             .visibleToClient(true)
             .build());
 
-        activity.record(journey, by, null, "COMMENT_ADDED", target.label(), null, null);
+        activity.record(journey, by, null, PortalSection.COMMENT_ADDED, target.label(), null, null);
 
         return PortalOutcome.ok("Thank you. We can see that beside the day you meant.", journey);
     }

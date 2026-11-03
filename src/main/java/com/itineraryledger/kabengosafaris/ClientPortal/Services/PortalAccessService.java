@@ -19,6 +19,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalCodeRepo
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalDeviceRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalJourneyRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalParticipantRepository;
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.PortalSection;
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.CustomerAcknowledgementSender;
 import com.itineraryledger.kabengosafaris.Legal.Services.LegalDocumentService;
 import com.itineraryledger.kabengosafaris.Security.RateLimit.RateLimiter;
@@ -167,7 +168,7 @@ public class PortalAccessService {
              * portal into a way of mailing strangers from our domain.
              */
             log.info("Portal code requested for an address not on journey {}", journey.getId());
-            activity.record(journey, null, null, "VERIFY_UNKNOWN_ADDRESS", null, ipAddress, null);
+            activity.record(journey, null, null, PortalSection.VERIFY_UNKNOWN_ADDRESS, null, ipAddress, null);
             return;
         }
 
@@ -212,7 +213,7 @@ public class PortalAccessService {
         sender.send("PORTAL_ACCESS_CODE", participant.getEmail(),
             "Your access code", variables, languageOf(journey));
 
-        activity.record(journey, participant, null, "VERIFY_CODE_SENT", null, ipAddress, null);
+        activity.record(journey, participant, null, PortalSection.VERIFY_CODE_SENT, null, ipAddress, null);
     }
 
     /** What came back from a verification attempt, and why. */
@@ -252,7 +253,7 @@ public class PortalAccessService {
              */
             stored.setAttempts(stored.getAttempts() == null ? 1 : stored.getAttempts() + 1);
             codeRepository.save(stored);
-            activity.record(journey, participant, null, "VERIFY_FAILED", null, ipAddress, userAgent);
+            activity.record(journey, participant, null, PortalSection.VERIFY_FAILED, null, ipAddress, userAgent);
             return Verification.no("wrong code");
         }
 
@@ -285,7 +286,7 @@ public class PortalAccessService {
             .expiresAt(LocalDateTime.now().plusDays(rememberDevice ? deviceLifetimeDays : 1))
             .build());
 
-        activity.record(journey, participant, device, "VERIFY_OK", null, ipAddress, userAgent);
+        activity.record(journey, participant, device, PortalSection.VERIFY_OK, null, ipAddress, userAgent);
         tellThemAboutTheNewDevice(journey, participant, device);
 
         return new Verification(true, deviceToken, true, null);
@@ -333,7 +334,7 @@ public class PortalAccessService {
         }
         device.setRevokedAt(LocalDateTime.now());
         deviceRepository.save(device);
-        activity.record(journey, device.getParticipant(), null, "DEVICE_REVOKED",
+        activity.record(journey, device.getParticipant(), null, PortalSection.DEVICE_REVOKED,
             device.getLabel(), null, null);
         return true;
     }

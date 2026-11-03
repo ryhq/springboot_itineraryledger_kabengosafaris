@@ -8,6 +8,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalAccessEvent;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalDevice;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalParticipant;
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.PortalSection;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,18 +48,20 @@ public class PortalActivityService {
     private final PortalActivityWriter writer;
 
     /**
-     * @param section what was opened: TRIP, QUOTE, INVOICE, DOCUMENT, DEVICES, VERIFY_OK and so on
+     * @param section what happened, and what kind of thing it is. A constant rather than a
+     *                string, because the figures built on this table have to be able to tell
+     *                the customer reading their quotation from us freezing it
      * @param detail  which document or which day. Never free text typed by the client
      */
     public void record(PortalJourney journey, PortalParticipant participant, PortalDevice device,
-                       String section, String detail, String ipAddress, String userAgent) {
+                       PortalSection section, String detail, String ipAddress, String userAgent) {
         if (journey == null || section == null) return;
 
         PortalAccessEvent event = PortalAccessEvent.builder()
             .journey(journey)
             .participant(participant)
             .device(device)
-            .section(section)
+            .section(section.name())
             .detail(trim(detail, 200))
             .ipAddress(trim(ipAddress, 64))
             .userAgent(trim(userAgent, 500))
@@ -83,7 +86,7 @@ public class PortalActivityService {
      * <p>A {@code try/catch} inside a transactional method cannot see its own commit fail, which
      * is why the first version of this swallowed nothing it needed to.
      */
-    private void writeQuietly(PortalAccessEvent event, Long journeyId, String section) {
+    private void writeQuietly(PortalAccessEvent event, Long journeyId, PortalSection section) {
         try {
             writer.write(event);
         } catch (Exception e) {
