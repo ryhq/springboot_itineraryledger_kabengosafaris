@@ -246,6 +246,9 @@ public class EmailTemplateTestService {
             case "PORTAL_INVITATION":
                 return generatePortalInvitationTestData(user);
 
+            case "PORTAL_TRIP_LINK":
+                return generatePortalTripLinkTestData(user);
+
             case "PORTAL_PROPOSAL_SUBMITTED":
                 return generatePortalProposalSubmittedTestData(user);
 
@@ -809,6 +812,17 @@ public class EmailTemplateTestService {
         return new TestEmailData(variables, "[TEST] Your trip was opened on a new device");
     }
 
+    private TestEmailData generatePortalTripLinkTestData(User user) {
+        Map<String, String> variables = new HashMap<>();
+        variables.put("recipientName", user.getFirstName());
+        variables.put("tripName", "8 Days Northern Circuit");
+        variables.put("quoteCode", "QT-1047-1026-1");
+        variables.put("portalUrl", "https://example.test/portal/sample");
+        /* the optional line, filled here so the preview shows where a typed note lands */
+        variables.put("message", "Lovely to speak just now. Everything we discussed is on the page.");
+        return new TestEmailData(variables, "[TEST] Your trip is ready to view");
+    }
+
     /*
      * Sample data for an invitation. The recipient is NOT the person pressing the test button:
      * this message goes to somebody the lead has named, so the preview uses a different name
@@ -924,6 +938,9 @@ public class EmailTemplateTestService {
         variables.put("depositPercentage", "30%");
         variables.put("depositDueDate", now.plusDays(7).format(dateFormatter));
         variables.put("fullPaymentDueDate", now.plusDays(45).format(dateFormatter));
+        /* filled in the preview so somebody can see the block the real email will carry; the
+         * real one is empty when the portal is off, and the template then prints nothing */
+        variables.put("portalUrl", "https://example.test/portal/sample");
         variables.put("customerNotes", "Package includes all park entry fees, accommodation, meals, and ground transport. International flights not included.");
 
         String subject = "[TEST] Your Safari Quote: " + variables.get("quoteCode") + " - " + variables.get("quoteTitle");

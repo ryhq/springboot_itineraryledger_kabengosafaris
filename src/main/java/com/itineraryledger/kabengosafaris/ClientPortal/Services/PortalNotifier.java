@@ -158,6 +158,41 @@ public class PortalNotifier {
             "You have been added to a trip", variables);
     }
 
+    /**
+     * Their link, on its own, because somebody here asked for it to be sent.
+     *
+     * <p>The quotation email already carries it beside the PDF and that is the usual route. This
+     * is for the quotations that went out before the portal existed, for a customer who deleted
+     * the message, and for a consultant who wants to send the page without attaching a priced
+     * document all over again.
+     *
+     * <p>Unlike everything else in this file it reports whether it worked: a person pressed a
+     * button and is waiting to be told, rather than a state change that has already happened.
+     */
+    public boolean tripLink(PortalJourney journey, String message) {
+        PortalParticipant lead = journey == null ? null : journey.lead();
+        if (lead == null) return false;
+
+        Map<String, String> variables = new LinkedHashMap<>();
+        variables.put("recipientName", nameOf(lead));
+        variables.put("tripName", tripNameOf(journey));
+        variables.put("quoteCode", journey.getQuote() == null ? ""
+            : orEmpty(journey.getQuote().getQuoteCode()));
+        variables.put("portalUrl", access.linkFor(journey));
+        /* always supplied: this renderer has no inverted sections, so an absent one prints as itself */
+        variables.put("message", message == null ? "" : message.trim());
+
+        try {
+            sender.send("PORTAL_TRIP_LINK", lead.getEmail(), "Your trip is ready to view",
+                variables, languageOf(journey));
+            return true;
+        } catch (Exception e) {
+            log.error("Could not send the trip link to {} on journey {}: {}",
+                lead.getEmail(), journey.getId(), e.toString());
+            return false;
+        }
+    }
+
     // ----------------------------------------------------------------- the plumbing
 
     private void toTheOffice(String event, PortalJourney journey, String subject,

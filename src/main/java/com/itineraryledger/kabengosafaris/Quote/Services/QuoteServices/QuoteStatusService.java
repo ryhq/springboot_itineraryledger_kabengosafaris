@@ -36,6 +36,7 @@ import com.itineraryledger.kabengosafaris.Quote.Services.QuoteDocumentServices.Q
 import com.itineraryledger.kabengosafaris.Translation.Services.TranslationService;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.QuoteDTO;
 import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalLinkService;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
 import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteStatus;
 import com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository;
@@ -59,6 +60,7 @@ public class QuoteStatusService {
 
     private final QuoteRepository quoteRepository;
     private final IdObfuscator idObfuscator;
+    private final PortalLinkService portalLinks;
     private final EmailTemplateRenderer emailTemplateRenderer;
     private final EmailSendingService emailSendingService;
     private final QuotePdfGenerationService quotePdfGenerationService;
@@ -910,6 +912,22 @@ public class QuoteStatusService {
 
             // Customer notes
             variables.put("customerNotes", quote.getCustomerNotes() != null ? quote.getCustomerNotes() : "");
+
+            /*
+             * Their own link to this trip.
+             *
+             * This email is the message the customer is already expecting, it already carries the
+             * PDF of this same quotation, and it goes to the address the access code will go to.
+             * Before this, the link was created when somebody pressed Share and then sat in the
+             * panel until a human copied it into a message, which is why the history could say
+             * "shared" beside a view count of nought.
+             *
+             * Always supplied, empty when there is nothing to give: the renderer has no inverted
+             * sections, so a variable left out of the map prints as itself and a customer reads
+             * {{portalUrl}}. The template wraps it in an optional block, so an empty one prints
+             * nothing at all.
+             */
+            variables.put("portalUrl", portalLinks.linkFor(quote));
 
             String subject = "Your Safari Quote: " + quote.getQuoteCode() + " - " + quote.getTitle();
             String quoteCode = quote.getQuoteCode();

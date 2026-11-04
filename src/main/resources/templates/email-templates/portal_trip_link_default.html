@@ -1,0 +1,47 @@
+<!--
+  Just the link, sent on its own.
+
+  The quotation email already carries this link beside the PDF, and that is the usual way a
+  customer gets it. This is for the times that is not enough: the quotation went out before the
+  portal existed, somebody deleted the message, or a consultant simply wants to send the page
+  without attaching a priced document again.
+
+  So it carries the link and nothing else. No figure, no code: they prove their own address on
+  the page. Forwarded on, it reaches no further than the trip page.
+-->
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.55; color: #1f2421">
+
+  <p style="margin: 0 0 14px">Hello {{recipientName}},</p>
+
+  {{#message}}
+  <p style="margin: 0 0 18px; white-space: pre-line">{{message}}</p>
+  {{/message}}
+
+  <p style="margin: 0 0 18px">
+    Here is your own page for{{#tripName}} {{tripName}}{{/tripName}}. Your trip is laid out day by
+    day, with the quotation, what is included, and somewhere to tell us what you would like
+    changed.
+  </p>
+
+  <p style="margin: 0 0 18px">
+    <a href="{{portalUrl}}" style="display: inline-block; padding: 10px 18px; background: {{companyAccentDark}}; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 14px">Open my trip</a>
+  </p>
+
+  <p style="margin: 0 0 18px; font-size: 13px; word-break: break-all">
+    <a href="{{portalUrl}}" style="color: {{companyAccentDark}}">{{portalUrl}}</a>
+  </p>
+
+  <p style="margin: 0 0 18px; font-size: 13px; color: #374151">
+    The first time you open it, enter this email address and we will send you a short code. That
+    is what keeps your prices to you.{{#quoteCode}} Your quotation reference is {{quoteCode}}.{{/quoteCode}}
+  </p>
+
+  <p style="margin: 14px 0 0">
+    Kind regards,<br>
+    {{companyName}}
+  </p>
+
+  <p style="margin: 18px 0 0; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280">
+    {{companyName}}{{#companyPhone}} · {{companyPhone}}{{/companyPhone}}{{#companyEmail}} · {{companyEmail}}{{/companyEmail}}{{#companyWebsite}} · {{companyWebsite}}{{/companyWebsite}}
+  </p>
+</div>

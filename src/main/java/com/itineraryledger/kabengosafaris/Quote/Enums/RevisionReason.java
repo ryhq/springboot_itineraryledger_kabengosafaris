@@ -14,8 +14,15 @@ package com.itineraryledger.kabengosafaris.Quote.Enums;
  */
 public enum RevisionReason {
 
-    /** The first one, written when the quotation is shared, so there is always a baseline. */
-    PUBLISHED("Sent to the customer"),
+    /**
+     * The first one, written when the quotation is shared, so there is always a baseline.
+     *
+     * <p>It used to read "Sent to the customer", which was not true and was misleading in the
+     * expensive direction. Sharing creates the link; it does not post anything. A consultant
+     * read "Sent to the customer · 0 views" and concluded the customer was ignoring them, when
+     * in fact nobody had ever given them the address.
+     */
+    PUBLISHED("Shared with the customer"),
 
     /** The client asked us to look at what they have put together. */
     SUBMITTED("Submitted by the customer"),

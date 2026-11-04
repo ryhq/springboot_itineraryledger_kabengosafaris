@@ -25,6 +25,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalDevice;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalParticipant;
 import com.itineraryledger.kabengosafaris.ClientPortal.Enums.EditingLevel;
+import com.itineraryledger.kabengosafaris.ClientPortal.Enums.PortalSection;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalAccessEventRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalDeviceRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalJourneyRepository;
@@ -32,7 +33,9 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Repository.PortalParticip
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalAccessService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalChangeLogService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalCommentService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalActivityService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalInsightService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalNotifier;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalInvitationService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalJourneyService;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalProposalService;
@@ -69,6 +72,8 @@ public class PortalAdminController {
     private final PortalParticipantRepository participants;
     private final PortalInvitationService invitations;
     private final PortalInsightService insights;
+    private final PortalNotifier notifier;
+    private final PortalActivityService activity;
     private final PortalJourneyService journeyService;
     private final PortalAccessService accessService;
     private final PortalChangeLogService changeLog;
@@ -394,6 +399,54 @@ public class PortalAdminController {
         return ResponseEntity.ok(ApiResponse.success(200,
             level == null ? "Back to the company default" : level.getDisplayName(),
             toDTO(journeyService.setEditingLevel(journey, level))));
+    }
+
+    /**
+     * Email the customer their link.
+     *
+     * <p>The quotation email carries it already, so this is the second route rather than the
+     * first: quotations that went out before the portal existed, a customer who deleted the
+     * message, or a consultant who wants to send the page without attaching a priced document
+     * again.
+     *
+     * <p>It goes to the lead traveller's address from the booking, never to an address typed
+     * here. A box to type a recipient into would turn the panel into a way of mailing anybody a
+     * link to a customer's trip, and the address on the booking is the one the access code will
+     * go to anyway, so any other address could not get past the trip page.
+     */
+    @PostMapping("/journeys/{id}/send-link")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE')")
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> sendLink(@PathVariable String id,
+                                                   @RequestBody(required = false) Map<String, String> body) {
+        PortalJourney journey = journey(id);
+        if (journey == null) return notFound();
+
+        if (!journey.isOpenable()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                "This link does not open anything at the moment, so there is no point sending it. "
+                    + "Reopen it first.", "PORTAL_CLOSED"));
+        }
+
+        String message = body == null ? null : body.get("message");
+        if (message != null && message.length() > 1000) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                "That note is too long for an email. Keep it to a line or two.", "NOTE_TOO_LONG"));
+        }
+
+        boolean sent = notifier.tripLink(journey, message);
+        if (!sent) {
+            return ResponseEntity.status(502).body(ApiResponse.error(502,
+                "We could not send that just now. The link is unchanged and you can copy it from "
+                    + "here in the meantime.", "PORTAL_LINK_NOT_SENT"));
+        }
+
+        activity.record(journey, null, null, PortalSection.LINK_EMAILED,
+            journey.lead() == null ? null : journey.lead().getEmail(), null, null);
+
+        return ResponseEntity.ok(ApiResponse.success(200,
+            "Sent to " + (journey.lead() == null ? "the customer" : journey.lead().getEmail()),
+            toDTO(journey)));
     }
 
     /**

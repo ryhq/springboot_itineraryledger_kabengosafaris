@@ -60,6 +60,8 @@ public enum PortalSection {
 
     // ----------------------------------------------------------------- we did it, not them
 
+    /** We emailed them their link. Ours, not theirs: it says nothing about their interest. */
+    LINK_EMAILED(Kind.OURS, "Link emailed to the customer"),
     PROPOSAL_TAKEN_OVER(Kind.OURS, "Taken over by us"),
     PROPOSAL_RETURNED(Kind.OURS, "Sent back to the customer"),
     JOURNEY_REVOKED(Kind.OURS, "Link withdrawn"),

@@ -50,6 +50,7 @@ public class EmailEventVariables {
             case "PORTAL_ACCESS_CODE" -> loadSchema("portal-access-code-schema.json");
             case "PORTAL_NEW_DEVICE" -> loadSchema("portal-new-device-schema.json");
             case "PORTAL_INVITATION" -> loadSchema("portal-invitation-schema.json");
+            case "PORTAL_TRIP_LINK" -> loadSchema("portal-trip-link-schema.json");
             /* the review loop: three to the office, two to the client */
             case "PORTAL_PROPOSAL_SUBMITTED" -> loadSchema("portal-proposal-submitted-schema.json");
             case "PORTAL_QUOTE_AGREED" -> loadSchema("portal-quote-agreed-schema.json");
@@ -94,6 +95,7 @@ public class EmailEventVariables {
             case "PORTAL_ACCESS_CODE" -> "Client portal: your access code";
             case "PORTAL_NEW_DEVICE" -> "Client portal: opened on a new device";
             case "PORTAL_INVITATION" -> "Client portal: somebody has been added to a booking";
+            case "PORTAL_TRIP_LINK" -> "Client portal: send a customer their link";
             case "PORTAL_PROPOSAL_SUBMITTED" -> "Client portal: a proposal is waiting for us";
             case "PORTAL_QUOTE_AGREED" -> "Client portal: a customer has accepted";
             case "PORTAL_QUOTE_DECLINED" -> "Client portal: a customer has declined";

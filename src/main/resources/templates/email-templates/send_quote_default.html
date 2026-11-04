@@ -412,6 +412,29 @@
 
                 <div class="divider"></div>
 
+                <!--
+                  Their own page for this trip.
+
+                  Optional, because the client portal can be switched off per company and a
+                  quotation whose customer has no address cannot be shared at all. The variable
+                  is ALWAYS supplied, empty when there is nothing to give: this renderer has no
+                  inverted sections, so a variable left out of the map prints as itself and a
+                  customer reads {{portalUrl}} in their own quotation.
+                -->
+                {{#portalUrl}}
+                <div class="cta-section" style="text-align:center;">
+                    <h3 style="margin:0 0 8px;">See it online</h3>
+                    <p style="margin:0 0 16px;">Your trip is laid out day by day on your own page, where you can read this quotation, see what is included, and tell us what you would like changed.</p>
+                    <p style="margin:0 0 12px;">
+                        <a href="{{portalUrl}}" style="display:inline-block; padding:12px 24px; background:{{companyAccentDark}}; color:#ffffff; text-decoration:none; border-radius:6px; font-weight:600;">Open my trip</a>
+                    </p>
+                    <p style="margin:0; font-size:13px; word-break:break-all;"><a href="{{portalUrl}}" style="color:{{companyAccentDark}};">{{portalUrl}}</a></p>
+                    <p style="margin:12px 0 0; font-size:13px;">The first time you open it we will email you a short code, so that only you can see what you are paying.</p>
+                </div>
+
+                <div class="divider"></div>
+                {{/portalUrl}}
+
                 <!-- CTA -->
                 <div class="cta-section">
                     <p>If you have any questions or would like to proceed with this quote, please don't hesitate to reach out to us at <strong>{{companyEmail}}</strong>.</p>

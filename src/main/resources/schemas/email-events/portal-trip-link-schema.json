@@ -1,0 +1,24 @@
+[
+  {
+    "name": "recipientName",
+    "description": "The lead traveller, by the name on the booking",
+    "isRequired": true
+  },
+  {
+    "name": "tripName",
+    "description": "The trip the link opens, so somebody travelling twice knows which"
+  },
+  {
+    "name": "quoteCode",
+    "description": "The quotation reference, for anybody who files by it"
+  },
+  {
+    "name": "portalUrl",
+    "description": "Their own page. The first time they open it they prove their address with a code, so this message carries no figure and no code of its own",
+    "isRequired": true
+  },
+  {
+    "name": "message",
+    "description": "An optional line typed by whoever sent it, shown above the link. Blank when nothing was typed"
+  }
+]

@@ -114,5 +114,9 @@
     "description": "Company email address for customer to reply to",
     "isRequired": false,
     "defaultValue": ""
+  },
+  {
+    "name": "portalUrl",
+    "description": "The customer's own link to this trip, where they can read the quotation, see what is included and tell us what they think. Empty when the client portal is switched off or the quotation has no shareable customer, so wrap it in {{#portalUrl}}...{{/portalUrl}}"
   }
 ]
