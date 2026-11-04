@@ -446,6 +446,12 @@ public class PortalApiController {
     public ResponseEntity<ApiResponse<?>> catalogue(
         @PathVariable String token,
         @RequestParam("row") String rowId,
+        /*
+         * Matched in the service rather than on the page, because the list is capped: filtering a
+         * capped list searches only what the cap let through, so a lodge they can name by heart
+         * would be missing from a busy region and they would conclude we do not work with it.
+         */
+        @RequestParam(value = "q", required = false) String search,
         @RequestHeader(value = SecurityConfigurations.PORTAL_SESSION_HEADER, required = false) String session
     ) {
         PortalAccessService.Access resolved = access.resolve(token, session);
@@ -474,7 +480,7 @@ public class PortalApiController {
         }
 
         return ResponseEntity.ok(ApiResponse.success(200, "Options retrieved",
-            catalogue.optionsFor(resolved.journey().getQuote(), row)));
+            catalogue.optionsFor(resolved.journey().getQuote(), row, search)));
     }
 
     /** An id we cannot read and an id that is not theirs get the same answer further in. */

@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.Accommodation;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRate;
 import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRateRepository;
+import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationImageRepository;
 import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRepository;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Core.SeasonResolverService;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
@@ -64,6 +65,8 @@ public class PortalCatalogueService {
     private static final int MOST_OPTIONS = 60;
 
     private final AccommodationRepository accommodations;
+    private final AccommodationImageRepository images;
+    private final PortalMediaUrls media;
     private final AccommodationRateRepository rates;
     private final SeasonResolverService seasons;
     private final IdObfuscator idObfuscator;
@@ -82,6 +85,17 @@ public class PortalCatalogueService {
         String roomType,
         String roomStandard,
         String board,
+        /**
+         * What the place looks like, from the published image module.
+         *
+         * <p>A name and a board type is a list somebody scrolls past. These are the pictures the
+         * website already serves to strangers, so a bare src is correct here — the rule that
+         * client DOCUMENTS must be streamed with the session does not reach a lodge photograph.
+         *
+         * <p>Null when the accommodation has no image, which the page renders as a plain card
+         * rather than as a broken box.
+         */
+        String imageUrl,
         /** True for the one they already have, so the page can mark it rather than offer it. */
         boolean current
     ) {}
@@ -93,6 +107,20 @@ public class PortalCatalogueService {
      */
     @Transactional(readOnly = true)
     public List<Option> optionsFor(Quote quote, QuoteDayAccommodation row) {
+        return optionsFor(quote, row, null);
+    }
+
+    /**
+     * The same, narrowed by what the client typed.
+     *
+     * <p>Matched here rather than in the page because the list is capped: filtering after the cap
+     * searches only the first {@value #MOST_OPTIONS}, so a lodge they can name would be missing
+     * from a region that holds more than that, and they would conclude we do not work with it.
+     *
+     * @param search part of a lodge's name, or null for everything
+     */
+    @Transactional(readOnly = true)
+    public List<Option> optionsFor(Quote quote, QuoteDayAccommodation row, String search) {
         List<Option> options = new ArrayList<>();
         if (quote == null || row == null || row.getAccommodation() == null) return options;
 
@@ -117,8 +145,16 @@ public class PortalCatalogueService {
 
         Long currentId = row.getAccommodation().getId();
         Set<String> seen = new LinkedHashSet<>();
+        String needle = search == null || search.isBlank() ? null
+            : search.trim().toLowerCase(java.util.Locale.ROOT);
 
         for (Accommodation candidate : accommodations.findLiveInRegion(region)) {
+            /* the one they already have is always kept, so the page can still mark it */
+            if (needle != null && !candidate.getId().equals(currentId)
+                    && (candidate.getName() == null
+                        || !candidate.getName().toLowerCase(java.util.Locale.ROOT).contains(needle))) {
+                continue;
+            }
             Season season = seasons.resolveAccommodationSeason(candidate.getId(), night);
             if (season == null) continue;   // nothing priced for that night; not an option
 
@@ -145,12 +181,21 @@ public class PortalCatalogueService {
                     rate.getRoomType().getName(),
                     rate.getRoomStandard().getName(),
                     rate.getBoardType().getName(),
+                    firstImageOf(candidate),
                     candidate.getId().equals(currentId)));
 
                 if (options.size() >= MOST_OPTIONS) return options;
             }
         }
         return options;
+    }
+
+    /** The lodge's own photograph, or null. Published module, so a bare src is correct. */
+    private String firstImageOf(Accommodation accommodation) {
+        return images.findByAccommodationIdOrderByDisplayOrderAsc(accommodation.getId()).stream()
+            .findFirst()
+            .map(image -> media.image("accommodation-images", image.getFileName()))
+            .orElse(null);
     }
 
     /**

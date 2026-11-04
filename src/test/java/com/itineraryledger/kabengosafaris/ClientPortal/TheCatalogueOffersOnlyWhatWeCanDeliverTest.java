@@ -28,8 +28,10 @@ import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRa
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRoomStandard;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRoomType;
 import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRateRepository;
+import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationImageRepository;
 import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRepository;
 import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalCatalogueService;
+import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalMediaUrls;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Core.SeasonResolverService;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.Entity.QuoteDay;
@@ -75,7 +77,13 @@ class TheCatalogueOffersOnlyWhatWeCanDeliverTest {
         IdObfuscator obfuscator = mock(IdObfuscator.class);
         when(obfuscator.encodeId(anyLong())).thenReturn("opt1");
 
-        service = new PortalCatalogueService(accommodations, rates, seasons, obfuscator);
+        /* no photographs in these tests: an empty image list is the ordinary case for a lodge
+           nobody has uploaded one for, and it must not change which options are offered */
+        AccommodationImageRepository images = mock(AccommodationImageRepository.class);
+        when(images.findByAccommodationIdOrderByDisplayOrderAsc(anyLong())).thenReturn(List.of());
+
+        service = new PortalCatalogueService(accommodations, images, new PortalMediaUrls(),
+            rates, seasons, obfuscator);
 
         quote = new Quote();
         quote.setId(1L);
@@ -198,6 +206,69 @@ class TheCatalogueOffersOnlyWhatWeCanDeliverTest {
 
         assertEquals(1, options.size());
         assertTrue(options.get(0).current());
+    }
+
+    // ------------------------------------------------------------------ finding one
+
+    /** Two neighbours plus the one they are in, so a search has something to narrow. */
+    private void threeInTheRegion() {
+        Accommodation farm = lodge(11L, "Farm of Dreams Lodge", "Serengeti");
+        Accommodation kati = lodge(12L, "Kati Kati Camp", "Serengeti");
+        Accommodation kudu = booked.getAccommodation();
+
+        when(accommodations.findLiveInRegion("Serengeti")).thenReturn(List.of(kudu, farm, kati));
+        for (Accommodation a : List.of(kudu, farm, kati)) {
+            when(seasons.resolveAccommodationSeason(eq(a.getId()), any())).thenReturn(season(7L));
+            when(rates.findByAccommodationIdAndSeasonIdAndIsActiveTrue(a.getId(), 7L))
+                .thenReturn(List.of(rate(900L + a.getId(), a)));
+        }
+    }
+
+    /**
+     * Narrowing happens before the cap, not after.
+     *
+     * <p>The list stops at a fixed number of options. Filtering the page's copy of it would search
+     * only what the cap let through, so a lodge the client can name by heart would be missing from
+     * a busy region — and they would conclude we do not work with it, which is the opposite of
+     * what the catalogue is for.
+     */
+    @Test
+    @DisplayName("a search narrows by name, and is matched before the list is capped")
+    void aSearchNarrowsByName() {
+        threeInTheRegion();
+
+        List<PortalCatalogueService.Option> all = service.optionsFor(quote, booked, null);
+        assertTrue(all.size() > 1, "the fixture must offer more than one for this to mean anything");
+
+        List<PortalCatalogueService.Option> found = service.optionsFor(quote, booked, "farm");
+        assertTrue(found.size() < all.size(), "nothing was narrowed");
+        assertTrue(found.stream().allMatch(o -> o.accommodation().toLowerCase().contains("farm")
+                || o.current()),
+            "only what they asked for, plus the one they already have");
+    }
+
+    @Test
+    @DisplayName("the lodge they already have survives any search, so the page can still mark it")
+    void theCurrentOneIsNeverFilteredOut() {
+        threeInTheRegion();
+
+        List<PortalCatalogueService.Option> found =
+            service.optionsFor(quote, booked, "nothing-matches-this");
+
+        assertTrue(found.stream().anyMatch(PortalCatalogueService.Option::current),
+            "a list that drops the current choice reads as though we have taken it away");
+    }
+
+    @Test
+    @DisplayName("a lodge with no photograph is still offered")
+    void aMissingPhotographIsNotAMissingOption() {
+        threeInTheRegion();
+
+        List<PortalCatalogueService.Option> options = service.optionsFor(quote, booked, null);
+
+        assertFalse(options.isEmpty());
+        assertTrue(options.stream().allMatch(o -> o.imageUrl() == null),
+            "the fixture holds no images; a null here must be a plain card, never a dropped row");
     }
 
     // ------------------------------------------------------------------ no figures

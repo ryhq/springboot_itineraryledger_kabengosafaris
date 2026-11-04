@@ -68,18 +68,11 @@ public class PortalViewService {
     private final PortalInvitationService invitations;
     private final PortalDeviceRepository devices;
     private final IdObfuscator idObfuscator;
+    private final PortalMediaUrls media;
     private final ItineraryImageRepository itineraryImages;
     private final AccommodationImageRepository accommodationImages;
     private final ParkImageRepository parkImages;
 
-    /**
-     * This API's own public address, for building image URLs.
-     *
-     * <p>The portal is served from a different hostname, so a relative path would resolve
-     * against that one and every photograph would be a broken box.
-     */
-    @org.springframework.beans.factory.annotation.Value("${app.base.url:}")
-    private String apiBaseUrl;
 
     @Transactional(readOnly = true)
     public PortalView.Page build(PortalAccessService.Access access) {
@@ -359,16 +352,9 @@ public class PortalViewService {
         return null;
     }
 
-    /**
-     * Absolute, because the portal is served from a different hostname than this API.
-     *
-     * <p>By file name rather than by id: an obfuscated id is re-salted on every restart, so a
-     * URL built from one stops resolving after the next deploy, and a page that was fine
-     * yesterday fills with broken images.
-     */
+    /** One shared builder, so the catalogue's photographs and the day's cannot drift apart. */
     private String imageUrl(String module, String fileName) {
-        if (fileName == null || apiBaseUrl == null || apiBaseUrl.isBlank()) return null;
-        return apiBaseUrl.replaceAll("/+$", "") + "/api/" + module + "/file/" + fileName;
+        return media.image(module, fileName);
     }
 
     // ----------------------------------------------------------------- the money
