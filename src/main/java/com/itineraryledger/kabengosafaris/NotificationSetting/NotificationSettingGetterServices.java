@@ -100,6 +100,32 @@ public class NotificationSettingGetterServices {
                 .collect(Collectors.toList());
     }
 
+    // ==================== CLIENT PORTAL ====================
+
+    public Boolean isClientPortalNotificationEnabled() {
+        return getBooleanSetting("notification.client_portal.enabled", true);
+    }
+
+    /**
+     * Who hears that a customer has asked us to look, accepted, or declined.
+     *
+     * <p>Falls back to the contact-us addresses, for the same reason the bill-due reminders do
+     * and with more at stake. Pressing Accept in the portal deliberately does not move the
+     * quotation's own status, so if this reaches nobody then somebody who has said yes is in a
+     * state nothing in the panel watches. An alert nobody receives is indistinguishable from one
+     * that was never built.
+     */
+    public List<String> getClientPortalNotificationEmails() {
+        String configured = getSettingValue("notification.client_portal.emails", null);
+        if (configured == null || configured.trim().isEmpty()) {
+            return getContactMessageNotificationEmails();
+        }
+        return Arrays.stream(configured.split(","))
+                .map(String::trim)
+                .filter(email -> !email.isEmpty())
+                .collect(Collectors.toList());
+    }
+
     // ==================== BILL DUE REMINDERS ====================
 
     public Boolean isBillDueReminderEnabled() {

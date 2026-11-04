@@ -125,14 +125,16 @@ class ASettingsLabelCanBeCorrectedWithoutTouchingItsValueTest {
     }
 
     /**
-     * The one label this was all for.
+     * The label that sent two people to the wrong page.
      *
-     * <p>It governs whether anybody hears that a customer has accepted, and accepting in the
-     * portal deliberately does not move the quotation's own status, so an empty list means a
-     * person who has said yes is in a state nothing watches.
+     * <p>It was first reworded to say the client portal mails here, which was true and was the
+     * wrong fix: the portal had no business on a page about backup scheduling and retention in
+     * the first place. The portal now has its own entry under Settings > Notification, beside
+     * the newsletter and contact-us lists, and this one says plainly that it is backups only and
+     * where the other thing lives.
      */
     @Test
-    @DisplayName("the notification list no longer claims to be only about backups")
+    @DisplayName("the backup list says it is backups, and says where the customer alerts are")
     void theLabelSaysWhatItActuallyGoverns() throws IOException {
         String source = Files.readString(Path.of("src/main/java/com/itineraryledger/"
             + "kabengosafaris/Initializers/BackupSettingsInitializer.java"));
@@ -140,9 +142,9 @@ class ASettingsLabelCanBeCorrectedWithoutTouchingItsValueTest {
         assertTrue(at > 0, "the setting key has moved");
 
         String declaration = source.substring(at, at + 900);
-        assertTrue(declaration.contains("client portal"),
-            "somebody reading this field has to learn that a customer's acceptance comes here");
-        assertFalse(declaration.contains("Email addresses to send backup notifications"),
-            "the old wording is what made this field look like somebody else's problem");
+        assertTrue(declaration.contains("Backups only"),
+            "an unqualified 'notifications' here is what made two people look in the wrong place");
+        assertTrue(declaration.contains("Settings > Notification"),
+            "say where the customer-facing alerts actually are, or the next person hunts too");
     }
 }

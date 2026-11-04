@@ -45,6 +45,9 @@ public class NotificationSettingsInitializer implements ApplicationRunner, Order
     @Value("${notification.contact_us.enabled:true}")
     private Boolean contactUsEnabled;
 
+    @Value("${notification.client_portal.emails:}")
+    private String clientPortalEmails;
+
     @Value("${notification.contact_us.emails:}")
     private String contactUsEmails;
 
@@ -150,6 +153,28 @@ public class NotificationSettingsInitializer implements ApplicationRunner, Order
                 SettingDataType.STRING,
                 "Email addresses to receive contact form notifications (comma-separated: email1@example.com,email2@example.com)",
                 NotificationSetting.Category.CONTACT_US,
+                false
+        );
+
+        // Client portal
+        createOrUpdateSetting(
+                "notification.client_portal.enabled",
+                "true",
+                SettingDataType.BOOLEAN,
+                "Tell us when a customer asks us to look at their proposal, accepts a quotation "
+                        + "or declines one",
+                NotificationSetting.Category.CLIENT_PORTAL,
+                false
+        );
+
+        createOrUpdateSetting(
+                "notification.client_portal.emails",
+                clientPortalEmails,
+                SettingDataType.STRING,
+                "Who hears it (comma-separated: email1@example.com,email2@example.com). Left "
+                        + "empty, the contact-us addresses are used, because an acceptance nobody "
+                        + "receives is indistinguishable from one that never happened",
+                NotificationSetting.Category.CLIENT_PORTAL,
                 false
         );
 

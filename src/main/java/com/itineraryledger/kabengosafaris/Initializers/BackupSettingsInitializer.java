@@ -581,12 +581,10 @@ public class BackupSettingsInitializer implements ApplicationRunner, Ordered {
                 "backup.notification.emails",
                 notificationEmails,
                 SettingDataType.STRING,
-                "Who hears from the system. Comma-separated: email1@example.com,email2@example.com. "
-                        + "This list started as the backup alerts and is no longer only that: it is "
-                        + "also where the client portal sends a proposal waiting for us, a customer "
-                        + "accepting and a customer declining. Accepting in the portal deliberately "
-                        + "does NOT move the quotation's own status, so if this is empty, somebody "
-                        + "who has said yes is sitting in a state nobody here is watching.",
+                "Who hears when a backup succeeds or fails (comma-separated: "
+                        + "email1@example.com,email2@example.com). Backups only: everything about "
+                        + "customers, including the client portal, is set at "
+                        + "Settings > Notification.",
                 BackupSetting.Category.NOTIFICATION,
                 false
         );

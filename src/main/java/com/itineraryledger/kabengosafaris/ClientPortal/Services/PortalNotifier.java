@@ -9,7 +9,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.itineraryledger.kabengosafaris.Backup.BackupSettings.BackupSettingsGetterServices;
+import com.itineraryledger.kabengosafaris.NotificationSetting.NotificationSettingGetterServices;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalParticipant;
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.CustomerAcknowledgementSender;
@@ -51,7 +51,7 @@ public class PortalNotifier {
     private final CustomerAcknowledgementSender sender;
     private final EmailTemplateRenderer renderer;
     private final EmailSendingService mail;
-    private final BackupSettingsGetterServices notificationSettings;
+    private final NotificationSettingGetterServices notificationSettings;
     private final PortalAccessService access;
     private final PortalChangeLogService changeLog;
 
@@ -163,10 +163,16 @@ public class PortalNotifier {
     private void toTheOffice(String event, PortalJourney journey, String subject,
                              Map<String, String> variables) {
         try {
-            List<String> recipients = notificationSettings.getNotificationEmails();
+            if (!Boolean.TRUE.equals(notificationSettings.isClientPortalNotificationEnabled())) {
+                log.info("Client portal notifications are switched off; not sending {}", event);
+                return;
+            }
+
+            List<String> recipients = notificationSettings.getClientPortalNotificationEmails();
             if (recipients.isEmpty()) {
-                log.warn("Nobody is configured to receive {}; the office will not hear about "
-                    + "journey {}", event, journey.getId());
+                log.warn("Nobody is configured to receive {}, so the office will not hear about "
+                    + "journey {}. Set an address at Settings > Notification > Client portal.",
+                    event, journey.getId());
                 return;
             }
 

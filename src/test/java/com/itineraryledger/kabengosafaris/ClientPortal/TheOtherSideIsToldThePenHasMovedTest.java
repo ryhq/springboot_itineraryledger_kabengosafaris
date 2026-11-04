@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.itineraryledger.kabengosafaris.Backup.BackupSettings.BackupSettingsGetterServices;
+import com.itineraryledger.kabengosafaris.NotificationSetting.NotificationSettingGetterServices;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
 import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalParticipant;
 import com.itineraryledger.kabengosafaris.ClientPortal.Enums.JourneyStatus;
@@ -157,8 +157,9 @@ class TheOtherSideIsToldThePenHasMovedTest {
         doThrow(new IllegalStateException("connection refused"))
             .when(sender).send(anyString(), anyString(), anyString(), any(), any());
 
-        BackupSettingsGetterServices settings = mock(BackupSettingsGetterServices.class);
-        when(settings.getNotificationEmails()).thenReturn(recipients);
+        NotificationSettingGetterServices settings = mock(NotificationSettingGetterServices.class);
+        when(settings.isClientPortalNotificationEnabled()).thenReturn(true);
+        when(settings.getClientPortalNotificationEmails()).thenReturn(recipients);
 
         PortalAccessService access = mock(PortalAccessService.class);
         when(access.linkFor(any())).thenReturn("https://mytrip.example.com/portal/abc");
