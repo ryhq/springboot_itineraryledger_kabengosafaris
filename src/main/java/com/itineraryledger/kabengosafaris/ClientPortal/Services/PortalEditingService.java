@@ -2,6 +2,8 @@ package com.itineraryledger.kabengosafaris.ClientPortal.Services;
 
 import java.util.List;
 
+import java.util.Locale;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -360,9 +362,146 @@ public class PortalEditingService {
      */
     private PortalOutcome done(PortalJourney journey, PortalParticipant by,
                                PortalSection section, String detail, String message) {
-        costEstimation.recalculate(journey.getQuote().getId());
+        if (!pricingIsDeferred()) {
+            costEstimation.recalculate(journey.getQuote().getId());
+        }
         activity.record(journey, by, null, section, detail, null, null);
         return PortalOutcome.ok(message, journey);
+    }
+
+    // ------------------------------------------------------------------ several at once
+
+    /**
+     * One change the client has staged but not yet sent.
+     *
+     * <p>A record rather than five overloads, because the page sends a LIST of them and the list
+     * has to survive a JSON round trip in the order the client made them.
+     */
+    public record Change(String action, Long rowId, Integer number, Boolean flag, Long optionId) {}
+
+    /**
+     * How many changes one commit may carry.
+     *
+     * <p>Generous enough for somebody rebuilding a fortnight, bounded because this arrives from a
+     * browser and every entry costs a row read and a write inside one transaction.
+     */
+    public static final int MOST_IN_ONE_GO = 40;
+
+    /** Thrown to roll the whole batch back; never leaves this class. */
+    private static final class Refused extends RuntimeException {
+        private final transient PortalOutcome outcome;
+        private final int at;
+
+        Refused(PortalOutcome outcome, int at) {
+            super(outcome.message(), null, false, false);
+            this.outcome = outcome;
+            this.at = at;
+        }
+    }
+
+    /**
+     * Everything the client staged, applied together or not at all.
+     *
+     * <p>Edits used to leave the page the moment a control was touched. That is wrong twice over.
+     * A customer clicking a lodge to see what it is had already changed their own quotation, with
+     * no way back and nothing asked; and anybody making three related changes — a lodge, its room
+     * count, the activity that goes with it — watched the price lurch twice through states that
+     * were never a trip they wanted.
+     *
+     * <p><strong>All or nothing, and that is the point of the method.</strong> Applying them one
+     * at a time over five requests leaves the fourth failing with three already written: the
+     * client's screen says "5 unsaved" and the quotation holds three of them, which is a worse
+     * state than either. One transaction means a refusal anywhere puts everything back.
+     *
+     * <p>It delegates to the same five methods a single edit uses — not a copy of their logic.
+     * The gates live there, they are scanned by a test, and a second path into a quotation that
+     * checked its own version of the rules is exactly the hole this application has had before.
+     */
+    @Transactional
+    public PortalOutcome applyAll(PortalJourney journey, PortalParticipant by,
+                                  List<Change> changes) {
+        if (changes == null || changes.isEmpty()) {
+            return PortalOutcome.refuse("There is nothing to save.", "PORTAL_NOTHING_STAGED", journey);
+        }
+        if (changes.size() > MOST_IN_ONE_GO) {
+            return PortalOutcome.refuse(
+                "That is more changes than we can take in one go. Save what you have and carry on.",
+                "PORTAL_TOO_MANY_CHANGES", journey);
+        }
+
+        /* asked once, plainly, before anything is touched: the refusal is the same either way */
+        PortalOutcome refusal = whyNotEditable(journey);
+        if (refusal != null) return refusal;
+
+        /*
+         * Price at the end rather than after each change.
+         *
+         * Repricing is the expensive half of an edit — it rebuilds every line on the quotation —
+         * and the intermediate figures are of no interest to anybody: they are the price of trips
+         * the client never asked for. Bound to the transaction rather than held in a field,
+         * because a field on a singleton service is shared by every customer at once.
+         */
+        TransactionSynchronizationManager.bindResource(DEFER_PRICING, Boolean.TRUE);
+        try {
+            int applied = 0;
+            for (Change change : changes) {
+                PortalOutcome outcome = applyOne(journey, by, change);
+                if (outcome == null) {
+                    throw new Refused(PortalOutcome.refuse(
+                        "That is not something you can change here.", "PORTAL_UNKNOWN_ACTION",
+                        journey), applied);
+                }
+                if (!outcome.done()) throw new Refused(outcome, applied);
+                applied++;
+            }
+
+            costEstimation.recalculate(journey.getQuote().getId());
+            return PortalOutcome.ok(
+                applied == 1 ? "Saved. Your price below has been worked out again."
+                    : "Saved. Your price below has been worked out again.",
+                journey);
+        } catch (Refused refused) {
+            /*
+             * Rolled back by the exception, and said in a way that locates it. "Something went
+             * wrong" on a batch of six leaves somebody re-making all six to find out which.
+             */
+            log.info("A staged batch on journey {} was refused at change {}: {}",
+                journey.getId(), refused.at + 1, refused.outcome.code());
+            throw refused;
+        } finally {
+            TransactionSynchronizationManager.unbindResourceIfPossible(DEFER_PRICING);
+        }
+    }
+
+    /** Dispatch, so the batch and the single edit cannot drift into two sets of rules. */
+    private PortalOutcome applyOne(PortalJourney journey, PortalParticipant by, Change change) {
+        String action = change.action() == null ? "" : change.action().toUpperCase(Locale.ROOT);
+        return switch (action) {
+            case "STAY" -> chooseStay(journey, by, change.rowId());
+            case "ROOMS" -> setRooms(journey, by, change.rowId(), change.number());
+            case "ACTIVITY" -> setActivityIncluded(journey, by, change.rowId(),
+                Boolean.TRUE.equals(change.flag()));
+            case "PARTY" -> setPartySize(journey, by, change.rowId(), change.number());
+            case "CATALOGUE" -> chooseFromCatalogue(journey, by, change.rowId(), change.optionId());
+            default -> null;
+        };
+    }
+
+    /** Where the outcome of a refused batch is read back out, once the rollback has happened. */
+    public static PortalOutcome refusalOf(RuntimeException e) {
+        return e instanceof Refused refused ? refused.outcome : null;
+    }
+
+    /** Which change it was, counting from one, for a message that locates the problem. */
+    public static int refusedAt(RuntimeException e) {
+        return e instanceof Refused refused ? refused.at + 1 : 0;
+    }
+
+    private static final String DEFER_PRICING =
+        PortalEditingService.class.getName() + ".deferPricing";
+
+    private boolean pricingIsDeferred() {
+        return Boolean.TRUE.equals(TransactionSynchronizationManager.getResource(DEFER_PRICING));
     }
 
     private boolean onlyLineWithAnybody(Quote quote, QuotePax row) {

@@ -455,14 +455,40 @@ class AClientReachesOnlyAsFarAsTheirLevelTest {
 
         List<String> offenders = new java.util.ArrayList<>();
         int found = 0;
+        int delegating = 0;
         while (m.find()) {
             found++;
+            String name = m.group(1);
             String body = bodyAt(source, m.end());
-            if (!body.contains("whyNotEditable(journey)")) offenders.add(m.group(1) + " (no gate)");
-            if (!body.contains("notYours(journey)")) offenders.add(m.group(1) + " (no ownership check)");
+
+            /* every one of them asks whether the quotation may change at all */
+            if (!body.contains("whyNotEditable(journey)")) offenders.add(name + " (no gate)");
+
+            /*
+             * applyAll is the batch, and it is the one method here that must NOT walk back from a
+             * row: it delegates to the five, so the ownership check happens in each of them. What
+             * it must not do is touch a repository itself, because that would be a second path
+             * into a quotation carrying its own idea of the rules — which is the hole this whole
+             * file exists to keep shut.
+             */
+            if (name.equals("applyAll")) {
+                delegating++;
+                if (!body.contains("applyOne(journey, by, change)")) {
+                    offenders.add(name + " (does not delegate)");
+                }
+                for (String repository : List.of("accommodations.", "activities.", "party.")) {
+                    if (body.contains(repository)) {
+                        offenders.add(name + " (touches " + repository + " itself)");
+                    }
+                }
+                continue;
+            }
+
+            if (!body.contains("notYours(journey)")) offenders.add(name + " (no ownership check)");
         }
 
-        assertEquals(5, found, "the edits a client may make; another one needs a test of its own");
+        assertEquals(6, found, "the edits a client may make; another one needs a test of its own");
+        assertEquals(1, delegating, "exactly one of them applies the others");
         assertTrue(offenders.isEmpty(),
             "these change a quotation without asking whether they may: " + offenders);
     }

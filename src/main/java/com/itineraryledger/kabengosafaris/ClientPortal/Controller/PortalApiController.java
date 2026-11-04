@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.ClientPortal.Controller;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -322,6 +323,81 @@ public class PortalApiController {
             return ResponseEntity.badRequest().body(ApiResponse.error(400,
                 "That is not something you can change here.", "PORTAL_UNKNOWN_ACTION"));
         }
+        if (!outcome.done()) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, outcome.message(), outcome.code()));
+        }
+        return ResponseEntity.ok(ApiResponse.success(200, outcome.message(), null));
+    }
+
+    /**
+     * Everything they staged, saved together.
+     *
+     * <p>The single-edit endpoint stays: it is what the batch delegates to, change by change,
+     * and removing it would leave the gates with only one caller to be checked against. What has
+     * changed is the page, which now holds the changes until the client says so. A customer
+     * clicking a lodge to see what it is had been changing their own quotation, with nothing
+     * asked and no way back.
+     *
+     * <p>A refusal anywhere in the list rolls the whole thing back and says WHICH change it was.
+     * "Something went wrong" on a batch of six leaves somebody re-making all six to find out.
+     */
+    @PostMapping(value = "/{token}/edits", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<?>> edits(
+        @PathVariable String token,
+        @RequestBody Map<String, Object> body,
+        @RequestHeader(value = SecurityConfigurations.PORTAL_SESSION_HEADER, required = false) String session
+    ) {
+        PortalAccessService.Access resolved = access.resolve(token, session);
+        if (resolved.journey() == null || !resolved.canReadTrip()) {
+            return gone();
+        }
+        if (!resolved.canReadPrivate()) {
+            return ResponseEntity.status(401).body(ApiResponse.error(401,
+                "Please enter a code first", "PORTAL_NOT_VERIFIED"));
+        }
+        if (resolved.participant() == null || !resolved.participant().mayAct()) {
+            return ResponseEntity.status(403).body(ApiResponse.error(403,
+                "Only the lead traveller on this booking can change it.", "PORTAL_NOT_THE_LEAD"));
+        }
+
+        Object raw = body.get("changes");
+        if (!(raw instanceof List<?> list)) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                "There is nothing to save.", "PORTAL_NOTHING_STAGED"));
+        }
+
+        List<PortalEditingService.Change> changes = new ArrayList<>();
+        for (Object entry : list) {
+            if (!(entry instanceof Map<?, ?> row)) continue;
+            Long rowId = decodeOrNull(row.get("id"));
+            if (rowId == null) {
+                /* an id we cannot read and an id that is not theirs get the same answer */
+                return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                    "That is not on this booking.", "NOT_ON_THIS_BOOKING"));
+            }
+            changes.add(new PortalEditingService.Change(
+                String.valueOf(row.get("action")),
+                rowId,
+                asInteger(row.get("value")),
+                row.get("value") instanceof Boolean flag ? flag : null,
+                decodeOrNull(row.get("option"))));
+        }
+
+        PortalOutcome outcome;
+        try {
+            outcome = editing.applyAll(resolved.journey(), resolved.participant(), changes);
+        } catch (RuntimeException e) {
+            PortalOutcome refused = PortalEditingService.refusalOf(e);
+            if (refused == null) throw e;
+            int at = PortalEditingService.refusedAt(e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                changes.size() == 1 ? refused.message()
+                    : "Change " + at + " of " + changes.size() + " could not be made, so nothing "
+                        + "was saved: " + refused.message(),
+                refused.code()));
+        }
+
         if (!outcome.done()) {
             return ResponseEntity.badRequest().body(
                 ApiResponse.error(400, outcome.message(), outcome.code()));
