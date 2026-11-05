@@ -970,10 +970,19 @@ public class EmailComposeService {
         return sender;
     }
 
+    /**
+     * The one-line preview shown in the message list.
+     *
+     * Delegates to {@link HtmlToText}, which drops the contents of &lt;head&gt;, &lt;style&gt; and
+     * &lt;script&gt; before it touches anything else. Stripping tags with a bare
+     * {@code replaceAll("<[^>]+>", "")} does NOT do that: it removes the tags and keeps what sat
+     * between them, so every templated message previewed as its own stylesheet --
+     * "Welcome to Kabengo Safaris /* Reset & Base *&#47; body { margin: 0; padding: 0; ...".
+     * The reader saw CSS where the first sentence should be.
+     */
     private String extractSnippet(String html, int maxLength) {
         if (html == null) return null;
-        // Strip HTML tags for snippet
-        String text = html.replaceAll("<[^>]+>", "").replaceAll("\\s+", " ").trim();
+        String text = HtmlToText.convert(html).replaceAll("\\s+", " ").trim();
         return text.length() > maxLength ? text.substring(0, maxLength) : text;
     }
 
