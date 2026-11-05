@@ -31,7 +31,7 @@
       "healthPort": 4451,
       "apiPort": 4450,
       "dumpCommand": "/usr/local/sbin/kabengo-predeploy-dump",
-      "publicHealthUrl": "https://api.kabengosafaris.ryhqtech.com/healthz"
+      "publicHealthUrl": "https://api.kabengosafaris.com/healthz"
     }
   ]
 }
