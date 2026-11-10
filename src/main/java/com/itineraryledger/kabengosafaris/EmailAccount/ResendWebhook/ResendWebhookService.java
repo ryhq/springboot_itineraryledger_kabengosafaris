@@ -153,10 +153,19 @@ public class ResendWebhookService {
      *       in the email list UI ("Delivered", "Bounced" chips).</li>
      * </ol>
      *
-     * <p>Webhooks can arrive out of order — we ignore transitions that would
-     * walk back from a terminal state ({@code DELIVERED} / {@code BOUNCED}
-     * / {@code COMPLAINED}), so a late {@code delivery_delayed} after a
-     * delivered event doesn't flip the row backwards.
+     * <p>Webhooks can arrive out of order, so the stored status is decided by
+     * {@link EmailDeliveryStatus#resolve} — the more actionable outcome wins,
+     * whichever order the events turn up in — rather than by arrival sequence.
+     * A late {@code delivery_delayed} cannot walk a delivered row backwards,
+     * and a bounce is not buried by a delivery that preceded it.
+     *
+     * <p>That second case is not a hypothetical. A send to several recipients
+     * produces one row and several outcomes, so one recipient's bounce used to
+     * be discarded because another recipient's delivery had already landed.
+     * The row then read "Delivered" for mail that someone never received, and
+     * the per-recipient truth survived only in the webhook event table. The
+     * timestamps are recorded regardless of which status wins, so a row can
+     * show it was both delivered and bounced.
      */
     private void handleEventSideEffects(String eventType, EmailAccount account, String emailId, LocalDateTime eventTimestamp) {
         if (account != null && "email.bounced".equals(eventType)) {
@@ -189,36 +198,30 @@ public class ResendWebhookService {
 
         LocalDateTime at = eventTimestamp != null ? eventTimestamp : LocalDateTime.now();
         EmailDeliveryStatus current = match.getDeliveryStatus();
+        EmailDeliveryStatus incoming = null;
         boolean transitioned = true;
 
+        // The timestamp of an outcome is recorded even when another outcome
+        // holds the status, so "delivered to one, bounced for another" is not
+        // lost just because one of the two has to win the single status field.
         switch (eventType) {
             case "email.delivered":
-                if (!isTerminal(current)) {
-                    match.setDeliveryStatus(EmailDeliveryStatus.DELIVERED);
-                    match.setDeliveredAt(at);
-                }
+                incoming = EmailDeliveryStatus.DELIVERED;
+                match.setDeliveredAt(at);
                 break;
             case "email.bounced":
-                if (current != EmailDeliveryStatus.DELIVERED) {
-                    match.setDeliveryStatus(EmailDeliveryStatus.BOUNCED);
-                    match.setBouncedAt(at);
-                }
+                incoming = EmailDeliveryStatus.BOUNCED;
+                match.setBouncedAt(at);
                 break;
             case "email.complained":
-                // Complaints can follow a delivery, so they're allowed to
-                // override DELIVERED — that's the whole signal.
-                match.setDeliveryStatus(EmailDeliveryStatus.COMPLAINED);
+                incoming = EmailDeliveryStatus.COMPLAINED;
                 match.setComplainedAt(at);
                 break;
             case "email.delivery_delayed":
-                if (!isTerminal(current)) {
-                    match.setDeliveryStatus(EmailDeliveryStatus.DELIVERY_DELAYED);
-                }
+                incoming = EmailDeliveryStatus.DELIVERY_DELAYED;
                 break;
             case "email.sent":
-                if (current == null) {
-                    match.setDeliveryStatus(EmailDeliveryStatus.SENT);
-                }
+                incoming = EmailDeliveryStatus.SENT;
                 break;
             default:
                 log.debug("Unhandled Resend event type: {}", eventType);
@@ -227,17 +230,12 @@ public class ResendWebhookService {
         }
 
         if (transitioned) {
+            match.setDeliveryStatus(EmailDeliveryStatus.resolve(current, incoming));
             match.setLastEventType(eventType);
             emailMessageRepository.save(match);
             log.info("EmailMessage {} → {} (event {})",
                     match.getId(), match.getDeliveryStatus(), eventType);
         }
-    }
-
-    private boolean isTerminal(EmailDeliveryStatus status) {
-        return status == EmailDeliveryStatus.DELIVERED
-                || status == EmailDeliveryStatus.BOUNCED
-                || status == EmailDeliveryStatus.COMPLAINED;
     }
 
     /**
