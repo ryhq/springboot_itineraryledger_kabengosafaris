@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices;
 
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -174,7 +175,7 @@ public class EmailAccountUpdateService {
 
         // Update SMTP host (if provided and different)
         if (updateDTO.getSmtpHost() != null && !updateDTO.getSmtpHost().isBlank()) {
-            if (!existing.getSmtpHost().equals(updateDTO.getSmtpHost())) {
+            if (!Objects.equals(existing.getSmtpHost(), updateDTO.getSmtpHost())) {
                 existing.setSmtpHost(updateDTO.getSmtpHost());
                 sensitiveAttributeChanged = true;
             }
@@ -182,7 +183,7 @@ public class EmailAccountUpdateService {
 
         // Update SMTP port (if provided and different)
         if (updateDTO.getSmtpPort() != null) {
-            if (!existing.getSmtpPort().equals(updateDTO.getSmtpPort())) {
+            if (!Objects.equals(existing.getSmtpPort(), updateDTO.getSmtpPort())) {
                 existing.setSmtpPort(updateDTO.getSmtpPort());
                 sensitiveAttributeChanged = true;
             }
@@ -190,7 +191,7 @@ public class EmailAccountUpdateService {
 
         // Update SMTP username (if provided and different)
         if (updateDTO.getSmtpUsername() != null && !updateDTO.getSmtpUsername().isBlank()) {
-            if (!existing.getSmtpUsername().equals(updateDTO.getSmtpUsername())) {
+            if (!Objects.equals(existing.getSmtpUsername(), updateDTO.getSmtpUsername())) {
                 existing.setSmtpUsername(updateDTO.getSmtpUsername());
                 sensitiveAttributeChanged = true;
             }
@@ -215,13 +216,13 @@ public class EmailAccountUpdateService {
 
         // Apply the updates if validation passed
         if (updateDTO.getUseTls() != null) {
-            if (!existing.getUseTls().equals(updateDTO.getUseTls())) {
+            if (!Objects.equals(existing.getUseTls(), updateDTO.getUseTls())) {
                 existing.setUseTls(updateDTO.getUseTls());
                 sensitiveAttributeChanged = true;
             }
         }
         if (updateDTO.getUseSsl() != null) {
-            if (!existing.getUseSsl().equals(updateDTO.getUseSsl())) {
+            if (!Objects.equals(existing.getUseSsl(), updateDTO.getUseSsl())) {
                 existing.setUseSsl(updateDTO.getUseSsl());
                 sensitiveAttributeChanged = true;
             }
