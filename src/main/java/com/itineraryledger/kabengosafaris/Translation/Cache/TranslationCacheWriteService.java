@@ -15,6 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
+import com.itineraryledger.kabengosafaris.Translation.Providers.TranslationProvider;
+import com.itineraryledger.kabengosafaris.Translation.Providers.TranslationProviderFactory;
+import com.itineraryledger.kabengosafaris.Translation.Settings.TranslationSettingGetterServices;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +46,8 @@ public class TranslationCacheWriteService {
 
     private final TranslationCacheRepository cacheRepository;
     private final IdObfuscator idObfuscator;
+    private final TranslationProviderFactory providerFactory;
+    private final TranslationSettingGetterServices settingsService;
 
     /**
      * Replace a cached translation with a human one.
@@ -119,6 +124,79 @@ public class TranslationCacheWriteService {
                 ? "Marked verified. It will not expire and no provider will overwrite it."
                 : "Verification withdrawn. Normal expiry and provider refresh apply again.",
             Map.of("id", obfuscatedId, "verified", verified)));
+    }
+
+    /**
+     * Ask the current provider for this phrase again and keep the answer.
+     *
+     * <p>The reason this exists rather than "delete it and let it refill": deleting leaves the
+     * entry missing until somebody happens to request that exact string again, which for a
+     * phrase on a page nobody visited this week could be never. Re-translating replaces it now,
+     * records which provider did it, and the character cost is visible and bounded -- one entry.
+     *
+     * <p>Refuses a verified entry unless explicitly forced. Re-translating one would throw away
+     * a person's correction in favour of the machine, which is the exact thing the flag exists
+     * to prevent, and doing it on a stray click would be unrecoverable.
+     */
+    @Transactional
+    public ResponseEntity<ApiResponse<?>> retranslate(String obfuscatedId, boolean force) {
+        Long id = decode(obfuscatedId);
+        if (id == null) {
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error(400, "Invalid cache entry id", "INVALID_ID"));
+        }
+        TranslationCache entry = cacheRepository.findById(id).orElse(null);
+        if (entry == null) {
+            return ResponseEntity.status(404).body(
+                ApiResponse.error(404, "Cache entry not found", "NOT_FOUND"));
+        }
+        if (Boolean.TRUE.equals(entry.getVerified()) && !force) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400,
+                "This translation was checked by "
+                    + (entry.getCorrectedBy() == null ? "someone" : entry.getCorrectedBy())
+                    + ". Re-translating would replace their wording with the provider's.",
+                "VERIFIED_ENTRY"));
+        }
+
+        try {
+            TranslationProvider provider = providerFactory.getActiveProvider();
+            String fresh = provider.translate(
+                entry.getOriginalContent(), entry.getSourceLanguage(), entry.getTargetLanguage());
+            if (fresh == null || fresh.isBlank()) {
+                return ResponseEntity.status(502).body(ApiResponse.error(502,
+                    "The provider returned nothing. The entry is unchanged.", "EMPTY_TRANSLATION"));
+            }
+
+            String before = entry.getTranslatedContent();
+            entry.setTranslatedContent(fresh);
+            entry.setProvider(provider.getProviderType().name());
+            entry.setExpiresAt(LocalDateTime.now().plusHours(settingsService.getCacheTtlHours()));
+            /* The machine wrote this, so nobody has stood behind it. */
+            entry.setVerified(false);
+            entry.setHumanCorrected(false);
+            cacheRepository.save(entry);
+
+            boolean changed = !fresh.equals(before);
+            log.info("Re-translated cache entry {} via {} ({} chars, {})",
+                entry.getName(), entry.getProvider(), entry.getCharacterCount(),
+                changed ? "text changed" : "identical to before");
+
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("id", obfuscatedId);
+            body.put("provider", entry.getProvider());
+            body.put("changed", changed);
+            body.put("charactersCharged", entry.getCharacterCount());
+            return ResponseEntity.ok(ApiResponse.success(200,
+                changed
+                    ? "Re-translated. The wording changed."
+                    : "Re-translated. The provider gave the same wording as before.",
+                body));
+        } catch (Exception e) {
+            log.warn("Re-translation failed for {}: {}", obfuscatedId, e.getMessage());
+            return ResponseEntity.status(502).body(ApiResponse.error(502,
+                "The provider could not be reached: " + e.getMessage()
+                    + ". The entry is unchanged.", "PROVIDER_FAILED"));
+        }
     }
 
     /**

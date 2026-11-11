@@ -442,6 +442,22 @@ public class TranslationController {
     }
 
     /**
+     * Ask the provider for this phrase again and keep the answer.
+     *
+     * <p>Costs characters against the provider's quota — one entry's worth — which is why it is
+     * a deliberate per-record action rather than anything that runs by itself.
+     */
+    @PostMapping("/cache/entries/{id}/retranslate")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_TRANSLATION_CACHE')")
+    public ResponseEntity<ApiResponse<?>> retranslateCacheEntry(
+        @PathVariable String id,
+        @RequestParam(required = false, defaultValue = "false") boolean force
+    ) {
+        log.info("POST /api/translation/cache/entries/{}/retranslate", id);
+        return cacheWriteService.retranslate(id, force);
+    }
+
+    /**
      * Delete one cache entry. The string is simply re-translated next time it is asked for.
      */
     @DeleteMapping("/cache/entries/{id}")
