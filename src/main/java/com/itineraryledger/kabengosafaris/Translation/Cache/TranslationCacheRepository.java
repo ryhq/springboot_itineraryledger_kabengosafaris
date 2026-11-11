@@ -27,7 +27,7 @@ public interface TranslationCacheRepository extends JpaRepository<TranslationCac
      */
     @Query("SELECT tc FROM TranslationCache tc WHERE tc.contentHash = :contentHash " +
            "AND tc.sourceLanguage = :sourceLanguage AND tc.targetLanguage = :targetLanguage " +
-           "AND tc.expiresAt > CURRENT_TIMESTAMP")
+           "AND (tc.expiresAt > CURRENT_TIMESTAMP OR tc.verified = true)")
     Optional<TranslationCache> findValidCacheEntry(
         @Param("contentHash") String contentHash,
         @Param("sourceLanguage") String sourceLanguage,
@@ -54,7 +54,7 @@ public interface TranslationCacheRepository extends JpaRepository<TranslationCac
      */
     @Query("SELECT COUNT(tc) > 0 FROM TranslationCache tc WHERE tc.contentHash = :contentHash " +
            "AND tc.sourceLanguage = :sourceLanguage AND tc.targetLanguage = :targetLanguage " +
-           "AND tc.expiresAt > CURRENT_TIMESTAMP")
+           "AND (tc.expiresAt > CURRENT_TIMESTAMP OR tc.verified = true)")
     boolean existsValidCacheEntry(
         @Param("contentHash") String contentHash,
         @Param("sourceLanguage") String sourceLanguage,
@@ -67,7 +67,7 @@ public interface TranslationCacheRepository extends JpaRepository<TranslationCac
      */
     @Modifying
     @Transactional
-    @Query("DELETE FROM TranslationCache tc WHERE tc.expiresAt < CURRENT_TIMESTAMP")
+    @Query("DELETE FROM TranslationCache tc WHERE tc.expiresAt < CURRENT_TIMESTAMP AND tc.verified = false")
     int deleteExpiredEntries();
 
     /**
@@ -77,7 +77,7 @@ public interface TranslationCacheRepository extends JpaRepository<TranslationCac
      */
     @Modifying
     @Transactional
-    @Query("DELETE FROM TranslationCache tc WHERE tc.createdAt < :beforeDate")
+    @Query("DELETE FROM TranslationCache tc WHERE tc.createdAt < :beforeDate AND tc.verified = false")
     int deleteEntriesOlderThan(@Param("beforeDate") LocalDateTime beforeDate);
 
     /**
@@ -88,7 +88,7 @@ public interface TranslationCacheRepository extends JpaRepository<TranslationCac
      */
     @Modifying
     @Transactional
-    @Query("DELETE FROM TranslationCache tc WHERE tc.sourceLanguage = :sourceLanguage AND tc.targetLanguage = :targetLanguage")
+    @Query("DELETE FROM TranslationCache tc WHERE tc.sourceLanguage = :sourceLanguage AND tc.targetLanguage = :targetLanguage AND tc.verified = false")
     int deleteByLanguagePair(
         @Param("sourceLanguage") String sourceLanguage,
         @Param("targetLanguage") String targetLanguage
@@ -98,7 +98,7 @@ public interface TranslationCacheRepository extends JpaRepository<TranslationCac
      * Count total cached translations
      * @return total count
      */
-    @Query("SELECT COUNT(tc) FROM TranslationCache tc WHERE tc.expiresAt > CURRENT_TIMESTAMP")
+    @Query("SELECT COUNT(tc) FROM TranslationCache tc WHERE tc.expiresAt > CURRENT_TIMESTAMP OR tc.verified = true")
     long countValidEntries();
 
     /**
@@ -107,6 +107,21 @@ public interface TranslationCacheRepository extends JpaRepository<TranslationCac
      */
     @Query("SELECT COALESCE(SUM(tc.hitCount), 0) FROM TranslationCache tc")
     long countTotalHits();
+
+    /** Entries a person has read and stands behind. */
+    @Query("SELECT COUNT(tc) FROM TranslationCache tc WHERE tc.verified = true")
+    long countVerifiedEntries();
+
+    /** Entries whose text a person changed. */
+    @Query("SELECT COUNT(tc) FROM TranslationCache tc WHERE tc.humanCorrected = true")
+    long countHumanCorrectedEntries();
+
+    /**
+     * Entries with no recorded provider. These predate provenance tracking, which in practice
+     * means the previous engine produced them -- the re-translation candidates after a switch.
+     */
+    @Query("SELECT COUNT(tc) FROM TranslationCache tc WHERE tc.provider IS NULL")
+    long countEntriesWithUnknownProvider();
 
     /**
      * Get total characters saved by caching (sum of character_count * hit_count)

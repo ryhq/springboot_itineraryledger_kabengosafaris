@@ -243,4 +243,53 @@ public class TranslationCacheSpecification {
             }
         };
     }
+
+    /**
+     * Entries a person has read and stands behind.
+     */
+    public static Specification<TranslationCache> isVerified(Boolean verified) {
+        return (root, query, cb) -> {
+            if (verified == null) {
+                return cb.conjunction();
+            }
+            return cb.equal(root.get("verified"), verified);
+        };
+    }
+
+    /**
+     * Entries whose translated text a person changed.
+     */
+    public static Specification<TranslationCache> isHumanCorrected(Boolean humanCorrected) {
+        return (root, query, cb) -> {
+            if (humanCorrected == null) {
+                return cb.conjunction();
+            }
+            return cb.equal(root.get("humanCorrected"), humanCorrected);
+        };
+    }
+
+    /**
+     * Filter by which provider produced the translation.
+     *
+     * <p>A null {@code provider} means "no provider recorded" and matches the rows that predate
+     * provenance tracking -- the re-translation candidates after a provider change. That is a
+     * real filter, not an absent one, so it cannot use the usual null-means-no-constraint shape;
+     * {@link #hasAnyProvider} is how a caller asks for "no constraint at all".
+     */
+    public static Specification<TranslationCache> hasProvider(String provider) {
+        return (root, query, cb) -> {
+            if (provider == null || provider.isBlank()) {
+                return cb.isNull(root.get("provider"));
+            }
+            return cb.equal(cb.upper(root.get("provider")), provider.toUpperCase());
+        };
+    }
+
+    /**
+     * No constraint on provider. Exists so a caller can be explicit rather than relying on a
+     * null that {@link #hasProvider} reads as a filter in its own right.
+     */
+    public static Specification<TranslationCache> hasAnyProvider() {
+        return (root, query, cb) -> cb.conjunction();
+    }
 }

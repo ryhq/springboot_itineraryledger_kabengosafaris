@@ -88,6 +88,10 @@ public class TranslationCacheGetterService {
             LocalDateTime createdBefore,
             Boolean expired,
             Boolean accessed,
+            String provider,
+            Boolean providerUnknown,
+            Boolean verified,
+            Boolean humanCorrected,
             String keyword,
             Boolean includeStats,
             String sortBy,
@@ -193,6 +197,22 @@ public class TranslationCacheGetterService {
         if (accessed != null) {
             specification = specification.and(TranslationCacheSpecification.hasBeenAccessed(accessed));
         }
+        /*
+         * providerUnknown is its own parameter rather than provider=null, because "no provider
+         * recorded" is a real filter -- it is how you find what the previous engine produced --
+         * and a null parameter has to keep meaning "no constraint".
+         */
+        if (Boolean.TRUE.equals(providerUnknown)) {
+            specification = specification.and(TranslationCacheSpecification.hasProvider(null));
+        } else if (provider != null && !provider.isBlank()) {
+            specification = specification.and(TranslationCacheSpecification.hasProvider(provider));
+        }
+        if (verified != null) {
+            specification = specification.and(TranslationCacheSpecification.isVerified(verified));
+        }
+        if (humanCorrected != null) {
+            specification = specification.and(TranslationCacheSpecification.isHumanCorrected(humanCorrected));
+        }
 
         // Execute query with specifications
         Page<TranslationCache> pagedCacheEntries = cacheRepository.findAll(specification, paging);
@@ -264,6 +284,16 @@ public class TranslationCacheGetterService {
              */
             .count("longEntries", TranslationCacheSpecification.characterCountGreaterThanOrEqual(500))
             .count("neverAccessed", TranslationCacheSpecification.hasBeenAccessed(false))
+            /*
+             * After a provider change these are the only two numbers that matter: what a person
+             * has blessed, and what the previous engine produced and nobody has looked at. An
+             * entry with no provider recorded predates provenance tracking, which in practice
+             * means the old engine wrote it -- and because the cache is read before the provider,
+             * the new engine will never be asked for that string until somebody clears it.
+             */
+            .count("verified", TranslationCacheSpecification.isVerified(true))
+            .count("humanCorrected", TranslationCacheSpecification.isHumanCorrected(true))
+            .count("unknownProvider", TranslationCacheSpecification.hasProvider(null))
             .recency(TranslationCacheSpecification::createdAfter)
             .build();
     }
@@ -389,6 +419,11 @@ public class TranslationCacheGetterService {
                 .expiresAt(cacheEntry.getExpiresAt())
                 .lastAccessedAt(cacheEntry.getLastAccessedAt())
                 .isExpired(cacheEntry.isExpired())
+                .provider(cacheEntry.getProvider())
+                .humanCorrected(cacheEntry.getHumanCorrected())
+                .verified(cacheEntry.getVerified())
+                .correctedBy(cacheEntry.getCorrectedBy())
+                .correctedAt(cacheEntry.getCorrectedAt())
                 .build();
     }
 }

@@ -41,6 +41,7 @@ public class TranslationController {
     private final TranslationProviderFactory providerFactory;
     private final TranslationCacheRepository cacheRepository;
     private final TranslationCacheGetterService cacheGetterService;
+    private final com.itineraryledger.kabengosafaris.Translation.Cache.TranslationCacheWriteService cacheWriteService;
     private final TranslationSettingGetterServices settingsService;
 
     /**
@@ -355,6 +356,15 @@ public class TranslationController {
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdBefore,
         @RequestParam(required = false) Boolean expired,
         @RequestParam(required = false) Boolean accessed,
+        @RequestParam(required = false) String provider,
+        /*
+         * "No provider recorded" is a filter in its own right -- it is how you find what the
+         * previous engine produced after a switch -- so it cannot be expressed as provider=null,
+         * which has to go on meaning "no constraint".
+         */
+        @RequestParam(required = false) Boolean providerUnknown,
+        @RequestParam(required = false) Boolean verified,
+        @RequestParam(required = false) Boolean humanCorrected,
         /*
          * The house name for the one search box. Without it the list page's search sent
          * `keyword`, Spring dropped it on the floor, and every row came back as if nothing
@@ -369,7 +379,8 @@ public class TranslationController {
         return cacheGetterService.getAllCacheEntries(
             page, size, name, sourceLanguage, targetLanguage, contentHash, originalContent, translatedContent,
             minHitCount, maxHitCount, minCharCount, maxCharCount, createdAfter, createdBefore,
-            expired, accessed, keyword, includeStats, sortBy, sortDirection
+            expired, accessed, provider, providerUnknown, verified, humanCorrected,
+            keyword, includeStats, sortBy, sortDirection
         );
     }
 
@@ -393,5 +404,70 @@ public class TranslationController {
     ) {
         log.info("GET /api/translation/cache/entries/{} - Fetching cache entry", id);
         return cacheGetterService.getCacheEntry(id, keyword, targetLanguage, sortBy, sortDirection);
+    }
+
+    /**
+     * Correct a cached translation by hand.
+     *
+     * <p>Machine translation gets trade words wrong in ways that read as fluent -- "lodge" came
+     * back as a theatre box in both French and Russian -- and the cache is consulted before the
+     * provider, so a wrong entry is served until somebody changes it. Correcting marks the row
+     * verified, which stops it expiring and stops any provider overwriting it; without that the
+     * correction would last only until the TTL lapsed.
+     */
+    @PutMapping("/cache/entries/{id}")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_TRANSLATION_CACHE')")
+    public ResponseEntity<ApiResponse<?>> correctCacheEntry(
+        @PathVariable String id,
+        @RequestBody java.util.Map<String, String> body
+    ) {
+        log.info("PUT /api/translation/cache/entries/{} - Correcting translation", id);
+        return cacheWriteService.correctEntry(id, body == null ? null : body.get("translatedContent"));
+    }
+
+    /**
+     * Mark an entry verified, or withdraw that, without changing the text.
+     *
+     * <p>"I read it and it was already right" is worth recording: it is the difference between
+     * a translation nobody has checked and one somebody has.
+     */
+    @PostMapping("/cache/entries/{id}/verify")
+    @PreAuthorize("hasAuthority('PERM_UPDATE_TRANSLATION_CACHE')")
+    public ResponseEntity<ApiResponse<?>> verifyCacheEntry(
+        @PathVariable String id,
+        @RequestParam(required = false, defaultValue = "true") boolean verified
+    ) {
+        log.info("POST /api/translation/cache/entries/{}/verify?verified={}", id, verified);
+        return cacheWriteService.setVerified(id, verified);
+    }
+
+    /**
+     * Delete one cache entry. The string is simply re-translated next time it is asked for.
+     */
+    @DeleteMapping("/cache/entries/{id}")
+    @PreAuthorize("hasAuthority('PERM_DELETE_TRANSLATION_CACHE')")
+    public ResponseEntity<ApiResponse<?>> deleteCacheEntry(
+        @PathVariable String id,
+        @RequestParam(required = false, defaultValue = "false") boolean includeVerified
+    ) {
+        log.info("DELETE /api/translation/cache/entries/{}", id);
+        return cacheWriteService.deleteEntries(java.util.List.of(id), includeVerified);
+    }
+
+    /**
+     * Delete several entries at once. Body is a bare array of ids, per the house contract, and
+     * the answer reports per-id outcomes rather than a count that hides what it refused.
+     *
+     * <p>Verified entries are skipped unless asked for explicitly: sweeping a filter should not
+     * be able to discard somebody's correction by accident.
+     */
+    @DeleteMapping("/cache/entries")
+    @PreAuthorize("hasAuthority('PERM_DELETE_TRANSLATION_CACHE')")
+    public ResponseEntity<ApiResponse<?>> deleteCacheEntries(
+        @RequestBody java.util.List<String> idList,
+        @RequestParam(required = false, defaultValue = "false") boolean includeVerified
+    ) {
+        log.info("DELETE /api/translation/cache/entries - {} ids", idList == null ? 0 : idList.size());
+        return cacheWriteService.deleteEntries(idList, includeVerified);
     }
 }

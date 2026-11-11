@@ -92,4 +92,16 @@ public class TranslationCacheDTO {
      * Whether this cache entry is expired
      */
     private Boolean isExpired;
+
+    /** Which provider produced the translation; null means it predates provenance tracking. */
+    private String provider;
+
+    /** Somebody changed this text by hand. */
+    private Boolean humanCorrected;
+
+    /** A person stands behind this translation; it never expires and no provider overwrites it. */
+    private Boolean verified;
+
+    private String correctedBy;
+    private LocalDateTime correctedAt;
 }

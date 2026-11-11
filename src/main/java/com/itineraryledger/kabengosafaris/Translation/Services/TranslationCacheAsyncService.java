@@ -2,6 +2,7 @@ package com.itineraryledger.kabengosafaris.Translation.Services;
 
 import com.itineraryledger.kabengosafaris.Translation.Cache.TranslationCache;
 import com.itineraryledger.kabengosafaris.Translation.Cache.TranslationCacheRepository;
+import com.itineraryledger.kabengosafaris.Translation.Providers.TranslationProviderFactory;
 import com.itineraryledger.kabengosafaris.Translation.Settings.TranslationSettingGetterServices;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ public class TranslationCacheAsyncService {
 
     private final TranslationCacheRepository cacheRepository;
     private final TranslationSettingGetterServices settingsService;
+    private final TranslationProviderFactory providerFactory;
 
     /**
      * Save translation to cache asynchronously.
@@ -45,9 +47,20 @@ public class TranslationCacheAsyncService {
             );
 
             if (existing.isPresent()) {
-                // Update existing entry
                 TranslationCache cache = existing.get();
+
+                // A person's answer outranks the machine's. Without this, correcting a
+                // translation by hand buys you only as long as the TTL: the entry lapses, the
+                // next request re-translates it, and the machine's version is written back with
+                // nothing anywhere reporting that the correction was undone.
+                if (!cache.isProviderWritable()) {
+                    log.debug("Left verified/corrected cache entry alone: {} {} -> {}",
+                        cache.getName(), sourceLanguage, targetLanguage);
+                    return;
+                }
+
                 cache.setTranslatedContent(translatedContent);
+                cache.setProvider(activeProviderName());
                 cache.setExpiresAt(LocalDateTime.now().plusHours(ttlHours));
                 cacheRepository.save(cache);
                 log.debug("Updated translation cache (async): {} -> {}, {} chars",
@@ -62,6 +75,7 @@ public class TranslationCacheAsyncService {
                     .originalContent(originalContent)
                     .translatedContent(translatedContent)
                     .characterCount(originalContent.length())
+                    .provider(activeProviderName())
                     .hitCount(0L)
                     .expiresAt(LocalDateTime.now().plusHours(ttlHours))
                     .build();
@@ -87,6 +101,24 @@ public class TranslationCacheAsyncService {
      * Record cache hit asynchronously.
      * Updates hit count without blocking the main flow.
      */
+    /**
+     * Which provider is translating right now.
+     *
+     * <p>Read here rather than threaded through four call sites in TranslationService, two of
+     * which have no provider in scope. The write runs on another thread a moment after the
+     * translation, so a provider switched in that gap would mislabel a row; switches are manual
+     * and rare, and the alternative is a parameter that half the callers would have to pass as
+     * null anyway. Never throws -- provenance must not be able to fail a cache write.
+     */
+    private String activeProviderName() {
+        try {
+            return providerFactory.getActiveProvider().getProviderType().name();
+        } catch (Exception e) {
+            log.debug("Could not determine active provider for cache provenance: {}", e.getMessage());
+            return null;
+        }
+    }
+
     @Async
     @Transactional
     public void recordCacheHitAsync(String contentHash, String sourceLanguage, String targetLanguage) {
