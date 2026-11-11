@@ -208,6 +208,19 @@ public class TranslationSettingsInitializer implements ApplicationRunner, Ordere
             false
         );
 
+        createOrUpdateSetting(
+            "translation.deepl.glossary.ids",
+            "",
+            SettingDataType.STRING,
+            "DeepL glossary ids per language pair, as 'en-fr:<id>,en-de:<id>'. Leave empty for none. "
+                + "NEVER add a glossary entry whose source and target are identical ('lodge' -> 'lodge'): "
+                + "DeepL answers such a request with the whole sentence left in English, 200 OK and nothing "
+                + "logged, so a reader simply sees the wrong language. Capitalise the target instead "
+                + "('lodge' -> 'Lodge'). DeepL's free tier allows one glossary per account.",
+            TranslationSetting.Category.LANGUAGES,
+            false
+        );
+
         // =====================================================================
         // CACHING Settings
         // =====================================================================
