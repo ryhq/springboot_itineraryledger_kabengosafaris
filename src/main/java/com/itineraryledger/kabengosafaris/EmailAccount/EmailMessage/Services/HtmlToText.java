@@ -26,6 +26,16 @@ public final class HtmlToText {
 
     private static final Pattern SCRIPT_OR_STYLE =
         Pattern.compile("<(script|style|head)[^>]*>.*?</\\1>", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    /*
+     * Comments, including Outlook's conditional ones.
+     *
+     * The tag stripper below cannot do this. It matches <[^>]+>, so the FIRST '>' ends the match --
+     * and `<!--[if mso]>` contains one. What survived was the tail of the comment and whatever a
+     * developer had written inside it: a preview in the mailbox list read "block here would leave
+     * the letter unstyled in Gmail and Outlook", which is a note to ourselves, shown to the reader
+     * as if it were the message. Removed first, so nothing inside a comment can reach the text.
+     */
+    private static final Pattern COMMENT = Pattern.compile("<!--.*?-->", Pattern.DOTALL);
     private static final Pattern ANCHOR =
         Pattern.compile("<a\\s[^>]*href\\s*=\\s*[\"']([^\"']+)[\"'][^>]*>(.*?)</a>",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
@@ -55,7 +65,8 @@ public final class HtmlToText {
     public static String convert(String html) {
         if (html == null || html.isBlank()) return "";
         try {
-            String text = SCRIPT_OR_STYLE.matcher(html).replaceAll(" ");
+            String text = COMMENT.matcher(html).replaceAll(" ");
+            text = SCRIPT_OR_STYLE.matcher(text).replaceAll(" ");
 
             // a link becomes "text <address>" unless the text already IS the address
             Matcher anchors = ANCHOR.matcher(text);

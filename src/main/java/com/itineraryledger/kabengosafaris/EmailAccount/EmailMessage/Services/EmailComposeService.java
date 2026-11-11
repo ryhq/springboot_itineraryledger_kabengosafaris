@@ -57,6 +57,7 @@ public class EmailComposeService {
     private final EmailStorageService emailStorageService;
     private final com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.EmailAttachmentRepository emailAttachmentRepository;
     private final EmailContactService emailContactService;
+    private final SentMailArchiveService sentMailArchiveService;
     private final ObjectMapper objectMapper;
     private final IdObfuscator idObfuscator;
 
@@ -494,6 +495,28 @@ public class EmailComposeService {
             if (isResendApi) {
                 // Send via Resend HTTP API
                 sentCopy = sendViaResendApi(account, dto, attachments, replyTo);
+
+                /*
+                 * File a copy in the mailbox's own Sent folder.
+                 *
+                 * Sending through an API means the message never passes through the mailbox, so
+                 * nothing puts it in Sent -- that is normally a side effect of a mail client
+                 * doing the sending. Left alone, the panel knows about every message sent and
+                 * webmail, Outlook and a phone know about none of them, so anyone replying from
+                 * a mail client cannot see what was already said.
+                 *
+                 * The MIME is built here purely to be filed; it is never sent, and the builder
+                 * only needs a Session to assemble it, so an account with no usable SMTP host
+                 * (which is every Resend/API account) can still produce one.
+                 */
+                try {
+                    MimeMessage copy = buildMimeMessage(
+                        new JavaMailSenderImpl(), account, dto, attachments, replyTo);
+                    sentMailArchiveService.archiveAsync(account, copy);
+                } catch (Exception e) {
+                    /* The mail is already away. A missing copy is not worth failing the send. */
+                    log.warn("Could not build a Sent copy for {}: {}", account.getEmail(), e.getMessage());
+                }
             } else {
                 // Send via SMTP (including Resend SMTP)
                 JavaMailSender mailSender = createMailSender(account);
@@ -502,6 +525,13 @@ public class EmailComposeService {
 
                 // Save .eml copy to SENT folder
                 sentCopy = saveSentCopy(account, mimeMessage, dto, attachments, replyTo, null);
+
+                /*
+                 * An SMTP send does not file a copy either: SMTP delivers, it does not write to
+                 * your mailbox. Mail clients append to Sent themselves, and this application is
+                 * the client here.
+                 */
+                sentMailArchiveService.archiveAsync(account, mimeMessage);
             }
 
             // Auto-harvest contacts from recipients
