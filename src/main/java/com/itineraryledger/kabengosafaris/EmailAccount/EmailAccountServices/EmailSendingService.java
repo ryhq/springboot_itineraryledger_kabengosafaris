@@ -62,6 +62,7 @@ public class EmailSendingService {
     private final EmailMessageRepository emailMessageRepository;
     private final EmailAttachmentRepository emailAttachmentRepository;
     private final ObjectMapper objectMapper;
+    private final com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.Services.SentMailArchiveService sentMailArchiveService;
 
     @Autowired
     public EmailSendingService(
@@ -71,7 +72,8 @@ public class EmailSendingService {
             EmailFolderRepository emailFolderRepository,
             EmailMessageRepository emailMessageRepository,
             EmailAttachmentRepository emailAttachmentRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.Services.SentMailArchiveService sentMailArchiveService) {
         this.emailAccountRepository = emailAccountRepository;
         this.emailStorageService = emailStorageService;
         this.emailSettingGetterServices = emailSettingGetterServices;
@@ -79,6 +81,7 @@ public class EmailSendingService {
         this.emailMessageRepository = emailMessageRepository;
         this.emailAttachmentRepository = emailAttachmentRepository;
         this.objectMapper = objectMapper;
+        this.sentMailArchiveService = sentMailArchiveService;
     }
 
     /**
@@ -120,6 +123,14 @@ public class EmailSendingService {
             } else {
                 sendViaSmtp(emailAccount, toEmail, subject, htmlContent);
             }
+
+            /*
+             * File a copy in the mailbox's own Sent folder. Quotes, invoices and notifications
+             * all leave through here, and none of them passed through the mailbox on the way --
+             * so without this they exist only in this application and never appear in webmail,
+             * Outlook or a phone.
+             */
+            sentMailArchiveService.archiveAsync(emailAccount, toEmail, subject, htmlContent, null, null);
 
             // Update sent counter on success
             incrementSentCount(emailAccount);
@@ -169,6 +180,8 @@ public class EmailSendingService {
             } else {
                 sendViaSmtpWithAttachment(emailAccount, toEmail, subject, htmlContent, pdfBytes, pdfFileName);
             }
+
+            sentMailArchiveService.archiveAsync(emailAccount, toEmail, subject, htmlContent, pdfBytes, pdfFileName);
 
             incrementSentCount(emailAccount);
             log.info("HTML email with attachment sent successfully to: {} using account: {}", toEmail, emailAccount.getName());

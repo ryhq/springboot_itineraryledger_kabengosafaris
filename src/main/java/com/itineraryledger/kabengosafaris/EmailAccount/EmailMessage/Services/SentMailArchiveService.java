@@ -16,6 +16,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.Session;
 import jakarta.mail.Store;
 import jakarta.mail.internet.MimeMessage;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,6 +42,47 @@ import lombok.extern.slf4j.Slf4j;
 public class SentMailArchiveService {
 
     /**
+     * Build a copy of a templated message and file it.
+     *
+     * <p>The templated senders -- quotes, invoices, notifications -- hand the provider a subject
+     * and some HTML rather than a MIME message, so there is nothing to append unless one is
+     * assembled here. It is built only to be filed and never sent.
+     *
+     * @param pdfBytes    attachment content, or null for none
+     * @param pdfFileName attachment name, used only when bytes are present
+     */
+    @Async
+    public void archiveAsync(EmailAccount account, String toEmail, String subject,
+                             String htmlContent, byte[] pdfBytes, String pdfFileName) {
+        if (account == null) {
+            return;
+        }
+        try {
+            MimeMessage message = new MimeMessage(Session.getInstance(new Properties()));
+            MimeMessageHelper helper = new MimeMessageHelper(message, pdfBytes != null, "UTF-8");
+            String from = account.getEmail();
+            if (account.getName() != null && !account.getName().isBlank()) {
+                helper.setFrom(from, account.getName());
+            } else {
+                helper.setFrom(from);
+            }
+            helper.setTo(toEmail);
+            helper.setSubject(subject == null ? "" : subject);
+            helper.setText(htmlContent == null ? "" : htmlContent, true);
+            helper.setSentDate(new java.util.Date());
+            if (pdfBytes != null && pdfBytes.length > 0) {
+                helper.addAttachment(
+                    pdfFileName == null || pdfFileName.isBlank() ? "attachment.pdf" : pdfFileName,
+                    new org.springframework.core.io.ByteArrayResource(pdfBytes));
+            }
+            archive(account, message);
+        } catch (Exception e) {
+            /* The mail is already away; a copy that cannot be built is not worth an exception. */
+            log.warn("Could not build a Sent copy for {}: {}", account.getEmail(), e.getMessage());
+        }
+    }
+
+    /**
      * Append a sent message to the account's Sent folder.
      *
      * @param account the sending account, which must also have IMAP configured
@@ -48,6 +90,11 @@ public class SentMailArchiveService {
      */
     @Async
     public void archiveAsync(EmailAccount account, MimeMessage message) {
+        archive(account, message);
+    }
+
+    /** The work itself, called directly when already on a background thread. */
+    private void archive(EmailAccount account, MimeMessage message) {
         if (account == null || message == null) {
             return;
         }
