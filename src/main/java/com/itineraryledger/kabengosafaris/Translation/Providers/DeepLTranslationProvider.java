@@ -19,14 +19,26 @@ public class DeepLTranslationProvider implements TranslationProvider {
     private final String apiKey;
     private final int timeoutSeconds;
 
+    /**
+     * Glossary ids keyed by "source-target", lower case. Empty means translate exactly as
+     * before: a glossary is opt-in, because a wrong one is worse than none at all.
+     */
+    private final Map<String, String> glossaryIds;
+
     private volatile Set<String> cachedLanguageCodes = null;
     private volatile long cacheTimestamp = 0;
     private static final long CACHE_TTL_MS = 5 * 60 * 1000;
 
     public DeepLTranslationProvider(String baseUrl, String apiKey, int timeoutSeconds) {
+        this(baseUrl, apiKey, timeoutSeconds, Map.of());
+    }
+
+    public DeepLTranslationProvider(String baseUrl, String apiKey, int timeoutSeconds,
+                                    Map<String, String> glossaryIds) {
         this.baseUrl = baseUrl;
         this.apiKey = apiKey;
         this.timeoutSeconds = timeoutSeconds;
+        this.glossaryIds = glossaryIds == null ? Map.of() : glossaryIds;
     }
 
     @Override
@@ -41,6 +53,18 @@ public class DeepLTranslationProvider implements TranslationProvider {
             formData.add("text", text);
             formData.add("source_lang", sourceLanguage.toUpperCase());
             formData.add("target_lang", targetLanguage.toUpperCase());
+
+            /*
+             * A glossary pins trade words DeepL otherwise renders as ordinary English: left to
+             * itself it turns a safari "lodge" into a "gîte", a French holiday cottage. Only
+             * applied when one is configured for this exact pair; nothing is sent otherwise, so
+             * an unconfigured install translates exactly as it did before.
+             */
+            String glossaryId = glossaryIds.get(
+                    sourceLanguage.toLowerCase() + "-" + targetLanguage.toLowerCase());
+            if (glossaryId != null && !glossaryId.isBlank()) {
+                formData.add("glossary_id", glossaryId);
+            }
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);

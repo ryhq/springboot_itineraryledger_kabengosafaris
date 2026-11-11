@@ -78,7 +78,8 @@ public class TranslationProviderFactory {
         return switch (account.getProviderType()) {
             case LIBRE_TRANSLATE -> new LibreTranslateProvider(account.getBaseUrl(), decryptedApiKey, timeout);
             case GOOGLE_CLOUD -> new GoogleCloudTranslationProvider(account.getBaseUrl(), decryptedApiKey, timeout);
-            case DEEPL -> new DeepLTranslationProvider(account.getBaseUrl(), decryptedApiKey, timeout);
+            case DEEPL -> new DeepLTranslationProvider(account.getBaseUrl(), decryptedApiKey, timeout,
+                    settingsService.getDeepLGlossaryIds());
         };
     }
 

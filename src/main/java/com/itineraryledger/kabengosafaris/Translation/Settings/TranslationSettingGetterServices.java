@@ -114,6 +114,41 @@ public class TranslationSettingGetterServices {
      * Get LibreTranslate base URL
      * @return the LibreTranslate base URL
      */
+    /**
+     * DeepL glossary ids, keyed by "source-target" (lower case), e.g. {@code en-fr}.
+     *
+     * <p>Stored as one setting, {@code translation.deepl.glossary.ids}, in the form
+     * {@code en-fr:<id>,en-de:<id>}. Empty by default, and an empty map means every translation
+     * behaves exactly as it does today -- a glossary can only ever be opt-in, because a bad one
+     * is worse than none.
+     *
+     * <p>Two things learnt the hard way and worth repeating wherever this value is edited.
+     * A glossary entry whose source and target are IDENTICAL ("lodge" -> "lodge") makes DeepL
+     * return the WHOLE SENTENCE in English, untranslated and with no error -- the exact silent
+     * failure the rest of this module exists to avoid. Capitalising the target
+     * ("lodge" -> "Lodge") is enough to avoid it. And DeepL's free tier allows exactly ONE
+     * glossary per account, so only one language pair can be covered without upgrading.
+     */
+    public java.util.Map<String, String> getDeepLGlossaryIds() {
+        TranslationSetting setting = translationSettingRepository
+                .findBySettingKey("translation.deepl.glossary.ids").orElse(null);
+        if (setting == null || !Boolean.TRUE.equals(setting.getActive())) {
+            return java.util.Map.of();
+        }
+        String raw = setting.getSettingValue();
+        if (raw == null || raw.isBlank()) {
+            return java.util.Map.of();
+        }
+        java.util.Map<String, String> out = new java.util.LinkedHashMap<>();
+        for (String part : raw.split(",")) {
+            String[] bits = part.split(":", 2);
+            if (bits.length == 2 && !bits[0].isBlank() && !bits[1].isBlank()) {
+                out.put(bits[0].trim().toLowerCase(), bits[1].trim());
+            }
+        }
+        return out;
+    }
+
     public String getLibreTranslateBaseUrl() {
         TranslationSetting setting = translationSettingRepository
                 .findBySettingKey("libretranslate.base.url").orElse(null);
