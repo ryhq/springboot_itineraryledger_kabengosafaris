@@ -53,6 +53,11 @@ class APreviewIsProseNotStylesheetTest {
             </style>
           </head>
           <body>
+            <!-- Styles are inline on purpose: a style block here would leave the letter
+                 unstyled in Gmail and Outlook. -->
+            <!--[if mso]>
+              <table role="presentation"><tr><td>
+            <![endif]-->
             <p>Hello Beatrice,</p>
             <p>Could you kindly share your correct bank account details?</p>
           </body>
@@ -69,6 +74,13 @@ class APreviewIsProseNotStylesheetTest {
         assertFalse(text.contains("Reset & Base"), "a CSS comment reached the reader:\n" + text);
         assertFalse(text.contains("Welcome to Kabengo Safaris"),
             "the <title> is chrome, not body text:\n" + text);
+
+        assertFalse(text.contains("unstyled in Gmail"),
+            "a note we wrote to ourselves inside an HTML comment reached the reader:\n" + text);
+        assertFalse(text.contains("endif"),
+            "the tail of an Outlook conditional comment reached the reader:\n" + text);
+        assertFalse(text.contains("-->"),
+            "a comment terminator reached the reader:\n" + text);
 
         assertTrue(text.contains("Hello Beatrice,"), "the greeting was lost:\n" + text);
         assertTrue(text.startsWith("Hello"),
