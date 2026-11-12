@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.ClientPortal.Services;
 
+import com.itineraryledger.kabengosafaris.Response.MoneyFormat;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -542,10 +543,8 @@ public class PortalViewService {
         return prices == null ? List.of() : prices;
     }
 
-    /** Grouped thousands, two decimals, the code in front. No locale guessing. */
+    /** Grouped thousands, two decimals, the code in front. See {@link MoneyFormat}. */
     private String format(String currency, BigDecimal amount) {
-        if (amount == null) return null;
-        return (currency == null ? "" : currency + " ")
-            + String.format("%,.2f", amount.setScale(2, RoundingMode.HALF_UP));
+        return MoneyFormat.format(currency, amount);
     }
 }

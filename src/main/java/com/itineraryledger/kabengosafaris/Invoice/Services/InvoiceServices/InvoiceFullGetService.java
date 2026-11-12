@@ -1,13 +1,11 @@
 package com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceServices;
 
+import com.itineraryledger.kabengosafaris.Response.MoneyFormat;
 import com.itineraryledger.kabengosafaris.Inclusion.Services.InclusionSnapshotService;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
-import java.util.Currency;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -365,22 +363,13 @@ public class InvoiceFullGetService {
     }
 
     /**
-     * Format price with currency symbol
+     * One dialect for every document: see {@link MoneyFormat}.
+     *
+     * <p>This used to format with a currency SYMBOL, so this record printed $2,700.00 while the
+     * receipt for the same money printed USD 2,700.00.
      */
     private String formatPrice(String currencyCode, BigDecimal amount) {
-        if (amount == null || currencyCode == null) {
-            return null;
-        }
-
-        try {
-            Currency currency = Currency.getInstance(currencyCode);
-            NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.US);
-            formatter.setCurrency(currency);
-            return formatter.format(amount);
-        } catch (Exception e) {
-            // Fallback: simple format
-            return currencyCode + " " + amount.toString();
-        }
+        return MoneyFormat.format(currencyCode, amount);
     }
 
     /**

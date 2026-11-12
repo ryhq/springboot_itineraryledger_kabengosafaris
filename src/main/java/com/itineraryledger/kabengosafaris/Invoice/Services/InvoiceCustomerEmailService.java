@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Invoice.Services;
 
+import com.itineraryledger.kabengosafaris.Response.MoneyFormat;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices.EmailSendingService;
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailTemplateRenderer;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
@@ -13,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -178,15 +178,15 @@ public class InvoiceCustomerEmailService {
             return "N/A";
         }
 
+        /*
+         * A price with no currency used to be printed as USD. That is an assertion nobody made:
+         * the row simply does not say what money it is in, and telling a customer "USD" because
+         * the field was empty is how a shilling balance gets paid in dollars.
+         */
         return grandTotals.stream()
-            .map(price -> {
-                String currency = price.getCurrency() != null ? price.getCurrency().toUpperCase() : "USD";
-                BigDecimal amount = price.getTotalPrice() != null ? price.getTotalPrice() : BigDecimal.ZERO;
-                NumberFormat nf = NumberFormat.getNumberInstance(Locale.US);
-                nf.setMinimumFractionDigits(2);
-                nf.setMaximumFractionDigits(2);
-                return currency + " " + nf.format(amount);
-            })
+            .map(price -> MoneyFormat.of(
+                price.getTotalPrice() != null ? price.getTotalPrice() : BigDecimal.ZERO,
+                price.getCurrency()))
             .collect(Collectors.joining(" | "));
     }
 
@@ -220,14 +220,9 @@ public class InvoiceCustomerEmailService {
             sb.append("<span class=\"detail-value\">");
             if (item.getPrices() != null && !item.getPrices().isEmpty()) {
                 String priceStr = item.getPrices().stream()
-                    .map(price -> {
-                        String currency = price.getCurrency() != null ? price.getCurrency().toUpperCase() : "";
-                        BigDecimal total = price.getTotalPrice() != null ? price.getTotalPrice() : BigDecimal.ZERO;
-                        NumberFormat nf = NumberFormat.getNumberInstance(Locale.US);
-                        nf.setMinimumFractionDigits(2);
-                        nf.setMaximumFractionDigits(2);
-                        return currency + " " + nf.format(total);
-                    })
+                    .map(price -> MoneyFormat.of(
+                        price.getTotalPrice() != null ? price.getTotalPrice() : BigDecimal.ZERO,
+                        price.getCurrency()))
                     .collect(Collectors.joining(" / "));
                 sb.append(priceStr);
             }

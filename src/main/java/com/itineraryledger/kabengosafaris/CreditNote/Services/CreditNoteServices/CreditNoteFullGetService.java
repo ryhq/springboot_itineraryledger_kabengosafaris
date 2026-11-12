@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.CreditNote.Services.CreditNoteServices;
 
+import com.itineraryledger.kabengosafaris.Response.MoneyFormat;
 import com.itineraryledger.kabengosafaris.CreditNote.DTOs.FullCreditNoteDTO;
 import com.itineraryledger.kabengosafaris.CreditNote.DTOs.FullCreditNoteDTO.CustomerDTO;
 import com.itineraryledger.kabengosafaris.CreditNote.DTOs.FullCreditNoteDTO.LineItemDTO;
@@ -21,12 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Currency;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -214,18 +212,14 @@ public class CreditNoteFullGetService {
     }
 
     /** Same formatting as the invoice, so the two documents never disagree about how money looks. */
+    /**
+     * One dialect for every document: see {@link MoneyFormat}.
+     *
+     * <p>This used to format with a currency SYMBOL, so this record printed $2,700.00 while the
+     * receipt for the same money printed USD 2,700.00.
+     */
     private String format(String currencyCode, BigDecimal amount) {
-        if (amount == null || currencyCode == null) {
-            return null;
-        }
-        try {
-            Currency currency = Currency.getInstance(currencyCode);
-            NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.US);
-            formatter.setCurrency(currency);
-            return formatter.format(amount);
-        } catch (Exception e) {
-            return currencyCode + " " + amount.toPlainString();
-        }
+        return MoneyFormat.format(currencyCode, amount);
     }
 
     private String displayName(Customer customer) {

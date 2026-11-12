@@ -1,11 +1,9 @@
 package com.itineraryledger.kabengosafaris.Invoice.Services.InvoiceServices;
 
+import com.itineraryledger.kabengosafaris.Response.MoneyFormat;
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDateTime;
-import java.util.Currency;
 import java.util.List;
-import java.util.Locale;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -117,16 +115,13 @@ public class InvoiceShareFullGetService {
             .build();
     }
 
+    /**
+     * One dialect for every document: see {@link MoneyFormat}.
+     *
+     * <p>This used to format with a currency SYMBOL, so this record printed $2,700.00 while the
+     * receipt for the same money printed USD 2,700.00.
+     */
     private static String format(String currencyCode, BigDecimal amount) {
-        if (amount == null || currencyCode == null) {
-            return null;
-        }
-        try {
-            NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.US);
-            formatter.setCurrency(Currency.getInstance(currencyCode));
-            return formatter.format(amount);
-        } catch (Exception e) {
-            return currencyCode + " " + amount;
-        }
+        return MoneyFormat.format(currencyCode, amount);
     }
 }

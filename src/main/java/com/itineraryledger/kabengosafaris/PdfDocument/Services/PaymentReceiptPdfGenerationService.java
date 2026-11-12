@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.PdfDocument.Services;
 
+import com.itineraryledger.kabengosafaris.Response.MoneyFormat;
 import com.itineraryledger.kabengosafaris.AuditLog.AuditLogService;
 import com.itineraryledger.kabengosafaris.Invoice.DTOs.PaymentReceiptDTO;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
@@ -19,10 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * PaymentReceiptPdfGenerationService - Generates payment receipt PDFs.
@@ -211,11 +210,9 @@ public class PaymentReceiptPdfGenerationService extends PdfGenerationBaseService
         return builder.build();
     }
 
+    /** One dialect for every document: see {@link MoneyFormat}. */
     private String formatAmount(BigDecimal amount, String currency) {
-        NumberFormat nf = NumberFormat.getNumberInstance(Locale.US);
-        nf.setMinimumFractionDigits(2);
-        nf.setMaximumFractionDigits(2);
-        return (currency != null ? currency.toUpperCase() : "") + " " + nf.format(amount != null ? amount : BigDecimal.ZERO);
+        return MoneyFormat.of(amount != null ? amount : BigDecimal.ZERO, currency);
     }
 
     private String formatPriceList(List<Price> prices) {

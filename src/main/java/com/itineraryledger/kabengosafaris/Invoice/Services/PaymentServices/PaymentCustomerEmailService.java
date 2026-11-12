@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Invoice.Services.PaymentServices;
 
+import com.itineraryledger.kabengosafaris.Response.MoneyFormat;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices.EmailSendingService;
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailTemplateRenderer;
 import com.itineraryledger.kabengosafaris.Invoice.Entity.Invoice;
@@ -14,12 +15,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -220,11 +219,9 @@ public class PaymentCustomerEmailService {
         return v;
     }
 
+    /** One dialect for every document: see {@link MoneyFormat}. */
     private String formatAmount(BigDecimal amount, String currency) {
-        NumberFormat nf = NumberFormat.getNumberInstance(Locale.US);
-        nf.setMinimumFractionDigits(2);
-        nf.setMaximumFractionDigits(2);
-        return (currency != null ? currency.toUpperCase() : "") + " " + nf.format(amount != null ? amount : BigDecimal.ZERO);
+        return MoneyFormat.of(amount != null ? amount : BigDecimal.ZERO, currency);
     }
 
     private String formatPriceList(List<Price> prices) {
