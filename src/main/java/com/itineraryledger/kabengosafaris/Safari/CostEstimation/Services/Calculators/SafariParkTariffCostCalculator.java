@@ -2,6 +2,7 @@ package com.itineraryledger.kabengosafaris.Safari.CostEstimation.Services.Calcul
 
 import com.itineraryledger.kabengosafaris.Activity.ChargingBasis;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CostLineItemDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Calculators.CurrencyBucket;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.CostItemType;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.ExclusionReason;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Core.ParkTariffRateLookupService;
@@ -18,10 +19,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -98,7 +99,7 @@ public class SafariParkTariffCostCalculator {
                     continue;
                 }
 
-                CostLineItemDTO lineItem = calculateTariffCost(
+                items.addAll(calculateTariffCost(
                     day.getDayNumber(),
                     parkId,
                     park.getParkName(),
@@ -107,11 +108,7 @@ public class SafariParkTariffCostCalculator {
                     season,
                     paxList,
                     carCount
-                );
-
-                if (lineItem != null) {
-                    items.add(lineItem);
-                }
+                ));
             }
         }
 
@@ -120,8 +117,12 @@ public class SafariParkTariffCostCalculator {
 
     /**
      * Calculate cost for a single park tariff.
+     *
+     * <p>Returns a list because one gate on one day can owe money in two currencies at once: the
+     * party's residents are charged in shillings and its visitors in dollars. See
+     * {@link CurrencyBucket} for why those never become one number.
      */
-    private CostLineItemDTO calculateTariffCost(
+    private List<CostLineItemDTO> calculateTariffCost(
             Integer dayNumber,
             Long parkId,
             String parkName,
@@ -134,7 +135,7 @@ public class SafariParkTariffCostCalculator {
         // Get the ParkTariff to determine charging basis
         Optional<ParkTariff> parkTariffOpt = parkTariffRepository.findByParkIdAndTariffId(parkId, tariffId);
         if (parkTariffOpt.isEmpty()) {
-            return buildNotFoundLineItem(dayNumber, parkName, tariffName);
+            return List.of(buildNotFoundLineItem(dayNumber, parkName, tariffName));
         }
 
         ParkTariff parkTariff = parkTariffOpt.get();
@@ -145,21 +146,25 @@ public class SafariParkTariffCostCalculator {
                 dayNumber, parkId, parkName, tariffId, tariffName, season, paxList
             );
         } else if (chargingBasis == ChargingBasis.PER_VEHICLE) {
-            return calculateGroupTariffCost(
+            /* One vehicle rate, one currency: nothing to split. */
+            return List.of(calculateGroupTariffCost(
                 dayNumber, parkId, parkName, tariffId, tariffName, season, paxList, carCount, chargingBasis
-            );
+            ));
         } else {
             // PER_GROUP, FLAT_RATE, PER_DAY, etc.
-            return calculateGroupTariffCost(
+            return List.of(calculateGroupTariffCost(
                 dayNumber, parkId, parkName, tariffId, tariffName, season, paxList, 1, chargingBasis
-            );
+            ));
         }
     }
 
     /**
-     * Calculate per-person tariff cost (sums up for all pax categories).
+     * Calculate per-person tariff cost, one line per currency the bands are charged in.
+     *
+     * <p>This used to sum every band into one figure and stamp it with whichever rate the loop
+     * read last. See {@link CurrencyBucket} for what that cost.
      */
-    private CostLineItemDTO calculatePerPersonTariffCost(
+    private List<CostLineItemDTO> calculatePerPersonTariffCost(
             Integer dayNumber,
             Long parkId,
             String parkName,
@@ -169,14 +174,10 @@ public class SafariParkTariffCostCalculator {
             List<FullSafariDTO.PaxDTO> paxList
     ) {
         if (paxList == null || paxList.isEmpty()) {
-            return buildNotFoundLineItem(dayNumber, parkName, tariffName);
+            return List.of(buildNotFoundLineItem(dayNumber, parkName, tariffName));
         }
 
-        BigDecimal stoTotal = BigDecimal.ZERO;
-        BigDecimal rackTotal = BigDecimal.ZERO;
-        String currency = DEFAULT_CURRENCY;
-        int totalPaxCount = 0;
-        boolean anyRateFound = false;
+        Map<String, CurrencyBucket> byCurrency = CurrencyBucket.ledger();
 
         for (FullSafariDTO.PaxDTO pax : paxList) {
             Long nationCategoryId = idObfuscator.decodeId(pax.getNationCategoryId());
@@ -200,40 +201,38 @@ public class SafariParkTariffCostCalculator {
                 BigDecimal stoUnit = rate.getStoRate() != null ? rate.getStoRate() : BigDecimal.ZERO;
                 BigDecimal rackUnit = rate.getRackRate() != null ? rate.getRackRate() : BigDecimal.ZERO;
 
-                stoTotal = stoTotal.add(stoUnit.multiply(BigDecimal.valueOf(count)));
-                rackTotal = rackTotal.add(rackUnit.multiply(BigDecimal.valueOf(count)));
-                totalPaxCount += count;
-                currency = rate.getCurrency() != null ? rate.getCurrency() : DEFAULT_CURRENCY;
-                anyRateFound = true;
+                String currency = rate.getCurrency() != null ? rate.getCurrency() : DEFAULT_CURRENCY;
+
+                byCurrency.computeIfAbsent(currency, c -> new CurrencyBucket()).add(
+                    stoUnit.multiply(BigDecimal.valueOf(count)),
+                    rackUnit.multiply(BigDecimal.valueOf(count)),
+                    count);
             }
         }
 
-        if (!anyRateFound) {
-            return buildNotFoundLineItem(dayNumber, parkName, tariffName);
+        if (byCurrency.isEmpty()) {
+            return List.of(buildNotFoundLineItem(dayNumber, parkName, tariffName));
         }
 
-        // Calculate average unit price for display
-        BigDecimal stoUnitPrice = totalPaxCount > 0
-            ? stoTotal.divide(BigDecimal.valueOf(totalPaxCount), 2, RoundingMode.HALF_UP)
-            : BigDecimal.ZERO;
-        BigDecimal rackUnitPrice = totalPaxCount > 0
-            ? rackTotal.divide(BigDecimal.valueOf(totalPaxCount), 2, RoundingMode.HALF_UP)
-            : BigDecimal.ZERO;
-
-        return CostLineItemDTO.builder()
-            .dayNumber(dayNumber)
-            .itemType(CostItemType.PARK_FEE)
-            .itemName(tariffName + " - " + parkName)
-            .itemId(idObfuscator.encodeId(tariffId))
-            .chargingBasis(ChargingBasis.PER_PERSON.getDisplayName())
-            .quantity(totalPaxCount)
-            .stoUnitPrice(stoUnitPrice)
-            .rackUnitPrice(rackUnitPrice)
-            .stoTotalPrice(stoTotal)
-            .rackTotalPrice(rackTotal)
-            .currency(currency)
-            .paxCategory("Per Person")
-            .build();
+        List<CostLineItemDTO> items = new ArrayList<>();
+        for (Map.Entry<String, CurrencyBucket> entry : byCurrency.entrySet()) {
+            CurrencyBucket bucket = entry.getValue();
+            items.add(CostLineItemDTO.builder()
+                .dayNumber(dayNumber)
+                .itemType(CostItemType.PARK_FEE)
+                .itemName(tariffName + " - " + parkName)
+                .itemId(idObfuscator.encodeId(tariffId))
+                .chargingBasis(ChargingBasis.PER_PERSON.getDisplayName())
+                .quantity(bucket.paxCount())
+                .stoUnitPrice(bucket.averageSto())
+                .rackUnitPrice(bucket.averageRack())
+                .stoTotalPrice(bucket.sto())
+                .rackTotalPrice(bucket.rack())
+                .currency(entry.getKey())
+                .paxCategory("Per Person")
+                .build());
+        }
+        return items;
     }
 
     /**
@@ -399,20 +398,17 @@ public class SafariParkTariffCostCalculator {
                     continue;
                 }
 
-                CostLineItemDTO line = calculateTariffCost(
+                for (CostLineItemDTO line : calculateTariffCost(
                     day.getDayNumber(), parkId, park.getParkName(), tariffId,
-                    tariff.getTariffName(), season, paxList, carCount);
-                if (line == null) {
-                    continue;
+                    tariff.getTariffName(), season, paxList, carCount)) {
+                    /* Waived wins the label: it says who gave the money up, which "not included" does not. */
+                    line.setExclusionReason(waived
+                        ? ExclusionReason.WAIVED_FEE
+                        : ExclusionReason.NOT_INCLUDED_IN_PRICE);
+                    line.setEntryId(tariff.getId());
+                    line.setParentEntryId(park.getId());
+                    excluded.add(line);
                 }
-
-                /* Waived wins the label: it says who gave the money up, which "not included" does not. */
-                line.setExclusionReason(waived
-                    ? ExclusionReason.WAIVED_FEE
-                    : ExclusionReason.NOT_INCLUDED_IN_PRICE);
-                line.setEntryId(tariff.getId());
-                line.setParentEntryId(park.getId());
-                excluded.add(line);
             }
         }
 

@@ -5,6 +5,7 @@ import com.itineraryledger.kabengosafaris.Activity.ActivityRepository;
 import com.itineraryledger.kabengosafaris.Activity.ChargingBasis;
 import com.itineraryledger.kabengosafaris.ActivityTariffRate.ActivityTariffRate;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CostLineItemDTO;
+import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Calculators.CurrencyBucket;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.CostItemType;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.ExclusionReason;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Services.Core.ActivityRateLookupService;
@@ -18,10 +19,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -75,17 +76,16 @@ public class SafariActivityCostCalculator {
                     continue;
                 }
 
-                CostLineItemDTO lineItem = calculateStandaloneActivityCost(
+                for (CostLineItemDTO lineItem : calculateStandaloneActivityCost(
                     day.getDayNumber(),
                     activity,
                     season,
                     paxList,
                     carCount
-                );
-
-                if (lineItem != null && (lineItem.getStoTotalPrice().compareTo(BigDecimal.ZERO) > 0
-                    || lineItem.getRackTotalPrice().compareTo(BigDecimal.ZERO) > 0)) {
-                    items.add(lineItem);
+                )) {
+                    if (carriesAnyCharge(lineItem)) {
+                        items.add(lineItem);
+                    }
                 }
             }
         }
@@ -105,7 +105,7 @@ public class SafariActivityCostCalculator {
                         continue;
                     }
 
-                    CostLineItemDTO lineItem = calculateParkActivityCost(
+                    for (CostLineItemDTO lineItem : calculateParkActivityCost(
                         day.getDayNumber(),
                         parkActivity,
                         parkId,
@@ -113,11 +113,10 @@ public class SafariActivityCostCalculator {
                         season,
                         paxList,
                         carCount
-                    );
-
-                    if (lineItem != null && (lineItem.getStoTotalPrice().compareTo(BigDecimal.ZERO) > 0
-                        || lineItem.getRackTotalPrice().compareTo(BigDecimal.ZERO) > 0)) {
-                        items.add(lineItem);
+                    )) {
+                        if (carriesAnyCharge(lineItem)) {
+                            items.add(lineItem);
+                        }
                     }
                 }
             }
@@ -129,7 +128,23 @@ public class SafariActivityCostCalculator {
     /**
      * Calculate cost for a standalone activity.
      */
-    private CostLineItemDTO calculateStandaloneActivityCost(
+    /**
+     * Is there any money on this line at all?
+     *
+     * <p>A zero line is an activity we do not charge for, and listing it among the costs reads as
+     * a price of nothing rather than as no price.
+     */
+    private boolean carriesAnyCharge(CostLineItemDTO lineItem) {
+        if (lineItem == null) {
+            return false;
+        }
+        BigDecimal sto = lineItem.getStoTotalPrice();
+        BigDecimal rack = lineItem.getRackTotalPrice();
+        return (sto != null && sto.compareTo(BigDecimal.ZERO) > 0)
+            || (rack != null && rack.compareTo(BigDecimal.ZERO) > 0);
+    }
+
+    private List<CostLineItemDTO> calculateStandaloneActivityCost(
             Integer dayNumber,
             FullSafariDTO.DayActivityDTO activity,
             Season season,
@@ -138,7 +153,7 @@ public class SafariActivityCostCalculator {
     ) {
         Long activityId = idObfuscator.decodeId(activity.getActivityId());
         if (activityId == null) {
-            return null;
+            return List.of();
         }
 
         return calculateActivityCost(
@@ -156,7 +171,7 @@ public class SafariActivityCostCalculator {
     /**
      * Calculate cost for a park activity.
      */
-    private CostLineItemDTO calculateParkActivityCost(
+    private List<CostLineItemDTO> calculateParkActivityCost(
             Integer dayNumber,
             FullSafariDTO.ParkActivityDTO parkActivity,
             Long parkId,
@@ -167,7 +182,7 @@ public class SafariActivityCostCalculator {
     ) {
         Long activityId = idObfuscator.decodeId(parkActivity.getActivityId());
         if (activityId == null) {
-            return null;
+            return List.of();
         }
 
         return calculateActivityCost(
@@ -185,7 +200,7 @@ public class SafariActivityCostCalculator {
     /**
      * Calculate cost for an activity (common logic for standalone and park activities).
      */
-    private CostLineItemDTO calculateActivityCost(
+    private List<CostLineItemDTO> calculateActivityCost(
             Integer dayNumber,
             Long activityId,
             String activityName,
@@ -198,14 +213,14 @@ public class SafariActivityCostCalculator {
         // Get the activity to check if it has a tariff
         Optional<Activity> activityOpt = activityRepository.findById(activityId);
         if (activityOpt.isEmpty()) {
-            return buildNotFoundLineItem(dayNumber, activityName, parkName);
+            return List.of(buildNotFoundLineItem(dayNumber, activityName, parkName));
         }
 
         Activity activity = activityOpt.get();
 
         // Skip if activity has no tariff (included/free activity)
         if (activity.getHasTariff() == null || !activity.getHasTariff()) {
-            return buildIncludedLineItem(dayNumber, activityName, parkName);
+            return List.of(buildIncludedLineItem(dayNumber, activityName, parkName));
         }
 
         ChargingBasis chargingBasis = activity.getChargingBasis() != null
@@ -217,21 +232,22 @@ public class SafariActivityCostCalculator {
                 dayNumber, activityId, activityName, parkId, parkName, season, paxList
             );
         } else if (chargingBasis == ChargingBasis.PER_VEHICLE) {
-            return calculateGroupActivityCost(
+            /* One vehicle rate, one currency: nothing to split. */
+            return List.of(calculateGroupActivityCost(
                 dayNumber, activityId, activityName, parkId, parkName, season, paxList, carCount, chargingBasis
-            );
+            ));
         } else {
             // PER_GROUP, FLAT_RATE, etc.
-            return calculateGroupActivityCost(
+            return List.of(calculateGroupActivityCost(
                 dayNumber, activityId, activityName, parkId, parkName, season, paxList, 1, chargingBasis
-            );
+            ));
         }
     }
 
     /**
      * Calculate per-person activity cost.
      */
-    private CostLineItemDTO calculatePerPersonActivityCost(
+    private List<CostLineItemDTO> calculatePerPersonActivityCost(
             Integer dayNumber,
             Long activityId,
             String activityName,
@@ -241,14 +257,10 @@ public class SafariActivityCostCalculator {
             List<FullSafariDTO.PaxDTO> paxList
     ) {
         if (paxList == null || paxList.isEmpty()) {
-            return buildNotFoundLineItem(dayNumber, activityName, parkName);
+            return List.of(buildNotFoundLineItem(dayNumber, activityName, parkName));
         }
 
-        BigDecimal stoTotal = BigDecimal.ZERO;
-        BigDecimal rackTotal = BigDecimal.ZERO;
-        String currency = DEFAULT_CURRENCY;
-        int totalPaxCount = 0;
-        boolean anyRateFound = false;
+        Map<String, CurrencyBucket> byCurrency = CurrencyBucket.ledger();
 
         for (FullSafariDTO.PaxDTO pax : paxList) {
             Long nationCategoryId = idObfuscator.decodeId(pax.getNationCategoryId());
@@ -272,42 +284,40 @@ public class SafariActivityCostCalculator {
                 BigDecimal stoUnit = rate.getStoRate() != null ? rate.getStoRate() : BigDecimal.ZERO;
                 BigDecimal rackUnit = rate.getRackRate() != null ? rate.getRackRate() : BigDecimal.ZERO;
 
-                stoTotal = stoTotal.add(stoUnit.multiply(BigDecimal.valueOf(count)));
-                rackTotal = rackTotal.add(rackUnit.multiply(BigDecimal.valueOf(count)));
-                totalPaxCount += count;
-                currency = rate.getCurrency() != null ? rate.getCurrency() : DEFAULT_CURRENCY;
-                anyRateFound = true;
+                String currency = rate.getCurrency() != null ? rate.getCurrency() : DEFAULT_CURRENCY;
+
+                byCurrency.computeIfAbsent(currency, c -> new CurrencyBucket()).add(
+                    stoUnit.multiply(BigDecimal.valueOf(count)),
+                    rackUnit.multiply(BigDecimal.valueOf(count)),
+                    count);
             }
         }
 
-        if (!anyRateFound) {
-            return buildNotFoundLineItem(dayNumber, activityName, parkName);
+        if (byCurrency.isEmpty()) {
+            return List.of(buildNotFoundLineItem(dayNumber, activityName, parkName));
         }
-
-        // Calculate average unit price for display
-        BigDecimal stoUnitPrice = totalPaxCount > 0
-            ? stoTotal.divide(BigDecimal.valueOf(totalPaxCount), 2, RoundingMode.HALF_UP)
-            : BigDecimal.ZERO;
-        BigDecimal rackUnitPrice = totalPaxCount > 0
-            ? rackTotal.divide(BigDecimal.valueOf(totalPaxCount), 2, RoundingMode.HALF_UP)
-            : BigDecimal.ZERO;
 
         String itemName = activityName + (parkName != null ? " @ " + parkName : "");
 
-        return CostLineItemDTO.builder()
-            .dayNumber(dayNumber)
-            .itemType(CostItemType.ACTIVITY)
-            .itemName(itemName)
-            .itemId(idObfuscator.encodeId(activityId))
-            .chargingBasis(ChargingBasis.PER_PERSON.getDisplayName())
-            .quantity(totalPaxCount)
-            .stoUnitPrice(stoUnitPrice)
-            .rackUnitPrice(rackUnitPrice)
-            .stoTotalPrice(stoTotal)
-            .rackTotalPrice(rackTotal)
-            .currency(currency)
-            .paxCategory("Per Person")
-            .build();
+        List<CostLineItemDTO> items = new ArrayList<>();
+        for (Map.Entry<String, CurrencyBucket> entry : byCurrency.entrySet()) {
+            CurrencyBucket bucket = entry.getValue();
+            items.add(CostLineItemDTO.builder()
+                .dayNumber(dayNumber)
+                .itemType(CostItemType.ACTIVITY)
+                .itemName(itemName)
+                .itemId(idObfuscator.encodeId(activityId))
+                .chargingBasis(ChargingBasis.PER_PERSON.getDisplayName())
+                .quantity(bucket.paxCount())
+                .stoUnitPrice(bucket.averageSto())
+                .rackUnitPrice(bucket.averageRack())
+                .stoTotalPrice(bucket.sto())
+                .rackTotalPrice(bucket.rack())
+                .currency(entry.getKey())
+                .paxCategory("Per Person")
+                .build());
+        }
+        return items;
     }
 
     /**
@@ -481,17 +491,15 @@ public class SafariActivityCostCalculator {
                     continue;
                 }
 
-                CostLineItemDTO line = calculateStandaloneActivityCost(
-                    day.getDayNumber(), activity, season, paxList, carCount);
-                if (line == null) {
-                    continue;
+                for (CostLineItemDTO line : calculateStandaloneActivityCost(
+                    day.getDayNumber(), activity, season, paxList, carCount)) {
+                    /* Optional wins the label: it is the one a client can still say yes to. */
+                    line.setExclusionReason(optional
+                        ? ExclusionReason.OPTIONAL_ACTIVITY
+                        : ExclusionReason.NOT_INCLUDED_IN_PRICE);
+                    line.setEntryId(activity.getId());
+                    excluded.add(line);
                 }
-                /* Optional wins the label: it is the one a client can still say yes to. */
-                line.setExclusionReason(optional
-                    ? ExclusionReason.OPTIONAL_ACTIVITY
-                    : ExclusionReason.NOT_INCLUDED_IN_PRICE);
-                line.setEntryId(activity.getId());
-                excluded.add(line);
             }
         }
 
@@ -506,17 +514,15 @@ public class SafariActivityCostCalculator {
                         || parkActivity.getIsIncludedInPrice()) {
                         continue;
                     }
-                    CostLineItemDTO line = calculateParkActivityCost(
+                    for (CostLineItemDTO line : calculateParkActivityCost(
                         day.getDayNumber(), parkActivity, parkId, park.getParkName(),
-                        season, paxList, carCount);
-                    if (line == null) {
-                        continue;
+                        season, paxList, carCount)) {
+                        /* A park activity has no optional flag of its own, so this is all it can say. */
+                        line.setExclusionReason(ExclusionReason.NOT_INCLUDED_IN_PRICE);
+                        line.setEntryId(parkActivity.getId());
+                        line.setParentEntryId(park.getId());
+                        excluded.add(line);
                     }
-                    /* A park activity has no optional flag of its own, so this is all it can say. */
-                    line.setExclusionReason(ExclusionReason.NOT_INCLUDED_IN_PRICE);
-                    line.setEntryId(parkActivity.getId());
-                    line.setParentEntryId(park.getId());
-                    excluded.add(line);
                 }
             }
         }

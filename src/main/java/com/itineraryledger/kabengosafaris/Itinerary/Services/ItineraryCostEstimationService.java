@@ -398,7 +398,7 @@ public class ItineraryCostEstimationService {
                     ChargingBasis chargingBasis = parkTariff.getTariff().getChargingBasis();
 
                     // Calculate based on charging basis (with carCount support)
-                    CostLineItem lineItem = calculateParkTariffCost(
+                    for (CostLineItem lineItem : calculateParkTariffCost(
                         day.getDayNumber(),
                         park.getParkName(),
                         tariff.getTariffName(),
@@ -410,10 +410,19 @@ public class ItineraryCostEstimationService {
                         useStoRate,
                         carCount,
                         warnings
-                    );
-
-                    if (lineItem != null && lineItem.getTotalPrice() != null) {
+                    )) {
+                        if (lineItem.getTotalPrice() == null) {
+                            continue;
+                        }
                         items.add(lineItem);
+                        /*
+                         * `total` and `currency` below are a single-currency convenience and are
+                         * a cross-currency sum the moment a party mixes nationalities. Nothing
+                         * that reaches a client reads them: the quote is built from `items`, each
+                         * carrying its own currency, and the response's honest figure is
+                         * `subtotalByCurrency`. Left as-is rather than silently made to look
+                         * right.
+                         */
                         total = total.add(lineItem.getTotalPrice());
                         if (lineItem.getCurrency() != null) {
                             currency = lineItem.getCurrency();
@@ -432,11 +441,17 @@ public class ItineraryCostEstimationService {
     }
 
     /**
-     * Calculate cost for a single park tariff
+     * Calculate cost for a single park tariff, one line per currency it is charged in.
+     *
+     * <p>A per-person gate fee is looked up band by band, and the bands are not all priced in the
+     * same money: Ngorongoro holds its resident fee in TZS and its visitor fee in USD. This used
+     * to add every band into one figure and label it with whichever rate the loop read last, so
+     * one Tanzanian on a party of eight turned TZS 46,020 of crater fees into USD 46,020 and
+     * tripled the quote. See {@code CurrencyBucket} in the CostEstimation calculators.
      *
      * @param carCount Number of vehicles (for PER_VEHICLE charging basis)
      */
-    private CostLineItem calculateParkTariffCost(
+    private List<CostLineItem> calculateParkTariffCost(
             Integer dayNumber,
             String parkName,
             String tariffName,
@@ -451,7 +466,7 @@ public class ItineraryCostEstimationService {
     ) {
         if (paxList == null || paxList.isEmpty()) {
             warnings.add(String.format("No pax configured for tariff: %s at %s", tariffName, parkName));
-            return null;
+            return List.of();
         }
 
         BigDecimal totalPrice = BigDecimal.ZERO;
@@ -462,8 +477,10 @@ public class ItineraryCostEstimationService {
         String chargingNote = chargingBasis.getDisplayName();
 
         if (chargingBasis == ChargingBasis.PER_PERSON) {
-            // Calculate per person - need rate for each pax category
-            int totalPaxCount = 0;
+            /* One running total per currency, in the order the currencies were first seen. */
+            Map<String, BigDecimal> totalByCurrency = new LinkedHashMap<>();
+            Map<String, Integer> paxByCurrency = new LinkedHashMap<>();
+
             for (FullItineraryDTO.PaxDTO pax : paxList) {
                 Long nationCategoryId = idObfuscator.decodeId(pax.getNationCategoryId());
                 Long ageCategoryId = idObfuscator.decodeId(pax.getAgeCategoryId());
@@ -481,22 +498,51 @@ public class ItineraryCostEstimationService {
                         : rate.getRackRate();
 
                     if (paxUnitPrice != null) {
+                        String rateCurrency = rate.getCurrency() != null
+                            ? rate.getCurrency() : DEFAULT_CURRENCY;
                         BigDecimal paxCost = paxUnitPrice.multiply(BigDecimal.valueOf(pax.getCount()));
-                        totalPrice = totalPrice.add(paxCost);
-                        totalPaxCount += pax.getCount();
-                        currency = rate.getCurrency() != null ? rate.getCurrency() : DEFAULT_CURRENCY;
-                        rateFound = true;
+                        totalByCurrency.merge(rateCurrency, paxCost, BigDecimal::add);
+                        paxByCurrency.merge(rateCurrency, pax.getCount(), Integer::sum);
                     }
                 } else {
                     warnings.add(String.format("Rate not found: %s for %s %s at %s",
                         tariffName, pax.getNationCategoryName(), pax.getAgeCategoryName(), parkName));
                 }
             }
-            quantity = totalPaxCount;
-            // Calculate average unit price for display
-            if (totalPaxCount > 0) {
-                unitPrice = totalPrice.divide(BigDecimal.valueOf(totalPaxCount), 2, RoundingMode.HALF_UP);
+
+            if (totalByCurrency.isEmpty()) {
+                return List.of(CostLineItem.builder()
+                    .dayNumber(dayNumber)
+                    .itemType("PARK_FEE")
+                    .itemName(tariffName + " - " + parkName)
+                    .quantity(0)
+                    .unitPrice(BigDecimal.ZERO)
+                    .totalPrice(BigDecimal.ZERO)
+                    .currency(DEFAULT_CURRENCY)
+                    .paxCategory(chargingNote)
+                    .rateFound(false)
+                    .build());
             }
+
+            List<CostLineItem> perCurrency = new ArrayList<>();
+            for (Map.Entry<String, BigDecimal> entry : totalByCurrency.entrySet()) {
+                int paxCount = paxByCurrency.getOrDefault(entry.getKey(), 0);
+                BigDecimal lineTotal = entry.getValue();
+                perCurrency.add(CostLineItem.builder()
+                    .dayNumber(dayNumber)
+                    .itemType("PARK_FEE")
+                    .itemName(tariffName + " - " + parkName)
+                    .quantity(paxCount)
+                    .unitPrice(paxCount > 0
+                        ? lineTotal.divide(BigDecimal.valueOf(paxCount), 2, RoundingMode.HALF_UP)
+                        : BigDecimal.ZERO)
+                    .totalPrice(lineTotal)
+                    .currency(entry.getKey())
+                    .paxCategory(chargingNote)
+                    .rateFound(true)
+                    .build());
+            }
+            return perCurrency;
         } else if (chargingBasis == ChargingBasis.PER_VEHICLE) {
             // PER_VEHICLE - multiply by car count
             Long highestPriorityNationId = findHighestPriorityNationCategory(paxList);
@@ -552,7 +598,8 @@ public class ItineraryCostEstimationService {
             }
         }
 
-        return CostLineItem.builder()
+        /* Vehicle and group rates are a single rate, so a single currency. */
+        return List.of(CostLineItem.builder()
             .dayNumber(dayNumber)
             .itemType("PARK_FEE")
             .itemName(tariffName + " - " + parkName)
@@ -562,7 +609,7 @@ public class ItineraryCostEstimationService {
             .currency(currency)
             .paxCategory(chargingNote)
             .rateFound(rateFound)
-            .build();
+            .build());
     }
 
     /**
@@ -937,7 +984,7 @@ public class ItineraryCostEstimationService {
                         continue;
                     }
 
-                    CostLineItem lineItem = calculateActivityCost(
+                    for (CostLineItem lineItem : calculateActivityCost(
                         day.getDayNumber(),
                         activity.getActivityId(),
                         activity.getActivityName(),
@@ -948,14 +995,14 @@ public class ItineraryCostEstimationService {
                         useStoRate,
                         carCount,
                         warnings
-                    );
-
-                    if (lineItem != null && lineItem.getTotalPrice() != null
-                        && lineItem.getTotalPrice().compareTo(BigDecimal.ZERO) > 0) {
-                        items.add(lineItem);
-                        total = total.add(lineItem.getTotalPrice());
-                        if (lineItem.getCurrency() != null) {
-                            currency = lineItem.getCurrency();
+                    )) {
+                        if (lineItem.getTotalPrice() != null
+                            && lineItem.getTotalPrice().compareTo(BigDecimal.ZERO) > 0) {
+                            items.add(lineItem);
+                            total = total.add(lineItem.getTotalPrice());
+                            if (lineItem.getCurrency() != null) {
+                                currency = lineItem.getCurrency();
+                            }
                         }
                     }
                 }
@@ -974,7 +1021,7 @@ public class ItineraryCostEstimationService {
                             continue;
                         }
 
-                        CostLineItem lineItem = calculateActivityCost(
+                        for (CostLineItem lineItem : calculateActivityCost(
                             day.getDayNumber(),
                             parkActivity.getActivityId(),
                             parkActivity.getActivityName(),
@@ -985,14 +1032,14 @@ public class ItineraryCostEstimationService {
                             useStoRate,
                             carCount,
                             warnings
-                        );
-
-                        if (lineItem != null && lineItem.getTotalPrice() != null
-                            && lineItem.getTotalPrice().compareTo(BigDecimal.ZERO) > 0) {
-                            items.add(lineItem);
-                            total = total.add(lineItem.getTotalPrice());
-                            if (lineItem.getCurrency() != null) {
-                                currency = lineItem.getCurrency();
+                        )) {
+                            if (lineItem.getTotalPrice() != null
+                                && lineItem.getTotalPrice().compareTo(BigDecimal.ZERO) > 0) {
+                                items.add(lineItem);
+                                total = total.add(lineItem.getTotalPrice());
+                                if (lineItem.getCurrency() != null) {
+                                    currency = lineItem.getCurrency();
+                                }
                             }
                         }
                     }
@@ -1009,9 +1056,14 @@ public class ItineraryCostEstimationService {
     }
 
     /**
-     * Calculate cost for a single activity
+     * Calculate cost for a single activity, one line per currency it is charged in.
+     *
+     * <p>Activity rates mix currencies even inside one nation band: the rate card holds 238 East
+     * African rows in shillings and 57 in dollars, because suppliers quote residents both ways.
+     * Summing them and labelling the result with the last rate read is how a quote silently
+     * changes by a factor of a thousand.
      */
-    private CostLineItem calculateActivityCost(
+    private List<CostLineItem> calculateActivityCost(
             Integer dayNumber,
             String activityIdObfuscated,
             String activityName,
@@ -1025,21 +1077,21 @@ public class ItineraryCostEstimationService {
     ) {
         Long activityId = idObfuscator.decodeId(activityIdObfuscated);
         if (activityId == null) {
-            return null;
+            return List.of();
         }
 
         // Get the activity to check if it has a tariff and its charging basis
         Optional<Activity> activityOpt = activityRepository.findById(activityId);
         if (activityOpt.isEmpty()) {
             warnings.add(String.format("Activity not found: %s on Day %d", activityName, dayNumber));
-            return null;
+            return List.of();
         }
 
         Activity activity = activityOpt.get();
 
         // Skip if activity has no tariff
         if (activity.getHasTariff() == null || !activity.getHasTariff()) {
-            return CostLineItem.builder()
+            return List.of(CostLineItem.builder()
                 .dayNumber(dayNumber)
                 .itemType("ACTIVITY")
                 .itemName(activityName + (parkName != null ? " @ " + parkName : ""))
@@ -1049,7 +1101,7 @@ public class ItineraryCostEstimationService {
                 .currency(DEFAULT_CURRENCY)
                 .paxCategory("Included")
                 .rateFound(true)
-                .build();
+                .build());
         }
 
         ChargingBasis chargingBasis = activity.getChargingBasis() != null
@@ -1064,8 +1116,10 @@ public class ItineraryCostEstimationService {
         String chargingNote = chargingBasis.getDisplayName();
 
         if (chargingBasis == ChargingBasis.PER_PERSON) {
-            // Calculate per person - need rate for each pax category
-            int totalPaxCount = 0;
+            /* One running total per currency, in the order the currencies were first seen. */
+            Map<String, BigDecimal> totalByCurrency = new LinkedHashMap<>();
+            Map<String, Integer> paxByCurrency = new LinkedHashMap<>();
+
             for (FullItineraryDTO.PaxDTO pax : paxList) {
                 Long nationCategoryId = idObfuscator.decodeId(pax.getNationCategoryId());
                 Long ageCategoryId = idObfuscator.decodeId(pax.getAgeCategoryId());
@@ -1098,21 +1152,52 @@ public class ItineraryCostEstimationService {
                         : rate.getRackRate();
 
                     if (paxUnitPrice != null) {
+                        String rateCurrency = rate.getCurrency() != null
+                            ? rate.getCurrency() : DEFAULT_CURRENCY;
                         BigDecimal paxCost = paxUnitPrice.multiply(BigDecimal.valueOf(pax.getCount()));
-                        totalPrice = totalPrice.add(paxCost);
-                        totalPaxCount += pax.getCount();
-                        currency = rate.getCurrency() != null ? rate.getCurrency() : DEFAULT_CURRENCY;
-                        rateFound = true;
+                        totalByCurrency.merge(rateCurrency, paxCost, BigDecimal::add);
+                        paxByCurrency.merge(rateCurrency, pax.getCount(), Integer::sum);
                     }
                 } else {
                     warnings.add(String.format("Activity rate not found: %s for %s %s on Day %d",
                         activityName, pax.getNationCategoryName(), pax.getAgeCategoryName(), dayNumber));
                 }
             }
-            quantity = totalPaxCount;
-            if (totalPaxCount > 0) {
-                unitPrice = totalPrice.divide(BigDecimal.valueOf(totalPaxCount), 2, RoundingMode.HALF_UP);
+
+            String activityItemName = activityName + (parkName != null ? " @ " + parkName : "");
+            if (totalByCurrency.isEmpty()) {
+                return List.of(CostLineItem.builder()
+                    .dayNumber(dayNumber)
+                    .itemType("ACTIVITY")
+                    .itemName(activityItemName)
+                    .quantity(0)
+                    .unitPrice(BigDecimal.ZERO)
+                    .totalPrice(BigDecimal.ZERO)
+                    .currency(DEFAULT_CURRENCY)
+                    .paxCategory(chargingNote)
+                    .rateFound(false)
+                    .build());
             }
+
+            List<CostLineItem> perCurrency = new ArrayList<>();
+            for (Map.Entry<String, BigDecimal> entry : totalByCurrency.entrySet()) {
+                int paxCount = paxByCurrency.getOrDefault(entry.getKey(), 0);
+                BigDecimal lineTotal = entry.getValue();
+                perCurrency.add(CostLineItem.builder()
+                    .dayNumber(dayNumber)
+                    .itemType("ACTIVITY")
+                    .itemName(activityItemName)
+                    .quantity(paxCount)
+                    .unitPrice(paxCount > 0
+                        ? lineTotal.divide(BigDecimal.valueOf(paxCount), 2, RoundingMode.HALF_UP)
+                        : BigDecimal.ZERO)
+                    .totalPrice(lineTotal)
+                    .currency(entry.getKey())
+                    .paxCategory(chargingNote)
+                    .rateFound(true)
+                    .build());
+            }
+            return perCurrency;
         } else if (chargingBasis == ChargingBasis.PER_VEHICLE) {
             // PER_VEHICLE - multiply by car count
             Long highestPriorityNationId = findHighestPriorityNationCategory(paxList);
@@ -1196,7 +1281,8 @@ public class ItineraryCostEstimationService {
             }
         }
 
-        return CostLineItem.builder()
+        /* Vehicle and group rates are a single rate, so a single currency. */
+        return List.of(CostLineItem.builder()
             .dayNumber(dayNumber)
             .itemType("ACTIVITY")
             .itemName(activityName + (parkName != null ? " @ " + parkName : ""))
@@ -1206,7 +1292,7 @@ public class ItineraryCostEstimationService {
             .currency(currency)
             .paxCategory(chargingNote)
             .rateFound(rateFound)
-            .build();
+            .build());
     }
 
     /**
