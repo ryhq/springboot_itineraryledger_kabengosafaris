@@ -339,7 +339,7 @@ public class ActivityCostCalculator {
                 .stoTotalPrice(bucket.sto())
                 .rackTotalPrice(bucket.rack())
                 .currency(entry.getKey())
-                .paxCategory("Per Person")
+                .paxCategory(bucket.bandLabel("Per Person"))
                 .paxShares(bucket.shares())
                 .build());
         }

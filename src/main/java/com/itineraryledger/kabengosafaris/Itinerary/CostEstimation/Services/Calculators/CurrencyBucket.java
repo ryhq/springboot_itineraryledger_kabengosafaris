@@ -34,6 +34,8 @@ public final class CurrencyBucket {
     private BigDecimal rack = BigDecimal.ZERO;
     private int paxCount = 0;
     private final List<CostLineItemDTO.PaxShareDTO> shares = new ArrayList<>();
+    /** First-seen order, no duplicates: the label reads like the party, not like a set. */
+    private final java.util.Set<String> bands = new java.util.LinkedHashSet<>();
 
     /**
      * Open a bucket per currency, in the order the currencies were first seen.
@@ -53,6 +55,9 @@ public final class CurrencyBucket {
         paxCount += count;
         if (share != null) {
             shares.add(share);
+            if (share.getPaxCategory() != null) {
+                bands.add(share.getPaxCategory());
+            }
         }
     }
 
@@ -60,10 +65,32 @@ public final class CurrencyBucket {
      * Add a band without recording its breakdown.
      *
      * <p>The safari side does not keep per-band shares — a safari is costed for the party that
-     * actually travelled, so there is no per-pax mode to attribute back to.
+     * actually travelled, so there is no per-pax mode to attribute back to. The band's name is
+     * still worth carrying, because it is what tells two rows of the same fee apart.
      */
-    public void add(BigDecimal shareSto, BigDecimal shareRack, int count) {
-        add(shareSto, shareRack, count, null);
+    public void add(BigDecimal shareSto, BigDecimal shareRack, int count, String band) {
+        sto = sto.add(shareSto);
+        rack = rack.add(shareRack);
+        paxCount += count;
+        if (band != null) {
+            bands.add(band);
+        }
+    }
+
+    /**
+     * Who this line is charging, for the label beside the item name.
+     *
+     * <p>One gate on one day can now produce two rows — a shilling one and a dollar one — and
+     * until this existed they were identical on the page apart from the figures: same name, same
+     * "Per Person" basis, nothing saying which was whose. On a costing sheet that is a reader
+     * guessing.
+     *
+     * <p>Returns the fallback when there is nothing better to say, because the panel and both PDF
+     * templates already hide the label when it reads exactly "Per Person" — they were built for
+     * this and were only ever handed the generic word.
+     */
+    public String bandLabel(String fallback) {
+        return bands.isEmpty() ? fallback : String.join(", ", bands);
     }
 
     /**

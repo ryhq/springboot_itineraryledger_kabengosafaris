@@ -289,7 +289,7 @@ public class SafariActivityCostCalculator {
                 byCurrency.computeIfAbsent(currency, c -> new CurrencyBucket()).add(
                     stoUnit.multiply(BigDecimal.valueOf(count)),
                     rackUnit.multiply(BigDecimal.valueOf(count)),
-                    count);
+                    count, paxCategory);
             }
         }
 
@@ -314,7 +314,7 @@ public class SafariActivityCostCalculator {
                 .stoTotalPrice(bucket.sto())
                 .rackTotalPrice(bucket.rack())
                 .currency(entry.getKey())
-                .paxCategory("Per Person")
+                .paxCategory(bucket.bandLabel("Per Person"))
                 .build());
         }
         return items;

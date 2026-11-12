@@ -128,6 +128,27 @@ class TwoCurrenciesNeverBecomeOneTest {
         assertEquals(2, totals.size(), "two currencies, two totals");
     }
 
+    @Test
+    @DisplayName("each line says which band it charges, so two rows of one fee tell apart")
+    void eachLineNamesItsBand() {
+        List<CostLineItemDTO> lines = crater()
+            .charging(NON_RESIDENT, "USD", "70.80", "92.04")
+            .charging(RESIDENT, "TZS", "11800", "15340")
+            .price(sevenVisitorsAndOneResident());
+
+        Map<String, CostLineItemDTO> byCurrency = lines.stream()
+            .collect(Collectors.toMap(CostLineItemDTO::getCurrency, Function.identity()));
+
+        /*
+         * Both rows are the same fee on the same day with the same "Per Person" basis, so on a
+         * costing sheet they are indistinguishable apart from the figures. The panel and both PDF
+         * templates already print this label and already hide it when it reads exactly
+         * "Per Person" — they were only ever handed the generic word.
+         */
+        assertEquals("Non-Resident Adult", byCurrency.get("USD").getPaxCategory());
+        assertEquals("Resident Adult", byCurrency.get("TZS").getPaxCategory());
+    }
+
     // ── a party of seven visitors and one Tanzanian ─────────────────────────────────────────────
 
     private List<FullItineraryDTO.PaxDTO> sevenVisitorsAndOneResident() {
