@@ -156,8 +156,8 @@
                     </td>
                     <td class="right" th:text="${item.prices != null and !#lists.isEmpty(item.prices) ? item.prices[0].quantity : '-'}">1</td>
                     <th:block th:each="currency : ${invoice.currencies}">
-                        <td class="right"><th:block th:each="price : ${item.prices}"><span th:if="${price.currency == currency}" th:text="${price.formattedUnitPrice != null ? price.formattedUnitPrice : price.unitPrice}">0</span></th:block></td>
-                        <td class="right"><th:block th:each="price : ${item.prices}"><span th:if="${price.currency == currency}" th:text="${price.formattedTotalPrice != null ? price.formattedTotalPrice : price.totalPrice}">0</span></th:block></td>
+                        <td class="right"><th:block th:each="price : ${item.prices}"><span th:if="${price.currency == currency}" th:text="${price.unitPrice != null ? #numbers.formatDecimal(price.unitPrice, 1, 'COMMA', 2, 'POINT') : ''}">0</span></th:block></td>
+                        <td class="right"><th:block th:each="price : ${item.prices}"><span th:if="${price.currency == currency}" th:text="${price.totalPrice != null ? #numbers.formatDecimal(price.totalPrice, 1, 'COMMA', 2, 'POINT') : ''}">0</span></th:block></td>
                     </th:block>
                 </tr>
             </tbody>

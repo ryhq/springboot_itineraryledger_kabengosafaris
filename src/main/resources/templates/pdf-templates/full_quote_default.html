@@ -753,16 +753,21 @@
             <td class="text-center">
               <span th:if="${item.prices != null and !item.prices.isEmpty()}" th:text="${item.prices[0].quantity}">2</span>
             </td>
+            <!--
+              The code is printed once, by the label above the figure, so the figure itself is
+              bare. The formatted* fields carry the code too (one dialect, everywhere), and using
+              them here printed it twice: "USD USD 9,500.70".
+            -->
             <td class="text-right">
               <div th:each="price : ${item.prices}">
                 <span class="currency-label" th:text="${price.currency}">USD</span>
-                <span class="price-amount" th:text="${price.formattedUnitPrice != null ? price.formattedUnitPrice : price.unitPrice}">$450.00</span>
+                <span class="price-amount" th:text="${price.unitPrice != null ? #numbers.formatDecimal(price.unitPrice, 1, 'COMMA', 2, 'POINT') : ''}">$450.00</span>
               </div>
             </td>
             <td class="text-right">
               <div th:each="price : ${item.prices}">
                 <span class="currency-label" th:text="${price.currency}">USD</span>
-                <span class="price-amount" th:text="${price.formattedTotalPrice != null ? price.formattedTotalPrice : price.totalPrice}">$900.00</span>
+                <span class="price-amount" th:text="${price.totalPrice != null ? #numbers.formatDecimal(price.totalPrice, 1, 'COMMA', 2, 'POINT') : ''}">$900.00</span>
               </div>
             </td>
           </tr>

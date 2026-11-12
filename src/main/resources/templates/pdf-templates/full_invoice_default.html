@@ -1089,7 +1089,7 @@
                       <th:block th:each="price : ${item.prices}">
                         <th:block th:if="${price.currency == currencyCol}">
                           <span class="price-amount"
-                                th:text="${price.formattedUnitPrice != null ? price.formattedUnitPrice : price.unitPrice}">450.00</span>
+                                th:text="${price.unitPrice != null ? #numbers.formatDecimal(price.unitPrice, 1, 'COMMA', 2, 'POINT') : ''}">450.00</span>
                           <th:block th:with="hasMatch=${true}"></th:block>
                         </th:block>
                       </th:block>
@@ -1107,7 +1107,7 @@
                       <th:block th:each="price : ${item.prices}">
                         <th:block th:if="${price.currency == currencyCol}">
                           <span class="price-amount"
-                                th:text="${price.formattedTotalPrice != null ? price.formattedTotalPrice : price.totalPrice}">900.00</span>
+                                th:text="${price.totalPrice != null ? #numbers.formatDecimal(price.totalPrice, 1, 'COMMA', 2, 'POINT') : ''}">900.00</span>
                           <th:block th:with="hasMatch=${true}"></th:block>
                         </th:block>
                       </th:block>
