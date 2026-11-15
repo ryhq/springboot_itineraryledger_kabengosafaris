@@ -1,5 +1,9 @@
 package com.itineraryledger.kabengosafaris.Safari.Services;
 
+import com.itineraryledger.kabengosafaris.Flight.CostEstimation.FlightFarePricer;
+import com.itineraryledger.kabengosafaris.Flight.Entity.FlightFare;
+import com.itineraryledger.kabengosafaris.Flight.Enums.MarkupType;
+import com.itineraryledger.kabengosafaris.Itinerary.DTOs.FullItineraryDTO;
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRate;
 import com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRateRepository;
 import com.itineraryledger.kabengosafaris.Activity.Activity;
@@ -165,6 +169,8 @@ public class SafariCostEstimationService {
             );
 
             // 7. Calculate totals by currency (multi-currency support)
+            CostBreakdown flightCosts = calculateFlightCosts(safari, startDate, warnings);
+
             Map<String, BigDecimal> subtotalByCurrency = new HashMap<>();
 
             // Aggregate park fees by currency
@@ -190,6 +196,19 @@ public class SafariCostEstimationService {
             // Aggregate activity costs by currency
             if (activityCosts.getItems() != null) {
                 for (CostLineItem item : activityCosts.getItems()) {
+                    String itemCurrency = item.getCurrency() != null ? item.getCurrency() : DEFAULT_CURRENCY;
+                    subtotalByCurrency.merge(itemCurrency,
+                        item.getTotalPrice() != null ? item.getTotalPrice() : BigDecimal.ZERO,
+                        BigDecimal::add);
+                }
+            }
+
+            /*
+             * Flights into the subtotal too. Easy to forget, and the failure is quiet: the sector
+             * shows in its own breakdown and is missing from the figure the invoice is built from.
+             */
+            if (flightCosts.getItems() != null) {
+                for (CostLineItem item : flightCosts.getItems()) {
                     String itemCurrency = item.getCurrency() != null ? item.getCurrency() : DEFAULT_CURRENCY;
                     subtotalByCurrency.merge(itemCurrency,
                         item.getTotalPrice() != null ? item.getTotalPrice() : BigDecimal.ZERO,
@@ -228,6 +247,7 @@ public class SafariCostEstimationService {
                 .parkFeeCosts(parkFeeCosts)
                 .accommodationCosts(accommodationCosts)
                 .activityCosts(activityCosts)
+                .flightCosts(flightCosts)
                 .daySummaries(daySummaries)
                 .currency(currency)
                 .subtotal(subtotal)
@@ -350,7 +370,7 @@ public class SafariCostEstimationService {
                     ChargingBasis chargingBasis = parkTariff.getTariff().getChargingBasis();
 
                     // Calculate based on charging basis (with carCount support)
-                    CostLineItem lineItem = calculateParkTariffCost(
+                    List<CostLineItem> lineItems = calculateParkTariffCost(
                         day.getDayNumber(),
                         park.getParkName(),
                         tariff.getTariffName(),
@@ -364,8 +384,15 @@ public class SafariCostEstimationService {
                         warnings
                     );
 
-                    if (lineItem != null && lineItem.getTotalPrice() != null) {
+                    for (CostLineItem lineItem : lineItems) {
+                        if (lineItem.getTotalPrice() == null) continue;
                         items.add(lineItem);
+                        /*
+                         * `total` and `currency` are a single-currency convenience and become a
+                         * cross-currency sum the moment a party mixes nationalities. Nothing that
+                         * reaches a customer reads them: the invoice is built from `items`, each
+                         * carrying its own currency.
+                         */
                         total = total.add(lineItem.getTotalPrice());
                         if (lineItem.getCurrency() != null) {
                             currency = lineItem.getCurrency();
@@ -388,7 +415,14 @@ public class SafariCostEstimationService {
      *
      * @param carCount Number of vehicles (for PER_VEHICLE charging basis)
      */
-    private CostLineItem calculateParkTariffCost(
+    /**
+     * One line per currency the bands are charged in.
+     *
+     * <p>Ngorongoro holds its resident fee in TZS and its visitor fee in USD. Summing them and
+     * labelling the result with whichever rate the loop read last put TZS 222,222 of shillings
+     * into a dollar invoice and turned USD 24,655 into USD 246,877.
+     */
+    private List<CostLineItem> calculateParkTariffCost(
             Integer dayNumber,
             String parkName,
             String tariffName,
@@ -403,7 +437,7 @@ public class SafariCostEstimationService {
     ) {
         if (paxList == null || paxList.isEmpty()) {
             warnings.add(String.format("No pax configured for tariff: %s at %s", tariffName, parkName));
-            return null;
+            return List.of();
         }
 
         BigDecimal totalPrice = BigDecimal.ZERO;
@@ -414,8 +448,9 @@ public class SafariCostEstimationService {
         String chargingNote = chargingBasis.getDisplayName();
 
         if (chargingBasis == ChargingBasis.PER_PERSON) {
-            // Calculate per person - need rate for each pax category
-            int totalPaxCount = 0;
+            Map<String, BigDecimal> totalByCurrency = new LinkedHashMap<>();
+            Map<String, Integer> paxByCurrency = new LinkedHashMap<>();
+
             for (FullSafariDTO.PaxDTO pax : paxList) {
                 Long nationCategoryId = idObfuscator.decodeId(pax.getNationCategoryId());
                 Long ageCategoryId = idObfuscator.decodeId(pax.getAgeCategoryId());
@@ -433,22 +468,40 @@ public class SafariCostEstimationService {
                         : rate.getRackRate();
 
                     if (paxUnitPrice != null) {
-                        BigDecimal paxCost = paxUnitPrice.multiply(BigDecimal.valueOf(pax.getCount()));
-                        totalPrice = totalPrice.add(paxCost);
-                        totalPaxCount += pax.getCount();
-                        currency = rate.getCurrency() != null ? rate.getCurrency() : DEFAULT_CURRENCY;
-                        rateFound = true;
+                        String rateCurrency = rate.getCurrency() != null
+                            ? rate.getCurrency() : DEFAULT_CURRENCY;
+                        totalByCurrency.merge(rateCurrency,
+                            paxUnitPrice.multiply(BigDecimal.valueOf(pax.getCount())), BigDecimal::add);
+                        paxByCurrency.merge(rateCurrency, pax.getCount(), Integer::sum);
                     }
                 } else {
                     warnings.add(String.format("Rate not found: %s for %s %s at %s",
                         tariffName, pax.getNationCategoryName(), pax.getAgeCategoryName(), parkName));
                 }
             }
-            quantity = totalPaxCount;
-            // Calculate average unit price for display
-            if (totalPaxCount > 0) {
-                unitPrice = totalPrice.divide(BigDecimal.valueOf(totalPaxCount), 2, RoundingMode.HALF_UP);
+
+            if (totalByCurrency.isEmpty()) {
+                return List.of(CostLineItem.builder()
+                    .dayNumber(dayNumber).itemType("PARK_FEE")
+                    .itemName(tariffName + " - " + parkName)
+                    .quantity(0).unitPrice(BigDecimal.ZERO).totalPrice(BigDecimal.ZERO)
+                    .currency(DEFAULT_CURRENCY).paxCategory(chargingNote).rateFound(false).build());
             }
+
+            List<CostLineItem> perCurrency = new ArrayList<>();
+            for (Map.Entry<String, BigDecimal> e : totalByCurrency.entrySet()) {
+                int paxCount = paxByCurrency.getOrDefault(e.getKey(), 0);
+                perCurrency.add(CostLineItem.builder()
+                    .dayNumber(dayNumber).itemType("PARK_FEE")
+                    .itemName(tariffName + " - " + parkName)
+                    .quantity(paxCount)
+                    .unitPrice(paxCount > 0
+                        ? e.getValue().divide(BigDecimal.valueOf(paxCount), 2, RoundingMode.HALF_UP)
+                        : BigDecimal.ZERO)
+                    .totalPrice(e.getValue())
+                    .currency(e.getKey()).paxCategory(chargingNote).rateFound(true).build());
+            }
+            return perCurrency;
         } else if (chargingBasis == ChargingBasis.PER_VEHICLE) {
             // PER_VEHICLE - multiply by car count
             Long highestPriorityNationId = findHighestPriorityNationCategory(paxList);
@@ -504,7 +557,8 @@ public class SafariCostEstimationService {
             }
         }
 
-        return CostLineItem.builder()
+        /* Vehicle and group rates are a single rate, so a single currency. */
+        return List.of(CostLineItem.builder()
             .dayNumber(dayNumber)
             .itemType("PARK_FEE")
             .itemName(tariffName + " - " + parkName)
@@ -514,7 +568,7 @@ public class SafariCostEstimationService {
             .currency(currency)
             .paxCategory(chargingNote)
             .rateFound(rateFound)
-            .build();
+            .build());
     }
 
     /**
@@ -788,7 +842,7 @@ public class SafariCostEstimationService {
                         continue;
                     }
 
-                    CostLineItem lineItem = calculateActivityCost(
+                    for (CostLineItem lineItem : calculateActivityCost(
                         day.getDayNumber(),
                         activity.getActivityId(),
                         activity.getActivityName(),
@@ -799,14 +853,14 @@ public class SafariCostEstimationService {
                         useStoRate,
                         carCount,
                         warnings
-                    );
-
-                    if (lineItem != null && lineItem.getTotalPrice() != null
-                        && lineItem.getTotalPrice().compareTo(BigDecimal.ZERO) > 0) {
-                        items.add(lineItem);
-                        total = total.add(lineItem.getTotalPrice());
-                        if (lineItem.getCurrency() != null) {
-                            currency = lineItem.getCurrency();
+                    )) {
+                        if (lineItem.getTotalPrice() != null
+                            && lineItem.getTotalPrice().compareTo(BigDecimal.ZERO) > 0) {
+                            items.add(lineItem);
+                            total = total.add(lineItem.getTotalPrice());
+                            if (lineItem.getCurrency() != null) {
+                                currency = lineItem.getCurrency();
+                            }
                         }
                     }
                 }
@@ -825,7 +879,7 @@ public class SafariCostEstimationService {
                             continue;
                         }
 
-                        CostLineItem lineItem = calculateActivityCost(
+                        for (CostLineItem lineItem : calculateActivityCost(
                             day.getDayNumber(),
                             parkActivity.getActivityId(),
                             parkActivity.getActivityName(),
@@ -836,14 +890,14 @@ public class SafariCostEstimationService {
                             useStoRate,
                             carCount,
                             warnings
-                        );
-
-                        if (lineItem != null && lineItem.getTotalPrice() != null
-                            && lineItem.getTotalPrice().compareTo(BigDecimal.ZERO) > 0) {
-                            items.add(lineItem);
-                            total = total.add(lineItem.getTotalPrice());
-                            if (lineItem.getCurrency() != null) {
-                                currency = lineItem.getCurrency();
+                        )) {
+                            if (lineItem.getTotalPrice() != null
+                                && lineItem.getTotalPrice().compareTo(BigDecimal.ZERO) > 0) {
+                                items.add(lineItem);
+                                total = total.add(lineItem.getTotalPrice());
+                                if (lineItem.getCurrency() != null) {
+                                    currency = lineItem.getCurrency();
+                                }
                             }
                         }
                     }
@@ -862,7 +916,11 @@ public class SafariCostEstimationService {
     /**
      * Calculate cost for a single activity
      */
-    private CostLineItem calculateActivityCost(
+    /**
+     * One line per currency, for the same reason the park fee is: the activity rate card holds
+     * resident bands in shillings and visitor bands in dollars.
+     */
+    private List<CostLineItem> calculateActivityCost(
             Integer dayNumber,
             String activityIdObfuscated,
             String activityName,
@@ -876,21 +934,21 @@ public class SafariCostEstimationService {
     ) {
         Long activityId = idObfuscator.decodeId(activityIdObfuscated);
         if (activityId == null) {
-            return null;
+            return List.of();
         }
 
         // Get the activity to check if it has a tariff and its charging basis
         Optional<Activity> activityOpt = activityRepository.findById(activityId);
         if (activityOpt.isEmpty()) {
             warnings.add(String.format("Activity not found: %s on Day %d", activityName, dayNumber));
-            return null;
+            return List.of();
         }
 
         Activity activity = activityOpt.get();
 
         // Skip if activity has no tariff
         if (activity.getHasTariff() == null || !activity.getHasTariff()) {
-            return CostLineItem.builder()
+            return List.of(CostLineItem.builder()
                 .dayNumber(dayNumber)
                 .itemType("ACTIVITY")
                 .itemName(activityName + (parkName != null ? " @ " + parkName : ""))
@@ -900,7 +958,7 @@ public class SafariCostEstimationService {
                 .currency(DEFAULT_CURRENCY)
                 .paxCategory("Included")
                 .rateFound(true)
-                .build();
+                .build());
         }
 
         ChargingBasis chargingBasis = activity.getChargingBasis() != null
@@ -915,8 +973,9 @@ public class SafariCostEstimationService {
         String chargingNote = chargingBasis.getDisplayName();
 
         if (chargingBasis == ChargingBasis.PER_PERSON) {
-            // Calculate per person - need rate for each pax category
-            int totalPaxCount = 0;
+            Map<String, BigDecimal> totalByCurrency = new LinkedHashMap<>();
+            Map<String, Integer> paxByCurrency = new LinkedHashMap<>();
+
             for (FullSafariDTO.PaxDTO pax : paxList) {
                 Long nationCategoryId = idObfuscator.decodeId(pax.getNationCategoryId());
                 Long ageCategoryId = idObfuscator.decodeId(pax.getAgeCategoryId());
@@ -949,21 +1008,39 @@ public class SafariCostEstimationService {
                         : rate.getRackRate();
 
                     if (paxUnitPrice != null) {
-                        BigDecimal paxCost = paxUnitPrice.multiply(BigDecimal.valueOf(pax.getCount()));
-                        totalPrice = totalPrice.add(paxCost);
-                        totalPaxCount += pax.getCount();
-                        currency = rate.getCurrency() != null ? rate.getCurrency() : DEFAULT_CURRENCY;
-                        rateFound = true;
+                        String rateCurrency = rate.getCurrency() != null
+                            ? rate.getCurrency() : DEFAULT_CURRENCY;
+                        totalByCurrency.merge(rateCurrency,
+                            paxUnitPrice.multiply(BigDecimal.valueOf(pax.getCount())), BigDecimal::add);
+                        paxByCurrency.merge(rateCurrency, pax.getCount(), Integer::sum);
                     }
                 } else {
                     warnings.add(String.format("Activity rate not found: %s for %s %s on Day %d",
                         activityName, pax.getNationCategoryName(), pax.getAgeCategoryName(), dayNumber));
                 }
             }
-            quantity = totalPaxCount;
-            if (totalPaxCount > 0) {
-                unitPrice = totalPrice.divide(BigDecimal.valueOf(totalPaxCount), 2, RoundingMode.HALF_UP);
+
+            String activityItemName = activityName + (parkName != null ? " @ " + parkName : "");
+            if (totalByCurrency.isEmpty()) {
+                return List.of(CostLineItem.builder()
+                    .dayNumber(dayNumber).itemType("ACTIVITY").itemName(activityItemName)
+                    .quantity(0).unitPrice(BigDecimal.ZERO).totalPrice(BigDecimal.ZERO)
+                    .currency(DEFAULT_CURRENCY).paxCategory(chargingNote).rateFound(false).build());
             }
+
+            List<CostLineItem> perCurrency = new ArrayList<>();
+            for (Map.Entry<String, BigDecimal> e : totalByCurrency.entrySet()) {
+                int paxCount = paxByCurrency.getOrDefault(e.getKey(), 0);
+                perCurrency.add(CostLineItem.builder()
+                    .dayNumber(dayNumber).itemType("ACTIVITY").itemName(activityItemName)
+                    .quantity(paxCount)
+                    .unitPrice(paxCount > 0
+                        ? e.getValue().divide(BigDecimal.valueOf(paxCount), 2, RoundingMode.HALF_UP)
+                        : BigDecimal.ZERO)
+                    .totalPrice(e.getValue())
+                    .currency(e.getKey()).paxCategory(chargingNote).rateFound(true).build());
+            }
+            return perCurrency;
         } else if (chargingBasis == ChargingBasis.PER_VEHICLE) {
             // PER_VEHICLE - multiply by car count
             Long highestPriorityNationId = findHighestPriorityNationCategory(paxList);
@@ -1047,7 +1124,8 @@ public class SafariCostEstimationService {
             }
         }
 
-        return CostLineItem.builder()
+        /* Vehicle and group rates are a single rate, so a single currency. */
+        return List.of(CostLineItem.builder()
             .dayNumber(dayNumber)
             .itemType("ACTIVITY")
             .itemName(activityName + (parkName != null ? " @ " + parkName : ""))
@@ -1057,7 +1135,113 @@ public class SafariCostEstimationService {
             .currency(currency)
             .paxCategory(chargingNote)
             .rateFound(rateFound)
-            .build();
+            .build());
+    }
+
+    /**
+     * Price the flight sectors on a safari.
+     *
+     * <p>This did not exist, and nothing said so. The invoice generator has always asked for
+     * {@code getFlightCosts()}, the orchestrator behind the Cost tab has always priced flights,
+     * and this service — the one that actually builds the invoice — returned nothing. So the
+     * Arusha to Zanzibar sector showed on screen at USD 764.16 and was absent from the invoice
+     * the customer was asked to pay. Ported from the itinerary service, which has had it all
+     * along.
+     */
+    private CostBreakdown calculateFlightCosts(
+            FullSafariDTO safari,
+            LocalDate startDate,
+            List<String> warnings
+    ) {
+        List<CostLineItem> items = new ArrayList<>();
+        BigDecimal total = BigDecimal.ZERO;
+        String currency = DEFAULT_CURRENCY;
+
+        if (safari.getDays() == null) {
+            return CostBreakdown.builder()
+                .total(BigDecimal.ZERO).currency(currency).itemCount(0).items(items).build();
+        }
+
+        int adults = 0;
+        int children = 0;
+        if (safari.getPaxList() != null) {
+            for (FullSafariDTO.PaxDTO pax : safari.getPaxList()) {
+                int count = pax.getCount() == null ? 0 : pax.getCount();
+                String age = pax.getAgeCategoryName() == null ? "" : pax.getAgeCategoryName().toLowerCase();
+                if (age.contains("child") || age.contains("infant") || age.contains("youth")) children += count;
+                else adults += count;
+            }
+        }
+
+        for (FullSafariDTO.DayDTO day : safari.getDays()) {
+            if (day.getFlights() == null) continue;
+            LocalDate dayDate = startDate == null ? null
+                : startDate.plusDays((day.getDayNumber() == null ? 1 : day.getDayNumber()) - 1);
+
+            for (FullItineraryDTO.DayFlightDTO flight : day.getFlights()) {
+                if (Boolean.TRUE.equals(flight.getIsAlternative())) continue;
+                if (Boolean.FALSE.equals(flight.getIsIncludedInPrice())) continue;
+
+                int seatAdults = adults;
+                int seatChildren = children;
+                if (flight.getPassengerCount() != null && flight.getPassengerCount() > 0) {
+                    seatAdults = flight.getPassengerCount();
+                    seatChildren = 0;
+                }
+                if (seatAdults + seatChildren == 0) continue;
+
+                FlightFare fare = FlightFare.builder()
+                    .netFare(flight.getNetFare())
+                    .taxesAndFees(flight.getTaxesAndFees() == null ? BigDecimal.ZERO : flight.getTaxesAndFees())
+                    .childPercent(flight.getChildPercent())
+                    .currency(flight.getCurrency() == null ? DEFAULT_CURRENCY : flight.getCurrency())
+                    .operatingMonths(flight.getOperatingMonths())
+                    .minimumSeats(flight.getMinimumSeats())
+                    .validFrom(LocalDate.MIN).validTo(LocalDate.MAX)
+                    .build();
+
+                MarkupType markupType = null;
+                if (flight.getMarkupType() != null && !flight.getMarkupType().isBlank()) {
+                    try {
+                        markupType = MarkupType.valueOf(flight.getMarkupType());
+                    } catch (IllegalArgumentException ignored) {
+                        /* An unrecognised stored value means no markup, not a failed estimate. */
+                    }
+                }
+
+                var priced = FlightFarePricer.price(fare, null, seatAdults, seatChildren,
+                    markupType, flight.getMarkupValue(), dayDate);
+                warnings.addAll(priced.warnings());
+
+                String name = ((flight.getAirlineName() == null ? "Flight" : flight.getAirlineName())
+                    + " " + (flight.getSectorLabel() == null ? "" : flight.getSectorLabel())
+                    + (flight.getEtd() == null ? "" : ", " + flight.getEtd())).trim();
+
+                items.add(CostLineItem.builder()
+                    .dayNumber(day.getDayNumber())
+                    .itemType("FLIGHT")
+                    .itemName(name)
+                    .referenceId(flight.getFlightFareId())
+                    .quantity(seatAdults + seatChildren)
+                    .unitPrice(priced.sellingPerAdult())
+                    .totalPrice(priced.totalSelling())
+                    .currency(priced.currency())
+                    .paxCategory("Per Person")
+                    .notes("Fare " + priced.currency() + " " + priced.netPerAdult()
+                        + ", markup from " + (flight.getMarkupSource() == null
+                            ? priced.markup().source() : flight.getMarkupSource())
+                        + ", tax " + priced.taxPerPerson() + " per person (never marked up)")
+                    /* A flight with no net fare is priced at nothing and says so, like a missing rate. */
+                    .rateFound(priced.isPriceable())
+                    .build());
+
+                total = total.add(priced.totalSelling());
+                currency = priced.currency();
+            }
+        }
+
+        return CostBreakdown.builder()
+            .total(total).currency(currency).itemCount(items.size()).items(items).build();
     }
 
     /**
