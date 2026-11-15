@@ -107,14 +107,33 @@ public class InvoiceDeleteService {
                 }
 
                 /*
-                 * Only a draft. Once an invoice has been sent, somebody outside
-                 * this office is holding a copy of it, and deleting our half
-                 * leaves a demand with no record behind it. Cancel instead.
+                 * Nothing anybody outside this office is holding.
+                 *
+                 * The rule was "only a draft", and its reason was about SENDING: once a customer
+                 * has a copy, deleting our half leaves a demand with no record behind it. A
+                 * cancelled invoice that was never sent has no copy anywhere, and refusing to
+                 * delete it was not protecting anything — it was deadlocking the safari.
+                 *
+                 * One invoice row per safari is enforced by a unique index on safari_id, so a
+                 * cancelled invoice still occupies the slot. Cancel-and-reissue therefore left the
+                 * safari permanently unbillable: the replacement could not be inserted, and the
+                 * cancelled one could not be removed to make room. SAF-8D7N-01002 reached exactly
+                 * that state, and the only symptom was "An unexpected error occurred" from a
+                 * constraint violation escaping on commit.
+                 *
+                 * So the test is what the comment always meant: has this reached the customer?
                  */
-                if (invoice.getStatus() != InvoiceStatus.DRAFT) {
+                boolean everSent = invoice.getSentDate() != null;
+                boolean removable = invoice.getStatus() == InvoiceStatus.DRAFT
+                        || (invoice.getStatus() == InvoiceStatus.CANCELLED && !everSent);
+
+                if (!removable) {
                     skipped.add(skip(obfuscated, invoice.getInvoiceCode(),
-                        "It is " + invoice.getStatus().getDisplayName().toLowerCase()
-                            + ". Only a draft can be deleted — cancel it instead."));
+                        everSent
+                            ? "It was sent to the customer on " + invoice.getSentDate()
+                                + ", so a copy exists outside this office. Cancel it instead."
+                            : "It is " + invoice.getStatus().getDisplayName().toLowerCase()
+                                + " and cannot be deleted. Cancel it instead."));
                     continue;
                 }
 

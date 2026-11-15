@@ -163,6 +163,26 @@ public class InvoiceFromSafariGenerationService {
                 );
             }
 
+            /*
+             * A CANCELLED invoice still holds the slot.
+             *
+             * safari_id carries a unique index — one invoice row per safari — so the check above,
+             * which deliberately lets a cancelled one through, promised something the schema
+             * forbids. The insert then died on commit and surfaced as "An unexpected error
+             * occurred", with no hint that a cancelled invoice was in the way.
+             *
+             * Said here instead, where it can name the remedy.
+             */
+            if (invoiceRepository.existsBySafariId(safari.getId())) {
+                return ResponseEntity.badRequest().body(
+                        ApiResponse.error(400,
+                                "A cancelled invoice is still attached to this safari, and a safari "
+                                    + "can only hold one. Delete the cancelled invoice to free the "
+                                    + "slot, then generate again.",
+                                "CANCELLED_INVOICE_OCCUPIES_SAFARI")
+                );
+            }
+
             // 3. Verify safari has customer and log it
             log.info("Customer derived from safari: {}", safari.getCustomer().getDisplayName());
 
