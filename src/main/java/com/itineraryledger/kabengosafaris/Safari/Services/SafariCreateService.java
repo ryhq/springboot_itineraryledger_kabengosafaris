@@ -566,7 +566,19 @@ public class SafariCreateService {
                     .state(SafariState.DRAFT)
                     .totalDays(totalDays)
                     .totalNights(totalNights)
-                    .carCount(itinerary != null ? itinerary.getCarCount() : null)
+                    /*
+                     * The QUOTE's vehicle count, not the itinerary's.
+                     *
+                     * The itinerary carries the reference party's figure — one car for the two
+                     * guests it was written around. A real booking sets its own: eight guests on
+                     * ITI-8D7N-1004 need two. Taking the itinerary's number converted a quote
+                     * priced for two vehicles into a safari planned for one, so the crater service
+                     * fee and the game drives were costed twice over on the quote and once on the
+                     * booking, and the operations list said to send one car for eight people.
+                     */
+                    .carCount(quote.getCarCount() != null
+                            ? quote.getCarCount()
+                            : (itinerary != null ? itinerary.getCarCount() : null))
                     .description(quote.getDescription() != null
                             ? quote.getDescription()
                             : (itinerary != null ? itinerary.getDescription() : null))
