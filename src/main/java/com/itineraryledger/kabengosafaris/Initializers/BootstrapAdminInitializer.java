@@ -92,7 +92,7 @@ public class BootstrapAdminInitializer implements ApplicationRunner, Ordered {
             userRepository.save(created);
 
             log.info("""
-                First account created: {} ({}) with SUPERADMIN. An activation email has been sent — \
+                First account created: {} ({}) with SUPERADMIN. An activation email has been sent - \
                 the account cannot be used until that link is followed, and no password was set for \
                 anybody.""", created.getEmail(), created.getUsername());
 

@@ -73,29 +73,29 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
 
     private void printStartBanner() {
         log.info("");
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║                                                                    ║");
-        log.info("║          GLOBAL SEASON INITIALIZER - START                         ║");
-        log.info("║          Tanzania Tourism Seasons (TANAPA/NCAA/Beaches)            ║");
-        log.info("║                                                                    ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|                                                                    |");
+        log.info("|          GLOBAL SEASON INITIALIZER - START                         |");
+        log.info("|          Tanzania Tourism Seasons (TANAPA/NCAA/Beaches)            |");
+        log.info("|                                                                    |");
+        log.info("+====================================================================+");
         log.info("");
     }
 
     private void printEndBanner(boolean success) {
         log.info("");
         if (success) {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║        ✓ GLOBAL SEASON INITIALIZER - COMPLETED                     ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|          GLOBAL SEASON INITIALIZER - COMPLETED                     |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         } else {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║        ✗ GLOBAL SEASON INITIALIZER - FAILED                        ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|          GLOBAL SEASON INITIALIZER - FAILED                        |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         }
         log.info("");
     }
@@ -112,7 +112,7 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
         for (SeasonData seasonData : seasonsData) {
             // Check if season already exists
             if (seasonRepository.existsByIsGlobalTrueAndName(seasonData.name)) {
-                log.debug("⊘ Global season already exists: {}", seasonData.name);
+                log.debug("Global season already exists: {}", seasonData.name);
                 skippedSeasons++;
                 continue;
             }
@@ -129,7 +129,7 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
                     .build();
 
             season = seasonRepository.save(season);
-            log.info("✓ Created global season: {} ({})", seasonData.name, seasonData.seasonType);
+            log.info("Created global season: {} ({})", seasonData.name, seasonData.seasonType);
             createdSeasons++;
 
             // Create season periods
@@ -147,7 +147,7 @@ public class GlobalSeasonInitializer implements ApplicationRunner {
                 seasonPeriodRepository.save(period);
 
                 String yearInfo = periodData.year != null ? String.valueOf(periodData.year) : "recurring";
-                log.info("  → Added period: {} to {} ({})",
+                log.info("  Added period: {} to {} ({})",
                     periodData.startDate, periodData.endDate, yearInfo);
                 createdPeriods++;
             }

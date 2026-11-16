@@ -66,7 +66,7 @@ public class BlogUpdateService {
                 /* the first publish is what freezes the slug, and it is recorded once */
                 if (Boolean.TRUE.equals(updateDTO.getIsPublished()) && blog.getFirstPublishedAt() == null) {
                     blog.setFirstPublishedAt(java.time.LocalDateTime.now());
-                    log.info("Blog '{}' published for the first time — its slug is now fixed", blog.getSlug());
+                    log.info("Blog '{}' published for the first time - its slug is now fixed", blog.getSlug());
                 }
             }
             if (updateDTO.getDisplayOrder() != null) blog.setDisplayOrder(updateDTO.getDisplayOrder());

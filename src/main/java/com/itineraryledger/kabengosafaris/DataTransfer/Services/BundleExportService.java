@@ -187,7 +187,7 @@ public class BundleExportService {
             zip.closeEntry();
         }
 
-        log.info("Exported {} module(s){} for {} — {} KB", chosen.size(),
+        log.info("Exported {} module(s){} for {} - {} KB", chosen.size(),
             includeImages ? " with " + files.size() + " file(s)" : "", identity.snapshot().name(),
             java.nio.file.Files.size(bundle) / 1024);
         return bundle;

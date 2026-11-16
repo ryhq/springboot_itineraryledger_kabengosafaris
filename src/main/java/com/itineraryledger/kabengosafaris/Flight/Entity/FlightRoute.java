@@ -107,6 +107,6 @@ public class FlightRoute {
     public String getSectorLabel() {
         String from = originAirstrip == null ? "?" : originAirstrip.getCode();
         String to = destinationAirstrip == null ? "?" : destinationAirstrip.getCode();
-        return from + " → " + to;
+        return from + " to " + to;
     }
 }

@@ -187,7 +187,7 @@ public class ItineraryInclusionBackfillInitializer implements ApplicationRunner 
             boolean anyProse = included.stream().anyMatch(l -> l.length() > LINE_LIMIT)
                 || excluded.stream().anyMatch(l -> l.length() > LINE_LIMIT);
             if (anyProse) {
-                log.info("INCLUSION BACKFILL: {} keeps its typed text — a line of {} characters is "
+                log.info("INCLUSION BACKFILL: {} keeps its typed text - a line of {} characters is "
                     + "a paragraph, not a list item",
                     itinerary.getCode(),
                     java.util.stream.Stream.concat(included.stream(), excluded.stream())

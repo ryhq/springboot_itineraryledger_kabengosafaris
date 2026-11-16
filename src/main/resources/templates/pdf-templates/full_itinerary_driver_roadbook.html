@@ -2,15 +2,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title th:text="${(itinerary.name != null ? itinerary.name : 'Safari Itinerary') + ' — Driver Roadbook'}">
+    <title th:text="${(itinerary.name != null ? itinerary.name : 'Safari Itinerary') + ' - Driver Roadbook'}">
       Driver Roadbook
     </title>
     <style>
       /* ========================================
-           [[${company.name}]] — DRIVER-GUIDE ROADBOOK
+           [[${company.name}]] - DRIVER-GUIDE ROADBOOK
            Internal operations document. One block per day with route,
            distance, park gate times, timed activities, meals and overnight.
-           Brand Colors: Forest Green {{companyAccent}} · Chocolate Brown {{companyAccentDark}} · Olive {{companyAccentDark}}
+           Brand Colors: Forest Green {{companyAccent}} | Chocolate Brown {{companyAccentDark}} | Olive {{companyAccentDark}}
            OpenHTMLToPDF: no CSS variables / transforms.
            ======================================== */
 
@@ -136,28 +136,28 @@
         <tr>
           <td>
             <div class="meta-label">Reference</div>
-            <div class="meta-value" th:text="${itinerary.code != null ? itinerary.code : '—'}">ITI-14D13N-1053</div>
+            <div class="meta-value" th:text="${itinerary.code != null ? itinerary.code : '-'}">ITI-14D13N-1053</div>
           </td>
           <td>
             <div class="meta-label">Duration</div>
             <div class="meta-value">
-              <span th:text="${(itinerary.totalDays != null ? itinerary.totalDays : '—') + 'd'}">14d</span><span th:if="${itinerary.totalNights != null}" th:text="${' / ' + itinerary.totalNights + 'n'}"> / 13n</span>
+              <span th:text="${(itinerary.totalDays != null ? itinerary.totalDays : '-') + 'd'}">14d</span><span th:if="${itinerary.totalNights != null}" th:text="${' / ' + itinerary.totalNights + 'n'}"> / 13n</span>
             </div>
           </td>
           <td>
             <div class="meta-label">Guests</div>
-            <div class="meta-value" th:text="${itinerary.totalPaxCount != null ? itinerary.totalPaxCount + ' pax' : '—'}">4 pax</div>
+            <div class="meta-value" th:text="${itinerary.totalPaxCount != null ? itinerary.totalPaxCount + ' pax' : '-'}">4 pax</div>
           </td>
           <td>
             <div class="meta-label">Vehicles</div>
-            <div class="meta-value" th:text="${itinerary.carCount != null ? itinerary.carCount : '—'}">1</div>
+            <div class="meta-value" th:text="${itinerary.carCount != null ? itinerary.carCount : '-'}">1</div>
           </td>
           <td>
             <div class="meta-label">Route</div>
             <div class="meta-value">
-              <span th:text="${itinerary.startLocation != null ? itinerary.startLocation : '—'}">Arusha</span>
+              <span th:text="${itinerary.startLocation != null ? itinerary.startLocation : '-'}">Arusha</span>
                to 
-              <span th:text="${itinerary.endLocation != null ? itinerary.endLocation : '—'}">Zanzibar</span>
+              <span th:text="${itinerary.endLocation != null ? itinerary.endLocation : '-'}">Zanzibar</span>
             </div>
           </td>
         </tr>
@@ -175,11 +175,11 @@
                 </td>
                 <td class="day-route">
                   <span th:if="${day.startLocation != null or day.endLocation != null}">
-                    <strong th:text="${day.startLocation != null ? day.startLocation : '—'}">Seronera</strong>
+                    <strong th:text="${day.startLocation != null ? day.startLocation : '-'}">Seronera</strong>
                      to 
-                    <strong th:text="${day.endLocation != null ? day.endLocation : '—'}">Zanzibar</strong>
+                    <strong th:text="${day.endLocation != null ? day.endLocation : '-'}">Zanzibar</strong>
                   </span>
-                  <span th:if="${day.distanceKm != null}" th:text="${' · ' + day.distanceKm + ' km'}"> · 320 km</span>
+                  <span th:if="${day.distanceKm != null}" th:text="${' | ' + day.distanceKm + ' km'}"> | 320 km</span>
                 </td>
               </tr>
             </table>
@@ -211,14 +211,14 @@
                   <span class="pn" th:text="${park.parkName != null ? park.parkName : 'Park'}">Serengeti National Park</span>
                   <span class="pe" th:if="${park.entryTypeDisplayName != null}" th:text="${park.entryTypeDisplayName}">Sleep-over</span>
                   <span class="pt">
-                    <span th:if="${park.arrivalTime != null and !#strings.isEmpty(park.arrivalTime)}" th:text="${' · in ' + park.arrivalTime}"> · in 07:00</span>
+                    <span th:if="${park.arrivalTime != null and !#strings.isEmpty(park.arrivalTime)}" th:text="${' | in ' + park.arrivalTime}"> | in 07:00</span>
                     <span th:if="${park.departureTime != null and !#strings.isEmpty(park.departureTime)}" th:text="${' / out ' + park.departureTime}"> / out 18:00</span>
                   </span>
                   <div class="park-acts" th:if="${park.activities != null and !park.activities.isEmpty()}">
                     <table class="sched">
                       <tr th:each="pa : ${park.activities}">
                         <td class="t">
-                          <span th:if="${pa.startTime != null and !#strings.isEmpty(pa.startTime)}" th:text="${pa.startTime}">08:00</span><span th:if="${pa.endTime != null and !#strings.isEmpty(pa.endTime)}" th:text="${'–' + pa.endTime}">–12:00</span>
+                          <span th:if="${pa.startTime != null and !#strings.isEmpty(pa.startTime)}" th:text="${pa.startTime}">08:00</span><span th:if="${pa.endTime != null and !#strings.isEmpty(pa.endTime)}" th:text="${'-' + pa.endTime}">-12:00</span>
                           <span th:if="${(pa.startTime == null or #strings.isEmpty(pa.startTime)) and pa.durationHours != null}" th:text="${pa.durationHours + ' h'}">3 h</span>
                         </td>
                         <td class="a"><span th:text="${pa.activityName != null ? pa.activityName : 'Activity'}">Game Drive</span></td>
@@ -245,11 +245,11 @@
                   </td>
                   <td class="a">
                     <span th:text="${flight.sectorLabel != null ? flight.sectorLabel : 'Flight'}">ARS to ZNZ</span>
-                    <span th:if="${flight.airlineName != null}" th:text="${' · ' + flight.airlineName}"> · Air Excel</span>
-                    <span class="tag opt" th:if="${flight.isAlternative != null and flight.isAlternative}"> · alternative</span>
-                    <span class="tag opt" th:if="${flight.isOnRequest != null and flight.isOnRequest}"> · on request</span>
-                    <span class="tag" th:if="${flight.minimumSeats != null}" th:text="${' · min ' + flight.minimumSeats + ' seats'}"></span>
-                    <span class="tag" th:if="${flight.notes != null and !#strings.isEmpty(flight.notes)}" th:text="${' · ' + flight.notes}"></span>
+                    <span th:if="${flight.airlineName != null}" th:text="${' | ' + flight.airlineName}"> | Air Excel</span>
+                    <span class="tag opt" th:if="${flight.isAlternative != null and flight.isAlternative}"> | alternative</span>
+                    <span class="tag opt" th:if="${flight.isOnRequest != null and flight.isOnRequest}"> | on request</span>
+                    <span class="tag" th:if="${flight.minimumSeats != null}" th:text="${' | min ' + flight.minimumSeats + ' seats'}"></span>
+                    <span class="tag" th:if="${flight.notes != null and !#strings.isEmpty(flight.notes)}" th:text="${' | ' + flight.notes}"></span>
                   </td>
                 </tr>
               </table>
@@ -261,13 +261,13 @@
               <table class="sched">
                 <tr th:each="act : ${day.activities}">
                   <td class="t">
-                    <span th:if="${act.startTime != null and !#strings.isEmpty(act.startTime)}" th:text="${act.startTime}">08:00</span><span th:if="${act.endTime != null and !#strings.isEmpty(act.endTime)}" th:text="${'–' + act.endTime}">–12:00</span>
+                    <span th:if="${act.startTime != null and !#strings.isEmpty(act.startTime)}" th:text="${act.startTime}">08:00</span><span th:if="${act.endTime != null and !#strings.isEmpty(act.endTime)}" th:text="${'-' + act.endTime}">-12:00</span>
                     <span th:if="${(act.startTime == null or #strings.isEmpty(act.startTime)) and act.durationHours != null}" th:text="${act.durationHours + ' h'}">2 h</span>
                   </td>
                   <td class="a">
                     <span th:text="${act.activityName != null ? act.activityName : 'Activity'}">City Tour</span>
-                    <span class="tag opt" th:if="${act.isOptional != null and act.isOptional}"> · optional</span>
-                    <span class="tag" th:if="${act.notes != null and !#strings.isEmpty(act.notes)}" th:text="${' · ' + act.notes}"></span>
+                    <span class="tag opt" th:if="${act.isOptional != null and act.isOptional}"> | optional</span>
+                    <span class="tag" th:if="${act.notes != null and !#strings.isEmpty(act.notes)}" th:text="${' | ' + act.notes}"></span>
                   </td>
                 </tr>
               </table>
@@ -280,10 +280,10 @@
                 <div class="overnight" th:if="${acc.isAlternative == null or acc.isAlternative == false}">
                   <strong th:text="${acc.accommodationName != null ? acc.accommodationName : 'Lodge'}">Amani Boutique Hotel</strong>
                   <span class="cfg">
-                    <span th:if="${acc.roomCount != null}" th:text="${' · ' + acc.roomCount + ' room(s)'}"> · 2 room(s)</span>
-                    <span th:if="${acc.roomTypeName != null}" th:text="${' · ' + acc.roomTypeName}"> · Double</span>
-                    <span th:if="${acc.roomStandardName != null}" th:text="${' · ' + acc.roomStandardName}"> · Deluxe Sea View</span>
-                    <span th:if="${acc.boardTypeName != null}" th:text="${' · ' + acc.boardTypeName}"> · Half Board</span>
+                    <span th:if="${acc.roomCount != null}" th:text="${' | ' + acc.roomCount + ' room(s)'}"> | 2 room(s)</span>
+                    <span th:if="${acc.roomTypeName != null}" th:text="${' | ' + acc.roomTypeName}"> | Double</span>
+                    <span th:if="${acc.roomStandardName != null}" th:text="${' | ' + acc.roomStandardName}"> | Deluxe Sea View</span>
+                    <span th:if="${acc.boardTypeName != null}" th:text="${' | ' + acc.boardTypeName}"> | Half Board</span>
                   </span>
                 </div>
               </th:block>

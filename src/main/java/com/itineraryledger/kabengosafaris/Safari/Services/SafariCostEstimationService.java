@@ -774,7 +774,7 @@ public class SafariCostEstimationService {
             .unitPrice(BigDecimal.ZERO)
             .totalPrice(BigDecimal.ZERO)
             .currency(DEFAULT_CURRENCY)
-            .notes("Rate not found — " + why)
+            .notes("Rate not found - " + why)
             .rateFound(false)
             .build();
     }

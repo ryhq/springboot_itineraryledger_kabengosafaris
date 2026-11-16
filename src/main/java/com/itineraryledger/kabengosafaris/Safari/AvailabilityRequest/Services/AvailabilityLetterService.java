@@ -171,8 +171,8 @@ public class AvailabilityLetterService {
                 if (spans.length() > 0) spans.append(" & ");
                 spans.append(range(block.get(0), block.get(block.size() - 1).plusDays(1)));
             }
-            String subject = "Availability Request · " + variables.get("accommodationName")
-                + " · " + spans;
+            String subject = "Availability Request | " + variables.get("accommodationName")
+                + " | " + spans;
 
             Map<String, Object> response = new HashMap<>();
             response.put("subject", subject);
@@ -268,8 +268,8 @@ public class AvailabilityLetterService {
                     ? request.getSubject() : "Re: " + request.getSubject();
             } else {
                 /* an older row kept no subject; rebuilt WITH its dates rather than left vague */
-                subject = "Re: Availability Request · " + variables.get("accommodationName")
-                    + " · " + range(checkIn, checkOut);
+                subject = "Re: Availability Request | " + variables.get("accommodationName")
+                    + " | " + range(checkIn, checkOut);
             }
 
             /*
@@ -402,7 +402,7 @@ public class AvailabilityLetterService {
         StringBuilder out = new StringBuilder();
         out.append("<p style=\"margin: 16px 0 6px; font-size: 13px; color: #6b7280\">")
            .append("The guests return to the property later in the trip. ")
-           .append("These are separate nights, with a gap in between — please treat each as its own booking.")
+           .append("These are separate nights, with a gap in between - please treat each as its own booking.")
            .append("</p>");
 
         for (int i = 1; i < blocks.size(); i++) {
@@ -561,15 +561,15 @@ public class AvailabilityLetterService {
         List<String> parts = new ArrayList<>();
         if (safari.getCode() != null) parts.add(safari.getCode());
         if (safari.getName() != null) parts.add(safari.getName());
-        return String.join(" · ", parts);
+        return String.join(" | ", parts);
     }
 
     /** "29 Jan – 1 Feb 2027" for the subject line. */
     private String range(LocalDate from, LocalDate to) {
         if (from.getYear() == to.getYear() && from.getMonth() == to.getMonth()) {
-            return from.getDayOfMonth() + "–" + to.format(SHORT);
+            return from.getDayOfMonth() + "-" + to.format(SHORT);
         }
-        return from.format(SHORT) + " – " + to.format(SHORT);
+        return from.format(SHORT) + " - " + to.format(SHORT);
     }
 
     private String escape(String value) {

@@ -245,7 +245,7 @@ public class QuoteItemReorderService {
                 Integer stored = existing.getDisplayOrder();
                 if (stored != null && !item.getExpectedDisplayOrder().equals(stored)) {
                     expectedOrderMismatches.add(
-                        String.format("Item %s: caller expected it at %d, but it is at %d — the list has moved on",
+                        String.format("Item %s: caller expected it at %d, but it is at %d - the list has moved on",
                             item.getItemId(), item.getExpectedDisplayOrder(), stored)
                     );
                 }

@@ -67,11 +67,11 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
      */
     private void printStartBanner() {
         log.info("");
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║                                                                    ║");
-        log.info("║              EMAIL EVENT INITIALIZER - START                       ║");
-        log.info("║                                                                    ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|                                                                    |");
+        log.info("|              EMAIL EVENT INITIALIZER - START                       |");
+        log.info("|                                                                    |");
+        log.info("+====================================================================+");
         log.info("");
     }
 
@@ -83,17 +83,17 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
     private void printEndBanner(boolean success) {
         log.info("");
         if (success) {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║          ✓ EMAIL EVENT INITIALIZER - COMPLETED                     ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|            EMAIL EVENT INITIALIZER - COMPLETED                     |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         } else {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║          ✗ EMAIL EVENT INITIALIZER - FAILED                        ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|            EMAIL EVENT INITIALIZER - FAILED                        |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         }
         log.info("");
     }
@@ -298,7 +298,7 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
 
         initializeEvent(
             "BILL_DUE_REMINDER",
-            "Sent as a supplier's bill approaches its due date — a week out, three days out, and on the day itself."
+            "Sent as a supplier's bill approaches its due date - a week out, three days out, and on the day itself."
         );
 
         initializeEvent(
@@ -389,7 +389,7 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
                     existing.setVariablesJson(variablesJson);
                     emailEventRepository.save(existing);
                 } else {
-                    log.debug("⊘ Email event already exists and matches its schema: {}", eventName);
+                    log.debug("Email event already exists and matches its schema: {}", eventName);
                 }
                 return;
             }

@@ -73,7 +73,7 @@ public class WebsiteCacheFilter extends OncePerRequestFilter {
         if (profile == null || !Boolean.TRUE.equals(profile.getWebsiteCacheAuto())) return;
         if (!profile.websiteCacheConfigured()) return;
 
-        log.debug("{} {} changed public content — clearing {}",
+        log.debug("{} {} changed public content - clearing {}",
             request.getMethod(), request.getRequestURI(), WebsiteCacheTags.describe(tags));
         cacheService.clearQuietly(tags);
     }

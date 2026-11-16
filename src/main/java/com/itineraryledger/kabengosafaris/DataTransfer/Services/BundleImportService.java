@@ -105,7 +105,7 @@ public class BundleImportService {
         if (version > BundleExportService.SCHEMA_VERSION) {
             throw new IllegalArgumentException(
                 "This bundle was written by a newer version (schema " + version + ", this one reads "
-                    + BundleExportService.SCHEMA_VERSION + "). Update this installation first — "
+                    + BundleExportService.SCHEMA_VERSION + "). Update this installation first - "
                     + "importing it here would silently drop whatever is new.");
         }
         return new Bundle(manifest, data, scratch);

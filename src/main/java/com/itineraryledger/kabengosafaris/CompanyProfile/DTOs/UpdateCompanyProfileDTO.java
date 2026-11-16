@@ -53,7 +53,7 @@ public class UpdateCompanyProfileDTO {
     @Size(max = 16, message = "Locale cannot exceed 16 characters")
     private String locale;
 
-    @Size(max = 8, message = "The mark can be at most 8 characters — one or two is usual")
+    @Size(max = 8, message = "The mark can be at most 8 characters - one or two is usual")
     private String brandMark;
 
     @jakarta.validation.constraints.Pattern(

@@ -289,7 +289,7 @@ public class AirlineService {
     }
 
     private String describeMarkup(Airline a) {
-        if (!a.hasMarkup()) return "No markup — fares pass through at cost";
+        if (!a.hasMarkup()) return "No markup - fares pass through at cost";
         return a.getMarkupType() == MarkupType.PERCENT
             ? a.getMarkupValue().stripTrailingZeros().toPlainString() + "% per person, on the fare before taxes"
             : a.getMarkupValue().stripTrailingZeros().toPlainString() + " per person, flat";

@@ -563,7 +563,7 @@ public class GlobalExceptionHandler {
          */
         Throwable root = ex;
         while (root.getCause() != null && root.getCause() != root) root = root.getCause();
-        log.warn("Multipart exception: {} — caused by {}: {}",
+        log.warn("Multipart exception: {} - caused by {}: {}",
             ex.getMessage(), root.getClass().getName(), root.getMessage());
 
         String message = "Failed to process file upload.";

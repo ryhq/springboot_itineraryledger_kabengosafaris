@@ -120,7 +120,7 @@ public class ItineraryBudgetLevelAdoptService {
         report.put("budgetCategory", itinerary.getBudgetCategory() == null ? null
             : itinerary.getBudgetCategory().name());
 
-        log.info("Itinerary {} adopted {} — {} night(s) changed", itineraryId, level, changes.size());
+        log.info("Itinerary {} adopted {} - {} night(s) changed", itineraryId, level, changes.size());
 
         return ResponseEntity.ok(ApiResponse.success(200,
             changes.isEmpty()

@@ -46,11 +46,11 @@ public class BackupService {
      * @return BackupResult with status and details
      */
     public BackupResult performBackup() {
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║                                                                    ║");
-        log.info("║                    BACKUP PROCESS STARTED                          ║");
-        log.info("║                                                                    ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|                                                                    |");
+        log.info("|                    BACKUP PROCESS STARTED                          |");
+        log.info("|                                                                    |");
+        log.info("+====================================================================+");
 
         BackupResult result = new BackupResult();
         result.setStartTime(LocalDateTime.now());
@@ -95,10 +95,10 @@ public class BackupService {
                 if (dbBackupPath != null) {
                     result.setDatabaseBackupPath(dbBackupPath);
                     result.setDatabaseBackupSuccess(true);
-                    log.info("✓ Database backup completed: {}", dbBackupPath);
+                    log.info("Database backup completed: {}", dbBackupPath);
                 } else {
                     result.setDatabaseBackupSuccess(false);
-                    log.error("✗ Database backup failed");
+                    log.error("Database backup failed");
                 }
             }
 
@@ -109,10 +109,10 @@ public class BackupService {
                 if (filesBackupPath != null) {
                     result.setFilesBackupPath(filesBackupPath);
                     result.setFilesBackupSuccess(true);
-                    log.info("✓ File system backup completed: {}", filesBackupPath);
+                    log.info("File system backup completed: {}", filesBackupPath);
                 } else {
                     result.setFilesBackupSuccess(false);
-                    log.error("✗ File system backup failed");
+                    log.error("File system backup failed");
                 }
             }
 
@@ -151,7 +151,7 @@ public class BackupService {
                 log.info("Compressing backup...");
                 finalBackupPath = compressBackup(tempBackupDir, storagePath, artifactName);
                 result.setCompressed(true);
-                log.info("✓ Backup compressed: {}", finalBackupPath);
+                log.info("Backup compressed: {}", finalBackupPath);
             } else {
                 // Move temp directory to final location
                 finalBackupPath = new File(storagePath, artifactName).getPath() + "/";
@@ -175,18 +175,18 @@ public class BackupService {
             }
 
             if (complete) {
-                log.info("╔════════════════════════════════════════════════════════════════════╗");
-                log.info("║                                                                    ║");
-                log.info("║              ✓ BACKUP PROCESS COMPLETED SUCCESSFULLY               ║");
-                log.info("║                                                                    ║");
-                log.info("╚════════════════════════════════════════════════════════════════════╝");
+                log.info("+====================================================================+");
+                log.info("|                                                                    |");
+                log.info("|                BACKUP PROCESS COMPLETED SUCCESSFULLY               |");
+                log.info("|                                                                    |");
+                log.info("+====================================================================+");
             } else {
                 result.setError(result.getMessage());
-                log.error("╔════════════════════════════════════════════════════════════════════╗");
-                log.error("║                                                                    ║");
-                log.error("║              ✗ BACKUP INCOMPLETE - DO NOT RELY ON IT               ║");
-                log.error("║                                                                    ║");
-                log.error("╚════════════════════════════════════════════════════════════════════╝");
+                log.error("+====================================================================+");
+                log.error("|                                                                    |");
+                log.error("|                BACKUP INCOMPLETE - DO NOT RELY ON IT               |");
+                log.error("|                                                                    |");
+                log.error("+====================================================================+");
                 log.error("{}", result.getMessage());
             }
 
@@ -196,11 +196,11 @@ public class BackupService {
             result.setMessage("Backup failed: " + e.getMessage());
             result.setError(e.getMessage());
 
-            log.error("╔════════════════════════════════════════════════════════════════════╗");
-            log.error("║                                                                    ║");
-            log.error("║                  ✗ BACKUP PROCESS FAILED                           ║");
-            log.error("║                                                                    ║");
-            log.error("╚════════════════════════════════════════════════════════════════════╝");
+            log.error("+====================================================================+");
+            log.error("|                                                                    |");
+            log.error("|                    BACKUP PROCESS FAILED                           |");
+            log.error("|                                                                    |");
+            log.error("+====================================================================+");
         }
 
         result.setEndTime(LocalDateTime.now());
@@ -306,9 +306,9 @@ public class BackupService {
                     totalDirectories++;
                     if (copyDirectory(sourcePath, targetPath)) {
                         successfulBackups++;
-                        log.info("✓ Backed up: {}", dirName);
+                        log.info("Backed up: {}", dirName);
                     } else {
-                        log.warn("✗ Failed to backup: {}", dirName);
+                        log.warn("Failed to backup: {}", dirName);
                     }
                 }
             }

@@ -60,7 +60,7 @@ public class BlogFirstPublishedBackfillInitializer implements ApplicationRunner 
                 log.info("BLOG BACKFILL: first-published stamped on {} article(s), {} failed", filled, failed);
             }
         } catch (Exception e) {
-            log.error("BLOG BACKFILL: skipped entirely — {}", e.getMessage(), e);
+            log.error("BLOG BACKFILL: skipped entirely - {}", e.getMessage(), e);
         }
     }
 

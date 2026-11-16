@@ -15,7 +15,7 @@
   <h1>Your invoice</h1>
   <p class="lede" th:if="${page.invoice != null}">
     <span th:text="${page.invoice.code}">INV-000000</span><span
-      th:if="${page.invoice.status != null}" th:text="' · ' + ${page.invoice.status}"> · Partially paid</span>
+      th:if="${page.invoice.status != null}" th:text="' | ' + ${page.invoice.status}"> | Partially paid</span>
   </p>
 
   <div class="card" th:if="${page.invoice != null}">

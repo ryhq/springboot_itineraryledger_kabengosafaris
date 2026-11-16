@@ -99,7 +99,7 @@ public class InvoiceCustomerEmailService {
             }
         }
 
-        String subject = "Your Invoice: " + invoice.getInvoiceCode() + " — " + invoice.getTitle();
+        String subject = "Your Invoice: " + invoice.getInvoiceCode() + " - " + invoice.getTitle();
         String invoiceCode = invoice.getInvoiceCode();
 
         final byte[] finalPdfBytes = pdfBytes;

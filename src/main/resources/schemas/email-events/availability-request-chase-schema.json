@@ -1,12 +1,12 @@
 [
   {
     "name": "greetingName",
-    "description": "Who to greet — a person's name when the address carries one, else 'Reservations Team'",
+    "description": "Who to greet - a person's name when the address carries one, else 'Reservations Team'",
     "isRequired": true
   },
   {
     "name": "brandName",
-    "description": "The company writing — supplied always, so it can be added to the wording; the signature already carries it, so the default letter does not repeat it",
+    "description": "The company writing - supplied always, so it can be added to the wording; the signature already carries it, so the default letter does not repeat it",
     "isRequired": false
   },
   {
@@ -51,7 +51,7 @@
   },
   {
     "name": "reference",
-    "description": "Our own reference — safari code and name",
+    "description": "Our own reference - safari code and name",
     "isRequired": false
   },
   {

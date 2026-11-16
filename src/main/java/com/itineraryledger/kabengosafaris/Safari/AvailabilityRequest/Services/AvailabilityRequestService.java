@@ -459,7 +459,7 @@ public class AvailabilityRequestService {
         if (hits.size() == 1) return hits.get(0);
         if (hits.size() > 1) {
             /* several asks to the same property: only the subject can say which, and it did not */
-            log.info("A reply from {} could match {} open availability requests — leaving it for a person",
+            log.info("A reply from {} could match {} open availability requests - leaving it for a person",
                 from, hits.size());
         }
         return null;

@@ -393,7 +393,7 @@ public class EmailSendingService {
                 .orElse(null);
 
             if (sentFolder == null) {
-                log.debug("No SENT folder found for account {} — skipping capture", account.getEmail());
+                log.debug("No SENT folder found for account {} - skipping capture", account.getEmail());
                 return;
             }
 
@@ -490,7 +490,7 @@ public class EmailSendingService {
                 .orElse(null);
 
             if (sentFolder == null) {
-                log.debug("No SENT folder found for account {} — skipping Resend capture", account.getEmail());
+                log.debug("No SENT folder found for account {} - skipping Resend capture", account.getEmail());
                 return;
             }
 

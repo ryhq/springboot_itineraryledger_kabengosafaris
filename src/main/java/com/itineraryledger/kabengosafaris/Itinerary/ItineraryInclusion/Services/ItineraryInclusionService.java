@@ -129,7 +129,7 @@ public class ItineraryInclusionService {
         }
         if (dto == null || dto.getItems() == null) {
             return ResponseEntity.badRequest().body(ApiResponse.error(400,
-                "Items list is required — send an empty list to clear it", "ITEMS_REQUIRED"));
+                "Items list is required - send an empty list to clear it", "ITEMS_REQUIRED"));
         }
 
         /* Resolve everything first, so a bad row cannot leave the set half-written. */

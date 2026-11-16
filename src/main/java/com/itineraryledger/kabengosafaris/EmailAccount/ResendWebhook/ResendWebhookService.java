@@ -233,7 +233,7 @@ public class ResendWebhookService {
             match.setDeliveryStatus(EmailDeliveryStatus.resolve(current, incoming));
             match.setLastEventType(eventType);
             emailMessageRepository.save(match);
-            log.info("EmailMessage {} → {} (event {})",
+            log.info("EmailMessage {} -> {} (event {})",
                     match.getId(), match.getDeliveryStatus(), eventType);
         }
     }

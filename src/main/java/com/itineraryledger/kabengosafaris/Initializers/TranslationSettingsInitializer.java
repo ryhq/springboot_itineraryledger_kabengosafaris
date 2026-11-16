@@ -107,28 +107,28 @@ public class TranslationSettingsInitializer implements ApplicationRunner, Ordere
 
     private void printStartBanner() {
         log.info("");
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║                                                                    ║");
-        log.info("║            TRANSLATION SETTINGS INITIALIZER - START                ║");
-        log.info("║                                                                    ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|                                                                    |");
+        log.info("|            TRANSLATION SETTINGS INITIALIZER - START                |");
+        log.info("|                                                                    |");
+        log.info("+====================================================================+");
         log.info("");
     }
 
     private void printEndBanner(boolean success) {
         log.info("");
         if (success) {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║       ✓ TRANSLATION SETTINGS INITIALIZER - COMPLETED               ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|         TRANSLATION SETTINGS INITIALIZER - COMPLETED               |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         } else {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║       ✗ TRANSLATION SETTINGS INITIALIZER - FAILED                  ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|         TRANSLATION SETTINGS INITIALIZER - FAILED                  |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         }
         log.info("");
     }
@@ -286,7 +286,7 @@ public class TranslationSettingsInitializer implements ApplicationRunner, Ordere
                                         Boolean requiresRestart) {
         try {
             if (translationSettingRepository.existsBySettingKey(settingKey)) {
-                log.debug("⊘ Setting already exists, skipping: {}", settingKey);
+                log.debug("Setting already exists, skipping: {}", settingKey);
                 return;
             }
 

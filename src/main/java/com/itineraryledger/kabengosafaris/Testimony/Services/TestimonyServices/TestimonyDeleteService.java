@@ -84,7 +84,7 @@ public class TestimonyDeleteService {
 
                 if (testimony == null) {
                     log.warn("Testimony not found: {}", id);
-                    skipped.add(skip(id, null, "No such review — it may already have been deleted"));
+                    skipped.add(skip(id, null, "No such review - it may already have been deleted"));
                     continue;
                 }
 

@@ -95,7 +95,7 @@ public class SafariPaymentScheduler {
         }
 
         // All invoices are in paid/settled state
-        log.debug("Safari {} — all {} invoice(s) are settled", safari.getCode(), allInvoices.size());
+        log.debug("Safari {} - all {} invoice(s) are settled", safari.getCode(), allInvoices.size());
         return true;
     }
 }

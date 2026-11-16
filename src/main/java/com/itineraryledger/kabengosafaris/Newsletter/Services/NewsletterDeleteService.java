@@ -71,7 +71,7 @@ public class NewsletterDeleteService {
                         log.info("Newsletter subscription deleted successfully: {}", id);
                     } else {
                         log.warn("Newsletter subscription not found: {}", id);
-                        skipped.add(skip(idObfuscated, "No such subscriber — it may already have been deleted"));
+                        skipped.add(skip(idObfuscated, "No such subscriber - it may already have been deleted"));
                     }
                 } catch (Exception e) {
                     log.error("Error deleting newsletter subscription: {}", id, e);

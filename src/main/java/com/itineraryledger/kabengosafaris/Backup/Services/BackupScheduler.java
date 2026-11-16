@@ -61,11 +61,11 @@ public class BackupScheduler {
             return;
         }
 
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║                                                                    ║");
-        log.info("║               SCHEDULED BACKUP TASK TRIGGERED                      ║");
-        log.info("║                                                                    ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|                                                                    |");
+        log.info("|               SCHEDULED BACKUP TASK TRIGGERED                      |");
+        log.info("|                                                                    |");
+        log.info("+====================================================================+");
 
         try {
             BackupService.BackupResult result = backupService.performBackup();
@@ -150,7 +150,7 @@ public class BackupScheduler {
                 try {
                     emailSendingService.sendHtmlEmail(
                         email,
-                        "✓ Backup Completed Successfully - " + result.getEndTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+                        "Backup completed successfully - " + result.getEndTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
                         htmlContent
                     );
                     log.info("Backup success notification sent to: {}", email);
@@ -223,7 +223,7 @@ public class BackupScheduler {
                 try {
                     emailSendingService.sendHtmlEmail(
                         email,
-                        "✗ Backup Failed - Immediate Attention Required - " + failureTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+                        "Backup FAILED, immediate attention required - " + failureTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
                         htmlContent
                     );
                     log.warn("Backup failure notification sent to: {}", email);

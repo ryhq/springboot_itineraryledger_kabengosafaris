@@ -63,7 +63,7 @@ public class CompanyProfileWriteService {
          */
         patch(dto.getTradingName(), v -> {
             if (v == null || v.isBlank()) {
-                throw new IllegalArgumentException("Trading name cannot be empty — every document prints it");
+                throw new IllegalArgumentException("Trading name cannot be empty - every document prints it");
             }
             profile.setTradingName(v);
         });
@@ -150,7 +150,7 @@ public class CompanyProfileWriteService {
 
         patch(dto.getEmail(), v -> {
             if (v == null || v.isBlank()) {
-                throw new IllegalArgumentException("An email address cannot be blank — delete the row instead");
+                throw new IllegalArgumentException("An email address cannot be blank - delete the row instead");
             }
             entity.setEmail(v.trim());
         });
@@ -218,7 +218,7 @@ public class CompanyProfileWriteService {
         patch(dto.getCountryCode(), entity::setCountryCode);
         patch(dto.getPhoneNumber(), v -> {
             if (v == null || v.isBlank()) {
-                throw new IllegalArgumentException("A phone number cannot be blank — delete the row instead");
+                throw new IllegalArgumentException("A phone number cannot be blank - delete the row instead");
             }
             entity.setPhoneNumber(v.trim());
         });
@@ -303,7 +303,7 @@ public class CompanyProfileWriteService {
         }
 
         if (entity.formatted().isBlank()) {
-            return badRequest("That would leave the address empty — delete the row instead");
+            return badRequest("That would leave the address empty - delete the row instead");
         }
 
         return saved("Address updated successfully", profile);
@@ -363,7 +363,7 @@ public class CompanyProfileWriteService {
 
         patch(dto.getUrl(), v -> {
             if (v == null || v.isBlank()) {
-                throw new IllegalArgumentException("A URL cannot be blank — delete the row instead");
+                throw new IllegalArgumentException("A URL cannot be blank - delete the row instead");
             }
             entity.setUrl(normaliseUrl(v));
         });
@@ -414,7 +414,7 @@ public class CompanyProfileWriteService {
                 .tradingName(fallbackCompanyName == null || fallbackCompanyName.isBlank()
                     ? "Your company" : fallbackCompanyName)
                 .build();
-            log.info("No company profile existed — creating one named '{}'", created.getTradingName());
+            log.info("No company profile existed - creating one named '{}'", created.getTradingName());
             return profileRepository.save(created);
         });
     }

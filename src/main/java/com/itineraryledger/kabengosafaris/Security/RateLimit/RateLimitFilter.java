@@ -128,7 +128,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         if (waitFor > 0) {
-            log.warn("Rate limit reached for {} on {} — {} more seconds", caller, path, waitFor);
+            log.warn("Rate limit reached for {} on {} - {} more seconds", caller, path, waitFor);
             refuse(response, rule, waitFor);
             return;
         }

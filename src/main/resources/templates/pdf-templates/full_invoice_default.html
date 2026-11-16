@@ -1033,7 +1033,7 @@
 
       <!-- Use currencies list from invoice DTO -->
       <th:block th:with="currencies=${invoice.currencies != null ? invoice.currencies : {}}">
-        <!-- Calculate currency column width: 56% / (number of currencies × 2) -->
+        <!-- Calculate currency column width: 56% / (number of currencies x 2) -->
         <th:block th:with="currencyColWidth=${56.0 / (currencies.size() * 2)}">
           <!-- Multi-currency horizontal table -->
           <div class="lineItems-table-wrapper">

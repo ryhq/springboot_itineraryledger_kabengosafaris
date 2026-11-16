@@ -158,7 +158,7 @@ public class PaymentCreateService {
                     return ResponseEntity.badRequest().body(
                         ApiResponse.error(400,
                             String.format("exchangeRate is required and must be > 0 for cross-currency payments " +
-                                "(%s → %s). Rate = 1 %s in %s.",
+                                "(%s to %s). Rate = 1 %s in %s.",
                                 paymentCurrency, invoiceCurrency, paymentCurrency, invoiceCurrency),
                             "EXCHANGE_RATE_REQUIRED")
                     );
@@ -249,7 +249,7 @@ public class PaymentCreateService {
 
             payment = paymentRepository.save(payment);
 
-            log.info("Payment saved with ID: {} for invoice: {} ({} {} → {} {} @ rate {})",
+            log.info("Payment saved with ID: {} for invoice: {} ({} {} -> {} {} @ rate {})",
                 payment.getId(), invoice.getInvoiceCode(),
                 paymentCurrency, dto.getAmount(),
                 invoiceCurrency, baseAmount, exchangeRate);

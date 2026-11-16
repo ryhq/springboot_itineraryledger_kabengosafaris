@@ -41,7 +41,7 @@ public class QuotePaxController {
             @PathVariable String quoteId,
             @Valid @RequestBody List<UpsertQuotePaxDTO> dtos
     ) {
-        log.info("POST /api/quotes/{}/pax — upserting {} pax entries", quoteId, dtos.size());
+        log.info("POST /api/quotes/{}/pax - upserting {} pax entries", quoteId, dtos.size());
         return quotePaxService.upsertQuotePax(quoteId, dtos);
     }
 
@@ -51,7 +51,7 @@ public class QuotePaxController {
             @PathVariable String quoteId,
             @RequestBody List<String> paxIds
     ) {
-        log.info("DELETE /api/quotes/{}/pax — deleting {} pax entries", quoteId, paxIds.size());
+        log.info("DELETE /api/quotes/{}/pax - deleting {} pax entries", quoteId, paxIds.size());
         return quotePaxService.deleteQuotePax(quoteId, paxIds);
     }
 }

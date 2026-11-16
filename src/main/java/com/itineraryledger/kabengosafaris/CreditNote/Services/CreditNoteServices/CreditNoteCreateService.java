@@ -87,7 +87,7 @@ public class CreditNoteCreateService {
             if (invoice.getStatus() == InvoiceStatus.DRAFT) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400,
-                        "Cannot credit a DRAFT invoice — edit the invoice directly instead",
+                        "Cannot credit a DRAFT invoice - edit the invoice directly instead",
                         "INVOICE_NOT_ISSUED")
                 );
             }

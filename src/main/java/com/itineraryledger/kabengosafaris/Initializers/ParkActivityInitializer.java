@@ -68,28 +68,28 @@ public class ParkActivityInitializer implements ApplicationRunner {
 
     private void printStartBanner() {
         log.info("");
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║                                                                    ║");
-        log.info("║          PARK-ACTIVITY INITIALIZER - START                         ║");
-        log.info("║                                                                    ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|                                                                    |");
+        log.info("|          PARK-ACTIVITY INITIALIZER - START                         |");
+        log.info("|                                                                    |");
+        log.info("+====================================================================+");
         log.info("");
     }
 
     private void printEndBanner(boolean success) {
         log.info("");
         if (success) {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║        ✓ PARK-ACTIVITY INITIALIZER - COMPLETED                     ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|          PARK-ACTIVITY INITIALIZER - COMPLETED                     |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         } else {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║        ✗ PARK-ACTIVITY INITIALIZER - FAILED                        ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|          PARK-ACTIVITY INITIALIZER - FAILED                        |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         }
         log.info("");
     }
@@ -155,7 +155,7 @@ public class ParkActivityInitializer implements ApplicationRunner {
 
                 // Check if relationship already exists
                 if (parkActivityRepository.existsByParkIdAndActivityId(parkId, activityId)) {
-                    log.debug("⊘ Relationship already exists: {} <-> {}", park.getName(), activity.getName());
+                    log.debug("Relationship already exists: {} <-> {}", park.getName(), activity.getName());
                     skippedCount++;
                     continue;
                 }
@@ -168,7 +168,7 @@ public class ParkActivityInitializer implements ApplicationRunner {
                         .build();
 
                 parkActivityRepository.save(parkActivity);
-                log.info("✓ Created relationship: {} <-> {}", park.getName(), activity.getName());
+                log.info("Created relationship: {} <-> {}", park.getName(), activity.getName());
                 createdCount++;
             }
         }

@@ -49,7 +49,7 @@
     <div class="day" th:each="day : ${page.trip.days}">
       <div class="n">
         Day <span th:text="${day.dayNumber}">1</span><span
-          th:if="${day.date != null}" th:text="' · ' + ${#temporals.format(day.date, 'EEE d MMM')}"> · Wed 30 Dec</span>
+          th:if="${day.date != null}" th:text="' | ' + ${#temporals.format(day.date, 'EEE d MMM')}"> | Wed 30 Dec</span>
       </div>
       <h3 th:text="${day.title}">Arrive in Arusha</h3>
 
@@ -66,13 +66,13 @@
       </div>
 
       <div class="meta" th:if="${!#lists.isEmpty(day.parks)}">
-        <span th:text="${#strings.listJoin(day.parks, ' · ')}">Serengeti</span>
+        <span th:text="${#strings.listJoin(day.parks, ' | ')}">Serengeti</span>
       </div>
 
       <div class="meta">
         <span th:if="${day.stay != null}">Staying at <strong th:text="${day.stay}">The lodge</strong></span>
         <span th:if="${day.stay == null and !day.overnight}">No overnight stay</span>
-        <span th:if="${day.meals != null}" th:text="' · ' + ${day.meals}"> · Breakfast, dinner</span>
+        <span th:if="${day.meals != null}" th:text="' | ' + ${day.meals}"> | Breakfast, dinner</span>
       </div>
     </div>
   </div>

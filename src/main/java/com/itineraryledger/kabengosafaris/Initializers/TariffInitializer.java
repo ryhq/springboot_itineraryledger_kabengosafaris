@@ -57,28 +57,28 @@ public class TariffInitializer implements ApplicationRunner {
 
     private void printStartBanner() {
         log.info("");
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║                                                                    ║");
-        log.info("║               TARIFF INITIALIZER - START                           ║");
-        log.info("║                                                                    ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|                                                                    |");
+        log.info("|               TARIFF INITIALIZER - START                           |");
+        log.info("|                                                                    |");
+        log.info("+====================================================================+");
         log.info("");
     }
 
     private void printEndBanner(boolean success) {
         log.info("");
         if (success) {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║            ✓ TARIFF INITIALIZER - COMPLETED                        ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|              TARIFF INITIALIZER - COMPLETED                        |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         } else {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║            ✗ TARIFF INITIALIZER - FAILED                           ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|              TARIFF INITIALIZER - FAILED                           |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         }
         log.info("");
     }
@@ -93,10 +93,10 @@ public class TariffInitializer implements ApplicationRunner {
         for (Tariff tariff : tariffsToCreate) {
             if (!tariffRepository.existsByNameIgnoreCase(tariff.getName())) {
                 tariffRepository.save(tariff);
-                log.info("✓ Created tariff: {}", tariff.getName());
+                log.info("Created tariff: {}", tariff.getName());
                 createdCount++;
             } else {
-                log.debug("⊘ Tariff already exists: {}", tariff.getName());
+                log.debug("Tariff already exists: {}", tariff.getName());
                 skippedCount++;
             }
         }

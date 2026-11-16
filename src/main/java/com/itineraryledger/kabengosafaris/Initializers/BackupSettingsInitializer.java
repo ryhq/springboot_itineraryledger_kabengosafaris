@@ -224,28 +224,28 @@ public class BackupSettingsInitializer implements ApplicationRunner, Ordered {
 
     private void printStartBanner() {
         log.info("");
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║                                                                    ║");
-        log.info("║              BACKUP SETTINGS INITIALIZER - START                   ║");
-        log.info("║                                                                    ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|                                                                    |");
+        log.info("|              BACKUP SETTINGS INITIALIZER - START                   |");
+        log.info("|                                                                    |");
+        log.info("+====================================================================+");
         log.info("");
     }
 
     private void printEndBanner(boolean success) {
         log.info("");
         if (success) {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║         ✓ BACKUP SETTINGS INITIALIZER - COMPLETED                  ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|           BACKUP SETTINGS INITIALIZER - COMPLETED                  |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         } else {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║         ✗ BACKUP SETTINGS INITIALIZER - FAILED                     ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|           BACKUP SETTINGS INITIALIZER - FAILED                     |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         }
         log.info("");
     }
@@ -624,7 +624,7 @@ public class BackupSettingsInitializer implements ApplicationRunner, Ordered {
                 if (description != null && !description.equals(existing.getDescription())) {
                     existing.setDescription(description);
                     backupSettingsRepository.save(existing);
-                    log.info("✎ Setting description brought up to date: {}", settingKey);
+                    log.info("Setting description brought up to date: {}", settingKey);
                 }
                 return;
             }
@@ -641,10 +641,10 @@ public class BackupSettingsInitializer implements ApplicationRunner, Ordered {
                     .build();
 
             backupSettingsRepository.save(setting);
-            log.info("✓ Backup setting initialized: {} = {} (category: {})", settingKey, settingValue, category);
+            log.info("Backup setting initialized: {} = {} (category: {})", settingKey, settingValue, category);
 
         } catch (Exception e) {
-            log.warn("✗ Failed to initialize backup setting {}: {}", settingKey, e.getMessage());
+            log.warn("Failed to initialize backup setting {}: {}", settingKey, e.getMessage());
         }
     }
 }

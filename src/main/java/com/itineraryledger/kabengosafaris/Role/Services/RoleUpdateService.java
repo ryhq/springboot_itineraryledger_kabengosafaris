@@ -115,7 +115,7 @@ public class RoleUpdateService {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(
                         400,
-                        "A built-in role's name, description and permissions are read-only — the system "
+                        "A built-in role's name, description and permissions are read-only - the system "
                             + "rewrites them on every restart, so the change would be undone. It can be "
                             + "switched off, or you can create your own role.",
                         "SYSTEM_ROLE_PROTECTED"
@@ -139,7 +139,7 @@ public class RoleUpdateService {
                     400,
                     "Super Administrator is always active. Switching it off would remove every "
                         + "permission from everybody holding it, including the one needed to switch it "
-                        + "back on — there would be no way back in.",
+                        + "back on - there would be no way back in.",
                     "SUPERADMIN_ALWAYS_ACTIVE"
                 )
             );

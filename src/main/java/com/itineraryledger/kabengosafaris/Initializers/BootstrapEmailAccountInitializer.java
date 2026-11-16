@@ -62,7 +62,7 @@ public class BootstrapEmailAccountInitializer implements ApplicationRunner, Orde
         if (host.isBlank() || username.isBlank() || password.isBlank() || fromAddress.isBlank()) {
             log.warn("""
                 No mail account exists and app.bootstrap.smtp.* is incomplete, so this installation \
-                cannot send email — including the first account's activation link. Set the SMTP \
+                cannot send email - including the first account's activation link. Set the SMTP \
                 properties and restart, or add the account through the panel once somebody can sign in.""");
             return;
         }
@@ -86,7 +86,7 @@ public class BootstrapEmailAccountInitializer implements ApplicationRunner, Orde
             account.setIsDefault(true);
 
             repository.save(account);
-            log.info("Mail account created for {} via {} — the first activation email can be sent",
+            log.info("Mail account created for {} via {} - the first activation email can be sent",
                 account.getEmail(), account.getSmtpHost());
 
         } catch (Exception e) {

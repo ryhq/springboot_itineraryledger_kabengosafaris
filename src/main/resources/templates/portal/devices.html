@@ -25,7 +25,7 @@
           <div class="sub">
             <span th:if="${device.ipAddress != null}" th:text="${device.ipAddress}">203.0.113.42</span><span
               th:if="${device.lastSeenAt != null}"
-              th:text="' · last used ' + ${#temporals.format(device.lastSeenAt, 'd MMM yyyy, HH:mm')}"> · last used 21 Oct</span>
+              th:text="' | last used ' + ${#temporals.format(device.lastSeenAt, 'd MMM yyyy, HH:mm')}"> | last used 21 Oct</span>
           </div>
         </div>
         <form th:action="@{'/api/portal/devices/' + ${device.id} + '/revoke'}" method="post">

@@ -28,21 +28,21 @@ public final class CompanyVariableCatalogue {
     /** flat name → what it is, in the order somebody filling a letterhead would want them */
     private static final Map<String, String> VARIABLES = new LinkedHashMap<>();
     static {
-        VARIABLES.put("companyName", "Trading name — what customers call the company");
+        VARIABLES.put("companyName", "Trading name - what customers call the company");
         VARIABLES.put("companyLegalName", "Registered entity. Falls back to the trading name");
         VARIABLES.put("companyTagline", "One line under the logo, where there is one");
 
         VARIABLES.put("companyEmail", "Primary email address");
-        VARIABLES.put("companyEmails", "Every active email address, separated by ·");
+        VARIABLES.put("companyEmails", "Every active email address, separated by |");
         VARIABLES.put("companyPhone", "Primary phone number, formatted");
         VARIABLES.put("companyPhoneSecondary", "Second number, for a letterhead with two");
         VARIABLES.put("companyPhoneTel", "Primary number as digits, for a tel: link");
         VARIABLES.put("companyPhoneSecondaryTel", "Second number as digits, for a tel: link");
-        VARIABLES.put("companyPhones", "Every active number, separated by ·");
+        VARIABLES.put("companyPhones", "Every active number, separated by |");
         VARIABLES.put("companyAddress", "Primary address on one line");
         VARIABLES.put("companyWebsite", "Website without the scheme, as a footer prints it");
 
-        VARIABLES.put("companyTin", "Taxpayer identification number — invoices must carry it");
+        VARIABLES.put("companyTin", "Taxpayer identification number - invoices must carry it");
         VARIABLES.put("companyVrn", "VAT registration number, where the company has one");
         VARIABLES.put("companyRegistrationNumber", "Company registration / incorporation number");
         VARIABLES.put("companyLicenceNumber", "Tour operator licence, where one is printed");
@@ -56,18 +56,18 @@ public final class CompanyVariableCatalogue {
         VARIABLES.put("companyTiktok", "TikTok URL, empty when there is none");
         VARIABLES.put("companyTripadvisor", "Tripadvisor URL, empty when there is none");
         VARIABLES.put("companyBookingUrl", "Booking page URL, empty when there is none");
-        VARIABLES.put("companyHasSocials", "Non-empty when the company has any social page — wrap the whole row in {{#companyHasSocials}}…{{/companyHasSocials}}");
+        VARIABLES.put("companyHasSocials", "Non-empty when the company has any social page - wrap the whole row in {{#companyHasSocials}}...{{/companyHasSocials}}");
 
         /*
          * The brand. A template that hardcodes a green is a template that looks wrong for the second
          * company, exactly like a hardcoded name — so the accent, the corner radius and the font are
          * variables too, and the shipped templates use them.
          */
-        VARIABLES.put("companyAccent", "The brand accent colour, e.g. #1c7a58. In a PDF use {{companyAccent}} even inside CSS — a ${} expression is escaped there");
-        VARIABLES.put("companyAccentBare", "The accent with no '#', for a colour inside a data: URI — write it as %23{{companyAccentBare}}");
+        VARIABLES.put("companyAccent", "The brand accent colour, e.g. #1c7a58. In a PDF use {{companyAccent}} even inside CSS - a ${} expression is escaped there");
+        VARIABLES.put("companyAccentBare", "The accent with no '#', for a colour inside a data: URI - write it as %23{{companyAccentBare}}");
         VARIABLES.put("companyAccentContrast", "Text colour that stays legible on the accent");
-        VARIABLES.put("companyAccentDark", "A darker shade of the accent — header bands, footers, rules");
-        VARIABLES.put("companyAccentSoft", "A pale tint of the accent — the wash behind a callout");
+        VARIABLES.put("companyAccentDark", "A darker shade of the accent - header bands, footers, rules");
+        VARIABLES.put("companyAccentSoft", "A pale tint of the accent - the wash behind a callout");
         VARIABLES.put("companyRadius", "Corner radius in pixels, e.g. 8px");
         VARIABLES.put("companyFont", "The brand font stack");
 
@@ -76,15 +76,15 @@ public final class CompanyVariableCatalogue {
          * so a template refers to the variable and never to a host, and the same template renders for
          * every company without editing.
          */
-        VARIABLES.put("companyLogoUrl", "Logo for a message BODY — a raster, on a white background. Upload a vector and it is converted for you");
-        VARIABLES.put("companyLogoEmailDarkUrl", "Logo for a message's coloured HEADER band — the light-ink mark, since the band is dark");
+        VARIABLES.put("companyLogoUrl", "Logo for a message BODY - a raster, on a white background. Upload a vector and it is converted for you");
+        VARIABLES.put("companyLogoEmailDarkUrl", "Logo for a message's coloured HEADER band - the light-ink mark, since the band is dark");
         VARIABLES.put("companyLogoLightUrl", "Icon logo for light backgrounds");
         VARIABLES.put("companyLogoDarkUrl", "Icon logo for dark backgrounds");
-        VARIABLES.put("companyLogoFullUrl", "Full lockup — mark plus wordmark — for a letterhead");
+        VARIABLES.put("companyLogoFullUrl", "Full lockup - mark plus wordmark - for a letterhead");
         VARIABLES.put("companyLogoFullTaglineUrl", "Full lockup carrying the tagline, for a cover page");
         VARIABLES.put("companyFaviconUrl", "Favicon, for anywhere a small square mark is wanted");
-        VARIABLES.put("companyLogoMarkup", "The icon logo as drawable markup, embedded — use this in a PDF, where fetching a URL mid-render is a blank box at worst. It arrives 110px wide; to change that, add a CSS rule such as .company-logo svg { width: 90px; height: 48px }");
-        VARIABLES.put("companyLogoFullMarkup", "The full lockup as drawable markup, embedded — for a letterhead or a cover page. It arrives 180px wide; to change that, add a CSS rule such as .company-logo svg { width: 150px; height: 80px }. Set the height too: this renderer cannot work out a vector's proportions, and height:auto leaves a tall empty band");
+        VARIABLES.put("companyLogoMarkup", "The icon logo as drawable markup, embedded - use this in a PDF, where fetching a URL mid-render is a blank box at worst. It arrives 110px wide; to change that, add a CSS rule such as .company-logo svg { width: 90px; height: 48px }");
+        VARIABLES.put("companyLogoFullMarkup", "The full lockup as drawable markup, embedded - for a letterhead or a cover page. It arrives 180px wide; to change that, add a CSS rule such as .company-logo svg { width: 150px; height: 80px }. Set the height too: this renderer cannot work out a vector's proportions, and height:auto leaves a tall empty band");
 
         VARIABLES.put("bankName", "Default bank account: the bank");
         VARIABLES.put("bankAccountName", "Default bank account: the account name");
@@ -140,7 +140,7 @@ public final class CompanyVariableCatalogue {
         }
         /* two the model offers that a flat email placeholder cannot */
         out.add(pdfRow("company.year", "This year, as a number", "number"));
-        out.add(pdfRow("company.hasLogo()", "True when a logo exists — guard an <img> with it", "boolean"));
+        out.add(pdfRow("company.hasLogo()", "True when a logo exists - guard an <img> with it", "boolean"));
         out.add(pdfRow("company.documentLogoUrl",
             "What this document should print at the top: the full lockup where one exists, the icon otherwise", "string"));
         out.add(pdfRow("company.formalName", "The registered entity where there is one, else the trading name", "string"));

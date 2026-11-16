@@ -559,7 +559,7 @@
             </div>
             <div th:if="${safari.customer.passportExpiry != null}">
               <strong>Expiry:</strong> <span th:text="${dateUtil.format(safari.customer.passportExpiry, 'dd MMM yyyy')}">01 Jan 2027</span>
-              <span class="passport-warning" th:if="${safari.customer.passportExpiringSoon != null and safari.customer.passportExpiringSoon}">⚠ Expires Soon</span>
+              <span class="passport-warning" th:if="${safari.customer.passportExpiringSoon != null and safari.customer.passportExpiringSoon}">Expires Soon</span>
             </div>
             <div th:if="${safari.customer.dateOfBirth != null}">
               <strong>Date of Birth:</strong> <span th:text="${dateUtil.format(safari.customer.dateOfBirth, 'dd MMM yyyy')}">01 Jan 1990</span>
@@ -958,10 +958,10 @@
                   <div style="font-size: 8pt; color: #6b6b6b; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Route</div>
                   <div style="font-size: 9pt; color: #2c2c2c; font-weight: 500;">
                     <span th:if="${day.startLocation != null and !#strings.isEmpty(day.startLocation)}" th:text="${day.startLocation}">Arusha</span>
-                    <span th:if="${day.startLocation == null or #strings.isEmpty(day.startLocation)}">—</span>
+                    <span th:if="${day.startLocation == null or #strings.isEmpty(day.startLocation)}">-</span>
                     to
                     <span th:if="${day.endLocation != null and !#strings.isEmpty(day.endLocation)}" th:text="${day.endLocation}">Tarangire</span>
-                    <span th:if="${day.endLocation == null or #strings.isEmpty(day.endLocation)}">—</span>
+                    <span th:if="${day.endLocation == null or #strings.isEmpty(day.endLocation)}">-</span>
                   </div>
                 </td>
                 <td th:if="${(day.startLocation == null or #strings.isEmpty(day.startLocation)) and (day.endLocation == null or #strings.isEmpty(day.endLocation))}" style="width: 50%; padding: 5px; vertical-align: top;"></td>
@@ -981,10 +981,10 @@
                   <div style="font-size: 8pt; color: #6b6b6b; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Time Range</div>
                   <div style="font-size: 9pt; color: #2c2c2c; font-weight: 500;">
                     <span th:if="${day.actualStartTime != null and !#strings.isEmpty(day.actualStartTime)}" th:text="${day.actualStartTime}">07:15</span>
-                    <span th:if="${day.actualStartTime == null or #strings.isEmpty(day.actualStartTime)}">—</span>
-                    —
+                    <span th:if="${day.actualStartTime == null or #strings.isEmpty(day.actualStartTime)}">-</span>
+                    -
                     <span th:if="${day.actualEndTime != null and !#strings.isEmpty(day.actualEndTime)}" th:text="${day.actualEndTime}">18:30</span>
-                    <span th:if="${day.actualEndTime == null or #strings.isEmpty(day.actualEndTime)}">—</span>
+                    <span th:if="${day.actualEndTime == null or #strings.isEmpty(day.actualEndTime)}">-</span>
                   </div>
                 </td>
                 <td th:if="${(day.actualStartTime == null or #strings.isEmpty(day.actualStartTime)) and (day.actualEndTime == null or #strings.isEmpty(day.actualEndTime))}" style="width: 50%; padding: 5px; vertical-align: top;"></td>
@@ -1190,8 +1190,8 @@
                       </span>
                       <span th:if="${park.feesPaid != null}" style="font-size: 9pt; color: #b36b00; margin-left: 15px;">
                         <span style="font-weight: 600;">Fees:</span>
-                        <span th:if="${park.feesPaid}" style="color: {{companyAccent}};">✓ Paid</span>
-                        <span th:if="${!park.feesPaid}" style="color: #e74c3c;">✗ Unpaid</span>
+                        <span th:if="${park.feesPaid}" style="color: {{companyAccent}};">Paid</span>
+                        <span th:if="${!park.feesPaid}" style="color: #e74c3c;">Unpaid</span>
                       </span>
                     </div>
 
@@ -1222,7 +1222,7 @@
                     <!-- Weather -->
                     <div th:if="${park.weatherConditions != null and !#strings.isEmpty(park.weatherConditions)}"
                          style="font-size: 9pt; color: #6b6b6b; margin-bottom: 12px;">
-                      <span style="font-weight: 600;">Weather:</span> <span th:text="${park.weatherConditions}">Sunny, 28°C</span>
+                      <span style="font-weight: 600;">Weather:</span> <span th:text="${park.weatherConditions}">Sunny, warm</span>
                     </div>
 
                     <!-- Park Activities (Nested) -->
@@ -1309,16 +1309,16 @@
                             </td>
                             <td style="padding: 6px 8px; text-align: center; color: #b36b00; font-weight: 600;">
                               <span th:if="${tariff.paxCount != null}" th:text="${tariff.paxCount}">2</span>
-                              <span th:if="${tariff.paxCount == null}">—</span>
+                              <span th:if="${tariff.paxCount == null}">-</span>
                             </td>
                             <td style="padding: 6px 8px; text-align: center;">
-                              <span th:if="${tariff.isPaid != null and tariff.isPaid}" style="color: {{companyAccent}}; font-weight: 600;">✓ Paid</span>
-                              <span th:if="${tariff.isPaid != null and !tariff.isPaid}" style="color: #e74c3c; font-weight: 600;">✗ Unpaid</span>
-                              <span th:if="${tariff.isPaid == null}" style="color: #999999;">—</span>
+                              <span th:if="${tariff.isPaid != null and tariff.isPaid}" style="color: {{companyAccent}}; font-weight: 600;">Paid</span>
+                              <span th:if="${tariff.isPaid != null and !tariff.isPaid}" style="color: #e74c3c; font-weight: 600;">Unpaid</span>
+                              <span th:if="${tariff.isPaid == null}" style="color: #999999;">-</span>
                             </td>
                             <td style="padding: 6px 8px; color: #b36b00; font-size: 8pt;">
                               <span th:if="${tariff.receiptNumber != null and !#strings.isEmpty(tariff.receiptNumber)}" th:text="${tariff.receiptNumber}">RCT-001234</span>
-                              <span th:if="${tariff.receiptNumber == null or #strings.isEmpty(tariff.receiptNumber)}" style="color: #999999;">—</span>
+                              <span th:if="${tariff.receiptNumber == null or #strings.isEmpty(tariff.receiptNumber)}" style="color: #999999;">-</span>
                             </td>
                           </tr>
                         </tbody>
@@ -1557,7 +1557,7 @@
               <!-- Weather Conditions -->
               <div th:if="${day.weatherConditions != null and !#strings.isEmpty(day.weatherConditions)}">
                 <div style="font-size: 8pt; color: #6b6b6b; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Weather</div>
-                <div style="font-size: 9pt; color: #2c2c2c;" th:text="${day.weatherConditions}">Sunny, 28°C</div>
+                <div style="font-size: 9pt; color: #2c2c2c;" th:text="${day.weatherConditions}">Sunny, warm</div>
               </div>
             </div>
 

@@ -96,7 +96,7 @@ public class RoleDeleteService {
 
             if (Boolean.TRUE.equals(role.getIsSystemRole())) {
                 skipped.add(reason(obfuscated, role.getName(),
-                    "A built-in role. These are read-only — switch off a custom role instead, "
+                    "A built-in role. These are read-only - switch off a custom role instead, "
                         + "or remove people from this one"));
                 continue;
             }
@@ -105,7 +105,7 @@ public class RoleDeleteService {
             if (holders > 0) {
                 skipped.add(reason(obfuscated, role.getName(),
                     holders + (holders == 1 ? " person still holds it" : " people still hold it")
-                        + " — reassign them first, or switch the role off to suspend it"));
+                        + " - reassign them first, or switch the role off to suspend it"));
                 continue;
             }
 
@@ -124,7 +124,7 @@ public class RoleDeleteService {
             } catch (Exception e) {
                 log.error("Error deleting role {}", role.getName(), e);
                 skipped.add(reason(obfuscated, role.getName(),
-                    "Still referenced elsewhere — switch it off instead"));
+                    "Still referenced elsewhere - switch it off instead"));
             }
         }
 

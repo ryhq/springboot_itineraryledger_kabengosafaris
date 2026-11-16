@@ -71,28 +71,28 @@ public class ImageSettingsInitializer implements ApplicationRunner, Ordered {
 
     private void printStartBanner() {
         log.info("");
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║                                                                    ║");
-        log.info("║              IMAGE SETTINGS INITIALIZER - START                    ║");
-        log.info("║                                                                    ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|                                                                    |");
+        log.info("|              IMAGE SETTINGS INITIALIZER - START                    |");
+        log.info("|                                                                    |");
+        log.info("+====================================================================+");
         log.info("");
     }
 
     private void printEndBanner(boolean success) {
         log.info("");
         if (success) {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║         ✓ IMAGE SETTINGS INITIALIZER - COMPLETED                   ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|           IMAGE SETTINGS INITIALIZER - COMPLETED                   |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         } else {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║         ✗ IMAGE SETTINGS INITIALIZER - FAILED                      ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|           IMAGE SETTINGS INITIALIZER - FAILED                      |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         }
         log.info("");
     }
@@ -153,7 +153,7 @@ public class ImageSettingsInitializer implements ApplicationRunner, Ordered {
                                         Boolean requiresRestart) {
         try {
             if (imageSettingRepository.existsBySettingKey(settingKey)) {
-                log.debug("⊘ Setting already exists, skipping: {}", settingKey);
+                log.debug("Setting already exists, skipping: {}", settingKey);
                 return;
             }
 

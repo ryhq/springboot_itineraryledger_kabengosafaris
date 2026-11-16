@@ -122,7 +122,7 @@ public class PaymentCustomerEmailService {
             }
         }
 
-        String subject = "Payment Receipt: " + invoice.getInvoiceCode() + " — " + formatAmount(payment.getAmount(), payment.getCurrency());
+        String subject = "Payment Receipt: " + invoice.getInvoiceCode() + " - " + formatAmount(payment.getAmount(), payment.getCurrency());
         String invoiceCode = invoice.getInvoiceCode();
 
         final byte[] finalPdfBytes = pdfBytes;

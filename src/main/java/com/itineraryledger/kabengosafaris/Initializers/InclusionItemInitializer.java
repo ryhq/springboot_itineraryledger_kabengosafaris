@@ -54,7 +54,7 @@ public class InclusionItemInitializer implements ApplicationRunner {
 
     private static final List<Seed> SEEDS = List.of(
         /* --- what a Kabengo safari includes, in the order they have always printed --- */
-        new Seed("Private 4×4 safari vehicle with pop-up roof", "Transport", true, "TRANSPORT"),
+        new Seed("Private 4x4 safari vehicle with pop-up roof", "Transport", true, "TRANSPORT"),
         /*
          * Null, not GUIDE. Checked against real quotes: they only ever carry ACCOMMODATION,
          * PARK_FEE, ACTIVITY and TRANSPORT items. The guide is inside the day rate and is never

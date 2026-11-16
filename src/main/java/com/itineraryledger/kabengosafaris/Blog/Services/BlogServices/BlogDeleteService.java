@@ -55,7 +55,7 @@ public class BlogDeleteService {
                 Long id = idObfuscator.decodeId(obfuscatedId);
                 Blog blog = blogRepository.findById(id).orElse(null);
                 if (blog == null) {
-                    skipped.add(skip(obfuscatedId, "No such post — it may already have been deleted"));
+                    skipped.add(skip(obfuscatedId, "No such post - it may already have been deleted"));
                     continue;
                 }
 

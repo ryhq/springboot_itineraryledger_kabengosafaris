@@ -52,7 +52,7 @@ public class BlogImageDeleteService {
                 Long id = idObfuscator.decodeId(obfuscatedId);
                 BlogImage image = blogImageRepository.findById(id).orElse(null);
                 if (image == null) {
-                    skipped.add(skip(obfuscatedId, "No such image — it may already have been deleted"));
+                    skipped.add(skip(obfuscatedId, "No such image - it may already have been deleted"));
                     continue;
                 }
                 String fileName = image.getFileName();

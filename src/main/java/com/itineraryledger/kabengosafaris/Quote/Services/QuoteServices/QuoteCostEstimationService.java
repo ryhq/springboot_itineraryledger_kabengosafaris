@@ -594,7 +594,7 @@ public class QuoteCostEstimationService {
             p.setUnitPrice(inflatedUnit);
             p.setTotalPrice(inflatedTotal);
             if (Boolean.FALSE.equals(li.getRateFound())) {
-                p.setBreakdown("Rate not found — estimated");
+                p.setBreakdown("Rate not found - estimated");
             }
 
             String description = buildLineDescription(li);
@@ -680,7 +680,7 @@ public class QuoteCostEstimationService {
             desc.append("Day ").append(li.getDayNumber());
         }
         if (li.getItemName() != null && !li.getItemName().isBlank()) {
-            if (desc.length() > 0) desc.append(" • ");
+            if (desc.length() > 0) desc.append(" - ");
             desc.append(li.getItemName());
         }
         if (li.getPaxCategory() != null && !li.getPaxCategory().isBlank()) {

@@ -142,7 +142,7 @@ public class ActivityTransfer implements ModuleTransfer {
                 ? null : rateRow.path("ageCategory").asText(null);
 
             String key = activity.getName() + (parkSlug == null ? "" : " @ " + parkSlug)
-                + " · " + seasonName + " · " + nationName + (ageName == null ? "" : " · " + ageName);
+                + " | " + seasonName + " | " + nationName + (ageName == null ? "" : " | " + ageName);
 
             /* a NAMED park that is missing is a fault; no park at all is the general price */
             Park park = parkSlug == null ? null : resolver.park(context, parkSlug);

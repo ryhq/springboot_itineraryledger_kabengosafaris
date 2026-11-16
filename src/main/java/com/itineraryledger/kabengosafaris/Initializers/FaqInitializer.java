@@ -80,7 +80,7 @@ public class FaqInitializer implements ApplicationRunner {
             log.info("FAQ INITIALIZER: {} created, {} already present, {} failed (of {} in {})",
                 created, skipped, failed, seeds.size(), SEED_FILE);
         } catch (Exception e) {
-            log.error("FAQ INITIALIZER: skipped entirely — {}", e.getMessage(), e);
+            log.error("FAQ INITIALIZER: skipped entirely - {}", e.getMessage(), e);
         }
     }
 

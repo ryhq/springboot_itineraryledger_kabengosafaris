@@ -65,28 +65,28 @@ public class ActivityInitializer implements ApplicationRunner {
 
     private void printStartBanner() {
         log.info("");
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║                                                                    ║");
-        log.info("║              ACTIVITY INITIALIZER - START                          ║");
-        log.info("║                                                                    ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|                                                                    |");
+        log.info("|              ACTIVITY INITIALIZER - START                          |");
+        log.info("|                                                                    |");
+        log.info("+====================================================================+");
         log.info("");
     }
 
     private void printEndBanner(boolean success) {
         log.info("");
         if (success) {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║           ✓ ACTIVITY INITIALIZER - COMPLETED                       ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|             ACTIVITY INITIALIZER - COMPLETED                       |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         } else {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║           ✗ ACTIVITY INITIALIZER - FAILED                          ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|             ACTIVITY INITIALIZER - FAILED                          |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         }
         log.info("");
     }
@@ -101,10 +101,10 @@ public class ActivityInitializer implements ApplicationRunner {
         for (Activity activity : activitiesToCreate) {
             if (!activityRepository.existsByName(activity.getName())) {
                 activityRepository.save(activity);
-                log.info("✓ Created activity: {}", activity.getName());
+                log.info("Created activity: {}", activity.getName());
                 createdCount++;
             } else {
-                log.debug("⊘ Activity already exists: {}", activity.getName());
+                log.debug("Activity already exists: {}", activity.getName());
                 skippedCount++;
             }
         }

@@ -105,7 +105,7 @@ public class EmailEventVariables {
             case "CONTACT_US" -> "Contact Us";
             case "SEND_QUOTE" -> "Quote Sent to Customer";
             case "AVAILABILITY_REQUEST" -> "Availability Request to a Property";
-            case "AVAILABILITY_REQUEST_CHASE" -> "Availability Request — Chase";
+            case "AVAILABILITY_REQUEST_CHASE" -> "Availability Request - Chase";
             case "SAFARI_PAYMENT_GAP" -> "Safari Payment Gap Alert";
             case "SAFARI_READINESS_ALERT" -> "Safari Readiness Alert";
             case "BILL_DUE_REMINDER" -> "Bill Due Reminder";
@@ -139,7 +139,7 @@ public class EmailEventVariables {
             case "AVAILABILITY_REQUEST" -> "Sent to a lodge or camp asking whether it has room on a safari's nights. Unlike every other event here it goes to a SUPPLIER, not a customer, and it is written from the safari rather than triggered by a state change.";
             case "SAFARI_PAYMENT_GAP" -> "Critical alert sent to operations when a safari has reached its start date but payment is not complete. Requires immediate action.";
             case "SAFARI_READINESS_ALERT" -> "Warning sent to operations when an upcoming safari has unresolved readiness issues (missing vehicles, accommodations, pax data).";
-            case "BILL_DUE_REMINDER" -> "Sent as a supplier's bill approaches its due date — a week out, three days out, and on the day. Nobody writes in to say a provisional hold is lapsing, so this is the only warning there is.";
+            case "BILL_DUE_REMINDER" -> "Sent as a supplier's bill approaches its due date - a week out, three days out, and on the day. Nobody writes in to say a provisional hold is lapsing, so this is the only warning there is.";
             case "SAFARI_STARTED" -> "Notification sent when a safari is automatically started by the system on its start date.";
             case "SAFARI_COMPLETED" -> "Notification sent when a safari is automatically completed after its end date. Post-trip tasks may be pending.";
             case "SAFARI_POST_TRIP_REMINDER" -> "Reminder sent for recently completed safaris with pending post-trip tasks (feedback collection, expense reconciliation).";
@@ -148,7 +148,7 @@ public class EmailEventVariables {
             case "SEND_INVOICE" -> "Email sent to customer when an invoice is delivered. Includes invoice details, line items summary, total amount, payment terms, and due date.";
             case "SEND_CREDIT_NOTE" -> "Email sent to customer when a credit note is issued against an invoice. Includes credit details, credited items, total credit amount, and original invoice reference.";
             case "SEND_PAYMENT_RECEIPT" -> "Email sent to customer when a payment is recorded against an invoice. Includes payment amount, method, reference, invoice details, and remaining balance.";
-            case "SEND_PAYMENT_ADVICE" -> "Sent to a SUPPLIER after we have paid one of their bills — the trade's payment or remittance advice. It carries what went out, when, how, our transfer reference and what is left owing, which is what a lodge needs to match the money to a reservation. Like the availability request it goes outward to a supplier, and it is sent by hand from the payment rather than fired by a state change: a correction to a payment should not email them a second time.";
+            case "SEND_PAYMENT_ADVICE" -> "Sent to a SUPPLIER after we have paid one of their bills - the trade's payment or remittance advice. It carries what went out, when, how, our transfer reference and what is left owing, which is what a lodge needs to match the money to a reservation. Like the availability request it goes outward to a supplier, and it is sent by hand from the payment rather than fired by a state change: a correction to a payment should not email them a second time.";
             default -> "";
         };
     }

@@ -87,28 +87,28 @@ public class AuditLogSettingInitializer implements ApplicationRunner, Ordered {
 
     private void printStartBanner() {
         log.info("");
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║                                                                    ║");
-        log.info("║            AUDIT LOG SETTINGS INITIALIZER - START                  ║");
-        log.info("║                                                                    ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|                                                                    |");
+        log.info("|            AUDIT LOG SETTINGS INITIALIZER - START                  |");
+        log.info("|                                                                    |");
+        log.info("+====================================================================+");
         log.info("");
     }
 
     private void printEndBanner(boolean success) {
         log.info("");
         if (success) {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║         ✓ AUDIT LOG SETTINGS INITIALIZER - COMPLETED               ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|           AUDIT LOG SETTINGS INITIALIZER - COMPLETED               |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         } else {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║         ✗ AUDIT LOG SETTINGS INITIALIZER - FAILED                  ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|           AUDIT LOG SETTINGS INITIALIZER - FAILED                  |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         }
         log.info("");
     }
@@ -220,7 +220,7 @@ public class AuditLogSettingInitializer implements ApplicationRunner, Ordered {
     ) {
             try {
                 if (auditLogSettingRepository.existsBySettingKey(settingKey)) {
-                    log.debug("⊘ Audit Setting already exists, skipping: {}", settingKey);
+                    log.debug("Audit Setting already exists, skipping: {}", settingKey);
                     return;
                 }
 

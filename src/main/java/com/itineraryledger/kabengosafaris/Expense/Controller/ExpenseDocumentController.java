@@ -49,7 +49,7 @@ public class ExpenseDocumentController {
     public ResponseEntity<ApiResponse<?>> uploadDocument(
             @PathVariable String expenseId,
             @ModelAttribute UploadExpenseDocumentDTO dto) {
-        log.info("POST /api/expenses/{}/documents — uploading expense document", expenseId);
+        log.info("POST /api/expenses/{}/documents - uploading expense document", expenseId);
         return uploadService.uploadDocument(expenseId, dto);
     }
 

@@ -665,7 +665,7 @@ public class QuoteStatusService {
             if (resolvedStartDate == null) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400,
-                        "Start date is required. This quote has no safariStartDate stored — provide startDate parameter.",
+                        "Start date is required. This quote has no safariStartDate stored - provide startDate parameter.",
                         "START_DATE_REQUIRED")
                 );
             }
@@ -686,10 +686,10 @@ public class QuoteStatusService {
             boolean hasQuoteSnapshot = quote.getDays() != null && !quote.getDays().isEmpty();
 
             if (hasQuoteSnapshot) {
-                log.info("Converting quote {} via Quote→Safari snapshot path", quote.getQuoteCode());
+                log.info("Converting quote {} via Quote->Safari snapshot path", quote.getQuoteCode());
                 safariResponse = safariCreateService.createSafariFromQuote(quote.getId(), resolvedStartDate);
             } else {
-                log.info("Converting quote {} via legacy Itinerary→Safari path", quote.getQuoteCode());
+                log.info("Converting quote {} via legacy Itinerary->Safari path", quote.getQuoteCode());
                 String itineraryObfuscatedId = idObfuscator.encodeId(quote.getItinerary().getId());
                 String customerObfuscatedId = idObfuscator.encodeId(quote.getCustomer().getId());
 

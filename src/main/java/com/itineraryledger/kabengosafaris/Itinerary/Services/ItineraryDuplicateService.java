@@ -89,7 +89,7 @@ public class ItineraryDuplicateService {
             if (source.getStatus() == ItineraryStatus.DRAFT) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400,
-                        "Only a complete or published itinerary can be duplicated. This one is still a draft — finish it and mark it complete first.",
+                        "Only a complete or published itinerary can be duplicated. This one is still a draft - finish it and mark it complete first.",
                         "ITINERARY_NOT_FINISHED"));
             }
             if (source.getStatus() == ItineraryStatus.ARCHIVED) {
@@ -103,7 +103,7 @@ public class ItineraryDuplicateService {
             if (name == null) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400,
-                        "Could not name the copy — too many itineraries already share this name. Send a name with the request.",
+                        "Could not name the copy - too many itineraries already share this name. Send a name with the request.",
                         "ITINERARY_NAME_EXISTS"));
             }
 
@@ -181,7 +181,7 @@ public class ItineraryDuplicateService {
             saved.setCode(saved.generateCode());
             saved = itineraryRepository.save(saved);
 
-            log.info("Itinerary {} duplicated as {} — {}", source.getCode(), saved.getCode(), counts);
+            log.info("Itinerary {} duplicated as {} - {}", source.getCode(), saved.getCode(), counts);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(
                 ApiResponse.success(201, summarise(counts, options, source),

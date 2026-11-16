@@ -257,7 +257,7 @@ public class QuoteResyncAndTemplateService {
                     quote.getInclusionList() != null ? quote.getInclusionList().size() : 0);
             body.put("itemsWritten", items);
             return ResponseEntity.ok(ApiResponse.success(200,
-                    "Quote re-synced from itinerary — all previous customisations have been discarded.",
+                    "Quote re-synced from itinerary - all previous customisations have been discarded.",
                     body));
         } catch (Exception e) {
             log.error("Failed to re-sync quote from itinerary", e);

@@ -289,7 +289,7 @@ public class AccommodationTransfer implements ModuleTransfer {
                 .findByAccommodationIdAndNameIgnoreCase(lodge.getId(), seasonName).orElse(null);
             if (existing != null) {
                 if (!context.mayOverwrite()) {
-                    outcome.skip(lodge.getName() + " · " + seasonName, "already here");
+                    outcome.skip(lodge.getName() + " | " + seasonName, "already here");
                     continue;
                 }
                 Scalars.apply(mapper, seasonRow, existing, "isSystem");
@@ -321,8 +321,8 @@ public class AccommodationTransfer implements ModuleTransfer {
             String standardName = rateRow.path("roomStandard").asText(null);
             String boardName = rateRow.path("boardType").asText(null);
 
-            String key = lodge.getName() + " · " + seasonName + " · " + typeName
-                + " · " + standardName + " · " + boardName;
+            String key = lodge.getName() + " | " + seasonName + " | " + typeName
+                + " | " + standardName + " | " + boardName;
 
             /* the lodge's own season first, then a company-wide one of that name */
             Season season = resolver.seasonFor(context, lodge.getId(), seasonName);

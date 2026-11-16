@@ -74,11 +74,11 @@ public class SafariLifecycleScheduler {
             safariRepository.save(safari);
             count++;
 
-            log.info("AUTO-START: {} ({}) — {} to {} — IN_PROGRESS",
+            log.info("AUTO-START: {} ({}) - {} to {} - IN_PROGRESS",
                 safari.getCode(), safari.getName(), safari.getStartDate(), safari.getEndDate());
 
             sendAlert("SAFARI_STARTED", buildStartedVariables(safari),
-                "Safari Started: " + safari.getCode() + " — " + safari.getName());
+                "Safari Started: " + safari.getCode() + " - " + safari.getName());
         }
 
         return count;
@@ -93,15 +93,15 @@ public class SafariLifecycleScheduler {
 
         int count = 0;
         for (Safari safari : readyToComplete) {
-            safari.changeState(SafariState.COMPLETED, "Auto-completed by system — ended on " + safari.getEndDate());
+            safari.changeState(SafariState.COMPLETED, "Auto-completed by system - ended on " + safari.getEndDate());
             safariRepository.save(safari);
             count++;
 
-            log.info("AUTO-COMPLETE: {} ({}) — ended {} — COMPLETED",
+            log.info("AUTO-COMPLETE: {} ({}) - ended {} - COMPLETED",
                 safari.getCode(), safari.getName(), safari.getEndDate());
 
             sendAlert("SAFARI_COMPLETED", buildCompletedVariables(safari),
-                "Safari Completed: " + safari.getCode() + " — " + safari.getName());
+                "Safari Completed: " + safari.getCode() + " - " + safari.getName());
         }
 
         return count;
@@ -118,11 +118,11 @@ public class SafariLifecycleScheduler {
         int count = 0;
         for (Safari safari : readyToClose) {
             safari.changeState(SafariState.CLOSED,
-                "Auto-closed — completed " + autoCloseGraceDays + " days ago");
+                "Auto-closed - completed " + autoCloseGraceDays + " days ago");
             safariRepository.save(safari);
             count++;
 
-            log.info("AUTO-CLOSE: {} ({}) — CLOSED", safari.getCode(), safari.getName());
+            log.info("AUTO-CLOSE: {} ({}) - CLOSED", safari.getCode(), safari.getName());
         }
 
         return count;

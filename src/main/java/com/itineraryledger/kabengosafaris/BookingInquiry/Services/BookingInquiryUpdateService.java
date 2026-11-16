@@ -305,7 +305,7 @@ public class BookingInquiryUpdateService {
         if (inquiry.getPreferredStartDate() != null) {
             notes.append("\nPreferred dates: ").append(inquiry.getPreferredStartDate());
             if (inquiry.getPreferredEndDate() != null) {
-                notes.append(" → ").append(inquiry.getPreferredEndDate());
+                notes.append(" to ").append(inquiry.getPreferredEndDate());
             }
         }
         if (inquiry.getAdults() != null) {

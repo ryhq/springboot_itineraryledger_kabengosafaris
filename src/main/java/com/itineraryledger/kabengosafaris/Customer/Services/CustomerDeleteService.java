@@ -137,7 +137,7 @@ public class CustomerDeleteService {
                     skipped.add(Map.of(
                         "id", encodedId,
                         "code", customer.getCode(),
-                        "reason", "Referenced by " + String.join(", ", refs) + " — deactivate instead"
+                        "reason", "Referenced by " + String.join(", ", refs) + " - deactivate instead"
                     ));
                     continue;
                 }

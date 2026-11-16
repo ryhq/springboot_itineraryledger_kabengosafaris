@@ -1173,7 +1173,7 @@
   {
     "path": "exclusionsList",
     "type": "List<String>",
-    "description": "What this price does NOT cover, one line each. Access with: th:each='line : ${safari.exclusionsList}'. Stated on the document, never derived from the list above — a line is here because somebody put it here.",
+    "description": "What this price does NOT cover, one line each. Access with: th:each='line : ${safari.exclusionsList}'. Stated on the document, never derived from the list above - a line is here because somebody put it here.",
     "isRequired": false
   },
   {

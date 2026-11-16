@@ -1,13 +1,13 @@
 <!--
-  Availability request — the default letter.
+  Availability request - the default letter.
 
-  Editable in the app (Communication → Email templates) like any other event template, so the
+  Editable in the app (Communication > Email templates) like any other event template, so the
   wording is the office's to change without a deploy. Two things to keep if you edit it:
 
   1. Every rule is written INLINE on the element. A mail client throws away a stylesheet, so a
      <style> block here would leave the letter unstyled in Gmail and Outlook alike.
   2. {{roomConfiguration}} and {{mealPlan}} arrive as <li> lists, and {{stayBlocks}} as whole
-     repeated blocks for a property visited twice. They are already HTML — do not escape them.
+     repeated blocks for a property visited twice. They are already HTML - do not escape them.
 -->
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.55; color: #1f2421">
 

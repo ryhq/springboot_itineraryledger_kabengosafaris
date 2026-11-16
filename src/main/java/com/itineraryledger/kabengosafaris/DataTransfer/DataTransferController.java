@@ -117,7 +117,7 @@ public class DataTransferController {
             String detail = e.getClass().getSimpleName()
                 + (e.getMessage() == null ? "" : ": " + e.getMessage());
             return ResponseEntity.status(500).body(
-                ApiResponse.error(500, "Could not build the bundle — " + detail, "EXPORT_FAILED"));
+                ApiResponse.error(500, "Could not build the bundle - " + detail, "EXPORT_FAILED"));
         }
     }
 
@@ -218,7 +218,7 @@ public class DataTransferController {
                 : ("PREVIEW".equals(busy.kind()) ? "A bundle check" : "An import");
             return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(409,
                 what + " is already running." + since + " Checking a bundle writes every record and "
-                    + "rolls it back, so it holds the same rows this one needs — this page will say "
+                    + "rolls it back, so it holds the same rows this one needs - this page will say "
                     + "when it is free.",
                 "TRANSFER_IN_PROGRESS"));
         }
@@ -238,7 +238,7 @@ public class DataTransferController {
             payload.put("modules", report.asRows());
 
             String message = previewOnly
-                ? "Nothing was written — this is what the bundle would do"
+                ? "Nothing was written - this is what the bundle would do"
                 : "Bundle imported";
             LAST.set(new Finished(previewOnly ? "PREVIEW" : "IMPORT", Instant.now(), payload));
             return ResponseEntity.ok(ApiResponse.success(200, message, payload));
@@ -251,12 +251,12 @@ public class DataTransferController {
             log.error("Import failed", e);
             if (isLockContention(e)) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(409,
-                    "The import could not get at the records it needed — something else was "
+                    "The import could not get at the records it needed - something else was "
                         + "holding them. Nothing was written. Wait a moment and try again.",
                     "TRANSFER_CONTENDED"));
             }
             return ResponseEntity.status(500).body(
-                ApiResponse.error(500, "The import failed — " + describe(e), "IMPORT_FAILED"));
+                ApiResponse.error(500, "The import failed - " + describe(e), "IMPORT_FAILED"));
         } finally {
             RUNNING.set(null);
             ONE_BUNDLE_AT_A_TIME.release();
@@ -301,7 +301,7 @@ public class DataTransferController {
         if (statement > 0) message = message.substring(0, statement);
         message = message.split("\\R")[0].trim();
         int cap = 300;
-        if (message.length() > cap) message = message.substring(0, cap) + "…";
+        if (message.length() > cap) message = message.substring(0, cap) + "...";
         return failure.getClass().getSimpleName() + ": " + message;
     }
 }

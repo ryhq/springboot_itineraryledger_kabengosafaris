@@ -105,16 +105,16 @@ public class BillDueReminderScheduler {
             variables.put("daysAway", String.valueOf(daysAway));
             variables.put("billCode", text(bill.getExpenseCode()));
             variables.put("billTitle", text(bill.getTitle()));
-            variables.put("vendorName", bill.getVendor() != null ? text(bill.getVendor().getName()) : "—");
-            variables.put("dueDate", bill.getDueDate() == null ? "—" : bill.getDueDate().toString());
+            variables.put("vendorName", bill.getVendor() != null ? text(bill.getVendor().getName()) : "-");
+            variables.put("dueDate", bill.getDueDate() == null ? "-" : bill.getDueDate().toString());
             variables.put("reference", text(bill.getReferenceNumber()));
-            variables.put("status", bill.getStatus() == null ? "—" : bill.getStatus().name());
-            variables.put("safariName", bill.getSafari() != null ? text(bill.getSafari().getName()) : "—");
+            variables.put("status", bill.getStatus() == null ? "-" : bill.getStatus().name());
+            variables.put("safariName", bill.getSafari() != null ? text(bill.getSafari().getName()) : "-");
             variables.put("safariCode", bill.getSafari() != null ? text(bill.getSafari().getCode()) : "");
             variables.put("amount", amountOf(bill));
 
-            String subject = urgency + " · " + variables.get("vendorName")
-                + " · " + variables.get("amount");
+            String subject = urgency + " | " + variables.get("vendorName")
+                + " | " + variables.get("amount");
 
             String html = templateRenderer.renderTemplate(EVENT, variables);
             for (String email : recipients) {
@@ -155,7 +155,7 @@ public class BillDueReminderScheduler {
         } catch (Exception e) {
             log.debug("Could not read the amount on {}: {}", bill.getExpenseCode(), e.getMessage());
         }
-        return "—";
+        return "-";
     }
 
     private String text(String value) {

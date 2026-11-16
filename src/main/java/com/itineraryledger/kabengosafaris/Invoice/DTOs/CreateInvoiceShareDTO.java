@@ -25,7 +25,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateInvoiceShareDTO {
 
-    @NotBlank(message = "A share needs a payer name — it is what goes on their receipt")
+    @NotBlank(message = "A share needs a payer name - it is what goes on their receipt")
     @Size(max = 200)
     private String payerName;
 

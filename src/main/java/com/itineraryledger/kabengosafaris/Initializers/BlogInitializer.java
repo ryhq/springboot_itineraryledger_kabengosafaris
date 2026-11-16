@@ -83,7 +83,7 @@ public class BlogInitializer implements ApplicationRunner {
                 created, skipped, failed, seeds.size(), SEED_FILE);
         } catch (Exception e) {
             // even reading the file must not be fatal
-            log.error("BLOG INITIALIZER: skipped entirely — {}", e.getMessage(), e);
+            log.error("BLOG INITIALIZER: skipped entirely - {}", e.getMessage(), e);
         }
     }
 

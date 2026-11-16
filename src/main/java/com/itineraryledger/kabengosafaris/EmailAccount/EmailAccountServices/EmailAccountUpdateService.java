@@ -384,7 +384,7 @@ public class EmailAccountUpdateService {
         if ((existing.getImapUsername() == null) != (existing.getImapPassword() == null)) {
             String missing = existing.getImapUsername() != null ? "password" : "username";
             return ResponseEntity.badRequest().body(ApiResponse.error(400,
-                "A separate mailbox login needs both a username and a password — the " + missing
+                "A separate mailbox login needs both a username and a password - the " + missing
                     + " is missing. Clear both to sign in to the mailbox with the SMTP credentials.",
                 "IMAP_CREDENTIALS_INCOMPLETE"));
         }

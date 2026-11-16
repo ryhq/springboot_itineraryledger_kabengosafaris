@@ -138,7 +138,7 @@ public class InvoiceCreateService {
                 .invoiceCode("TEMP") // Temporary code, will be updated after save
                 .title(createDTO.getTitle())
                 .description(isSupplement
-                    ? "Supplement — " + createDTO.getSupplementReason()
+                    ? "Supplement - " + createDTO.getSupplementReason()
                         + (createDTO.getDescription() != null && !createDTO.getDescription().isBlank()
                             ? ". " + createDTO.getDescription() : "")
                     : createDTO.getDescription())

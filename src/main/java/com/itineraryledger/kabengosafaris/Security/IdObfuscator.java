@@ -102,11 +102,11 @@ public class IdObfuscator {
         String salt;
         if (configuredSalt != null && !configuredSalt.isBlank()) {
             salt = configuredSalt.trim();
-            log.info("IdObfuscator: fixed salt from configuration — ids hold still across restarts, "
+            log.info("IdObfuscator: fixed salt from configuration - ids hold still across restarts, "
                 + "so saved links keep resolving");
         } else {
             salt = StrongPasswordGenerator.generateStrongPassword(saltLengthForGenerator);
-            log.info("IdObfuscator: salt generated for this run — ids are re-derived on every start, "
+            log.info("IdObfuscator: salt generated for this run - ids are re-derived on every start, "
                 + "so a leaked identifier expires at the next restart and no external reference to a "
                 + "record survives a deploy. Set security.idObfuscator.salt to fix one instead.");
         }

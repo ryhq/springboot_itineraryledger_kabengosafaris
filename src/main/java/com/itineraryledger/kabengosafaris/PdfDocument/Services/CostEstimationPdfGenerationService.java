@@ -84,7 +84,7 @@ public class CostEstimationPdfGenerationService extends PdfGenerationBaseService
                 return ResponseEntity.status(404).body(
                     ApiResponse.error(404,
                         "Nothing to cost for itinerary " + itineraryIdObfuscated
-                            + " — it may not exist, or it has no days and pax to price.",
+                            + " - it may not exist, or it has no days and pax to price.",
                         "COSTING_NOT_AVAILABLE")
                 );
             }
@@ -211,7 +211,7 @@ public class CostEstimationPdfGenerationService extends PdfGenerationBaseService
                 String.format("Priced for %s. %s",
                     pricedFor,
                     Boolean.TRUE.equals(costing.getHasIncompleteRates())
-                        ? costing.getRateIssueCount() + " item(s) could not be priced — the totals are partial."
+                        ? costing.getRateIssueCount() + " item(s) could not be priced - the totals are partial."
                         : "Every item priced."),
                 version,
                 notes
@@ -374,7 +374,7 @@ public class CostEstimationPdfGenerationService extends PdfGenerationBaseService
                 String.format("Priced for %s. %s",
                     pricedFor,
                     Boolean.TRUE.equals(costing.getHasIncompleteRates())
-                        ? costing.getRateIssueCount() + " item(s) could not be priced — the totals are partial."
+                        ? costing.getRateIssueCount() + " item(s) could not be priced - the totals are partial."
                         : "Every item priced."),
                 version,
                 notes
@@ -412,7 +412,7 @@ public class CostEstimationPdfGenerationService extends PdfGenerationBaseService
         ResponseEntity<T> response = (ResponseEntity<T>) ResponseEntity.status(404).body(
             ApiResponse.error(404,
                 "Nothing to cost for quote " + quoteIdObfuscated
-                    + " — it may not exist, or it carries no day snapshot to price.",
+                    + " - it may not exist, or it carries no day snapshot to price.",
                 "COSTING_NOT_AVAILABLE")
         );
         return response;

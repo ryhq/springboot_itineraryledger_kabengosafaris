@@ -356,7 +356,7 @@ public class EmailAccountCreateService {
         if (hasUser == hasSecret) return null;
         String missing = hasUser ? "password" : "username";
         return ResponseEntity.badRequest().body(ApiResponse.error(400,
-            "A separate mailbox login needs both a username and a password — the " + missing
+            "A separate mailbox login needs both a username and a password - the " + missing
                 + " is missing. Leave both blank to sign in to the mailbox with the SMTP credentials.",
             "IMAP_CREDENTIALS_INCOMPLETE"));
     }

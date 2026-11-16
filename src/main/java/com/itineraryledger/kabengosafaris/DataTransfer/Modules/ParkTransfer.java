@@ -197,8 +197,8 @@ public class ParkTransfer implements ModuleTransfer {
             String nationName = rateRow.path("nationCategory").asText(null);
             String ageName = rateRow.path("ageCategory").asText(null);
 
-            String key = park.getName() + " · " + tariffSlug + " · " + seasonName
-                + " · " + nationName + (ageName == null ? "" : " · " + ageName);
+            String key = park.getName() + " | " + tariffSlug + " | " + seasonName
+                + " | " + nationName + (ageName == null ? "" : " | " + ageName);
 
             Tariff tariff = resolver.tariff(context, tariffSlug);
             if (tariff == null) {

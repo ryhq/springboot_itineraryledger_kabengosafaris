@@ -2,15 +2,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title th:text="${(quote.title != null ? quote.title : 'Safari Quote') + ' — Payment Schedule'}">
+    <title th:text="${(quote.title != null ? quote.title : 'Safari Quote') + ' - Payment Schedule'}">
       Payment Schedule
     </title>
     <style>
       /* ========================================
-           [[${company.name}]] — PAYMENT SCHEDULE (from FULL_QUOTE)
+           [[${company.name}]] - PAYMENT SCHEDULE (from FULL_QUOTE)
            Turns the quote's deposit / payment terms into a clear timeline.
            Deposit and balance are computed: total x depositPercentage / 100.
-           Colors: Forest Green {{companyAccent}} · Chocolate Brown {{companyAccentDark}}
+           Colors: Forest Green {{companyAccent}} | Chocolate Brown {{companyAccentDark}}
            OpenHTMLToPDF: no CSS variables / transforms.
            ======================================== */
       * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -112,7 +112,7 @@
         <tr>
           <td>
             <div class="meta-label">Quote</div>
-            <div class="meta-value" th:text="${quote.quoteCode != null ? quote.quoteCode : '—'}">QT-1053-0126-1</div>
+            <div class="meta-value" th:text="${quote.quoteCode != null ? quote.quoteCode : '-'}">QT-1053-0126-1</div>
           </td>
           <td th:if="${quote.itinerary != null}">
             <div class="meta-label">Itinerary</div>
@@ -121,7 +121,7 @@
           <td th:if="${quote.itinerary != null and (quote.itinerary.totalDays != null or quote.itinerary.totalNights != null)}">
             <div class="meta-label">Duration</div>
             <div class="meta-value">
-              <span th:if="${quote.itinerary.totalDays != null}" th:text="${quote.itinerary.totalDays + ' days'}">14 days</span><span th:if="${quote.itinerary.totalNights != null}" th:text="${' · ' + quote.itinerary.totalNights + ' nights'}"> · 13 nights</span>
+              <span th:if="${quote.itinerary.totalDays != null}" th:text="${quote.itinerary.totalDays + ' days'}">14 days</span><span th:if="${quote.itinerary.totalNights != null}" th:text="${' | ' + quote.itinerary.totalNights + ' nights'}"> | 13 nights</span>
             </div>
           </td>
           <td th:if="${quote.statusDisplayName != null}">
@@ -138,7 +138,7 @@
         <span th:if="${quote.validTo == null and (quote.validityStatusMessage == null or #strings.isEmpty(quote.validityStatusMessage))}">Please refer to your quote for validity dates.</span>
       </div>
 
-      <!-- schedule per currency (one th:each, no th:with — inline arithmetic) -->
+      <!-- schedule per currency (one th:each, no th:with - inline arithmetic) -->
       <th:block th:each="row : ${quote.grandTotals}">
 
         <div class="cur-heading" th:if="${#lists.size(quote.grandTotals) > 1}" th:text="${'Amounts in ' + row.currency}">Amounts in EUR</div>

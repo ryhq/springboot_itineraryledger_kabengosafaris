@@ -192,7 +192,7 @@ public class RoleController {
             if (Boolean.FALSE.equals(request.getIsActive())
                 && "SUPERADMIN".equalsIgnoreCase(role.getName())) {
                 throw new IllegalStateException(
-                    "Super Administrator is always active — switching it off would leave no way back in");
+                    "Super Administrator is always active - switching it off would leave no way back in");
             }
             if (request.getIsActive() != null) role.setActive(request.getIsActive());
         });

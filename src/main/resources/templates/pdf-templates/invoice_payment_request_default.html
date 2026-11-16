@@ -6,7 +6,7 @@
     <style>
       /* ========================================
            COMPANY - PAYMENT REQUEST (ONE SHARE)
-           Accent: {{companyAccent}} · darkened: {{companyAccentDark}}
+           Accent: {{companyAccent}} | darkened: {{companyAccentDark}}
            ======================================== */
 
       * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -188,7 +188,7 @@
       <div class="status">
         <span th:text="${share.statusDisplayName}">Awaiting payment</span><span
               th:if="${share.dueDate != null and !share.settled}"
-              th:text="${' · due ' + #temporals.format(share.dueDate, 'dd MMMM yyyy')}"> &#183; due 15 January 2027</span>
+              th:text="${' | due ' + #temporals.format(share.dueDate, 'dd MMMM yyyy')}"> &#183; due 15 January 2027</span>
       </div>
     </div>
 

@@ -65,29 +65,29 @@ public class PaxNationCategoryInitializer implements ApplicationRunner {
 
     private void printStartBanner() {
         log.info("");
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║                                                                    ║");
-        log.info("║          PAX NATION CATEGORY INITIALIZER - START                   ║");
-        log.info("║          Standard Passenger Nationality Categories                 ║");
-        log.info("║                                                                    ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|                                                                    |");
+        log.info("|          PAX NATION CATEGORY INITIALIZER - START                   |");
+        log.info("|          Standard Passenger Nationality Categories                 |");
+        log.info("|                                                                    |");
+        log.info("+====================================================================+");
         log.info("");
     }
 
     private void printEndBanner(boolean success) {
         log.info("");
         if (success) {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║        ✓ PAX NATION CATEGORY INITIALIZER - COMPLETED               ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|          PAX NATION CATEGORY INITIALIZER - COMPLETED               |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         } else {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║        ✗ PAX NATION CATEGORY INITIALIZER - FAILED                  ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|          PAX NATION CATEGORY INITIALIZER - FAILED                  |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         }
         log.info("");
     }
@@ -103,7 +103,7 @@ public class PaxNationCategoryInitializer implements ApplicationRunner {
         for (PaxNationCategoryData categoryData : categoriesData) {
             // Check if category already exists
             if (paxNationCategoryRepository.existsByNameIgnoreCase(categoryData.name)) {
-                log.debug("⊘ Pax nation category already exists: {}", categoryData.name);
+                log.debug("Pax nation category already exists: {}", categoryData.name);
                 skippedCategories++;
                 continue;
             }
@@ -119,7 +119,7 @@ public class PaxNationCategoryInitializer implements ApplicationRunner {
                     .build();
 
             paxNationCategoryRepository.save(category);
-            log.info("✓ Created pax nation category: {} (Priority {}, {})",
+            log.info("Created pax nation category: {} (Priority {}, {})",
                 categoryData.name,
                 categoryData.priorityFactor,
                 categoryData.categoryType);

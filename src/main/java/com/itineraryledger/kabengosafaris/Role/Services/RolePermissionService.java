@@ -312,7 +312,7 @@ public class RolePermissionService {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 ApiResponse.error(
                     HttpStatus.BAD_REQUEST.value(),
-                    "A built-in role's permissions are read-only — the system rewrites them on every "
+                    "A built-in role's permissions are read-only - the system rewrites them on every "
                         + "restart. Create your own role to grant a different set.",
                     ErrorCode.OPERATION_NOT_ALLOWED.getCode()
                 )

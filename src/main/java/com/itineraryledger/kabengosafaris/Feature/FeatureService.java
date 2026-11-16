@@ -121,7 +121,7 @@ public class FeatureService {
              * A database that cannot answer must not turn the whole product off. Defaults are "on",
              * so a broken read degrades to the product everybody had before features existed.
              */
-            log.error("Could not read the feature switches — falling back to defaults", e);
+            log.error("Could not read the feature switches - falling back to defaults", e);
         }
 
         for (Feature feature : Feature.values()) {

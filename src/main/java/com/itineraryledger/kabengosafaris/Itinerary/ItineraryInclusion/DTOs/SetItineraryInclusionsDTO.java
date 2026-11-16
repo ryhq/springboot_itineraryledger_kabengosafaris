@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SetItineraryInclusionsDTO {
 
-    @NotNull(message = "Items list is required — send an empty list to clear it")
+    @NotNull(message = "Items list is required - send an empty list to clear it")
     private List<Row> items;
 
     @Data

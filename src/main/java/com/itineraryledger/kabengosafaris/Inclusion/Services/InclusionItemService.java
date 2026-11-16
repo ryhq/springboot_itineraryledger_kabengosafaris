@@ -352,12 +352,12 @@ public class InclusionItemService {
                 InclusionItem item = repository.findById(id).orElse(null);
                 if (item == null) {
                     skipped.add(skip(obfuscatedId, null,
-                        "No such inclusion item — it may already have been deleted"));
+                        "No such inclusion item - it may already have been deleted"));
                     continue;
                 }
                 if (item.isSystemItem()) {
                     skipped.add(skip(obfuscatedId, item.getCode(),
-                        "One of the standard lines. Disable it instead — deleting it would take it "
+                        "One of the standard lines. Disable it instead - deleting it would take it "
                         + "off every itinerary that lists it."));
                     continue;
                 }

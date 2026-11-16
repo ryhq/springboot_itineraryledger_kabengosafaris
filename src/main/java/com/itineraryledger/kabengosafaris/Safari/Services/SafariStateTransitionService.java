@@ -232,7 +232,7 @@ public class SafariStateTransitionService {
 
             if (safari.getCustomer() == null) {
                 return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Safari has no customer linked — cannot create invoice", "NO_CUSTOMER")
+                    ApiResponse.error(400, "Safari has no customer linked - cannot create invoice", "NO_CUSTOMER")
                 );
             }
 
@@ -243,7 +243,7 @@ public class SafariStateTransitionService {
 
             CreateInvoiceFromSafariDTO invoiceDTO = CreateInvoiceFromSafariDTO.builder()
                 .safariId(safariObfuscatedId)
-                .title(safari.getName() + " — Invoice")
+                .title(safari.getName() + " - Invoice")
                 .description(safari.getDescription())
                 .useStoRate(useStoRate != null ? useStoRate : false)
                 .currency(currency != null ? currency : "USD")
@@ -267,7 +267,7 @@ public class SafariStateTransitionService {
 
             // Step 2: Transition to PENDING_PAYMENT
             SafariState previousState = safari.getState();
-            String reason = dto != null && dto.getReason() != null ? dto.getReason() : "Payment requested — invoice generated";
+            String reason = dto != null && dto.getReason() != null ? dto.getReason() : "Payment requested - invoice generated";
             safari.changeState(SafariState.PENDING_PAYMENT, reason);
             Safari savedSafari = safariRepository.save(safari);
 
@@ -284,8 +284,8 @@ public class SafariStateTransitionService {
             }
 
             String message = createdInvoice != null
-                ? "Payment requested — Invoice created and safari moved to Pending Payment"
-                : "Payment requested — Safari moved to Pending Payment (invoice creation failed, create manually)";
+                ? "Payment requested - Invoice created and safari moved to Pending Payment"
+                : "Payment requested - Safari moved to Pending Payment (invoice creation failed, create manually)";
 
             return ResponseEntity.ok().body(
                 ApiResponse.success(200, message, result)

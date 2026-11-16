@@ -112,14 +112,14 @@ public class UserAdminDeleteService {
 
             if (isLastWayIn(user)) {
                 skipped.add(reason(obfuscated, user.getUsername(),
-                    "The last active " + SUPERADMIN + " — nobody could administer the system afterwards"));
+                    "The last active " + SUPERADMIN + " - nobody could administer the system afterwards"));
                 continue;
             }
 
             String blocking = describeReferences(id);
             if (blocking != null) {
                 skipped.add(reason(obfuscated, user.getUsername(),
-                    "Recorded against " + blocking + " — deactivate instead to keep the history"));
+                    "Recorded against " + blocking + " - deactivate instead to keep the history"));
                 continue;
             }
 
@@ -142,7 +142,7 @@ public class UserAdminDeleteService {
             } catch (Exception e) {
                 log.warn("Could not delete account {}", user.getUsername(), e);
                 skipped.add(reason(obfuscated, user.getUsername(),
-                    "Still referenced elsewhere — deactivate instead"));
+                    "Still referenced elsewhere - deactivate instead"));
             }
         }
 

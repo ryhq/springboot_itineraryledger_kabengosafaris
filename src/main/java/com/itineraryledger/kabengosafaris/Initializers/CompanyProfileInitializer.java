@@ -57,7 +57,7 @@ public class CompanyProfileInitializer implements ApplicationRunner, Ordered {
     public void run(ApplicationArguments args) {
         if (!seedEnabled) return;
         if (repository.count() > 0) {
-            log.info("Company profile already exists — left exactly as it is");
+            log.info("Company profile already exists - left exactly as it is");
             warmUp();
             return;
         }
@@ -122,13 +122,13 @@ public class CompanyProfileInitializer implements ApplicationRunner, Ordered {
     private void warmUp() {
         try {
             var snapshot = identityService.snapshot();
-            log.info("Company identity resolves: '{}' · {} · {} · {}",
+            log.info("Company identity resolves: '{}' | {} | {} | {}",
                 snapshot.name(),
                 snapshot.email().isBlank() ? "no email" : snapshot.email(),
                 snapshot.phone().isBlank() ? "no phone" : snapshot.phone(),
                 snapshot.address().isBlank() ? "no address" : snapshot.address());
         } catch (Exception e) {
-            log.error("The company profile cannot be read — every document and email will fall back to "
+            log.error("The company profile cannot be read - every document and email will fall back to "
                 + "the configured name only. Fix this before sending anything.", e);
         }
     }

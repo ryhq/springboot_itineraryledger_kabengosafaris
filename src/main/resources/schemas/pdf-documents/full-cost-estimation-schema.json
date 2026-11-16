@@ -56,7 +56,7 @@
     {
         "path": "startDate",
         "type": "LocalDate",
-        "description": "The date the pricing was run for. Rates are seasonal, so this decides every figure below — print it.",
+        "description": "The date the pricing was run for. Rates are seasonal, so this decides every figure below - print it.",
         "isRequired": true
     },
     {
@@ -80,7 +80,7 @@
     {
         "path": "hasIncompleteRates",
         "type": "Boolean",
-        "description": "True when something could not be priced. The totals are then PARTIAL — a client-facing template should refuse to print a total while this is true.",
+        "description": "True when something could not be priced. The totals are then PARTIAL - a client-facing template should refuse to print a total while this is true.",
         "isRequired": true
     },
     {
@@ -92,7 +92,7 @@
     {
         "path": "totals",
         "type": "List<CostTotalsDTO>",
-        "description": "One block per currency — never summed across currencies. Access with: th:each='total : ${costing.totals}'",
+        "description": "One block per currency - never summed across currencies. Access with: th:each='total : ${costing.totals}'",
         "isRequired": true,
         "children": [
             {"path": "currency", "type": "String", "description": "Currency code, e.g. 'USD'"},
@@ -102,25 +102,25 @@
             {"path": "parkFeesRack", "type": "BigDecimal", "description": "Park fees, published price"},
             {"path": "activitiesSto", "type": "BigDecimal", "description": "Activities, operator cost"},
             {"path": "activitiesRack", "type": "BigDecimal", "description": "Activities, published price"},
-            {"path": "grandTotalSto", "type": "BigDecimal", "description": "INTERNAL — total operator cost. Never print on a client-facing template."},
-            {"path": "grandTotalRack", "type": "BigDecimal", "description": "Total published price — this is the client-facing number"},
-            {"path": "grossProfit", "type": "BigDecimal", "description": "INTERNAL — rack minus STO. Never print on a client-facing template."},
-            {"path": "marginPercent", "type": "BigDecimal", "description": "INTERNAL — gross profit as a percentage of rack, one decimal"},
-            {"path": "stoPerPax", "type": "BigDecimal", "description": "INTERNAL — operator cost per guest"},
-            {"path": "rackPerPax", "type": "BigDecimal", "description": "Published price per guest — safe to print"}
+            {"path": "grandTotalSto", "type": "BigDecimal", "description": "INTERNAL - total operator cost. Never print on a client-facing template."},
+            {"path": "grandTotalRack", "type": "BigDecimal", "description": "Total published price - this is the client-facing number"},
+            {"path": "grossProfit", "type": "BigDecimal", "description": "INTERNAL - rack minus STO. Never print on a client-facing template."},
+            {"path": "marginPercent", "type": "BigDecimal", "description": "INTERNAL - gross profit as a percentage of rack, one decimal"},
+            {"path": "stoPerPax", "type": "BigDecimal", "description": "INTERNAL - operator cost per guest"},
+            {"path": "rackPerPax", "type": "BigDecimal", "description": "Published price per guest - safe to print"}
         ]
     },
     {
         "path": "quoteTotals",
         "type": "List<QuoteTotalsDTO>",
-        "description": "QUOTE SUBJECT ONLY — what the customer is actually charged, per currency, read from the quote's own stored totals rather than recomputed. Empty for an itinerary or a safari. The tables above are what the trip costs; this is what was quoted, and the gap between them is the tax, discount and uplift the quote carries. Access: th:each='quoted : ${costing.quoteTotals}'",
+        "description": "QUOTE SUBJECT ONLY - what the customer is actually charged, per currency, read from the quote's own stored totals rather than recomputed. Empty for an itinerary or a safari. The tables above are what the trip costs; this is what was quoted, and the gap between them is the tax, discount and uplift the quote carries. Access: th:each='quoted : ${costing.quoteTotals}'",
         "isRequired": false,
         "children": [
             {"path": "currency", "type": "String", "description": "Currency code, e.g. 'USD'"},
             {"path": "subtotal", "type": "BigDecimal", "description": "The quote's line items added up, before tax or discount"},
             {"path": "taxAmount", "type": "BigDecimal", "description": "Tax as quoted"},
             {"path": "discountAmount", "type": "BigDecimal", "description": "Discount as quoted, a positive number to be subtracted"},
-            {"path": "grandTotal", "type": "BigDecimal", "description": "What the customer pays — the same figure the quotation PDF prints"},
+            {"path": "grandTotal", "type": "BigDecimal", "description": "What the customer pays - the same figure the quotation PDF prints"},
             {"path": "perGuest", "type": "BigDecimal", "description": "grandTotal divided by the travelling party, safe to print"},
             {"path": "taxPercentage", "type": "BigDecimal", "description": "The rate that produced taxAmount, so a document can name it"}
         ]
@@ -146,10 +146,10 @@
                     {"path": "itemName", "type": "String", "description": "What was charged, e.g. 'Conservation Fee - Tarangire National Park'"},
                     {"path": "itemId", "type": "String", "description": "Obfuscated ID of the underlying item"},
                     {"path": "chargingBasis", "type": "String", "description": "How it is charged: Per Person, Per Room, Per Vehicle, Per Group, Per Day"},
-                    {"path": "quantity", "type": "Integer", "description": "Units charged — guests, rooms, vehicles or days"},
-                    {"path": "stoUnitPrice", "type": "BigDecimal", "description": "INTERNAL — operator cost per unit. For a per-person line this is the average across bands; the exact rates are in paxShares."},
+                    {"path": "quantity", "type": "Integer", "description": "Units charged - guests, rooms, vehicles or days"},
+                    {"path": "stoUnitPrice", "type": "BigDecimal", "description": "INTERNAL - operator cost per unit. For a per-person line this is the average across bands; the exact rates are in paxShares."},
                     {"path": "rackUnitPrice", "type": "BigDecimal", "description": "Published price per unit"},
-                    {"path": "stoTotalPrice", "type": "BigDecimal", "description": "INTERNAL — operator cost for this line"},
+                    {"path": "stoTotalPrice", "type": "BigDecimal", "description": "INTERNAL - operator cost for this line"},
                     {"path": "rackTotalPrice", "type": "BigDecimal", "description": "Published price for this line"},
                     {"path": "currency", "type": "String", "description": "Currency of this line"},
                     {"path": "paxCategory", "type": "String", "description": "Which band this line is for, or 'Per Person' / the charging description for shared lines"},
@@ -163,10 +163,10 @@
                             {"path": "ageCategoryId", "type": "String", "description": "Obfuscated age band ID"},
                             {"path": "paxCategory", "type": "String", "description": "e.g. 'Non-Resident Adult'"},
                             {"path": "count", "type": "Integer", "description": "Guests in this band"},
-                            {"path": "stoUnitPrice", "type": "BigDecimal", "description": "INTERNAL — this band's operator rate"},
+                            {"path": "stoUnitPrice", "type": "BigDecimal", "description": "INTERNAL - this band's operator rate"},
                             {"path": "rackUnitPrice", "type": "BigDecimal", "description": "This band's published rate"},
-                            {"path": "stoTotalPrice", "type": "BigDecimal", "description": "INTERNAL — rate × count"},
-                            {"path": "rackTotalPrice", "type": "BigDecimal", "description": "Published rate × count"}
+                            {"path": "stoTotalPrice", "type": "BigDecimal", "description": "INTERNAL - rate x count"},
+                            {"path": "rackTotalPrice", "type": "BigDecimal", "description": "Published rate x count"}
                         ]
                     }
                 ]
@@ -177,13 +177,13 @@
                 "description": "This day's subtotals, one per currency. Access: th:each='total : ${day.totalsByCurrency}'",
                 "children": [
                     {"path": "currency", "type": "String", "description": "Currency code"},
-                    {"path": "accommodationSto", "type": "BigDecimal", "description": "INTERNAL — accommodation cost this day"},
+                    {"path": "accommodationSto", "type": "BigDecimal", "description": "INTERNAL - accommodation cost this day"},
                     {"path": "accommodationRack", "type": "BigDecimal", "description": "Accommodation price this day"},
-                    {"path": "parkFeesSto", "type": "BigDecimal", "description": "INTERNAL — park fees this day"},
+                    {"path": "parkFeesSto", "type": "BigDecimal", "description": "INTERNAL - park fees this day"},
                     {"path": "parkFeesRack", "type": "BigDecimal", "description": "Park fees price this day"},
-                    {"path": "activitiesSto", "type": "BigDecimal", "description": "INTERNAL — activities this day"},
+                    {"path": "activitiesSto", "type": "BigDecimal", "description": "INTERNAL - activities this day"},
                     {"path": "activitiesRack", "type": "BigDecimal", "description": "Activities price this day"},
-                    {"path": "grandTotalSto", "type": "BigDecimal", "description": "INTERNAL — day total, operator cost"},
+                    {"path": "grandTotalSto", "type": "BigDecimal", "description": "INTERNAL - day total, operator cost"},
                     {"path": "grandTotalRack", "type": "BigDecimal", "description": "Day total, published price"}
                 ]
             }
@@ -192,7 +192,7 @@
     {
         "path": "paxCostDetails",
         "type": "List<PaxCategoryCostDTO>",
-        "description": "The same costing grouped by pax band instead of by day — what each kind of guest costs. Access with: th:each='band : ${costing.paxCostDetails}'",
+        "description": "The same costing grouped by pax band instead of by day - what each kind of guest costs. Access with: th:each='band : ${costing.paxCostDetails}'",
         "isRequired": false,
         "children": [
             {"path": "nationCategoryId", "type": "String", "description": "Obfuscated nationality band ID"},
@@ -210,9 +210,9 @@
                     {"path": "itemName", "type": "String", "description": "What was charged"},
                     {"path": "chargingBasis", "type": "String", "description": "How it is charged"},
                     {"path": "quantity", "type": "Integer", "description": "Units charged for this band"},
-                    {"path": "stoUnitPrice", "type": "BigDecimal", "description": "INTERNAL — operator rate for this band"},
+                    {"path": "stoUnitPrice", "type": "BigDecimal", "description": "INTERNAL - operator rate for this band"},
                     {"path": "rackUnitPrice", "type": "BigDecimal", "description": "Published rate for this band"},
-                    {"path": "stoTotalPrice", "type": "BigDecimal", "description": "INTERNAL — line cost for this band"},
+                    {"path": "stoTotalPrice", "type": "BigDecimal", "description": "INTERNAL - line cost for this band"},
                     {"path": "rackTotalPrice", "type": "BigDecimal", "description": "Line price for this band"},
                     {"path": "currency", "type": "String", "description": "Currency of this line"},
                     {"path": "paxCategory", "type": "String", "description": "Band label carried on the line"},
@@ -225,13 +225,13 @@
                 "description": "What this band totals, one block per currency. Access: th:each='total : ${band.totalsByCurrency}'",
                 "children": [
                     {"path": "currency", "type": "String", "description": "Currency code"},
-                    {"path": "accommodationSto", "type": "BigDecimal", "description": "INTERNAL — accommodation for this band"},
+                    {"path": "accommodationSto", "type": "BigDecimal", "description": "INTERNAL - accommodation for this band"},
                     {"path": "accommodationRack", "type": "BigDecimal", "description": "Accommodation price for this band"},
-                    {"path": "parkFeesSto", "type": "BigDecimal", "description": "INTERNAL — park fees for this band"},
+                    {"path": "parkFeesSto", "type": "BigDecimal", "description": "INTERNAL - park fees for this band"},
                     {"path": "parkFeesRack", "type": "BigDecimal", "description": "Park fees price for this band"},
-                    {"path": "activitiesSto", "type": "BigDecimal", "description": "INTERNAL — activities for this band"},
+                    {"path": "activitiesSto", "type": "BigDecimal", "description": "INTERNAL - activities for this band"},
                     {"path": "activitiesRack", "type": "BigDecimal", "description": "Activities price for this band"},
-                    {"path": "grandTotalSto", "type": "BigDecimal", "description": "INTERNAL — band total, operator cost"},
+                    {"path": "grandTotalSto", "type": "BigDecimal", "description": "INTERNAL - band total, operator cost"},
                     {"path": "grandTotalRack", "type": "BigDecimal", "description": "Band total, published price"}
                 ]
             }
@@ -240,7 +240,7 @@
     {
         "path": "rateIssues",
         "type": "List<RateIssueLogDTO>",
-        "description": "INTERNAL — everything that could not be priced, and why. A client-facing template must not print these; an operations template should. Access: th:each='issue : ${costing.rateIssues}'",
+        "description": "INTERNAL - everything that could not be priced, and why. A client-facing template must not print these; an operations template should. Access: th:each='issue : ${costing.rateIssues}'",
         "isRequired": false,
         "children": [
             {"path": "issueType", "type": "Enum", "description": "MISSING, INACTIVE, NO_STO_RATE, NO_SEASON or SEASON_NOT_FOUND"},
@@ -260,13 +260,13 @@
         "isRequired": false,
         "children": [
             {"path": "currency", "type": "String", "description": "Currency code"},
-            {"path": "accommodationSto", "type": "BigDecimal", "description": "INTERNAL — stored accommodation cost"},
+            {"path": "accommodationSto", "type": "BigDecimal", "description": "INTERNAL - stored accommodation cost"},
             {"path": "accommodationRack", "type": "BigDecimal", "description": "Stored accommodation price"},
-            {"path": "parkFeesSto", "type": "BigDecimal", "description": "INTERNAL — stored park fees"},
+            {"path": "parkFeesSto", "type": "BigDecimal", "description": "INTERNAL - stored park fees"},
             {"path": "parkFeesRack", "type": "BigDecimal", "description": "Stored park fees price"},
-            {"path": "activitiesSto", "type": "BigDecimal", "description": "INTERNAL — stored activities cost"},
+            {"path": "activitiesSto", "type": "BigDecimal", "description": "INTERNAL - stored activities cost"},
             {"path": "activitiesRack", "type": "BigDecimal", "description": "Stored activities price"},
-            {"path": "grandTotalSto", "type": "BigDecimal", "description": "INTERNAL — stored total operator cost"},
+            {"path": "grandTotalSto", "type": "BigDecimal", "description": "INTERNAL - stored total operator cost"},
             {"path": "grandTotalRack", "type": "BigDecimal", "description": "Stored total published price"},
             {"path": "hasIncompleteRates", "type": "Boolean", "description": "Whether the stored figure was saved with rates missing"},
             {"path": "calculatedAt", "type": "String", "description": "When the stored figure was worked out"},

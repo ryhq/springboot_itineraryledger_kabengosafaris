@@ -72,7 +72,7 @@ public class ExpensePaymentCreateService {
                     return ResponseEntity.status(HttpStatus.CONFLICT).body(
                         ApiResponse.error(409,
                             "This bill is still a draft, so it cannot take a payment yet. Record it "
-                                + "first — the payment drawer can do both at once.",
+                                + "first - the payment drawer can do both at once.",
                             "EXPENSE_NOT_PAYABLE"));
                 }
                 ResponseEntity<ApiResponse<?>> recorded =

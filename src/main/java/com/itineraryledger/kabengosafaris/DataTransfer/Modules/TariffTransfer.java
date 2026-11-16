@@ -72,7 +72,7 @@ public class TariffTransfer implements ModuleTransfer {
                  * lasts until the next restart and then silently reverts. Better to say so.
                  */
                 if (Boolean.TRUE.equals(existing.getIsSystem())) {
-                    outcome.skip(label, "a built-in tariff — the initializer restores it on every restart");
+                    outcome.skip(label, "a built-in tariff - the initializer restores it on every restart");
                     continue;
                 }
                 Scalars.apply(mapper, row, existing, "slug", "isSystem");

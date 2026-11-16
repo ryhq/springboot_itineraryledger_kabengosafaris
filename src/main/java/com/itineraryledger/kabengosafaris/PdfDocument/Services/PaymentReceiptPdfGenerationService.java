@@ -129,7 +129,7 @@ public class PaymentReceiptPdfGenerationService extends PdfGenerationBaseService
 
         String documentTitle = title != null && !title.isBlank()
             ? title
-            : String.format("Payment receipt — %s %s, %s",
+            : String.format("Payment receipt - %s %s, %s",
                 payment.getCurrency(),
                 payment.getAmount() != null ? payment.getAmount().toPlainString() : "",
                 payment.getPaymentDate() != null ? payment.getPaymentDate().toString() : invoiceCode);

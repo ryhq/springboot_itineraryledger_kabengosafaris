@@ -335,7 +335,7 @@ public class DocumentInclusionService {
         Map<String, Object> body = new HashMap<>();
         body.put("savedCount", count);
         return ResponseEntity.ok(ApiResponse.success(200,
-            "Saved — this " + what + " now states its own " + count + " line(s), "
+            "Saved - this " + what + " now states its own " + count + " line(s), "
             + "and no longer follows what it was copied from.", body));
     }
 
@@ -343,7 +343,7 @@ public class DocumentInclusionService {
         Map<String, Object> body = new HashMap<>();
         body.put("copiedCount", count);
         return ResponseEntity.ok(ApiResponse.success(200,
-            "Reset to " + parent + " — " + count + " line(s) copied, and anything edited here has "
+            "Reset to " + parent + " - " + count + " line(s) copied, and anything edited here has "
             + "been discarded.", body));
     }
 

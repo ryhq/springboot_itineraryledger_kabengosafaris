@@ -90,7 +90,7 @@ public class CompanyAssetService {
         if (file.getSize() > maxBytes) {
             return badRequest("That file is " + CompanyProfileGetService.formatFileSize(file.getSize())
                 + ". A logo must be under " + CompanyProfileGetService.formatFileSize(maxBytes)
-                + " — these files load on every page and every email.");
+                + " - these files load on every page and every email.");
         }
 
         String original = file.getOriginalFilename() == null ? "upload" : Paths.get(file.getOriginalFilename()).getFileName().toString();
@@ -111,7 +111,7 @@ public class CompanyAssetService {
         if ("svg".equals(extension)) {
             String offending = activeContentIn(bytes);
             if (offending != null) {
-                log.warn("Rejected SVG company asset '{}' — contains {}", original, offending);
+                log.warn("Rejected SVG company asset '{}' - contains {}", original, offending);
                 return badRequest("That SVG contains active content (" + offending
                     + "). Export it again as a plain vector, without scripts or embedded objects.");
             }

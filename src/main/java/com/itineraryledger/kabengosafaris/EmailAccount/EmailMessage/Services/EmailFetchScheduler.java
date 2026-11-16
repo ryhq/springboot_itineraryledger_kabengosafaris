@@ -66,7 +66,7 @@ public class EmailFetchScheduler {
 
             // Skip if already fetching for this account
             if (fetchLocks.putIfAbsent(account.getId(), Boolean.TRUE) != null) {
-                log.debug("Skipping account {} — fetch already in progress", account.getEmail());
+                log.debug("Skipping account {} - fetch already in progress", account.getEmail());
                 continue;
             }
 

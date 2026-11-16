@@ -48,7 +48,7 @@ public class QuoteDayController {
             @PathVariable String dayId,
             @Valid @RequestBody UpdateQuoteDayDTO dto
     ) {
-        log.info("PUT /api/quote-days/{} — updating", dayId);
+        log.info("PUT /api/quote-days/{} - updating", dayId);
         return quoteDayService.updateDay(dayId, dto);
     }
 
@@ -69,7 +69,7 @@ public class QuoteDayController {
             @PathVariable String quoteId,
             @RequestBody java.util.List<String> orderedDayIds
     ) {
-        log.info("POST /api/quotes/{}/days/reorder — {} day ids", quoteId,
+        log.info("POST /api/quotes/{}/days/reorder - {} day ids", quoteId,
                 orderedDayIds != null ? orderedDayIds.size() : 0);
         return quoteDayService.reorderDays(quoteId, orderedDayIds);
     }

@@ -65,9 +65,9 @@ public class EmailSettingsInitializer implements ApplicationRunner, Ordered {
     @Transactional
     public void run(ApplicationArguments args) {
         log.info("");
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║            EMAIL SETTINGS INITIALIZER - START                      ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|            EMAIL SETTINGS INITIALIZER - START                      |");
+        log.info("+====================================================================+");
 
         try {
             // Retention settings
@@ -109,13 +109,13 @@ public class EmailSettingsInitializer implements ApplicationRunner, Ordered {
             createIfNotExists("email.sent.capture.enabled", String.valueOf(sentCaptureEnabled), SettingDataType.BOOLEAN,
                 "Enable capturing all outgoing system emails as .eml files in the SENT folder", EmailSetting.Category.EMAIL_STORAGE, false);
 
-            log.info("║         EMAIL SETTINGS INITIALIZER - COMPLETED                    ║");
+            log.info("|         EMAIL SETTINGS INITIALIZER - COMPLETED                    |");
         } catch (Exception e) {
             log.error("Error during Email Settings initialization", e);
-            log.info("║         EMAIL SETTINGS INITIALIZER - FAILED                        ║");
+            log.info("|         EMAIL SETTINGS INITIALIZER - FAILED                        |");
         }
 
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
         log.info("");
     }
 

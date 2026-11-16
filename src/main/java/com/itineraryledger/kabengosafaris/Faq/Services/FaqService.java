@@ -298,7 +298,7 @@ public class FaqService {
                 Long id = idObfuscator.decodeId(obfuscatedId);
                 Faq faq = faqRepository.findById(id).orElse(null);
                 if (faq == null) {
-                    skipped.add(skip(obfuscatedId, "No such FAQ — it may already have been deleted"));
+                    skipped.add(skip(obfuscatedId, "No such FAQ - it may already have been deleted"));
                     continue;
                 }
                 faqRepository.delete(faq);

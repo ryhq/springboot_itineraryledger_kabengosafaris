@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SetDocumentInclusionsDTO {
 
-    @NotNull(message = "Items list is required — send an empty list to say nothing at all")
+    @NotNull(message = "Items list is required - send an empty list to say nothing at all")
     private List<Row> items;
 
     @Data

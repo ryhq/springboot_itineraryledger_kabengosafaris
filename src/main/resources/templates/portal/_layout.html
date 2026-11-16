@@ -33,7 +33,7 @@
   <meta name="robots" content="noindex, nofollow, noarchive" />
   <meta name="referrer" content="same-origin" />
   <meta name="color-scheme" content="light" />
-  <title th:text="${title} + ' · ' + ${page.companyName}">Your trip</title>
+  <title th:text="${title} + ' | ' + ${page.companyName}">Your trip</title>
 
   <!-- the company's colours, already validated; see PortalViewService.brandCss -->
   <style th:utext="${page.brandCss}">:root{--accent:#1f6f4a;--accent-dark:#164c34;--accent-soft:#f1f6f3;}</style>

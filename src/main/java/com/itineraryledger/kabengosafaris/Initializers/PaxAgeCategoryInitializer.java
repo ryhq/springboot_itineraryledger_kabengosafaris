@@ -59,29 +59,29 @@ public class PaxAgeCategoryInitializer implements ApplicationRunner {
 
     private void printStartBanner() {
         log.info("");
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║                                                                    ║");
-        log.info("║          PAX AGE CATEGORY INITIALIZER - START                      ║");
-        log.info("║          Standard Passenger Age Categories                         ║");
-        log.info("║                                                                    ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|                                                                    |");
+        log.info("|          PAX AGE CATEGORY INITIALIZER - START                      |");
+        log.info("|          Standard Passenger Age Categories                         |");
+        log.info("|                                                                    |");
+        log.info("+====================================================================+");
         log.info("");
     }
 
     private void printEndBanner(boolean success) {
         log.info("");
         if (success) {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║        ✓ PAX AGE CATEGORY INITIALIZER - COMPLETED                  ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|          PAX AGE CATEGORY INITIALIZER - COMPLETED                  |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         } else {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║        ✗ PAX AGE CATEGORY INITIALIZER - FAILED                     ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|          PAX AGE CATEGORY INITIALIZER - FAILED                     |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         }
         log.info("");
     }
@@ -97,7 +97,7 @@ public class PaxAgeCategoryInitializer implements ApplicationRunner {
         for (PaxAgeCategoryData categoryData : categoriesData) {
             // Check if category already exists
             if (paxAgeCategoryRepository.existsByNameIgnoreCase(categoryData.name)) {
-                log.debug("⊘ Pax age category already exists: {}", categoryData.name);
+                log.debug("Pax age category already exists: {}", categoryData.name);
                 skippedCategories++;
                 continue;
             }
@@ -114,10 +114,10 @@ public class PaxAgeCategoryInitializer implements ApplicationRunner {
                     .build();
 
             paxAgeCategoryRepository.save(category);
-            log.info("✓ Created pax age category: {} ({}-{} years, {})",
+            log.info("Created pax age category: {} ({}-{} years, {})",
                 categoryData.name,
                 categoryData.minAge,
-                categoryData.maxAge >= 150 ? "∞" : categoryData.maxAge,
+                categoryData.maxAge >= 150 ? "and over" : categoryData.maxAge,
                 categoryData.categoryType);
             createdCategories++;
         }

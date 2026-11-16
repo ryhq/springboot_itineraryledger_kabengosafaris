@@ -158,13 +158,13 @@ public class EmailReceivingService {
             int initialSyncDays = emailSettingGetterServices.getInitialSyncDays();
             sinceDate = Date.from(LocalDateTime.now().minusDays(initialSyncDays)
                 .atZone(ZoneId.systemDefault()).toInstant());
-            log.info("First sync for account {} — fetching emails from last {} days",
+            log.info("First sync for account {} - fetching emails from last {} days",
                 account.getEmail(), initialSyncDays);
         } else {
             // Subsequent sync — fetch since last successful fetch
             sinceDate = Date.from(account.getLastFetchedAt()
                 .atZone(ZoneId.systemDefault()).toInstant());
-            log.info("Incremental sync for account {} — fetching emails since {}",
+            log.info("Incremental sync for account {} - fetching emails since {}",
                 account.getEmail(), account.getLastFetchedAt());
         }
 

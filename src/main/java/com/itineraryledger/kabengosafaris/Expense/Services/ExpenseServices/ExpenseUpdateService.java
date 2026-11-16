@@ -63,7 +63,7 @@ public class ExpenseUpdateService {
                     && !expense.getStatus().canTransitionTo(requestedStatus)) {
                     return ResponseEntity.badRequest().body(
                         ApiResponse.error(400,
-                            "Invalid status transition: " + expense.getStatus() + " → " + dto.getStatus(),
+                            "Invalid status transition: " + expense.getStatus() + " to " + dto.getStatus(),
                             "INVALID_STATUS_TRANSITION"));
                 }
                 expense.setStatus(requestedStatus);

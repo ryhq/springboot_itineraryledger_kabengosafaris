@@ -19,7 +19,7 @@
   <h1>Your quotation</h1>
   <p class="lede" th:if="${page.quote != null}">
     <span th:text="${page.quote.code}">QT-0000</span><span
-      th:if="${page.quote.status != null}" th:text="' · ' + ${page.quote.status}"> · Sent</span>
+      th:if="${page.quote.status != null}" th:text="' | ' + ${page.quote.status}"> | Sent</span>
   </p>
 
   <div class="note warn" th:if="${page.quote != null and page.quote.expired}">

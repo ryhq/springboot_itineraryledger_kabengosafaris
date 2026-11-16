@@ -64,11 +64,11 @@ public class PdfDocumentInitializer implements ApplicationRunner, Ordered {
      */
     private void printStartBanner() {
         log.info("");
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║                                                                    ║");
-        log.info("║             PDF DOCUMENT INITIALIZER - START                       ║");
-        log.info("║                                                                    ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|                                                                    |");
+        log.info("|             PDF DOCUMENT INITIALIZER - START                       |");
+        log.info("|                                                                    |");
+        log.info("+====================================================================+");
         log.info("");
     }
 
@@ -80,17 +80,17 @@ public class PdfDocumentInitializer implements ApplicationRunner, Ordered {
     private void printEndBanner(boolean success) {
         log.info("");
         if (success) {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║         ✓ PDF DOCUMENT INITIALIZER - COMPLETED                     ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|           PDF DOCUMENT INITIALIZER - COMPLETED                     |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         } else {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║         ✗ PDF DOCUMENT INITIALIZER - FAILED                        ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|           PDF DOCUMENT INITIALIZER - FAILED                        |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         }
         log.info("");
     }
@@ -112,7 +112,7 @@ public class PdfDocumentInitializer implements ApplicationRunner, Ordered {
                 seeded++;
             } catch (Exception e) {
                 failed++;
-                log.error("✗ Could not seed PDF document '{}': {} — the application continues without it",
+                log.error("Could not seed PDF document '{}': {} - the application continues without it",
                     documentName, e.getMessage());
             }
         }

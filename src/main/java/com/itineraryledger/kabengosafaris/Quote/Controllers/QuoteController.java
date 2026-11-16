@@ -287,7 +287,7 @@ public class QuoteController {
     ) {
         String name = body != null ? body.get("name") : null;
         String description = body != null ? body.get("description") : null;
-        log.info("POST /api/quotes/{}/save-as-itinerary — promoting to template", idObfuscated);
+        log.info("POST /api/quotes/{}/save-as-itinerary - promoting to template", idObfuscated);
         return quoteResyncAndTemplateService.saveAsItinerary(idObfuscated, name, description);
     }
 
@@ -299,7 +299,7 @@ public class QuoteController {
     @PostMapping("/{idObfuscated}/resync-from-itinerary")
     @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE')")
     public ResponseEntity<ApiResponse<?>> resyncFromItinerary(@PathVariable String idObfuscated) {
-        log.info("POST /api/quotes/{}/resync-from-itinerary — wiping and re-snapshotting", idObfuscated);
+        log.info("POST /api/quotes/{}/resync-from-itinerary - wiping and re-snapshotting", idObfuscated);
         return quoteResyncAndTemplateService.resyncFromItinerary(idObfuscated);
     }
 

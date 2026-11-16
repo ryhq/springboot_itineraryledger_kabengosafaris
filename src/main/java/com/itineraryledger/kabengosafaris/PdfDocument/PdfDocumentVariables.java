@@ -139,7 +139,7 @@ public class PdfDocumentVariables {
                 {
                     "client_price_sheet",
                     "Client Price Sheet",
-                    "Published (rack) prices only — no operator cost, no margin, no pricing gaps. "
+                    "Published (rack) prices only - no operator cost, no margin, no pricing gaps. "
                         + "Safe to send to a client. States no total while anything is unpriced."
                 }
             };

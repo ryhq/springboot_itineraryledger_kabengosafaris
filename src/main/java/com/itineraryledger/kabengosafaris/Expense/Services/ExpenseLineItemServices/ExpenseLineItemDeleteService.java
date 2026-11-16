@@ -90,7 +90,7 @@ public class ExpenseLineItemDeleteService {
 
                 Expense parent = item.getExpense();
                 if (!parent.isEditable()) {
-                    log.warn("Refusing to delete line item {} — parent expense not editable", id);
+                    log.warn("Refusing to delete line item {} - parent expense not editable", id);
                     skipped.add(Map.of(
                         "id", encodedId,
                         "reason", "The bill is " + parent.getStatus() + " and can no longer be edited"

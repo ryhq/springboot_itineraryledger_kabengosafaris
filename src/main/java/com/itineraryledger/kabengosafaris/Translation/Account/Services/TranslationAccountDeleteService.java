@@ -72,12 +72,12 @@ public class TranslationAccountDeleteService {
 
                 TranslationAccount account = translationAccountRepository.findById(id).orElse(null);
                 if (account == null) {
-                    skipped.add(skip(idObfuscated, null, "No such account — it may already have been deleted"));
+                    skipped.add(skip(idObfuscated, null, "No such account - it may already have been deleted"));
                     continue;
                 }
                 if (Boolean.TRUE.equals(account.getIsDefault())) {
                     skipped.add(skip(idObfuscated, account.getName(),
-                        "This is the default account — make another one default first"));
+                        "This is the default account - make another one default first"));
                     continue;
                 }
 

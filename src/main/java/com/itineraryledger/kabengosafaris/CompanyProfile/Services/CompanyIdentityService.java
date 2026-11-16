@@ -143,7 +143,7 @@ public class CompanyIdentityService {
         CompanyProfile profile = profileRepository.findSingleton().orElse(null);
 
         if (profile == null) {
-            log.warn("No company profile row yet — documents will carry the fallback name only");
+            log.warn("No company profile row yet - documents will carry the fallback name only");
             return Snapshot.empty(fallbackCompanyName);
         }
 
@@ -608,8 +608,8 @@ public class CompanyIdentityService {
             map.put("companyRegistrationNumber", registrationNumber);
             map.put("companyLicenceNumber", licenceNumber);
             map.put("companyCurrency", defaultCurrency);
-            map.put("companyEmails", String.join(" · ", emails));
-            map.put("companyPhones", String.join(" · ", phones));
+            map.put("companyEmails", String.join(" | ", emails));
+            map.put("companyPhones", String.join(" | ", phones));
             /*
              * One variable per platform, empty when the company has no such page. A template wraps
              * its icon in {{#companyFacebook}}…{{/companyFacebook}} so an absent page leaves no

@@ -102,7 +102,7 @@ public class PaymentDeleteService {
                     if (wouldBreakFullyPaid(payment, invoice)) {
                         return ResponseEntity.badRequest().body(
                             ApiResponse.error(400,
-                                String.format("Cannot delete payment — safari %s is in %s state. " +
+                                String.format("Cannot delete payment - safari %s is in %s state. " +
                                     "This would make the invoice no longer fully paid. " +
                                     "Use force=true to override.",
                                     safari.getCode(), safari.getState().getDisplayName()),

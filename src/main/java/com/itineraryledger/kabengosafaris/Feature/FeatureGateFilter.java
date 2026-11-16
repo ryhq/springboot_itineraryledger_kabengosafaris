@@ -46,7 +46,7 @@ public class FeatureGateFilter extends OncePerRequestFilter {
 
         Feature feature = featureService.featureFor(path);
         if (feature != null && !featureService.isEnabled(feature)) {
-            log.debug("Feature '{}' is off — answering 404 for {} {}", feature.getKey(), request.getMethod(), path);
+            log.debug("Feature '{}' is off - answering 404 for {} {}", feature.getKey(), request.getMethod(), path);
             respondNotFound(response, feature);
             return;
         }

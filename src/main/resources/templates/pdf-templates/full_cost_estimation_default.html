@@ -2,11 +2,11 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title th:text="${costing.subjectName != null ? costing.subjectName + ' — Costing' : 'Cost Estimation'}">Cost Estimation</title>
+    <title th:text="${costing.subjectName != null ? costing.subjectName + ' - Costing' : 'Cost Estimation'}">Cost Estimation</title>
     <style>
       /* ========================================
            COMPANY - COSTING DOCUMENTS
-           Forest Green {{companyAccent}} · Chocolate {{companyAccentDark}} · Olive {{companyAccentDark}}
+           Forest Green {{companyAccent}} | Chocolate {{companyAccentDark}} | Olive {{companyAccentDark}}
            CSS variables are not supported by OpenHTMLToPDF.
            ======================================== */
 
@@ -32,7 +32,7 @@
         @bottom-left { content: element(footer-running); }
       }
 
-      /* the contact block lives here — on every page, out of the way of the
+      /* the contact block lives here - on every page, out of the way of the
          figures, which is where a letterhead keeps it */
       .footer-running { position: running(footer-running); }
       .footer-tagline {
@@ -160,8 +160,8 @@
     <div class="footer-running">
       <div class="footer-tagline" th:if="${company.tagline != null and !#strings.isEmpty(company.tagline)}" th:text="${company.tagline}">Company tagline</div>
       <div class="footer-contact">
-        [[${company.address}]] · [[${company.phone}]] ·
-        [[${company.email}]] · [[${company.website}]]
+        [[${company.address}]] | [[${company.phone}]] |
+        [[${company.email}]] | [[${company.website}]]
       </div>
     </div>
 
@@ -206,8 +206,8 @@
       <p class="subject-name" th:text="${costing.subjectName}">Itinerary</p>
       <p class="subject-line">
         <span th:text="${costing.subjectKind == 'SAFARI' ? 'Safari' : (costing.subjectKind == 'QUOTE' ? 'Quotation' : 'Itinerary template')}">Itinerary template</span>
-        <span th:if="${costing.tripType != null}"> · <span th:text="${costing.tripType}">Private</span></span>
-        <span th:if="${costing.budgetCategory != null}"> · <span th:text="${costing.budgetCategory}">Mid-Range</span></span>
+        <span th:if="${costing.tripType != null}"> | <span th:text="${costing.tripType}">Private</span></span>
+        <span th:if="${costing.budgetCategory != null}"> | <span th:text="${costing.budgetCategory}">Mid-Range</span></span>
       </p>
       <table class="facts">
         <tr>
@@ -234,7 +234,7 @@
         <span th:text="${unpriced}">0</span> item(s) could not be priced at all
       </p>
       <p class="warn-body">
-        Every total below EXCLUDES them. That is a gap in the rate cards, not a discount — treat
+        Every total below EXCLUDES them. That is a gap in the rate cards, not a discount - treat
         these figures as a floor, never as a quotable price. The detail is under Pricing gaps.
       </p>
     </div>
@@ -246,7 +246,7 @@
       </p>
       <p class="warn-body" style="color: #3e5b3a">
         No season was configured for those dates, so the next season by priority was used. The totals
-        below are complete — but they rest on an assumption worth checking before quoting. The lines
+        below are complete - but they rest on an assumption worth checking before quoting. The lines
         are listed under Pricing gaps.
       </p>
     </div>
@@ -257,7 +257,7 @@
       <table class="grid">
         <caption>
           <span th:text="${total.currency}">USD</span>
-          <span class="unit">— all amounts in <span th:text="${total.currency}">USD</span></span>
+          <span class="unit">- all amounts in <span th:text="${total.currency}">USD</span></span>
         </caption>
         <thead>
           <tr>
@@ -290,7 +290,7 @@
             <td>
               Total
               <span style="font-weight: 400; color: {{companyAccent}}">
-                · margin <span th:text="${#numbers.formatDecimal(total.marginPercent, 1, 1)}">0.0</span>%
+                | margin <span th:text="${#numbers.formatDecimal(total.marginPercent, 1, 1)}">0.0</span>%
               </span>
             </td>
             <td class="num" th:text="${#numbers.formatDecimal(total.grandTotalSto, 1, 'COMMA', 2, 'POINT')}">0.00</td>
@@ -301,12 +301,12 @@
             <td style="color: #666">Per guest (<span th:text="${costing.totalPax}">0</span> pax)</td>
             <td class="num" th:text="${#numbers.formatDecimal(total.stoPerPax, 1, 'COMMA', 2, 'POINT')}">0.00</td>
             <td class="num" th:text="${#numbers.formatDecimal(total.rackPerPax, 1, 'COMMA', 2, 'POINT')}">0.00</td>
-            <td class="num">—</td>
+            <td class="num">-</td>
           </tr>
         </tbody>
       </table>
       <p class="note" th:if="${multi}">
-        One block per currency. They are never added together — a total across currencies would be
+        One block per currency. They are never added together - a total across currencies would be
         a number that does not exist.
       </p>
 
@@ -323,7 +323,7 @@
              th:if="${costing.subjectKind == 'QUOTE'}" style="margin-top: 10pt">
         <caption style="text-align: left">
           Quoted on <span th:text="${costing.subjectCode}">QT-0000</span>
-          <span th:if="${multi}" th:text="${' · ' + quoted.currency}"> · USD</span>
+          <span th:if="${multi}" th:text="${' | ' + quoted.currency}"> | USD</span>
         </caption>
         <!--
           Two columns where the table above has four. The cost table compares STO against rack;
@@ -379,8 +379,8 @@
         <tbody>
           <tr th:each="saved : ${costing.savedSummary}">
             <td th:text="${saved.currency}">USD</td>
-            <td th:text="${saved.calculatedAt}">—</td>
-            <td th:text="${saved.startDateUsed}">—</td>
+            <td th:text="${saved.calculatedAt}">-</td>
+            <td th:text="${saved.startDateUsed}">-</td>
             <td class="num" th:text="${#numbers.formatDecimal(saved.grandTotalSto, 1, 'COMMA', 2, 'POINT')}">0.00</td>
             <td class="num" th:text="${#numbers.formatDecimal(saved.grandTotalRack, 1, 'COMMA', 2, 'POINT')}">0.00</td>
           </tr>
@@ -407,10 +407,10 @@
           </span>
         </span>
         Day <span th:text="${day.dayNumber}">1</span>
-        <span th:if="${day.dayTitle != null}"> · <span th:text="${day.dayTitle}">Title</span></span>
+        <span th:if="${day.dayTitle != null}"> | <span th:text="${day.dayTitle}">Title</span></span>
         <span class="when">
-          <span th:if="${day.date != null}" th:text="${' — ' + #temporals.format(day.date, 'EEE dd MMM')}"> — Mon 01 Jan</span>
-          <span th:if="${day.seasonName != null}" th:text="${' · ' + day.seasonName}"> · High Season</span>
+          <span th:if="${day.date != null}" th:text="${' - ' + #temporals.format(day.date, 'EEE dd MMM')}"> - Mon 01 Jan</span>
+          <span th:if="${day.seasonName != null}" th:text="${' | ' + day.seasonName}"> | High Season</span>
         </span>
       </div>
 
@@ -432,7 +432,7 @@
               <td>
                 <span th:text="${item.itemName}">Item</span>
                 <span th:if="${item.paxCategory != null and item.paxCategory != 'Per Person'}"
-                      style="color: #888" th:text="${' · ' + item.paxCategory}"> · band</span>
+                      style="color: #888" th:text="${' | ' + item.paxCategory}"> | band</span>
               </td>
               <td th:text="${item.chargingBasis}">Per Person</td>
               <td class="num" th:text="${item.quantity}">0</td>
@@ -479,7 +479,7 @@
           </span>
           <span th:text="${band.nationCategoryName}">Non-Resident</span>
           <span th:text="${band.ageCategoryName}">Adult</span>
-          <span class="when">· <span th:text="${band.paxCount}">0</span> guest(s)</span>
+          <span class="when">| <span th:text="${band.paxCount}">0</span> guest(s)</span>
         </div>
 
         <table class="grid">
@@ -526,10 +526,10 @@
             <td>
               <span th:text="${issue.itemName}">Item</span>
               <span th:if="${issue.paxCategory != null}" style="color: #888"
-                    th:text="${' · ' + issue.paxCategory}"> · band</span>
+                    th:text="${' | ' + issue.paxCategory}"> | band</span>
             </td>
-            <td th:text="${issue.seasonName}">—</td>
-            <td style="font-size: 7.5pt" th:text="${issue.message}">—</td>
+            <td th:text="${issue.seasonName}">-</td>
+            <td style="font-size: 7.5pt" th:text="${issue.message}">-</td>
           </tr>
         </tbody>
       </table>
@@ -540,7 +540,7 @@
     </div>
 
     <p class="note" style="margin-top: 14pt; border-top: .5pt solid #d8d4c8; padding-top: 6pt">
-      Internal document. Operator cost, gross profit and margin appear on this sheet — do not send it
+      Internal document. Operator cost, gross profit and margin appear on this sheet - do not send it
       to a client. The client-facing version is the Price Sheet template, which prints published
       prices only.
     </p>

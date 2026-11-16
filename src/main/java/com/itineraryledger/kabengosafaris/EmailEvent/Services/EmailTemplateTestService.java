@@ -421,19 +421,19 @@ public class EmailTemplateTestService {
 
         variables.put("customerName", displayName(user));
         variables.put("invoiceCode", "INV-000000");
-        variables.put("invoiceTitle", "Sample Safari — Northern Circuit");
+        variables.put("invoiceTitle", "Sample Safari - Northern Circuit");
         variables.put("issueDate", today.toString());
         variables.put("dueDate", today.plusDays(14).toString());
         variables.put("grandTotal", "USD 4,850.00");
-        variables.put("safariName", "Sample Safari — Northern Circuit");
+        variables.put("safariName", "Sample Safari - Northern Circuit");
         variables.put("safariCode", "SAF-0D0N-00000");
         variables.put("itemsSummary", "Accommodation, park fees and activities for 2 guests");
         variables.put("paymentTerms", "50% deposit on confirmation, balance 30 days before arrival");
-        variables.put("customerNotes", "Sample note — this invoice is a test and is not payable.");
+        variables.put("customerNotes", "Sample note - this invoice is a test and is not payable.");
         variables.put("sentDate", today.toString());
         variables.put("companyEmail", companyEmail());
 
-        return new TestEmailData(variables, "[TEST] Invoice INV-000000 · USD 4,850.00");
+        return new TestEmailData(variables, "[TEST] Invoice INV-000000 | USD 4,850.00");
     }
 
     private TestEmailData generateCreditNoteSentTestData(User user) {
@@ -442,17 +442,17 @@ public class EmailTemplateTestService {
 
         variables.put("customerName", displayName(user));
         variables.put("creditNoteCode", "CRN-000000");
-        variables.put("creditNoteTitle", "Sample credit — one night not taken");
+        variables.put("creditNoteTitle", "Sample credit - one night not taken");
         variables.put("issueDate", today.toString());
         variables.put("invoiceCode", "INV-000000");
         variables.put("totalCredit", "USD 420.00");
         variables.put("reason", "A night released before arrival at the guests' request");
-        variables.put("itemsSummary", "1 × Double Room, Full Board — 1 night");
-        variables.put("customerNotes", "Sample note — this credit note is a test.");
+        variables.put("itemsSummary", "1 x Double Room, Full Board - 1 night");
+        variables.put("customerNotes", "Sample note - this credit note is a test.");
         variables.put("sentDate", today.toString());
         variables.put("companyEmail", companyEmail());
 
-        return new TestEmailData(variables, "[TEST] Credit note CRN-000000 · USD 420.00");
+        return new TestEmailData(variables, "[TEST] Credit note CRN-000000 | USD 420.00");
     }
 
     private TestEmailData generatePaymentReceiptSentTestData(User user) {
@@ -461,7 +461,7 @@ public class EmailTemplateTestService {
 
         variables.put("customerName", displayName(user));
         variables.put("invoiceCode", "INV-000000");
-        variables.put("invoiceTitle", "Sample Safari — Northern Circuit");
+        variables.put("invoiceTitle", "Sample Safari - Northern Circuit");
         variables.put("paymentAmount", "USD 2,425.00");
         variables.put("paymentDate", today.toString());
         variables.put("paymentMethod", "Bank transfer");
@@ -470,9 +470,9 @@ public class EmailTemplateTestService {
         variables.put("totalPaid", "USD 2,425.00");
         variables.put("balanceRemaining", "USD 2,425.00");
         variables.put("paymentStatus", "Part paid");
-        variables.put("safariName", "Sample Safari — Northern Circuit");
+        variables.put("safariName", "Sample Safari - Northern Circuit");
         variables.put("safariCode", "SAF-0D0N-00000");
-        variables.put("paymentNotes", "Sample note — this receipt is a test.");
+        variables.put("paymentNotes", "Sample note - this receipt is a test.");
         /*
          * The cross-currency block filled too: it is the part of this letter most likely to be got
          * wrong, and a test that never exercises it is a test that never checks it.
@@ -486,7 +486,7 @@ public class EmailTemplateTestService {
         variables.put("sentDate", today.toString());
         variables.put("companyEmail", companyEmail());
 
-        return new TestEmailData(variables, "[TEST] Payment received · INV-000000 · USD 2,425.00");
+        return new TestEmailData(variables, "[TEST] Payment received | INV-000000 | USD 2,425.00");
     }
 
     /** The signed-in person, since a test letter is addressed to whoever asked for it. */
@@ -518,18 +518,18 @@ public class EmailTemplateTestService {
         variables.put("reference", "FT26090712345");
         variables.put("paidFrom", "Sample operating account");
         variables.put("billCode", "EXP-000000");
-        variables.put("billTitle", "Sample Lodge — Double Room, Full Board — 2 rooms — day 4");
+        variables.put("billTitle", "Sample Lodge - Double Room, Full Board - 2 rooms - day 4");
         variables.put("billDescription", "Two nights, half board, arriving 10 September");
         variables.put("vendorReference", "INV-SAMPLE-0001");
         variables.put("billTotal", "USD 1,240.00");
         variables.put("balanceRemaining", "USD 620.00");
         variables.put("isSettled", "no");
-        variables.put("safariName", "Sample Safari — Northern Circuit");
+        variables.put("safariName", "Sample Safari - Northern Circuit");
         variables.put("safariCode", "SAF-0D0N-00000");
         variables.put("notes", "Balance to follow once the second room is confirmed.");
 
-        String subject = "[TEST] Payment sent · " + variables.get("amountPaid")
-                + " · " + variables.get("billCode");
+        String subject = "[TEST] Payment sent | " + variables.get("amountPaid")
+                + " | " + variables.get("billCode");
 
         return new TestEmailData(variables, subject);
     }
@@ -542,17 +542,17 @@ public class EmailTemplateTestService {
         variables.put("urgency", "Due in 3 days");
         variables.put("daysAway", "3");
         variables.put("billCode", "EXP-000000");
-        variables.put("billTitle", "Sample Lodge — Double Room, Full Board — 2 rooms — day 4");
+        variables.put("billTitle", "Sample Lodge - Double Room, Full Board - 2 rooms - day 4");
         variables.put("vendorName", "Sample Lodge Ltd");
         variables.put("amount", "USD 1,240.00");
         variables.put("dueDate", dueDate.toString());
         variables.put("reference", "INV-SAMPLE-0001");
         variables.put("status", "DRAFT");
-        variables.put("safariName", "Sample Safari — Northern Circuit");
+        variables.put("safariName", "Sample Safari - Northern Circuit");
         variables.put("safariCode", "SAF-0D0N-00000");
 
-        String subject = "[TEST] Due in 3 days · " + variables.get("vendorName")
-                + " · " + variables.get("amount");
+        String subject = "[TEST] Due in 3 days | " + variables.get("vendorName")
+                + " | " + variables.get("amount");
 
         return new TestEmailData(variables, subject);
     }
@@ -606,7 +606,7 @@ public class EmailTemplateTestService {
         variables.put("errorMessage", "Database backup failed: Connection timeout after 30 seconds. Please check database server connectivity.");
         variables.put("nextBackupTime", nextBackupTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
-        String subject = "[TEST] ⚠️ Backup Failed - " + brandName;
+        String subject = "[TEST] Backup FAILED - " + brandName;
 
         return new TestEmailData(variables, subject);
     }
@@ -966,7 +966,7 @@ public class EmailTemplateTestService {
         variables.put("totalDays", "7");
         variables.put("alertDate", now.format(dateFormatter));
 
-        return new TestEmailData(variables, "[TEST] CRITICAL: Payment Gap — SAF-7D6N-1007 — 7-Day Serengeti & Ngorongoro Safari");
+        return new TestEmailData(variables, "[TEST] CRITICAL: Payment Gap - SAF-7D6N-1007 - 7-Day Serengeti & Ngorongoro Safari");
     }
 
     private TestEmailData generateSafariReadinessAlertTestData(User user) {
@@ -987,7 +987,7 @@ public class EmailTemplateTestService {
             "<li style=\"margin: 4px 0;\">No passenger categories defined</li>");
         variables.put("alertDate", now.format(dateFormatter));
 
-        return new TestEmailData(variables, "[TEST] Safari Readiness Issues — SAF-7D6N-1007 starts in 5 day(s)");
+        return new TestEmailData(variables, "[TEST] Safari Readiness Issues - SAF-7D6N-1007 starts in 5 day(s)");
     }
 
     private TestEmailData generateSafariStartedTestData(User user) {
@@ -1005,7 +1005,7 @@ public class EmailTemplateTestService {
         variables.put("startLocation", "Arusha");
         variables.put("alertDate", now.format(dateFormatter));
 
-        return new TestEmailData(variables, "[TEST] Safari Started: SAF-7D6N-1007 — 7-Day Serengeti & Ngorongoro Safari");
+        return new TestEmailData(variables, "[TEST] Safari Started: SAF-7D6N-1007 - 7-Day Serengeti & Ngorongoro Safari");
     }
 
     private TestEmailData generateSafariCompletedTestData(User user) {
@@ -1021,7 +1021,7 @@ public class EmailTemplateTestService {
         variables.put("totalDays", "7");
         variables.put("alertDate", now.format(dateFormatter));
 
-        return new TestEmailData(variables, "[TEST] Safari Completed: SAF-7D6N-1007 — 7-Day Serengeti & Ngorongoro Safari");
+        return new TestEmailData(variables, "[TEST] Safari Completed: SAF-7D6N-1007 - 7-Day Serengeti & Ngorongoro Safari");
     }
 
     private TestEmailData generateSafariPostTripReminderTestData(User user) {
@@ -1042,7 +1042,7 @@ public class EmailTemplateTestService {
             "<li style=\"margin: 4px 0;\">File park entry receipts</li>");
         variables.put("alertDate", now.format(dateFormatter));
 
-        return new TestEmailData(variables, "[TEST] Post-Trip Tasks Pending — SAF-7D6N-1007 — ended 3 day(s) ago");
+        return new TestEmailData(variables, "[TEST] Post-Trip Tasks Pending - SAF-7D6N-1007 - ended 3 day(s) ago");
     }
 
     /**
@@ -1084,11 +1084,11 @@ public class EmailTemplateTestService {
             + night(checkIn.plusDays(2), slash, "Full Board"));
         /* one visit in the sample, as in the live letter: a second visit is a second request */
         variables.put("stayBlocks", "");
-        variables.put("reference", "SAF-14D13N-01003 · Ultimate Northern Tanzania, Culture & Zanzibar Beach");
+        variables.put("reference", "SAF-14D13N-01003 | Ultimate Northern Tanzania, Culture & Zanzibar Beach");
         variables.put("accentColor", accent);
 
-        String subject = "[TEST] Availability Request · " + variables.get("accommodationName")
-            + " · " + checkIn.getDayOfMonth() + "–" + checkOut.format(shortDate);
+        String subject = "[TEST] Availability Request | " + variables.get("accommodationName")
+            + " | " + checkIn.getDayOfMonth() + "-" + checkOut.format(shortDate);
 
         return new TestEmailData(variables, subject);
     }
@@ -1130,11 +1130,11 @@ public class EmailTemplateTestService {
             + " <span style=\"color: #6b7280\">&middot; Standard Tent</span></li>"
             + "<li style=\"margin: 2px 0\"><strong style=\"color: #111827\">1 &times;</strong> Triple Room"
             + " <span style=\"color: #6b7280\">&middot; Standard Tent</span></li>");
-        variables.put("reference", "SAF-14D13N-01003 · Ultimate Northern Tanzania, Culture & Zanzibar Beach");
+        variables.put("reference", "SAF-14D13N-01003 | Ultimate Northern Tanzania, Culture & Zanzibar Beach");
         variables.put("accentColor", brandAccent);
 
-        String subject = "[TEST] Re: Availability Request · " + variables.get("accommodationName")
-            + " · " + checkIn.getDayOfMonth() + "–" + checkOut.format(shortDate);
+        String subject = "[TEST] Re: Availability Request | " + variables.get("accommodationName")
+            + " | " + checkIn.getDayOfMonth() + "-" + checkOut.format(shortDate);
 
         return new TestEmailData(variables, subject);
     }
@@ -1168,7 +1168,7 @@ public class EmailTemplateTestService {
         variables.put("emergencyContact", "+255 700 123 456 (24/7 emergency line)");
         variables.put("sentDate", now.format(dateFormatter));
 
-        return new TestEmailData(variables, "[TEST] Your Safari Details: SAF-7D6N-1007 — 7-Day Serengeti & Ngorongoro Safari");
+        return new TestEmailData(variables, "[TEST] Your Safari Details: SAF-7D6N-1007 - 7-Day Serengeti & Ngorongoro Safari");
     }
 
     private TestEmailData generateSafariCustomerMessageTestData(User user) {
@@ -1190,7 +1190,7 @@ public class EmailTemplateTestService {
         variables.put("sentDate", now.format(dateFormatter));
         variables.put("senderName", "Ricksy Faby, Operations Manager");
 
-        return new TestEmailData(variables, "[TEST] SAF-7D6N-1007 — Important Update: Vehicle Upgrade");
+        return new TestEmailData(variables, "[TEST] SAF-7D6N-1007 - Important Update: Vehicle Upgrade");
     }
 
     /**

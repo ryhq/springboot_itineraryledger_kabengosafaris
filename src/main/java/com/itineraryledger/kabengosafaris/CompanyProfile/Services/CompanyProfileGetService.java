@@ -50,11 +50,11 @@ public class CompanyProfileGetService {
     private static final Map<CompanyAsset.AssetKind, String[]> SLOTS = new LinkedHashMap<>();
     static {
         SLOTS.put(CompanyAsset.AssetKind.LOGO_LIGHT,
-            new String[] { "Icon logo — light mode",
+            new String[] { "Icon logo - light mode",
                 "The mark on its own, for light backgrounds: the topbar, the sign-in screen, footers, the website." });
         SLOTS.put(CompanyAsset.AssetKind.LOGO_DARK,
-            new String[] { "Icon logo — dark mode",
-                "The same mark for dark backgrounds — the panel in dark mode, and a dark website footer." });
+            new String[] { "Icon logo - dark mode",
+                "The same mark for dark backgrounds - the panel in dark mode, and a dark website footer." });
         SLOTS.put(CompanyAsset.AssetKind.LOGO_FULL,
             new String[] { "Full logo",
                 "Mark plus wordmark, for places with room: letterheads, PDF covers, a website header." });
@@ -62,19 +62,19 @@ public class CompanyProfileGetService {
             new String[] { "Full logo with tagline",
                 "The same lockup carrying the tagline. Right on a cover page; noise in a header." });
         SLOTS.put(CompanyAsset.AssetKind.FAVICON_LIGHT,
-            new String[] { "Favicon — light mode", "The browser tab mark when the viewer's system is light." });
+            new String[] { "Favicon - light mode", "The browser tab mark when the viewer's system is light." });
         SLOTS.put(CompanyAsset.AssetKind.FAVICON_DARK,
-            new String[] { "Favicon — dark mode", "The browser tab mark when the viewer's system is dark." });
+            new String[] { "Favicon - dark mode", "The browser tab mark when the viewer's system is dark." });
         SLOTS.put(CompanyAsset.AssetKind.LOGO_EMAIL,
-            new String[] { "Logo — email, light background",
+            new String[] { "Logo - email, light background",
                 "A PNG for the body of a message, where the background is white. "
-                + "Mail clients do not render SVG, so email needs its own raster copy — "
+                + "Mail clients do not render SVG, so email needs its own raster copy - "
                 + "upload a vector and it is converted for you." });
         SLOTS.put(CompanyAsset.AssetKind.LOGO_EMAIL_DARK,
-            new String[] { "Logo — email, dark header",
+            new String[] { "Logo - email, dark header",
                 "A PNG for the coloured header band at the top of every message. "
                 + "The band is painted in the dark accent, so the light-background copy "
-                + "disappears into it — this wants the light-ink version of the mark." });
+                + "disappears into it - this wants the light-ink version of the mark." });
     }
 
     @Transactional(readOnly = true)
@@ -528,7 +528,7 @@ public class CompanyProfileGetService {
         total++;
         if (has(bank.accountNumber())) filled++; else
             gaps.add(gap("bank", "A default bank account", "BLOCKING",
-                "Proforma invoices print no payment details, so nobody can pay. Set one in Finance → Bank accounts.", "BANK"));
+                "Proforma invoices print no payment details, so nobody can pay. Set one in Finance > Bank accounts.", "BANK"));
 
         boolean ready = gaps.stream().noneMatch(g -> "BLOCKING".equals(g.getSeverity()));
 

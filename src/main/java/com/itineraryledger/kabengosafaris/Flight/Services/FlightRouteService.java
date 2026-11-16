@@ -63,7 +63,13 @@ public class FlightRouteService {
      *
      * The dotted paths are property paths, not SQL — Spring Data joins them for us.
      */
-    /** Words that join two place names on screen and name nothing themselves. */
+    /**
+     * Words that join two place names on screen and name nothing themselves.
+     *
+     * <p>The arrow stays. This reads what somebody typed, and for years what they typed was an
+     * arrow. A parser that only understands the text we produce today cannot read the text we
+     * produced yesterday.
+     */
     private static final java.util.Set<String> JOINERS =
         java.util.Set.of("to", "and", "-", "->", "→", "via");
 

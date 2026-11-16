@@ -2,11 +2,11 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title th:text="${costing.subjectName != null ? costing.subjectName + ' — Price Sheet' : 'Price Sheet'}">Cost Estimation</title>
+    <title th:text="${costing.subjectName != null ? costing.subjectName + ' - Price Sheet' : 'Price Sheet'}">Cost Estimation</title>
     <style>
       /* ========================================
            COMPANY - COSTING DOCUMENTS
-           Forest Green {{companyAccent}} · Chocolate {{companyAccentDark}} · Olive {{companyAccentDark}}
+           Forest Green {{companyAccent}} | Chocolate {{companyAccentDark}} | Olive {{companyAccentDark}}
            CSS variables are not supported by OpenHTMLToPDF.
            ======================================== */
 
@@ -32,7 +32,7 @@
         @bottom-left { content: element(footer-running); }
       }
 
-      /* the contact block lives here — on every page, out of the way of the
+      /* the contact block lives here - on every page, out of the way of the
          figures, which is where a letterhead keeps it */
       .footer-running { position: running(footer-running); }
       .footer-tagline {
@@ -160,8 +160,8 @@
     <div class="footer-running">
       <div class="footer-tagline" th:if="${company.tagline != null and !#strings.isEmpty(company.tagline)}" th:text="${company.tagline}">Company tagline</div>
       <div class="footer-contact">
-        [[${company.address}]] · [[${company.phone}]] ·
-        [[${company.email}]] · [[${company.website}]]
+        [[${company.address}]] | [[${company.phone}]] |
+        [[${company.email}]] | [[${company.website}]]
       </div>
     </div>
 
@@ -206,8 +206,8 @@
       <p class="subject-name" th:text="${costing.subjectName}">Itinerary</p>
       <p class="subject-line">
         <span th:text="${costing.subjectKind == 'SAFARI' ? 'Safari' : (costing.subjectKind == 'QUOTE' ? 'Quotation' : 'Itinerary template')}">Itinerary template</span>
-        <span th:if="${costing.tripType != null}"> · <span th:text="${costing.tripType}">Private</span></span>
-        <span th:if="${costing.budgetCategory != null}"> · <span th:text="${costing.budgetCategory}">Mid-Range</span></span>
+        <span th:if="${costing.tripType != null}"> | <span th:text="${costing.tripType}">Private</span></span>
+        <span th:if="${costing.budgetCategory != null}"> | <span th:text="${costing.budgetCategory}">Mid-Range</span></span>
       </p>
       <table class="facts">
         <tr>
@@ -243,7 +243,7 @@
       <table class="grid">
         <caption>
           <span th:text="${total.currency}">USD</span>
-          <span class="unit">— all amounts in <span th:text="${total.currency}">USD</span></span>
+          <span class="unit">- all amounts in <span th:text="${total.currency}">USD</span></span>
         </caption>
         <thead>
           <tr>
@@ -275,7 +275,7 @@
         </tbody>
       </table>
       <p class="note" th:if="${multi}">
-        One block per currency. They are never added together — a total across currencies would be
+        One block per currency. They are never added together - a total across currencies would be
         a number that does not exist.
       </p>
 
@@ -292,7 +292,7 @@
              th:if="${costing.subjectKind == 'QUOTE'}" style="margin-top: 10pt">
         <caption>
           Quoted
-          <span class="unit">— as it appears on <span th:text="${costing.subjectCode}">QT-0000</span></span>
+          <span class="unit">- as it appears on <span th:text="${costing.subjectCode}">QT-0000</span></span>
         </caption>
         <thead>
           <tr>
@@ -341,10 +341,10 @@
           <span th:text="${#numbers.formatDecimal(t.grandTotalRack, 1, 'COMMA', 2, 'POINT')}">0.00</span>
         </span>
         Day <span th:text="${day.dayNumber}">1</span>
-        <span th:if="${day.dayTitle != null}"> · <span th:text="${day.dayTitle}">Title</span></span>
+        <span th:if="${day.dayTitle != null}"> | <span th:text="${day.dayTitle}">Title</span></span>
         <span class="when">
-          <span th:if="${day.date != null}" th:text="${' — ' + #temporals.format(day.date, 'EEE dd MMM')}"> — Mon 01 Jan</span>
-          <span th:if="${day.seasonName != null}" th:text="${' · ' + day.seasonName}"> · High Season</span>
+          <span th:if="${day.date != null}" th:text="${' - ' + #temporals.format(day.date, 'EEE dd MMM')}"> - Mon 01 Jan</span>
+          <span th:if="${day.seasonName != null}" th:text="${' | ' + day.seasonName}"> | High Season</span>
         </span>
       </div>
 
@@ -364,7 +364,7 @@
               <td>
                 <span th:text="${item.itemName}">Item</span>
                 <span th:if="${item.paxCategory != null and item.paxCategory != 'Per Person'}"
-                      style="color: #888" th:text="${' · ' + item.paxCategory}"> · band</span>
+                      style="color: #888" th:text="${' | ' + item.paxCategory}"> | band</span>
               </td>
               <td th:text="${item.chargingBasis}">Per Person</td>
               <td class="num" th:text="${item.quantity}">0</td>
@@ -383,7 +383,7 @@
             </tr>
           </th:block>
           <tr th:if="${#lists.isEmpty(day.lineItems)}">
-            <td colspan="5" style="color: #888">A transfer or rest day — no park fees or chargeable activities.</td>
+            <td colspan="5" style="color: #888">A transfer or rest day - no park fees or chargeable activities.</td>
           </tr>
         </tbody>
       </table>
@@ -404,7 +404,7 @@
           </span>
           <span th:text="${band.nationCategoryName}">Non-Resident</span>
           <span th:text="${band.ageCategoryName}">Adult</span>
-          <span class="when">· <span th:text="${band.paxCount}">0</span> guest(s)</span>
+          <span class="when">| <span th:text="${band.paxCount}">0</span> guest(s)</span>
         </div>
 
         <table class="grid">
@@ -432,8 +432,8 @@
 
 
     <p class="note" style="margin-top: 14pt; border-top: .5pt solid #d8d4c8; padding-top: 6pt">
-      This sheet lists what the trip includes and what it costs. Anything not listed — international
-      flights, visas, travel insurance, tips and items of a personal nature — is not included. Prices
+      This sheet lists what the trip includes and what it costs. Anything not listed - international
+      flights, visas, travel insurance, tips and items of a personal nature - is not included. Prices
       are held for the travel dates shown and are subject to confirmation of availability.
     </p>
 

@@ -119,7 +119,7 @@ public class SafariCustomerEmailService {
                 }
             }
 
-            String subject = "Your Safari Details: " + safari.getCode() + " — " + safari.getName();
+            String subject = "Your Safari Details: " + safari.getCode() + " - " + safari.getName();
             String safariCode = safari.getCode();
 
             final byte[] finalPdfBytes = pdfBytes;
@@ -242,7 +242,7 @@ public class SafariCustomerEmailService {
             variables.put("sentDate", LocalDate.now().format(DATE_FMT));
             variables.put("senderName", companyName() + " Team");
 
-            String emailSubject = safari.getCode() + " — " + messageSubject;
+            String emailSubject = safari.getCode() + " - " + messageSubject;
             String safariCode = safari.getCode();
             final String emailLang = resolvedLanguage;
             final Long templateId = emailTemplateId;

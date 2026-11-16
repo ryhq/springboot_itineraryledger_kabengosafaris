@@ -1,5 +1,5 @@
 <!--
-  "We have your enquiry" — back to the person who filled in the safari planner.
+  "We have your enquiry" - back to the person who filled in the safari planner.
 
   The planner asks ten steps' worth of questions, so the first thing this email owes them is
   proof that all of it arrived and was read correctly. Reading their own answers back is not
@@ -10,7 +10,7 @@
   minute on a form is at their most interested right now and a day is a long time.
 
   Every variable the planner captures is declared on the event, whether or not this template
-  prints it — a different template can then be written for a different tone without touching any
+  prints it - a different template can then be written for a different tone without touching any
   Java. That is why the list is long and this file only uses part of it.
 -->
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.55; color: #1f2421">
@@ -99,7 +99,7 @@
     {{#itineraryUrl}}<a href="{{itineraryUrl}}" style="color: #111827; text-decoration: none">{{itineraryName}}</a>{{/itineraryUrl}}
   </p>
   <p style="margin: 0; font-size: 13px; color: #6b7280">
-    {{#itineraryTotalDays}}{{itineraryTotalDays}} days{{/itineraryTotalDays}}{{#itineraryStartLocation}} · from {{itineraryStartLocation}}{{/itineraryStartLocation}}{{#itineraryEndLocation}} to {{itineraryEndLocation}}{{/itineraryEndLocation}}
+    {{#itineraryTotalDays}}{{itineraryTotalDays}} days{{/itineraryTotalDays}}{{#itineraryStartLocation}} | from {{itineraryStartLocation}}{{/itineraryStartLocation}}{{#itineraryEndLocation}} to {{itineraryEndLocation}}{{/itineraryEndLocation}}
   </p>
   {{#itineraryUrl}}
   <p style="margin: 8px 0 0; font-size: 13px">
@@ -119,7 +119,7 @@
   </p>
 
   <p style="margin: 18px 0 0; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280">
-    Enquiry {{inquiryCode}} · received {{inquiryDate}}<br>
-    {{companyName}}{{#companyPhone}} · {{companyPhone}}{{/companyPhone}}{{#companyEmail}} · {{companyEmail}}{{/companyEmail}}{{#companyWebsite}} · {{companyWebsite}}{{/companyWebsite}}
+    Enquiry {{inquiryCode}} | received {{inquiryDate}}<br>
+    {{companyName}}{{#companyPhone}} | {{companyPhone}}{{/companyPhone}}{{#companyEmail}} | {{companyEmail}}{{/companyEmail}}{{#companyWebsite}} | {{companyWebsite}}{{/companyWebsite}}
   </p>
 </div>

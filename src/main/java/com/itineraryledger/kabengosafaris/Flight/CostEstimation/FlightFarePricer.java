@@ -138,7 +138,7 @@ public final class FlightFarePricer {
         if (!fare.hasNetFare()) {
             warnings.add("No net fare loaded for this flight"
                 + (fare.getGrossFare() != null
-                    ? " — the airline's published gross is " + currency + " " + fare.getGrossFare()
+                    ? " - the airline's published gross is " + currency + " " + fare.getGrossFare()
                       + ", which is not what we pay and is not quotable."
                     : "."));
             return empty(warnings, markup, currency, adults, children);
@@ -150,7 +150,7 @@ public final class FlightFarePricer {
         }
         if (travelDate != null && !fare.fliesIn(travelDate)) {
             warnings.add("This route does not normally fly in " + travelDate.getMonth()
-                + " — confirm with the airline. The fare itself does not change.");
+                + " - confirm with the airline. The fare itself does not change.");
         }
         if (fare.getFlightRoute() != null && Boolean.TRUE.equals(fare.getFlightRoute().getIsOnRequest())) {
             warnings.add("This sector is flown on request only, so a seat is not guaranteed.");

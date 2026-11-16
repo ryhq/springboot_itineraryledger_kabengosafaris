@@ -247,7 +247,7 @@ public class UserAdminUpdateService {
             if (user == null) return notFound();
 
             if (Boolean.TRUE.equals(user.getEnabled())) {
-                return rejected("That account is already active — send a password reset instead");
+                return rejected("That account is already active - send a password reset instead");
             }
 
             accountVerificationService.resendVerificationEmail(user.getEmail());
@@ -270,7 +270,7 @@ public class UserAdminUpdateService {
     private ResponseEntity<ApiResponse<?>> refuseSelfLockout(User target, User actor, String verb) {
         if (actor == null || !actor.getId().equals(target.getId())) return null;
         return ResponseEntity.badRequest().body(ApiResponse.error(400,
-            "You cannot " + verb + " your own account — ask another administrator to do it",
+            "You cannot " + verb + " your own account - ask another administrator to do it",
             "SELF_LOCKOUT_REFUSED"));
     }
 
@@ -285,7 +285,7 @@ public class UserAdminUpdateService {
         if (keepsAdministration) return null;
 
         return ResponseEntity.badRequest().body(ApiResponse.error(400,
-            "That would remove your own access to user management — ask another administrator to change your roles",
+            "That would remove your own access to user management - ask another administrator to change your roles",
             "SELF_LOCKOUT_REFUSED"));
     }
 

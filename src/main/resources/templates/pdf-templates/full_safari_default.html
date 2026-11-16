@@ -1174,7 +1174,7 @@
                             <span th:if="${flight.eta != null}"> - <span th:text="${flight.eta}">10:15</span></span>
                         </div>
                         <div class="text-small" th:if="${flight.isAlternative != null and flight.isAlternative}">
-                            <span class="text-muted">Alternative — not in the price</span>
+                            <span class="text-muted">Alternative - not in the price</span>
                         </div>
                         <div class="text-small" th:if="${flight.isOnRequest != null and flight.isOnRequest}">
                             <span class="text-muted">On request only</span>
@@ -1238,7 +1238,7 @@
                             <span th:if="${accommodation.boardTypeName != null}"
                                   th:text="' (' + ${accommodation.boardTypeName} + ')'">Board</span>
                             <span th:if="${accommodation.roomCount != null}"
-                                  th:text="' × ' + ${accommodation.roomCount} + ' room(s)'">Rooms</span>
+                                  th:text="' x ' + ${accommodation.roomCount} + ' room(s)'">Rooms</span>
                         </div>
                         <div th:if="${accommodation.confirmationNumber != null}" class="confirmation-badge"
                              th:text="'Confirmation: ' + ${accommodation.confirmationNumber}">Confirmation

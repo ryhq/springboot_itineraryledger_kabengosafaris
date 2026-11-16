@@ -69,7 +69,7 @@ public class VendorDeleteService {
             if (bills > 0) {
                 skipped.add(skip(obfuscated, vendor.getCode(),
                     bills + (bills == 1 ? " bill is" : " bills are") + " recorded against them."
-                        + " They are the record of what we paid — deactivate the vendor instead."));
+                        + " They are the record of what we paid - deactivate the vendor instead."));
                 continue;
             }
 

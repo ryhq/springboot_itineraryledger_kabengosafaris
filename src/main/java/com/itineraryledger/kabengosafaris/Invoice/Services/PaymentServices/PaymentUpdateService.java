@@ -94,7 +94,7 @@ public class PaymentUpdateService {
                     if (wouldBreakFullyPaid(payment, invoice, dto)) {
                         return ResponseEntity.badRequest().body(
                             ApiResponse.error(400,
-                                String.format("Cannot reduce payment — safari %s is in %s state. " +
+                                String.format("Cannot reduce payment - safari %s is in %s state. " +
                                     "This change would make the invoice no longer fully paid. " +
                                     "Set force=true to override.",
                                     safari.getCode(), safari.getState().getDisplayName()),

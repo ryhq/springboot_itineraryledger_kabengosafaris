@@ -135,13 +135,13 @@ public class JodConverterManager {
                 status = Status.STOPPED;
                 lastError = null;
                 lastReloadedAt = LocalDateTime.now();
-                log.info("JodConverterManager: reload complete — pool intentionally stopped (jodconverter.local.enabled=false)");
+                log.info("JodConverterManager: reload complete - pool intentionally stopped (jodconverter.local.enabled=false)");
                 return snapshot("LibreOffice pool is disabled. Enable 'jodconverter.local.enabled' and reload to start.");
             }
             try {
                 startInternal();
                 lastReloadedAt = LocalDateTime.now();
-                log.info("JodConverterManager: reload complete — pool is RUNNING");
+                log.info("JodConverterManager: reload complete - pool is RUNNING");
                 return snapshot("LibreOffice pool reloaded and running.");
             } catch (Exception e) {
                 status = Status.FAILED;
@@ -303,11 +303,11 @@ public class JodConverterManager {
                 .build();
             registry.addFormat(docxWithWeb);
 
-            log.debug("Custom format registry built: DOCX now supports WEB → DOCX conversion");
+            log.debug("Custom format registry built: DOCX now supports WEB -> DOCX conversion");
             return registry;
         } catch (Exception e) {
             log.warn("Failed to build custom format registry, falling back to defaults. " +
-                "HTML → DOCX conversion may fail.", e);
+                "HTML -> DOCX conversion may fail.", e);
             return DefaultDocumentFormatRegistry.getInstance();
         }
     }

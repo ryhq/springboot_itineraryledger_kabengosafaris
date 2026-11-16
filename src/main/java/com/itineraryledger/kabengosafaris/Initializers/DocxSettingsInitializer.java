@@ -75,28 +75,28 @@ public class DocxSettingsInitializer implements ApplicationRunner, Ordered {
 
     private void printStartBanner() {
         log.info("");
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║                                                                    ║");
-        log.info("║              DOCX SETTINGS INITIALIZER - START                     ║");
-        log.info("║                                                                    ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|                                                                    |");
+        log.info("|              DOCX SETTINGS INITIALIZER - START                     |");
+        log.info("|                                                                    |");
+        log.info("+====================================================================+");
         log.info("");
     }
 
     private void printEndBanner(boolean success) {
         log.info("");
         if (success) {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║         ✓ DOCX SETTINGS INITIALIZER - COMPLETED                    ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|           DOCX SETTINGS INITIALIZER - COMPLETED                    |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         } else {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║         ✗ DOCX SETTINGS INITIALIZER - FAILED                       ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|           DOCX SETTINGS INITIALIZER - FAILED                       |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         }
         log.info("");
     }
@@ -108,7 +108,7 @@ public class DocxSettingsInitializer implements ApplicationRunner, Ordered {
             docxEngine,
             SettingDataType.STRING,
             "DOCX generation engine: 'docx4j' (in-JVM, no host deps, drops @page/running footers) " +
-                "or 'libreoffice' (headless LibreOffice via JODConverter — higher fidelity, " +
+                "or 'libreoffice' (headless LibreOffice via JODConverter - higher fidelity, " +
                 "requires LibreOffice installed AND jodconverter.local.enabled=true).",
             DocxSetting.Category.ENGINE,
             false
@@ -122,7 +122,7 @@ public class DocxSettingsInitializer implements ApplicationRunner, Ordered {
             SettingDataType.BOOLEAN,
             "Enable the JODConverter local OfficeManager. Required to use docx.engine=libreoffice. " +
                 "Requires LibreOffice installed on the host (apt install libreoffice-core libreoffice-writer). " +
-                "⚠ Requires application restart.",
+                "Requires application restart.",
             DocxSetting.Category.LIBREOFFICE,
             true
         );
@@ -133,7 +133,7 @@ public class DocxSettingsInitializer implements ApplicationRunner, Ordered {
             SettingDataType.STRING,
             "Explicit path to the LibreOffice install (e.g. /usr/lib/libreoffice). " +
                 "Leave blank on Debian/Ubuntu to let JODConverter autodiscover. " +
-                "⚠ Requires application restart.",
+                "Requires application restart.",
             DocxSetting.Category.LIBREOFFICE,
             true
         );
@@ -143,7 +143,7 @@ public class DocxSettingsInitializer implements ApplicationRunner, Ordered {
             jodconverterPortNumbers,
             SettingDataType.STRING,
             "Comma-separated ports for the soffice pool. Multiple ports = multiple parallel " +
-                "office instances (e.g. '2002,2003,2004'). ⚠ Requires application restart.",
+                "office instances (e.g. '2002,2003,2004'). Requires application restart.",
             DocxSetting.Category.LIBREOFFICE,
             true
         );
@@ -153,7 +153,7 @@ public class DocxSettingsInitializer implements ApplicationRunner, Ordered {
             String.valueOf(jodconverterMaxTasksPerProcess),
             SettingDataType.INTEGER,
             "Recycle each soffice process after this many conversions (defends against memory leaks). " +
-                "⚠ Requires application restart.",
+                "Requires application restart.",
             DocxSetting.Category.LIBREOFFICE,
             true
         );
@@ -163,7 +163,7 @@ public class DocxSettingsInitializer implements ApplicationRunner, Ordered {
             String.valueOf(jodconverterTaskExecutionTimeout),
             SettingDataType.LONG,
             "Per-conversion timeout in milliseconds. Raise for very large documents. " +
-                "⚠ Requires application restart.",
+                "Requires application restart.",
             DocxSetting.Category.LIBREOFFICE,
             true
         );
@@ -173,7 +173,7 @@ public class DocxSettingsInitializer implements ApplicationRunner, Ordered {
             String.valueOf(jodconverterTaskQueueTimeout),
             SettingDataType.LONG,
             "How long a task may wait in the queue before failing (milliseconds). " +
-                "⚠ Requires application restart.",
+                "Requires application restart.",
             DocxSetting.Category.LIBREOFFICE,
             true
         );
@@ -188,7 +188,7 @@ public class DocxSettingsInitializer implements ApplicationRunner, Ordered {
     ) {
         try {
             if (docxSettingRepository.existsBySettingKey(settingKey)) {
-                log.debug("⊘ DOCX setting already exists, skipping: {}", settingKey);
+                log.debug("DOCX setting already exists, skipping: {}", settingKey);
                 return;
             }
             DocxSetting setting = DocxSetting.builder()

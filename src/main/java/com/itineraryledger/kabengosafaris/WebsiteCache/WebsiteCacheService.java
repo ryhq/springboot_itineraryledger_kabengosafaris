@@ -97,7 +97,7 @@ public class WebsiteCacheService {
             return record(profile, false, "No website address is recorded, so there is nothing to call", tags);
         }
         if (profile.getWebsiteCacheSecret() == null || profile.getWebsiteCacheSecret().isBlank()) {
-            return record(profile, false, "No website key is recorded — the website will refuse an "
+            return record(profile, false, "No website key is recorded - the website will refuse an "
                 + "unsigned request, which is the point of the key", tags);
         }
 
@@ -135,7 +135,7 @@ public class WebsiteCacheService {
             return record(profile, false, "The website rejected the key. The value stored here and "
                 + "the one in the website's environment are not the same", tags);
         } catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
-            return record(profile, false, "The website has no " + REVALIDATE_PATH + " — it is "
+            return record(profile, false, "The website has no " + REVALIDATE_PATH + " - it is "
                 + "running a version from before cache clearing existed", tags);
         } catch (RuntimeException e) {
             return record(profile, false, "Could not reach " + url + ": " + rootMessage(e), tags);
@@ -189,7 +189,7 @@ public class WebsiteCacheService {
         long now = System.currentTimeMillis();
         Long previous = lastCleared.get(key);
         if (previous != null && now - previous < COALESCE_MILLIS) {
-            log.debug("Skipping a repeat clear of {} — one went out {}ms ago",
+            log.debug("Skipping a repeat clear of {} - one went out {}ms ago",
                 key, now - previous);
             return false;
         }
@@ -227,7 +227,7 @@ public class WebsiteCacheService {
             return new Outcome(false, "The website rejected the key", url, Set.of());
         } catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
             return new Outcome(false, "The website has no " + REVALIDATE_PATH
-                + " — it is running a version from before cache clearing existed", url, Set.of());
+                + " - it is running a version from before cache clearing existed", url, Set.of());
         } catch (RuntimeException e) {
             return new Outcome(false, "Could not reach " + url + ": " + rootMessage(e), url, Set.of());
         }

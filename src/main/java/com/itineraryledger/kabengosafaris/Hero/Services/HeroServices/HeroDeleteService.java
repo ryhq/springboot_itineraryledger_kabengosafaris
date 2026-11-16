@@ -102,7 +102,7 @@ public class HeroDeleteService {
 
                 if (hero == null) {
                     log.warn("Hero not found: {}", id);
-                    skipped.add(skip(id, null, "No such banner — it may already have been deleted"));
+                    skipped.add(skip(id, null, "No such banner - it may already have been deleted"));
                     continue;
                 }
 

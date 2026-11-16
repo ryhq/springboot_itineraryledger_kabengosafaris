@@ -205,7 +205,7 @@ public class SafariPhaseAlertScheduler {
             variables.put("issuesList", issuesHtml.toString());
 
             String urgency = "Imminent".equals(phase) ? "CRITICAL: " : "";
-            String subject = urgency + "Safari Readiness Issues — " + safari.getCode() + " starts in " + daysUntil + " day(s)";
+            String subject = urgency + "Safari Readiness Issues - " + safari.getCode() + " starts in " + daysUntil + " day(s)";
 
             sendAlert("SAFARI_READINESS_ALERT", variables, subject);
         } catch (Exception e) {
@@ -231,7 +231,7 @@ public class SafariPhaseAlertScheduler {
                 + "<li style=\"margin: 4px 0;\">File park entry receipts</li>";
             variables.put("pendingTasks", tasks);
 
-            String subject = "Post-Trip Tasks Pending — " + safari.getCode() + " — ended " + daysSinceEnd + " day(s) ago";
+            String subject = "Post-Trip Tasks Pending - " + safari.getCode() + " - ended " + daysSinceEnd + " day(s) ago";
 
             sendAlert("SAFARI_POST_TRIP_REMINDER", variables, subject);
         } catch (Exception e) {

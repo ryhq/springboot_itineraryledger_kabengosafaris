@@ -2,19 +2,19 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title th:text="${(itinerary.name != null ? itinerary.name : 'Safari Itinerary') + ' — Accommodation Choices'}">
+    <title th:text="${(itinerary.name != null ? itinerary.name : 'Safari Itinerary') + ' - Accommodation Choices'}">
       Accommodation Choices
     </title>
     <style>
       /* ========================================
-           [[${company.name}]] — ACCOMMODATION CHOICES
+           [[${company.name}]] - ACCOMMODATION CHOICES
            Brand Colors:
            - Forest Green:   {{companyAccent}}
            - Chocolate Brown (from the company\'s accent): {{companyAccentDark}}
            - Olive Brown:    {{companyAccentDark}}
            - Gold (accent):  #b6842f  (marks the recommended stay)
 
-           OpenHTMLToPDF: no CSS variables, no CSS transforms —
+           OpenHTMLToPDF: no CSS variables, no CSS transforms -
            direct color values and inline SVG only.
            ======================================== */
 
@@ -152,7 +152,7 @@
     </div>
 
     <!-- ========================================
-         HEADER — logo left · document title right
+         HEADER - logo left | document title right
          ======================================== -->
     <header class="header">
       <table class="header-table">
@@ -187,18 +187,18 @@
         <tr>
           <td>
             <div class="meta-label">Reference</div>
-            <div class="meta-value" th:text="${itinerary.code != null ? itinerary.code : '—'}">ITI-14D13N-1053</div>
+            <div class="meta-value" th:text="${itinerary.code != null ? itinerary.code : '-'}">ITI-14D13N-1053</div>
           </td>
           <td>
             <div class="meta-label">Duration</div>
             <div class="meta-value">
-              <span th:text="${(itinerary.totalDays != null ? itinerary.totalDays : '—') + ' days'}">14 days</span>
-              <span th:if="${itinerary.totalNights != null}" th:text="${' · ' + itinerary.totalNights + ' nights'}"> · 13 nights</span>
+              <span th:text="${(itinerary.totalDays != null ? itinerary.totalDays : '-') + ' days'}">14 days</span>
+              <span th:if="${itinerary.totalNights != null}" th:text="${' | ' + itinerary.totalNights + ' nights'}"> | 13 nights</span>
             </div>
           </td>
           <td>
             <div class="meta-label">Trip Type</div>
-            <div class="meta-value" th:text="${itinerary.tripTypeDisplayName != null ? itinerary.tripTypeDisplayName : '—'}">Private</div>
+            <div class="meta-value" th:text="${itinerary.tripTypeDisplayName != null ? itinerary.tripTypeDisplayName : '-'}">Private</div>
           </td>
           <td th:if="${itinerary.totalPaxCount != null}">
             <div class="meta-label">Guests</div>
@@ -215,7 +215,7 @@
       </p>
 
       <!-- ── DAYS ───────────────────────────────
-           One block per day — each day shows the accommodation(s) it lands at.
+           One block per day - each day shows the accommodation(s) it lands at.
            Multi-night stays therefore repeat per night, which keeps the day
            numbering sequential and unambiguous.
            ======================================== -->
@@ -229,7 +229,7 @@
             <span
               class="stop-name"
               th:text="${day.endLocation != null and !#strings.isEmpty(day.endLocation) ? day.endLocation : (day.title != null ? day.title : 'Accommodation')}"
-            >Zanzibar · Paje &amp; Dongwe Beach</span>
+            >Zanzibar | Paje &amp; Dongwe Beach</span>
           </div>
 
           <!-- Recommended (isAlternative false/null) -->

@@ -88,7 +88,7 @@ public class CreditNoteDeleteService {
                         log.warn("Cannot delete credit note {} - status is {} (only DRAFT credit notes can be deleted)",
                                  creditNote.getCreditNoteCode(), creditNote.getStatus().getDisplayName());
                         skipped.add(skip(idObfuscated, creditNote.getCreditNoteCode(),
-                            String.format("It is %s. Only a draft can be deleted — this one is on record.",
+                            String.format("It is %s. Only a draft can be deleted - this one is on record.",
                                 creditNote.getStatus().getDisplayName().toLowerCase())));
                         continue;
                     }

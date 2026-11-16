@@ -132,7 +132,7 @@ public class ItineraryDayDuplicateService {
                 })
                 .toList();
 
-            log.info("Day {} of itinerary {} duplicated ×{} — {}",
+            log.info("Day {} of itinerary {} duplicated x{} - {}",
                 source.getDayNumber(), itinerary.getCode(), copies, counts);
 
             Map<String, Object> data = new LinkedHashMap<>();

@@ -5,7 +5,7 @@
   { "name": "paidOn", "description": "The date the money left, ISO", "isRequired": true },
   { "name": "method", "description": "How it was sent: bank transfer, cash, mobile money", "isRequired": true },
   { "name": "reference", "description": "OUR transfer reference, so they can find it on their statement", "isRequired": false },
-  { "name": "paidFrom", "description": "The account it was sent from, by name only — never an account number", "isRequired": false },
+  { "name": "paidFrom", "description": "The account it was sent from, by name only - never an account number", "isRequired": false },
   { "name": "billCode", "description": "Our own reference for the bill, e.g. EXP-000002", "isRequired": true },
   { "name": "billTitle", "description": "What the bill is for, as recorded", "isRequired": true },
   { "name": "billDescription", "description": "The longer description, where one was written", "isRequired": false },

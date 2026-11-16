@@ -110,8 +110,8 @@ public class ExpensePaymentAdviceService {
             body.put("to", recipients.to());
             body.put("cc", recipients.cc());
             body.put("recipientsFrom", recipients.source());
-            body.put("subject", "Payment sent · " + variables.get("amountPaid")
-                + " · " + variables.get("billCode"));
+            body.put("subject", "Payment sent | " + variables.get("amountPaid")
+                + " | " + variables.get("billCode"));
             body.put("html", html);
             body.put("vendorName", variables.get("vendorName"));
             body.put("attachments", attachmentsFor(payment, bill));
@@ -228,18 +228,18 @@ public class ExpensePaymentAdviceService {
         BigDecimal owing = balanceIn(bill, currency);
         boolean settled = owing.compareTo(BigDecimal.ZERO) <= 0;
 
-        variables.put("vendorName", bill.getVendor() != null ? text(bill.getVendor().getName(), "—") : "—");
+        variables.put("vendorName", bill.getVendor() != null ? text(bill.getVendor().getName(), "-") : "-");
         variables.put("settlement", settled ? "Paid in full" : "Part payment");
         variables.put("amountPaid", money(payment.getAmount(), text(payment.getCurrency(), currency)));
-        variables.put("paidOn", payment.getPaymentDate() == null ? "—" : payment.getPaymentDate().toString());
-        variables.put("method", payment.getPaymentMethod() == null ? "—"
+        variables.put("paidOn", payment.getPaymentDate() == null ? "-" : payment.getPaymentDate().toString());
+        variables.put("method", payment.getPaymentMethod() == null ? "-"
             : readable(payment.getPaymentMethod().name()));
         variables.put("reference", text(payment.getReference(), ""));
         /* the account's NAME only: a supplier reconciling does not need our account number */
         variables.put("paidFrom", payment.getBankAccount() != null
             ? text(payment.getBankAccount().getAccountName(), "") : "");
-        variables.put("billCode", text(bill.getExpenseCode(), "—"));
-        variables.put("billTitle", text(bill.getTitle(), "—"));
+        variables.put("billCode", text(bill.getExpenseCode(), "-"));
+        variables.put("billTitle", text(bill.getTitle(), "-"));
         variables.put("billDescription", text(bill.getDescription(), ""));
         variables.put("vendorReference", text(bill.getReferenceNumber(), ""));
         variables.put("billTotal", money(totalIn(bill, currency), currency));
@@ -276,7 +276,7 @@ public class ExpensePaymentAdviceService {
     }
 
     private static String money(BigDecimal amount, String currency) {
-        if (amount == null) return "—";
+        if (amount == null) return "-";
         return (currency == null || currency.isBlank() ? "" : currency + " ") + MONEY.format(amount);
     }
 

@@ -229,7 +229,7 @@ public class BackupCreateService {
                 try {
                     emailSendingService.sendHtmlEmail(
                         email,
-                        "✓ Manual Backup Completed Successfully - " + result.getEndTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+                        "Manual backup completed successfully - " + result.getEndTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
                         htmlContent
                     );
                     log.info("Manual backup success notification sent to: {}", email);
@@ -294,7 +294,7 @@ public class BackupCreateService {
                 try {
                     emailSendingService.sendHtmlEmail(
                         email,
-                        "⚠️ Manual Backup Failed - " + failureTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
+                        "Manual backup FAILED - " + failureTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
                         htmlContent
                     );
                     log.info("Manual backup failure notification sent to: {}", email);

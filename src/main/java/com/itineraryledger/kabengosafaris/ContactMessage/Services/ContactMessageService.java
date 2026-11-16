@@ -152,7 +152,7 @@ public class ContactMessageService {
     private String excerpt(String message) {
         if (message == null || message.isBlank()) return "";
         String flat = message.trim().replaceAll("\\s+", " ");
-        return flat.length() <= 180 ? flat : flat.substring(0, 179).trim() + "…";
+        return flat.length() <= 180 ? flat : flat.substring(0, 179).trim() + "...";
     }
 
     private String nullToEmpty(String value) {

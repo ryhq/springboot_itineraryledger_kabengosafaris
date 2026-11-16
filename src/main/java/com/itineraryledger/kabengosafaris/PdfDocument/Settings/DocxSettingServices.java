@@ -167,7 +167,7 @@ public class DocxSettingServices {
         String message = "DOCX Setting updated successfully. " +
             (activeChanged ? "Active status changed. " : "") +
             (settingValueChanged ? "Setting Value changed. " : "") +
-            (Boolean.TRUE.equals(setting.getRequiresRestart()) ? "⚠ This change requires an application restart to take effect." : "");
+            (Boolean.TRUE.equals(setting.getRequiresRestart()) ? "This change requires an application restart to take effect." : "");
 
         return ResponseEntity.ok(ApiResponse.success(200, message.trim(), toDTO(setting)));
     }

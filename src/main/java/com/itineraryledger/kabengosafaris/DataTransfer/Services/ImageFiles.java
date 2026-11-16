@@ -75,7 +75,7 @@ public class ImageFiles {
 
             Path source = Paths.get(root).resolve(fileName).normalize();
             if (!Files.exists(source)) {
-                log.warn("{} image '{}' is recorded but not on disk — leaving it out of the bundle",
+                log.warn("{} image '{}' is recorded but not on disk - leaving it out of the bundle",
                     module, fileName);
                 continue;
             }

@@ -42,7 +42,7 @@ public class BlogSeeder {
             throw new IllegalArgumentException("A seeded post needs a slug");
         }
         if (blogRepository.existsBySlug(slug)) {
-            log.debug("Blog '{}' already exists — leaving it alone", slug);
+            log.debug("Blog '{}' already exists - leaving it alone", slug);
             return false;
         }
 

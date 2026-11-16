@@ -239,7 +239,7 @@ public class ExpenseDocumentGetService {
              */
             log.warn("Expense document id could not be decoded: {}", idObfuscated);
             return ResponseEntity.badRequest().body(
-                ApiResponse.error(400, "That is not a document id — the link may be from an older "
+                ApiResponse.error(400, "That is not a document id - the link may be from an older "
                     + "version of this record. Reload the page and try again.",
                     "EXPENSE_DOCUMENT_ID_INVALID"));
         }

@@ -64,28 +64,28 @@ public class ParkTariffInitializer implements ApplicationRunner {
 
     private void printStartBanner() {
         log.info("");
-        log.info("╔════════════════════════════════════════════════════════════════════╗");
-        log.info("║                                                                    ║");
-        log.info("║          PARK-TARIFF INITIALIZER - START                           ║");
-        log.info("║                                                                    ║");
-        log.info("╚════════════════════════════════════════════════════════════════════╝");
+        log.info("+====================================================================+");
+        log.info("|                                                                    |");
+        log.info("|          PARK-TARIFF INITIALIZER - START                           |");
+        log.info("|                                                                    |");
+        log.info("+====================================================================+");
         log.info("");
     }
 
     private void printEndBanner(boolean success) {
         log.info("");
         if (success) {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║        ✓ PARK-TARIFF INITIALIZER - COMPLETED                       ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|          PARK-TARIFF INITIALIZER - COMPLETED                       |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         } else {
-            log.info("╔════════════════════════════════════════════════════════════════════╗");
-            log.info("║                                                                    ║");
-            log.info("║        ✗ PARK-TARIFF INITIALIZER - FAILED                          ║");
-            log.info("║                                                                    ║");
-            log.info("╚════════════════════════════════════════════════════════════════════╝");
+            log.info("+====================================================================+");
+            log.info("|                                                                    |");
+            log.info("|          PARK-TARIFF INITIALIZER - FAILED                          |");
+            log.info("|                                                                    |");
+            log.info("+====================================================================+");
         }
         log.info("");
     }
@@ -151,7 +151,7 @@ public class ParkTariffInitializer implements ApplicationRunner {
 
                 // Check if relationship already exists
                 if (parkTariffRepository.existsByParkIdAndTariffId(parkId, tariffId)) {
-                    log.debug("⊘ Relationship already exists: {} <-> {}", park.getName(), tariff.getName());
+                    log.debug("Relationship already exists: {} <-> {}", park.getName(), tariff.getName());
                     skippedCount++;
                     continue;
                 }
@@ -164,7 +164,7 @@ public class ParkTariffInitializer implements ApplicationRunner {
                         .build();
 
                 parkTariffRepository.save(parkTariff);
-                log.info("✓ Created relationship: {} <-> {}", park.getName(), tariff.getName());
+                log.info("Created relationship: {} <-> {}", park.getName(), tariff.getName());
                 createdCount++;
             }
         }

@@ -44,7 +44,7 @@ public enum Feature {
     WEBSITE_CONTENT(
         "website-content",
         "Website content",
-        "Heroes, blog, testimonies, FAQs and the newsletter — the pages a public site reads. "
+        "Heroes, blog, testimonies, FAQs and the newsletter - the pages a public site reads. "
             + "Off for a company whose website this system does not feed.",
         "CONTENT",
         List.of("/api/heroes", "/api/hero-images", "/api/blogs", "/api/blog-images",
