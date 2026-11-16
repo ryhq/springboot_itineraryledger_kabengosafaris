@@ -86,7 +86,26 @@ public class NotificationSetting {
          * and the audit row needs a real person. If this reaches nobody, a customer who has said
          * yes is sitting in a state nothing here watches.
          */
-        CLIENT_PORTAL("Client Portal Notification Settings");
+        CLIENT_PORTAL("Client Portal Notification Settings"),
+        /**
+         * The trips themselves: a readiness problem days before departure, a booking that has
+         * reached its start date without being paid, a trip that started, ended, or needs closing
+         * out.
+         *
+         * <p>These were addressed from the BACKUP settings, for the same reason the portal ones
+         * were and with the same result. Whoever is on a page about database dumps and retention
+         * was deciding who hears that a safari leaves in two days with no vehicle assigned, and
+         * the only way to stop the alerts was to empty that list, which also switched off the
+         * backup failure warning.
+         *
+         * <p>The cadences live here too, because the defect was never only the address. A gap
+         * check with no lower bound and nothing recording that it had already spoken said
+         * CRITICAL every morning forever: a safari that never reaches FULLY_PAID never
+         * auto-starts, so never auto-completes, so never auto-closes, so it never leaves the set
+         * being scanned. Each channel now names the days it speaks on, and an empty list means
+         * that channel is silent.
+         */
+        SAFARI_OPERATIONS("Safari Operations Alert Settings");
 
         private final String displayName;
 

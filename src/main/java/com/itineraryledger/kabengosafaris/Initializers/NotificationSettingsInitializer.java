@@ -223,6 +223,61 @@ public class NotificationSettingsInitializer implements ApplicationRunner, Order
                 false
         );
 
+        // Safari operations
+        createOrUpdateSetting(
+                "notification.safari_operations.enabled",
+                "true",
+                SettingDataType.BOOLEAN,
+                "Tell us when a trip is not ready to leave, has passed its start date without "
+                        + "being paid, has started, has ended, or needs closing out",
+                NotificationSetting.Category.SAFARI_OPERATIONS,
+                false
+        );
+
+        createOrUpdateSetting(
+                "notification.safari_operations.emails",
+                contactUsEmails,
+                SettingDataType.STRING,
+                "Who hears it (comma-separated: email1@example.com,email2@example.com). Left "
+                        + "empty, the contact-us addresses are used. These alerts used to be "
+                        + "addressed from the Backup settings, where nobody deciding who should "
+                        + "hear about a departing trip would think to look",
+                NotificationSetting.Category.SAFARI_OPERATIONS,
+                false
+        );
+
+        createOrUpdateSetting(
+                "notification.safari_operations.readiness_days",
+                "7,3,1",
+                SettingDataType.STRING,
+                "How many days before departure to report unresolved readiness issues, "
+                        + "comma-separated. Inside two days the alert is marked critical and adds "
+                        + "the payment state. Empty means no readiness alerts. Default 7,3,1",
+                NotificationSetting.Category.SAFARI_OPERATIONS,
+                false
+        );
+
+        createOrUpdateSetting(
+                "notification.safari_operations.payment_gap_days",
+                "0,3,7,14",
+                SettingDataType.STRING,
+                "How many days after the start date to report a booking that is still not fully "
+                        + "paid, comma-separated. 0 is the morning of departure. Empty means no "
+                        + "payment gap alerts. Default 0,3,7,14",
+                NotificationSetting.Category.SAFARI_OPERATIONS,
+                false
+        );
+
+        createOrUpdateSetting(
+                "notification.safari_operations.post_trip_days",
+                "2",
+                SettingDataType.STRING,
+                "How many days after a trip ends to send the post-trip task reminder, "
+                        + "comma-separated. Empty means no reminder. Default 2",
+                NotificationSetting.Category.SAFARI_OPERATIONS,
+                false
+        );
+
         log.info("All notification settings have been initialized");
     }
 

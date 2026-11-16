@@ -14,13 +14,20 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * SafariPaymentScheduler - Auto-transitions safaris from PENDING_PAYMENT → FULLY_PAID
+ * SafariPaymentScheduler - Auto-transitions a safari to FULLY_PAID
  * when all linked invoices are settled (status = PAID).
  *
  * Runs every hour to detect invoice payments promptly.
  *
+ * CONFIRMED is watched as well as PENDING_PAYMENT. A safari is moved to CONFIRMED when the
+ * booking is agreed, and nothing moves it on from there by itself, so a confirmed trip whose
+ * invoices were all settled sat in CONFIRMED with the money in the bank. That was invisible until
+ * the payment gap alert began reporting it as unpaid on the morning of departure, which is the
+ * worst possible way to learn that a state machine has a gap in it: an alert that cries wolf is
+ * worse than no alert, because it teaches the reader that this subject line is wrong.
+ *
  * Logic:
- * 1. Find all safaris in PENDING_PAYMENT state
+ * 1. Find all safaris in PENDING_PAYMENT or CONFIRMED state
  * 2. For each, check if there are any linked invoices
  * 3. If all invoices are PAID (none unpaid), transition to FULLY_PAID
  * 4. If no invoices exist, skip (manual payment flow applies)
@@ -39,21 +46,22 @@ public class SafariPaymentScheduler {
     @Scheduled(cron = "${safari.payment.schedule.cron:0 0 * * * ?}")
     @Transactional
     public void checkInvoicePayments() {
-        List<Safari> pendingPayment = safariRepository.findByState(SafariState.PENDING_PAYMENT);
+        List<Safari> pendingPayment = safariRepository.findByStateIn(
+            List.of(SafariState.PENDING_PAYMENT, SafariState.CONFIRMED));
 
         if (pendingPayment.isEmpty()) {
             return;
         }
 
-        log.debug("Checking invoice payments for {} safari(s) in PENDING_PAYMENT state", pendingPayment.size());
+        log.debug("Checking invoice payments for {} safari(s) awaiting settlement", pendingPayment.size());
 
         int transitioned = 0;
         for (Safari safari : pendingPayment) {
             if (isFullyPaidByInvoices(safari)) {
-                safari.changeState(SafariState.FULLY_PAID, "Auto-transitioned — all linked invoices are fully paid");
+                safari.changeState(SafariState.FULLY_PAID, "Auto-transitioned, all linked invoices are fully paid");
                 safariRepository.save(safari);
                 transitioned++;
-                log.info("AUTO-PAID: {} ({}) — all invoices settled — transitioned to FULLY_PAID",
+                log.info("AUTO-PAID: {} ({}), all invoices settled, transitioned to FULLY_PAID",
                     safari.getCode(), safari.getName());
             }
         }

@@ -1,6 +1,6 @@
 package com.itineraryledger.kabengosafaris.Safari.Services;
 
-import com.itineraryledger.kabengosafaris.Backup.BackupSettings.BackupSettingsGetterServices;
+import com.itineraryledger.kabengosafaris.NotificationSetting.NotificationSettingGetterServices;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices.EmailSendingService;
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailTemplateRenderer;
 import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
@@ -38,7 +38,7 @@ public class SafariLifecycleScheduler {
     private final SafariRepository safariRepository;
     private final EmailTemplateRenderer emailTemplateRenderer;
     private final EmailSendingService emailSendingService;
-    private final BackupSettingsGetterServices backupSettings;
+    private final NotificationSettingGetterServices notificationSettings;
 
     @Value("${safari.lifecycle.auto-close.grace-days:14}")
     private int autoCloseGraceDays;
@@ -132,28 +132,38 @@ public class SafariLifecycleScheduler {
      * PAYMENT GAP: Flag safaris not FULLY_PAID on startDate — sends critical email
      */
     private int detectPaymentGaps(LocalDate today) {
+        List<Integer> afterDays = notificationSettings.getSafariPaymentGapDays();
+        if (afterDays.isEmpty()) {
+            log.debug("Payment gap alerts have no days configured");
+            return 0;
+        }
+
         List<SafariState> unpaidStates = List.of(
             SafariState.DRAFT, SafariState.PENDING_APPROVAL, SafariState.APPROVED,
             SafariState.CONFIRMED, SafariState.PENDING_PAYMENT
         );
 
-        List<Safari> gaps = safariRepository.findPaymentGapSafaris(today, unpaidStates);
-        if (gaps.isEmpty()) return 0;
+        int reported = 0;
+        for (Integer daysOverdue : afterDays) {
+            List<Safari> gaps = safariRepository.findPaymentGapSafarisStartingOn(
+                today.minusDays(daysOverdue), unpaidStates);
 
-        for (Safari safari : gaps) {
-            long daysOverdue = java.time.temporal.ChronoUnit.DAYS.between(safari.getStartDate(), today);
+            for (Safari safari : gaps) {
+                log.error("PAYMENT GAP: {} ({}), startDate {} is {} day(s) overdue, state: {}, customer: {}",
+                    safari.getCode(), safari.getName(), safari.getStartDate(), daysOverdue,
+                    safari.getState().getDisplayName(),
+                    safari.getCustomer() != null ? safari.getCustomer().getDisplayName() : "N/A");
 
-            log.error("PAYMENT GAP: {} ({}) — startDate {} is {} day(s) overdue — state: {} — customer: {}",
-                safari.getCode(), safari.getName(), safari.getStartDate(), daysOverdue,
-                safari.getState().getDisplayName(),
-                safari.getCustomer() != null ? safari.getCustomer().getDisplayName() : "N/A");
-
-            sendAlert("SAFARI_PAYMENT_GAP", buildPaymentGapVariables(safari, daysOverdue),
-                "CRITICAL: Payment Gap — " + safari.getCode() + " — " + safari.getName());
+                sendAlert("SAFARI_PAYMENT_GAP", buildPaymentGapVariables(safari, daysOverdue),
+                    "CRITICAL: Payment Gap - " + safari.getCode() + " - " + safari.getName());
+                reported++;
+            }
         }
 
-        log.warn("PAYMENT GAP ALERT: {} safari(s) past start date without full payment", gaps.size());
-        return gaps.size();
+        if (reported > 0) {
+            log.warn("PAYMENT GAP ALERT: {} safari(s) past start date without full payment", reported);
+        }
+        return reported;
     }
 
     // ============================================================
@@ -206,9 +216,14 @@ public class SafariLifecycleScheduler {
 
     private void sendAlert(String eventName, Map<String, String> variables, String subject) {
         try {
-            List<String> recipients = backupSettings.getNotificationEmails();
+            if (!Boolean.TRUE.equals(notificationSettings.isSafariOperationsNotificationEnabled())) {
+                log.debug("Safari operations alerts are switched off, not sending {}", eventName);
+                return;
+            }
+
+            List<String> recipients = notificationSettings.getSafariOperationsNotificationEmails();
             if (recipients.isEmpty()) {
-                log.warn("No notification email recipients configured — skipping {} alert", eventName);
+                log.warn("No safari operations recipients configured, skipping {} alert", eventName);
                 return;
             }
 

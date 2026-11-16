@@ -94,10 +94,18 @@ public interface SafariRepository extends JpaRepository<Safari, Long>, JpaSpecif
     List<Safari> findReadyToClose(@Param("cutoff") java.time.LocalDateTime cutoff);
 
     /**
-     * Find safaris with payment gap: NOT FULLY_PAID but startDate <= today (should have been paid)
+     * Safaris that started on exactly this date and are still not fully paid.
+     *
+     * <p>Exactly, not <code>startDate &lt;= today</code>. The open-ended form had no lower bound
+     * and nothing recording that the alert had already gone out, and a safari in these states can
+     * never leave them on its own: auto-start runs from FULLY_PAID, auto-complete from
+     * IN_PROGRESS, auto-close from COMPLETED. So one booking nobody marked paid produced a mail
+     * subject-lined CRITICAL every morning, indefinitely. The caller now asks about the specific
+     * days it has been told to speak on.
      */
-    @Query("SELECT s FROM Safari s WHERE s.startDate <= :today AND s.state IN :unpaidStates AND s.isActive = true")
-    List<Safari> findPaymentGapSafaris(@Param("today") LocalDate today, @Param("unpaidStates") List<SafariState> unpaidStates);
+    @Query("SELECT s FROM Safari s WHERE s.startDate = :startDate AND s.state IN :unpaidStates AND s.isActive = true")
+    List<Safari> findPaymentGapSafarisStartingOn(@Param("startDate") LocalDate startDate,
+                                                 @Param("unpaidStates") List<SafariState> unpaidStates);
 
     /**
      * Find upcoming safaris in a specific phase window for alerts

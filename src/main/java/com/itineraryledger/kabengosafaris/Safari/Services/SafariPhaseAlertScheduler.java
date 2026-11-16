@@ -1,6 +1,6 @@
 package com.itineraryledger.kabengosafaris.Safari.Services;
 
-import com.itineraryledger.kabengosafaris.Backup.BackupSettings.BackupSettingsGetterServices;
+import com.itineraryledger.kabengosafaris.NotificationSetting.NotificationSettingGetterServices;
 import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices.EmailSendingService;
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailTemplateRenderer;
 import com.itineraryledger.kabengosafaris.Safari.Entity.Safari;
@@ -22,11 +22,18 @@ import java.util.Map;
  * SafariPhaseAlertScheduler - Runs daily phase-driven checks on safaris
  * and sends email alerts for readiness issues and post-trip reminders.
  *
- * Runs daily at 7:00 AM (after SafariLifecycleScheduler at 6:00 AM):
+ * Runs daily at 7:00 AM (after SafariLifecycleScheduler at 6:00 AM).
  *
- * STARTING_SOON (3-7 days): Readiness check — vehicles, accommodations, pax
- * IMMINENT (1-2 days): Final check — all issues logged as CRITICAL
- * JUST_ENDED (1-7 days): Post-trip task reminders
+ * <p>It speaks on named days, not across windows. It used to sweep days 7 down to 3 and then 2
+ * and 1, re-sending the same unresolved list on all seven mornings, and to send the post-trip
+ * reminder on every one of the seven days after a trip ended. That reminder carries a fixed list
+ * of tasks and checks none of them, so copies two through seven told the reader nothing the first
+ * had not. Seven copies of one problem is how a person learns to delete a subject line unread.
+ *
+ * <p>Which days, and whether a channel speaks at all, is configured under Settings →
+ * Notification. An empty day list means that channel is silent. Inside two days of departure the
+ * readiness alert is marked critical and adds the payment state, which is the one piece the
+ * window form was carrying that the day form has to keep.
  */
 @Component
 @RequiredArgsConstructor
@@ -36,7 +43,7 @@ public class SafariPhaseAlertScheduler {
     private final SafariRepository safariRepository;
     private final EmailTemplateRenderer emailTemplateRenderer;
     private final EmailSendingService emailSendingService;
-    private final BackupSettingsGetterServices backupSettings;
+    private final NotificationSettingGetterServices notificationSettings;
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
 
@@ -49,84 +56,93 @@ public class SafariPhaseAlertScheduler {
     public void checkPhaseAlerts() {
         log.info("=== Safari Phase Alert Scheduler START ===");
 
+        if (!Boolean.TRUE.equals(notificationSettings.isSafariOperationsNotificationEnabled())) {
+            log.debug("Safari operations alerts are switched off");
+            return;
+        }
+
         LocalDate today = LocalDate.now();
 
-        checkStartingSoon(today);
-        checkImminent(today);
+        checkReadiness(today);
         checkJustEnded(today);
 
         log.info("=== Safari Phase Alert Scheduler END ===");
     }
 
     /**
-     * STARTING_SOON (3-7 days out): Readiness check — sends email if issues found
+     * Readiness, on the days we were told to speak.
+     *
+     * <p>Inside two days the phase is Imminent: the subject is marked critical and an incomplete
+     * payment counts as an issue in its own right. Further out it is a heads-up about something
+     * there is still time to fix.
      */
-    private void checkStartingSoon(LocalDate today) {
-        List<Safari> safaris = safariRepository.findUpcomingInWindow(today.plusDays(3), today.plusDays(7), ACTIVE_BOOKING_STATES);
-        if (safaris.isEmpty()) return;
+    private void checkReadiness(LocalDate today) {
+        List<Integer> leadDays = notificationSettings.getSafariReadinessLeadDays();
+        if (leadDays.isEmpty()) {
+            log.debug("Readiness alerts have no lead days configured");
+            return;
+        }
 
-        log.info("STARTING_SOON: {} safari(s) starting in 3-7 days", safaris.size());
+        for (Integer daysUntil : leadDays) {
+            LocalDate departure = today.plusDays(daysUntil);
+            List<Safari> safaris = safariRepository.findUpcomingInWindow(
+                departure, departure, ACTIVE_BOOKING_STATES);
+            if (safaris.isEmpty()) continue;
 
-        for (Safari safari : safaris) {
-            long daysUntil = java.time.temporal.ChronoUnit.DAYS.between(today, safari.getStartDate());
-            List<String> issues = validateReadiness(safari);
+            boolean imminent = daysUntil <= 2;
+            log.info("READINESS: {} safari(s) starting in {} day(s)", safaris.size(), daysUntil);
 
-            if (issues.isEmpty()) {
-                log.info("  [OK] {} — starts in {} days — all checks passed", safari.getCode(), daysUntil);
-            } else {
-                log.warn("  [ISSUES] {} — starts in {} days — {}: {}", safari.getCode(), daysUntil, issues.size(), String.join("; ", issues));
+            for (Safari safari : safaris) {
+                List<String> issues = validateReadiness(safari);
 
-                sendReadinessAlert(safari, "Starting Soon", daysUntil, issues);
+                if (imminent && safari.getState() != SafariState.FULLY_PAID) {
+                    issues.add("Payment not complete, current state: "
+                        + safari.getState().getDisplayName());
+                }
+
+                if (issues.isEmpty()) {
+                    log.info("  [OK] {} starts in {} day(s), all checks passed",
+                        safari.getCode(), daysUntil);
+                    continue;
+                }
+
+                if (imminent) {
+                    log.error("  [CRITICAL] {} starts in {} day(s), UNRESOLVED: {}",
+                        safari.getCode(), daysUntil, String.join("; ", issues));
+                } else {
+                    log.warn("  [ISSUES] {} starts in {} day(s), {}: {}",
+                        safari.getCode(), daysUntil, issues.size(), String.join("; ", issues));
+                }
+
+                sendReadinessAlert(safari, imminent ? "Imminent" : "Starting Soon", daysUntil, issues);
             }
         }
     }
 
     /**
-     * IMMINENT (1-2 days out): Final check — sends critical email for ANY unresolved issue
-     */
-    private void checkImminent(LocalDate today) {
-        List<Safari> safaris = safariRepository.findUpcomingInWindow(today.plusDays(1), today.plusDays(2), ACTIVE_BOOKING_STATES);
-        if (safaris.isEmpty()) return;
-
-        log.info("IMMINENT: {} safari(s) starting in 1-2 days", safaris.size());
-
-        for (Safari safari : safaris) {
-            long daysUntil = java.time.temporal.ChronoUnit.DAYS.between(today, safari.getStartDate());
-            List<String> issues = validateReadiness(safari);
-
-            // Also flag payment issues
-            if (safari.getState() != SafariState.FULLY_PAID) {
-                issues.add("Payment not complete — current state: " + safari.getState().getDisplayName());
-            }
-
-            if (!issues.isEmpty()) {
-                log.error("  [CRITICAL] {} — starts in {} day(s) — UNRESOLVED: {}", safari.getCode(), daysUntil, String.join("; ", issues));
-
-                sendReadinessAlert(safari, "Imminent", daysUntil, issues);
-            }
-        }
-    }
-
-    /**
-     * JUST_ENDED (1-7 days after end): Post-trip task reminders
+     * The post-trip reminder, once.
+     *
+     * <p>The task list it carries is fixed text and nothing here checks whether any of it is
+     * outstanding, so there is no honest reason to send a second one.
      */
     private void checkJustEnded(LocalDate today) {
-        List<Safari> recentlyEnded = safariRepository.findByEndDateBetween(today.minusDays(7), today.minusDays(1));
+        List<Integer> afterDays = notificationSettings.getSafariPostTripDays();
+        if (afterDays.isEmpty()) {
+            log.debug("Post-trip reminders have no days configured");
+            return;
+        }
 
-        List<Safari> completedSafaris = recentlyEnded.stream()
-            .filter(s -> s.getState() == SafariState.COMPLETED)
-            .toList();
+        for (Integer daysSinceEnd : afterDays) {
+            LocalDate ended = today.minusDays(daysSinceEnd);
+            List<Safari> completed = safariRepository.findByEndDateBetween(ended, ended).stream()
+                .filter(s -> s.getState() == SafariState.COMPLETED)
+                .toList();
+            if (completed.isEmpty()) continue;
 
-        if (completedSafaris.isEmpty()) return;
-
-        log.info("JUST_ENDED: {} safari(s) completed in last 7 days", completedSafaris.size());
-
-        for (Safari safari : completedSafaris) {
-            long daysSinceEnd = java.time.temporal.ChronoUnit.DAYS.between(safari.getEndDate(), today);
-
-            log.info("  [POST-TRIP] {} — ended {} day(s) ago", safari.getCode(), daysSinceEnd);
-
-            sendPostTripReminder(safari, daysSinceEnd);
+            log.info("POST-TRIP: {} safari(s) ended {} day(s) ago", completed.size(), daysSinceEnd);
+            for (Safari safari : completed) {
+                sendPostTripReminder(safari, daysSinceEnd);
+            }
         }
     }
 
@@ -169,7 +185,7 @@ public class SafariPhaseAlertScheduler {
     // Email dispatchers
     // ============================================================
 
-    private void sendReadinessAlert(Safari safari, String phase, long daysUntil, List<String> issues) {
+    private void sendReadinessAlert(Safari safari, String phase, int daysUntil, List<String> issues) {
         try {
             Map<String, String> variables = new HashMap<>();
             variables.put("safariCode", safari.getCode());
@@ -197,7 +213,7 @@ public class SafariPhaseAlertScheduler {
         }
     }
 
-    private void sendPostTripReminder(Safari safari, long daysSinceEnd) {
+    private void sendPostTripReminder(Safari safari, int daysSinceEnd) {
         try {
             Map<String, String> variables = new HashMap<>();
             variables.put("safariCode", safari.getCode());
@@ -225,9 +241,9 @@ public class SafariPhaseAlertScheduler {
 
     private void sendAlert(String eventName, Map<String, String> variables, String subject) {
         try {
-            List<String> recipients = backupSettings.getNotificationEmails();
+            List<String> recipients = notificationSettings.getSafariOperationsNotificationEmails();
             if (recipients.isEmpty()) {
-                log.warn("No notification email recipients configured — skipping {} alert", eventName);
+                log.warn("No safari operations recipients configured, skipping {} alert", eventName);
                 return;
             }
 
