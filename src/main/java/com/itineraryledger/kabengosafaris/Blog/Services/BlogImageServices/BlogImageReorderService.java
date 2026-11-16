@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
  * The gallery's order, set as a whole list.
  *
  * Position in the list IS the display order, and every id must belong to the post being
- * reordered — a stray id would otherwise renumber some other post's gallery.
+ * reordered - a stray id would otherwise renumber some other post's gallery.
  */
 @Service
 @Slf4j

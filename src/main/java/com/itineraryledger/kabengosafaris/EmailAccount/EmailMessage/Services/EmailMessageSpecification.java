@@ -50,7 +50,7 @@ public class EmailMessageSpecification {
     /**
      * The messages notSnoozed() hides: put away until a time still in the future.
      *
-     * Snoozing worked and there was no way to see what had been snoozed — the list excluded them
+     * Snoozing worked and there was no way to see what had been snoozed - the list excluded them
      * and nothing else listed them, so a message put away for next week simply vanished until it
      * came back. This is the view that answers "what did I defer?".
      */
@@ -126,7 +126,7 @@ public class EmailMessageSpecification {
     }
 
     /**
-     * Inverse of notMatchingMuteRules — used by the muted-summary endpoint
+     * Inverse of notMatchingMuteRules - used by the muted-summary endpoint
      * to count what *would* have shown without the rules.
      */
     public static Specification<EmailMessage> matchesAnyMuteRule(

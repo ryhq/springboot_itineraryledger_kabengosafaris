@@ -99,7 +99,7 @@ public class QuoteItemCreateService {
             if (createDTO.getPrices() != null && !createDTO.getPrices().isEmpty()) {
                 prices = createDTO.getPrices().stream()
                     .map(priceInput -> {
-                        // Compute totalPrice = quantity × unitPrice
+                        // Compute totalPrice = quantity x unitPrice
                         BigDecimal totalPrice = priceInput.getUnitPrice()
                             .multiply(BigDecimal.valueOf(priceInput.getQuantity()));
 

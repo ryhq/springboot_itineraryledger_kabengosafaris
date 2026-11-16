@@ -16,13 +16,13 @@ import org.springframework.dao.PessimisticLockingFailureException;
  *
  * A preview performs every write and rolls it back, so it holds row locks across the whole bundle
  * while it runs. "Check this bundle" then "Import" therefore had the second request waiting on the
- * first, until MySQL's lock wait timeout killed it — and what the office got was a toast containing
+ * first, until MySQL's lock wait timeout killed it - and what the office got was a toast containing
  * a parameterised INSERT printed twice:
  *
- *     The import failed — PessimisticLockingFailureException: could not execute statement [Lock
+ *     The import failed - PessimisticLockingFailureException: could not execute statement [Lock
  *     wait timeout exceeded; try restarting transaction] [insert into park_tariff_rates
- *     (age_category_id,created_at,currency,…) values (?,?,?,?,?,?,?,?,?,?,?,?,?)]; SQL [insert
- *     into park_tariff_rates (age_category_id,created_at,…) values (?,?,?,?,?,?,?,?,?,?,?,?,?)]
+ *     (age_category_id,created_at,currency,...) values (?,?,?,?,?,?,?,?,?,?,?,?,?)]; SQL [insert
+ *     into park_tariff_rates (age_category_id,created_at,...) values (?,?,?,?,?,?,?,?,?,?,?,?,?)]
  *
  * Every word of which is true and none of which says "wait a moment and try again".
  */

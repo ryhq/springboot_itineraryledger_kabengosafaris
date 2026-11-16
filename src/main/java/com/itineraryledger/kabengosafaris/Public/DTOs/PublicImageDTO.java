@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Public-safe Image DTO — shared across Park, Activity, Accommodation, and Hero images.
+ * Public-safe Image DTO - shared across Park, Activity, Accommodation, and Hero images.
  * Excludes: fileName, originalFileName, isPrimary, isActive, displayOrder,
  * fileSize, mimeType, width, height, createdAt, updatedAt, parent entity IDs.
  */

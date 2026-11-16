@@ -22,7 +22,7 @@ import com.itineraryledger.kabengosafaris.NotificationSetting.NotificationSettin
  * <p>Pressing Accept in the portal deliberately does not move the quotation's own status: that
  * path is audited and the audit row needs a real person. The email is therefore the only thing
  * that tells anybody a customer has said yes, and it was going to
- * {@code backup.notification.emails} — a setting that lives on a screen about backup scheduling,
+ * {@code backup.notification.emails} - a setting that lives on a screen about backup scheduling,
  * scope, storage and retention.
  *
  * <p>Nobody deciding who should hear that a customer accepted a quotation would look there.

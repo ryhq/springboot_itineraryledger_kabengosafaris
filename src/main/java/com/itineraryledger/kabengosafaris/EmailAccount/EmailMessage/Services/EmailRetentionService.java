@@ -26,7 +26,7 @@ public class EmailRetentionService {
     private final EmailSettingGetterServices emailSettingGetterServices;
 
     /**
-     * Daily cleanup at 3 AM — delete old emails and auto-empty trash
+     * Daily cleanup at 3 AM - delete old emails and auto-empty trash
      */
     @Scheduled(cron = "0 0 3 * * ?")
     @Transactional

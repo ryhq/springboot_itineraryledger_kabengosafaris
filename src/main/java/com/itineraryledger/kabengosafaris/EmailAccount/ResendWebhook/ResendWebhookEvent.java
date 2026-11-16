@@ -30,7 +30,7 @@ public class ResendWebhookEvent {
     private Long id;
 
     /**
-     * Unique event ID from Resend (svix-id header) — used for idempotency
+     * Unique event ID from Resend (svix-id header) - used for idempotency
      */
     @Column(nullable = false, unique = true)
     private String svixId;

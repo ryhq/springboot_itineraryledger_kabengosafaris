@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 
 /**
- * JodConverterManager — owns the lifecycle of the headless LibreOffice pool
+ * JodConverterManager - owns the lifecycle of the headless LibreOffice pool
  * so {@code jodconverter.local.*} settings can be reloaded at runtime without
  * restarting the whole Spring Boot app.
  *
@@ -64,7 +64,7 @@ public class JodConverterManager {
     @Getter private volatile LocalDateTime startedAt;
     @Getter private volatile LocalDateTime lastReloadedAt;
 
-    // Snapshot of the settings that built the current running pool — surfaced
+    // Snapshot of the settings that built the current running pool - surfaced
     // via the status endpoint so admins can tell what config is actually live.
     @Getter private volatile String activeOfficeHome;
     @Getter private volatile String activePortNumbers;

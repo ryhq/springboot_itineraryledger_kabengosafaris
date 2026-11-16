@@ -56,106 +56,106 @@ This separation allows SafariState to be simpler and focus purely on business wo
  Core Journey (Happy Path)
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                         CORE JOURNEY (9 states)                        │
-└──────────────────────────────────────────────────────────────────────┘
++======================================================================+
+|                         CORE JOURNEY (9 states)                        |
++======================================================================+
 
-┌─────────┐    POST /submit-for-approval    ┌──────────────────┐
-│  DRAFT  │ ──────────────────────────────► │ PENDING_APPROVAL │
-└─────────┘                                  └─────────┬────────┘
-                                                       │
-                                                       │ POST /approve
-                                                       │
-                                                       ▼
-                                             ┌──────────────┐
-                                             │   APPROVED   │
-                                             └──────┬───────┘
-                                                    │
-                                                    │ POST /confirm
-                                                    │
-                                                    ▼
-                                            ┌───────────────┐
-                                            │  CONFIRMED    │
-                                            └───────┬───────┘
-                                                    │
-                                                    │ POST /request-payment
-                                                    │
-                                                    ▼
-                                         ┌─────────────────────┐
-                                         │  PENDING_PAYMENT    │
-                                         └──────────┬──────────┘
-                                                    │
-                                                    │ POST /record-payment
-                                                    │
-                                                    ▼
-                                           ┌────────────────┐
-                                           │  FULLY_PAID    │
-                                           └────────┬───────┘
-                                                    │
-                                                    │ POST /start
-                                                    │
-                                                    ▼
-                                            ┌──────────────┐
-                                            │ IN_PROGRESS  │
-                                            └──────┬───────┘
-                                                   │
-                                                   │ POST /complete
-                                                   │
-                                                   ▼
-                                            ┌────────────┐
-                                            │ COMPLETED  │
-                                            └─────┬──────┘
-                                                  │
-                                                  │ POST /close
-                                                  │
-                                                  ▼
-                                            ┌─────────┐
-                                            │ CLOSED  │
-                                            └─────────┘
++=========+    POST /submit-for-approval    +==================+
+|  DRAFT  | ==============================► | PENDING_APPROVAL |
++=========+                                  +=========+========+
+                                                       |
+                                                       | POST /approve
+                                                       |
+                                                       v
+                                             +==============+
+                                             |   APPROVED   |
+                                             +======+=======+
+                                                    |
+                                                    | POST /confirm
+                                                    |
+                                                    v
+                                            +===============+
+                                            |  CONFIRMED    |
+                                            +=======+=======+
+                                                    |
+                                                    | POST /request-payment
+                                                    |
+                                                    v
+                                         +=====================+
+                                         |  PENDING_PAYMENT    |
+                                         +==========+==========+
+                                                    |
+                                                    | POST /record-payment
+                                                    |
+                                                    v
+                                           +================+
+                                           |  FULLY_PAID    |
+                                           +========+=======+
+                                                    |
+                                                    | POST /start
+                                                    |
+                                                    v
+                                            +==============+
+                                            | IN_PROGRESS  |
+                                            +======+=======+
+                                                   |
+                                                   | POST /complete
+                                                   |
+                                                   v
+                                            +============+
+                                            | COMPLETED  |
+                                            +=====+======+
+                                                  |
+                                                  | POST /close
+                                                  |
+                                                  v
+                                            +=========+
+                                            | CLOSED  |
+                                            +=========+
 ```
 
 ### Exception/Special States
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                    EXCEPTION/SPECIAL (5 states)                        │
-└──────────────────────────────────────────────────────────────────────┘
++======================================================================+
+|                    EXCEPTION/SPECIAL (5 states)                        |
++======================================================================+
 
-┌────────────┐     POST /hold (with reason)      ┌──────────┐
-│  Any State │ ──────────────────────────────────►│ ON_HOLD  │
-│ (editable) │                                     └────┬─────┘
-└────────────┘                                          │
-                                                        │ POST /release-hold
-                                                        │
-                                                        ▼
++============+     POST /hold (with reason)      +==========+
+|  Any State | ==================================►| ON_HOLD  |
+| (editable) |                                     +====+=====+
++============+                                          |
+                                                        | POST /release-hold
+                                                        |
+                                                        v
                                                   (returns to previous
                                                    or specified state)
 
-┌────────────┐     POST /cancel (with reason)    ┌───────────┐
-│  Any State │ ──────────────────────────────────►│ CANCELLED │
-│(cancellable)│                                    └─────┬─────┘
-└────────────┘                                           │
-                                                         │ POST /initiate-refund
-                                                         │
-                                                         ▼
-                                                ┌─────────────────┐
-                                                │ REFUND_PENDING  │
-                                                └────────┬────────┘
-                                                         │
-                                                         │ POST /record-refund
-                                                         │
-                                                         ▼
-                                                ┌──────────────────┐
-                                                │ REFUND_COMPLETE  │
-                                                └──────────────────┘
++============+     POST /cancel (with reason)    +===========+
+|  Any State | ==================================►| CANCELLED |
+|(cancellable)|                                    +=====+=====+
++============+                                           |
+                                                         | POST /initiate-refund
+                                                         |
+                                                         v
+                                                +=================+
+                                                | REFUND_PENDING  |
+                                                +========+========+
+                                                         |
+                                                         | POST /record-refund
+                                                         |
+                                                         v
+                                                +==================+
+                                                | REFUND_COMPLETE  |
+                                                +==================+
 
-┌────────────┐     POST /mark-disputed          ┌──────────┐
-│  Post-trip │ ──────────────────────────────────►│ DISPUTED │
-│   States   │                                    └────┬─────┘
-└────────────┘                                         │
-                                                       │ POST /resolve-dispute
-                                                       │
-                                                       ▼
++============+     POST /mark-disputed          +==========+
+|  Post-trip | ==================================►| DISPUTED |
+|   States   |                                    +====+=====+
++============+                                         |
+                                                       | POST /resolve-dispute
+                                                       |
+                                                       v
                                                  (returns to CLOSED
                                                   or REFUND_PENDING)
 ```

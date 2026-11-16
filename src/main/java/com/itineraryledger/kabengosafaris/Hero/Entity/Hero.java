@@ -80,7 +80,7 @@ public class Hero {
      */
     /*
      * Deliberately NOT @Lob. The column is TEXT, and @Lob made Hibernate treat it as a CLOB
-     * — which meant LOWER() over it threw, so the banner search could never look inside the
+     * - which meant LOWER() over it threw, so the banner search could never look inside the
      * body text. Nothing about the column changes (ddl-auto=update never alters an existing
      * one); only how it is bound and queried.
      */

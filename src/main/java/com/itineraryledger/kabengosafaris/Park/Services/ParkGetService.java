@@ -369,7 +369,7 @@ public class ParkGetService {
     }
 
     /**
-     * Shared filter chain — the rows, the stat counters and the prev/next walk
+     * Shared filter chain - the rows, the stat counters and the prev/next walk
      * must always agree, so all three build their Specification here.
      */
     private Specification<Park> buildSpec(
@@ -435,7 +435,7 @@ public class ParkGetService {
 
     /**
      * Dashboard counters for the CURRENT filter set. Every figure here is also
-     * reachable as a filter — no stat exists that the user can't then drill into.
+     * reachable as a filter - no stat exists that the user can't then drill into.
      */
     private Map<String, Object> computeStats(Specification<Park> base) {
         return listStats.of(Park.class, base)
@@ -446,7 +446,7 @@ public class ParkGetService {
             .complement("offWebsite", "onWebsite")
             .breakdown("byType", ParkType.values(), ParkSpecification::hasParkType)
             .recency(ParkSpecification::createdAfter)
-            // actionable data-quality gaps — each one is also a filter
+            // actionable data-quality gaps - each one is also a filter
             .count("missingDescription", ParkSpecification.anyQualityIssue(true, false, false, false))
             .count("missingImage", ParkSpecification.anyQualityIssue(false, true, false, false))
             .count("missingCoordinates", ParkSpecification.anyQualityIssue(false, false, true, false))

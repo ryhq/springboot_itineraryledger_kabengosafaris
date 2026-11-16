@@ -237,7 +237,7 @@ public class AccommodationRateSpecification {
     /**
      * Free-text search across the names a rate is identified by.
      *
-     * The rates list has always shown a "Search accommodation or season…" box; the
+     * The rates list has always shown a "Search accommodation or season..." box; the
      * endpoint had no keyword parameter, so every keystroke was discarded server
      * side. This joins the five owning records so the box does what it says.
      */

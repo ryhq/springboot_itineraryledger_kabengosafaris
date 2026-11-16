@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
  * EMAIL_INBOX_API.md.
  *
  * matchField + matchPattern + matchMode encode a single substring/prefix
- * predicate. ANDing two rules isn't supported on purpose — define two
+ * predicate. ANDing two rules isn't supported on purpose - define two
  * separate rules instead.
  */
 @Entity

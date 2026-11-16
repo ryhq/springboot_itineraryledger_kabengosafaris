@@ -23,7 +23,7 @@ import java.util.List;
  *   CONFIRMED  → IN_PROGRESS  once the start date has arrived
  *   IN_PROGRESS → COMPLETED   once the end date has passed
  *
- * PENDING is left alone on purpose — an unconfirmed booking starting today is a
+ * PENDING is left alone on purpose - an unconfirmed booking starting today is a
  * question for a human, not something to quietly mark as under way. CANCELLED is
  * never touched.
  */

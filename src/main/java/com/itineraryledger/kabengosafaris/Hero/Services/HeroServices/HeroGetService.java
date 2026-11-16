@@ -80,7 +80,7 @@ public class HeroGetService {
      * One hero, plus where it sits in the set the caller was looking at.
      *
      * The filter and sort come from the list page, so prev/next walks the same rows that
-     * were on screen — page into a banner from the Home-page list and the arrows stay
+     * were on screen - page into a banner from the Home-page list and the arrows stay
      * among Home-page banners instead of wandering the whole table.
      */
     public ResponseEntity<ApiResponse<?>> getHeroById(
@@ -337,7 +337,7 @@ public class HeroGetService {
     /**
      * The cards over the hero list.
      *
-     * Every figure here is reachable as a filter and every filter has a figure — the two
+     * Every figure here is reachable as a filter and every filter has a figure - the two
      * data-quality counters especially, because a banner with no image and a button with no
      * link are the failures that look perfectly healthy in every other column.
      */

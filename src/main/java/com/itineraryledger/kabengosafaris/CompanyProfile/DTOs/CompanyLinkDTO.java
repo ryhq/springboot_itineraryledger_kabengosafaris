@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public class CompanyLinkDTO {
     private String id;
     private String url;
-    /** the url without scheme or trailing slash — what a footer shows. */
+    /** the url without scheme or trailing slash - what a footer shows. */
     private String display;
     private String linkType;
     private String label;

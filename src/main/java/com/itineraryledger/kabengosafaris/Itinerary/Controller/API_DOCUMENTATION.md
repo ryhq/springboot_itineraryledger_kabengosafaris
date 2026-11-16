@@ -498,15 +498,15 @@ Deletes multiple itineraries by their IDs.
 ### Itinerary Status Workflow
 
 ```
-DRAFT ──────► COMPLETE ──────► PUBLISHED
-  ▲              │                 │
-  │              │                 │
-  └──────────────┴─────────────────┘
-                 │
-                 ▼
+DRAFT ======► COMPLETE ======► PUBLISHED
+  ^              |                 |
+  |              |                 |
+  +==============+=================+
+                 |
+                 v
              ARCHIVED
-                 │
-                 ▼
+                 |
+                 v
          DRAFT or COMPLETE
 ```
 

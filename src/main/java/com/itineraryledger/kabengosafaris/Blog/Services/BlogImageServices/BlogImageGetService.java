@@ -174,7 +174,7 @@ public class BlogImageGetService {
         }
     }
 
-    /** Every image of one post, in display order — what the editor's gallery reads. */
+    /** Every image of one post, in display order - what the editor's gallery reads. */
     public ResponseEntity<ApiResponse<?>> getImagesForBlog(String blogIdObfuscated) {
         try {
             Long blogId = idObfuscator.decodeId(blogIdObfuscated);

@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Reading blog posts.
  *
- * The list carries no body — an article is thousands of words and twenty of them would be
+ * The list carries no body - an article is thousands of words and twenty of them would be
  * megabytes for a table showing titles. The record carries everything, including the parsed
  * block list, so the editor never has to parse JSON itself.
  */
@@ -62,7 +62,7 @@ public class BlogGetService {
 
     /**
      * The ONE description of the filtered set, shared by the rows, the counters and the
-     * record arrows — so a card and the table under it cannot disagree.
+     * record arrows - so a card and the table under it cannot disagree.
      */
     private Specification<Blog> buildSpec(BlogFilter filter) {
         Specification<Blog> spec = Specification.unrestricted();
@@ -165,7 +165,7 @@ public class BlogGetService {
     /**
      * Counters for the WHOLE filtered set.
      *
-     * Every one of these is reachable as a filter, and every filter has one — a figure you
+     * Every one of these is reachable as a filter, and every filter has one - a figure you
      * cannot click is decoration.
      */
     private Map<String, Object> buildStats(Specification<Blog> spec) {
@@ -296,7 +296,7 @@ public class BlogGetService {
             .build();
     }
 
-    /** The cover, or the first image if nothing was ever marked — never nothing at all. */
+    /** The cover, or the first image if nothing was ever marked - never nothing at all. */
     public BlogImage coverOf(Blog blog) {
         if (blog == null || blog.getImages() == null || blog.getImages().isEmpty()) return null;
         return blog.getImages().stream()

@@ -94,7 +94,7 @@ public class PublicItineraryService {
                 case "name" -> "name";
                 default -> "createdAt"; // newest / createdAt / popular / featured / price → newest
             };
-            // NOTE: do NOT use Sort.Order.nullsLast() here — Hibernate throws
+            // NOTE: do NOT use Sort.Order.nullsLast() here - Hibernate throws
             // "Applying Null Precedence using Criteria Queries is not yet supported"
             // for Specification/Criteria queries, which 500s every request.
             Sort sort = Sort.by(dir, sortField);
@@ -187,7 +187,7 @@ public class PublicItineraryService {
     }
 
     /**
-     * Build a paginated "safaris" page from a set of itinerary ids — active only,
+     * Build a paginated "safaris" page from a set of itinerary ids - active only,
      * newest first, in-memory paginated. Produces identical cards to /public/safaris.
      */
     private ResponseEntity<ApiResponse<?>> safariPageFromIds(List<Long> ids, Integer page, Integer size, String lang) {
@@ -226,7 +226,7 @@ public class PublicItineraryService {
     }
 
     /**
-     * "Most booked" itineraries — those that have been converted into the most actual Safaris.
+     * "Most booked" itineraries - those that have been converted into the most actual Safaris.
      * Ranked by count of linked Safari records; only publicly-visible (active) itineraries are returned.
      */
     @Transactional(readOnly = true)
@@ -247,7 +247,7 @@ public class PublicItineraryService {
                 countById.put(id, ((Number) r[1]).longValue());
             }
 
-            // Only publicly-visible itineraries — published, not merely active.
+            // Only publicly-visible itineraries - published, not merely active.
             Map<Long, Itinerary> byId = itineraryRepository.findAllById(orderedIds).stream()
                 .filter(Itinerary::isPubliclyVisible)
                 .collect(Collectors.toMap(Itinerary::getId, it -> it));
@@ -368,7 +368,7 @@ public class PublicItineraryService {
             /*
              * Through the reader, so the catalogue rows win and an itinerary the backfill left
              * alone still answers with the text it has always served. nullIfEmpty keeps the wire
-             * shape exactly as splitLines left it — the website hides the whole section when both
+             * shape exactly as splitLines left it - the website hides the whole section when both
              * are absent, and a change from null to [] here would make it appear empty instead.
              */
             .inclusions(nullIfEmpty(inclusionReader.included(itinerary)))
@@ -539,7 +539,7 @@ public class PublicItineraryService {
 
     /**
      * Null rather than an empty list, because the website hides the whole "What's included"
-     * section when both are absent — and an empty array would leave a heading over nothing.
+     * section when both are absent - and an empty array would leave a heading over nothing.
      */
     private List<String> nullIfEmpty(List<String> lines) {
         return lines == null || lines.isEmpty() ? null : lines;
@@ -581,7 +581,7 @@ public class PublicItineraryService {
         String hero = imageResolver.resolveItineraryHero(itinerary.getId());
         if (hero != null) return hero;
 
-        // 2. Fall back to a deterministic per-safari pick — stable and diversified across trips
+        // 2. Fall back to a deterministic per-safari pick - stable and diversified across trips
         long seed = itinerary.getId() != null ? itinerary.getId() : 0L;
         return imageResolver.resolveSafariImageDeterministic(seed, allParkIds, allActivityIds, allAccIds, allParkImages, allActivityImages);
     }

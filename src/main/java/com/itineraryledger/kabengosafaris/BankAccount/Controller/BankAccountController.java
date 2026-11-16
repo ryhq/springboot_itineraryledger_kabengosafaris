@@ -102,7 +102,7 @@ public class BankAccountController {
     private com.itineraryledger.kabengosafaris.BankAccount.Repository.BankAccountRepository bulkFlagsRepository;
 
     /**
-     * PATCH /bulk — one request for a whole selection.
+     * PATCH /bulk - one request for a whole selection.
      *
      * Retiring several accounts at once is the ordinary case when a bank is
      * changed; doing it one at a time leaves the set half-changed with nobody the

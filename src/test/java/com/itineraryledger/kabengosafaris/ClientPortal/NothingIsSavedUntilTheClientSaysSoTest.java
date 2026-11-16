@@ -18,8 +18,8 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalEditingSer
  * A customer clicking a lodge to see what it is had already changed their own quotation.
  *
  * <p>Every control on the quotation page used to write the moment it was touched: no confirmation,
- * no way back, and the total lurching under them. Three related changes — a lodge, its room count,
- * the activity that goes with it — produced three prices, two of which were for a trip nobody had
+ * no way back, and the total lurching under them. Three related changes - a lodge, its room count,
+ * the activity that goes with it - produced three prices, two of which were for a trip nobody had
  * asked for.
  *
  * <p>So the page holds what they have staged and sends it when they say so. That is a front-end
@@ -102,7 +102,7 @@ class NothingIsSavedUntilTheClientSaysSoTest {
      * Repricing is the expensive half of an edit: it rebuilds every line on the quotation.
      *
      * <p>Doing it per change would make a batch of ten ten times as slow for a figure nobody
-     * wants — the intermediate totals are the prices of trips the client never asked for.
+     * wants - the intermediate totals are the prices of trips the client never asked for.
      */
     @Test
     @DisplayName("a batch is priced once at the end, not once per change")

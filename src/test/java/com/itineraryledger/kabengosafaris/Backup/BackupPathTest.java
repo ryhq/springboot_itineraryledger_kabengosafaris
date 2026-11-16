@@ -17,8 +17,8 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * That a backup can be OPENED, not merely listed.
  *
- * The configured storage path may or may not end in a separator — an environment file written by hand
- * usually does not — and this code glued directory to filename with `+`. Listing kept working, because
+ * The configured storage path may or may not end in a separator - an environment file written by hand
+ * usually does not - and this code glued directory to filename with `+`. Listing kept working, because
  * a directory path is valid without its trailing slash, so six backups appeared on screen and every
  * one of them answered 404 when opened. A list that lies is worse than an empty one.
  */
@@ -37,7 +37,7 @@ class BackupPathTest {
             /* and what they used to do, kept here so nobody 'fixes' this in config instead */
             if (!configured.endsWith("/")) {
                 assertFalse(new java.io.File(configured + "backup_20260818_020001.zip").exists(),
-                    "concatenation cannot work without a trailing slash — that was the bug");
+                    "concatenation cannot work without a trailing slash - that was the bug");
             }
         }
     }

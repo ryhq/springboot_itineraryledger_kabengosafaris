@@ -44,7 +44,7 @@ public class GetSeasonPeriodService {
 
     /*
      * A list of date ranges is only useful in date order, so startDate and endDate
-     * are sortable and startDate is the default — sorting periods by creation time
+     * are sortable and startDate is the default - sorting periods by creation time
      * tells you nothing about when they apply.
      */
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -318,7 +318,7 @@ public class GetSeasonPeriodService {
     }
 
     /**
-     * The ONE place a period filter is expressed — rows, counters and prev/next all
+     * The ONE place a period filter is expressed - rows, counters and prev/next all
      * build from this, so a card can never disagree with the table and the arrows
      * can never walk a different set from the one on screen.
      */

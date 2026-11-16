@@ -36,7 +36,7 @@ public class UpdateTariffDTO {
      * NOTE: Changing charging basis may affect existing rates
      */
     /**
-     * A String so a blank can CLEAR it and null still means "leave alone" — bound
+     * A String so a blank can CLEAR it and null still means "leave alone" - bound
      * as the enum, an empty value made Jackson reject the whole body.
      */
     private String chargingBasis;

@@ -40,7 +40,7 @@ public class PdfDocumentSpecification {
         };
     }
 
-    /** No template at all — the document cannot be produced. */
+    /** No template at all - the document cannot be produced. */
     public static Specification<PdfDocument> hasNoTemplates() {
         return (root, query, cb) -> cb.not(cb.exists(templates(root, query, cb, null)));
     }

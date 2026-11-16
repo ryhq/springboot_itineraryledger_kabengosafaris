@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * A safari is driven in the cars its quote was priced for.
  *
- * <p>An itinerary is a product, written around a reference party — ITI-8D7N-1004 carries one
+ * <p>An itinerary is a product, written around a reference party - ITI-8D7N-1004 carries one
  * vehicle because it was written for two guests. A quote then sets its own: eight guests need two.
  * Conversion read the <b>itinerary's</b> figure, so QT-1003-1026-1, priced and sold with two
  * vehicles, became SAF-8D7N-01002 planned with one.
@@ -58,7 +58,7 @@ class ABookingTravelsInTheCarsItWasQuotedTest {
         assertTrue(fromQuote >= 0, "the quote-first branch is gone");
 
         /*
-         * createSafariFromItinerary — a safari raised directly from a product, with no quote — is
+         * createSafariFromItinerary - a safari raised directly from a product, with no quote - is
          * a different method and legitimately reads the itinerary. Only the conversion path is
          * asserted here.
          */

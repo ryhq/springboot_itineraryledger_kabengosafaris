@@ -33,7 +33,7 @@ import lombok.RequiredArgsConstructor;
  * Parks, the tariffs each one charges, and the rates for them.
  *
  * The awkward shape of the three, and the reason this one was built first. A park rate is identified
- * by five things — park, tariff, season, residency, age band — and only the first is inside this
+ * by five things - park, tariff, season, residency, age band - and only the first is inside this
  * document. The other four are looked up by name in the company being imported into, which is the
  * whole trick: an id from the source installation is meaningless here (they are per-installation and
  * rotate on restart), so a name is the only thing that survives the journey.
@@ -91,7 +91,7 @@ public class ParkTransfer implements ModuleTransfer {
             for (ParkTariffRate rate : rates.findByParkId(park.getId())) {
                 ObjectNode row = Scalars.of(mapper, rate);
                 /*
-                 * The four references, as names — the only form that means anything elsewhere. The
+                 * The four references, as names - the only form that means anything elsewhere. The
                  * park and the tariff come through the join entity the rate actually hangs off.
                  */
                 ParkTariff link = rate.getParkTariff();
@@ -105,7 +105,7 @@ public class ParkTransfer implements ModuleTransfer {
                 rateRows.add(row);
             }
 
-            /* the gallery, only when asked for — it dwarfs the rates otherwise */
+            /* the gallery, only when asked for - it dwarfs the rates otherwise */
             imageFiles.attach(mapper, node, "parks", park.getSlug(),
                 parkImages.findByParkIdOrderByDisplayOrderAsc(park.getId()), includeImages, files);
 
@@ -153,7 +153,7 @@ public class ParkTransfer implements ModuleTransfer {
             } else {
                 outcome.skip(label, "already here");
                 /*
-                 * The park is left alone, but its RATES are still offered — which is usually the
+                 * The park is left alone, but its RATES are still offered - which is usually the
                  * point. Somebody moving a corrected rate sheet into a company that already has the
                  * parks wants the numbers, not a second Serengeti.
                  */
@@ -232,7 +232,7 @@ public class ParkTransfer implements ModuleTransfer {
              * A park carries a few hundred rates and each one asked "is this already here?" on its
              * own, then asked for the park-tariff link on its own, then inserted. Three round trips
              * a row across three modules is sixteen thousand for one bundle, and a check of 5,394
-             * rates took 274 seconds — longer than the gateway holds the request open, so the
+             * rates took 274 seconds - longer than the gateway holds the request open, so the
              * report could never reach the person who asked for it. The rows were never the cost.
              */
             String rateKey = tariff.getId() + "/" + season.getId() + "/" + nation.getId()
@@ -246,7 +246,7 @@ public class ParkTransfer implements ModuleTransfer {
 
             /*
              * The rate hangs off the park-tariff LINK, so the link has to exist first. A bundle may
-             * carry a rate for a tariff the park's own `tariffs` list forgot to mention — the rate
+             * carry a rate for a tariff the park's own `tariffs` list forgot to mention - the rate
              * is the stronger evidence that the park charges it, so the link is created rather than
              * the rate refused.
              */

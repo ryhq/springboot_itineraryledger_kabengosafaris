@@ -47,7 +47,7 @@ public class CreatePaymentDTO {
 
     /**
      * The invoice currency this payment settles (one of the invoice's grandTotal currencies).
-     * Optional — auto-inferred when the invoice has a single currency in grandTotals,
+     * Optional - auto-inferred when the invoice has a single currency in grandTotals,
      * or when the payment currency matches a grandTotal currency.
      * Required for cross-currency payments on multi-currency invoices.
      */

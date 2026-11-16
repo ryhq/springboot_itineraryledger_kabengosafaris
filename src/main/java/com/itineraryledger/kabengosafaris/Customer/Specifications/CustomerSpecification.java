@@ -36,7 +36,7 @@ public class CustomerSpecification {
         return (root, query, cb) -> cb.like(cb.lower(root.get("companyName")), "%" + companyName.toLowerCase() + "%");
     }
 
-    // email/phone live on child tables (customer_emails / customer_phones) — join, and
+    // email/phone live on child tables (customer_emails / customer_phones) - join, and
     // deduplicate the customer rows the join multiplies
     public static Specification<Customer> emailLike(String email) {
         return (root, query, cb) -> {
@@ -176,7 +176,7 @@ public class CustomerSpecification {
         return (root, query, cb) -> root.get("source").in(sources);
     }
 
-    /** any of the requested status flags — e.g. active OR inactive */
+    /** any of the requested status flags - e.g. active OR inactive */
     public static Specification<Customer> activeIn(java.util.List<Boolean> states) {
         return (root, query, cb) -> root.get("isActive").in(states);
     }

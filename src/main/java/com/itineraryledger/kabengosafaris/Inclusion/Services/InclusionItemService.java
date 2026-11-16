@@ -40,7 +40,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * The catalogue of lines a trip's promise is assembled from — read, written and ordered.
+ * The catalogue of lines a trip's promise is assembled from - read, written and ordered.
  *
  * <p>One service rather than four, as {@code FaqService} is: an item is a sentence, a side and a
  * position, and splitting that across create/update/delete/get classes would be four files of
@@ -329,7 +329,7 @@ public class InclusionItemService {
     /**
      * Delete, reference-checked.
      *
-     * <p>An item any itinerary still lists is refused and says which itineraries — disabling is the
+     * <p>An item any itinerary still lists is refused and says which itineraries - disabling is the
      * right move there, and it is reversible. A seeded item is refused outright. Note what does NOT
      * block: a quote, safari or invoice that printed this line holds the wording as its own text, so
      * tidying the catalogue can never empty a document already with a customer.
@@ -393,7 +393,7 @@ public class InclusionItemService {
     /**
      * The whole running order at once.
      *
-     * <p>Position in the list IS the display order — sending one item's new number would leave the
+     * <p>Position in the list IS the display order - sending one item's new number would leave the
      * rest of the list disagreeing with what the person just dragged.
      */
     @AuditLogAnnotation(action = "REORDER_INCLUSION_ITEMS",
@@ -443,7 +443,7 @@ public class InclusionItemService {
             .defaultIncluded(item.getDefaultIncluded())
             .claimAppliesTo(item.getClaimAppliesTo())
             /*
-             * Only described when there IS a claim. describe(null, …) says "every line", which is
+             * Only described when there IS a claim. describe(null, ...) says "every line", which is
              * true for a tax scope and the opposite of the truth here.
              */
             .claimAppliesToLabel(item.makesACheckableClaim()

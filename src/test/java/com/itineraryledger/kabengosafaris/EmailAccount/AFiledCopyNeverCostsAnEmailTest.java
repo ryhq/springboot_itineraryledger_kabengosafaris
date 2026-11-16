@@ -17,7 +17,7 @@ import jakarta.mail.internet.MimeMessage;
 /**
  * Filing a copy in Sent must never be able to cost an email.
  *
- * <p>By the time this runs the provider has already accepted the message — it is away, and the
+ * <p>By the time this runs the provider has already accepted the message - it is away, and the
  * recipient will get it. Everything here is therefore best-effort: an unreachable mailbox, a
  * missing Sent folder, bad credentials or a server that refuses APPEND must all end as a log
  * line. Turning a cosmetic problem ("it is not in Sent") into a real one ("the send failed")
@@ -25,7 +25,7 @@ import jakarta.mail.internet.MimeMessage;
  *
  * <p>Why the feature exists: sending through an API means the message never passes through the
  * mailbox, so nothing puts it in Sent. Kabengo's panel listed 996 sent messages while the real
- * mailbox held 300, newest dated 8 September — the ones migrated from the old host. Some seven
+ * mailbox held 300, newest dated 8 September - the ones migrated from the old host. Some seven
  * hundred messages to clients existed only in this application's database.
  */
 @DisplayName("Filing a copy never costs an email")

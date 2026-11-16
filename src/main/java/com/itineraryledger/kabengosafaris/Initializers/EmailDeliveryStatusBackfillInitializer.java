@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
  *       &gt; sent, mirroring the live webhook handler.</li>
  * </ol>
  *
- * <p>Re-running this is safe — pass 1 only touches null columns, pass 2
+ * <p>Re-running this is safe - pass 1 only touches null columns, pass 2
  * only touches rows that still have no {@code delivery_status}.
  */
 @Component
@@ -49,13 +49,13 @@ public class EmailDeliveryStatusBackfillInitializer implements ApplicationRunner
             backfillResendEmailId();
             backfillDeliveryStatus();
         } catch (Exception e) {
-            // Never block startup over a back-fill — log and move on.
+            // Never block startup over a back-fill - log and move on.
             log.warn("Email delivery status back-fill skipped: {}", e.getMessage());
         }
     }
 
     /**
-     * Pass 1 — copy the embedded resend email id out of the legacy wrapped
+     * Pass 1 - copy the embedded resend email id out of the legacy wrapped
      * messageId. Only operates on rows with the exact {@code &lt;uuid&gt;}
      * shape, leaving regular RFC-2822 IDs untouched.
      */
@@ -72,7 +72,7 @@ public class EmailDeliveryStatusBackfillInitializer implements ApplicationRunner
     }
 
     /**
-     * Pass 2 — derive {@code delivery_status} + the matching timestamp
+     * Pass 2 - derive {@code delivery_status} + the matching timestamp
      * columns from the strongest event seen in {@code resend_webhook_events}
      * for each message.
      */

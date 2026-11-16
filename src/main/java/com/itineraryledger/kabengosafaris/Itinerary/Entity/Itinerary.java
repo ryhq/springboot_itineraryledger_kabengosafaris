@@ -84,11 +84,11 @@ public class Itinerary {
 
     @Lob
     @Column(columnDefinition = "TEXT")
-    private String inclusions; // What's included — one item per line
+    private String inclusions; // What's included - one item per line
 
     @Lob
     @Column(columnDefinition = "TEXT")
-    private String exclusions; // What's not included — one item per line
+    private String exclusions; // What's not included - one item per line
 
     @Column(name = "start_location", length = 200)
     private String startLocation; // e.g., "Arusha"

@@ -189,7 +189,7 @@ public class AccessLogService {
                 /*
                  * The one search box: the path, the caller's address and the browser string.
                  * Those are the three things anybody has in hand when they come to this page
-                 * — a URL somebody reported, an IP from an alert, or a bot's user agent.
+                 * - a URL somebody reported, an IP from an alert, or a bot's user agent.
                  */
                 .filter(dto -> {
                     if (keyword == null || keyword.isBlank()) return true;
@@ -240,7 +240,7 @@ public class AccessLogService {
             /*
              * An empty result is still a result. This used to answer 204 with a null body,
              * which every generic list client reads as "no data at all" rather than "no rows
-             * matched" — the table went blank instead of saying nothing matched the filter.
+             * matched" - the table went blank instead of saying nothing matched the filter.
              */
 
             // Prepare response with summary
@@ -255,7 +255,7 @@ public class AccessLogService {
             response.put("summary", generateSummary(pageLogs.getContent()));
             /*
              * `summary` counts the PAGE, which is what the old panel showed. `stats` counts
-             * the whole filtered set — the honest answer to "how many errors are there",
+             * the whole filtered set - the honest answer to "how many errors are there",
              * and free here because the filtering already happened in memory.
              */
             response.put("pageSize", pageLogs.getSize());
@@ -403,7 +403,7 @@ public class AccessLogService {
      *
      * The panel's facets are multi-select everywhere else in the app, so a user picking two
      * methods sends `requestMethod=GET,POST`. Compared with equals() that matched nothing at
-     * all — a filter that silently empties the table, which is worse than having no filter.
+     * all - a filter that silently empties the table, which is worse than having no filter.
      * OR inside the dimension, AND across dimensions, exactly as the list contract says.
      */
     private boolean anyOf(String accepted, String value) {

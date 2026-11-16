@@ -22,12 +22,12 @@ import java.util.List;
  *
  * Structure:
  * CreditNote
- * ├── customer (who the credit belongs to)
- * ├── invoice (the invoice it comes off)
- * ├── lineItems (what is being credited, with multi-currency prices)
- * ├── subtotals (by currency)
- * ├── taxes (by currency)
- * └── totals (by currency)
+ * +== customer (who the credit belongs to)
+ * +== invoice (the invoice it comes off)
+ * +== lineItems (what is being credited, with multi-currency prices)
+ * +== subtotals (by currency)
+ * +== taxes (by currency)
+ * +== totals (by currency)
  */
 @Data
 @NoArgsConstructor

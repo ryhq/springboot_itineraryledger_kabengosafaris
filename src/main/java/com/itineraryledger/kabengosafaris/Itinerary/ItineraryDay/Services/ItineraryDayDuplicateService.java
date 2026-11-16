@@ -29,15 +29,15 @@ import java.util.Map;
 /**
  * Copies a day, with everything on it, one or more times.
  *
- * Three nights in the Serengeti are three days that differ by a sentence — the
+ * Three nights in the Serengeti are three days that differ by a sentence - the
  * same park visit, the same fees, the same lodge. Building them by hand is where
  * the time in a 13-day itinerary actually goes, and each retyping is a chance
  * for the fees to drift apart.
  *
  * <p>The copies land directly after the source by default, because "another
  * night here" means next, not last; the days after them are renumbered. The
- * itinerary's day count is a hard ceiling — {@code POST /days} already refuses
- * to exceed {@code totalDays} — so this refuses in the same terms rather than
+ * itinerary's day count is a hard ceiling - {@code POST /days} already refuses
+ * to exceed {@code totalDays} - so this refuses in the same terms rather than
  * quietly making an itinerary that can never be completed.
  */
 @Service
@@ -92,7 +92,7 @@ public class ItineraryDayDuplicateService {
 
             /*
              * The ceiling is the itinerary's own day count, not an arbitrary
-             * limit — an itinerary with more days than it declares can never be
+             * limit - an itinerary with more days than it declares can never be
              * completed, so the refusal names both numbers and the way out.
              */
             if (copies > free) {
@@ -105,7 +105,7 @@ public class ItineraryDayDuplicateService {
                         "ITINERARY_DAYS_FULL"));
             }
 
-            // appended first, then moved into place — one unique day number at a time
+            // appended first, then moved into place - one unique day number at a time
             int nextNumber = days.stream().mapToInt(ItineraryDay::getDayNumber).max().orElse(0) + 1;
             List<ItineraryDay> created = new ArrayList<>();
             Counts counts = new Counts();
@@ -153,7 +153,7 @@ public class ItineraryDayDuplicateService {
      * Moves the new days to sit directly behind the source.
      *
      * Day numbers are unique per itinerary, so they cannot be shuffled in place:
-     * every day goes negative first and comes back in the intended order — the
+     * every day goes negative first and comes back in the intended order - the
      * same two-pass the reorder endpoint uses, for the same reason.
      */
     private void placeAfterSource(Long itineraryId, ItineraryDay source, List<ItineraryDay> created) {
@@ -239,7 +239,7 @@ public class ItineraryDayDuplicateService {
 
         /*
          * Flights ride with the accommodations rather than behind their own flag. The existing
-         * options gate structural DEPTH — whether to bring the days, the parks, the beds — and a
+         * options gate structural DEPTH - whether to bring the days, the parks, the beds - and a
          * flight is part of what a day IS. A copy that silently arrives without its Zanzibar leg
          * looks complete and is not, which is how the inclusion work lost data twice.
          */
@@ -313,7 +313,7 @@ public class ItineraryDayDuplicateService {
         }
     }
 
-    /** Per copy, not in total — "each with 1 park visit" is what was asked for. */
+    /** Per copy, not in total - "each with 1 park visit" is what was asked for. */
     private String summarise(ItineraryDay source, int copies, Counts counts) {
         List<String> parts = new ArrayList<>();
         if (counts.parks > 0) parts.add(each(counts.parks, copies, "park visit", "park visits"));

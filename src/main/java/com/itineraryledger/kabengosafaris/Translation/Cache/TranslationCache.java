@@ -102,7 +102,7 @@ public class TranslationCache {
     /**
      * Which provider produced {@link #translatedContent}.
      *
-     * <p>Null means the row predates provenance tracking and nothing recorded it — NOT that it
+     * <p>Null means the row predates provenance tracking and nothing recorded it - NOT that it
      * came from no provider. Those rows are the re-translation candidates after a provider
      * change, which is the whole reason this column exists: without it, switching engine leaves
      * you unable to tell which of tens of thousands of entries are the old engine's work, and
@@ -124,7 +124,7 @@ public class TranslationCache {
      * A person has read this translation and stands behind it.
      *
      * <p>Set when it is corrected, and settable on its own for "I read it, it was already
-     * right". **A verified entry is never overwritten by a provider and never expires** — see
+     * right". **A verified entry is never overwritten by a provider and never expires** - see
      * {@link #isExpired()}. Without that, a correction survives only until its TTL lapses and
      * the next request quietly replaces it with the machine's version again, with nothing
      * anywhere reporting that the fix was undone.
@@ -133,7 +133,7 @@ public class TranslationCache {
     @Builder.Default
     private Boolean verified = false;
 
-    /** Who made the correction — username, for the audit trail. */
+    /** Who made the correction - username, for the audit trail. */
     @Column(name = "corrected_by", length = 255)
     private String correctedBy;
 

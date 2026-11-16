@@ -183,8 +183,8 @@ public class ParkUpdateService {
             park.setTags(updateParkDTO.getTags());
         }
         /*
-         * Who charges to enter. Set once — usually the first time a park fee is
-         * billed — and remembered from then on, so nobody is asked twice.
+         * Who charges to enter. Set once - usually the first time a park fee is
+         * billed - and remembered from then on, so nobody is asked twice.
          *
          * An empty string clears it; null leaves it alone, as everywhere else.
          */

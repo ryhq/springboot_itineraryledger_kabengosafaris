@@ -43,7 +43,7 @@ public class QuoteItemGetService {
     /*
      * displayOrder belongs here: the lines of a quote are a document, printed in
      * the order the reorder endpoint maintains, so it is the one order a caller
-     * most needs — and asking for it was answered with 400.
+     * most needs - and asking for it was answered with 400.
      */
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "displayOrder", "itemType", "itemName", "isActive", "createdAt", "updatedAt"
@@ -94,7 +94,7 @@ public class QuoteItemGetService {
             QuoteItemDTO quoteItemDTO = convertToDTO(quoteItem);
 
             /*
-             * Circular navigation over the caller's filtered, sorted set — scoped to the
+             * Circular navigation over the caller's filtered, sorted set - scoped to the
              * parent when one is given. The id-ordered walk this replaces stepped through a
              * different set from the one on screen and could not say where you were in it.
              */
@@ -387,7 +387,7 @@ public class QuoteItemGetService {
 
     /**
      * The ONE description of the filtered set, shared by the rows and by the record
-     * arrows — paging that walked a different set from the one on screen would be
+     * arrows - paging that walked a different set from the one on screen would be
      * worse than no arrows (see CLAUDE.md).
      */
     private Specification<QuoteItem> buildSpec(

@@ -211,7 +211,7 @@ public class ParkController {
     private com.itineraryledger.kabengosafaris.Park.ParkRepository bulkFlagsRepository;
 
     /**
-     * PATCH /bulk — one request for a whole selection.
+     * PATCH /bulk - one request for a whole selection.
      *
      * Only the flags present in the body apply, so the same endpoint serves
      * activate, deactivate, publish, unpublish. Returns per-id

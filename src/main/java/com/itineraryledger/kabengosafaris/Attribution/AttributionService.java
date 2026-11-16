@@ -86,7 +86,7 @@ public class AttributionService {
         return new HashSet<>(Arrays.asList(values));
     }
 
-    /** Null in, null out — a form posted without tags stores nothing rather than a row of blanks. */
+    /** Null in, null out - a form posted without tags stores nothing rather than a row of blanks. */
     public Attribution from(AttributionRequest request) {
         if (request == null) return null;
 
@@ -111,7 +111,7 @@ public class AttributionService {
          * Emptiness is decided BEFORE the channel is derived, not after.
          *
          * resolveChannel answers DIRECT when it is given nothing, which is right for a
-         * visitor who really did type the address — the page still records the page they
+         * visitor who really did type the address - the page still records the page they
          * landed on, so a real direct visit is never empty here. But a form posted with
          * no attribution at all (a browser with storage blocked, an older page, a caller
          * that omits the field) would otherwise be stamped DIRECT, and that is a claim
@@ -135,8 +135,8 @@ public class AttributionService {
         a.setChannel(resolveChannel(a.getSource(), a.getMedium(), a.getClickIdType(), a.getReferrer()));
 
         /*
-         * The first touch carries no click id or referrer of its own — only the
-         * three tags worth keeping for months — so it is resolved from those alone.
+         * The first touch carries no click id or referrer of its own - only the
+         * three tags worth keeping for months - so it is resolved from those alone.
          * When nothing was kept, it is the same visit as the last touch.
          */
         if (a.getFirstSource() == null && a.getFirstMedium() == null) {

@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 /**
  * Patch semantics: null means "leave it alone".
  *
- * displayOrder is not here — ordering is the reorder endpoint's job, so two people dragging
+ * displayOrder is not here - ordering is the reorder endpoint's job, so two people dragging
  * images cannot write conflicting single values.
  */
 @Data

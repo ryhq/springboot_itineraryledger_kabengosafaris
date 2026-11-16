@@ -49,7 +49,7 @@ public class VendorGetService {
      * One vendor, plus where it sits in the set the caller was looking at.
      *
      * The filter and sort come from the list page, so prev/next walks the same
-     * rows that were on screen — page into a park authority from a filtered list
+     * rows that were on screen - page into a park authority from a filtered list
      * and the arrows stay among park authorities.
      */
     public ResponseEntity<ApiResponse<?>> getVendorById(
@@ -141,7 +141,7 @@ public class VendorGetService {
     /**
      * ONE specification, shared by the rows, the counters and the record walk.
      *
-     * Every dimension ORs inside itself and ANDs across — "lodge or park
+     * Every dimension ORs inside itself and ANDs across - "lodge or park
      * authority, in Arusha, with no email" is one question.
      */
     private Specification<Vendor> buildSpec(VendorFilter filter) {

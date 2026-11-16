@@ -32,7 +32,7 @@ import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteTree
  * <p>It did not. {@code QuoteVersionService} copied the line items and stopped: no days, no
  * travelling party, no inclusions. The document therefore read correctly and was hollow
  * underneath, because the day tree is what the price is computed FROM. {@code recalculate}
- * skips a quotation with no days, so a v2 could never be repriced — every edit to it changed
+ * skips a quotation with no days, so a v2 could never be repriced - every edit to it changed
  * the trip and left the total exactly where it was, with no error anywhere.
  *
  * <p>That was survivable while only staff touched a quotation. It stopped being survivable the
@@ -209,8 +209,8 @@ class ANewVersionCarriesTheWholeTripTest {
     /**
      * The copy reads the previous quotation and nothing else.
      *
-     * <p>Re-snapshotting from the itinerary is the obvious shortcut — the code to do it already
-     * exists in {@code QuoteFromItineraryGenerationService} — and it is wrong in a way that
+     * <p>Re-snapshotting from the itinerary is the obvious shortcut - the code to do it already
+     * exists in {@code QuoteFromItineraryGenerationService} - and it is wrong in a way that
      * leaves no trace. After the first edit the two are different documents on purpose: the
      * quotation's day tree is the customer's own copy, which is exactly why the portal is
      * allowed to let them change it. Reading the itinerary would silently discard every choice

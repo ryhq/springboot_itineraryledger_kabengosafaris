@@ -41,9 +41,9 @@ public class InvoiceShareDTO {
 
     /** Summed from this share's payments, never stored. */
     private BigDecimal amountPaid;
-    /** amount − amountPaid. Negative means this payer has sent more than their share. */
+    /** amount - amountPaid. Negative means this payer has sent more than their share. */
     private BigDecimal balance;
-    /** UNPAID · PARTIALLY_PAID · PAID, derived from the two figures above. */
+    /** UNPAID | PARTIALLY_PAID | PAID, derived from the two figures above. */
     private String status;
     private Integer paymentCount;
 

@@ -6,7 +6,7 @@ import lombok.*;
  * How much of an itinerary to copy.
  *
  * Every flag defaults to true, so a POST with no body at all is a complete copy
- * — the common case stays the simplest call. The flags exist for the variants a
+ * - the common case stays the simplest call. The flags exist for the variants a
  * catalogue is actually built from: the same route with different lodges, or the
  * same trip priced for a different party.
  *
@@ -18,13 +18,13 @@ public class DuplicateItineraryDTO {
 
     /**
      * Name for the copy. Left out, the server takes '<name> (Copy)', then
-     * '(Copy 2)' and up — names are unique on this table.
+     * '(Copy 2)' and up - names are unique on this table.
      */
     private String name;
 
     /**
      * Copy the days: their text, route, distance and meals, plus the standalone
-     * activities on each. Off, the copy is a shell — its own fields only, and
+     * activities on each. Off, the copy is a shell - its own fields only, and
      * everything below is moot.
      */
     @Builder.Default
@@ -42,7 +42,7 @@ public class DuplicateItineraryDTO {
     @Builder.Default
     private Boolean includeAccommodations = true;
 
-    /** Copy the nationality × age bands the itinerary is priced for. */
+    /** Copy the nationality x age bands the itinerary is priced for. */
     @Builder.Default
     private Boolean includePax = true;
 

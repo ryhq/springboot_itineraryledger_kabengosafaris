@@ -23,9 +23,9 @@ import lombok.NoArgsConstructor;
 public class InclusionWarningDTO {
 
     /**
-     * CONTRADICTED — the document says one thing and the price does another.
-     * UNSUPPORTED — it promises something of a kind the quote has none of.
-     * MISSING — the document states a price and says nothing at all about what it covers.
+     * CONTRADICTED - the document says one thing and the price does another.
+     * UNSUPPORTED - it promises something of a kind the quote has none of.
+     * MISSING - the document states a price and says nothing at all about what it covers.
      */
     private String severity;
 

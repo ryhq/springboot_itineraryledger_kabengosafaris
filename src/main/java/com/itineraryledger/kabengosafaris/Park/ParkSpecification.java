@@ -353,7 +353,7 @@ public class ParkSpecification {
     }
 
     /**
-     * Actionable data-quality gaps — every one of these is also a stat card, so
+     * Actionable data-quality gaps - every one of these is also a stat card, so
      * a count the admin sees is always reachable as a filter.
      */
     public static Specification<Park> anyQualityIssue(
@@ -395,7 +395,7 @@ public class ParkSpecification {
     public static Specification<Park> hasTag(String tag) {
         return (root, query, cb) -> {
             if (tag == null || tag.isBlank()) return cb.conjunction();
-            // tags is @Lob/TEXT (CLOB) — cast to String so LIKE/LOWER work in Criteria.
+            // tags is @Lob/TEXT (CLOB) - cast to String so LIKE/LOWER work in Criteria.
             return cb.like(cb.lower(root.get("tags").as(String.class)), "%" + tag.toLowerCase() + "%");
         };
     }

@@ -47,7 +47,7 @@ public class VehicleHireGetService {
     }
 
     /**
-     * One hire, plus where it sits in the set the caller was looking at — the
+     * One hire, plus where it sits in the set the caller was looking at - the
      * list's filters and sort decide the walk, not raw id order.
      */
     public ResponseEntity<ApiResponse<?>> getVehicleHireById(
@@ -203,7 +203,7 @@ public class VehicleHireGetService {
     }
 
     /**
-     * The ONE place a hire filter is expressed — rows, counters and prev/next all
+     * The ONE place a hire filter is expressed - rows, counters and prev/next all
      * build from it, so a card can never disagree with the table.
      */
     private Specification<VehicleHire> buildSpec(

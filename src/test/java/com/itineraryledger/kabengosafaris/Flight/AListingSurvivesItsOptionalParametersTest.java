@@ -20,14 +20,14 @@ import org.junit.jupiter.api.Test;
  * makes.
  *
  * <p>Two of these shipped to production on the same day, behind a suite of 346 passing tests, and
- * both were found by calling the API rather than by any test. They are the same mistake twice — a
+ * both were found by calling the API rather than by any test. They are the same mistake twice - a
  * helper that rejects null, handed the null that absence produces:
  *
  * <ol>
- *   <li>{@code SORTABLE.contains(sortBy)} — {@code List.of} forbids nulls, and that extends to
+ *   <li>{@code SORTABLE.contains(sortBy)} - {@code List.of} forbids nulls, and that extends to
  *       reads, so {@code contains(null)} throws NullPointerException instead of answering false.
  *       Every flight listing answered 500.</li>
- *   <li>{@code idObfuscator.decodeId(airlineId)} inside a filter — it throws "Hash cannot be null or
+ *   <li>{@code idObfuscator.decodeId(airlineId)} inside a filter - it throws "Hash cannot be null or
  *       empty", so the UNFILTERED listing answered 400.</li>
  * </ol>
  *
@@ -76,7 +76,7 @@ class AListingSurvivesItsOptionalParametersTest {
             for (String body : buildSpecBodies(source)) {
                 if (DECODE.matcher(body).find()) {
                     offences.add(file.getFileName()
-                        + "  decodeId inside buildSpec — use optionalId(...) instead");
+                        + "  decodeId inside buildSpec - use optionalId(...) instead");
                 }
             }
         }
@@ -124,7 +124,7 @@ class AListingSurvivesItsOptionalParametersTest {
         while (true) {
             /*
              * The DECLARATION, not the name. Matching "buildSpec(" alone finds the call site inside
-             * getAll first, and brace-matching from there walks the wrong block entirely — which is
+             * getAll first, and brace-matching from there walks the wrong block entirely - which is
              * how this test managed to flag two services that have no decodeId in a filter at all.
              */
             if (!declaration.find(from)) return bodies;

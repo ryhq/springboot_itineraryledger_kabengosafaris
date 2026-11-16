@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * A row per feature, so the switches are visible before anybody touches them.
  *
- * Existing rows are left exactly as they are — a company that turned its fleet off must not have it
+ * Existing rows are left exactly as they are - a company that turned its fleet off must not have it
  * turned back on by a deploy. New features arrive on their default (on), and the log says what this
  * installation currently has, which is the first thing to check when somebody reports a missing page.
  */

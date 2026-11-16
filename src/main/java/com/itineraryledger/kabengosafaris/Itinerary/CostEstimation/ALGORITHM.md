@@ -9,32 +9,32 @@ This document describes the algorithm used to estimate itinerary costs. The syst
 ## High-Level Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         COST ESTIMATION FLOW                            │
-└─────────────────────────────────────────────────────────────────────────┘
++=========================================================================+
+|                         COST ESTIMATION FLOW                            |
++=========================================================================+
 
 1. INPUT
-   ├── Itinerary ID (obfuscated)
-   ├── Start Date (optional, defaults to today)
-   └── Mode (PER_DAY or PER_PAX)
+   +== Itinerary ID (obfuscated)
+   +== Start Date (optional, defaults to today)
+   +== Mode (PER_DAY or PER_PAX)
 
 2. FETCH DATA
-   └── Load Full Itinerary (days, pax, parks, activities, accommodations)
+   +== Load Full Itinerary (days, pax, parks, activities, accommodations)
 
 3. FOR EACH DAY
-   ├── Resolve Season (global season for the day's date)
-   ├── Calculate Accommodation Costs
-   ├── Calculate Park Tariff Costs
-   └── Calculate Activity Costs
+   +== Resolve Season (global season for the day's date)
+   +== Calculate Accommodation Costs
+   +== Calculate Park Tariff Costs
+   +== Calculate Activity Costs
 
 4. AGGREGATE
-   ├── PER_DAY Mode: Group by day → currency
-   └── PER_PAX Mode: Group by pax category → currency
+   +== PER_DAY Mode: Group by day → currency
+   +== PER_PAX Mode: Group by pax category → currency
 
 5. OUTPUT
-   ├── Line items with STO + Rack prices
-   ├── Totals grouped by currency (no mixing)
-   └── Rate issues log
+   +== Line items with STO + Rack prices
+   +== Totals grouped by currency (no mixing)
+   +== Rate issues log
 ```
 
 ---
@@ -134,8 +134,8 @@ FUNCTION calculateAccommodationCosts(day, dayDate, paxList):
         // Calculate totals (always both STO and Rack)
         stoUnit = rate.stoRate OR 0
         rackUnit = rate.rackRate OR 0
-        stoTotal = stoUnit × quantity
-        rackTotal = rackUnit × quantity
+        stoTotal = stoUnit x quantity
+        rackTotal = rackUnit x quantity
 
         // Log if STO rate is missing
         IF rate.stoRate IS NULL:
@@ -293,8 +293,8 @@ FUNCTION calculatePerPersonTariff(park, tariff, season, paxList):
         stoUnit = rate.stoRate OR 0
         rackUnit = rate.rackRate OR 0
 
-        stoTotal += stoUnit × pax.count
-        rackTotal += rackUnit × pax.count
+        stoTotal += stoUnit x pax.count
+        rackTotal += rackUnit x pax.count
         totalPaxCount += pax.count
         currency = rate.currency
 
@@ -337,8 +337,8 @@ FUNCTION calculateGroupTariff(park, tariff, season, paxList, quantity, chargingB
 
     stoUnit = rate.stoRate OR 0
     rackUnit = rate.rackRate OR 0
-    stoTotal = stoUnit × quantity
-    rackTotal = rackUnit × quantity
+    stoTotal = stoUnit x quantity
+    rackTotal = rackUnit x quantity
 
     RETURN CostLineItem{
         itemType: PARK_FEE,
@@ -576,8 +576,8 @@ FUNCTION distributeItemsToPax(items, paxCostMap, paxList, totalPax, carCount):
 
 FUNCTION createProportionalItem(original, proportion, paxCount):
 
-    stoTotal = original.stoTotalPrice × proportion
-    rackTotal = original.rackTotalPrice × proportion
+    stoTotal = original.stoTotalPrice x proportion
+    rackTotal = original.rackTotalPrice x proportion
 
     // Calculate per-person unit price for this category
     stoUnit = paxCount > 0 ? stoTotal / paxCount : 0
@@ -719,103 +719,103 @@ FUNCTION logMissingRate(itemType, itemName, itemId, dayNumber, paxCategory, seas
 ## Complete Flow Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           COST ESTIMATION ALGORITHM                          │
-└─────────────────────────────────────────────────────────────────────────────┘
++=============================================================================+
+|                           COST ESTIMATION ALGORITHM                          |
++=============================================================================+
 
-                              ┌─────────────────┐
-                              │  API Request    │
-                              │  - itineraryId  │
-                              │  - startDate    │
-                              │  - mode         │
-                              └────────┬────────┘
-                                       │
-                                       ▼
-                              ┌─────────────────┐
-                              │ Fetch Full      │
-                              │ Itinerary       │
-                              └────────┬────────┘
-                                       │
-                                       ▼
-                              ┌─────────────────┐
-                              │ Clear Rate      │
-                              │ Issue Logger    │
-                              └────────┬────────┘
-                                       │
-                    ┌──────────────────┼──────────────────┐
-                    │                  │                  │
-                    ▼                  ▼                  ▼
-           ┌───────────────┐  ┌───────────────┐  ┌───────────────┐
-           │ FOR EACH DAY  │  │ FOR EACH DAY  │  │ FOR EACH DAY  │
-           │               │  │               │  │               │
-           │ Calculate     │  │ Calculate     │  │ Calculate     │
-           │ Accommodation │  │ Park Tariff   │  │ Activity      │
-           │ Costs         │  │ Costs         │  │ Costs         │
-           └───────┬───────┘  └───────┬───────┘  └───────┬───────┘
-                   │                  │                  │
-                   │    ┌─────────────┼─────────────┐    │
-                   │    │             │             │    │
-                   ▼    ▼             ▼             ▼    ▼
-           ┌─────────────────────────────────────────────────┐
-           │              RATE LOOKUP FLOW                   │
-           │                                                 │
-           │  1. Check isActive = true                       │
-           │  2. For activities: park-specific → global rate │
-           │  3. For accommodations:                         │
-           │     - No seasons? → Skip (log NO_SEASON)        │
-           │     - Date in period? → Use that season         │
-           │     - Else → Fallback by season TYPE priority   │
-           │     - NEVER use global seasons                  │
-           │  4. Log issues if not found                     │
-           │  5. Always calculate both STO and Rack          │
-           └───────────────────────┬─────────────────────────┘
-                                   │
-                                   ▼
-                    ┌──────────────┴──────────────┐
-                    │                             │
+                              +=================+
+                              |  API Request    |
+                              |  - itineraryId  |
+                              |  - startDate    |
+                              |  - mode         |
+                              +========+========+
+                                       |
+                                       v
+                              +=================+
+                              | Fetch Full      |
+                              | Itinerary       |
+                              +========+========+
+                                       |
+                                       v
+                              +=================+
+                              | Clear Rate      |
+                              | Issue Logger    |
+                              +========+========+
+                                       |
+                    +==================+==================+
+                    |                  |                  |
+                    v                  v                  v
+           +===============+  +===============+  +===============+
+           | FOR EACH DAY  |  | FOR EACH DAY  |  | FOR EACH DAY  |
+           |               |  |               |  |               |
+           | Calculate     |  | Calculate     |  | Calculate     |
+           | Accommodation |  | Park Tariff   |  | Activity      |
+           | Costs         |  | Costs         |  | Costs         |
+           +=======+=======+  +=======+=======+  +=======+=======+
+                   |                  |                  |
+                   |    +=============+=============+    |
+                   |    |             |             |    |
+                   v    v             v             v    v
+           +=================================================+
+           |              RATE LOOKUP FLOW                   |
+           |                                                 |
+           |  1. Check isActive = true                       |
+           |  2. For activities: park-specific → global rate |
+           |  3. For accommodations:                         |
+           |     - No seasons? → Skip (log NO_SEASON)        |
+           |     - Date in period? → Use that season         |
+           |     - Else → Fallback by season TYPE priority   |
+           |     - NEVER use global seasons                  |
+           |  4. Log issues if not found                     |
+           |  5. Always calculate both STO and Rack          |
+           +=======================+=========================+
+                                   |
+                                   v
+                    +==============+==============+
+                    |                             |
             MODE=PER_DAY                   MODE=PER_PAX
-                    │                             │
-                    ▼                             ▼
-           ┌───────────────┐             ┌───────────────┐
-           │ Group by Day  │             │ Distribute to │
-           │               │             │ Pax Categories│
-           │ Day 1:        │             │               │
-           │  - lineItems  │             │ Non-Res Adult:│
-           │  - totals     │             │  - lineItems  │
-           │    by currency│             │  - totals     │
-           │               │             │               │
-           │ Day 2:        │             │ Non-Res Child:│
-           │  ...          │             │  ...          │
-           └───────┬───────┘             └───────┬───────┘
-                   │                             │
-                   └──────────────┬──────────────┘
-                                  │
-                                  ▼
-                         ┌───────────────┐
-                         │ Group Grand   │
-                         │ Totals by     │
-                         │ Currency      │
-                         │               │
-                         │ USD:          │
-                         │  - STO total  │
-                         │  - Rack total │
-                         │               │
-                         │ TZS:          │
-                         │  - STO total  │
-                         │  - Rack total │
-                         └───────┬───────┘
-                                 │
-                                 ▼
-                         ┌───────────────┐
-                         │ Collect Rate  │
-                         │ Issues        │
-                         └───────┬───────┘
-                                 │
-                                 ▼
-                         ┌───────────────┐
-                         │ Build Final   │
-                         │ Response      │
-                         └───────────────┘
+                    |                             |
+                    v                             v
+           +===============+             +===============+
+           | Group by Day  |             | Distribute to |
+           |               |             | Pax Categories|
+           | Day 1:        |             |               |
+           |  - lineItems  |             | Non-Res Adult:|
+           |  - totals     |             |  - lineItems  |
+           |    by currency|             |  - totals     |
+           |               |             |               |
+           | Day 2:        |             | Non-Res Child:|
+           |  ...          |             |  ...          |
+           +=======+=======+             +=======+=======+
+                   |                             |
+                   +==============+==============+
+                                  |
+                                  v
+                         +===============+
+                         | Group Grand   |
+                         | Totals by     |
+                         | Currency      |
+                         |               |
+                         | USD:          |
+                         |  - STO total  |
+                         |  - Rack total |
+                         |               |
+                         | TZS:          |
+                         |  - STO total  |
+                         |  - Rack total |
+                         +=======+=======+
+                                 |
+                                 v
+                         +===============+
+                         | Collect Rate  |
+                         | Issues        |
+                         +=======+=======+
+                                 |
+                                 v
+                         +===============+
+                         | Build Final   |
+                         | Response      |
+                         +===============+
 ```
 
 ---

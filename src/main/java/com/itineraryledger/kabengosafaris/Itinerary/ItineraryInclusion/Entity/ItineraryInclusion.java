@@ -28,13 +28,13 @@ import lombok.NoArgsConstructor;
  * One line of an itinerary's promise: a catalogue item, and whether this trip includes it.
  *
  * <p>An entity rather than a {@code @ManyToMany} join, because it carries payload. Every
- * association in this codebase that says something of its own — {@code ItineraryPax},
- * {@code ItineraryDayParkTariff} — is an entity; the four {@code @ManyToMany}s are all payload-free
+ * association in this codebase that says something of its own - {@code ItineraryPax},
+ * {@code ItineraryDayParkTariff} - is an entity; the four {@code @ManyToMany}s are all payload-free
  * tag sets.
  *
  * <p>{@code isIncluded} is stored rather than derived. "Not included" as the complement of the
  * ticked set would mean adding one row to the catalogue silently rewrote the not-included paragraph
- * of every itinerary at once — a sentence sent to a paying customer that nobody wrote and nobody
+ * of every itinerary at once - a sentence sent to a paying customer that nobody wrote and nobody
  * reviewed. It would also make it impossible to add a line at quote level, which is the whole point
  * of the chain.
  */

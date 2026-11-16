@@ -116,7 +116,7 @@ public class CustomerEmailSpecification {
         };
     }
 
-    /** No label — unclear who the address reaches. */
+    /** No label - unclear who the address reaches. */
     public static Specification<CustomerEmail> missingLabel() {
         return (root, query, cb) -> cb.or(
             cb.isNull(root.get("label")),

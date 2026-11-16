@@ -183,7 +183,7 @@ public class ExpensePaymentListService {
         }
     }
 
-    /** Counts, never sums — payments arrive in several currencies. */
+    /** Counts, never sums - payments arrive in several currencies. */
     private Map<String, Object> buildStats(Specification<ExpensePayment> spec) {
         return listStats.of(ExpensePayment.class, spec)
             .total()

@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>Read and written as a whole set, never a row at a time. The screen is a list of switches over
  * the catalogue, and the honest shape of "save what I switched" is one request that replaces the
- * lot — a half-applied change is then not a state this can end up in.
+ * lot - a half-applied change is then not a state this can end up in.
  */
 @Service
 @Slf4j
@@ -51,7 +51,7 @@ public class ItineraryInclusionService {
      * This itinerary's rows AND the catalogue it can pick from, in one answer.
      *
      * <p>Two requests would mean the screen reconciling two lists client-side, and the moment those
-     * disagree — an item disabled between the two calls — it would render a switch for something
+     * disagree - an item disabled between the two calls - it would render a switch for something
      * that cannot be switched.
      */
     @Transactional(readOnly = true)
@@ -193,7 +193,7 @@ public class ItineraryInclusionService {
         /*
          * The old text columns are cleared the moment this itinerary has rows of its own. Leaving
          * them would mean two answers to the same question, and the reader's fallback would never
-         * fire again anyway — but the next person to read the column would not know that.
+         * fire again anyway - but the next person to read the column would not know that.
          */
         itinerary.setInclusions(null);
         itinerary.setExclusions(null);

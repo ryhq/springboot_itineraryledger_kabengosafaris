@@ -79,7 +79,7 @@ public class SafariDayAccommodation {
     private Boolean isAlternative = false; // True if this is a backup/alternative option
 
     /**
-     * Internal operational notes about this night — why this property, what the
+     * Internal operational notes about this night - why this property, what the
      * alternative was, what it costs us. It has carried our STO price and our
      * budget grading, so it is NOT for customer documents: only the operational
      * PDF templates (accommodation plan / choices) may print it, never the

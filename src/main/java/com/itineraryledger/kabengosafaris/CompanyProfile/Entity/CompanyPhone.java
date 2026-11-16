@@ -77,7 +77,7 @@ public class CompanyPhone {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    /** "+255 624 110 836" — what a document prints. */
+    /** "+255 624 110 836" - what a document prints. */
     public String formatted() {
         String cc = countryCode == null ? "" : countryCode.trim();
         String number = phoneNumber == null ? "" : phoneNumber.trim();

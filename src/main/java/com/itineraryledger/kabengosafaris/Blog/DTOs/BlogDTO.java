@@ -28,7 +28,7 @@ public class BlogDTO {
     private LocalDate publishDate;
     private Integer readMinutes;
     private List<String> tags;
-    /** The block list, parsed from storage — never the raw JSON string. */
+    /** The block list, parsed from storage - never the raw JSON string. */
     private List<BlogBlockDTO> body;
     private List<BlogFaqDTO> faqs;
     private Boolean isPublished;

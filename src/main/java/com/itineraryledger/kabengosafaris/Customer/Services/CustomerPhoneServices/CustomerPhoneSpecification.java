@@ -136,7 +136,7 @@ public class CustomerPhoneSpecification {
         );
     }
 
-    /** No country code — may not dial internationally. */
+    /** No country code - may not dial internationally. */
     public static Specification<CustomerPhone> missingCountryCode() {
         return (root, query, cb) -> cb.or(
             cb.isNull(root.get("countryCode")),

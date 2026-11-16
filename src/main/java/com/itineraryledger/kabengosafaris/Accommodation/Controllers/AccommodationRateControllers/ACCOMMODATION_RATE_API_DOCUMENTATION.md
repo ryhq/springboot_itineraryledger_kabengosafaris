@@ -41,7 +41,7 @@ The Accommodation Rate API manages pricing for accommodations based on:
 | **Rack Rate** | The price charged to the customer (revenue) |
 | **STO Rate** | The cost we pay on behalf of the customer (expense/tour operator rate) |
 | **Profit Amount** | Rack Rate - STO Rate (the profit we make per transaction) |
-| **Profit Percentage** | (Profit Amount / Rack Rate) × 100 |
+| **Profit Percentage** | (Profit Amount / Rack Rate) x 100 |
 | **Per Person (PPS)** | Rate charged per guest (common in safari lodges/camps) |
 | **Per Room** | Rate charged per room regardless of occupancy (common in hotels) |
 
@@ -539,7 +539,7 @@ The unique key for matching is:
 | `stoRate` | BigDecimal | STO rate - cost paid on behalf of customer (expense) |
 | `currency` | String | ISO 4217 currency code |
 | `profitAmount` | BigDecimal | Calculated: Rack Rate - STO Rate |
-| `profitPercentage` | BigDecimal | Calculated: (Profit Amount / Rack Rate) × 100 |
+| `profitPercentage` | BigDecimal | Calculated: (Profit Amount / Rack Rate) x 100 |
 | `isPerPerson` | Boolean | Rate charging model: `true` = Per Person Sharing (PPS), `false` = Per Room |
 | `notes` | String | Optional notes |
 | `isActive` | Boolean | Active status |
@@ -604,7 +604,7 @@ All four dimensions (Season, Room Type, Room Standard, Board Type) must belong t
 | `rackRate` | Price charged to customer | $350.00 |
 | `stoRate` | Cost we pay on customer's behalf | $300.00 |
 | `profitAmount` | rackRate - stoRate | $50.00 |
-| `profitPercentage` | (profitAmount / rackRate) × 100 | 14.29% |
+| `profitPercentage` | (profitAmount / rackRate) x 100 | 14.29% |
 
 ### Unique Constraint
 

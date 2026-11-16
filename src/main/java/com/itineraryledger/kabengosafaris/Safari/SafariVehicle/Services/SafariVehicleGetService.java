@@ -68,7 +68,7 @@ public class SafariVehicleGetService {
             SafariVehicleDTO dto = convertToDTO(safariVehicle);
 
             /*
-             * This list takes no sort, so the walk stays in id order as it was — what it gains
+             * This list takes no sort, so the walk stays in id order as it was - what it gains
              * is the ability to say where in the safari's vehicles you are.
              */
             Long parentId = safariId;

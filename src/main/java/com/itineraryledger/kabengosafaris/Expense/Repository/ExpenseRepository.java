@@ -38,7 +38,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
     /**
      * Bills whose due date falls on one of a set of days, in a state that still owes money.
      *
-     * Written as a query because the reminder asks for several specific DAYS rather than a range —
+     * Written as a query because the reminder asks for several specific DAYS rather than a range -
      * 7, 3 and 0 days out are three dates, not a window, and fetching the window would mean
      * reminding about every bill in between on every single one of those days.
      */

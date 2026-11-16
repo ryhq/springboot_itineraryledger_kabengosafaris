@@ -86,7 +86,7 @@ public class ParkImageSpecification {
             after == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), after);
     }
 
-    /** No caption — the image cannot be labelled on the website. */
+    /** No caption - the image cannot be labelled on the website. */
     public static Specification<ParkImage> missingCaption() {
         return (root, query, cb) -> cb.or(
             cb.isNull(root.get("caption")),
@@ -94,7 +94,7 @@ public class ParkImageSpecification {
         );
     }
 
-    /** No alt text — an accessibility gap. */
+    /** No alt text - an accessibility gap. */
     public static Specification<ParkImage> missingAltText() {
         return (root, query, cb) -> cb.or(
             cb.isNull(root.get("altText")),

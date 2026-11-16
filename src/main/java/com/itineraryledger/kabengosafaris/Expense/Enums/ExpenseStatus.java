@@ -3,7 +3,7 @@ package com.itineraryledger.kabengosafaris.Expense.Enums;
 import lombok.Getter;
 
 /**
- * Expense workflow — simple record-and-pay (no approval step).
+ * Expense workflow - simple record-and-pay (no approval step).
  *
  * Core journey:
  *   DRAFT → RECORDED → PARTIALLY_PAID → PAID

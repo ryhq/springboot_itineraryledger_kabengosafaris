@@ -35,8 +35,8 @@ import lombok.NoArgsConstructor;
  *
  * <p><strong>There is deliberately no FlightSchedule entity.</strong> The obvious design splits
  * "the 08:00 departure" from "what the 08:00 costs", but the source disproves it: on the Air Excel
- * sheet the fare and the tax both vary <em>per departure</em> — Kilimanjaro to Grumeti is taxed 25
- * on one departure and 30 on another — so a schedule table would be one row per fare row and the
+ * sheet the fare and the tax both vary <em>per departure</em> - Kilimanjaro to Grumeti is taxed 25
+ * on one departure and 30 on another - so a schedule table would be one row per fare row and the
  * join would buy nothing. One published line is one row here.
  *
  * <h2>Two dates and a month list, doing different jobs</h2>
@@ -51,7 +51,7 @@ import lombok.NoArgsConstructor;
  *
  * <p>{@code netFare} is what we pay and is the only basis for a quote. {@code grossFare} is the
  * airline's published price, kept so a client can be shown what booking direct would cost. The Air
- * Excel sheet publishes gross only, so an import of it leaves {@code netFare} null — and a null net
+ * Excel sheet publishes gross only, so an import of it leaves {@code netFare} null - and a null net
  * fare raises a rate issue rather than quietly pricing a trip at a number nobody agreed to.
  *
  * <p>{@code taxesAndFees} is per person and is <strong>never marked up</strong>. It is collected on
@@ -112,7 +112,7 @@ public class FlightFare {
 
     /**
      * Which months this departure flies: "6,7,8,9,10,11". Part of the row's identity, not decoration
-     * — one sector can publish the same departure time with a different arrival in each season.
+     * - one sector can publish the same departure time with a different arrival in each season.
      *
      * <p>A year-round row stores all twelve explicitly. Null means no window was stated at all,
      * which is what an on-request sector has.

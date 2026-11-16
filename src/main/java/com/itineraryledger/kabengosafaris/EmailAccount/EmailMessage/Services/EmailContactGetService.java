@@ -37,7 +37,7 @@ public class EmailContactGetService {
     private static final String DEFAULT_SORT_FIELD = "frequency";
 
     /**
-     * Autocomplete search — used by compose TO/CC/BCC fields.
+     * Autocomplete search - used by compose TO/CC/BCC fields.
      * Lightweight: no pagination metadata, just a flat list sorted by frequency.
      */
     public ResponseEntity<ApiResponse<?>> searchContacts(String accountIdObfuscated, String search, int limit) {
@@ -129,7 +129,7 @@ public class EmailContactGetService {
             }
 
             /*
-             * Circular navigation over the caller's filtered, sorted set — scoped to the
+             * Circular navigation over the caller's filtered, sorted set - scoped to the
              * parent when one is given. The id-ordered walk this replaces stepped through a
              * different set from the one on screen and could not say where you were in it.
              */
@@ -186,7 +186,7 @@ public class EmailContactGetService {
 
     /**
      * The ONE description of the filtered set, shared by the rows and by the record
-     * arrows — paging that walked a different set from the one on screen would be
+     * arrows - paging that walked a different set from the one on screen would be
      * worse than no arrows (see CLAUDE.md).
      */
     private Specification<EmailContact> buildSpec(

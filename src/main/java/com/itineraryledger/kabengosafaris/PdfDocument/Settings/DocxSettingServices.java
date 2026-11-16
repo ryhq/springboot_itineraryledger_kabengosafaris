@@ -329,7 +329,7 @@ public class DocxSettingServices {
     }
 
     // =====================================================================
-    // LibreOffice lifecycle — reload/stop/status
+    // LibreOffice lifecycle - reload/stop/status
     //
     // Lets admins apply jodconverter.local.* changes without bouncing Spring Boot.
     // The pool runs under a ReadWriteLock: reload waits for in-flight conversions

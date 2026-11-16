@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Every state a bill can be in must have a way out.
  *
  * <p>Bills are created as DRAFT. The payment service refused a payment on a draft and told the
- * office to "mark the expense as RECORDED first" — and nothing in the system could do that. The
+ * office to "mark the expense as RECORDED first" - and nothing in the system could do that. The
  * transition was legal in the enum, the update endpoint would have accepted it, and no endpoint
  * or button offered it. So the one live bill on Jatelo could take no payment and reach no other
  * state: the only door out was Cancel.

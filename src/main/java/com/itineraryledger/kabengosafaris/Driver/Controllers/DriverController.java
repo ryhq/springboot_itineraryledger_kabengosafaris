@@ -110,7 +110,7 @@ public class DriverController {
     @org.springframework.beans.factory.annotation.Autowired
     private com.itineraryledger.kabengosafaris.Driver.Repository.DriverRepository bulkFlagsRepository;
 
-    /** PATCH /bulk — activate or withdraw a whole selection in one request. */
+    /** PATCH /bulk - activate or withdraw a whole selection in one request. */
     @PatchMapping("/bulk")
     @PreAuthorize("hasAuthority('PERM_UPDATE_DRIVER')")
     public ResponseEntity<?> bulkFlags(

@@ -13,7 +13,7 @@ import lombok.Getter;
  * The same shape the deletes use, for the same reason: a 200 that quietly did nothing is the worst
  * possible answer. Somebody moving a rate sheet between companies needs to know that 340 rates
  * landed, 12 were left alone because they already existed, and 3 could not be placed because the
- * target has no lodge by that name — and WHICH three.
+ * target has no lodge by that name - and WHICH three.
  *
  * `unresolved` is deliberately separate from `skipped`. Skipping is a decision the import made on
  * purpose; an unresolved reference is a hole in the data, and it is the only part of the report that
@@ -43,7 +43,7 @@ public class TransferReport {
             updated++;
         }
 
-        /** Deliberately left alone — it already exists and the mode says not to touch it. */
+        /** Deliberately left alone - it already exists and the mode says not to touch it. */
         public void skip(String key, String reason) {
             skipped.add(entry(key, reason));
         }

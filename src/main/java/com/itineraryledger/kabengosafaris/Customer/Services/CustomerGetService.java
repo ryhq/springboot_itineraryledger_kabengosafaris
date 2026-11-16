@@ -245,7 +245,7 @@ public class CustomerGetService {
     private static final int NAV_ID_LIMIT = 20_000;
 
     /**
-     * Ids of everything matching the spec, in the requested sort order — the
+     * Ids of everything matching the spec, in the requested sort order - the
      * backbone of filter-aware next/previous navigation. Only ids are selected,
      * so this stays cheap compared with fetching entities.
      */
@@ -282,7 +282,7 @@ public class CustomerGetService {
     }
 
     /**
-     * Shared filter chain — the list and the stats must always agree, so both
+     * Shared filter chain - the list and the stats must always agree, so both
      * build their Specification here.
      */
     private Specification<Customer> buildSpec(
@@ -355,7 +355,7 @@ public class CustomerGetService {
     }
 
     /**
-     * Summary counts over everything the current filters match — returned inside
+     * Summary counts over everything the current filters match - returned inside
      * the list response so the dashboard cards and the table can never disagree.
      * Page-scoped figures are derived by the client from the returned rows.
      */

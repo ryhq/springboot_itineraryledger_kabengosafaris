@@ -171,7 +171,7 @@ public class PaymentListService {
     /**
      * Narrows by an obfuscated id, or narrows to nothing if it will not decode.
      *
-     * An unreadable id must not quietly widen the list to every payment — that is
+     * An unreadable id must not quietly widen the list to every payment - that is
      * the opposite of what was asked for, and here it would be money.
      */
     private Specification<Payment> and(
@@ -193,7 +193,7 @@ public class PaymentListService {
      * The cards that head the list.
      *
      * Counts, never sums. Payments arrive in several currencies and adding them
-     * would need a rate nobody here chose — the money itself is read per row and
+     * would need a rate nobody here chose - the money itself is read per row and
      * per currency on the invoice it answers.
      */
     private Map<String, Object> buildStats(Specification<Payment> spec) {

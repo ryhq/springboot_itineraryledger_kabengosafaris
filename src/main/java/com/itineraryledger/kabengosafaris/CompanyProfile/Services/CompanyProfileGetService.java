@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
  * Reads the one company profile, and says what is still missing from it.
  *
  * There is no list endpoint: this is a singleton row. If it does not exist yet (a brand-new
- * database whose initializer has not run) the response is an empty profile rather than a 404 —
+ * database whose initializer has not run) the response is an empty profile rather than a 404 -
  * the Settings page must still render, with every gap showing.
  */
 @Service
@@ -94,7 +94,7 @@ public class CompanyProfileGetService {
      * The panel needs this to preview a template honestly. A preview that shows `{{companyName}}`
      * where the name goes, and no colour where the accent goes, cannot answer the only question
      * somebody previews a letterhead to ask: does this look right. The business variables stay as
-     * placeholders — a customer's name genuinely is not known yet — but who we are is known, so
+     * placeholders - a customer's name genuinely is not known yet - but who we are is known, so
      * showing a placeholder there is a worse lie than showing the value.
      *
      * Each entry carries both spellings, because the two engines differ: `{{companyName}}` in an
@@ -124,7 +124,7 @@ public class CompanyProfileGetService {
         /*
          * Whether the caller may see the sensitive half. Read from the authentication rather than
          * taken on trust from the caller, and defaulting to "no" when there is no authentication at
-         * all — a redaction that fails open is not a redaction.
+         * all - a redaction that fails open is not a redaction.
          */
         org.springframework.security.core.Authentication auth =
             org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
@@ -140,7 +140,7 @@ public class CompanyProfileGetService {
             row.put("description", declared.get("description"));
             row.put("group", declared.get("group"));
             /*
-             * currentYear is not part of the cached snapshot — a copyright line that still says last
+             * currentYear is not part of the cached snapshot - a copyright line that still says last
              * year on the 2nd of January is exactly the kind of thing nobody reports.
              */
             boolean redacted = NEEDS_COMPANY_READ.contains(name) && !mayReadCompany;
@@ -148,7 +148,7 @@ public class CompanyProfileGetService {
                 ? String.valueOf(java.time.Year.now().getValue())
                 : resolved.getOrDefault(name, "")));
             /*
-             * Say WHY it is blank. Without this the panel shows "Empty — set it in Settings" for a
+             * Say WHY it is blank. Without this the panel shows "Empty - set it in Settings" for a
              * value that is set, and somebody goes looking for a fault in the company record.
              */
             if (redacted) row.put("redacted", true);
@@ -196,7 +196,7 @@ public class CompanyProfileGetService {
      * What the app needs to look like this company, before anybody has logged in.
      *
      * Public and deliberately small: the login screen renders before there is a token, and it has to
-     * render in the right colour with the right mark — a build pointed at another company's API must
+     * render in the right colour with the right mark - a build pointed at another company's API must
      * not flash this company's brand. Nothing sensitive is here; a name and a logo are published by
      * definition.
      *
@@ -212,8 +212,8 @@ public class CompanyProfileGetService {
         payload.put("name", snapshot.name());
         payload.put("tagline", snapshot.tagline());
         /*
-         * The letter mark, drawn when there is no logo file. The company's own choice if it made one —
-         * an initial is a poor mark for "Jatelo African Travels" — otherwise the first letter.
+         * The letter mark, drawn when there is no logo file. The company's own choice if it made one -
+         * an initial is a poor mark for "Jatelo African Travels" - otherwise the first letter.
          */
         String chosenMark = profile == null ? null : profile.getBrandMark();
         payload.put("mark", chosenMark != null && !chosenMark.isBlank()
@@ -222,7 +222,7 @@ public class CompanyProfileGetService {
 
         /*
          * Contact details, because the sign-in screen offers "trouble signing in?" and it has to
-         * offer a real address. Already public through /api/public/company — repeated here so the
+         * offer a real address. Already public through /api/public/company - repeated here so the
          * login screen needs one request, not two.
          */
         payload.put("email", snapshot.email());
@@ -320,7 +320,7 @@ public class CompanyProfileGetService {
     }
 
     /**
-     * Primary first, then display order, then id — the same order {@link CompanyIdentityService}
+     * Primary first, then display order, then id - the same order {@link CompanyIdentityService}
      * picks a primary in, so the top row of the panel is always the one documents print.
      */
     private <T> Comparator<T> byOrder(java.util.function.Function<T, Boolean> primary,
@@ -391,7 +391,7 @@ public class CompanyProfileGetService {
             .build();
     }
 
-    /** All five slots, every time — an empty slot is the point of the panel. */
+    /** All five slots, every time - an empty slot is the point of the panel. */
     public List<CompanyAssetDTO> assetSlots(CompanyProfile profile) {
         List<CompanyAssetDTO> out = new ArrayList<>();
 
@@ -433,7 +433,7 @@ public class CompanyProfileGetService {
      * The gap list.
      *
      * BLOCKING means a document or an email will print a blank where this belongs. RECOMMENDED
-     * means it merely looks unfinished. Nothing here is enforced on save — the profile of a company
+     * means it merely looks unfinished. Nothing here is enforced on save - the profile of a company
      * that has not registered for VAT is complete without a VRN, and the page should say so rather
      * than nag.
      */
@@ -499,7 +499,7 @@ public class CompanyProfileGetService {
          * licence, and their profile is complete without one. Once a number IS present the date
          * matters, because every invoice and voucher prints the number and nothing else in the
          * system knows it stops being true. A lapsed licence on a document is worse than a blank
-         * one — it reads as trading on a licence that has expired.
+         * one - it reads as trading on a licence that has expired.
          */
         if (has(profile == null ? null : profile.getLicenceNumber())) {
             total++;

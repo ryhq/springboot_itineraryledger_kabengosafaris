@@ -129,7 +129,7 @@ public class SafariLifecycleScheduler {
     }
 
     /**
-     * PAYMENT GAP: Flag safaris not FULLY_PAID on startDate — sends critical email
+     * PAYMENT GAP: Flag safaris not FULLY_PAID on startDate - sends critical email
      */
     private int detectPaymentGaps(LocalDate today) {
         List<Integer> afterDays = notificationSettings.getSafariPaymentGapDays();

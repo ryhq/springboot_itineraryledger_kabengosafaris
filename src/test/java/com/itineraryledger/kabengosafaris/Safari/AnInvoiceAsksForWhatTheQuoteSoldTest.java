@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <ul>
  *   <li><b>INV-000102</b> read <b>USD 246,877.73</b> against a booking of USD 24,655.40 plus
  *       TZS 222,222.00. The per-person loop summed every pax band into one figure and stamped it
- *       with whichever rate it read last, so the shillings were billed as dollars — a bill ten
+ *       with whichever rate it read last, so the shillings were billed as dollars - a bill ten
  *       times the trip.</li>
  *   <li><b>INV-000103</b> read <b>USD 2,531.10</b> against USD 3,295.26. This service never priced
  *       flights at all, so the Arusha to Zanzibar sector showed on the Cost tab at USD 764.16 and

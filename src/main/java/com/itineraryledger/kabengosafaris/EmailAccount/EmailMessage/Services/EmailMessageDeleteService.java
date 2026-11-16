@@ -34,7 +34,7 @@ public class EmailMessageDeleteService {
     private final IdObfuscator idObfuscator;
 
     /**
-     * Delete a message — moves to trash first, permanently deletes if already in trash
+     * Delete a message - moves to trash first, permanently deletes if already in trash
      */
     @Transactional
     public ResponseEntity<ApiResponse<?>> deleteMessage(String accountIdObfuscated, String messageIdObfuscated) {
@@ -49,7 +49,7 @@ public class EmailMessageDeleteService {
             }
 
             if (message.getFolder().getType() == EmailFolderType.TRASH) {
-                // Already in trash — permanently delete
+                // Already in trash - permanently delete
                 return permanentlyDelete(message, accountId);
             } else {
                 // Move to trash
@@ -291,7 +291,7 @@ public class EmailMessageDeleteService {
     }
 
     /**
-     * Archive a single message — moves it to the account's ARCHIVE folder.
+     * Archive a single message - moves it to the account's ARCHIVE folder.
      * §4 in EMAIL_INBOX_API.md.
      */
     @Transactional
@@ -315,7 +315,7 @@ public class EmailMessageDeleteService {
     }
 
     /**
-     * Archive a batch of messages — convenience wrapper around batchMove
+     * Archive a batch of messages - convenience wrapper around batchMove
      * targeting the account's ARCHIVE folder so the frontend doesn't need
      * to look the folder id up first.
      */

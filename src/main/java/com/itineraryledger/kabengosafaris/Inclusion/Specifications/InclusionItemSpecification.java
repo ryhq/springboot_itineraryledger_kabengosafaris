@@ -50,7 +50,7 @@ public class InclusionItemSpecification {
         };
     }
 
-    /** The label and the internal note both — staff search for the words they typed, either place. */
+    /** The label and the internal note both - staff search for the words they typed, either place. */
     public static Specification<InclusionItem> searchKeyword(String keyword) {
         return (root, query, cb) -> {
             if (keyword == null || keyword.isBlank()) return cb.conjunction();
@@ -67,7 +67,7 @@ public class InclusionItemSpecification {
     /**
      * Lines that say something a priced document can be checked against.
      *
-     * <p>A blank scope is not "covers everything" here — it is "claims nothing". See the field
+     * <p>A blank scope is not "covers everything" here - it is "claims nothing". See the field
      * comment on {@code InclusionItem.claimAppliesTo}: the shared LineCategoryScope helper reads
      * null the other way round, and this is the boundary where the two meanings meet.
      */
@@ -89,7 +89,7 @@ public class InclusionItemSpecification {
      * Whether any itinerary has a row for this.
      *
      * <p>Itineraries only. A quote, safari or invoice holds the wording as its own text and has no
-     * foreign key back here, so a sent document neither keeps an item alive nor blocks its delete —
+     * foreign key back here, so a sent document neither keeps an item alive nor blocks its delete -
      * which is exactly the property that lets a catalogue be tidied without touching paperwork
      * already with a customer.
      */

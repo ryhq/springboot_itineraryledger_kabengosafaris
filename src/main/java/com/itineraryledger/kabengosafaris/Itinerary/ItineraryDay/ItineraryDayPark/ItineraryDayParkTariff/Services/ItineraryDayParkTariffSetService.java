@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  * Replaces the whole fee set on a park visit in one call.
  *
  * The UI for this is a checklist of the park's tariffs, and a checklist is a
- * SET — not a sequence of adds and removes. Sending the state you want and
+ * SET - not a sequence of adds and removes. Sending the state you want and
  * letting the server work out the difference means ticking three boxes cannot
  * half-succeed, and the client never has to track which rows already existed.
  *

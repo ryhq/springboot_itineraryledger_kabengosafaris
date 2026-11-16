@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
  * Reported as DOWN when migrations are pending, because "the app is running" and "the app is
  * correct" are different questions and the deploy gate asks the second one.
  *
- * The Flyway bean is optional on purpose — this reports honestly on an instance that still leans on
+ * The Flyway bean is optional on purpose - this reports honestly on an instance that still leans on
  * Hibernate's `ddl-auto`, and upgrades itself the moment migrations are wired in.
  */
 @Component("schema")
@@ -37,7 +37,7 @@ public class SchemaHealthIndicator implements HealthIndicator {
 
         if (migrator == null) {
             /*
-             * Not a failure — a statement of fact. Hibernate is deciding the schema, so nothing can
+             * Not a failure - a statement of fact. Hibernate is deciding the schema, so nothing can
              * assert the schema matches this jar; the deploy gate should not pretend otherwise.
              */
             detail.put("migrations", "not configured");

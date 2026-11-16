@@ -184,7 +184,7 @@ public class QuoteSpecification {
     }
 
     /**
-     * Raised since a moment — the basis of the "new this week / this month"
+     * Raised since a moment - the basis of the "new this week / this month"
      * counters. Takes the cut-off rather than a day count so the caller decides
      * the window and the stats helper can reuse it.
      */
@@ -197,7 +197,7 @@ public class QuoteSpecification {
     // ========================
 
     /**
-     * Any of these statuses — OR inside the dimension.
+     * Any of these statuses - OR inside the dimension.
      *
      * The list page lets a stat card be shift-clicked onto another, so "Sent or
      * Accepted" is one request, not two. A single-valued enum param cannot
@@ -234,7 +234,7 @@ public class QuoteSpecification {
 
     /**
      * The one search box: code, title, description, and the names a quote is
-     * actually looked up by — its customer and its itinerary.
+     * actually looked up by - its customer and its itinerary.
      *
      * Joins are LEFT so a quote is never dropped for want of the thing being
      * searched, and the query is DISTINCT because a join can otherwise repeat a

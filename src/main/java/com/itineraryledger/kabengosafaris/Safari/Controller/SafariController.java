@@ -295,7 +295,7 @@ public class SafariController {
     private com.itineraryledger.kabengosafaris.Expense.Services.ExpenseServices.ExpenseAllocationService expenseAllocationService;
 
     /**
-     * GET /{id}/expense-allocations — every billed thing on this trip.
+     * GET /{id}/expense-allocations - every billed thing on this trip.
      *
      * One request for the whole day tree. It draws dozens of billable rows on a
      * fourteen-day trip and each needs to know whether it is already covered and

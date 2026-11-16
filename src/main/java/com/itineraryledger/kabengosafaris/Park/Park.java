@@ -118,7 +118,7 @@ public class Park {
      *
      * A park is a place; a vendor is an account we settle. TANAPA issues the
      * invoice for most of the national parks and the NCAA for Ngorongoro, so one
-     * vendor covers many parks — which is why this points out of the park rather
+     * vendor covers many parks - which is why this points out of the park rather
      * than the park owning it.
      *
      * Optional by design, and remembered once set: the first time a park fee is

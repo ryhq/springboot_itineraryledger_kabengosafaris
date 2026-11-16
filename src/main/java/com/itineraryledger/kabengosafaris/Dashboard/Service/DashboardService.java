@@ -264,8 +264,8 @@ public class DashboardService {
     /**
      * What share of the quotes we actually sent came to something, as a percentage.
      *
-     * The denominator is every quote that ever left the building — still out, accepted,
-     * converted, rejected or expired — not the ones sitting in SENT right now. Status is a
+     * The denominator is every quote that ever left the building - still out, accepted,
+     * converted, rejected or expired - not the ones sitting in SENT right now. Status is a
      * position, not a history: a quote that is accepted is no longer SENT, so dividing by
      * SENT alone measured winners against the dwindling pile of undecided ones. With eight
      * accepted and two still out it reported 400%, and a rate above 100% is a number nobody
@@ -574,7 +574,7 @@ public class DashboardService {
                 }
             }
 
-            // Rank by sum of all currencies (simple heuristic — could be FX-converted later)
+            // Rank by sum of all currencies (simple heuristic - could be FX-converted later)
             List<Map.Entry<Long, Map<String, BigDecimal>>> ranked = customerRevenue.entrySet().stream()
                     .sorted((a, b) -> sumAll(b.getValue()).compareTo(sumAll(a.getValue())))
                     .limit(n)
@@ -1043,7 +1043,7 @@ public class DashboardService {
                 byStatus.put(s.name(), expenseRepository.countByStatus(s));
             }
 
-            // Spend by category — sum line-item totalPrices grouped by category, per currency
+            // Spend by category - sum line-item totalPrices grouped by category, per currency
             Map<String, Map<String, BigDecimal>> byCategoryRaw = new LinkedHashMap<>();
             List<ExpenseLineItem> allLineItems = expenseLineItemRepository.findAll();
             for (ExpenseLineItem li : allLineItems) {
@@ -1156,7 +1156,7 @@ public class DashboardService {
              * Cancelled invoices are excluded, because SafariBillingService excludes them and
              * that is the figure the safari's own Money tab shows. When the two disagreed, the
              * dashboard reported USD 50,030.48 against a safari whose record page said
-             * 26,304.76 — the difference being one cancelled invoice — and of the two numbers
+             * 26,304.76 - the difference being one cancelled invoice - and of the two numbers
              * the one on the record is the one people trust. A dashboard that contradicts the
              * record it summarises is worse than no dashboard.
              *
@@ -1170,7 +1170,7 @@ public class DashboardService {
                 if (inv.getStatus() == InvoiceStatus.CANCELLED) continue;
                 invoicesBySafari.computeIfAbsent(inv.getSafari().getId(), k -> new ArrayList<>()).add(inv);
             }
-            // Same for expenses (only those linked to a safari — operational expenses excluded)
+            // Same for expenses (only those linked to a safari - operational expenses excluded)
             Map<Long, List<Expense>> expensesBySafari = new HashMap<>();
             for (Expense exp : expenseRepository.findAll()) {
                 if (exp.getSafari() != null) {
@@ -1235,7 +1235,7 @@ public class DashboardService {
             }
         }
 
-        // Net per currency: revenue − expenses. Currencies present in either side appear.
+        // Net per currency: revenue - expenses. Currencies present in either side appear.
         Map<String, BigDecimal> net = new LinkedHashMap<>();
         Set<String> currencies = new LinkedHashSet<>();
         currencies.addAll(revenue.keySet());

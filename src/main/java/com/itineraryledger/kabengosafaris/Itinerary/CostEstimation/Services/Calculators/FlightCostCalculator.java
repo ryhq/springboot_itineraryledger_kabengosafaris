@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
  * the markup base, and the markup cascade all live there and are tested there. This class does the
  * day-tree plumbing and nothing else, so the sum cannot drift between the two callers.
  *
- * <p>Alternatives go to {@code excludedLineItems} exactly as an alternative lodge does — costed and
+ * <p>Alternatives go to {@code excludedLineItems} exactly as an alternative lodge does - costed and
  * shown, never added to the total.
  */
 @Service
@@ -70,7 +70,7 @@ public class FlightCostCalculator {
      *
      * <p>An itinerary's pax and a safari's pax are different classes holding the same two columns,
      * so the day-tree callers reduce their own list to this and everything below is shared. That
-     * is what keeps there from being a second copy of the seat arithmetic on the safari side —
+     * is what keeps there from being a second copy of the seat arithmetic on the safari side -
      * the failure this whole module was built to avoid.
      */
     public record Seats(int adults, int children) {
@@ -140,13 +140,13 @@ public class FlightCostCalculator {
                                   ExclusionReason exclusionReason) {
 
         /*
-         * A flight is per SEAT, so the split between adults and children matters — a child flies at
+         * A flight is per SEAT, so the split between adults and children matters - a child flies at
          * 70% of the fare. Everything else on a day is per room or per vehicle and can work from a
          * head count, which is why no other calculator needs this.
          */
         int adults = seats == null ? 0 : seats.adults();
         int children = seats == null ? 0 : seats.children();
-        /* An explicit passenger count on the line overrides the trip's pax — a positioning leg some
+        /* An explicit passenger count on the line overrides the trip's pax - a positioning leg some
          * of the party takes, or one seat bought for a guide. Treated as adults: it is a seat count
          * and nobody typing it means "and some of them are children". */
         if (flight.getPassengerCount() != null && flight.getPassengerCount() > 0) {
@@ -209,8 +209,8 @@ public class FlightCostCalculator {
             .stoUnitPrice(priced.sellingPerAdult())
             .rackUnitPrice(priced.sellingPerAdult())
             /*
-             * STO and rack carry the same figure. A flight has no rack multiplier — that is an
-             * accommodation rule, and 316 x 1.3 is 411 for a seat the airline publishes at 316 — so
+             * STO and rack carry the same figure. A flight has no rack multiplier - that is an
+             * accommodation rule, and 316 x 1.3 is 411 for a seat the airline publishes at 316 - so
              * the markup is already inside both and there is no second number to show.
              */
             .stoTotalPrice(priced.totalSelling())
@@ -231,7 +231,7 @@ public class FlightCostCalculator {
     /**
      * @param resolvedSource where the markup came from, as worked out once when the DTO was built.
      *                       The pricer is handed that already-resolved markup as this line's own, so
-     *                       it would report "this flight" for every flight — naming the airline's 13%
+     *                       it would report "this flight" for every flight - naming the airline's 13%
      *                       as a per-trip override, which is exactly the disagreement between the
      *                       cost sheet and the panel that resolving the cascade in one place was
      *                       meant to prevent.

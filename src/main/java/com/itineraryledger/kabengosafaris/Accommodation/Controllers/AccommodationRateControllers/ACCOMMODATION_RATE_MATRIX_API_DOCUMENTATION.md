@@ -31,13 +31,13 @@ The Rate Matrix API provides all the data needed to render a rate input grid for
 ### Grid Structure
 
 ```
-Season × Room Standard × Room Type × Board Type | STO Rate | Rack Rate | Currency | Per Person
+Season x Room Standard x Room Type x Board Type | STO Rate | Rack Rate | Currency | Per Person
 ```
 
 Or when filtered by a specific season:
 
 ```
-Room Standard × Room Type × Board Type | STO Rate | Rack Rate | Currency | Per Person
+Room Standard x Room Type x Board Type | STO Rate | Rack Rate | Currency | Per Person
 ```
 
 ### Rate Charging Models
@@ -51,7 +51,7 @@ Room Standard × Room Type × Board Type | STO Rate | Rack Rate | Currency | Per
 
 | Feature | Activity/Park Tariff Rate | Accommodation Rate |
 |---------|---------------------------|-------------------|
-| Dimensions | Season × Nation Category × Age Category | Season × Room Standard × Room Type × Board Type |
+| Dimensions | Season x Nation Category x Age Category | Season x Room Standard x Room Type x Board Type |
 | Dimension Source | Global (PaxNationCategory, PaxAgeCategory) | All accommodation-specific |
 | Age Category | Conditional (only for PER_PERSON) | Not applicable |
 | Number of Dimensions | 2-3 (depends on charging basis) | 4 |
@@ -355,8 +355,8 @@ function findExistingRate(existingRates, seasonId, roomTypeId, roomStandardId, b
 When no `seasonId` filter is provided:
 
 ```
-Total rows = seasons × roomStandards × roomTypes × boardTypes
-Example: 3 seasons × 3 standards × 3 types × 4 boards = 108 rows
+Total rows = seasons x roomStandards x roomTypes x boardTypes
+Example: 3 seasons x 3 standards x 3 types x 4 boards = 108 rows
 ```
 
 | Column | Description |
@@ -376,8 +376,8 @@ Example: 3 seasons × 3 standards × 3 types × 4 boards = 108 rows
 When `seasonId` filter is provided:
 
 ```
-Total rows = roomStandards × roomTypes × boardTypes
-Example: 3 standards × 3 types × 4 boards = 36 rows
+Total rows = roomStandards x roomTypes x boardTypes
+Example: 3 standards x 3 types x 4 boards = 36 rows
 ```
 
 | Column | Description |
@@ -503,32 +503,32 @@ async function onSeasonChange(seasonId) {
 ### UI Flow Recommendation
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│ Configure Rates for: Serena Hotel                                     │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                       │
-│  Season Filter: [All Seasons ▼]                                       │
-│                 ├── All Seasons    ✓                                  │
-│                 ├── High Season                                       │
-│                 ├── Low Season                                        │
-│                 └── Shoulder Season                                   │
-│                                                                       │
-│  ┌─────────────────────────────────────────────────────────────────┐  │
-│  │ # │ Season │ Std  │ Type   │ Board │ STO │ Rack │ Curr │ PPS   │  │
-│  │───│────────│──────│────────│───────│─────│──────│──────│───────│  │
-│  │ 1 │ High   │ Std  │ Single │ RO    │     │      │ USD  │ [✓]   │  │
-│  │ 2 │ High   │ Std  │ Single │ B&B   │     │      │ USD  │ [✓]   │  │
-│  │ 3 │ High   │ Std  │ Single │ HB    │     │      │ USD  │ [✓]   │  │
-│  │ 4 │ High   │ Std  │ Single │ FB    │     │      │ USD  │ [✓]   │  │
-│  │...│ ...    │ ...  │ ...    │ ...   │ ... │ ...  │ ...  │ ...   │  │
-│  └─────────────────────────────────────────────────────────────────┘  │
-│                                                                       │
-│  Legend: PPS = Per Person Sharing (✓) / Per Room (☐)                  │
-│  Summary: 108 possible rates | 12 configured | 96 missing             │
-│                                                                       │
-│  [Save Changes]  [Reset]                                              │
-│                                                                       │
-└──────────────────────────────────────────────────────────────────────┘
++======================================================================+
+| Configure Rates for: Serena Hotel                                     |
++======================================================================+
+|                                                                       |
+|  Season Filter: [All Seasons v]                                       |
+|                 +== All Seasons    ✓                                  |
+|                 +== High Season                                       |
+|                 +== Low Season                                        |
+|                 +== Shoulder Season                                   |
+|                                                                       |
+|  +=================================================================+  |
+|  | # | Season | Std  | Type   | Board | STO | Rack | Curr | PPS   |  |
+|  |===|========|======|========|=======|=====|======|======|=======|  |
+|  | 1 | High   | Std  | Single | RO    |     |      | USD  | [✓]   |  |
+|  | 2 | High   | Std  | Single | B&B   |     |      | USD  | [✓]   |  |
+|  | 3 | High   | Std  | Single | HB    |     |      | USD  | [✓]   |  |
+|  | 4 | High   | Std  | Single | FB    |     |      | USD  | [✓]   |  |
+|  |...| ...    | ...  | ...    | ...   | ... | ...  | ...  | ...   |  |
+|  +=================================================================+  |
+|                                                                       |
+|  Legend: PPS = Per Person Sharing (✓) / Per Room (☐)                  |
+|  Summary: 108 possible rates | 12 configured | 96 missing             |
+|                                                                       |
+|  [Save Changes]  [Reset]                                              |
+|                                                                       |
++======================================================================+
 ```
 
 ---
@@ -639,18 +639,18 @@ The `isPerPerson` field indicates the rate charging model:
 - **`false`**: Per Room - common in hotels/guesthouses
 
 This affects how costs are calculated in itinerary cost estimation:
-- **PPS**: Rate × Number of guests
-- **Per Room**: Rate × Number of rooms
+- **PPS**: Rate x Number of guests
+- **Per Room**: Rate x Number of rooms
 
 ### Total Possible Rates Calculation
 
 ```
-Total = Seasons × RoomStandards × RoomTypes × BoardTypes
+Total = Seasons x RoomStandards x RoomTypes x BoardTypes
 
 Example:
 - 3 Seasons
 - 3 Room Standards
 - 3 Room Types
 - 4 Board Types
-= 3 × 3 × 3 × 4 = 108 possible rate combinations
+= 3 x 3 x 3 x 4 = 108 possible rate combinations
 ```

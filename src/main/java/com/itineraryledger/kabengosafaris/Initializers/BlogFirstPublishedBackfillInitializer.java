@@ -21,12 +21,12 @@ import lombok.extern.slf4j.Slf4j;
  * Fills in first_published_at for articles that were already live when the column arrived.
  *
  * The six seeded posts were published before there was anywhere to record it, and the seeder
- * is idempotent — it skipped them, so the column stayed null and the record page reported
+ * is idempotent - it skipped them, so the column stayed null and the record page reported
  * "First published: Never" about articles the sitemap has been serving for weeks.
  *
  * Runs once in effect: a post that has a date is left alone, so this is a no-op on every
  * later boot. Each row goes in its own REQUIRES_NEW transaction inside its own try/catch, and
- * the whole sweep is wrapped again — a backfill must never be the reason an application will
+ * the whole sweep is wrapped again - a backfill must never be the reason an application will
  * not start.
  */
 @Component
@@ -64,7 +64,7 @@ public class BlogFirstPublishedBackfillInitializer implements ApplicationRunner 
         }
     }
 
-    /** One row, one transaction — see BlogSeeder for why that separation is what makes the catch real. */
+    /** One row, one transaction - see BlogSeeder for why that separation is what makes the catch real. */
     @Component
     @RequiredArgsConstructor
     static class BlogFirstPublishedBackfill {

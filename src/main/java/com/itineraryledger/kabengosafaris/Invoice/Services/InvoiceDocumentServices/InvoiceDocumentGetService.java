@@ -120,7 +120,7 @@ public class InvoiceDocumentGetService {
 
             /*
              * The list page's facets. Each ORs inside its own dimension and ANDs
-             * across — asking for "receipt or invoice PDF, expiring this month"
+             * across - asking for "receipt or invoice PDF, expiring this month"
              * is one question, not two lists intersected by hand.
              */
             spec = spec.and(InvoiceDocumentSpecification.byDocumentTypes(documentTypes));
@@ -175,7 +175,7 @@ public class InvoiceDocumentGetService {
             response.put("totalItems", dtoPage.getTotalElements());
             /*
              * Counters for the WHOLE filtered set, from the same specification as
-             * the rows — without them the page can only summarise what it loaded,
+             * the rows - without them the page can only summarise what it loaded,
              * and the "All filtered / This page" toggle has to stay hidden.
              */
             if (includeStats == null || includeStats) {
@@ -213,7 +213,7 @@ public class InvoiceDocumentGetService {
     /**
      * One document, and where it sits in the set the caller came from.
      *
-     * @param scopeParentId the invoice, when opened from inside one — paging then
+     * @param scopeParentId the invoice, when opened from inside one - paging then
      *                      stays among that invoice's documents
      */
     public ResponseEntity<ApiResponse<?>> getDocumentById(String obfuscatedId, String scopeParentId) {
@@ -240,8 +240,8 @@ public class InvoiceDocumentGetService {
             InvoiceDocumentDTO documentDTO = toDTO(document);
 
             /*
-             * Prev/next walks the SAME set the caller was looking at — this
-             * invoice's documents when scoped, everything otherwise — and returns
+             * Prev/next walks the SAME set the caller was looking at - this
+             * invoice's documents when scoped, everything otherwise - and returns
              * the position, so the record page can show 'N of M'. It used to walk
              * a raw id-ordered query with no position at all.
              */

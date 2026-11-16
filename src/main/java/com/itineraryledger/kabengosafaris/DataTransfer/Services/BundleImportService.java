@@ -30,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Reading a bundle into this company.
  *
- * The preview is the part worth explaining. It does not describe what an import WOULD do — it runs
+ * The preview is the part worth explaining. It does not describe what an import WOULD do - it runs
  * the import, collects the report, and rolls the transaction back. That is deliberate, and it is the
  * lesson from a fault earlier in this codebase where a "show me what will be sent" path had its own
  * substitution loop and therefore showed something no customer would ever receive. A preview written
@@ -67,7 +67,7 @@ public class BundleImportService {
      *
      * Entry names are checked rather than trusted. A bundle is a file somebody was handed, and a zip
      * entry called `../../etc/anything` is a well-known way to write outside the directory you meant
-     * — old enough to have a name, and still worth the four lines.
+     * - old enough to have a name, and still worth the four lines.
      */
     public Bundle read(InputStream source) throws IOException {
         Path scratch = Files.createTempDirectory("bundle-");
@@ -114,7 +114,7 @@ public class BundleImportService {
     /**
      * Run it and throw the result away, so the report is the truth rather than a guess.
      *
-     * Rolled back by marking the transaction rather than by throwing, so the report survives — an
+     * Rolled back by marking the transaction rather than by throwing, so the report survives - an
      * exception would take it with it, and the report is the entire product of a preview.
      */
     @Transactional
@@ -129,8 +129,8 @@ public class BundleImportService {
     /**
      * The real thing.
      *
-     * One transaction for the whole bundle: a half-imported rate sheet — the lodges in, their rates
-     * not — is harder to reason about than one that plainly did not happen. Per-record faults do NOT
+     * One transaction for the whole bundle: a half-imported rate sheet - the lodges in, their rates
+     * not - is harder to reason about than one that plainly did not happen. Per-record faults do NOT
      * roll it back; they are reported, because one lodge naming a season this company has not got is
      * not a reason to reject the other three hundred.
      */
@@ -149,8 +149,8 @@ public class BundleImportService {
             hasFiles ? bundle.getFiles() : null, hasFiles);
 
         /*
-         * Dependency order, always. The bundle's own file order is not to be trusted — a zip can be
-         * rebuilt by hand — and a rate read before its season is a rate that cannot be placed.
+         * Dependency order, always. The bundle's own file order is not to be trusted - a zip can be
+         * rebuilt by hand - and a rate read before its season is a rate that cannot be placed.
          */
         for (ModuleTransfer module : modules.stream()
                 .sorted(Comparator.comparingInt(ModuleTransfer::order)).toList()) {

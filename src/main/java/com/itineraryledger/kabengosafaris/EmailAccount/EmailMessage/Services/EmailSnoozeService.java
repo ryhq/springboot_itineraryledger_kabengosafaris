@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * §3 — Snooze. Hides a message from the inbox until snoozeUntil passes;
+ * §3 - Snooze. Hides a message from the inbox until snoozeUntil passes;
  * the scheduled wake job then clears the field and marks the message
  * unread so it re-surfaces with attention weight.
  */

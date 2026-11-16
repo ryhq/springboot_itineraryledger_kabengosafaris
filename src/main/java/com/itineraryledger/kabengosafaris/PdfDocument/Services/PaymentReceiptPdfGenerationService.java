@@ -99,7 +99,7 @@ public class PaymentReceiptPdfGenerationService extends PdfGenerationBaseService
      *
      * A downloaded receipt lives in somebody's downloads folder; a filed one
      * answers "what did we send this customer" from the invoice itself, months
-     * later, without anyone having to remember. It is the same PDF either way —
+     * later, without anyone having to remember. It is the same PDF either way -
      * this only decides whether a copy stays.
      */
     @Transactional

@@ -64,7 +64,7 @@ OTHER
 
 ### PriceInput Object
 
-Used when creating or updating quote items. The system automatically computes `totalPrice = quantity × unitPrice`.
+Used when creating or updating quote items. The system automatically computes `totalPrice = quantity x unitPrice`.
 
 ```json
 {
@@ -228,7 +228,7 @@ All fields are optional. Only provided fields will be updated.
 **Note:**
 - `displayOrder` field is NOT available in update - use `/reorder` endpoint
 - When updating prices, provide complete price list (replaces existing prices)
-- `totalPrice` is computed automatically from `quantity × unitPrice`
+- `totalPrice` is computed automatically from `quantity x unitPrice`
 
 #### Response
 
@@ -663,7 +663,7 @@ Content-Type: application/json
 ```
 
 **Notes:**
-- The system automatically calculated `totalPrice = 4 × 250.00 = 1000.00`
+- The system automatically calculated `totalPrice = 4 x 250.00 = 1000.00`
 - The system automatically assigned `displayOrder = 1` (first item for this quote)
 
 ---
@@ -791,7 +791,7 @@ Content-Type: application/json
 }
 ```
 
-**Note:** Total price automatically recalculated: `4 × 275.00 = 1100.00`
+**Note:** Total price automatically recalculated: `4 x 275.00 = 1100.00`
 
 ---
 
@@ -899,7 +899,7 @@ Content-Type: application/json
 
 ## Notes
 
-1. **Automatic Price Calculation:** When creating or updating items, users only provide `currency`, `quantity`, `unitPrice`, and optional `breakdown`. The system automatically computes `totalPrice = quantity × unitPrice`.
+1. **Automatic Price Calculation:** When creating or updating items, users only provide `currency`, `quantity`, `unitPrice`, and optional `breakdown`. The system automatically computes `totalPrice = quantity x unitPrice`.
 
 2. **Automatic Display Order Assignment:** When creating a new item, the `displayOrder` is automatically assigned by the system:
    - **First item** for a quote: `displayOrder = 1`

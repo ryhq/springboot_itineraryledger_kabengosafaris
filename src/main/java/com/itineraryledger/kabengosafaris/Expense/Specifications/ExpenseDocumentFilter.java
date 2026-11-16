@@ -11,7 +11,7 @@ import lombok.Data;
  * Everything a caller can narrow the expense-document list by, in one object.
  *
  * Bound from the query string with {@code @ModelAttribute}, and shared by the
- * rows, the stat cards and the record walk — so a card cannot report a figure the
+ * rows, the stat cards and the record walk - so a card cannot report a figure the
  * table would contradict.
  */
 @Data
@@ -38,7 +38,7 @@ public class ExpenseDocumentFilter {
     private List<String> statuses;
 
     private Boolean currentlyValid;
-    /** expired · expiring · no-expiry */
+    /** expired | expiring | no-expiry */
     private List<String> validity;
 
     private LocalDateTime createdAfter;

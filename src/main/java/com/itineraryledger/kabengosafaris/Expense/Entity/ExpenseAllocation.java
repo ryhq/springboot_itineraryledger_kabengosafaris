@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
  * either side could say none of that, so the relation gets its own record.
  *
  * <p><b>Why the subject is a soft reference.</b> The day tree is edited for as
- * long as the trip runs — a lodge is swapped, a park visit is removed — but what
+ * long as the trip runs - a lodge is swapped, a park visit is removed - but what
  * a bill paid for is a historical fact that must not change when it does. So the
  * id is kept without a foreign key and the label, the day number and the date are
  * snapshotted beside it. A removed stay leaves an allocation that still reads
@@ -66,7 +66,7 @@ public class ExpenseAllocation {
     @Column(name = "subject_type", nullable = false, length = 32)
     private ExpenseSubjectType subjectType;
 
-    /** Raw id of the day-object. Soft on purpose — see the class note. */
+    /** Raw id of the day-object. Soft on purpose - see the class note. */
     @Column(name = "subject_id", nullable = false)
     private Long subjectId;
 
@@ -86,8 +86,8 @@ public class ExpenseAllocation {
      * What of this bill belongs to this day, when somebody has bothered to say.
      *
      * A lodge invoice covering two nights is usually settled as one figure, and
-     * splitting it is guesswork nobody needs. But when a share IS known — two of
-     * five park permits on this day — recording it beats recomputing it later.
+     * splitting it is guesswork nobody needs. But when a share IS known - two of
+     * five park permits on this day - recording it beats recomputing it later.
      */
     @Column(precision = 19, scale = 2)
     private BigDecimal share;

@@ -36,7 +36,7 @@ import org.hibernate.annotations.BatchSize;
  *
  * The body is a LIST OF BLOCKS held as JSON rather than a slab of HTML: the website walks
  * paragraphs, headings, bullet lists and images to build both the page and its JSON-LD, and
- * a single HTML string could not be walked. The per-post FAQs are JSON for the same reason —
+ * a single HTML string could not be walked. The per-post FAQs are JSON for the same reason -
  * they are page furniture for one article, not rows anybody queries across.
  *
  * Long text is TEXT/LONGTEXT and never {@code @Lob}: a CLOB cannot be passed through
@@ -106,7 +106,7 @@ public class Blog {
      * When this article FIRST went live, and therefore when its slug froze.
      *
      * Policy: a slug is not edited once the post has been published. The address is out in the
-     * world by then — in search results, in somebody's bookmarks, in a WhatsApp message — and
+     * world by then - in search results, in somebody's bookmarks, in a WhatsApp message - and
      * renaming it turns every one of those into a 404. Current state is not enough to enforce
      * that: unpublish, rename, republish would sidestep it, so the moment is recorded once and
      * never cleared. Nullable, so it is safe to add to an existing table.

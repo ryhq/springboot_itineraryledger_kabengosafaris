@@ -40,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
  * own thing, so a role granting "users" grants exactly this screen.
  *
  * The write endpoints take the caller's own account, because several changes have to
- * be refused when the target is the caller — deactivating yourself, locking yourself
+ * be refused when the target is the caller - deactivating yourself, locking yourself
  * out, dropping your own administration rights. See UserAdminUpdateService.
  */
 @RestController
@@ -57,7 +57,7 @@ public class UserAdminController {
     private final BulkFlags bulkFlags;
 
     /**
-     * The list, its counters and its sort — one endpoint.
+     * The list, its counters and its sort - one endpoint.
      *
      * The filter arrives as a @ModelAttribute so every dimension is a query param and
      * the whole state stays in the URL, which is what makes a filtered list shareable

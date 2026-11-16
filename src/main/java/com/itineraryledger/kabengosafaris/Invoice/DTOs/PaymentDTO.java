@@ -30,7 +30,7 @@ public class PaymentDTO {
     private String shareId;
     private String sharePayerName;
     private String invoiceTitle;
-    /* whose money it was and which trip it paid for — a cross-invoice list is
+    /* whose money it was and which trip it paid for - a cross-invoice list is
        unreadable without them */
     private String customerId;
     private String customerName;

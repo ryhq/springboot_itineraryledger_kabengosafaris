@@ -19,11 +19,11 @@ import com.openhtmltopdf.svgsupport.BatikSVGDrawer;
  *
  * Both were wrong, one after the other, and neither is visible in the markup:
  *
- *  · A logo file states its own size and the renderer believes it, so a wrapper that plainly said
- *    180px got whatever the file felt like — for a viewBox-only export, the renderer's 300pt default.
- *  · Sizing it with CSS fixed that and introduced the next fault: this renderer never learns a
- *    vector's aspect ratio, so {@code height:auto} left its default 150pt box — a 300px-tall band
- *    around a 72px drawing — as empty space above and below the logo on every letterhead.
+ *  | A logo file states its own size and the renderer believes it, so a wrapper that plainly said
+ *    180px got whatever the file felt like - for a viewBox-only export, the renderer's 300pt default.
+ *  | Sizing it with CSS fixed that and introduced the next fault: this renderer never learns a
+ *    vector's aspect ratio, so {@code height:auto} left its default 150pt box - a 300px-tall band
+ *    around a 72px drawing - as empty space above and below the logo on every letterhead.
  *
  * So the page is rasterised and measured: how wide the ink is, and how much taller the element's box
  * is than the ink inside it. A red rule immediately after the logo marks where the flow resumed.
@@ -102,7 +102,7 @@ class LogoSizeIsTemplateControlledTest {
         Measured fixed = render(CompanyIdentityService.sizeableSvg(VIEWBOX_ONLY, 180), "");
         assertTrue(fixed.wasted() <= 2,
             "the element should end where the logo does, but wasted " + fixed.wasted()
-                + "px — that band is the empty space above and below the logo on a letterhead");
+                + "px - that band is the empty space above and below the logo on a letterhead");
     }
 
     @Test
@@ -122,7 +122,7 @@ class LogoSizeIsTemplateControlledTest {
         /*
          * This is why the size is in ATTRIBUTES rather than an inline style: a stylesheet beats an
          * attribute and loses to an inline style, so putting it inline would have made the size
-         * impossible to change from the template — the opposite of what was asked for.
+         * impossible to change from the template - the opposite of what was asked for.
          */
         Measured overridden = render(CompanyIdentityService.sizeableSvg(VIEWBOX_ONLY, 180),
             ".letterhead svg{width:90px;height:48px}");

@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Upsert payload for QuotePax. Used for bulk add/update calls — clients send
+ * Upsert payload for QuotePax. Used for bulk add/update calls - clients send
  * the desired pax mix and the service reconciles via the unique
  * (quote_id, nation_category_id, age_category_id) constraint.
  */

@@ -12,8 +12,8 @@ import com.itineraryledger.kabengosafaris.Expense.Entity.ExpenseDocument.Documen
  * Filters for the expense-document list, matching the other document modules.
  *
  * The Type facet is multi-value because the two halves of the paper trail are
- * asked about together — "the invoices they sent" is four types, "what we sent
- * back once paid" is five — and a singular enum param cannot answer either.
+ * asked about together - "the invoices they sent" is four types, "what we sent
+ * back once paid" is five - and a singular enum param cannot answer either.
  */
 public class ExpenseDocumentSpecification {
 
@@ -115,7 +115,7 @@ public class ExpenseDocumentSpecification {
 
     /**
      * The one search box: the title, the notes, either filename, their document
-     * number, and the bill's own code — because "the slip for EXP-000104" is how
+     * number, and the bill's own code - because "the slip for EXP-000104" is how
      * somebody looks for it.
      */
     public static Specification<ExpenseDocument> searchKeyword(String keyword) {

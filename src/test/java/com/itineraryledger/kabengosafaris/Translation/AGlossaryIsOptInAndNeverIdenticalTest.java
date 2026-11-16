@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
  * <p>An entry whose source and target are IDENTICAL makes DeepL return the whole sentence in
  * English. Measured on 2026-11-11 with an en-fr glossary containing "lodge" -> "lodge":
  * "Kudu Lodge sits two kilometres off the road." came back as "The Kudu Lodge is located two
- * kilometres from the road." — untranslated, HTTP 200, no error anywhere. A French reader would
+ * kilometres from the road." - untranslated, HTTP 200, no error anywhere. A French reader would
  * simply see English. Removing the identity entry restored correct French immediately, and
  * capitalising the target ("lodge" -> "Lodge") kept the fix without the passthrough.
  *
@@ -54,7 +54,7 @@ class AGlossaryIsOptInAndNeverIdenticalTest {
 
     /**
      * The parser behind translation.deepl.glossary.ids. An unset or malformed value must mean
-     * "no glossary", never "some glossary" — a wrong glossary is worse than none.
+     * "no glossary", never "some glossary" - a wrong glossary is worse than none.
      */
     @Test
     @DisplayName("a blank or malformed setting means no glossary at all")

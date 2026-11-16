@@ -247,7 +247,7 @@ public class EmailAccountSignatureService {
              * Then the company's own, as {{placeholders}}.
              *
              * A signature's declared variables use single braces; the company's use double, the same
-             * as every email template — and without this pass a sign-off went out reading literally
+             * as every email template - and without this pass a sign-off went out reading literally
              * "{{companyName}}". Same renderer as the templates, so the two cannot drift.
              */
             result = companyPlaceholderRenderer.apply(result);

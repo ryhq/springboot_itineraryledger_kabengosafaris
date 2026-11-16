@@ -26,7 +26,7 @@ import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     /**
-     * Cookie name used for the short-lived "download bridge" — set by
+     * Cookie name used for the short-lived "download bridge" - set by
      * BackupDownloadController.prepareDownload right before the frontend
      * does a top-level navigation to /api/backups/download/{filename},
      * because a {@code window.location} request cannot carry an

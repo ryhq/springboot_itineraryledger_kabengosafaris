@@ -69,8 +69,8 @@ public class TestimonyController {
     @PreAuthorize("hasAuthority('PERM_READ_TESTIMONY')")
     public ResponseEntity<ApiResponse<?>> listTestimonies(
         /*
-         * Every parameter the old signature took is still spelled the same on the wire —
-         * @ModelAttribute binds them onto the filter — plus the multi-value forms
+         * Every parameter the old signature took is still spelled the same on the wire -
+         * @ModelAttribute binds them onto the filter - plus the multi-value forms
          * (sources, ratings, statuses, flags, qualities).
          */
         @ModelAttribute TestimonyFilter filter,
@@ -156,7 +156,7 @@ public class TestimonyController {
     private com.itineraryledger.kabengosafaris.Testimony.Repository.TestimonyRepository bulkFlagsRepository;
 
     /**
-     * PATCH /bulk — approve, feature or archive a whole selection at once.
+     * PATCH /bulk - approve, feature or archive a whole selection at once.
      *
      * Reviews arrive in batches and are read in batches; approving twenty of them one record
      * at a time is the kind of work nobody does, so they sit unpublished instead. Only the

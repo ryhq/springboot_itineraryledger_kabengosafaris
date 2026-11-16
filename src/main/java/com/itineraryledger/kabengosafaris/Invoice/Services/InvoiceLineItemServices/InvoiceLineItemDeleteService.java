@@ -98,7 +98,7 @@ public class InvoiceLineItemDeleteService {
 
         // Note: do NOT swallow per-item exceptions. If anything throws inside
         // the proxy-wrapped delete (FK violation, audit aspect failure, etc.)
-        // Spring marks the whole transaction rollback-only — silently catching
+        // Spring marks the whole transaction rollback-only - silently catching
         // here just produces a confusing UnexpectedRollbackException at commit.
         // Let the exception propagate so the outer try-catch can return a
         // meaningful error and the whole batch rolls back atomically.

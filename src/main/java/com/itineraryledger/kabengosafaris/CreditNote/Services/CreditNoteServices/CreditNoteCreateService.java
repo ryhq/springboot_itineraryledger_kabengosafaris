@@ -83,7 +83,7 @@ public class CreditNoteCreateService {
             // Status guard: only invoices that have been issued to the customer
             // can have credit notes created against them.
             //   - DRAFT:     edit the invoice directly instead.
-            //   - CANCELLED: invoice is void — nothing to credit.
+            //   - CANCELLED: invoice is void - nothing to credit.
             if (invoice.getStatus() == InvoiceStatus.DRAFT) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error(400,
@@ -169,7 +169,7 @@ public class CreditNoteCreateService {
      * Convert CreditNote entity to CreditNoteDTO
      */
     public CreditNoteDTO convertToDTO(CreditNote creditNote) {
-        // Derive subtotals/taxes/totals from active line items + taxPercentage —
+        // Derive subtotals/taxes/totals from active line items + taxPercentage -
         // they are not stored on the CreditNote entity.
         CreditNoteTotalsAggregationService.ComputedTotals computed =
             totalsAggregationService.compute(creditNote);

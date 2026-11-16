@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Auto-harvest service — called from EmailComposeService and EmailReceivingService.
+ * Auto-harvest service - called from EmailComposeService and EmailReceivingService.
  * CRUD operations are in EmailContactGetService, EmailContactCreateService,
  * EmailContactUpdateService, and EmailContactDeleteService.
  */

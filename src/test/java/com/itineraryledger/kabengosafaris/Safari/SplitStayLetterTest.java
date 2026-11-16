@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
  * That a property used on separate nights is asked about as separate bookings.
  *
  * The letter read the earliest night as check-in and the latest as check-out, so a lodge used on the
- * 26th and the 28th was sent "Check-in 26/01, Check-out 29/01, Number of Nights 2" — three nights of
+ * 26th and the 28th was sent "Check-in 26/01, Check-out 29/01, Number of Nights 2" - three nights of
  * dates against a count of two, for guests who are elsewhere on the 27th. The reservations desk
  * either blocks a night nobody wants or writes back to ask what we meant.
  *
@@ -55,7 +55,7 @@ class SplitStayLetterTest {
 
         LocalDate wrongCheckOut = jan(28).plusDays(1);
         assertEquals(3, java.time.temporal.ChronoUnit.DAYS.between(jan(26), wrongCheckOut),
-            "26/01 to 29/01 is three nights, which is what a lodge would have blocked — while the "
+            "26/01 to 29/01 is three nights, which is what a lodge would have blocked - while the "
                 + "same letter said the number of nights was two");
     }
 
@@ -94,7 +94,7 @@ class SplitStayLetterTest {
     @Test
     @DisplayName("a repeated night does not invent a second visit")
     void duplicatesCollapse() {
-        /* two rooms on one night are two rows and one night — the map is keyed by date for this */
+        /* two rooms on one night are two rows and one night - the map is keyed by date for this */
         List<List<LocalDate>> blocks = consecutiveBlocks(List.of(jan(26), jan(26), jan(27)));
         assertEquals(1, blocks.size());
         assertEquals(2, blocks.get(0).size(), "one night, however many rooms are on it");

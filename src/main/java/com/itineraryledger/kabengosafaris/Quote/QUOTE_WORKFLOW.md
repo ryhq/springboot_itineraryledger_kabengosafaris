@@ -11,7 +11,7 @@ The Quote module implements a comprehensive status workflow system that manages 
 ```
 DRAFT → READY → SENT → [ACCEPTED/REJECTED/EXPIRED] → [CONVERTED/CANCELLED]
   ↑       ↓       ↓              ↓                           ↓
-  └───────┴───────┴──────────────┴───────────────────────────┘
+  +=======+=======+==============+===========================+
 ```
 
 | Status | Description | Can Edit? | Can Delete? | Can Send to Customer? |
@@ -30,67 +30,67 @@ DRAFT → READY → SENT → [ACCEPTED/REJECTED/EXPIRED] → [CONVERTED/CANCELLE
 ## Workflow Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    QUOTE LIFECYCLE                              │
-└─────────────────────────────────────────────────────────────────┘
++=================================================================+
+|                    QUOTE LIFECYCLE                              |
++=================================================================+
 
-┌──────────┐
-│  DRAFT   │ ◄─────────────────────────┐
-└─────┬────┘                           │
-      │                                │
-      │ POST /api/quotes/{id}/mark-ready
-      │ Permission: PERM_READY_QUOTE   │
-      │                                │
-      ▼                                │
-┌──────────┐                           │
-│  READY   │                           │
-└─────┬────┘                           │
-      │                                │
-      │ POST /api/quotes/{id}/send     │
-      │ Permission: PERM_SEND_QUOTE    │
-      │                                │
-      ▼                                │
-┌──────────┐                           │
-│   SENT   │                           │
-└─────┬────┘                           │
-      │                                │
-      ├──────────────────┐             │
-      │                  │             │
-      │ Customer Action  │             │
-      │                  │             │
-      ▼                  ▼             │
-┌──────────┐      ┌──────────┐         │
-│ ACCEPTED │      │ REJECTED │         │
-└─────┬────┘      └─────┬────┘         │
-      │                  │             │
-      │                  │             │
-      ▼                  └─────────────┘
-┌──────────┐
-│CONVERTED │
-└──────────┘
++==========+
+|  DRAFT   | ◄=========================+
++=====+====+                           |
+      |                                |
+      | POST /api/quotes/{id}/mark-ready
+      | Permission: PERM_READY_QUOTE   |
+      |                                |
+      v                                |
++==========+                           |
+|  READY   |                           |
++=====+====+                           |
+      |                                |
+      | POST /api/quotes/{id}/send     |
+      | Permission: PERM_SEND_QUOTE    |
+      |                                |
+      v                                |
++==========+                           |
+|   SENT   |                           |
++=====+====+                           |
+      |                                |
+      +==================+             |
+      |                  |             |
+      | Customer Action  |             |
+      |                  |             |
+      v                  v             |
++==========+      +==========+         |
+| ACCEPTED |      | REJECTED |         |
++=====+====+      +=====+====+         |
+      |                  |             |
+      |                  |             |
+      v                  +=============+
++==========+
+|CONVERTED |
++==========+
 
 
 ADDITIONAL TRANSITIONS:
 
-┌──────────┐    POST /api/quotes/{id}/cancel       ┌──────────┐
-│   ANY    │ ──────────────────────────────────►   │CANCELLED │
-└──────────┘    Permission: PERM_CANCEL_QUOTE      └──────────┘
++==========+    POST /api/quotes/{id}/cancel       +==========+
+|   ANY    | ==================================►   |CANCELLED |
++==========+    Permission: PERM_CANCEL_QUOTE      +==========+
 
-┌──────────┐    POST /api/quotes/{id}/revert-to-draft    ┌──────────┐
-│  READY   │ ──────────────────────────────────────────► │  DRAFT   │
-└──────────┘    Permission: PERM_REVERT_QUOTE_TO_DRAFT   └──────────┘
++==========+    POST /api/quotes/{id}/revert-to-draft    +==========+
+|  READY   | ==========================================► |  DRAFT   |
++==========+    Permission: PERM_REVERT_QUOTE_TO_DRAFT   +==========+
 
-┌──────────┐    POST /api/quotes/{id}/revert-to-draft    ┌──────────┐
-│   SENT   │ ──────────────────────────────────────────► │  DRAFT   │
-└──────────┘    Permission: PERM_REVERT_QUOTE_TO_DRAFT   └──────────┘
++==========+    POST /api/quotes/{id}/revert-to-draft    +==========+
+|   SENT   | ==========================================► |  DRAFT   |
++==========+    Permission: PERM_REVERT_QUOTE_TO_DRAFT   +==========+
 
-┌──────────┐    Automatic (via scheduled job or check)   ┌──────────┐
-│   SENT   │ ──────────────────────────────────────────► │ EXPIRED  │
-└──────────┘    When validity date passes                └──────────┘
++==========+    Automatic (via scheduled job or check)   +==========+
+|   SENT   | ==========================================► | EXPIRED  |
++==========+    When validity date passes                +==========+
 
-┌──────────┐    POST /api/quotes/{id}/convert      ┌──────────┐
-│ ACCEPTED │ ──────────────────────────────────►   │CONVERTED │
-└──────────┘    Permission: PERM_CONVERT_QUOTE     └──────────┘
++==========+    POST /api/quotes/{id}/convert      +==========+
+| ACCEPTED | ==================================►   |CONVERTED |
++==========+    Permission: PERM_CONVERT_QUOTE     +==========+
 ```
 
 ---

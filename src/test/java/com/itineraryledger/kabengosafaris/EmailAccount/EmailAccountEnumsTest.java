@@ -17,7 +17,7 @@ import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.SendingMethod
 /**
  * That an email account's enums can be sent by name.
  *
- * They used to be 1-based codes that appear in no enum and no response — 6 for CUSTOM, 1 for IMAP —
+ * They used to be 1-based codes that appear in no enum and no response - 6 for CUSTOM, 1 for IMAP -
  * so a caller had to know them by heart. The panel sends the name it displays, and because the DTO
  * field was an Integer, Jackson rejected the ENTIRE body: "Required request body is missing or
  * malformed", naming neither the field nor the value, on a form where every box looked filled in.
@@ -77,7 +77,7 @@ class EmailAccountEnumsTest {
                 "src/main/java/com/itineraryledger/kabengosafaris/EmailAccount/DTOs/" + dto + ".java"));
             for (String field : new String[] {"providerType", "sendingMethod", "receivingProtocol"}) {
                 assertFalse(source.contains("private Integer " + field + ";"),
-                    dto + "." + field + " is an Integer again — a request sending the enum's NAME"
+                    dto + "." + field + " is an Integer again - a request sending the enum's NAME"
                         + " will be refused as a malformed body, naming neither field nor value");
                 assertTrue(source.contains("private String " + field + ";"),
                     dto + "." + field + " should be a String so both a name and a code parse");

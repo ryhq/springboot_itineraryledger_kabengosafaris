@@ -181,7 +181,7 @@ public class EmailAccountSpecification {
      * The one search box: the address, what it is called, what it is for, and the host.
      *
      * Never the API key or the webhook secret. Neither is returned by any endpoint and
-     * neither must become searchable by accident — "who holds this key" is not a question a
+     * neither must become searchable by accident - "who holds this key" is not a question a
      * list should answer.
      */
     public static Specification<EmailAccount> searchKeyword(String keyword) {
@@ -196,7 +196,7 @@ public class EmailAccountSpecification {
         };
     }
 
-    /** Never tested — nobody has ever proved mail leaves through this account. */
+    /** Never tested - nobody has ever proved mail leaves through this account. */
     public static Specification<EmailAccount> neverTested() {
         return (root, query, cb) -> cb.isNull(root.get("lastTestedAt"));
     }

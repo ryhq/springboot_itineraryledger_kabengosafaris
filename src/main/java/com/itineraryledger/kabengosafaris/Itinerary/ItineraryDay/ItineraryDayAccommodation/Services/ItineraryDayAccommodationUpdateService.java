@@ -126,7 +126,7 @@ public class ItineraryDayAccommodationUpdateService {
              * The room configuration, which used to be fixed after creation.
              * Order matters: the property is resolved first, because the room
              * type, standard and board are then checked against whichever
-             * property the stay ends up on — a Bungalow from another lodge is
+             * property the stay ends up on - a Bungalow from another lodge is
              * not a valid choice here, and silently accepting it would price
              * the night against a rate that does not exist.
              */

@@ -31,7 +31,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * A flight on a day of a safari — a trip that is actually running.
+ * A flight on a day of a safari - a trip that is actually running.
  *
  * <p>Same shape as the quote's, plus the operational state a running trip needs: whether the seat
  * has been asked for, held or ticketed, and the reference the airline gave us. The accommodation
@@ -140,7 +140,7 @@ public class SafariDayFlight {
         return bookingStatus == BookingStatus.TICKETED;
     }
 
-    /** "Air Excel ARS to ZNZ, 14:00" — see {@link FlightLabels}, which all three day trees share. */
+    /** "Air Excel ARS to ZNZ, 14:00" - see {@link FlightLabels}, which all three day trees share. */
     public String getDisplayName() {
         return FlightLabels.displayName(flightRoute, flightFare);
     }

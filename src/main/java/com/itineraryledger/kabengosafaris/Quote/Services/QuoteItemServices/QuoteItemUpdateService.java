@@ -107,7 +107,7 @@ public class QuoteItemUpdateService {
                 if (!updateDTO.getPrices().isEmpty()) {
                     prices = updateDTO.getPrices().stream()
                         .map(priceInput -> {
-                            // Compute totalPrice = quantity × unitPrice
+                            // Compute totalPrice = quantity x unitPrice
                             BigDecimal totalPrice = priceInput.getUnitPrice()
                                 .multiply(BigDecimal.valueOf(priceInput.getQuantity()));
 

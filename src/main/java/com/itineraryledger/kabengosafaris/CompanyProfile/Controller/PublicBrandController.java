@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
  * logo and favicon files.
  *
  * Its own path rather than a corner of /api/public/company, because this is the FIRST request the
- * panel makes — before login, before a token exists — and what it answers decides the colour of the
+ * panel makes - before login, before a token exists - and what it answers decides the colour of the
  * sign-in screen. It also means a bundle built for one company but pointed at another company's API
  * shows the API's company rather than the one compiled into it.
  */

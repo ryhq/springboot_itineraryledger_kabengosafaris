@@ -33,15 +33,15 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Templates as a resource of their own, at /api/email-templates.
  *
- * The nested surface under an event stays exactly as it was — nothing that calls it needs
- * changing — but a template is a thing somebody maintains, reviews and searches across
+ * The nested surface under an event stays exactly as it was - nothing that calls it needs
+ * changing - but a template is a thing somebody maintains, reviews and searches across
  * events, and a resource you can only reach by first knowing its parent cannot have a
  * list page, a record page or a filter of its own.
  *
  * Every write here resolves the template's event and hands off to the same nested service,
  * so there is one implementation of each rule rather than two that drift. In particular
- * the delete guards — a system default can never be removed, and neither can the template
- * an event is currently sending — are enforced in one place and inherited here.
+ * the delete guards - a system default can never be removed, and neither can the template
+ * an event is currently sending - are enforced in one place and inherited here.
  */
 @RestController
 @RequestMapping("/api/email-templates")
@@ -84,7 +84,7 @@ public class EmailTemplateFlatController {
 
     /**
      * Creating a template needs to know which email it is for, so `eventId` is required in
-     * the body — there is no such thing as a template belonging to nothing.
+     * the body - there is no such thing as a template belonging to nothing.
      */
     @PostMapping
     @PreAuthorize("hasAuthority('PERM_CREATE_EMAIL_TEMPLATE')")
@@ -107,7 +107,7 @@ public class EmailTemplateFlatController {
      * Enabling or disabling a selection in one request.
      *
      * Only `enabled` is offered. Which template an email sends is a choice between siblings
-     * — turning several on at once cannot express it, and a bulk control that silently
+     * - turning several on at once cannot express it, and a bulk control that silently
      * picked a winner would be worse than not having one.
      */
     @org.springframework.web.bind.annotation.PatchMapping("/bulk")

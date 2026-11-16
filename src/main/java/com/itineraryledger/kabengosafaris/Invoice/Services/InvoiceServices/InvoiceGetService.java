@@ -92,7 +92,7 @@ public class InvoiceGetService {
              * Prev/next walks the SAME set the list was showing.
              *
              * It used to walk every invoice in id order, so paging out of an
-             * "Overdue" list landed on a paid one — arrows that traverse a
+             * "Overdue" list landed on a paid one - arrows that traverse a
              * different set from the one on screen are worse than no arrows.
              */
             Specification<Invoice> navSpec = buildSpec(filter != null ? filter : new InvoiceFilter());
@@ -259,7 +259,7 @@ public class InvoiceGetService {
     /**
      * ONE specification, shared by the rows, the counters and the record walk.
      *
-     * Every dimension ORs inside itself and ANDs across — asking for "sent or
+     * Every dimension ORs inside itself and ANDs across - asking for "sent or
      * overdue, for this customer" is one question, not two lists intersected by
      * hand afterwards.
      */
@@ -327,7 +327,7 @@ public class InvoiceGetService {
     /**
      * Narrows by an obfuscated id, or narrows to nothing if it will not decode.
      *
-     * An unreadable id must not quietly widen the list to every invoice — that is
+     * An unreadable id must not quietly widen the list to every invoice - that is
      * the opposite of what was asked for.
      */
     private Specification<Invoice> and(

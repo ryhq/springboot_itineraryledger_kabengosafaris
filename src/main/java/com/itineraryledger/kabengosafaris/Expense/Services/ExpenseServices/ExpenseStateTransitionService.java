@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * Drives the auto-status transitions on payment write/delete:
- *   sum(balances) ≤ 0  → PAID
+ *   sum(balances) <= 0  → PAID
  *   any payment present → PARTIALLY_PAID (if not already PAID)
  *   no payments         → RECORDED (if previously PARTIALLY_PAID)
  */

@@ -20,7 +20,7 @@ import java.util.List;
  *
  * Snapshotted from ItineraryDay when a Quote is generated from an Itinerary.
  * Operational fields (actualDate, weatherNotes, actualStartTime, actualEndTime,
- * driverNotes) live on SafariDay only — Quote is a negotiation document, not a
+ * driverNotes) live on SafariDay only - Quote is a negotiation document, not a
  * live booking.
  */
 @Entity

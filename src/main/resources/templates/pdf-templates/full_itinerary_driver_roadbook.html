@@ -24,7 +24,7 @@
       }
       .footer-running { position: running(footer-running); font-size: 8pt; color: {{companyAccentDark}}; }
 
-      /* ── Header ─────────────────────────────── */
+      /* == Header =============================== */
       .header { margin-bottom: 8px; padding-bottom: 12px; border-bottom: 2px solid #e8e8e8; }
       .header-table { width: 100%; border-collapse: collapse; }
       .header-table td { vertical-align: bottom; padding: 0; }
@@ -49,7 +49,7 @@
       .meta-label { font-size: 7pt; font-weight: 700; color: #999999; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
       .meta-value { font-size: 9pt; font-weight: 600; color: #2c2c2c; }
 
-      /* ── Day block ──────────────────────────── */
+      /* == Day block ============================ */
       .day { margin-bottom: 12px; page-break-inside: avoid; border: 1px solid #e8e8e8; }
       .day-header { background: {{companyAccentDark}}; color: #fff; padding: 7px 12px; }
       .day-header-table { width: 100%; border-collapse: collapse; }
@@ -93,7 +93,7 @@
 
       .notes { font-size: 8.5pt; color: #8a5200; background: #fdf7ee; border-left: 3px solid #e0a95a; padding: 5px 9px; white-space: pre-line; }
 
-      /* ── Footer ─────────────────────────────── */
+      /* == Footer =============================== */
       .footer-section { margin-top: 16px; padding-top: 12px; border-top: 2px solid {{companyAccentDark}}; }
       .footer-brand { font-weight: 700; color: {{companyAccentDark}}; font-size: 10.5pt; letter-spacing: .5px; }
       .footer-contact { font-size: 8.5pt; color: #6b6b6b; margin: 5px 0; }
@@ -163,7 +163,7 @@
         </tr>
       </table>
 
-      <!-- ── DAYS (all days) ──────────────────── -->
+      <!-- == DAYS (all days) ==================== -->
       <th:block th:each="day : ${itinerary.days}">
         <div class="day">
           <div class="day-header">

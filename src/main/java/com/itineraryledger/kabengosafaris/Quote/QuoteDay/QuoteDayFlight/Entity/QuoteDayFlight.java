@@ -37,8 +37,8 @@ import lombok.NoArgsConstructor;
  * sent with even after somebody edits the itinerary it came from. This row is the flight half of
  * that copy.
  *
- * <p>The markup override travels down from the itinerary because it is a DECISION about this trip —
- * "flat 50 on this sector for this client" — and dropping it would quietly re-price the flight at
+ * <p>The markup override travels down from the itinerary because it is a DECISION about this trip -
+ * "flat 50 on this sector for this client" - and dropping it would quietly re-price the flight at
  * the airline's default.
  */
 @Entity
@@ -108,7 +108,7 @@ public class QuoteDayFlight {
         return !Boolean.TRUE.equals(isAlternative);
     }
 
-    /** "Air Excel ARS to ZNZ, 14:00" — see {@link FlightLabels}, which all three day trees share. */
+    /** "Air Excel ARS to ZNZ, 14:00" - see {@link FlightLabels}, which all three day trees share. */
     public String getDisplayName() {
         return FlightLabels.displayName(flightRoute, flightFare);
     }

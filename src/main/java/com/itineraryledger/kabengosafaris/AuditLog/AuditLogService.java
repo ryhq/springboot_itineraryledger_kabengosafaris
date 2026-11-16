@@ -35,8 +35,8 @@ public class AuditLogService {
     /**
      * What may be sorted on.
      *
-     * `createdAt` is the only order an audit log is ever read in by default — it is a
-     * chronology — but who and what are worth sorting by when hunting.
+     * `createdAt` is the only order an audit log is ever read in by default - it is a
+     * chronology - but who and what are worth sorting by when hunting.
      */
     private static final java.util.List<String> VALID_SORT_FIELDS = java.util.Arrays.asList(
         "createdAt", "username", "action", "entityType", "status"
@@ -402,7 +402,7 @@ public class AuditLogService {
             }
 
             /*
-             * The walk runs over the SAME specification the list used, in the same order —
+             * The walk runs over the SAME specification the list used, in the same order -
              * so stepping through failures stays among failures. It used to page over the
              * whole table by id, which on a log this long is a walk to nowhere.
              */
@@ -540,7 +540,7 @@ public class AuditLogService {
     /**
      * One specification, used by the rows, the cards and the record walk.
      *
-     * OR inside a dimension, AND across dimensions — so "deletes or updates, by Ricksy, on
+     * OR inside a dimension, AND across dimensions - so "deletes or updates, by Ricksy, on
      * Customers, since Monday" reads the way somebody means it.
      */
     private Specification<AuditLog> buildSpec(AuditLogFilter filter) {
@@ -630,8 +630,8 @@ public class AuditLogService {
      *
      * There are 330 action names and 87 entity types in the code, and a hard-coded list of
      * them would drift the moment somebody adds a module. DISTINCT over the table can only
-     * ever offer a value that matches something — which is the whole rule about filters
-     * here — and it also says what this installation has really done.
+     * ever offer a value that matches something - which is the whole rule about filters
+     * here - and it also says what this installation has really done.
      */
     public ResponseEntity<ApiResponse<?>> getFacetValues() {
         Map<String, Object> data = new HashMap<>();

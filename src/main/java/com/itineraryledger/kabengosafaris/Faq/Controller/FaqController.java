@@ -77,7 +77,7 @@ public class FaqController {
     }
 
     /**
-     * PATCH /bulk — show or hide a whole selection.
+     * PATCH /bulk - show or hide a whole selection.
      *
      * Seasonal answers go on and off together (a park's fees, a closed route), and doing that
      * one record at a time is how a stale answer ends up staying on the site.
@@ -92,7 +92,7 @@ public class FaqController {
         });
     }
 
-    /** The running order, as a whole list — position IS the display order. */
+    /** The running order, as a whole list - position IS the display order. */
     @PostMapping("/reorder")
     @PreAuthorize("hasAuthority('PERM_UPDATE_FAQ')")
     public ResponseEntity<ApiResponse<?>> reorder(@Valid @RequestBody ReorderFaqsDTO dto) {

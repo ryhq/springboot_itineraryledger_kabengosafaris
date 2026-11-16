@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
  * "send me a test" path. Missing a caller is how a template gets fixed and the test email still
  * says the wrong company.
  *
- * Bank details are resolved from the Bank accounts module, not stored here — the invoice PDF already
+ * Bank details are resolved from the Bank accounts module, not stored here - the invoice PDF already
  * reads that module, and a sort code with two homes is a sort code that will disagree with itself.
  *
  * Cached, because rendering one letter asks for nine fields and a PDF asks for more. Any write to
@@ -42,7 +42,7 @@ public class CompanyIdentityService {
     private final CompanyProfileRepository profileRepository;
     private final BankAccountRepository bankAccountRepository;
 
-    /** Last resort when no profile row exists yet — a fresh install, before anybody has filled it. */
+    /** Last resort when no profile row exists yet - a fresh install, before anybody has filled it. */
     @Value("${app.company.name:}")
     private String fallbackCompanyName;
 
@@ -82,7 +82,7 @@ public class CompanyIdentityService {
     /**
      * The company as a Thymeleaf model: {@code ${company.name}}, {@code ${company.bank.swift}}.
      *
-     * Same data as {@link #snapshot()}, shaped for SpEL — see CompanyTemplateModel for why a record
+     * Same data as {@link #snapshot()}, shaped for SpEL - see CompanyTemplateModel for why a record
      * would not do.
      */
     @Transactional(readOnly = true)
@@ -160,7 +160,7 @@ public class CompanyIdentityService {
             .findFirst().map(CompanyLink::display).orElse("");
 
         /*
-         * Every active address and number, for the footers that print all of them — a company with
+         * Every active address and number, for the footers that print all of them - a company with
          * one office and a WhatsApp line should not have to choose which one a voucher shows.
          */
         List<String> allEmails = profile.getEmails().stream()
@@ -197,8 +197,8 @@ public class CompanyIdentityService {
          *
          * This is the bug it just cost: two fields were added in the middle of the record and the
          * arguments here kept their old order, so logoMarkup received a URL and a PDF printed
-         * "https://api…/assets/logo-full-tagline" as text where the logo belongs. Nothing failed to
-         * compile, because they are all Strings — which is exactly why naming them matters.
+         * "https://api.../assets/logo-full-tagline" as text where the logo belongs. Nothing failed to
+         * compile, because they are all Strings - which is exactly why naming them matters.
          */
         return Snapshot.builder()
             .name(profile.displayName())
@@ -231,7 +231,7 @@ public class CompanyIdentityService {
             .logoFullMarkup(assetMarkup(profile, 180, CompanyAsset.AssetKind.LOGO_FULL,
                 CompanyAsset.AssetKind.LOGO_FULL_TAGLINE, CompanyAsset.AssetKind.LOGO_LIGHT))
             .accent(brandAccent)
-            /* black text on a pale accent, white on a dark one — a heading has to stay readable */
+            /* black text on a pale accent, white on a dark one - a heading has to stay readable */
             .accentContrast(contrastFor(brandAccent))
             /* the darker shade a header band uses, and the tint a callout sits on */
             .accentDark(shade(brandAccent, 0.62f))
@@ -263,8 +263,8 @@ public class CompanyIdentityService {
     /**
      * The accent, darkened or tinted.
      *
-     * A design has more than one brand colour in it — a header band, a rule, the wash behind a
-     * callout — and asking a company to choose three is asking them to get two of them wrong. A
+     * A design has more than one brand colour in it - a header band, a rule, the wash behind a
+     * callout - and asking a company to choose three is asking them to get two of them wrong. A
      * factor below 1 darkens; above 1 lightens towards white.
      */
     private String shade(String hex, float factor) {
@@ -289,7 +289,7 @@ public class CompanyIdentityService {
      * Readable text on the accent.
      *
      * A dark green wants white on it and a pale sand wants black, and a template cannot work that out
-     * for itself — so it is computed once here, by luminance.
+     * for itself - so it is computed once here, by luminance.
      */
     private String contrastFor(String hex) {
         if (hex == null || !hex.matches("#[0-9a-fA-F]{6}")) return "#ffffff";
@@ -300,7 +300,7 @@ public class CompanyIdentityService {
         return luminance > 0.6 ? "#16171a" : "#ffffff";
     }
 
-    /** Primary first, then declared order — and only among the ones still in use. */
+    /** Primary first, then declared order - and only among the ones still in use. */
     private <T> Optional<T> pick(List<T> items,
                                  java.util.function.Function<T, Boolean> primary,
                                  java.util.function.Function<T, Boolean> active,
@@ -319,7 +319,7 @@ public class CompanyIdentityService {
      * company's art hardcoded); anything else becomes an <img> with a data URI. Width is left to the
      * template, because the space a logo sits in belongs to the design, not to the logo.
      *
-     * Returns empty when nothing is uploaded — a template guards on it and leaves the space out
+     * Returns empty when nothing is uploaded - a template guards on it and leaves the space out
      * rather than drawing a broken image.
      */
     private String assetMarkup(CompanyProfile profile, int baseWidth, CompanyAsset.AssetKind... kinds) {
@@ -342,7 +342,7 @@ public class CompanyIdentityService {
                 /*
                  * A raster is the easy case: the renderer reads its dimensions from the file, so
                  * height:auto genuinely means auto and the box comes out tight. The width is an
-                 * attribute for the same reason as the SVG — a template's CSS rule can beat it.
+                 * attribute for the same reason as the SVG - a template's CSS rule can beat it.
                  */
                 return "<img src=\"data:" + (mime.isBlank() ? "image/png" : mime) + ";base64,"
                     + java.util.Base64.getEncoder().encodeToString(bytes)
@@ -358,7 +358,7 @@ public class CompanyIdentityService {
     /**
      * The URL an email should point an {@code <img>} at.
      *
-     * Always the email slot, whenever the company has uploaded ANY logo — because that endpoint
+     * Always the email slot, whenever the company has uploaded ANY logo - because that endpoint
      * falls back through the other slots and converts a vector to PNG on the way out. Pointing at
      * logo-light instead, as this used to, sends a mail client after an SVG it will not render: a
      * broken-image box at the top of a welcome email, which is what a customer saw.
@@ -373,8 +373,8 @@ public class CompanyIdentityService {
     /**
      * The URL an email's coloured header band should point at.
      *
-     * Same reasoning as the light one — always the slot, so the endpoint's fallback and its
-     * SVG-to-PNG conversion both apply — but this slot borrows the DARK mark first.
+     * Same reasoning as the light one - always the slot, so the endpoint's fallback and its
+     * SVG-to-PNG conversion both apply - but this slot borrows the DARK mark first.
      */
     private String emailLogoDarkUrl(CompanyProfile profile) {
         String own = assetUrl(profile, CompanyAsset.AssetKind.LOGO_EMAIL_DARK);
@@ -412,10 +412,10 @@ public class CompanyIdentityService {
      * Three measured facts about this renderer, none of them guessable:
      *
      *  1. It never learns a vector's aspect ratio. With {@code height:auto} it allocates its default
-     *     150pt box — 300px tall around a 72px drawing — which is the empty band that appeared above
+     *     150pt box - 300px tall around a 72px drawing - which is the empty band that appeared above
      *     and below the logo on every letterhead.
      *  2. An explicit height collapses the box exactly (measured: 72px box, 1px slack).
-     *  3. A size in width/height ATTRIBUTES behaves the same as one in an inline style — except that
+     *  3. A size in width/height ATTRIBUTES behaves the same as one in an inline style - except that
      *     attributes lose to a CSS rule, and an inline style beats one. So the size goes in
      *     attributes: a template can override it with {@code .letterhead svg {width:120px}} and an
      *     inline style could not be overridden at all.
@@ -519,8 +519,8 @@ public class CompanyIdentityService {
 
     /** What a document knows about the company. Immutable; rebuilt when the profile changes. */
     /*
-     * A builder, because this record has grown three times and each time every positional caller —
-     * including the tests — stopped compiling. A caller that names the two fields it cares about does
+     * A builder, because this record has grown three times and each time every positional caller -
+     * including the tests - stopped compiling. A caller that names the two fields it cares about does
      * not break when a fourteenth is added.
      */
     @lombok.Builder
@@ -537,7 +537,7 @@ public class CompanyIdentityService {
          * The raster an email header should use, which is the DARK-ink mark.
          *
          * The shipped emails paint that band in the dark accent, so the light-background copy is a
-         * green mark on a dark green field — the welcome email opened with a faint outline where the
+         * green mark on a dark green field - the welcome email opened with a faint outline where the
          * logo belongs. Separate slot, separate variable, because "which logo" is a question about
          * the background it lands on.
          */
@@ -550,7 +550,7 @@ public class CompanyIdentityService {
          *
          * A PDF is rendered on the server and a client may open it offline; fetching an https image
          * mid-render is slow at best and a blank box at worst. Measured against this renderer: inline
-         * SVG draws, an SVG data URI draws, a raster data URI draws — so the asset is embedded, and
+         * SVG draws, an SVG data URI draws, a raster data URI draws - so the asset is embedded, and
          * whichever form the company uploaded is the form used.
          */
         String logoMarkup, String logoFullMarkup,
@@ -588,7 +588,7 @@ public class CompanyIdentityService {
 
         /**
          * The template variables. Names are the ones the templates will use, and every one is a
-         * string — a template that prints "null" is a template nobody proofread.
+         * string - a template that prints "null" is a template nobody proofread.
          */
         public Map<String, String> variables() {
             Map<String, String> map = new LinkedHashMap<>();
@@ -598,7 +598,7 @@ public class CompanyIdentityService {
             map.put("companyEmail", email);
             map.put("companyPhone", phone);
             map.put("companyPhoneSecondary", phoneSecondary);
-            /* tel: links need the digits only — "+255 746 598 330" is not a dialable href */
+            /* tel: links need the digits only - "+255 746 598 330" is not a dialable href */
             map.put("companyPhoneTel", dialable(phone));
             map.put("companyPhoneSecondaryTel", dialable(phoneSecondary));
             map.put("companyAddress", address);
@@ -612,7 +612,7 @@ public class CompanyIdentityService {
             map.put("companyPhones", String.join(" | ", phones));
             /*
              * One variable per platform, empty when the company has no such page. A template wraps
-             * its icon in {{#companyFacebook}}…{{/companyFacebook}} so an absent page leaves no
+             * its icon in {{#companyFacebook}}...{{/companyFacebook}} so an absent page leaves no
              * dead link behind.
              */
             map.put("companyFacebook", socials.getOrDefault("FACEBOOK", ""));

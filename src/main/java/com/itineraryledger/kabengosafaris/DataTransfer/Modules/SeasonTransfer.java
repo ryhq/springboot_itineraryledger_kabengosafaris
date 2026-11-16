@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
  * The company-wide seasons, with the dates that make them mean something.
  *
  * A season is only a label until its periods say when it runs, and every rate in the product hangs
- * off one — so a bundle of rates without these is a price list with no answer to "when".
+ * off one - so a bundle of rates without these is a price list with no answer to "when".
  *
  * The periods travel as they are, which is safe more often than it sounds: a period is a MonthDay
  * pair, so "1 June to 31 October" repeats every year and lands correctly in any company. Only a
@@ -63,7 +63,7 @@ public class SeasonTransfer implements ModuleTransfer {
     /**
      * Write a season's periods, replacing whatever was there.
      *
-     * Replaced rather than merged because a period has no natural key — two periods of the same
+     * Replaced rather than merged because a period has no natural key - two periods of the same
      * season differ only by their dates, which are the thing being changed. Merging would leave last
      * year's window sitting alongside this year's with nothing to say which is current.
      */

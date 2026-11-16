@@ -23,7 +23,7 @@ import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.CostIte
  * from the day's total: a figure on screen the sum does not agree with, and nothing anywhere saying
  * why. Adding FLIGHT to the enum was half a change; this holds the other half in place.
  *
- * <p>Checked against every aggregator, not only the itinerary's — the Safari ones import the same
+ * <p>Checked against every aggregator, not only the itinerary's - the Safari ones import the same
  * enum and the same DTO, so one forgotten branch there fails the same way on a safari.
  */
 class EveryCostTypeReachesTheTotalTest {
@@ -41,7 +41,7 @@ class EveryCostTypeReachesTheTotalTest {
 
         for (Path aggregator : AGGREGATORS) {
             if (!Files.exists(aggregator)) {
-                offences.add(aggregator.getFileName() + " has moved — this test can no longer see it");
+                offences.add(aggregator.getFileName() + " has moved - this test can no longer see it");
                 continue;
             }
             String source = Files.readString(aggregator);
@@ -69,8 +69,8 @@ class EveryCostTypeReachesTheTotalTest {
 
         assertEquals(new BigDecimal("364"), totals.getFlightsSto());
         /*
-         * Equal on purpose. A flight carries no rack multiplier — the house 1.3 is an accommodation
-         * rule, and a 316 fare marked up 30% is 411 for a seat the airline publishes at 316 — so the
+         * Equal on purpose. A flight carries no rack multiplier - the house 1.3 is an accommodation
+         * rule, and a 316 fare marked up 30% is 411 for a seat the airline publishes at 316 - so the
          * markup is already inside both figures and they agree.
          */
         assertEquals(totals.getFlightsSto(), totals.getFlightsRack(),
@@ -83,10 +83,10 @@ class EveryCostTypeReachesTheTotalTest {
         /*
          * Found in production, with the first flight ever attached to a real trip. The day showed a
          * 764.16 flight line, flightsSto agreed with it, and grandTotalSto was the figure from
-         * before the flight existed — because calculateGrandTotals() named three categories and
+         * before the flight existed - because calculateGrandTotals() named three categories and
          * flights were the fourth.
          *
-         * Adding a category is three edits — the field, the adder, and the sum — and nothing but
+         * Adding a category is three edits - the field, the adder, and the sum - and nothing but
          * this test holds them together. Each category is checked on its own, so the failure
          * message names the one that was forgotten.
          */
@@ -104,7 +104,7 @@ class EveryCostTypeReachesTheTotalTest {
             totals.calculateGrandTotals();
 
             assertEquals(0, totals.getGrandTotalSto().compareTo(new BigDecimal("100")),
-                () -> category.name() + " does not reach grandTotalSto — the line shows on the day "
+                () -> category.name() + " does not reach grandTotalSto - the line shows on the day "
                     + "and the total disagrees with it");
             assertEquals(0, totals.getGrandTotalRack().compareTo(new BigDecimal("100")),
                 () -> category.name() + " does not reach grandTotalRack");

@@ -88,7 +88,7 @@ public class InvoiceDeleteService {
      * Deletes what it can and reports every id it did not, one by one.
      *
      * The house contract: {deletedCount, deletedIds, skipped:[{id, code, reason}]}
-     * and a 200 even when nothing went — a caller that asked about six invoices
+     * and a 200 even when nothing went - a caller that asked about six invoices
      * needs to know which four survived and why, not a sentence with the reasons
      * glued into it.
      */
@@ -112,7 +112,7 @@ public class InvoiceDeleteService {
                  * The rule was "only a draft", and its reason was about SENDING: once a customer
                  * has a copy, deleting our half leaves a demand with no record behind it. A
                  * cancelled invoice that was never sent has no copy anywhere, and refusing to
-                 * delete it was not protecting anything — it was deadlocking the safari.
+                 * delete it was not protecting anything - it was deadlocking the safari.
                  *
                  * One invoice row per safari is enforced by a unique index on safari_id, so a
                  * cancelled invoice still occupies the slot. Cancel-and-reissue therefore left the

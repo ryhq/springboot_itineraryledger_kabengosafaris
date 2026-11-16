@@ -77,7 +77,7 @@ public class ActivityCostCalculator {
 
                 /*
                  * The guard used to read `a != null && b > 0 || c > 0`, which binds as
-                 * `(a && b) || c` — so a null line item fell through to dereference c.
+                 * `(a && b) || c` - so a null line item fell through to dereference c.
                  */
                 for (CostLineItemDTO lineItem : calculateStandaloneActivityCost(
                     day.getDayNumber(),
@@ -253,7 +253,7 @@ public class ActivityCostCalculator {
     /**
      * Calculate per-person activity cost, one line per currency the bands are charged in.
      *
-     * <p>Activity rates mix currencies even within one nation band — the rate card holds 238
+     * <p>Activity rates mix currencies even within one nation band - the rate card holds 238
      * East African rows in shillings and 57 in dollars, because some suppliers quote residents one
      * way and some the other. Both are legitimate, so the engine reads whatever each row says
      * rather than assuming a house currency. See {@link CurrencyBucket}.

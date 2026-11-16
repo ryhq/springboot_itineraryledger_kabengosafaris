@@ -15,7 +15,7 @@ import lombok.Data;
  * The rows, the stat cards and the record walk are all built from this, so a card cannot
  * report a figure the table would contradict, and prev/next cannot wander out of the set on
  * screen. Spring binds it with {@code @ModelAttribute}, so every parameter the old
- * signature took is still spelled the same on the wire — the v1 panel is still live against
+ * signature took is still spelled the same on the wire - the v1 panel is still live against
  * this API.
  */
 @Data

@@ -32,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
  * Blog posts, for the management panel.
  *
  * The filter binds from the query string as one object, so the list, its counters and a
- * record's prev/next are all asked the same question — and adding a filter is one field
+ * record's prev/next are all asked the same question - and adding a filter is one field
  * rather than four signatures.
  */
 @RestController
@@ -107,7 +107,7 @@ public class BlogController {
     }
 
     /**
-     * PATCH /bulk — publish or unpublish a whole selection.
+     * PATCH /bulk - publish or unpublish a whole selection.
      *
      * Articles are written in batches and reviewed in batches; publishing six of them one
      * record at a time is the kind of work that does not get done, so they sit as drafts.

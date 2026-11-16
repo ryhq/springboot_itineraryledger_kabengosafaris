@@ -7,7 +7,7 @@ import com.itineraryledger.kabengosafaris.Flight.Entity.FlightRoute;
 import com.itineraryledger.kabengosafaris.Itinerary.DTOs.FullItineraryDTO;
 
 /**
- * One flight row, as the cost engine wants to read it — written once for the three day trees.
+ * One flight row, as the cost engine wants to read it - written once for the three day trees.
  *
  * <p>An itinerary day, a quote day and a safari day each have their own flight entity. They are
  * three unrelated Java types holding the same eight columns, because each document keeps its own
@@ -16,7 +16,7 @@ import com.itineraryledger.kabengosafaris.Itinerary.DTOs.FullItineraryDTO;
  * written out three times.
  *
  * <p>Which is worth avoiding for one specific reason, not on principle. Twenty-odd of these fields
- * are inert — a label, a code, a note — and a copy that omits one is obvious. Three are not:
+ * are inert - a label, a code, a note - and a copy that omits one is obvious. Three are not:
  * <b>netFare</b>, <b>taxesAndFees</b> and the resolved <b>markup</b> are what the calculator does
  * arithmetic on. A converter that resolves the cascade slightly differently from its neighbour
  * produces a quote whose cost sheet disagrees with the itinerary it came from, by a few dollars,

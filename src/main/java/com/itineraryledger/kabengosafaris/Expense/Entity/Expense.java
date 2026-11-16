@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Expense — money paid (or owed) to a Vendor, optionally for a specific Safari.
+ * Expense - money paid (or owed) to a Vendor, optionally for a specific Safari.
  *
  * Mirrors Invoice in reverse: it is a parent document with line items and
  * cross-currency payment tracking via ExpensePayment.
@@ -81,7 +81,7 @@ public class Expense {
 
     // =========================================================================
     // Multi-currency totals (computed by ExpenseTotalsCalculationService).
-    // No discounts column — vendors don't typically discount themselves.
+    // No discounts column - vendors don't typically discount themselves.
     // =========================================================================
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -106,11 +106,11 @@ public class Expense {
     @Column(name = "expense_date", nullable = false)
     private LocalDate expenseDate;
 
-    /** When the vendor expects payment by. Nullable — many cash purchases have no due date. */
+    /** When the vendor expects payment by. Nullable - many cash purchases have no due date. */
     @Column(name = "due_date")
     private LocalDate dueDate;
 
-    /** Vendor's own invoice / receipt number — important for reconciliation. */
+    /** Vendor's own invoice / receipt number - important for reconciliation. */
     @Column(name = "reference_number", length = 200)
     private String referenceNumber;
 

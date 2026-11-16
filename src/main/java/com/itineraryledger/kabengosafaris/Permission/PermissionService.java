@@ -66,7 +66,7 @@ public class PermissionService {
      * The catalogue: the rows, the counters and the sort, in one response.
      *
      * Sorted by name rather than by creation date, because "when was this permission
-     * seeded" is nobody's question — the list is read looking for a capability, and the
+     * seeded" is nobody's question - the list is read looking for a capability, and the
      * name is what it is looked up by.
      */
     public ResponseEntity<?> getAllPermissions(
@@ -160,7 +160,7 @@ public class PermissionService {
                 counts.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
             }
         } catch (Exception e) {
-            // A count we cannot get is left null, which the UI renders as "—".
+            // A count we cannot get is left null, which the UI renders as "-".
             log.warn("Could not count permission holders", e);
         }
 
@@ -192,7 +192,7 @@ public class PermissionService {
      * Every entity the catalogue covers, sorted, for the filter dropdown.
      *
      * Read from the permissions themselves rather than from entities.json, so the list
-     * reflects what is actually grantable — including the custom permissions, whose
+     * reflects what is actually grantable - including the custom permissions, whose
      * entities are not all in that file.
      */
     public ResponseEntity<ApiResponse<?>> getDistinctEntities() {
@@ -216,7 +216,7 @@ public class PermissionService {
      * The filter and sort ride along so prev/next walks the SAME rows the list was
      * showing, and so the readout can say "3 of 12". It used to page by raw id over the
      * whole table, which meant arrows on a filtered list quietly traversed a different
-     * set from the one on screen — and with nearly five hundred rows in id order, the
+     * set from the one on screen - and with nearly five hundred rows in id order, the
      * next arrow landed somewhere unrelated. `position` and `total` were absent
      * entirely, so the header had arrows and nothing to say where they were going.
      */

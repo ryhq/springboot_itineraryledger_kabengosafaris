@@ -82,7 +82,7 @@ public class TranslationAccountSpecification {
      * The one search box: what the account is called, what it is for, and where it points.
      *
      * Never the API key. It is not returned by any endpoint and must not become searchable
-     * by accident — "does anybody hold this key" is not a question this list should answer.
+     * by accident - "does anybody hold this key" is not a question this list should answer.
      */
     public static Specification<TranslationAccount> searchKeyword(String keyword) {
         return (root, query, cb) -> {
@@ -96,7 +96,7 @@ public class TranslationAccountSpecification {
     }
 
     /**
-     * Never tested — nobody has ever proved this account works.
+     * Never tested - nobody has ever proved this account works.
      *
      * A translation provider fails silently: the text simply comes back in English. So an
      * untested account is the same failure as a broken one, just not discovered yet.

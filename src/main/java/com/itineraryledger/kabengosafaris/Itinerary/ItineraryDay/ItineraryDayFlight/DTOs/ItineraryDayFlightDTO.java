@@ -32,7 +32,7 @@ public class ItineraryDayFlightDTO {
     private String markupSource;
     private Integer sortOrder;
     private String notes;
-    /** What one adult costs, all in — fare plus markup plus the per-person tax. */
+    /** What one adult costs, all in - fare plus markup plus the per-person tax. */
     private BigDecimal sellingPerAdult;
     private String pricingNote;
     private LocalDateTime createdAt;

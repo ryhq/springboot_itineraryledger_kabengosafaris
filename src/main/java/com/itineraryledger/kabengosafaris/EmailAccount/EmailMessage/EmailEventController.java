@@ -11,8 +11,8 @@ import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
 import lombok.RequiredArgsConstructor;
 
 /**
- * §9 — server-sent events for inbox-realtime UI updates.
- * Event names: ready · message.new · message.updated · sync.completed.
+ * §9 - server-sent events for inbox-realtime UI updates.
+ * Event names: ready | message.new | message.updated | sync.completed.
  *
  * Explicit bean name to avoid collision with
  * com.itineraryledger.kabengosafaris.EmailEvent.EmailEventController

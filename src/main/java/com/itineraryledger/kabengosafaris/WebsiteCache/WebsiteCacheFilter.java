@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <h2>Why a filter and not a hook in each service</h2>
  *
- * The alternative is a line in every write service that touches public content — about forty of
+ * The alternative is a line in every write service that touches public content - about forty of
  * them today, and one more every time a resource is added. The line that gets forgotten is the one
  * that makes somebody say "the website is wrong again", months later, about a module nobody
  * connects to this feature. A filter is keyed on the URL space instead, which is the same thing the

@@ -290,7 +290,7 @@ public class SafariGetService {
      * Narrows by an obfuscated id, or narrows to nothing if it will not decode.
      *
      * An id that cannot be read must not quietly widen the result to every
-     * safari — that is the opposite of what was asked for.
+     * safari - that is the opposite of what was asked for.
      */
     private Specification<Safari> and(
             Specification<Safari> spec,

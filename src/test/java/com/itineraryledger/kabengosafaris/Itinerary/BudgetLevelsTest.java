@@ -42,7 +42,7 @@ class BudgetLevelsTest {
 
     private static final LocalDate START = LocalDate.of(2026, 9, 3);
 
-    // ── the rule ────────────────────────────────────────────────────────────────────────────────
+    // == the rule ================================================================================
 
     @Test
     @DisplayName("lowest is the cheapest, high the dearest, medium the lower middle")
@@ -57,7 +57,7 @@ class BudgetLevelsTest {
 
         assertEquals("Ndutu Savannah", pick(out, BudgetLevel.LOWEST, 1).getAccommodationName());
         assertEquals("Ndutu Safari Lodge", pick(out, BudgetLevel.HIGH, 1).getAccommodationName());
-        /* 340, 400, 450, 468 — the lower of the two middles, which is "ties to the cheaper" */
+        /* 340, 400, 450, 468 - the lower of the two middles, which is "ties to the cheaper" */
         assertEquals("Nyikani", pick(out, BudgetLevel.MEDIUM, 1).getAccommodationName());
     }
 
@@ -162,7 +162,7 @@ class BudgetLevelsTest {
         assertEquals("Masek", pick(out, BudgetLevel.HIGH, 1).getAccommodationName());
     }
 
-    // ── the category audits, it does not choose ─────────────────────────────────────────────────
+    // == the category audits, it does not choose =================================================
 
     @Test
     @DisplayName("a cheap bed labelled ultra-luxury still counts as the cheapest, and says so")
@@ -196,7 +196,7 @@ class BudgetLevelsTest {
             "the note should say the dearest recorded bed is only budget: " + dearest.getNote());
     }
 
-    // ── the awkward nights ──────────────────────────────────────────────────────────────────────
+    // == the awkward nights ======================================================================
 
     @Test
     @DisplayName("a night with one bed is the same in all three columns, and is counted as such")
@@ -239,7 +239,7 @@ class BudgetLevelsTest {
         }
     }
 
-    // ── the badge ───────────────────────────────────────────────────────────────────────────────
+    // == the badge ===============================================================================
 
     @Test
     @DisplayName("a night priced from the wrong season says so in every column")
@@ -306,7 +306,7 @@ class BudgetLevelsTest {
         assertEquals("MID_RANGE", level(out, BudgetLevel.LOWEST).getBadge());
     }
 
-    // ── the current total is left alone ─────────────────────────────────────────────────────────
+    // == the current total is left alone =========================================================
 
     @Test
     @DisplayName("working out the levels does not change what the trip costs now")
@@ -321,7 +321,7 @@ class BudgetLevelsTest {
             "the figure on the record is the cost of what is booked now, whatever the columns say");
     }
 
-    // ── helpers ─────────────────────────────────────────────────────────────────────────────────
+    // == helpers =================================================================================
 
     private BudgetLevelComparisonDTO.LevelDTO level(BudgetLevelComparisonDTO out, BudgetLevel level) {
         return out.getLevels().stream().filter(l -> l.getLevel() == level).findFirst().orElseThrow();

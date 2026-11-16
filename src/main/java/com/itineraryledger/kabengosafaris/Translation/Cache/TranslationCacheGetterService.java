@@ -237,7 +237,7 @@ public class TranslationCacheGetterService {
         /*
          * Counters for the WHOLE filtered set, from the same specification as the rows. This
          * list is 15,000 rows long, so a page-scope-only summary was answering questions
-         * about ten of them and saying so — true, but almost never what was asked.
+         * about ten of them and saying so - true, but almost never what was asked.
          */
         if (!Boolean.FALSE.equals(includeStats)) {
             response.put("stats", buildStats(specification));
@@ -306,7 +306,7 @@ public class TranslationCacheGetterService {
      * One entry, plus where it sits in the set the caller was looking at.
      *
      * The keyword and language come from the list, so paging through a search stays inside
-     * that search — "7 of 15,917" while looking at one match was the arrows walking a
+     * that search - "7 of 15,917" while looking at one match was the arrows walking a
      * different set from the one on screen.
      */
     public ResponseEntity<ApiResponse<?>> getCacheEntry(
@@ -330,7 +330,7 @@ public class TranslationCacheGetterService {
             }
 
             /*
-             * Ordered newest-first like the list, and reporting the position — arrows with no
+             * Ordered newest-first like the list, and reporting the position - arrows with no
              * "3 of 40" between them leave somebody paging through 15,000 entries with no
              * idea where they are or when it ends.
              */

@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
  * Every rule here guards something a stranger can reach with no account: registering, asking for a
  * password reset, asking for an activation link again, and the three forms the websites post. Each
  * of those causes an email to leave this company's domain, so without a limit they are a way to have
- * this installation deliver unwanted mail to anybody — at the company's own sending reputation and
+ * this installation deliver unwanted mail to anybody - at the company's own sending reputation and
  * quota, from the company's own address.
  *
  * Deliberately NOT applied to the authenticated API. Somebody signed in and holding a permission is
@@ -43,7 +43,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     /**
      * How far to trust X-Forwarded-For.
      *
-     * The header is written by whoever is in front, and by anybody who feels like sending one — so
+     * The header is written by whoever is in front, and by anybody who feels like sending one - so
      * taking the FIRST entry means a caller can invent a new identity per request and the limit
      * counts nothing. This installation sits behind exactly one proxy, so the last entry is the
      * address that proxy actually saw. Set to 0 when nothing is in front and the socket is the truth.
@@ -71,7 +71,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
          */
         new RateLimitRule("POST", "/api/auth/login", 30, Duration.ofMinutes(15), false,
             "sign-in attempts"),
-        /* the website's own forms — each one notifies somebody by mail */
+        /* the website's own forms - each one notifies somebody by mail */
         new RateLimitRule("POST", "/api/public/booking-inquiries", 10, Duration.ofHours(1), false,
             "booking inquiries"),
         new RateLimitRule("POST", "/api/public/contact", 10, Duration.ofHours(1), false,

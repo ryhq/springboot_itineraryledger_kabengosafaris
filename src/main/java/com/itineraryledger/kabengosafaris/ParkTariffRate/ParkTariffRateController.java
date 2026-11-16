@@ -163,7 +163,7 @@ public class ParkTariffRateController {
     @org.springframework.beans.factory.annotation.Autowired
     private com.itineraryledger.kabengosafaris.ParkTariffRate.Repositories.ParkTariffRateRepository bulkFlagsRepository;
 
-    /** PATCH /bulk — activate or withdraw a whole selection in one request. */
+    /** PATCH /bulk - activate or withdraw a whole selection in one request. */
     @PatchMapping("/bulk")
     @PreAuthorize("hasAuthority('PERM_UPDATE_PARK_TARIFF_RATE')")
     public ResponseEntity<?> bulkFlags(

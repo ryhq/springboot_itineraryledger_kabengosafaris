@@ -137,8 +137,8 @@ public class HeroController {
     @PreAuthorize("hasAuthority('PERM_READ_HERO')")
     public ResponseEntity<ApiResponse<?>> getAllHeroes(
         /*
-         * Every parameter the old signature took is still spelled the same on the wire —
-         * @ModelAttribute binds them onto the filter — plus the multi-value forms
+         * Every parameter the old signature took is still spelled the same on the wire -
+         * @ModelAttribute binds them onto the filter - plus the multi-value forms
          * (heroPages, statuses, qualities) and a keyword.
          */
         @ModelAttribute HeroFilter filter,
@@ -175,7 +175,7 @@ public class HeroController {
     private com.itineraryledger.kabengosafaris.Hero.Repository.HeroRepository bulkFlagsRepository;
 
     /**
-     * PATCH /bulk — show or hide a whole selection of banners at once.
+     * PATCH /bulk - show or hide a whole selection of banners at once.
      *
      * Only the flags present in the body apply, and it reports per-id outcomes rather than a
      * bare 200 that hides what did not change. Without this, taking six banners off the site

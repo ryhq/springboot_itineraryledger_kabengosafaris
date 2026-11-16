@@ -24,12 +24,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * drifted. A customer holding all three has to work out whether they are three debts.
  *
  * <p>So: the ISO code in front, grouped thousands, two decimals, and nothing that renders a
- * currency symbol — {@code $} belongs to a dozen currencies and Java writes TZS as {@code TSh},
+ * currency symbol - {@code $} belongs to a dozen currencies and Java writes TZS as {@code TSh},
  * which a German client has no reason to read as money at all.
  */
 class EveryDocumentWritesMoneyTheSameWayTest {
 
-    // ── the dialect ─────────────────────────────────────────────────────────────────────────────
+    // == the dialect =============================================================================
 
     @Test
     @DisplayName("the code goes in front, grouped thousands, two decimals")
@@ -62,7 +62,7 @@ class EveryDocumentWritesMoneyTheSameWayTest {
             MoneyFormat.of(new BigDecimal("12.5"), "USD"));
     }
 
-    // ── nobody reintroduces a currency symbol ───────────────────────────────────────────────────
+    // == nobody reintroduces a currency symbol ===================================================
 
     @Test
     @DisplayName("no service formats money with a currency symbol")

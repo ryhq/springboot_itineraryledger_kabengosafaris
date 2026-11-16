@@ -22,7 +22,7 @@ public class InclusionLineDTO {
     private String category;
     private Boolean isIncluded;
 
-    /** For Thymeleaf, which reads getters — {@code th:if="${line.included}"} beats a null check. */
+    /** For Thymeleaf, which reads getters - {@code th:if="${line.included}"} beats a null check. */
     public boolean isIncluded() {
         return isIncluded != null && isIncluded;
     }

@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** Null means "leave alone" on every field here — the house patch semantics. */
+/** Null means "leave alone" on every field here - the house patch semantics. */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

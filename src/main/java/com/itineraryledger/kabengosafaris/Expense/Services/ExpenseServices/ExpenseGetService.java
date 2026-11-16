@@ -51,7 +51,7 @@ public class ExpenseGetService {
     /**
      * One bill, plus where it sits in the set the caller was looking at.
      *
-     * Paging out of an "overdue" list must stay among overdue bills — arrows that
+     * Paging out of an "overdue" list must stay among overdue bills - arrows that
      * traverse a different set from the one on screen are worse than no arrows.
      */
     public ResponseEntity<ApiResponse<?>> getExpenseById(
@@ -145,7 +145,7 @@ public class ExpenseGetService {
     /**
      * ONE specification, shared by the rows, the counters and the record walk.
      *
-     * Every dimension ORs inside itself and ANDs across — "accommodation or park
+     * Every dimension ORs inside itself and ANDs across - "accommodation or park
      * fee, unpaid, for this safari" is one question.
      */
     private Specification<Expense> buildSpec(ExpenseFilter filter) {
@@ -189,8 +189,8 @@ public class ExpenseGetService {
     /**
      * The cards that head the list, every one of them reachable as a filter.
      *
-     * No money on any card. A bill's total is a list of amounts per currency —
-     * a TZS lodge invoice and a USD park fee — and one figure across them would
+     * No money on any card. A bill's total is a list of amounts per currency -
+     * a TZS lodge invoice and a USD park fee - and one figure across them would
      * be an exchange rate nobody here chose. What is owed in each currency
      * belongs on the safari's Money tab, where both sides are known.
      */

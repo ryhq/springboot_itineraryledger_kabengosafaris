@@ -78,7 +78,7 @@ public class PublicEntityResolver {
         /*
          * Published only, and this is the one that mattered most.
          *
-         * The list endpoints filtered on isActive alone, which already showed drafts — but this
+         * The list endpoints filtered on isActive alone, which already showed drafts - but this
          * resolves by CODE, and a code is guessable: ITI-6D6N-1070 is a day count and a serial.
          * Anybody could read a trip that had never been published, priced and described as though
          * it were for sale. Filtering the lists without filtering this would have looked fixed and

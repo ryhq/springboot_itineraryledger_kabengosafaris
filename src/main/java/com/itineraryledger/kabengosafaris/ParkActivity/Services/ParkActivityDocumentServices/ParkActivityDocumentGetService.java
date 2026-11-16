@@ -236,7 +236,7 @@ public class ParkActivityDocumentGetService {
     }
 
     /**
-     * The filter chain the record pager walks — the same dimensions the list
+     * The filter chain the record pager walks - the same dimensions the list
      * offers, so paging from a filtered list stays inside those matches.
      */
     private Specification<ParkActivityDocument> navigationSpec(
@@ -297,7 +297,7 @@ public class ParkActivityDocumentGetService {
     }
 
     /**
-     * One document, plus where it sits in the set the caller was looking at — the
+     * One document, plus where it sits in the set the caller was looking at - the
      * arrows walk the same filtered, sorted list the table showed.
      */
     public ResponseEntity<?> getDocumentById(

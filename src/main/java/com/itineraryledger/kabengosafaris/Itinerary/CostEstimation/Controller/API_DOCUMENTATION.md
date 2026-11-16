@@ -170,8 +170,8 @@ Authorization: Bearer <token>
 | `quantity` | Integer | Quantity (pax count, vehicle count, or 1) |
 | `stoUnitPrice` | Decimal | STO unit price |
 | `rackUnitPrice` | Decimal | Rack unit price |
-| `stoTotalPrice` | Decimal | STO total (unit × quantity) |
-| `rackTotalPrice` | Decimal | Rack total (unit × quantity) |
+| `stoTotalPrice` | Decimal | STO total (unit x quantity) |
+| `rackTotalPrice` | Decimal | Rack total (unit x quantity) |
 | `currency` | String | Currency code (e.g., "USD", "TZS") |
 | `paxCategory` | String | Pax category description (for per-person items) |
 | `notes` | String | Additional context |

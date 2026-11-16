@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
  * contact collections in display order, and the asset slots.
  *
  * There is exactly one of these rows, so there is no list endpoint and no obfuscated id for the
- * profile itself — only its children are addressable.
+ * profile itself - only its children are addressable.
  */
 @Data
 @NoArgsConstructor
@@ -49,7 +49,7 @@ public class CompanyProfileDTO {
     /** where customers open their own trip; blank means the API's own address */
     private String portalUrl;
     /**
-     * Whether a cache secret is stored — never the secret itself.
+     * Whether a cache secret is stored - never the secret itself.
      *
      * <p>A credential that can be read back is a credential that leaks over a shoulder, into a
      * screenshot, or through a browser's saved form data. The page shows "set" or "not set" and
@@ -68,7 +68,7 @@ public class CompanyProfileDTO {
     private List<CompanyLinkDTO> links;
     private List<CompanyAssetDTO> assets;
 
-    /** What every document would print today — the resolved primaries, not the collections. */
+    /** What every document would print today - the resolved primaries, not the collections. */
     private ResolvedDTO resolved;
 
     private LocalDateTime createdAt;

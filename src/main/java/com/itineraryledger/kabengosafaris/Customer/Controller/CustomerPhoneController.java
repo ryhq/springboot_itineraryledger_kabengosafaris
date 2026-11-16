@@ -239,7 +239,7 @@ public class CustomerPhoneController {
     private com.itineraryledger.kabengosafaris.Customer.Repository.CustomerPhoneRepository bulkFlagsRepository;
 
     /**
-     * PATCH /bulk — one request for a whole selection.
+     * PATCH /bulk - one request for a whole selection.
      *
      * Only the flags present in the body apply, so the same endpoint serves
      * activate, deactivate. Returns per-id

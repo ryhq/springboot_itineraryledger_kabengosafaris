@@ -46,7 +46,7 @@ public class RentalClientGetService {
     }
 
     /**
-     * One client, plus where it sits in the set the caller was looking at — the
+     * One client, plus where it sits in the set the caller was looking at - the
      * list's filters and sort decide the walk, not raw id order.
      */
     public ResponseEntity<ApiResponse<?>> getRentalClientById(
@@ -217,7 +217,7 @@ public class RentalClientGetService {
         return null;
     }
 
-    /** The ONE place a client filter is expressed — rows, counters and prev/next. */
+    /** The ONE place a client filter is expressed - rows, counters and prev/next. */
     private Specification<RentalClient> buildSpec(
         RentalClientType clientType, String firstName, String lastName, String companyName,
         String phone, String email, Boolean isActive, String keyword

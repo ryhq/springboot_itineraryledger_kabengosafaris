@@ -15,7 +15,7 @@ import lombok.Data;
  * The rows, the stat cards and the record walk are all built from this, so a card cannot
  * report a figure the table would contradict, and prev/next cannot wander out of the set on
  * screen. Spring binds it from the query string with {@code @ModelAttribute}, so every
- * parameter the old signature took is still spelled the same on the wire — the v1 panel is
+ * parameter the old signature took is still spelled the same on the wire - the v1 panel is
  * still live against this API.
  *
  * Note the enum is `heroPage`, not `page`: `page` is the pagination parameter, and a filter
@@ -73,7 +73,7 @@ public class HeroFilter {
     /**
      * The single active/inactive answer, or null when the pair cancels.
      *
-     * Asking for both is not a contradiction to refuse — it is somebody clearing a filter
+     * Asking for both is not a contradiction to refuse - it is somebody clearing a filter
      * by selecting everything, and the honest reading is no constraint at all.
      */
     public Boolean resolvedActive() {

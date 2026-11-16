@@ -25,13 +25,13 @@ import lombok.extern.slf4j.Slf4j;
  *
  * It usually is not. Almost every money record in this system carries the account
  * that created it, updated it or recorded the payment, and those stamps are the only
- * answer to "who did this" — an auditor's first question. Deleting the account behind
+ * answer to "who did this" - an auditor's first question. Deleting the account behind
  * them either fails on a foreign key or, worse, succeeds and quietly empties the
  * column. So a delete is refused whenever anything points at the account, with the
  * counts that refused it, and deactivating is offered instead: the login stops
  * working and every stamp still names a person.
  *
- * What genuinely can be deleted is the account that never did anything — a typo in an
+ * What genuinely can be deleted is the account that never did anything - a typo in an
  * invite, a colleague who was set up twice.
  */
 @Service
@@ -125,8 +125,8 @@ public class UserAdminDeleteService {
 
             try {
                 /*
-                 * Email-account grants are access, not history — the same thing being
-                 * withdrawn here — so they go with the account rather than blocking it.
+                 * Email-account grants are access, not history - the same thing being
+                 * withdrawn here - so they go with the account rather than blocking it.
                  */
                 entityManager.createQuery(
                     "delete from EmailAccountPermission x where x.user.id = :id")
@@ -160,7 +160,7 @@ public class UserAdminDeleteService {
      * What points at this account, as a phrase a person can act on.
      *
      * Returns null when nothing does. Counts are grouped by what the reader would call
-     * the thing — "3 invoices" rather than one line for created_by and another for
+     * the thing - "3 invoices" rather than one line for created_by and another for
      * updated_by, which describes our schema instead of their problem.
      */
     private String describeReferences(Long userId) {
@@ -189,7 +189,7 @@ public class UserAdminDeleteService {
             return count == null ? 0 : count;
         } catch (Exception e) {
             /*
-             * A renamed field or entity must not read as "nothing references this" —
+             * A renamed field or entity must not read as "nothing references this" -
              * that is how a delete gets through and empties an audit column. Report it
              * as a reference so the delete is refused, and log loudly.
              */
@@ -223,7 +223,7 @@ public class UserAdminDeleteService {
         return entry;
     }
 
-    /** For the record page, so the ⋯ menu can explain itself before anything is clicked. */
+    /** For the record page, so the ... menu can explain itself before anything is clicked. */
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<?>> checkDeletable(String obfuscated) {
         try {

@@ -221,8 +221,8 @@ Non-Resident Child (2 pax):
 | `quantity` | Integer | Quantity (pax count, room count, vehicle count, etc.) |
 | `stoUnitPrice` | Decimal | STO rate per unit |
 | `rackUnitPrice` | Decimal | Rack rate per unit |
-| `stoTotalPrice` | Decimal | STO total (unit price × quantity) |
-| `rackTotalPrice` | Decimal | Rack total (unit price × quantity) |
+| `stoTotalPrice` | Decimal | STO total (unit price x quantity) |
+| `rackTotalPrice` | Decimal | Rack total (unit price x quantity) |
 | `currency` | String | Currency code (USD, TZS, etc.) |
 | `paxCategory` | String | Pax category (for categorization) |
 | `notes` | String | Additional notes |

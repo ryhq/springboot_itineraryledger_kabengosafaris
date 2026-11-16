@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
  * What a safari owes, read from its invoices.
  *
  * Every figure is derived. Nothing here is stored on the safari, so nothing here
- * can contradict the invoice it came from — which is the whole reason it exists.
+ * can contradict the invoice it came from - which is the whole reason it exists.
  * Amounts are per currency and are never added across them.
  */
 @Data
@@ -33,7 +33,7 @@ public class SafariBillingDTO {
     private String latestInvoiceStatus;
     private LocalDate dueDate;
 
-    /** NOT_INVOICED · AWAITING_PAYMENT · PARTIALLY_PAID · OVERDUE · PAID */
+    /** NOT_INVOICED | AWAITING_PAYMENT | PARTIALLY_PAID | OVERDUE | PAID */
     private String paymentStatus;
     private String paymentStatusDisplayName;
 
@@ -64,7 +64,7 @@ public class SafariBillingDTO {
         private LocalDate issueDate;
         private LocalDate dueDate;
         private Boolean isSupplement;
-        /** why this second invoice exists — the answer to the customer's question */
+        /** why this second invoice exists - the answer to the customer's question */
         private String supplementReason;
         private List<Price> total;
         private List<Price> paid;

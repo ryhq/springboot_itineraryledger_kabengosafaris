@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * pays it. Accommodation is where a tax, or a provision against a supplier invoicing beyond
  * contract, actually belongs.
  *
- * <p>On a real quote — the VENOT family's 13,177.74 — a blanket 18% takes 2,372. Aimed at the beds
+ * <p>On a real quote - the VENOT family's 13,177.74 - a blanket 18% takes 2,372. Aimed at the beds
  * alone it takes 1,282. The difference is what the client is charged for a risk their park fees do
  * not carry.
  */

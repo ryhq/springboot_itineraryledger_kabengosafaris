@@ -19,7 +19,7 @@ import com.itineraryledger.kabengosafaris.Public.DTOs.PublicItineraryDTO;
  *
  * <p>This is written from a live defect. {@code PublicItineraryDTO.inclusions} and
  * {@code exclusions} were never annotated, while {@code description}, {@code highlights} and the
- * two locations beside them were — so a German visitor to a safari page read a German heading,
+ * two locations beside them were - so a German visitor to a safari page read a German heading,
  * "Jede Kabengo-Safari beinhaltet", over eight bullets still in English. The machinery was never
  * the problem: {@code PublicTranslationService} has handled a {@code @Translatable List<String>}
  * since the blog's bullet blocks. Two annotations were simply missing.
@@ -82,7 +82,7 @@ class TheGermanPageSaysItInGermanTest {
         for (String name : List.of("inclusions", "exclusions")) {
             Field field = PublicItineraryDTO.class.getDeclaredField(name);
             assertTrue(field.isAnnotationPresent(Translatable.class),
-                name + " must be @Translatable — a German page showed German headings over English "
+                name + " must be @Translatable - a German page showed German headings over English "
                 + "bullets for months because it was not");
             assertTrue(isListOfString(field), name + " should still be a List<String> on the wire");
         }

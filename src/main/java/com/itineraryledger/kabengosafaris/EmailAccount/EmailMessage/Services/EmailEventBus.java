@@ -12,11 +12,11 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * §9 — in-process SSE event bus. Each subscriber (by accountId) gets a
+ * §9 - in-process SSE event bus. Each subscriber (by accountId) gets a
  * dedicated emitter; publishers fan out to every emitter for the matching
  * account.
  *
- * This is deliberately minimal — single-instance only. If the app ever
+ * This is deliberately minimal - single-instance only. If the app ever
  * runs multi-replica, swap this for Redis Pub/Sub or similar.
  */
 @Service

@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 /**
  * The new order of the whole catalogue: position IS the new displayOrder (1-indexed).
  *
- * A bare list of ids, because the catalogue is global — there is no parent to scope it to.
+ * A bare list of ids, because the catalogue is global - there is no parent to scope it to.
  */
 @Data
 @NoArgsConstructor

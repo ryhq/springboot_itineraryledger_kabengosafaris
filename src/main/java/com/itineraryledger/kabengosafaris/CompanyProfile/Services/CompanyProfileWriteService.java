@@ -32,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
  *  1. Every write ends with {@link CompanyIdentityService#invalidate()}. The identity is cached
  *     because every PDF and every email asks for it; a cache nobody invalidates means the new
  *     phone number appears on the website and not on the invoice.
- *  2. Every write returns the SAME payload as GET — the profile plus the completeness gaps — so the
+ *  2. Every write returns the SAME payload as GET - the profile plus the completeness gaps - so the
  *     Settings page never has to re-fetch to find out that removing the last active email just
  *     broke the invoice footer.
  */
@@ -98,7 +98,7 @@ public class CompanyProfileWriteService {
         patch(dto.getWebsiteUrl(), v -> profile.setWebsiteUrl(
             v == null ? null : v.replaceAll("/+$", "")));
         /*
-         * Encrypted on the way in, and never decrypted for any reader — only for the one call that
+         * Encrypted on the way in, and never decrypted for any reader - only for the one call that
          * dials the website. "" removes it, which is how somebody turns cache clearing off for good
          * without having to remember what they typed.
          */
@@ -470,8 +470,8 @@ public class CompanyProfileWriteService {
     }
 
     private void patch(String value, Consumer<String> setter) {
-        if (value == null) return;              // absent — leave it alone
-        setter.accept(value.isBlank() ? null : value.trim());   // "" — clear it
+        if (value == null) return;              // absent - leave it alone
+        setter.accept(value.isBlank() ? null : value.trim());   // "" - clear it
     }
 
     private <T> T find(List<T> items, String idObfuscated, java.util.function.Function<T, Long> id) {

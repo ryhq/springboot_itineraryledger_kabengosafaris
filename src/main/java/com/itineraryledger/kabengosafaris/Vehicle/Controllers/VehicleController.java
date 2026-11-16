@@ -154,7 +154,7 @@ public class VehicleController {
     @org.springframework.beans.factory.annotation.Autowired
     private com.itineraryledger.kabengosafaris.Vehicle.Repository.VehicleRepository bulkFlagsRepository;
 
-    /** PATCH /bulk — activate or withdraw a whole selection in one request. */
+    /** PATCH /bulk - activate or withdraw a whole selection in one request. */
     @PatchMapping("/bulk")
     @PreAuthorize("hasAuthority('PERM_UPDATE_VEHICLE')")
     public ResponseEntity<?> bulkFlags(

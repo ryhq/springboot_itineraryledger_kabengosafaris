@@ -36,7 +36,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A blog post's images: upload, order, cover, delete — and the bytes themselves.
+ * A blog post's images: upload, order, cover, delete - and the bytes themselves.
  *
  * The two file endpoints are deliberately unauthenticated in the same way the other image
  * modules are: an image URL is embedded in a page, and a browser fetching it carries no
@@ -88,7 +88,7 @@ public class BlogImageController {
         return getService.getImageById(id, scopeParentId, blogId, isPrimary, isActive, keyword, sortBy, sortDirection);
     }
 
-    /** The gallery of one post, in order — what the editor reads. */
+    /** The gallery of one post, in order - what the editor reads. */
     @GetMapping("/blog/{blogId}")
     @PreAuthorize("hasAuthority('PERM_READ_BLOG_IMAGE')")
     public ResponseEntity<ApiResponse<?>> getImagesForBlog(@PathVariable String blogId) {

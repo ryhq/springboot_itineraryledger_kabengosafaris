@@ -23,8 +23,8 @@ import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
  * the public website must not show it.
  *
  * <p>Written from a live leak. Every public service filtered itineraries on {@code isActive} alone
- * — the list, the search, the navigation, the homepage, the related-trip strips and the
- * resolve-by-identifier path — so three DRAFT itineraries were readable, searchable and priced on
+ * - the list, the search, the navigation, the homepage, the related-trip strips and the
+ * resolve-by-identifier path - so three DRAFT itineraries were readable, searchable and priced on
  * the public site. {@code ItinerarySpecification.isActiveAndPublished()} already existed, was
  * documented as "typically for customer-facing queries", and had not one caller.
  *
@@ -37,7 +37,7 @@ class OnlyAPublishedTripReachesThePublicTest {
     private static final Path PUBLIC_SERVICES =
         Paths.get("src/main/java/com/itineraryledger/kabengosafaris/Public");
 
-    /** `itinerary.getIsActive()`, `itin.getIsActive()`, `Itinerary::getIsActive` — and nothing else. */
+    /** `itinerary.getIsActive()`, `itin.getIsActive()`, `Itinerary::getIsActive` - and nothing else. */
     private static final Pattern ITINERARY_ACTIVE = Pattern.compile(
         "\\b(itinerary|itin|itineraries)\\w*\\.getIsActive\\(\\)|Itinerary::getIsActive",
         Pattern.CASE_INSENSITIVE);
@@ -49,7 +49,7 @@ class OnlyAPublishedTripReachesThePublicTest {
 
         assertFalse(visible(Itinerary.ItineraryStatus.DRAFT, true), "a draft is being built");
         assertFalse(visible(Itinerary.ItineraryStatus.COMPLETE, true),
-            "complete means ready to publish — nobody has said publish it");
+            "complete means ready to publish - nobody has said publish it");
         assertFalse(visible(Itinerary.ItineraryStatus.ARCHIVED, true),
             "archived was deliberately withdrawn");
         assertFalse(visible(Itinerary.ItineraryStatus.PUBLISHED, false),
@@ -68,7 +68,7 @@ class OnlyAPublishedTripReachesThePublicTest {
                 String name = file.getFileName().toString();
 
                 if (source.contains("ItinerarySpecification.isActive(true)")) {
-                    offences.add(name + ": ItinerarySpecification.isActive(true) — use "
+                    offences.add(name + ": ItinerarySpecification.isActive(true) - use "
                         + "isActiveAndPublished(), or a draft is on the website");
                 }
                 /*
@@ -77,13 +77,13 @@ class OnlyAPublishedTripReachesThePublicTest {
                  *
                  * Matched on the RECEIVER, not on the file. The first version of this asked
                  * whether a file mentioned Itinerary anywhere and called getIsActive() on
-                 * anything, and flagged three services filtering parks and accommodations — which
+                 * anything, and flagged three services filtering parks and accommodations - which
                  * is correct for those, since a park has no published state. A check that cries
                  * wolf three times out of four gets the whole suite ignored.
                  */
                 Matcher m = ITINERARY_ACTIVE.matcher(source);
                 while (m.find()) {
-                    offences.add(name + ": " + m.group().trim() + " — an itinerary needs "
+                    offences.add(name + ": " + m.group().trim() + " - an itinerary needs "
                         + "isPubliclyVisible(), because active is not published");
                 }
             }

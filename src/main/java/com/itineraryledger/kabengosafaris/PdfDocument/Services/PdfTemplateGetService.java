@@ -199,8 +199,8 @@ public class PdfTemplateGetService {
             /*
              * The record carries its layout.
              *
-             * The list deliberately does not — a layout is a whole HTML document and twenty of
-             * them is megabytes for a table of names — but the record IS the layout, and
+             * The list deliberately does not - a layout is a whole HTML document and twenty of
+             * them is megabytes for a table of names - but the record IS the layout, and
              * fetching it separately meant the editor opened on a blank page while the record
              * claimed to have loaded.
              */
@@ -213,7 +213,7 @@ public class PdfTemplateGetService {
              * Scoped to one document when the caller says so, which is what opening a layout
              * from inside its document means: the arrows stay among that document's layouts
              * instead of wandering into another document's. Paging by raw id did neither, and
-             * carried no position at all — so the header had arrows and nothing to say where
+             * carried no position at all - so the header had arrows and nothing to say where
              * they were going.
              */
             Specification<PdfTemplate> navSpec = Specification.unrestricted();

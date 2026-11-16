@@ -82,7 +82,7 @@ public class ResendWebhookEventGetService {
             response.put("currentSortDirection", sortDirection.toLowerCase());
             /*
              * Counters over the WHOLE filtered set. Page scope answered "3 bounced" about the
-             * twenty-five rows on screen out of 2,279 — true, and read by everybody as the
+             * twenty-five rows on screen out of 2,279 - true, and read by everybody as the
              * number of bounces there have ever been.
              */
             if (!Boolean.FALSE.equals(includeStats)) {
@@ -130,7 +130,7 @@ public class ResendWebhookEventGetService {
 
             ResendWebhookEventDTO dto = convertToDTO(event);
 
-            // Circular navigation — find previous and next by receivedAt desc order
+            // Circular navigation - find previous and next by receivedAt desc order
             Specification<ResendWebhookEvent> navSpec = buildSpec(eventType, fromEmail, toEmail, keyword);
             String navSortBy = validateSortField(sortBy) != null ? validateSortField(sortBy) : "receivedAt";
             Map<String, Object> nav = recordNavigation.navigate(

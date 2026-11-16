@@ -213,7 +213,7 @@ public class PublicImageResolver {
     /**
      * Deterministic per-safari image pick. Builds the pool of images from the trip's
      * linked entities and selects one by a stable hash of the safari/itinerary id, so
-     * two trips that share the same first park no longer show the same photo — and the
+     * two trips that share the same first park no longer show the same photo - and the
      * chosen image never changes between requests. Prefers scenic park/activity images
      * over accommodation (lodge-room) shots.
      */
@@ -304,7 +304,7 @@ public class PublicImageResolver {
         return appBaseUrl + (relativePath.startsWith("/") ? "" : "/") + relativePath;
     }
 
-    // ── Public DTO converters ────────────────────────────────────────
+    // == Public DTO converters ========================================
 
     public PublicImageDTO toPublicDTO(ParkImage image) {
         return PublicImageDTO.builder()

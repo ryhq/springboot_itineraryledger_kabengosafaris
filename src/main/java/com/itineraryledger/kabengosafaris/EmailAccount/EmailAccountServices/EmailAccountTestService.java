@@ -116,7 +116,7 @@ public class EmailAccountTestService {
 
         log.info("Starting connection test for account: {} ({}) [{}]", emailAccount.getName(), id, emailAccount.getProviderType());
 
-        // Perform test with retry logic — route based on provider and sending method
+        // Perform test with retry logic - route based on provider and sending method
         boolean testPassed;
         if (emailAccount.getProviderType() == EmailAccountProvider.RESEND
                 && emailAccount.getSendingMethod() == SendingMethod.API) {

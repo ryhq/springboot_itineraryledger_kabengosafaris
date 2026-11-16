@@ -27,7 +27,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
  * <p>It did, on a live company, and the cause was not visible in the code that failed. Signing
  * in creates a device row and then records VERIFY_OK pointing at it. Recording ran in a nested
  * transaction, so its foreign-key check waited on a parent row the outer transaction was still
- * holding — while that outer transaction waited for the nested call to return. Fifty seconds
+ * holding - while that outer transaction waited for the nested call to return. Fifty seconds
  * later: lock-wait timeout, then {@code UnexpectedRollbackException}, and a client who had
  * typed the right code was told "an unexpected error occurred" and shown no quotation.
  *
@@ -37,7 +37,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Entity.PortalJourney;
  * swallowed.
  *
  * <p>In this package rather than beside the other portal tests, because the writer it has to
- * stand in for is package-private — which is itself deliberate, since the whole point is that
+ * stand in for is package-private - which is itself deliberate, since the whole point is that
  * nothing outside this package may write one of these rows inside somebody else's transaction.
  */
 class RecordingAVisitCannotUndoTheVisitTest {

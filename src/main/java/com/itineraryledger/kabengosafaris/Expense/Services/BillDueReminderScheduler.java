@@ -24,12 +24,12 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Saying that a supplier's bill is about to fall due, before it does.
  *
- * Everything else this system notifies about is somebody contacting us — a booking inquiry, a
+ * Everything else this system notifies about is somebody contacting us - a booking inquiry, a
  * contact form, a newsletter sign-up. This is the opposite and that is why it matters: nobody writes
  * in to say a provisional hold is about to lapse. A lodge holds rooms until a date, that date passes
  * in silence, and the first anyone knows is a reply saying the rooms are gone.
  *
- * Three warnings rather than one — a week out, three days out, and the morning of — because a single
+ * Three warnings rather than one - a week out, three days out, and the morning of - because a single
  * reminder is a single chance to be looking at the inbox that day. They are separate emails on
  * purpose: a digest that says "3 bills coming up" is easy to leave for later, and one that says
  * "PAY TODAY: Tanganyika Wilderness Camps, USD 2,096" is not.
@@ -136,14 +136,14 @@ public class BillDueReminderScheduler {
     /**
      * What is still owed, falling back to the total.
      *
-     * A part-paid bill should say what is LEFT — telling somebody to pay 2,096 when 1,000 has gone
+     * A part-paid bill should say what is LEFT - telling somebody to pay 2,096 when 1,000 has gone
      * is how a supplier gets paid twice.
      */
     private String amountOf(Expense bill) {
         try {
             /*
              * The grand total, in the currency it was billed in. Not a balance: the expense carries
-             * no outstanding figure of its own — what is left is derived from payments elsewhere —
+             * no outstanding figure of its own - what is left is derived from payments elsewhere -
              * and inventing one here would put a number in an email that no screen agrees with.
              */
             if (bill.getGrandTotals() != null && !bill.getGrandTotals().isEmpty()) {

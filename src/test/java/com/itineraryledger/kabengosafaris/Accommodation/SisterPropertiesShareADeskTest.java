@@ -51,7 +51,7 @@ class SisterPropertiesShareADeskTest {
             assertFalse(source.contains("existsByEmail(") || source.contains("existsByPhoneNumber("),
                 where + " asks whether the address exists ANYWHERE. Two sister properties share a "
                     + "reservations desk, and this is what left Serengeti Acacia Bliss with no "
-                    + "contact details. Scope it with existsByAccommodationIdAnd…");
+                    + "contact details. Scope it with existsByAccommodationIdAnd...");
 
             assertTrue(source.contains("existsByAccommodationIdAnd"),
                 where + " must scope its duplicate check to the accommodation");

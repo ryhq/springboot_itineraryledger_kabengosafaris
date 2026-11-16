@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>The itinerary's equivalent edits a PRODUCT; this edits what a named customer was told. The
  * rules are otherwise identical, and where they are identical they are written the same way on
- * purpose — a reader comparing the two should see the difference, not the restating.
+ * purpose - a reader comparing the two should see the difference, not the restating.
  *
  * <p>Nothing here recalculates the quote. The eight existing call sites that trigger a recalc do
  * that, and a flight added here reaches the total through {@code buildSyntheticDTO}, which reads
@@ -207,7 +207,7 @@ public class QuoteDayFlightService {
      *
      * <p>Every other day-tree service calls {@code triggerRecalc} on every write. This one did
      * not, so adding, editing or removing a sector changed the itinerary and left the total
-     * standing at whatever it was — a quotation that silently disagreed with its own contents.
+     * standing at whatever it was - a quotation that silently disagreed with its own contents.
      */
     private void recalcFor(QuoteDay day) {
         if (day == null || day.getQuote() == null) return;
@@ -255,7 +255,7 @@ public class QuoteDayFlightService {
             }
 
             /*
-             * FLIGHT is in DERIVED_TYPES, so the price depends on it — and this was the one
+             * FLIGHT is in DERIVED_TYPES, so the price depends on it - and this was the one
              * mutation in the day tree that never asked for a recalculation. Removing a sector
              * left the old total standing.
              */

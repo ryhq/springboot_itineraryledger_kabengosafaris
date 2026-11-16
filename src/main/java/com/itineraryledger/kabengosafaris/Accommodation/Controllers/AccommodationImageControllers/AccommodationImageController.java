@@ -321,7 +321,7 @@ public class AccommodationImageController {
     private com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationImageRepository bulkFlagsRepository;
 
     /**
-     * PATCH /bulk — one request for a whole selection. Only the flags present in
+     * PATCH /bulk - one request for a whole selection. Only the flags present in
      * the body apply, and per-id outcomes come back rather than a bare 200.
      */
     @PatchMapping("/bulk")

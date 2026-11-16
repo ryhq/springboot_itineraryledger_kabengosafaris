@@ -38,7 +38,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * The site's global FAQ list — read, written and ordered.
+ * The site's global FAQ list - read, written and ordered.
  *
  * One service rather than four: an FAQ is a question, an answer and a position, and splitting
  * that across create/update/delete/get classes would be four files of ceremony for one table.
@@ -57,7 +57,7 @@ public class FaqService {
     /**
      * Below this, an answer is worth a second look.
      *
-     * 120 characters is roughly a single line — long enough for "yes" plus a reason, too short
+     * 120 characters is roughly a single line - long enough for "yes" plus a reason, too short
      * for most of the questions this page is asked.
      */
     private static final int THIN_ANSWER_CHARS = 120;
@@ -322,7 +322,7 @@ public class FaqService {
     /**
      * The whole running order at once.
      *
-     * Position in the list IS the display order — sending one item's new number would leave
+     * Position in the list IS the display order - sending one item's new number would leave
      * the rest of the list disagreeing with what the person just dragged.
      */
     @AuditLogAnnotation(action = "REORDER_FAQS", description = "Reordering FAQs", entityType = "Faq")

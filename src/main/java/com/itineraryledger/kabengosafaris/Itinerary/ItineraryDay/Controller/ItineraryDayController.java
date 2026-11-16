@@ -60,7 +60,7 @@ public class ItineraryDayController {
      * Three nights in the same park are three days that differ by a sentence.
      * The copies land directly after the source and the rest are renumbered,
      * because "another night here" means next, not last. The itinerary's day
-     * count is the ceiling — the refusal names it rather than making an
+     * count is the ceiling - the refusal names it rather than making an
      * itinerary that can never be completed.
      */
     @PostMapping("/{dayId}/duplicate")

@@ -143,7 +143,7 @@ public class CostLineItemDTO {
      * Per-pax mode used to split the sum by headcount, which handed every band
      * the same number no matter what its own rate was.
      *
-     * Empty for group, vehicle and per-room items — those genuinely are shared.
+     * Empty for group, vehicle and per-room items - those genuinely are shared.
      */
     private List<PaxShareDTO> paxShares;
 

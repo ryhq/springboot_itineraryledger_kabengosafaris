@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Cancelling an invoice must not leave a safari that can never be billed.
  *
- * <p>Three rules met and made a trap. {@code safari_id} carries a unique index — one invoice row
+ * <p>Three rules met and made a trap. {@code safari_id} carries a unique index - one invoice row
  * per safari. The generator's guard deliberately let a <b>cancelled</b> invoice through, promising
  * that cancel-and-reissue works. And delete refused anything that was not a DRAFT.
  *
@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * be inserted, because the cancelled row still held the slot, and the cancelled row could not be
  * removed to make room. SAF-8D7N-01002 reached exactly that state on 15 November 2026 while
  * reissuing an invoice that had billed TZS as USD. The only symptom was <i>"An unexpected error
- * occurred"</i> — a constraint violation escaping on commit, after the service's own catch.
+ * occurred"</i> - a constraint violation escaping on commit, after the service's own catch.
  *
  * <p>The delete rule's reason was always about <b>sending</b>, not about status: once a customer
  * holds a copy, deleting our half leaves a demand with no record behind it. A cancelled invoice

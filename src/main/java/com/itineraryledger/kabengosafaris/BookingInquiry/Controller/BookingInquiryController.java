@@ -87,7 +87,7 @@ public class BookingInquiryController {
     }
 
     /**
-     * POST /{id}/convert — turn the enquirer into a customer.
+     * POST /{id}/convert - turn the enquirer into a customer.
      *
      * This is the join between the website and everything downstream. Somebody
      * asked for a safari; until they are a customer they cannot be quoted, and

@@ -11,7 +11,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 /**
- * RecordNavigation — prev/next plus the "3 of 6" readout on a record page.
+ * RecordNavigation - prev/next plus the "3 of 6" readout on a record page.
  *
  * Paging must walk the SAME set the list was showing, so callers pass the very
  * Specification their list built (see CustomerGetService.navigationIds): page into

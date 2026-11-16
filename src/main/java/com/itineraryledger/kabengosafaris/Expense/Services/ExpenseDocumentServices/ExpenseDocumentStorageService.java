@@ -18,7 +18,7 @@ import java.security.NoSuchAlgorithmException;
 
 /**
  * File-storage service for expense documents. Mirrors
- * InvoiceDocumentStorageService verbatim — same hashing, same validation
+ * InvoiceDocumentStorageService verbatim - same hashing, same validation
  * pipeline (FileSettingGetterServices), same MIME table, same hashed-filename
  * scheme. Different on-disk root only.
  */

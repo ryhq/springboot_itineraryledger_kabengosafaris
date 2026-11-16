@@ -21,7 +21,7 @@ import java.util.Map;
  * Computes per-currency subtotals, taxes, and totals for a credit note on demand
  * from its active line items + taxPercentage.
  *
- * These values are NOT persisted on the CreditNote entity — they are derived
+ * These values are NOT persisted on the CreditNote entity - they are derived
  * at read time so they never drift from the underlying line-item prices.
  */
 @Service
@@ -88,7 +88,7 @@ public class CreditNoteTotalsAggregationService {
     /**
      * Sum of current credit-note totals per currency across all active credit notes
      * tied to the given invoice. Inactive credit notes (isActive=false) are skipped.
-     * Includes all statuses (DRAFT through CONSUMED) — a DRAFT still reserves its amount.
+     * Includes all statuses (DRAFT through CONSUMED) - a DRAFT still reserves its amount.
      */
     public Map<String, BigDecimal> existingCreditsByInvoice(Invoice invoice) {
         Map<String, BigDecimal> totals = new HashMap<>();
@@ -123,8 +123,8 @@ public class CreditNoteTotalsAggregationService {
      * to the existing credits against {@code invoice} exceed the invoice's grandTotal
      * for any currency?
      *
-     * The caller is responsible for computing {@code additionalContribution} — for a
-     * new line item that's {@code subtotal + (subtotal × taxPct / 100)}.
+     * The caller is responsible for computing {@code additionalContribution} - for a
+     * new line item that's {@code subtotal + (subtotal x taxPct / 100)}.
      */
     public OverCreditCheck checkOverCredit(Invoice invoice, Map<String, BigDecimal> additionalContribution) {
         if (invoice == null || invoice.getGrandTotals() == null || invoice.getGrandTotals().isEmpty()) {

@@ -22,7 +22,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * A sector one airline flies — Air Excel, Arusha to Zanzibar. 243 of these from one price list.
+ * A sector one airline flies - Air Excel, Arusha to Zanzibar. 243 of these from one price list.
  *
  * <p>This is the stable thing a trip points at. A planner choosing a flight is choosing a
  * <em>sector</em>, not a departure time: the 12:30 and the 14:00 to Zanzibar are the same decision
@@ -71,7 +71,7 @@ public class FlightRoute {
     private Airstrip destinationAirstrip;
 
     /**
-     * 109 of 350 rows on the Air Excel sheet say "N/A" — not scheduled, flown on request only.
+     * 109 of 350 rows on the Air Excel sheet say "N/A" - not scheduled, flown on request only.
      *
      * <p>A trip may still use one; it warns rather than blocks, which is the house convention for
      * an incomplete price everywhere else.

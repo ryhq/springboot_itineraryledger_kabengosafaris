@@ -58,7 +58,7 @@ public class PermissionSpecification {
         };
     }
 
-    /** Exact entities, OR'd — the dimension the catalogue is actually read by. */
+    /** Exact entities, OR'd - the dimension the catalogue is actually read by. */
     public static Specification<Permission> byEntities(java.util.List<String> entities) {
         return (root, query, cb) -> entities == null || entities.isEmpty()
             ? cb.conjunction()
@@ -75,7 +75,7 @@ public class PermissionSpecification {
      * The one search box: the name, the entity and the description.
      *
      * Names are shouty and underscored (UPDATE_SAFARI_DAY_PARK), so somebody looking
-     * for "safari day park" has to hit as well — the description is what carries the
+     * for "safari day park" has to hit as well - the description is what carries the
      * words a person would actually type.
      */
     public static Specification<Permission> searchKeyword(String keyword) {
@@ -110,8 +110,8 @@ public class PermissionSpecification {
     /**
      * A named capability rather than one of the generated four.
      *
-     * The catalogue is mostly action × entity (CREATE_PARK, READ_PARK, …). The rest are
-     * hand-written for things that are not CRUD — SEND_INVOICE, APPROVE_SAFARI — and
+     * The catalogue is mostly action x entity (CREATE_PARK, READ_PARK, ...). The rest are
+     * hand-written for things that are not CRUD - SEND_INVOICE, APPROVE_SAFARI - and
      * they are the ones worth reviewing when deciding what a role may do, because they
      * are where the workflow lives.
      */

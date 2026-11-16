@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * What a safari cost, asked of its expenses — the counterpart to
+ * What a safari cost, asked of its expenses - the counterpart to
  * {@link SafariBillingService}, which asks its invoices what it earned.
  *
  * Together they answer the only question an operator asks after a trip: did it
@@ -88,7 +88,7 @@ public class SafariCostingService {
 
             /*
              * A bill's categories come from its line items, and its total is the
-             * sum of them plus tax — so the breakdown is built from the lines
+             * sum of them plus tax - so the breakdown is built from the lines
              * while the headline figure stays the bill's own stored total. The
              * two can differ by the tax, and the breakdown says what was bought
              * rather than what was owed.

@@ -62,7 +62,7 @@ public class ContactMessageSpecification {
             : cb.equal(root.get("customer").get("id"), customerId);
     }
 
-    /* The work queues — what the list is actually for. */
+    /* The work queues - what the list is actually for. */
 
     /** Nobody has opened it yet. */
     public static Specification<ContactMessage> unread() {
@@ -87,7 +87,7 @@ public class ContactMessageSpecification {
             cb.lessThan(root.get("createdAt"), LocalDateTime.now().minusDays(days)));
     }
 
-    /** From somebody already on our books — it reads differently, so it is worth a card. */
+    /** From somebody already on our books - it reads differently, so it is worth a card. */
     public static Specification<ContactMessage> fromKnownCustomer(boolean known) {
         return (root, query, cb) -> known
             ? cb.isNotNull(root.get("customer"))

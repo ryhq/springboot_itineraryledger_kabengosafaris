@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
  * The build fails if anything a client's link can reach carries what their trip costs us.
  *
  * <p>Modelled on {@code NoClientDocumentPrintsOurCostTest}, which exists because an itinerary PDF
- * once reached a customer reading "Auto-linked alternative: MID_RANGE in Arusha, STO $90" — our
+ * once reached a customer reading "Auto-linked alternative: MID_RANGE in Arusha, STO $90" - our
  * supplier price and our internal budget grading. The portal is the same hazard with a wider
  * mouth: a document is assembled deliberately, while a view model grows a field at a time, and
  * the entities it reads from carry our cost basis right beside the customer's price.
@@ -137,7 +137,7 @@ class NoPortalResponseCarriesOurCostTest {
     void noPortalTemplatePrintsOurCost() throws IOException {
         Map<Pattern, String> rules = new LinkedHashMap<>(FORBIDDEN_VALUES);
         rules.put(Pattern.compile("\\bSTO\\b"),
-            "the word STO — our pricing basis is not the customer's vocabulary");
+            "the word STO - our pricing basis is not the customer's vocabulary");
         rules.put(Pattern.compile("\\b(MID_RANGE|MIDRANGE|ULTRA_LUXURY)\\b"),
             "an internal budget grading");
         rules.put(Pattern.compile("\\$\\{[^}]*\\.internalNotes\\b"),

@@ -20,7 +20,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * A place an aircraft lands — Arusha, Seronera, Zanzibar, Kogatende.
+ * A place an aircraft lands - Arusha, Seronera, Zanzibar, Kogatende.
  *
  * <p>A shared lookup, like {@code Park}: airstrips belong to the country, not to an airline, and two
  * airlines flying into Seronera are flying into the same strip. That is what makes "which airlines
@@ -92,7 +92,7 @@ public class Airstrip {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    /** "Seronera (SER)" — what a route reads as on a day of a trip. */
+    /** "Seronera (SER)" - what a route reads as on a day of a trip. */
     public String getDisplayName() {
         return code == null ? name : name + " (" + code + ")";
     }

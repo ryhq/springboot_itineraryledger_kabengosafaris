@@ -32,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
  * Every template, across every event.
  *
  * The nested list under an event answers "what can this email send". This is the list of
- * the wording itself — which is a thing somebody maintains, reviews and searches, not
+ * the wording itself - which is a thing somebody maintains, reviews and searches, not
  * only a detail of the event it hangs off. Without it there is no way to ask "which
  * templates has somebody rewritten" or "what is switched off" except by opening eighteen
  * events one at a time.
@@ -118,7 +118,7 @@ public class EmailTemplateListService {
 
             /*
              * The body lives on disk, not in the row. A read failure is reported rather than
-             * quietly returning a template with no content — an empty editor looks exactly
+             * quietly returning a template with no content - an empty editor looks exactly
              * like a template somebody emptied, and one of those is safe to save over.
              */
             String content = templateService.readTemplateFile(template.getFileName());
@@ -156,7 +156,7 @@ public class EmailTemplateListService {
         }
     }
 
-    /** The event a template belongs to, obfuscated — the write services are nested under it. */
+    /** The event a template belongs to, obfuscated - the write services are nested under it. */
     public String eventIdOf(String templateIdObfuscated) {
         try {
             Long id = idObfuscator.decodeId(templateIdObfuscated);
@@ -225,7 +225,7 @@ public class EmailTemplateListService {
     /**
      * Decodes the obfuscated event ids, or narrows to nothing if none of them read.
      *
-     * An unreadable id must not quietly widen the list to every template — that is the
+     * An unreadable id must not quietly widen the list to every template - that is the
      * opposite of what was asked for.
      */
     private List<Long> decodeAll(List<String> obfuscated) {

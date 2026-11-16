@@ -170,7 +170,7 @@ public class AuditLogSpecification {
      * sentence describing it.
      *
      * Deliberately NOT oldValues/newValues. Those are @Lob LONGTEXT holding whole records as
-     * JSON — LOWER() over a CLOB throws, and scanning every version of every row ever saved
+     * JSON - LOWER() over a CLOB throws, and scanning every version of every row ever saved
      * is not a search anybody wants to wait for.
      */
     public static Specification<AuditLog> searchKeyword(String keyword) {
@@ -187,7 +187,7 @@ public class AuditLogSpecification {
     }
 
     // ========================
-    // WORTH LOOKING AT — each of these is a card AND a filter
+    // WORTH LOOKING AT - each of these is a card AND a filter
     // ========================
 
     /** Somebody tried to do something and did not get it. */

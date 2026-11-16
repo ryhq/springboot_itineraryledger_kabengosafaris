@@ -43,7 +43,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  *  - covered stays go to PENDING in the SAME transaction as the record, so a stay can never say
  *    "nothing asked" while a request says otherwise;
- *  - a chase falls due three WORKING days after sending — a Friday request is not overdue on Monday;
+ *  - a chase falls due three WORKING days after sending - a Friday request is not overdue on Monday;
  *  - confirming a stay closes the ask that was waiting on it, since nobody goes back to tidy up.
  */
 @Service
@@ -101,7 +101,7 @@ public class AvailabilityRequestService {
 
             /*
              * Every stay must belong to THIS safari. Without the check, an id from another trip
-             * would attach a request to nights nobody asked about — and the guard would then hide a
+             * would attach a request to nights nobody asked about - and the guard would then hide a
              * property that had never been written to.
              */
             List<SafariDayAccommodation> stays = new ArrayList<>();
@@ -150,7 +150,7 @@ public class AvailabilityRequestService {
              * The Message-ID of what we sent, which is what a reply's In-Reply-To will name.
              *
              * Taken from our own copy of the sent mail rather than asked of the caller: the browser
-             * does not see the header, and without it the matcher had nothing to match on — it read
+             * does not see the header, and without it the matcher had nothing to match on - it read
              * `rfcMessageId` while the create path only ever wrote `emailMessageId`, so every reply
              * arrived, was looked at, and was silently ignored.
              */
@@ -211,7 +211,7 @@ public class AvailabilityRequestService {
         }
     }
 
-    /** By hand, for the reply that matched no header — see LinkReplyDTO. */
+    /** By hand, for the reply that matched no header - see LinkReplyDTO. */
     @Transactional
     public ResponseEntity<ApiResponse<?>> linkReply(String requestIdObfuscated, LinkReplyDTO dto) {
         try {
@@ -239,7 +239,7 @@ public class AvailabilityRequestService {
      * A chase has gone out: the clock starts again.
      *
      * Without this the request keeps its original due date and the list asks for a chase that has
-     * already been sent — so the same lodge gets nudged every morning by whoever opens the list
+     * already been sent - so the same lodge gets nudged every morning by whoever opens the list
      * first. The count is kept because "we have chased three times" is the fact behind deciding a
      * property has stopped answering.
      */
@@ -255,7 +255,7 @@ public class AvailabilityRequestService {
             LocalDateTime now = LocalDateTime.now();
             request.setLastChasedAt(now);
             request.setChaseCount(request.chasesSoFar() + 1);
-            /* three working days again — the same rule as the first send */
+            /* three working days again - the same rule as the first send */
             request.setChaseDueAt(chaseDueFrom(now));
             /*
              * Still SENT, deliberately. A chase is us writing again, not them answering, and moving
@@ -277,7 +277,7 @@ public class AvailabilityRequestService {
      *
      * Four ways, in order of how much they prove:
      *
-     *  1. In-Reply-To / References naming the Message-ID we sent — the only one the standards
+     *  1. In-Reply-To / References naming the Message-ID we sent - the only one the standards
      *     guarantee, and the only one that was implemented. It never fired, because nothing wrote
      *     `rfcMessageId` in the first place.
      *  2. the same thread id.
@@ -287,7 +287,7 @@ public class AvailabilityRequestService {
      *     In-Reply-To, is not an edge case; it is Tuesday. "Exactly one" is what keeps this honest:
      *     with two open asks to the same lodge, a person has to say which.
      *
-     * Automated mail is never a reply — a bounce for our own message would otherwise close the very
+     * Automated mail is never a reply - a bounce for our own message would otherwise close the very
      * request it failed to deliver.
      */
     @Transactional
@@ -320,8 +320,8 @@ public class AvailabilityRequestService {
     /**
      * Go looking for replies that have already arrived.
      *
-     * Matching happens as mail is fetched, so anything received while that hook did not exist — or
-     * while the app was down, or before a record kept the headers it needed — sits unanswered on the
+     * Matching happens as mail is fetched, so anything received while that hook did not exist - or
+     * while the app was down, or before a record kept the headers it needed - sits unanswered on the
      * chase list for ever. This re-reads the inbox for every open ask and applies the same rules, so
      * the state can be recovered instead of corrected by hand, one request at a time.
      */
@@ -414,7 +414,7 @@ public class AvailabilityRequestService {
             || subj.contains("returning message to sender");
     }
 
-    /** "Re: Availability Request · Outpost Lodge · 23–24 Jan 2027" is our own subject, answered. */
+    /** "Re: Availability Request | Outpost Lodge | 23-24 Jan 2027" is our own subject, answered. */
     private static String bareSubject(String subject) {
         if (subject == null) return "";
         String out = subject.trim();
@@ -492,7 +492,7 @@ public class AvailabilityRequestService {
      * Fill in what a record should have kept about the mail it names.
      *
      * The Message-ID, the thread, the subject and the addresses all sit on our own copy of the sent
-     * message. A record written before the create path read them shows "written to —" and can never
+     * message. A record written before the create path read them shows "written to -" and can never
      * be matched to a reply, and there is no reason for either: the message is right there.
      */
     private void repairMailDetails() {
@@ -535,7 +535,7 @@ public class AvailabilityRequestService {
     }
 
     /**
-     * The first address out of however the message stored them — a JSON array for mail this app
+     * The first address out of however the message stored them - a JSON array for mail this app
      * composed, a raw header for mail it synced.
      */
     private String firstAddress(String stored) {
@@ -587,7 +587,7 @@ public class AvailabilityRequestService {
     }
 
     /**
-     * One row per NIGHT that has been asked about — the day workspace's single read.
+     * One row per NIGHT that has been asked about - the day workspace's single read.
      *
      * Shaped like the billing coverage the day screen already draws chips from, so the stay cards
      * ask one question of one payload rather than one question each.
@@ -634,9 +634,9 @@ public class AvailabilityRequestService {
     }
 
     /**
-     * One row of the chase list — flat, and carrying what the row itself has to say.
+     * One row of the chase list - flat, and carrying what the row itself has to say.
      *
-     * The nights are summarised rather than listed: a list page needs "3 nights, 29 Jan – 1 Feb", and
+     * The nights are summarised rather than listed: a list page needs "3 nights, 29 Jan - 1 Feb", and
      * whoever wants the detail opens the request. Counts of Cc and Bcc rather than the addresses,
      * because a table is not the place to spill who was blind-copied.
      */

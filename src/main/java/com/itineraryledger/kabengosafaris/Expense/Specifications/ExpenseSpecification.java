@@ -103,7 +103,7 @@ public class ExpenseSpecification {
      *
      * Category is a property of a line, not of a bill: one lodge invoice can
      * carry a room charge and a park fee. So this means "has at least one line of
-     * that kind", and it joins — hence distinct, or a two-line bill would be
+     * that kind", and it joins - hence distinct, or a two-line bill would be
      * returned twice.
      */
     public static Specification<Expense> byCategories(java.util.List<ExpenseCategory> categories) {
@@ -121,7 +121,7 @@ public class ExpenseSpecification {
             : root.get("status").in(statuses);
     }
 
-    /** Falls due within the window and is not settled — the pay-this-week list. */
+    /** Falls due within the window and is not settled - the pay-this-week list. */
     public static Specification<Expense> dueWithin(int days) {
         return (root, query, cb) -> {
             LocalDate today = LocalDate.now();
@@ -135,7 +135,7 @@ public class ExpenseSpecification {
     /**
      * Free text over the code, the title, the reference and the vendor's name.
      *
-     * The vendor is joined because that is how a bill is looked up — by who sent
+     * The vendor is joined because that is how a bill is looked up - by who sent
      * it. LEFT join: a bill with no vendor yet must still be findable.
      */
     public static Specification<Expense> searchKeyword(String keyword) {

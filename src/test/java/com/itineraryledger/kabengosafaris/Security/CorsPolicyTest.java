@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
  * That this API never again answers everybody with credentials.
  *
  * It did: `setAllowedOriginPatterns("*")` together with `setAllowCredentials(true)` means any page on
- * the internet could make a credentialed request here and read the reply — the browser's same-origin
+ * the internet could make a credentialed request here and read the reply - the browser's same-origin
  * rule switched off for every site at once. It was there for the backup cookie-bridge, which does
  * need credentials, and the fix is to name who may use them rather than to allow everyone.
  *
@@ -32,7 +32,7 @@ class CorsPolicyTest {
 
         /*
          * Scoped to the CREDENTIALED configuration. The public API deliberately answers any origin,
-         * with credentials off — so a file-wide search for a wildcard now finds a legitimate one,
+         * with credentials off - so a file-wide search for a wildcard now finds a legitimate one,
          * and the thing that actually matters is the PAIRING.
          */
         String credentialed = source.substring(source.indexOf("CorsConfiguration corsConfiguration"),
@@ -45,7 +45,7 @@ class CorsPolicyTest {
         assertTrue(source.contains("setAllowedOrigins(allowedOrigins())"),
             "origins should come from configuration, so each deployment names its own callers");
         assertTrue(source.contains("setAllowCredentials(true)"),
-            "credentials are still needed — the backup download hands over a short-lived cookie");
+            "credentials are still needed - the backup download hands over a short-lived cookie");
     }
 
     @Test
@@ -67,7 +67,7 @@ class CorsPolicyTest {
          * Locking CORS to the panel's origin was right for the authenticated API and wrong for the
          * public one: both company websites went blank while the API kept answering 200 with every
          * row present, because the browser was throwing the answers away. The comment justifying it
-         * said the sites were unaffected since "their API references are <img> sources" — true of the
+         * said the sites were unaffected since "their API references are <img> sources" - true of the
          * pictures, false of the parks, heroes, accommodations and testimonials they FETCH.
          */
         int publicAt = source.indexOf("CorsConfiguration publicConfiguration");
@@ -78,12 +78,12 @@ class CorsPolicyTest {
         String publicBlock = source.substring(publicAt, source.indexOf("cors.configurationSource", publicAt));
 
         assertTrue(publicBlock.contains("setAllowCredentials(false)"),
-            "a wildcard origin is only safe with credentials OFF — with them on it is the exact hole "
+            "a wildcard origin is only safe with credentials OFF - with them on it is the exact hole "
                 + "the rest of this configuration exists to close");
         assertTrue(publicBlock.contains("\"POST\""),
             "the sites submit testimonials, newsletter sign-ups and booking inquiries");
         assertTrue(source.contains("registerCorsConfiguration(\"/api/public/**\""),
-            "the public rule has to be registered, and before the catch-all — the source takes the "
+            "the public rule has to be registered, and before the catch-all - the source takes the "
                 + "first pattern that matches");
         assertTrue(source.indexOf("registerCorsConfiguration(\"/api/public/**\"")
                 < source.indexOf("registerCorsConfiguration(\"/**\""),

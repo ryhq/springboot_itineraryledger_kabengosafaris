@@ -89,7 +89,7 @@ public class HeroSpecification {
     /**
      * The one search box: the words a banner actually shows.
      *
-     * Headline, subtitle, body and the button's own text — somebody hunting for the banner
+     * Headline, subtitle, body and the button's own text - somebody hunting for the banner
      * that says "Book your safari" is as likely to remember the button as the heading, and
      * as likely to remember a phrase from the paragraph as either.
      *
@@ -109,7 +109,7 @@ public class HeroSpecification {
     }
 
     // ========================
-    // WORTH CHECKING — each of these is a card AND a filter
+    // WORTH CHECKING - each of these is a card AND a filter
     // ========================
 
     /**
@@ -131,7 +131,7 @@ public class HeroSpecification {
         };
     }
 
-    /** A call to action with nowhere to go — a button that does nothing when clicked. */
+    /** A call to action with nowhere to go - a button that does nothing when clicked. */
     public static Specification<Hero> hasBrokenCta() {
         return (root, query, cb) -> cb.and(
             cb.isNotNull(root.get("ctaText")),

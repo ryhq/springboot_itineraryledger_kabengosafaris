@@ -35,7 +35,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpec
     /**
      * Sum the base (invoice-currency-equivalent) amounts of all payments that settle a given
      * invoice currency. This correctly accounts for cross-currency payments via their stored
-     * exchangeRate: baseAmount = amount × exchangeRate.
+     * exchangeRate: baseAmount = amount x exchangeRate.
      *
      * Falls back to raw amount for legacy rows where baseAmount is still null.
      */

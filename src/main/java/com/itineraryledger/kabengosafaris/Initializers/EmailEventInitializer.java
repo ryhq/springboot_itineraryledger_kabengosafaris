@@ -113,7 +113,7 @@ public class EmailEventInitializer implements ApplicationRunner, Ordered {
 
         /*
          * The one event addressed to a SUPPLIER rather than a customer, and the one written by hand
-         * from a safari rather than fired by a state change — which is why its template is worth
+         * from a safari rather than fired by a state change - which is why its template is worth
          * having here: the wording belongs to the office, not to a deploy.
          */
         initializeEvent(

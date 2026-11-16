@@ -84,7 +84,7 @@ public class InvoiceCreateService {
              * The rule exists to stop the same trip being invoiced twice by two
              * people. It must not stop the legitimate second demand: a trip that
              * changes after it has been part-paid leaves the customer owing the
-             * difference, and the original invoice cannot be amended to say so —
+             * difference, and the original invoice cannot be amended to say so -
              * they hold a copy of it and have paid against it.
              *
              * So the caller declares the intent. A supplement must also say what

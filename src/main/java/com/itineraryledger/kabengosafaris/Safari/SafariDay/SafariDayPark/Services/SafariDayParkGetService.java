@@ -184,7 +184,7 @@ public class SafariDayParkGetService {
             /*
              * Parent-scoped circular navigation, in the ORDER THE LIST USED. The repository
              * walk this replaces stepped by id whatever the sort was, so the arrows moved
-             * through a different sequence from the one on screen — and could not say where
+             * through a different sequence from the one on screen - and could not say where
              * in it you were.
              */
             Long parentId = parkVisit.getSafariDay().getId();

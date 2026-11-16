@@ -18,13 +18,13 @@ import org.junit.jupiter.api.Test;
 /**
  * That "Send me a test" works for every email the product can send.
  *
- * The test send is the only way to see a template as a recipient will, and the only safe way — it
+ * The test send is the only way to see a template as a recipient will, and the only safe way - it
  * goes to the signed-in address and nowhere else. An event with no sample data does not degrade
  * gracefully: it answers 501 with "Please implement a test case in
  * EmailTemplateTestService.generateTestEmailData()", which is a message written for whoever built
  * the system, shown to whoever is editing the wording.
  *
- * That happened for BILL_DUE_REMINDER the day it shipped. Fixing it turned up three more — the
+ * That happened for BILL_DUE_REMINDER the day it shipped. Fixing it turned up three more - the
  * invoice, credit note and payment receipt letters had never had sample data either, so the button
  * had been refusing on the three most customer-facing templates in the product without anybody
  * noticing.
@@ -42,7 +42,7 @@ class EveryEmailEventCanBeTestedTest {
     private Set<String> registeredEvents() throws IOException {
         String source = Files.readString(CATALOGUE);
         int from = source.indexOf("\"USER_REGISTRATION\"");
-        assertTrue(from > 0, "the event list has moved — this test reads it from EmailEventVariables");
+        assertTrue(from > 0, "the event list has moved - this test reads it from EmailEventVariables");
 
         Set<String> events = new LinkedHashSet<>();
         Matcher m = Pattern.compile("\"([A-Z][A-Z_]+)\"").matcher(source.substring(from));
@@ -65,7 +65,7 @@ class EveryEmailEventCanBeTestedTest {
             if (!handled.contains(event)) missing.add(event);
         }
 
-        assertFalse(events.isEmpty(), "no events were read — the catalogue's shape has changed");
+        assertFalse(events.isEmpty(), "no events were read - the catalogue's shape has changed");
         assertTrue(missing.isEmpty(),
             "These events have no sample data, so \"Send me a test\" answers 501 with a message "
                 + "addressed to whoever built the system: " + missing
@@ -73,12 +73,12 @@ class EveryEmailEventCanBeTestedTest {
     }
 
     @Test
-    @DisplayName("no sample names a company — the fixtures are literals like any other string")
+    @DisplayName("no sample names a company - the fixtures are literals like any other string")
     void samplesNameNobody() throws IOException {
         /*
          * The same rule the templates live under. A sample vendor called after a real company would
          * be a company name compiled into the jar, which is what CompanyLiteralsInTemplatesTest
-         * exists to prevent — and a fixture is the easiest place to forget it.
+         * exists to prevent - and a fixture is the easiest place to forget it.
          */
         String service = Files.readString(TEST_SERVICE);
         int from = service.indexOf("generateBillDueReminderTestData");

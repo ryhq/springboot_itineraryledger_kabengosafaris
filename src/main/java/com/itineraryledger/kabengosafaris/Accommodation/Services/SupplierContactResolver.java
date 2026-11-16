@@ -17,8 +17,8 @@ import java.util.TreeSet;
  * person who answers should be able to see who else has it.
  *
  * <p>Extracted from the availability letter, which had all of this and kept it private. The payment
- * advice needed the same rules with a different preference — a lodge that has an accounts address
- * would rather hear about money there than at the reservations desk — and copying sixty lines of
+ * advice needed the same rules with a different preference - a lodge that has an accounts address
+ * would rather hear about money there than at the reservations desk - and copying sixty lines of
  * parent-group fallback, de-duplication and ordering would have guaranteed the two drifted apart.
  */
 @Service
@@ -41,7 +41,7 @@ public class SupplierContactResolver {
     /**
      * Telling them about money: accounts first, then billing, then whatever is primary.
      *
-     * A payment advice sent to a reservations desk usually still arrives — somebody forwards it —
+     * A payment advice sent to a reservations desk usually still arrives - somebody forwards it -
      * but a property that has told us where to send remittances has told us for a reason.
      */
     public Recipients forBilling(Accommodation property) {
@@ -53,7 +53,7 @@ public class SupplierContactResolver {
     /**
      * The property's addresses, then its group's.
      *
-     * A branch often keeps none of its own — everything for it is answered by the group — so a To
+     * A branch often keeps none of its own - everything for it is answered by the group - so a To
      * taken from the property alone reports a camp as unreachable when its group can be written to
      * today. Sibling branches are left out: another camp has no part in this.
      */

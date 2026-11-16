@@ -30,7 +30,7 @@ import java.util.List;
 /**
  * Copies a finished itinerary into a fresh draft.
  *
- * A catalogue is built by variation, not from scratch — the fly-out version of
+ * A catalogue is built by variation, not from scratch - the fly-out version of
  * the 6-day classic differs by one day. Without this, that means retyping every
  * day, park, tariff, activity and stay, and the copy silently drifts from the
  * original.
@@ -45,7 +45,7 @@ import java.util.List;
  * name and no history of being reviewed, so publishing it is a decision someone
  * has to make again.
  *
- * <p>Depth is chosen per call — see {@link DuplicateItineraryDTO}. What is never
+ * <p>Depth is chosen per call - see {@link DuplicateItineraryDTO}. What is never
  * copied is images and documents: those are files on disk referenced by row, and
  * a copy pointing at the originals would delete the originals' files when it was
  * deleted. The response says what was copied AND what was left out, so a flag
@@ -144,7 +144,7 @@ public class ItineraryDuplicateService {
 
             /*
              * Copied unconditionally, with no flag of its own. The existing options gate structural
-             * DEPTH — days, parks, tariffs, accommodations, pax. What the price covers is an
+             * DEPTH - days, parks, tariffs, accommodations, pax. What the price covers is an
              * itinerary-level field in the same class as description and highlights, and a copy
              * that silently lost it is the same defect as a quote saved as a template losing it.
              */
@@ -257,7 +257,7 @@ public class ItineraryDuplicateService {
 
         /*
          * Flights ride with the accommodations rather than behind their own flag. The existing
-         * options gate structural DEPTH — whether to bring the days, the parks, the beds — and a
+         * options gate structural DEPTH - whether to bring the days, the parks, the beds - and a
          * flight is part of what a day IS. A copy that silently arrives without its Zanzibar leg
          * looks complete and is not, which is how the inclusion work lost data twice.
          */
@@ -280,7 +280,7 @@ public class ItineraryDuplicateService {
         return copy;
     }
 
-    /** A park visit, with the activities chosen for it and — if asked — its fee categories. */
+    /** A park visit, with the activities chosen for it and - if asked - its fee categories. */
     private ItineraryDayPark copyPark(ItineraryDayPark park, DuplicateItineraryDTO options, Counts counts) {
         ItineraryDayPark copy = ItineraryDayPark.builder()
             .park(park.getPark())
@@ -395,7 +395,7 @@ public class ItineraryDuplicateService {
         return n + " " + (n == 1 ? one : many);
     }
 
-    /** 'a, b and c' — a list a person would read aloud. */
+    /** 'a, b and c' - a list a person would read aloud. */
     private String join(List<String> parts) {
         if (parts.size() == 1) return parts.get(0);
         return String.join(", ", parts.subList(0, parts.size() - 1)) + " and " + parts.get(parts.size() - 1);

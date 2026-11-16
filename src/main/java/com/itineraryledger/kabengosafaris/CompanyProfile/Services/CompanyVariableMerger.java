@@ -14,8 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Adds the company's variables to whatever a record declares, when it is read.
  *
- * At READ time rather than in the seed, deliberately. Seeded rows are never overwritten — that is
- * what protects somebody's edits — so a variable added to a seed would only ever appear on
+ * At READ time rather than in the seed, deliberately. Seeded rows are never overwritten - that is
+ * what protects somebody's edits - so a variable added to a seed would only ever appear on
  * installations created afterwards. Merging here means every event, document and signature, on every
  * installation, gains the company variables the moment this ships, and the next one added needs no
  * migration either.

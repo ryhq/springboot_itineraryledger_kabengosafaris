@@ -257,7 +257,7 @@ public class NewsletterGetService {
             .count("noCustomer", NewsletterSubscriptionSpecification.hasNoCustomer())
             .count("noName", NewsletterSubscriptionSpecification.hasNoName())
             /*
-             * Recency is measured by when they signed up, not by a createdAt — that is the
+             * Recency is measured by when they signed up, not by a createdAt - that is the
              * date this table actually keeps, and the one anybody means by "new".
              */
             .window("newLast7Days", 7, NewsletterSubscriptionSpecification::subscribedAfter)

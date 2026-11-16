@@ -17,7 +17,7 @@ import com.itineraryledger.kabengosafaris.Translation.Services.TranslationServic
  *
  * <p>Found in a real German quote, in print. Thymeleaf escapes on the way into the HTML, so
  * "All park, conservation &amp; crater-service fees" reaches the translator as
- * "conservation &amp;amp; crater-service fees" — and the engine obligingly translated the entity
+ * "conservation &amp;amp; crater-service fees" - and the engine obligingly translated the entity
  * too. The customer's PDF said:
  *
  * <pre>Alle Park, Erhaltung &amp; amp; Kraterservice Gebühren</pre>

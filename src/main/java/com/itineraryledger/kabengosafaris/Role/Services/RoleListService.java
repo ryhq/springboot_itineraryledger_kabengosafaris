@@ -33,8 +33,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * The role list, on the house contract.
  *
- * RoleGetService already answers the two narrow questions the older screens ask —
- * which roles does this user hold, which hold this permission — and those keep their
+ * RoleGetService already answers the two narrow questions the older screens ask -
+ * which roles does this user hold, which hold this permission - and those keep their
  * own methods. This is the list itself: one endpoint carrying the rows, the counters
  * computed from the same specification, and record paging that walks the filtered set
  * rather than every role in id order.
@@ -176,7 +176,7 @@ public class RoleListService {
     /**
      * Narrows by an obfuscated id, or narrows to nothing if it will not decode.
      *
-     * An unreadable id must not quietly widen the list to every role — that is the opposite
+     * An unreadable id must not quietly widen the list to every role - that is the opposite
      * of what was asked for, and on this screen the list is who can do something.
      */
     private Specification<Role> narrowById(
@@ -209,7 +209,7 @@ public class RoleListService {
     /**
      * The rows, with their permission and holder counts.
      *
-     * Permissions are already in memory — the association is eager — so that count is
+     * Permissions are already in memory - the association is eager - so that count is
      * free. Holders are one grouped query for the whole page rather than one per row.
      */
     private List<RoleDTO> withCounts(List<Role> roles) {
@@ -223,7 +223,7 @@ public class RoleListService {
                 holders.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
             }
         } catch (Exception e) {
-            // A count we cannot get is left null, which the UI renders as "—".
+            // A count we cannot get is left null, which the UI renders as "-".
             log.warn("Could not count role holders", e);
         }
 

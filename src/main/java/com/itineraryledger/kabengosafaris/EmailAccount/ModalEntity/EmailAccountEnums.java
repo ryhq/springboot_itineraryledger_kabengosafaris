@@ -3,10 +3,10 @@ package com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity;
 /**
  * Reading the provider, sending method and receiving protocol off a request.
  *
- * These arrived as 1-based codes — 6 meant CUSTOM, 2 meant SMTP, 1 meant IMAP — numbers that appear
+ * These arrived as 1-based codes - 6 meant CUSTOM, 2 meant SMTP, 1 meant IMAP - numbers that appear
  * in no enum and no response, so a caller had to know them by heart. The panel sends the names it
  * displays, which is the reasonable thing to send; the mismatch made Jackson reject the WHOLE body,
- * and the caller was told "Required request body is missing or malformed" — a message that names
+ * and the caller was told "Required request body is missing or malformed" - a message that names
  * neither the field nor the value, for a form where everything looked filled in.
  *
  * So both are accepted. The codes still work for anything that already sends them, and a name is
@@ -17,7 +17,7 @@ public final class EmailAccountEnums {
 
     private EmailAccountEnums() {}
 
-    /** GMAIL=1 … CUSTOM=6, RESEND=7, or the name itself. Null when it is neither. */
+    /** GMAIL=1 ... CUSTOM=6, RESEND=7, or the name itself. Null when it is neither. */
     public static EmailAccountProvider provider(String raw) {
         Integer code = asCode(raw);
         if (code != null) {
@@ -48,7 +48,7 @@ public final class EmailAccountEnums {
         return byName(SendingMethod.values(), raw);
     }
 
-    /** IMAP=1, POP3=2, anything else NONE — or the name. Null only when the name is unknown. */
+    /** IMAP=1, POP3=2, anything else NONE - or the name. Null only when the name is unknown. */
     public static ReceivingProtocol receivingProtocol(String raw) {
         Integer code = asCode(raw);
         if (code != null) {

@@ -8,7 +8,7 @@ import lombok.Data;
 /**
  * Everything a caller can narrow the role list by, in one object.
  *
- * A short list — a dozen roles, most of them shipped with the system — so the useful
+ * A short list - a dozen roles, most of them shipped with the system - so the useful
  * dimensions are not "find one" but "which of these are actually doing anything":
  * which are switched off, which are ours rather than built in, which grant nothing,
  * and which nobody holds. The last two are how a role list rots: somebody adds
@@ -54,8 +54,8 @@ public class RoleFilter {
     /**
      * What is worth looking at.
      *
-     * noPermissions — grants nothing; anybody holding it can sign in and do nothing
-     * noUsers       — nobody holds it, so it is documentation rather than access
+     * noPermissions - grants nothing; anybody holding it can sign in and do nothing
+     * noUsers       - nobody holds it, so it is documentation rather than access
      */
     private List<String> qualities;
 

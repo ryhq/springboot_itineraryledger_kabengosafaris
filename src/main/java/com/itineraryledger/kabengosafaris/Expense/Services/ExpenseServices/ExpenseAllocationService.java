@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
  * What each bill covers, across the days of a trip.
  *
  * The office's real question is never "what does this bill say" but "has this
- * night been paid for, and by which invoice" — and the answer is a relation, not
+ * night been paid for, and by which invoice" - and the answer is a relation, not
  * a field. This service keeps that relation and answers it from both ends: from a
  * bill (what am I paying for) and from a safari (what is already covered).
  */
@@ -118,7 +118,7 @@ public class ExpenseAllocationService {
 
             /*
              * The same thing twice on the same bill is a mistake, not a second
-             * charge — a second charge is a second bill. Saying so beats silently
+             * charge - a second charge is a second bill. Saying so beats silently
              * doubling what the coverage view reports.
              */
             if (allocationRepository.existsByExpenseIdAndSubjectTypeAndSubjectId(

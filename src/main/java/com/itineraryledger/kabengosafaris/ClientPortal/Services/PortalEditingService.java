@@ -404,8 +404,8 @@ public class PortalEditingService {
      *
      * <p>Edits used to leave the page the moment a control was touched. That is wrong twice over.
      * A customer clicking a lodge to see what it is had already changed their own quotation, with
-     * no way back and nothing asked; and anybody making three related changes — a lodge, its room
-     * count, the activity that goes with it — watched the price lurch twice through states that
+     * no way back and nothing asked; and anybody making three related changes - a lodge, its room
+     * count, the activity that goes with it - watched the price lurch twice through states that
      * were never a trip they wanted.
      *
      * <p><strong>All or nothing, and that is the point of the method.</strong> Applying them one
@@ -413,7 +413,7 @@ public class PortalEditingService {
      * client's screen says "5 unsaved" and the quotation holds three of them, which is a worse
      * state than either. One transaction means a refusal anywhere puts everything back.
      *
-     * <p>It delegates to the same five methods a single edit uses — not a copy of their logic.
+     * <p>It delegates to the same five methods a single edit uses - not a copy of their logic.
      * The gates live there, they are scanned by a test, and a second path into a quotation that
      * checked its own version of the rules is exactly the hole this application has had before.
      */
@@ -436,7 +436,7 @@ public class PortalEditingService {
         /*
          * Price at the end rather than after each change.
          *
-         * Repricing is the expensive half of an edit — it rebuilds every line on the quotation —
+         * Repricing is the expensive half of an edit - it rebuilds every line on the quotation -
          * and the intermediate figures are of no interest to anybody: they are the price of trips
          * the client never asked for. Bound to the transaction rather than held in a field,
          * because a field on a singleton service is shared by every customer at once.

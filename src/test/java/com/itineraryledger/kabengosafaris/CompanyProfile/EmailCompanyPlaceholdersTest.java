@@ -24,10 +24,10 @@ import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailTemplateRende
 import com.itineraryledger.kabengosafaris.EmailEvent.Services.EmailTemplateService;
 
 /**
- * That a shipped email template's {{company…}} placeholders are actually filled.
+ * That a shipped email template's {{company...}} placeholders are actually filled.
  *
  * The trap this guards: substitution used to be driven by the EVENT's declared variable list, so a
- * placeholder no event mentioned survived into the sent message as literal braces — the reader would
+ * placeholder no event mentioned survived into the sent message as literal braces - the reader would
  * have seen "{{companyName}}" in the footer. Rendered here against a REAL template file, with an
  * event that declares nothing at all, which is the worst case.
  */
@@ -70,7 +70,7 @@ class EmailCompanyPlaceholdersTest {
         /*
          * Built from the catalogue, not hand-listed.
          *
-         * A hand-written fixture falls behind the moment a variable is added — which is exactly what
+         * A hand-written fixture falls behind the moment a variable is added - which is exactly what
          * happened when the brand colours arrived: the template used them, nothing filled them, and
          * this test was right to fail. Deriving the stub means the fixture cannot go stale.
          */

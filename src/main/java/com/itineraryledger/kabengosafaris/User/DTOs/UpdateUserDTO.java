@@ -28,7 +28,7 @@ public class UpdateUserDTO {
 
     /**
      * Replaces the whole set when sent, so an empty list genuinely means "no roles"
-     * rather than "no change" — which is why it is only read when non-null.
+     * rather than "no change" - which is why it is only read when non-null.
      */
     private List<String> roleIds;
 }

@@ -14,7 +14,7 @@ import org.springframework.security.web.SecurityFilterChain;
  * systemd, the deploy script and an uptime monitor have no JWT and no business obtaining one. The
  * detail is not public in exchange: actuator is bound to 127.0.0.1 on its own port (see
  * `management.server.address`), so only the box itself can read the components. What the internet
- * can reach is the terse `public` health group on /api/public/health — a bare UP or DOWN, no
+ * can reach is the terse `public` health group on /api/public/health - a bare UP or DOWN, no
  * component names, no versions, no paths.
  *
  * First in the chain, ahead of the JWT filter, so a probe is never answered with a 401 during the

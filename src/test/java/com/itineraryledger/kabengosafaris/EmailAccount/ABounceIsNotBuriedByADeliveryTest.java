@@ -24,8 +24,8 @@ import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.ModalEntity.
  * "Delivered" and the bounce survived only in the webhook event table, which nothing reads.
  *
  * <p>It hid a real failure for eight months. One address soft-bounced every message sent to it
- * from 2026-03 onwards — 363 of them, including supplier availability replies and a flight
- * inquiry — while every one of those rows reported Delivered. Nobody chases a message marked
+ * from 2026-03 onwards - 363 of them, including supplier availability replies and a flight
+ * inquiry - while every one of those rows reported Delivered. Nobody chases a message marked
  * delivered, which is exactly why a bounce behind a delivery is the expensive kind to lose.
  *
  * <p>The same code had always let a COMPLAINT override a delivery, with the comment "Complaints

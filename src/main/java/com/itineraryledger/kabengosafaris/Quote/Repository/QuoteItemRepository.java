@@ -64,8 +64,8 @@ public interface QuoteItemRepository extends JpaRepository<QuoteItem, Long>, Jpa
      * Delete only the item types cost estimation can regenerate.
      *
      * <p>Recalculation replaces what it derives and must leave everything else alone. Deleting the
-     * lot and rewriting three types destroyed any hand-written line — a flight, a transfer, a
-     * one-off charge — on the next edit to any day of the quote, silently.
+     * lot and rewriting three types destroyed any hand-written line - a flight, a transfer, a
+     * one-off charge - on the next edit to any day of the quote, silently.
      */
     void deleteByQuoteIdAndItemTypeIn(Long quoteId, java.util.Collection<QuoteItemType> itemTypes);
 

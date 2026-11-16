@@ -17,11 +17,11 @@ import lombok.RequiredArgsConstructor;
  * Which build is running here, and for whom.
  *
  * With one deployment you know what is running because you just pushed it. With one per company the
- * question "is anybody behind?" needs an answer that is not a guess — and it has to be answerable
+ * question "is anybody behind?" needs an answer that is not a guess - and it has to be answerable
  * without a login, because the thing asking is usually a deploy script or a monitor.
  *
  * Deliberately thin: a version, a commit, a build time and the company's name. No dependency
- * versions, no paths, no configuration — an unauthenticated endpoint should not be a map of the box.
+ * versions, no paths, no configuration - an unauthenticated endpoint should not be a map of the box.
  */
 @RestController
 @RequestMapping("/api/public/version")

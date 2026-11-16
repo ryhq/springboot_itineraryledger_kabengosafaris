@@ -30,70 +30,70 @@ DRAFT → SENT → VIEWED → [PARTIALLY_PAID/OVERDUE] → PAID
 ## Workflow Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    INVOICE LIFECYCLE                            │
-└─────────────────────────────────────────────────────────────────┘
++=================================================================+
+|                    INVOICE LIFECYCLE                            |
++=================================================================+
 
-┌──────────┐
-│  DRAFT   │
-└─────┬────┘
-      │
-      │ POST /api/invoices/{id}/state/send
-      │ Permission: PERM_SEND_INVOICE
-      │
-      ▼
-┌──────────┐
-│   SENT   │
-└─────┬────┘
-      │
-      │ POST /api/invoices/{id}/state/mark-viewed
-      │ Permission: PERM_MARK_INVOICE_VIEWED
-      │
-      ▼
-┌──────────┐
-│  VIEWED  │
-└─────┬────┘
-      │
-      ├──────────────────┬───────────────────┐
-      │                  │                   │
-      │ Record Payment   │ Mark Overdue      │
-      │                  │                   │
-      ▼                  ▼                   ▼
-┌──────────┐      ┌──────────┐       ┌──────────┐
-│PARTIALLY │      │   PAID   │       │ OVERDUE  │
-│  PAID    │      │          │       │          │
-└─────┬────┘      └─────┬────┘       └─────┬────┘
-      │                  │                   │
-      │                  │                   │
-      │ Full Payment     │ Refund            │ Payment
-      │                  │                   │
-      ▼                  ▼                   ▼
-┌──────────┐      ┌──────────┐       ┌──────────┐
-│   PAID   │      │ REFUNDED │       │PARTIALLY │
-│          │      │          │       │  PAID    │
-└──────────┘      └──────────┘       └──────────┘
++==========+
+|  DRAFT   |
++=====+====+
+      |
+      | POST /api/invoices/{id}/state/send
+      | Permission: PERM_SEND_INVOICE
+      |
+      v
++==========+
+|   SENT   |
++=====+====+
+      |
+      | POST /api/invoices/{id}/state/mark-viewed
+      | Permission: PERM_MARK_INVOICE_VIEWED
+      |
+      v
++==========+
+|  VIEWED  |
++=====+====+
+      |
+      +==================+===================+
+      |                  |                   |
+      | Record Payment   | Mark Overdue      |
+      |                  |                   |
+      v                  v                   v
++==========+      +==========+       +==========+
+|PARTIALLY |      |   PAID   |       | OVERDUE  |
+|  PAID    |      |          |       |          |
++=====+====+      +=====+====+       +=====+====+
+      |                  |                   |
+      |                  |                   |
+      | Full Payment     | Refund            | Payment
+      |                  |                   |
+      v                  v                   v
++==========+      +==========+       +==========+
+|   PAID   |      | REFUNDED |       |PARTIALLY |
+|          |      |          |       |  PAID    |
++==========+      +==========+       +==========+
 
 
 ADDITIONAL TRANSITIONS:
 
-┌──────────┐    POST /api/invoices/{id}/state/cancel    ┌──────────┐
-│ DRAFT/   │ ──────────────────────────────────────►   │CANCELLED │
-│ SENT/    │    Permission: PERM_CANCEL_INVOICE        └──────────┘
-│ VIEWED   │
-└──────────┘
++==========+    POST /api/invoices/{id}/state/cancel    +==========+
+| DRAFT/   | ======================================►   |CANCELLED |
+| SENT/    |    Permission: PERM_CANCEL_INVOICE        +==========+
+| VIEWED   |
++==========+
 
-┌──────────┐    POST /api/invoices/{id}/state/initiate-refund    ┌──────────┐
-│  PAID/   │ ──────────────────────────────────────────────────► │ REFUNDED │
-│PARTIALLY │    Permission: PERM_INITIATE_INVOICE_REFUND         └──────────┘
-│  PAID    │
-└──────────┘
++==========+    POST /api/invoices/{id}/state/initiate-refund    +==========+
+|  PAID/   | ==================================================► | REFUNDED |
+|PARTIALLY |    Permission: PERM_INITIATE_INVOICE_REFUND         +==========+
+|  PAID    |
++==========+
 
-┌──────────┐    Automatic check or manual trigger          ┌──────────┐
-│ SENT/    │ ──────────────────────────────────────────►   │ OVERDUE  │
-│ VIEWED/  │    POST /api/invoices/{id}/state/mark-overdue └──────────┘
-│PARTIALLY │    Permission: PERM_MARK_INVOICE_OVERDUE
-│  PAID    │
-└──────────┘
++==========+    Automatic check or manual trigger          +==========+
+| SENT/    | ==========================================►   | OVERDUE  |
+| VIEWED/  |    POST /api/invoices/{id}/state/mark-overdue +==========+
+|PARTIALLY |    Permission: PERM_MARK_INVOICE_OVERDUE
+|  PAID    |
++==========+
 ```
 
 ---

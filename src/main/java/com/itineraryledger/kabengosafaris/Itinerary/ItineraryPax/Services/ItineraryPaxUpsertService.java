@@ -94,7 +94,7 @@ public class ItineraryPaxUpsertService {
 
             /*
              * Bean validation does not cascade into a @RequestBody List, so @Min(1)
-             * on the DTO never runs and a zero reached the entity's @PrePersist —
+             * on the DTO never runs and a zero reached the entity's @PrePersist -
              * which throws, and an IllegalArgumentException reads to the caller as
              * "an unexpected error occurred". Check it here, where the answer can
              * name the band.

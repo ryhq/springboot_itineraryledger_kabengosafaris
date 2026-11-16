@@ -25,7 +25,7 @@ import lombok.NoArgsConstructor;
 /**
  * A question the website answers on its FAQ page.
  *
- * Global, and ordered by hand — the order is editorial, so it is stored rather than derived.
+ * Global, and ordered by hand - the order is editorial, so it is stored rather than derived.
  * The per-post FAQs are a different thing entirely and live on the blog itself.
  */
 @Entity

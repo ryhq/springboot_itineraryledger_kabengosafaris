@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/** Aggregate of expense + line items + payments — single round-trip for UI detail page. */
+/** Aggregate of expense + line items + payments - single round-trip for UI detail page. */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

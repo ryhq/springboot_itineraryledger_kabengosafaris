@@ -279,7 +279,7 @@ public class AccommodationController {
     private com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationRepository bulkFlagsRepository;
 
     /**
-     * PATCH /bulk — one request for a whole selection. Only the flags present in
+     * PATCH /bulk - one request for a whole selection. Only the flags present in
      * the body apply, so activate, deactivate, publish and hide are the same call.
      */
     @PatchMapping("/bulk")

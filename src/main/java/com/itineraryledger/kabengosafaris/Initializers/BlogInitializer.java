@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
  * Seeds the articles the website is already serving, so a fresh database matches the live site.
  *
  * Idempotent: a post whose slug exists is left exactly as it is, which means editing a seeded
- * article in the panel is safe — the next restart will not overwrite the edit.
+ * article in the panel is safe - the next restart will not overwrite the edit.
  *
  * RESILIENT BY CONSTRUCTION: every post is seeded in its own REQUIRES_NEW transaction inside
  * its own try/catch, and the whole run is wrapped again. A bad seed costs one article and a

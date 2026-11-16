@@ -161,8 +161,8 @@ public class PortalJourneyService {
      * <p>Different from {@link #revoke}, and the difference is the point. Revoking keeps the
      * journey: the address stops working, but who opened it and when is still on file, which is
      * what you want when a link reached the wrong person and somebody may have to answer for it.
-     * Deleting is for a link that should never have existed — the wrong customer, a test, a
-     * quotation raised twice — where keeping an access log about the wrong person is itself the
+     * Deleting is for a link that should never have existed - the wrong customer, a test, a
+     * quotation raised twice - where keeping an access log about the wrong person is itself the
      * problem.
      *
      * <p>Children go first and in order, because a participant owns devices and codes and the

@@ -30,7 +30,7 @@ public interface AvailabilityRequestRepository
 
     List<AvailabilityRequest> findByThreadId(String threadId);
 
-    /** Still open and asked about a particular stay — the guard's question. */
+    /** Still open and asked about a particular stay - the guard's question. */
     @Query("""
         select r from AvailabilityRequest r
         join r.stays s
@@ -40,7 +40,7 @@ public interface AvailabilityRequestRepository
     List<AvailabilityRequest> findOpenForStay(@Param("stayId") Long stayId);
 
     /**
-     * Open requests for one property — the last resort when a reply arrives with no usable headers.
+     * Open requests for one property - the last resort when a reply arrives with no usable headers.
      *
      * A lodge answering from a different address than the one written to, through a mail client that
      * drops In-Reply-To, is not an edge case; it is Tuesday.
@@ -69,7 +69,7 @@ public interface AvailabilityRequestRepository
     List<AvailabilityRequest> findNeedingMailRepair();
 
     /**
-     * Everything still waiting on an answer, newest first — the pool a stray reply is matched
+     * Everything still waiting on an answer, newest first - the pool a stray reply is matched
      * against when its headers cannot say which ask it belongs to.
      */
     @Query("""

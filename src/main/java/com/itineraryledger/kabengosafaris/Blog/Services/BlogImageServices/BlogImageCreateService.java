@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
  * Uploading images to a post.
  *
  * Everything is validated BEFORE anything is written, and if a later file fails the files
- * already saved are removed again — a half-finished upload leaves rows pointing at nothing,
+ * already saved are removed again - a half-finished upload leaves rows pointing at nothing,
  * which is worse than a clean failure.
  */
 @Service

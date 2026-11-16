@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.*;
  * the global default is used. The engine that actually produced the bytes
  * is reported in the `X-Docx-Engine` response header.
  *
- * Authorization piggy-backs on PERM_GENERATE_PDF — admins can split into
+ * Authorization piggy-backs on PERM_GENERATE_PDF - admins can split into
  * a dedicated PERM_GENERATE_DOCX permission later via the RBAC UI if needed.
  */
 @RestController
@@ -46,7 +46,7 @@ public class WordGenerationController {
     private final IdObfuscator idObfuscator;
 
     /**
-     * Generic DOCX generation endpoint — mirrors POST /api/pdf/generate.
+     * Generic DOCX generation endpoint - mirrors POST /api/pdf/generate.
      * The `engine` field on the request DTO overrides the global docx.engine setting.
      */
     @PostMapping("/generate")

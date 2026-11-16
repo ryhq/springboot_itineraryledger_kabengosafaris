@@ -54,7 +54,7 @@ public class BookingInquiryDTO {
     /**
      * How they actually got here. Null when nothing was recorded, which is every
      * inquiry taken before this shipped and everything entered by hand in the office
-     * — the panel says so rather than reporting it as direct traffic.
+     * - the panel says so rather than reporting it as direct traffic.
      */
     private AttributionDTO attribution;
     private String preferredLocale;

@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
  * One of the company's addresses.
  *
  * A postal box is not a street, and the office a guest walks into is not always the one on the
- * invoice — so the type says which is which, and `isPrimary` says which one a document prints when
+ * invoice - so the type says which is which, and `isPrimary` says which one a document prints when
  * it only has room for one.
  */
 @Entity

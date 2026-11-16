@@ -45,16 +45,16 @@ public class Attribution {
     @Column(name = "attr_campaign", length = 180)
     private String campaign;
 
-    /** utm_content — which creative, which variant. The unit of an A/B test. */
+    /** utm_content - which creative, which variant. The unit of an A/B test. */
     @Column(name = "attr_content", length = 180)
     private String content;
 
-    /** utm_term — the keyword that was bid on. */
+    /** utm_term - the keyword that was bid on. */
     @Column(name = "attr_term", length = 180)
     private String term;
 
     /**
-     * The platform's own click identifier (gclid, fbclid, msclkid…). Kept whole
+     * The platform's own click identifier (gclid, fbclid, msclkid...). Kept whole
      * because it is the only thing that can be matched back against the ad
      * platform's own report when our count and theirs disagree.
      */
@@ -64,7 +64,7 @@ public class Attribution {
     @Column(name = "attr_click_id_type", length = 20)
     private String clickIdType;
 
-    /** The first page of the converting visit — which page the ad actually sold. */
+    /** The first page of the converting visit - which page the ad actually sold. */
     @Column(name = "attr_landing_page", length = 500)
     private String landingPage;
 

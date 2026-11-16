@@ -12,7 +12,7 @@ import lombok.Data;
  * Everything a caller can narrow the safari list by, in one object.
  *
  * It exists so the rows, the counters and the record walk are asked the same
- * question — and so adding a filter is one field rather than four signatures.
+ * question - and so adding a filter is one field rather than four signatures.
  * Spring binds it straight from the query string with {@code @ModelAttribute},
  * so the parameter names on the wire are unchanged.
  */
@@ -41,7 +41,7 @@ public class SafariFilter {
      * Safaris RUNNING in a window, which is not the same question as starting in it.
      *
      * A calendar asks "what is on in August" and a safari that began on 28 July and ends on
-     * 4 August is on in August — filtering by start date alone drops it from the month it is
+     * 4 August is on in August - filtering by start date alone drops it from the month it is
      * visibly in. Overlap: startDate <= runningTo AND endDate >= runningFrom.
      */
     private LocalDate runningFrom;

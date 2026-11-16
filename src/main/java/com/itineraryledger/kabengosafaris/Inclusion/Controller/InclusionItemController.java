@@ -80,7 +80,7 @@ public class InclusionItemController {
     }
 
     /**
-     * PATCH /bulk — enable or disable a whole selection.
+     * PATCH /bulk - enable or disable a whole selection.
      *
      * <p>Lines go on and off together when a policy changes (a park stops waiving a fee, an insurer
      * changes cover), and doing that one row at a time is how half a change ships.
@@ -93,7 +93,7 @@ public class InclusionItemController {
         });
     }
 
-    /** The running order, as a whole list — position IS the display order. */
+    /** The running order, as a whole list - position IS the display order. */
     @PostMapping("/reorder")
     @PreAuthorize("hasAuthority('PERM_UPDATE_INCLUSION_ITEM')")
     public ResponseEntity<ApiResponse<?>> reorder(@Valid @RequestBody ReorderInclusionItemsDTO dto) {

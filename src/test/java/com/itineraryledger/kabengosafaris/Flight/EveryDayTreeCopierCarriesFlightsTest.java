@@ -15,18 +15,18 @@ import org.junit.jupiter.api.Test;
  * A day's tree is copied in seven places, and a copier that forgets a child drops it in silence.
  *
  * <p>Nothing fails when it happens. The duplicated itinerary opens, the generated quote prices, the
- * safari runs — they are simply missing a leg, and the first person to notice is a client at an
+ * safari runs - they are simply missing a leg, and the first person to notice is a client at an
  * airstrip with no seat. The inclusion work hit this exact failure twice before it was believed.
  *
  * <p>So the rule is structural: <b>wherever a copier carries accommodations, it must carry
  * flights.</b> Accommodations are the reference child because every one of these seven copies them
- * — they are the oldest and most complete member of the day tree — so "handles accommodations" is a
+ * - they are the oldest and most complete member of the day tree - so "handles accommodations" is a
  * reliable way to ask "is this a day-tree copier?" without maintaining a hand-written list that the
  * eighth copier would not be added to.
  *
  * <p>This reads source text rather than running the copiers. That is a real limit and it is worth
  * naming: it proves the branch exists, not that it is correct. It is the cheap half of the
- * guarantee, and the half that actually decays — a new copier written next year is far likelier to
+ * guarantee, and the half that actually decays - a new copier written next year is far likelier to
  * omit flights entirely than to copy them wrongly.
  */
 class EveryDayTreeCopierCarriesFlightsTest {
@@ -59,7 +59,7 @@ class EveryDayTreeCopierCarriesFlightsTest {
             String source = Files.readString(file);
             assertTrue(source.contains("Accommodation"),
                 file.getFileName() + " no longer copies accommodations, so it is no longer the "
-                    + "shape this test assumes — check whether it is still a day-tree copier");
+                    + "shape this test assumes - check whether it is still a day-tree copier");
             assertTrue(source.contains("Flight"),
                 file.getFileName() + " copies accommodations but not flights: "
                     + entry.getValue());
@@ -74,7 +74,7 @@ class EveryDayTreeCopierCarriesFlightsTest {
         /*
          * A safari is built either straight from an itinerary or from an accepted quote, and the
          * two walk different trees. Wiring only the itinerary path leaves every safari that came
-         * from a quote — which is most of them — without its flights.
+         * from a quote - which is most of them - without its flights.
          */
         assertTrue(source.contains("copyDayFlights("),
             "the itinerary path must copy flights");
@@ -94,7 +94,7 @@ class EveryDayTreeCopierCarriesFlightsTest {
                 + "about, so an export with no matching import loses them without a word");
         assertTrue(source.contains("\"accommodations\", \"flights\""),
             "\"flights\" must be named at the Scalars.apply call site as well as caught by the "
-                + "container guard — the guard is the net, the exclusion is the intent");
+                + "container guard - the guard is the net, the exclusion is the intent");
         assertTrue(source.contains("\"flights\","),
             "and the flight catalogue must be in requires(), or an itinerary naming a sector "
                 + "arrives before the sector exists and refuses itself");

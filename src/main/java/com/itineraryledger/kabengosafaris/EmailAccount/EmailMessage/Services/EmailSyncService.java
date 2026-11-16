@@ -39,7 +39,7 @@ public class EmailSyncService {
         int fetched = emailReceivingService.fetchNewEmails(account);
         log.info("Manual sync complete for account {}: {} new emails fetched", account.getEmail(), fetched);
 
-        // §9 — broadcast sync.completed to any subscribed SSE clients so
+        // §9 - broadcast sync.completed to any subscribed SSE clients so
         // the inbox v2 sync pill flips green without waiting for a poll.
         // Instant serialises as an ISO-8601 UTC string so JS Date() parses
         // it correctly regardless of the user's timezone (see also the

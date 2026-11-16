@@ -1,7 +1,7 @@
 package com.itineraryledger.kabengosafaris.Vendor.Enums;
 
 /**
- * VendorType — categorises external parties we PAY (not customers we bill).
+ * VendorType - categorises external parties we PAY (not customers we bill).
  * Used by the Expense module to bucket spend by vendor kind.
  */
 public enum VendorType {

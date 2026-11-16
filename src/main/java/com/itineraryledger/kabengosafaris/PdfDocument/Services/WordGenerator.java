@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
  *                                                    LibreOffice + jodconverter.local.enabled=true)
  *
  * Selection: reads {@code docx.engine} from {@link DocxSettingGetterServices}
- * on every request — so a runtime edit via PUT /api/docx-settings/{id} takes
+ * on every request - so a runtime edit via PUT /api/docx-settings/{id} takes
  * effect immediately without restart. Falls back to the application.properties
  * value (@Value inside DocxSettingGetterServices) when the DB row is absent or
  * inactive.
@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
  *
  * Downstream callers ({@link WordGenerationBaseService} and per-document
  * services) keep calling {@code wordGenerator.generateDocx(html, template)}
- * as before — routing is transparent.
+ * as before - routing is transparent.
  */
 @Service
 @Slf4j

@@ -103,7 +103,7 @@ public class RentalClientController {
     @org.springframework.beans.factory.annotation.Autowired
     private com.itineraryledger.kabengosafaris.RentalClient.Repository.RentalClientRepository bulkFlagsRepository;
 
-    /** PATCH /bulk — activate or withdraw a whole selection in one request. */
+    /** PATCH /bulk - activate or withdraw a whole selection in one request. */
     @PatchMapping("/bulk")
     @PreAuthorize("hasAuthority('PERM_UPDATE_RENTAL_CLIENT')")
     public ResponseEntity<?> bulkFlags(

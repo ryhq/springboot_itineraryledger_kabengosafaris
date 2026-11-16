@@ -187,7 +187,7 @@ public class SecurityConfigurations {
     /**
      * Who may make a credentialed request to this API.
      *
-     * The panel's own origin, plus whatever this deployment adds — a second panel hostname during a
+     * The panel's own origin, plus whatever this deployment adds - a second panel hostname during a
      * cutover, or a developer's machine working against a live API, which is a real workflow and
      * better stated than smuggled in behind a wildcard.
      */
@@ -262,7 +262,7 @@ public class SecurityConfigurations {
              * Named origins, not a wildcard.
              *
              * This was `*` WITH credentials, which means any page anywhere could make a credentialed
-             * request to this API and read the answer — the browser's same-origin protection turned
+             * request to this API and read the answer - the browser's same-origin protection turned
              * off for every site on the internet at once. It existed for the backup cookie-bridge,
              * which needs credentials; the fix is to keep credentials and name who may use them.
              *
@@ -273,7 +273,7 @@ public class SecurityConfigurations {
              * claimed they were unaffected because "their API references are <img> sources, and an
              * image load is not a CORS request". Only the pictures are. The sites also FETCH their
              * parks, heroes, accommodations and testimonies from /api/public/*, and locking this to
-             * the panel's origin emptied both of them — the API kept answering 200 with every row
+             * the panel's origin emptied both of them - the API kept answering 200 with every row
              * present, and the browser threw the answers away.
              */
             corsConfiguration.setAllowedOrigins(allowedOrigins());
@@ -284,7 +284,7 @@ public class SecurityConfigurations {
                 HttpHeaders.CONTENT_DISPOSITION
             )); // Expose specific headers
             // Required so the browser accepts cross-origin requests carrying
-            // cookies (used by the backup download cookie-bridge — a
+            // cookies (used by the backup download cookie-bridge - a
             // short-lived path-scoped JWT cookie issued by
             // /api/backups/{filename}/prepare-download and read on the
             // following top-level navigation to /api/backups/download/*).
@@ -296,7 +296,7 @@ public class SecurityConfigurations {
              * The public API answers any origin, and carries no credentials while doing it.
              *
              * These endpoints are published by definition: a park's description, a hero image, the
-             * testimonials — served to a website whose whole job is showing them to strangers, and
+             * testimonials - served to a website whose whole job is showing them to strangers, and
              * readable by anyone who types the URL. CORS protects a browser from being used as
              * somebody's authenticated proxy, and with credentials off there is no authority to
              * borrow, so naming origins here would buy nothing and cost an outage every time a
@@ -304,7 +304,7 @@ public class SecurityConfigurations {
              *
              * allowCredentials(false) is the load-bearing half. A wildcard WITH credentials is the
              * hole this whole configuration exists to close, and the browser refuses that pairing
-             * anyway — which is a good sign it should not be attempted.
+             * anyway - which is a good sign it should not be attempted.
              *
              * POST is included because the sites submit to it: a testimonial, a newsletter
              * subscription, a booking inquiry.
@@ -316,7 +316,7 @@ public class SecurityConfigurations {
             publicConfiguration.setAllowCredentials(false);
 
             UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-            /* the more specific pattern is registered first — the source takes the first match */
+            /* the more specific pattern is registered first - the source takes the first match */
             source.registerCorsConfiguration("/api/public/**", publicConfiguration);
             source.registerCorsConfiguration("/**", corsConfiguration);
             cors.configurationSource(source);
@@ -336,14 +336,14 @@ public class SecurityConfigurations {
                 .requestMatchers("/api/auth/**").permitAll() // Allow unauthenticated access to auth endpoints
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Allow unauthenticated access to Swagger documentation
                 /*
-                 * PUBLIC MEDIA — website content, and an <img> carries no bearer token.
+                 * PUBLIC MEDIA - website content, and an <img> carries no bearer token.
                  *
                  * IMAGES only. Every one of these is served to the public site: park and activity
                  * photos, accommodation galleries, heroes, blog art, testimony portraits. A URL is
                  * the only credential, which is exactly right for a picture meant to be published.
                  *
-                 * DOCUMENTS are deliberately NOT here. They were, and it meant a customer document —
-                 * the module that exists to hold passports and visas — could be fetched by anyone
+                 * DOCUMENTS are deliberately NOT here. They were, and it meant a customer document -
+                 * the module that exists to hold passports and visas - could be fetched by anyone
                  * with the link: no login, no permission check, and links leak through forwarded
                  * mail, browser history and shared screens. The panel reads private files through
                  * the API with its token, so nothing needed the exemption.
@@ -363,8 +363,8 @@ public class SecurityConfigurations {
                 .requestMatchers("/api/public/**").permitAll() // Allow public access to website frontend APIs
                 /*
                  * The terse health probe: UP or DOWN, no components, no versions, no paths (see the
-                 * `public` health group). Whatever asks — an uptime monitor, a load balancer, the
-                 * deploy script — has no token and no way to obtain one, and answering it with a 401
+                 * `public` health group). Whatever asks - an uptime monitor, a load balancer, the
+                 * deploy script - has no token and no way to obtain one, and answering it with a 401
                  * would report the app as broken while it is merely private. The DETAILED health
                  * lives on the localhost-only management port.
                  */
@@ -382,7 +382,7 @@ public class SecurityConfigurations {
          * The feature gate runs FIRST of the three.
          *
          * A module this company does not have should answer "no such thing" before anybody asks who is
-         * calling or what they may do — otherwise a disabled feature's 404 depends on being logged in,
+         * calling or what they may do - otherwise a disabled feature's 404 depends on being logged in,
          * and an unauthenticated caller would learn more than a signed-in one.
          */
         .addFilterBefore(featureGateFilter, DynamicPermissionFilter.class)
@@ -390,8 +390,8 @@ public class SecurityConfigurations {
          * The rate limiter runs before all of them.
          *
          * Everything it guards is reachable without an account, so making it wait behind
-         * authentication would mean the work it exists to prevent — a database lookup and an outgoing
-         * email — happens on the way to being refused. It sits after CORS, though, which Spring puts
+         * authentication would mean the work it exists to prevent - a database lookup and an outgoing
+         * email - happens on the way to being refused. It sits after CORS, though, which Spring puts
          * at the head of the chain: a 429 the browser cannot read is a form that silently does
          * nothing.
          */

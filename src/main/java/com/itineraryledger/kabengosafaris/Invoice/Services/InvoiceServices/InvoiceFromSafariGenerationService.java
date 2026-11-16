@@ -148,7 +148,7 @@ public class InvoiceFromSafariGenerationService {
              * One live invoice per safari, same rule as the direct create path.
              *
              * This endpoint re-derives every line from the costing, so running it
-             * twice bills the whole trip twice — and the second one looks exactly
+             * twice bills the whole trip twice - and the second one looks exactly
              * as legitimate as the first. Raising a supplement is a different act
              * with a different instrument: POST /api/invoices with isSupplement
              * and a reason, carrying only what changed.
@@ -166,7 +166,7 @@ public class InvoiceFromSafariGenerationService {
             /*
              * A CANCELLED invoice still holds the slot.
              *
-             * safari_id carries a unique index — one invoice row per safari — so the check above,
+             * safari_id carries a unique index - one invoice row per safari - so the check above,
              * which deliberately lets a cancelled one through, promised something the schema
              * forbids. The insert then died on commit and surfaced as "An unexpected error
              * occurred", with no hint that a cancelled invoice was in the way.
@@ -301,7 +301,7 @@ public class InvoiceFromSafariGenerationService {
             }
 
             // Markup multiplier baked into each line item's unit price (same
-            // model as Quote): customer never sees a markup line — the
+            // model as Quote): customer never sees a markup line - the
             // inflated price IS the line total. Falls back to quote values
             // when not explicitly provided on the DTO.
             BigDecimal multiplier = computeMarkupMultiplier(
@@ -319,7 +319,7 @@ public class InvoiceFromSafariGenerationService {
             InvoiceDTO invoiceDTO = (InvoiceDTO) invoiceResponse.getBody().getData();
             String invoiceId = invoiceDTO.getId();
 
-            // 6. Create InvoiceLineItems — either copied verbatim from the quote
+            // 6. Create InvoiceLineItems - either copied verbatim from the quote
             // (preserving manual lines like the flight) or re-derived from the
             // cost estimation.
             int itemsCreated;
@@ -338,7 +338,7 @@ public class InvoiceFromSafariGenerationService {
              *
              * Re-read rather than threaded through CreateInvoiceDTO, the same shape the quote
              * generator uses when it re-reads its Quote. Safari's rows first, the quote's as a
-             * fallback for a trip booked before the chain existed — and neither present is simply
+             * fallback for a trip booked before the chain existed - and neither present is simply
              * an invoice that says nothing, never an exception: an invoice that cannot be raised is
              * worse than one that states a little less than it might.
              */
@@ -380,7 +380,7 @@ public class InvoiceFromSafariGenerationService {
      * When accounting fields (tax, discount, notes, payment terms) are not explicitly provided,
      * falls back to values from the latest quote for this safari's itinerary + customer.
      *
-     * @param latestQuote The latest quote (nullable) — used as fallback for accounting defaults
+     * @param latestQuote The latest quote (nullable) - used as fallback for accounting defaults
      */
     private CreateInvoiceDTO buildCreateInvoiceDTO(
             String safariIdObfuscated,
@@ -417,7 +417,7 @@ public class InvoiceFromSafariGenerationService {
 
         dto.setSafariId(safariIdObfuscated);
 
-        // Invoice dates — use quote's fullPaymentDueDate as dueDate fallback
+        // Invoice dates - use quote's fullPaymentDueDate as dueDate fallback
         dto.setIssueDate(issueDate);
         if (dueDate != null) {
             dto.setDueDate(dueDate);
@@ -425,7 +425,7 @@ public class InvoiceFromSafariGenerationService {
             dto.setDueDate(latestQuote.getFullPaymentDueDate());
         }
 
-        // Pricing details — fall back to quote values when not explicitly provided
+        // Pricing details - fall back to quote values when not explicitly provided
         if (taxPercentage != null) {
             dto.setTaxPercentage(taxPercentage);
         } else if (latestQuote != null && latestQuote.getTaxPercentage() != null) {
@@ -445,7 +445,7 @@ public class InvoiceFromSafariGenerationService {
                     latestQuote.getQuoteCode());
         }
 
-        // Markup — explicit override beats quote fallback
+        // Markup - explicit override beats quote fallback
         if (agentCommissionPercentage != null) {
             dto.setAgentCommissionPercentage(agentCommissionPercentage);
             dto.setAgentCommissionReason(agentCommissionReason);
@@ -465,13 +465,13 @@ public class InvoiceFromSafariGenerationService {
                     latestQuote.getMarginUpliftPercentage(), latestQuote.getQuoteCode());
         }
 
-        // Notes — fall back to quote values
+        // Notes - fall back to quote values
         dto.setInternalNotes(internalNotes != null ? internalNotes
                 : (latestQuote != null ? latestQuote.getInternalNotes() : null));
         dto.setCustomerNotes(customerNotes != null ? customerNotes
                 : (latestQuote != null ? latestQuote.getCustomerNotes() : null));
 
-        // Payment terms — build from quote deposit/payment info if not provided
+        // Payment terms - build from quote deposit/payment info if not provided
         if (paymentTerms != null && !paymentTerms.isBlank()) {
             dto.setPaymentTerms(paymentTerms);
         } else if (latestQuote != null && latestQuote.getDepositPercentage() != null) {
@@ -497,7 +497,7 @@ public class InvoiceFromSafariGenerationService {
      * Create InvoiceLineItems from cost estimation breakdown.
      *
      * <p>When {@code condense} is true, all line items belonging to the same
-     * InvoiceItemType (Accommodation, Park Fee, Activity, …) are merged into
+     * InvoiceItemType (Accommodation, Park Fee, Activity, ...) are merged into
      * one InvoiceLineItem per type, with prices summed per currency. The
      * merged row's description preserves the underlying breakdown so the
      * customer-facing PDF still shows what is included.
@@ -560,9 +560,9 @@ public class InvoiceFromSafariGenerationService {
     /**
      * Copy the quote's active line items verbatim into the invoice.
      *
-     * <p>This preserves the exact shape of the quote — including any
+     * <p>This preserves the exact shape of the quote - including any
      * manually-added lines (e.g. a TRANSPORT/flight line) that cost estimation
-     * cannot produce — and whatever condensed/detailed form the quote is
+     * cannot produce - and whatever condensed/detailed form the quote is
      * already in. Prices are copied as-is: the quote already has markup baked
      * into its unit prices, so no commission/uplift multiplier is applied here
      * (doing so would double-inflate).
@@ -599,7 +599,7 @@ public class InvoiceFromSafariGenerationService {
                 CreateInvoiceLineItemDTO.PriceInput pi = new CreateInvoiceLineItemDTO.PriceInput();
                 pi.setCurrency(p.getCurrency());
                 pi.setQuantity(p.getQuantity() != null && p.getQuantity() >= 1 ? p.getQuantity() : 1);
-                pi.setUnitPrice(p.getUnitPrice()); // verbatim — markup already baked in
+                pi.setUnitPrice(p.getUnitPrice()); // verbatim - markup already baked in
                 pi.setBreakdown(p.getBreakdown());
                 prices.add(pi);
             }

@@ -263,7 +263,7 @@ Content-Type: application/json
 
 **Conversion Rate Calculation:**
 ```
-Conversion Rate = ((Accepted Quotes + Converted Quotes) / Total Sent Quotes) × 100
+Conversion Rate = ((Accepted Quotes + Converted Quotes) / Total Sent Quotes) x 100
 ```
 
 **Error Response (500 Internal Server Error):**

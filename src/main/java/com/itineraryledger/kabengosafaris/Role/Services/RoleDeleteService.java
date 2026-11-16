@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Deleting roles.
  *
- * Reference-checked, per id, reporting what it refused and why — the house contract for
+ * Reference-checked, per id, reporting what it refused and why - the house contract for
  * every delete in this API. It did not used to be: a role somebody still held failed on
  * the user_roles foreign key, the failure was logged and swallowed, and the caller got
  * "0 role(s) deleted successfully" with a 200. A success that deleted nothing is the
@@ -33,10 +33,10 @@ import lombok.extern.slf4j.Slf4j;
  *
  * Two things are refused:
  *
- *   · A built-in role. SUPERADMIN, ADMIN, USER and GUEST are read-only: the initializer
+ *   | A built-in role. SUPERADMIN, ADMIN, USER and GUEST are read-only: the initializer
  *     owns their definition and rewrites it on every startup, so any change here is either
  *     undone overnight or, for a delete, loses every assignment to it in the meantime.
- *   · A role somebody still holds. Deleting it would strip their access silently, and
+ *   | A role somebody still holds. Deleting it would strip their access silently, and
  *     nothing would record that it had happened; switching the role off is the reversible
  *     way to suspend a group, and reassigning people first is the deliberate way.
  *
@@ -142,8 +142,8 @@ public class RoleDeleteService {
     /**
      * How many people hold this role.
      *
-     * A failure here must not read as "nobody holds it" — that is how a delete gets
-     * through and silently strips somebody's access — so an error counts as one holder
+     * A failure here must not read as "nobody holds it" - that is how a delete gets
+     * through and silently strips somebody's access - so an error counts as one holder
      * and the delete is refused.
      */
     private long countHolders(Long roleId) {
@@ -171,7 +171,7 @@ public class RoleDeleteService {
         roleRepository.deleteById(id);
     }
 
-    /** For the record page, so the ⋯ menu can explain itself before anything is clicked. */
+    /** For the record page, so the ... menu can explain itself before anything is clicked. */
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<?>> checkDeletable(String obfuscated) {
         try {

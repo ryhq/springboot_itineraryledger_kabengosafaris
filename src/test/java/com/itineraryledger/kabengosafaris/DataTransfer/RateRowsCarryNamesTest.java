@@ -14,7 +14,7 @@ import com.itineraryledger.kabengosafaris.ParkTariffRate.ParkTariffRate;
 /**
  * A row carries its references as NAMES, and importing it must not choke on them.
  *
- * "High Season" is the only form of a season that means anything in another installation — an id
+ * "High Season" is the only form of a season that means anything in another installation - an id
  * belongs to the database it came from. So every rate row has "season": "High Season" beside its
  * scalar columns, while the entity's season property is a Season.
  *
@@ -25,7 +25,7 @@ import com.itineraryledger.kabengosafaris.ParkTariffRate.ParkTariffRate;
  *     to ParkTariffRate
  *
  * Parks, activities and accommodations all name their references this way, so no rate had ever
- * imported — on the first real bundle, all 2,664 of them.
+ * imported - on the first real bundle, all 2,664 of them.
  */
 class RateRowsCarryNamesTest {
 
@@ -87,7 +87,7 @@ class RateRowsCarryNamesTest {
     @DisplayName("when applying does fail, the message says what and where")
     void theMessageIsDiagnosable() {
         /*
-         * The old message printed copy.fieldNames() — an Iterator — so it read like
+         * The old message printed copy.fieldNames() - an Iterator - so it read like
          * "LinkedKeyIterator@458f3d5c", and the cause was dropped. A failed import told nobody
          * anything.
          */

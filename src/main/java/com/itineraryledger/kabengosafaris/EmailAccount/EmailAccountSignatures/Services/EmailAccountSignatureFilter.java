@@ -14,7 +14,7 @@ import lombok.Data;
 @Data
 public class EmailAccountSignatureFilter {
 
-    /** Free text across the name and description — never the body, which is a whole file. */
+    /** Free text across the name and description - never the body, which is a whole file. */
     private String keyword;
     private String search;
 
@@ -30,7 +30,7 @@ public class EmailAccountSignatureFilter {
     private Boolean isDefault;
 
     /**
-     * "shipped" / "custom" — whether this came with the system or somebody wrote it.
+     * "shipped" / "custom" - whether this came with the system or somebody wrote it.
      *
      * Worth a filter because the two behave differently: a shipped signature can always be
      * restored and can never be deleted.

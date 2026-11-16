@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
  * A new question.
  *
  * No displayOrder: a new FAQ goes to the end of the list, and where it should actually sit is
- * decided by dragging it there — see UpdateFaqDTO for why one row cannot own a sequence.
+ * decided by dragging it there - see UpdateFaqDTO for why one row cannot own a sequence.
  */
 @Data
 @NoArgsConstructor

@@ -344,13 +344,13 @@ public class SafariFullGetService {
     /**
      * A flight on a safari day, in the shape the cost engine reads.
      *
-     * <p>The markup cascade is resolved here, once — line, then fare, then airline — for the same
+     * <p>The markup cascade is resolved here, once - line, then fare, then airline - for the same
      * reason the itinerary side does it here rather than in the calculator: resolved in two places,
      * the cost sheet and the panel eventually disagree about which one applied.
      *
      * <p>A safari HAS dates, unlike an itinerary, so a line with no chosen departure is a looser
-     * end here than there. It still prices off the cheapest live fare rather than nothing — the
-     * warnings the pricer raises say so on the Cost tab — because a running trip with a blank
+     * end here than there. It still prices off the cheapest live fare rather than nothing - the
+     * warnings the pricer raises say so on the Cost tab - because a running trip with a blank
      * where a flight should be is the worse failure.
      */
     private FullItineraryDTO.DayFlightDTO convertDayFlightToDTO(SafariDayFlight flight) {

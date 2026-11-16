@@ -19,7 +19,7 @@ public class UpdateTranslationAccountDTO {
     /** Provider type: 1=LIBRE_TRANSLATE, 2=GOOGLE_CLOUD, 3=DEEPL */
     private Integer providerType;
 
-    /** API key — will be re-encrypted if provided */
+    /** API key - will be re-encrypted if provided */
     private String apiKey;
 
     /** Provider endpoint URL */

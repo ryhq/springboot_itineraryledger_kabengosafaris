@@ -34,10 +34,10 @@ import lombok.extern.slf4j.Slf4j;
  * Two guards run through the whole class, and they exist because the mistakes they
  * prevent cannot be undone from inside the application:
  *
- *   · You cannot switch off, lock or strip the roles from your OWN account. The
- *     request would succeed and the next one would be refused — locked out by your
+ *   | You cannot switch off, lock or strip the roles from your OWN account. The
+ *     request would succeed and the next one would be refused - locked out by your
  *     own click, with no way back in to reverse it.
- *   · You cannot remove the last way in. If a change would leave no enabled account
+ *   | You cannot remove the last way in. If a change would leave no enabled account
  *     holding an active SUPERADMIN role, it is refused. Otherwise the only remedy is
  *     a hand-written UPDATE against the database, which is not a remedy an office has.
  */
@@ -194,7 +194,7 @@ public class UserAdminUpdateService {
      *
      * The real case is a lost or wiped phone: the authenticator is gone and its codes
      * are unrecoverable, so somebody has to clear the enrolment before they can set it
-     * up again. The seed and the backup codes are both dropped — leaving either behind
+     * up again. The seed and the backup codes are both dropped - leaving either behind
      * would let the old phone, if it ever turns up, still sign in.
      */
     @Transactional
@@ -294,7 +294,7 @@ public class UserAdminUpdateService {
      *
      * Reads the pending state of the account being changed, and the saved state of
      * everybody else, so it catches the last superadmin being deactivated and the last
-     * superadmin having the role taken away — which are the same accident.
+     * superadmin having the role taken away - which are the same accident.
      */
     private ResponseEntity<ApiResponse<?>> refuseIfStrandingTheSystem(User pending) {
         boolean pendingIsAWayIn = isAWayIn(pending);

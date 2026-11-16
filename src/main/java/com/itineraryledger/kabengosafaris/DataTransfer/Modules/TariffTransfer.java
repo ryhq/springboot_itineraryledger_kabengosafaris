@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * The tariff catalogue: what KINDS of charge exist at all.
  *
- * Not an export anybody asks for — it travels because park rates are made of it. A park rate is
+ * Not an export anybody asks for - it travels because park rates are made of it. A park rate is
  * identified by (park, tariff, season, nationality, age), so a bundle of Serengeti rates that did
  * not carry "Conservation Fee" as a concept would arrive with nowhere to put a single number.
  *

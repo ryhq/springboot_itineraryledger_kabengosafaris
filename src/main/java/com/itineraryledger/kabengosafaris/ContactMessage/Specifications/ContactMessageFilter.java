@@ -35,9 +35,9 @@ public class ContactMessageFilter {
     /**
      * What needs doing.
      *
-     * unread — nobody has opened it. unanswered — read but not replied to, which
-     * is the one that gets forgotten. stale — unanswered and more than two days
-     * old. known — from somebody already on our books, which changes how it reads.
+     * unread - nobody has opened it. unanswered - read but not replied to, which
+     * is the one that gets forgotten. stale - unanswered and more than two days
+     * old. known - from somebody already on our books, which changes how it reads.
      */
     private List<String> queues;
 

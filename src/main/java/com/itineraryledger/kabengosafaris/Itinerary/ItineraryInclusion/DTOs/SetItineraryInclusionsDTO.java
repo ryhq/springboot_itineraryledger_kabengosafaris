@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
  * The whole list, in order, replacing whatever was there.
  *
  * <p>Not one row at a time. Position in the array IS the print order, so sending a single row's
- * new number would leave every other row disagreeing with what the person just did — the same
+ * new number would leave every other row disagreeing with what the person just did - the same
  * reason the FAQ and the inclusion catalogue take their running order as a whole.
  *
  * <p>An empty list is a legitimate instruction: it means this trip says nothing about what its

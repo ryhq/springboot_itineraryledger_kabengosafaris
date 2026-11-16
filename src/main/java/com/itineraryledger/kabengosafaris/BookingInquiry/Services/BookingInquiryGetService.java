@@ -75,7 +75,7 @@ public class BookingInquiryGetService {
     /**
      * One inquiry, plus where it sits in the set the caller was looking at.
      *
-     * Paging out of an "unanswered" list must stay among unanswered ones — arrows
+     * Paging out of an "unanswered" list must stay among unanswered ones - arrows
      * that traverse a different set from the one on screen are worse than none.
      */
     public ResponseEntity<ApiResponse<?>> getInquiryById(
@@ -197,7 +197,7 @@ public class BookingInquiryGetService {
     /**
      * ONE specification, shared by the rows, the counters and the record walk.
      *
-     * Every dimension ORs inside itself and ANDs across — "luxury or mid-range,
+     * Every dimension ORs inside itself and ANDs across - "luxury or mid-range,
      * from Germany, still unanswered" is one question.
      */
     private Specification<BookingInquiry> buildSpec(BookingInquiryFilter filter) {
@@ -276,7 +276,7 @@ public class BookingInquiryGetService {
             /*
              * Where they came from. The breakdown is what a campaign report groups by;
              * `paid` is the subset that cost money, and `untracked` is the honest
-             * counter beside it — leads that carry no arrival at all, so nobody reads
+             * counter beside it - leads that carry no arrival at all, so nobody reads
              * the percentages as if they covered everything.
              */
             .breakdown("byChannel", AcquisitionChannel.values(), BookingInquirySpecification::byChannel)

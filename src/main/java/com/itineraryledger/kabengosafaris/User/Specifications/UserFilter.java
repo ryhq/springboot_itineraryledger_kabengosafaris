@@ -25,7 +25,7 @@ public class UserFilter {
 
     /** Narrow to holders of one role, by obfuscated id. */
     private String roleId;
-    /** …or several, OR'd together. */
+    /** ...or several, OR'd together. */
     private List<String> roleIds;
 
     /** Role names, for links that arrive knowing "ADMIN" rather than an id. */
@@ -46,11 +46,11 @@ public class UserFilter {
     /**
      * What needs attention.
      *
-     * noRoles     — can log in and do nothing; almost always an unfinished setup
-     * neverSignedIn — invited, never activated; the invite may have been lost
-     * mfaOff      — no second factor on an account that can see customer data
-     * passwordExpired — will be refused at the next login
-     * failedAttempts  — somebody is getting the password wrong, or guessing it
+     * noRoles     - can log in and do nothing; almost always an unfinished setup
+     * neverSignedIn - invited, never activated; the invite may have been lost
+     * mfaOff      - no second factor on an account that can see customer data
+     * passwordExpired - will be refused at the next login
+     * failedAttempts  - somebody is getting the password wrong, or guessing it
      */
     private List<String> qualities;
 

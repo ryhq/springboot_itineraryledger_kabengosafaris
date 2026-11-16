@@ -95,7 +95,7 @@ public class EmailFetchScheduler {
      */
     private boolean isDueForFetch(EmailAccount account) {
         if (account.getLastFetchedAt() == null) {
-            return true; // Never fetched — fetch now
+            return true; // Never fetched - fetch now
         }
 
         int intervalMinutes = account.getFetchIntervalMinutes() != null
@@ -121,7 +121,7 @@ public class EmailFetchScheduler {
     }
 
     /**
-     * Handle successful fetch — reset failure count, update timestamps.
+     * Handle successful fetch - reset failure count, update timestamps.
      */
     @Transactional
     public void onFetchSuccess(EmailAccount account, int fetchedCount) {
@@ -136,7 +136,7 @@ public class EmailFetchScheduler {
     }
 
     /**
-     * Handle fetch failure — increment failure count, apply backoff, auto-disable after threshold.
+     * Handle fetch failure - increment failure count, apply backoff, auto-disable after threshold.
      */
     @Transactional
     public void onFetchFailure(EmailAccount account, Exception e) {

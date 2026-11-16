@@ -138,7 +138,7 @@ public class ItineraryCostEstimationService {
     }
 
     /**
-     * Estimate costs given a pre-built {@link FullItineraryDTO} — used by
+     * Estimate costs given a pre-built {@link FullItineraryDTO} - used by
      * {@code QuoteCostEstimationService} which synthesises this shape from
      * the Quote's own day-tree + pax mix, so the customer's per-quote edits
      * (room counts, pax changes, accommodation swaps) feed through the same
@@ -233,7 +233,7 @@ public class ItineraryCostEstimationService {
             /*
              * Aggregate flights by currency. Easy to forget, and the failure is quiet: the flight
              * would appear in its own breakdown and be missing from the subtotal the quote is built
-             * from — the same shape as the grand-total bug this module already had once.
+             * from - the same shape as the grand-total bug this module already had once.
              */
             if (flightCosts.getItems() != null) {
                 for (CostLineItem item : flightCosts.getItems()) {
@@ -849,8 +849,8 @@ public class ItineraryCostEstimationService {
     /**
      * Air fares for the whole trip.
      *
-     * <p>Every figure comes from {@link FlightFarePricer} — the same one the itinerary Cost tab
-     * uses — so the quote and the Cost tab cannot disagree about what a flight costs. This walks the
+     * <p>Every figure comes from {@link FlightFarePricer} - the same one the itinerary Cost tab
+     * uses - so the quote and the Cost tab cannot disagree about what a flight costs. This walks the
      * day tree and nothing more.
      *
      * <p>Alternatives and lines switched off are skipped, exactly as they are everywhere else: an

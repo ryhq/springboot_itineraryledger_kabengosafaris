@@ -189,7 +189,7 @@ public class PaxAgeCategorySpecification {
         };
     }
 
-    /** Rows created on or after `moment` — the recency counters. */
+    /** Rows created on or after `moment` - the recency counters. */
     public static Specification<PaxAgeCategory> createdAfter(java.time.LocalDateTime moment) {
         return (root, query, cb) ->
             moment == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), moment);

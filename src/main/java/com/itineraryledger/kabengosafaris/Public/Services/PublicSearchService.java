@@ -101,7 +101,7 @@ public class PublicSearchService {
 
             Map<String, Object> results = new HashMap<>();
 
-            // Parks — safe VARCHAR fields only (location, shortDescription, fullDescription are TEXT)
+            // Parks - safe VARCHAR fields only (location, shortDescription, fullDescription are TEXT)
             Specification<Park> parkSpec = ParkSpecification.isActive(true)
                 .and(ParkSpecification.isWebActive(true))
                 .and(safeSearch(searchKeyword, "name", "region", "district"));
@@ -121,7 +121,7 @@ public class PublicSearchService {
             results.put("parks", parkDtos);
             results.put("parksTotalItems", parkPage.getTotalElements());
 
-            // Activities — safe VARCHAR fields only (description, tags, equipmentRequired, safetyInformation are TEXT)
+            // Activities - safe VARCHAR fields only (description, tags, equipmentRequired, safetyInformation are TEXT)
             Specification<Activity> activitySpec = ActivitySpecification.isActive(true)
                 .and(ActivitySpecification.isWebActive(true))
                 .and(safeSearch(searchKeyword, "name", "seasonAvailability"));
@@ -140,7 +140,7 @@ public class PublicSearchService {
             results.put("activities", activityDtos);
             results.put("activitiesTotalItems", activityPage.getTotalElements());
 
-            // Accommodations — already safe (excludes @Lob fields)
+            // Accommodations - already safe (excludes @Lob fields)
             Specification<Accommodation> accSpec = AccommodationSpecification.isActive(true)
                 .and(AccommodationSpecification.isWebActive(true))
                 .and(AccommodationSpecification.searchKeyword(searchKeyword));
@@ -164,7 +164,7 @@ public class PublicSearchService {
             results.put("accommodations", accDtos);
             results.put("accommodationsTotalItems", accPage.getTotalElements());
 
-            // Safaris (Itineraries) — safe VARCHAR fields only (description, highlights are TEXT)
+            // Safaris (Itineraries) - safe VARCHAR fields only (description, highlights are TEXT)
             Specification<Itinerary> itinSpec = ItinerarySpecification.isActiveAndPublished()
                 .and(safeSearch(searchKeyword, "name", "code", "startLocation", "endLocation"));
             Page<Itinerary> itinPage = itineraryRepository.findAll(itinSpec,
@@ -187,7 +187,7 @@ public class PublicSearchService {
             results.put("safaris", safariDtos);
             results.put("safarisTotalItems", itinPage.getTotalElements());
 
-            // Testimonials — safe VARCHAR fields only (message is TEXT)
+            // Testimonials - safe VARCHAR fields only (message is TEXT)
             Specification<Testimony> testSpec = TestimonySpecification.isApproved(true)
                 .and(TestimonySpecification.isActive(true))
                 .and(safeSearch(searchKeyword, "authorName"));

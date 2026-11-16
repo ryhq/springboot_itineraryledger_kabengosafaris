@@ -10,7 +10,7 @@ import com.itineraryledger.kabengosafaris.Response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 
 /**
- * §2 — Thread access. The frontend's preferred shape: request a thread
+ * §2 - Thread access. The frontend's preferred shape: request a thread
  * directly by its RFC-2822 derived threadId without first opening a
  * message. Returns thread metadata + all messages oldest → newest.
  */

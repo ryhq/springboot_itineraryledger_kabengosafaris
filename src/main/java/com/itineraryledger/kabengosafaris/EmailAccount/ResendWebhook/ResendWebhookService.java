@@ -64,7 +64,7 @@ public class ResendWebhookService {
             // 1. Check idempotency first (before verification to avoid unnecessary crypto)
             if (webhookEventRepository.existsBySvixId(svixId)) {
                 log.debug("Duplicate webhook event skipped: svixId={}", svixId);
-                return true; // Already processed — return success
+                return true; // Already processed - return success
             }
 
             // 2. Parse the payload to extract "from" email for account lookup
@@ -90,7 +90,7 @@ public class ResendWebhookService {
                     return false;
                 }
             } else {
-                // No account found or no webhook secret configured — log but still accept
+                // No account found or no webhook secret configured - log but still accept
                 // This allows webhooks to work even before secrets are configured per-account
                 log.info("No webhook secret configured for from={}, accepting without signature verification", fromEmail);
             }
@@ -147,15 +147,15 @@ public class ResendWebhookService {
      *
      * <p>Two side-effects:
      * <ol>
-     *   <li>Account-level counters (bounce count) — unchanged.</li>
+     *   <li>Account-level counters (bounce count) - unchanged.</li>
      *   <li>Per-message delivery status on the matching {@link EmailMessage}
      *       row, looked up by {@code resend_email_id}. This is what surfaces
      *       in the email list UI ("Delivered", "Bounced" chips).</li>
      * </ol>
      *
      * <p>Webhooks can arrive out of order, so the stored status is decided by
-     * {@link EmailDeliveryStatus#resolve} — the more actionable outcome wins,
-     * whichever order the events turn up in — rather than by arrival sequence.
+     * {@link EmailDeliveryStatus#resolve} - the more actionable outcome wins,
+     * whichever order the events turn up in - rather than by arrival sequence.
      * A late {@code delivery_delayed} cannot walk a delivered row backwards,
      * and a bounce is not buried by a delivery that preceded it.
      *
@@ -177,8 +177,8 @@ public class ResendWebhookService {
         if (emailId == null || emailId.isBlank()) return;
 
         // Primary lookup uses the dedicated column. For rows persisted before
-        // the column existed, fall back to messageId="<emailId>" — the
-        // wrapper format the sender service has always used — and back-fill
+        // the column existed, fall back to messageId="<emailId>" - the
+        // wrapper format the sender service has always used - and back-fill
         // the new column so subsequent webhooks hit the fast path.
         EmailMessage match = emailMessageRepository.findByResendEmailId(emailId).orElse(null);
         if (match == null) {

@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
  *
  * It could not. `isSystemDefault` is NOT NULL on the column and had no default on the field, and
  * the hand-made path never set it. The insert therefore failed at COMMIT, after the method's own
- * try/catch had already returned 201 — the class is @Transactional, so the violation surfaced from
+ * try/catch had already returned 201 - the class is @Transactional, so the violation surfaced from
  * the commit rather than the catch, and what the office saw was "An unexpected error occurred"
  * naming no field at all.
  *

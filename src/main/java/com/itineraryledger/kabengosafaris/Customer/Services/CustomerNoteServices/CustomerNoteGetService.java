@@ -39,7 +39,7 @@ public class CustomerNoteGetService {
 
     /*
      * followUpCompleted and followUpDate are sortable because the follow-up queue
-     * is the reason this list exists — the panel defaults to ordering by when a
+     * is the reason this list exists - the panel defaults to ordering by when a
      * note is due, and a rejected sort field is a 400, not a fallback.
      */
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
@@ -381,7 +381,7 @@ public class CustomerNoteGetService {
     }
 
     /**
-     * The filter chain the record pager walks — the same dimensions the list
+     * The filter chain the record pager walks - the same dimensions the list
      * offers, so paging from a filtered list stays inside those matches.
      */
     private Specification<CustomerNote> navigationSpec(

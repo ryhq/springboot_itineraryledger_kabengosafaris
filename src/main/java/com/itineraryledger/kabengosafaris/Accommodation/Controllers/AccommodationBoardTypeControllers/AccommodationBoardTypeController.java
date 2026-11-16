@@ -264,7 +264,7 @@ public class AccommodationBoardTypeController {
     private com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationBoardTypeRepository bulkFlagsRepository;
 
     /**
-     * PATCH /bulk — one request for a whole selection.
+     * PATCH /bulk - one request for a whole selection.
      *
      * Activating fifty rows one request at a time is slow and can leave the set
      * half-changed; this applies only the flags present in the body and reports

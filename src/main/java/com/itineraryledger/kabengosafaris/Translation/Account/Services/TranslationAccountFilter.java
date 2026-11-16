@@ -26,7 +26,7 @@ public class TranslationAccountFilter {
     private String description;
     private String baseUrl;
 
-    /** 1=LibreTranslate, 2=Google Cloud, 3=DeepL — the wire format this module chose. */
+    /** 1=LibreTranslate, 2=Google Cloud, 3=DeepL - the wire format this module chose. */
     private Integer providerType;
     private List<Integer> providerTypes;
 
@@ -40,7 +40,7 @@ public class TranslationAccountFilter {
     /**
      * Worth checking, each of which is also a card.
      *
-     * An account that last failed is one nobody noticed had failed — translations quietly
+     * An account that last failed is one nobody noticed had failed - translations quietly
      * fall back to English when a provider is down. An account never tested is one nobody
      * has ever proved works, which is the same problem before it happens.
      */

@@ -46,7 +46,7 @@ public class EmailReceivingService {
     private final EmailStorageService emailStorageService;
     private final EmailSettingGetterServices emailSettingGetterServices;
     private final EmailContactService emailContactService;
-    /** availability requests notice their own replies — see the call after a message is saved */
+    /** availability requests notice their own replies - see the call after a message is saved */
     private final AvailabilityRequestService availabilityRequestService;
     private final ObjectMapper objectMapper;
 
@@ -146,7 +146,7 @@ public class EmailReceivingService {
     private Message[] getMessagesToFetch(Folder remoteInbox, EmailAccount account, int maxFetch)
             throws MessagingException {
 
-        // POP3 doesn't support IMAP search — fall back to tail-N
+        // POP3 doesn't support IMAP search - fall back to tail-N
         if (account.getReceivingProtocol() == ReceivingProtocol.POP3) {
             return getMessagesByTail(remoteInbox, maxFetch);
         }
@@ -154,14 +154,14 @@ public class EmailReceivingService {
         // IMAP: use SINCE search
         Date sinceDate;
         if (account.getLastFetchedAt() == null) {
-            // First sync — go back N days
+            // First sync - go back N days
             int initialSyncDays = emailSettingGetterServices.getInitialSyncDays();
             sinceDate = Date.from(LocalDateTime.now().minusDays(initialSyncDays)
                 .atZone(ZoneId.systemDefault()).toInstant());
             log.info("First sync for account {} - fetching emails from last {} days",
                 account.getEmail(), initialSyncDays);
         } else {
-            // Subsequent sync — fetch since last successful fetch
+            // Subsequent sync - fetch since last successful fetch
             sinceDate = Date.from(account.getLastFetchedAt()
                 .atZone(ZoneId.systemDefault()).toInstant());
             log.info("Incremental sync for account {} - fetching emails since {}",
@@ -282,7 +282,7 @@ public class EmailReceivingService {
             ? mimeMessage.getSentDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
             : LocalDateTime.now();
 
-        // Create DB record — isRead respects server SEEN flag
+        // Create DB record - isRead respects server SEEN flag
         EmailMessage emailMessage = EmailMessage.builder()
             .emailAccount(account)
             .folder(folder)
@@ -314,7 +314,7 @@ public class EmailReceivingService {
         /*
          * Does this answer something we asked?
          *
-         * Headers first — In-Reply-To, References, thread — then the subject and the sender, because
+         * Headers first - In-Reply-To, References, thread - then the subject and the sender, because
          * a lodge replying from reservations@ through a client that drops In-Reply-To is ordinary,
          * and a request left on the chase list after it has been answered is the thing this exists
          * to prevent. Best effort by construction: a mailbox sync must never fail because of
@@ -424,8 +424,8 @@ public class EmailReceivingService {
      * letter within a day of being connected, all stamped with the same send time, and the count
      * was still climbing.
      *
-     * The header is optional in practice — plenty of senders omit it, and a strict reading of
-     * RFC 5322 makes it a SHOULD — so the fix is not to demand one but to derive an identity from
+     * The header is optional in practice - plenty of senders omit it, and a strict reading of
+     * RFC 5322 makes it a SHOULD - so the fix is not to demand one but to derive an identity from
      * the message itself. Sender, recipients, subject, send date and size are stable across
      * fetches of the same message and differ between genuinely different ones.
      *
@@ -455,7 +455,7 @@ public class EmailReceivingService {
             return "<" + hash + "@no-message-id.local>";
         } catch (Exception e) {
             /*
-             * Unreachable in practice — SHA-256 is required of every JVM. Falling back to the
+             * Unreachable in practice - SHA-256 is required of every JVM. Falling back to the
              * material itself keeps dedup working rather than reopening the duplicate hole.
              */
             log.warn("Could not hash a message identity; using the raw material", e);

@@ -176,12 +176,12 @@ public class RoleController {
     /**
      * Activating or deactivating a selection in one request.
      *
-     * An inactive role grants nothing — the authorities of everybody holding it drop
-     * the permissions immediately — so this is the switch that suspends access without
+     * An inactive role grants nothing - the authorities of everybody holding it drop
+     * the permissions immediately - so this is the switch that suspends access without
      * unpicking assignments.
      *
      * Allowed on built-in roles, because the active flag is not part of the definition the
-     * initializer rewrites — but never for SUPERADMIN, which is the one switch with no way
+     * initializer rewrites - but never for SUPERADMIN, which is the one switch with no way
      * back. The single-record endpoint refuses the same thing, so a bulk call of one cannot
      * be used to get a different answer.
      */

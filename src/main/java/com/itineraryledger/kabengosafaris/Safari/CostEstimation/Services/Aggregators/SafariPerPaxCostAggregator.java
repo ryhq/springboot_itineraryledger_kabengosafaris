@@ -338,7 +338,7 @@ public class SafariPerPaxCostAggregator {
      * and then distributed by {@code distributeItemsToPax} like every other per-person cost, so a
      * child's share is the ADULT-weighted average rather than that child's own 70% fare. That is
      * the existing behaviour of this whole aggregator, not something flights introduce, and the
-     * per-day view and the grand total are unaffected — but it is worth knowing before anybody
+     * per-day view and the grand total are unaffected - but it is worth knowing before anybody
      * quotes a single child off this screen.
      */
     private FlightCostCalculator.Seats seats(List<FullSafariDTO.PaxDTO> paxList) {

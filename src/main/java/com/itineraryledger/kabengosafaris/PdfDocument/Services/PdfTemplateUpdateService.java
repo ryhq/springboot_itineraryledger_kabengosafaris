@@ -125,7 +125,7 @@ public class PdfTemplateUpdateService {
      * Restore EVERY system-default template in one call.
      *
      * Shipping a template fix is not a deploy: seeded files are never overwritten, which is what
-     * protects somebody's edits — so a corrected default reaches an existing installation only when
+     * protects somebody's edits - so a corrected default reaches an existing installation only when
      * somebody restores it. One template at a time across sixteen documents is a chore nobody
      * finishes, and a half-restored set is worse than an old one.
      *

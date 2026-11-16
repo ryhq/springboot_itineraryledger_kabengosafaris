@@ -18,14 +18,14 @@ import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
  * A module may reuse a column's name for its own nested data, and importing must not choke on it.
  *
  * <p>An itinerary's promise used to be the free-text column {@code inclusions}. It is rows now, and
- * the exporter writes them as an array under that same key — the wording is the only name a line has
+ * the exporter writes them as an array under that same key - the wording is the only name a line has
  * that means anything in another company, so the array is what travels.
  *
  * <p>{@link Scalars#apply} then handed the array to Jackson for a {@code String} field that still
  * exists on the entity, and Jackson threw:
  *
  * <pre>
- *   Could not apply budgetCategory, carCount, …, inclusions to Itinerary
+ *   Could not apply budgetCategory, carCount, ..., inclusions to Itinerary
  *   at Itinerary["inclusions"]: Cannot deserialize value of type `java.lang.String`
  *   from Array value (token `JsonToken.START_ARRAY`)
  * </pre>
@@ -36,8 +36,8 @@ import com.itineraryledger.kabengosafaris.Itinerary.Entity.Itinerary;
  * review because every test in this package reads the module's source text, and source text cannot
  * see a shape mismatch.
  *
- * <p>This is the same family as {@link RateRowsCarryNamesTest} — a field that is known and the wrong
- * shape — and it is caught the same way, by removing it before Jackson is asked.
+ * <p>This is the same family as {@link RateRowsCarryNamesTest} - a field that is known and the wrong
+ * shape - and it is caught the same way, by removing it before Jackson is asked.
  */
 class ANestedArrayNeverLandsOnAColumnTest {
 
@@ -55,7 +55,7 @@ class ANestedArrayNeverLandsOnAColumnTest {
 
         ArrayNode inclusions = row.putArray("inclusions");
         ObjectNode line = inclusions.addObject();
-        line.put("item", "Private 4×4 safari vehicle with pop-up roof");
+        line.put("item", "Private 4x4 safari vehicle with pop-up roof");
         line.put("included", true);
         line.put("order", 1);
 
@@ -78,7 +78,7 @@ class ANestedArrayNeverLandsOnAColumnTest {
             "the real columns beside it must still be applied");
         assertEquals(9, itinerary.getTotalDays());
         assertNull(itinerary.getInclusions(),
-            "the legacy column must be left alone — the rows are the promise now");
+            "the legacy column must be left alone - the rows are the promise now");
     }
 
     @Test
@@ -124,7 +124,7 @@ class ANestedArrayNeverLandsOnAColumnTest {
             "the few itineraries the backfill left as prose have no rows, so the array is empty and "
                 + "the text is all they have; it has to travel under its own key");
         assertTrue(source.contains("if (inclusionRows.isEmpty())"),
-            "and only for those — where rows exist they are the promise, and the old text is "
+            "and only for those - where rows exist they are the promise, and the old text is "
                 + "residue that V18 removes");
     }
 }

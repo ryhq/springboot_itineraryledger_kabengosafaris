@@ -53,7 +53,7 @@ public class TranslationCacheWriteService {
      * Replace a cached translation with a human one.
      *
      * <p>Marks the row corrected AND verified: somebody typed it, so somebody stands behind it.
-     * The original text and the content hash are never touched — the hash is the cache key, and
+     * The original text and the content hash are never touched - the hash is the cache key, and
      * rewriting it would orphan the entry rather than correct it.
      */
     @Transactional
@@ -95,7 +95,7 @@ public class TranslationCacheWriteService {
     /**
      * Mark an entry verified, or withdraw that.
      *
-     * <p>Verifying without editing is "I read it and it was already right" — which is worth
+     * <p>Verifying without editing is "I read it and it was already right" - which is worth
      * recording, because it is the difference between a translation nobody has checked and one
      * somebody has. Withdrawing it hands the row back to the normal expiry and provider rules.
      */
@@ -204,7 +204,7 @@ public class TranslationCacheWriteService {
      *
      * <p>Reports per-id outcomes rather than a bare count, following the house delete contract,
      * because "deleted 3 of 5" with no reason for the other two is the kind of answer that gets
-     * ignored. A verified entry is skipped unless {@code includeVerified} — deleting somebody's
+     * ignored. A verified entry is skipped unless {@code includeVerified} - deleting somebody's
      * correction by sweeping a filter is exactly the accident the flag exists to prevent.
      */
     @Transactional

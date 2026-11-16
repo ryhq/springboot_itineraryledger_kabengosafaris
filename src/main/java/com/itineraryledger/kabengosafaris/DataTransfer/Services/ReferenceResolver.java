@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
  * Turning a name in a bundle into a row in this company.
  *
  * The single most important piece of an import, and the one place a fault is invisible. Every id in
- * a bundle is worthless here — they are per-installation and rotate on restart — so names are all
+ * a bundle is worthless here - they are per-installation and rotate on restart - so names are all
  * there is, and a name that fails to match does not throw. It produces null, and the caller reports
  * a rate it could not place, by name. The alternative is worse in both directions: throwing abandons
  * 2,599 good rates over one bad one, and creating the missing thing silently invents a park.
@@ -82,7 +82,7 @@ public class ReferenceResolver {
         return context.cached("age", name, key -> ages.findByNameIgnoreCase(key).orElse(null));
     }
 
-    /** By slug, then by name — an activity rate may name a park that was created by hand elsewhere. */
+    /** By slug, then by name - an activity rate may name a park that was created by hand elsewhere. */
     public Park park(TransferContext context, String slugOrName) {
         if (blank(slugOrName)) return null;
         return context.cached("park", slugOrName, key -> parks.findBySlug(key)

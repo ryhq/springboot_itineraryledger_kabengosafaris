@@ -14,14 +14,14 @@ import java.util.List;
 /**
  * A costing, as a document.
  *
- * The cost estimate on screen answers three questions at once — what it costs,
- * what it sells for, and what could not be priced — and a template needs all
+ * The cost estimate on screen answers three questions at once - what it costs,
+ * what it sells for, and what could not be priced - and a template needs all
  * three plus the header that says WHAT was costed. This carries them together,
  * with both breakdowns computed (by day and by pax band) so one template can
  * print either without the caller having chosen a mode in advance.
  *
  * <p><b>Deliberately not itinerary-shaped.</b> The subject is described by a
- * generic header — name, code, kind, dates, party — rather than by itinerary
+ * generic header - name, code, kind, dates, party - rather than by itinerary
  * fields, so a safari costing can fill the same document and reuse the same
  * templates when the Safari module lands. Nothing here says "itinerary" except
  * the value of {@code subjectKind}.
@@ -43,7 +43,7 @@ public class FullCostEstimationDTO {
     /** Obfuscated id of whatever was costed. */
     private String subjectId;
 
-    /** ITINERARY or SAFARI — what kind of thing this costing is for. */
+    /** ITINERARY or SAFARI - what kind of thing this costing is for. */
     private String subjectKind;
 
     /** Its code, e.g. 'ITI-14D13N-1053'. */
@@ -62,7 +62,7 @@ public class FullCostEstimationDTO {
 
     /* ------------------------------ the basis ----------------------------- */
 
-    /** The date the pricing was run for — seasons make this load-bearing. */
+    /** The date the pricing was run for - seasons make this load-bearing. */
     private LocalDate startDate;
     private LocalDate endDate;
 
@@ -88,7 +88,7 @@ public class FullCostEstimationDTO {
 
     /* ------------------------------ the gaps ------------------------------ */
 
-    /** True when anything could not be priced — the totals are then partial. */
+    /** True when anything could not be priced - the totals are then partial. */
     private Boolean hasIncompleteRates;
 
     /** Every unpriceable item, with the day and season that could not resolve. */
@@ -147,16 +147,16 @@ public class FullCostEstimationDTO {
         private BigDecimal grandTotalSto;
         private BigDecimal grandTotalRack;
 
-        /** rack − STO. What the trip earns at the published price. */
+        /** rack - STO. What the trip earns at the published price. */
         private BigDecimal grossProfit;
 
         /** The same as a percentage of rack, to one decimal place. */
         private BigDecimal marginPercent;
 
-        /** grandTotalSto ÷ totalPax — the per-head cost, precomputed. */
+        /** grandTotalSto ÷ totalPax - the per-head cost, precomputed. */
         private BigDecimal stoPerPax;
 
-        /** grandTotalRack ÷ totalPax — the per-head selling price. */
+        /** grandTotalRack ÷ totalPax - the per-head selling price. */
         private BigDecimal rackPerPax;
     }
 

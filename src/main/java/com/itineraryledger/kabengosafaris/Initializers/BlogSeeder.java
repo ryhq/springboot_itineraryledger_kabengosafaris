@@ -64,7 +64,7 @@ public class BlogSeeder {
             /* the site already serves these, so they arrive published */
             .isPublished(true)
             /*
-             * And already at these addresses — the sitemap lists them — so the slug is frozen
+             * And already at these addresses - the sitemap lists them - so the slug is frozen
              * from the date the article says it was published, not from this boot.
              */
             .firstPublishedAt(seed.date() != null
@@ -79,7 +79,7 @@ public class BlogSeeder {
     }
 
     /**
-     * The shape of one entry in seed/blogs.json — the website's own BlogPost, verbatim.
+     * The shape of one entry in seed/blogs.json - the website's own BlogPost, verbatim.
      *
      * A record rather than the entity so a change to either side is a compile error here
      * rather than a silent mis-seed.

@@ -40,7 +40,7 @@ public class RegistrationHandler {
          * The filter limits the other two mail-senders by recipient, but it cannot do it here: this
          * endpoint carries its email in a JSON BODY, and a servlet filter reading the body consumes
          * the stream the controller then needs. Checked here instead, where the address is already
-         * parsed — and only on THIS path, so an administrator creating accounts and the first-run
+         * parsed - and only on THIS path, so an administrator creating accounts and the first-run
          * initializer are untouched.
          *
          * Without it the per-IP ceiling is the only guard, and the attack worth stopping is a
@@ -88,7 +88,7 @@ public class RegistrationHandler {
              *
              * Activation only ENABLES the account; it sets no password. An account an
              * administrator created has a generated one nobody ever saw, so the next thing that
-             * colleague needs is a password link — and the landing page can only offer that in one
+             * colleague needs is a password link - and the landing page can only offer that in one
              * click if it knows where to send it. Nothing is disclosed: the caller just proved
              * possession of that account's activation token.
              */

@@ -20,7 +20,7 @@ import com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountSignatures.Mo
  *
  * The bug this closes: the variables were substituted everywhere and declared nowhere, so the
  * "variables you can use" panel listed only the record's own fields and template authors typed the
- * company's details by hand — which is the drift the whole company profile exists to end.
+ * company's details by hand - which is the drift the whole company profile exists to end.
  *
  * The opposite mistake is worse: offering a variable nothing fills puts literal braces in front of a
  * customer. So the catalogue is checked against what the identity actually produces.
@@ -57,7 +57,7 @@ class CompanyVariableDeclarationTest {
         assertEquals("safariCode", rows.get(0).get("name"), "the event's own variables come first");
         assertTrue(rows.stream().anyMatch(r -> "companyName".equals(r.get("name"))));
         assertTrue(rows.stream().anyMatch(r -> "companyAccent".equals(r.get("name"))),
-            "the brand colour is a variable too — a template that hardcodes a green is as wrong as "
+            "the brand colour is a variable too - a template that hardcodes a green is as wrong as "
                 + "one that hardcodes a name");
         assertTrue(rows.stream().anyMatch(r -> "companyLogoFullUrl".equals(r.get("name"))));
     }
@@ -97,7 +97,7 @@ class CompanyVariableDeclarationTest {
     void signaturesCanReadIt() throws Exception {
         /*
          * The signature model has three fields and the merged rows carry five. Jackson fails on
-         * unknown properties by default, and that failure is caught and turned into an empty list —
+         * unknown properties by default, and that failure is caught and turned into an empty list -
          * which would have silently hidden a signature's own variables as well as the company's.
          */
         String merged = CompanyVariableMerger.mergeEmailVariables("[]");

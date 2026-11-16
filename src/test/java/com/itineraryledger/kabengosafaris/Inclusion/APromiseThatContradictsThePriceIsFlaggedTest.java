@@ -25,7 +25,7 @@ import com.itineraryledger.kabengosafaris.Quote.QuoteInclusion.Entity.QuoteInclu
  * <p>The third test here is the important one, and the reason this class exists at all.
  * {@link com.itineraryledger.kabengosafaris.GlobalEnums.LineCategoryScope} is shared with
  * {@code taxAppliesTo} and {@code discountAppliesTo}, where an unset scope means "the whole quote"
- * — so {@code covers(null, anything)} answers true. Eight of the fourteen standard lines claim
+ * - so {@code covers(null, anything)} answers true. Eight of the fourteen standard lines claim
  * nothing a machine can verify, and read the shared way, "Drinking water on game drives" would
  * accuse every quote ever written of contradicting itself about park fees, insurance and visas at
  * once. A guard that fires on everything is a guard somebody switches off.
@@ -66,7 +66,7 @@ class APromiseThatContradictsThePriceIsFlaggedTest {
     void aLineWithNoClaimIsNeverChecked() {
         /*
          * The trap. This quote prices its park fees outside the total AND carries a line with no
-         * claim. If the null scope were read the shared way — as every category — the water line
+         * claim. If the null scope were read the shared way - as every category - the water line
          * would be reported as contradicting the park fees, on this quote and on every other.
          */
         Quote quote = new Quote();
@@ -103,7 +103,7 @@ class APromiseThatContradictsThePriceIsFlaggedTest {
 
         assertEquals(1, warnings.size());
         assertEquals("UNSUPPORTED", warnings.get(0).getSeverity(),
-            "not the same as a contradiction — it may simply not belong on this trip");
+            "not the same as a contradiction - it may simply not belong on this trip");
     }
 
     @Test

@@ -17,7 +17,7 @@ import com.openhtmltopdf.svgsupport.BatikSVGDrawer;
  * This matters because the shipped templates each carried 27KB of ONE company's logo as inline SVG
  * path data, and replacing it with the company's own asset only helps if the replacement renders. The
  * choices are inline SVG markup, an <img> holding an SVG data URI, or an <img> holding a raster data
- * URI — and which of those the renderer supports is a fact about this library, not something to
+ * URI - and which of those the renderer supports is a fact about this library, not something to
  * assume. So it is measured: a page that draws the mark is bigger than the same page without it.
  */
 class LogoInPdfTest {
@@ -27,8 +27,8 @@ class LogoInPdfTest {
         "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\" width=\"90\" height=\"90\">"
             + "<rect width=\"100\" height=\"100\" fill=\"#014225\"/></svg>";
 
-    /** a 1×1 PNG, base64 */
-    /** a 240×120 PNG — big enough that a page carrying it is measurably bigger */
+    /** a 1x1 PNG, base64 */
+    /** a 240x120 PNG - big enough that a page carrying it is measurably bigger */
     private static final String PNG_BASE64 =
         "iVBORw0KGgoAAAANSUhEUgAAAPAAAAB4CAIAAABD1OhwAAABXElEQVR4nO3SUQkAIBTAwGcYi9g/lCUEYRxcgH1s1tmQMd8L4CFDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphibF0KQYmhRDk2JoUgxNiqFJMTQphiblAlBVtqR7STsrAAAAAElFTkSuQmCC";
 
@@ -53,7 +53,7 @@ class LogoInPdfTest {
         int blank = render("<p>x</p>").length;
         int withLogo = render("<p>x</p>" + SVG).length;
         assertTrue(withLogo > blank + 200,
-            "inline SVG added only " + (withLogo - blank) + " bytes — it did not draw");
+            "inline SVG added only " + (withLogo - blank) + " bytes - it did not draw");
     }
 
     @Test
@@ -64,7 +64,7 @@ class LogoInPdfTest {
         int blank = render("<p>x</p>").length;
         int withLogo = render("<p>x</p><img src=\"" + dataUri + "\" style=\"width:90px\"/>").length;
         assertTrue(withLogo > blank + 200,
-            "an SVG data URI added only " + (withLogo - blank) + " bytes — the renderer ignored it, "
+            "an SVG data URI added only " + (withLogo - blank) + " bytes - the renderer ignored it, "
                 + "so a template must inline the markup instead");
     }
 
@@ -75,6 +75,6 @@ class LogoInPdfTest {
         int withLogo = render("<p>x</p><img src=\"data:image/png;base64," + PNG_BASE64
             + "\" style=\"width:90px\"/>").length;
         assertTrue(withLogo > blank + 100,
-            "a raster data URI added only " + (withLogo - blank) + " bytes — it did not draw");
+            "a raster data URI added only " + (withLogo - blank) + " bytes - it did not draw");
     }
 }

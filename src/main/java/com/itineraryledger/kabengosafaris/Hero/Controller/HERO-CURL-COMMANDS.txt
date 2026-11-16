@@ -164,7 +164,7 @@ curl -X POST http://localhost:4450/api/heroes \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
     "title": "Custom Itinerary Planning",
-    "subtitle": "Your Safari, Your Way — Designed from Scratch",
+    "subtitle": "Your Safari, Your Way - Designed from Scratch",
     "description": "No two travelers are alike, and neither are our safaris. Share your interests, budget, travel dates, and bucket-list sightings, and our safari specialists will build a personalized itinerary that maximizes your time in the bush. Whether you have 3 days or 3 weeks, we make every moment count.",
     "page": "SERVICES",
     "ctaText": "Request Custom Itinerary",
@@ -289,7 +289,7 @@ curl -X POST http://localhost:4450/api/heroes \
   -d '{
     "title": "Serengeti National Park",
     "subtitle": "Endless Plains, Endless Possibilities",
-    "description": "Spanning 14,750 square kilometers of pristine savannah, the Serengeti is home to the largest terrestrial mammal migration on Earth. Lions, leopards, cheetahs, elephants, and over 500 bird species call this UNESCO World Heritage Site home. The Serengeti is not just a destination — it is the soul of African safari.",
+    "description": "Spanning 14,750 square kilometers of pristine savannah, the Serengeti is home to the largest terrestrial mammal migration on Earth. Lions, leopards, cheetahs, elephants, and over 500 bird species call this UNESCO World Heritage Site home. The Serengeti is not just a destination - it is the soul of African safari.",
     "page": "DESTINATIONS",
     "ctaText": "Explore Serengeti",
     "ctaLink": "/destinations/serengeti",
@@ -308,7 +308,7 @@ curl -X POST http://localhost:4450/api/heroes \
   -d '{
     "title": "Ngorongoro Crater",
     "subtitle": "The Eighth Wonder of the World",
-    "description": "Descend into the world largest intact volcanic caldera, a natural amphitheater teeming with over 25,000 large animals including the critically endangered black rhino. The crater floor covers 260 square kilometers and offers unparalleled game density — you can spot the Big Five in a single game drive.",
+    "description": "Descend into the world largest intact volcanic caldera, a natural amphitheater teeming with over 25,000 large animals including the critically endangered black rhino. The crater floor covers 260 square kilometers and offers unparalleled game density - you can spot the Big Five in a single game drive.",
     "page": "DESTINATIONS",
     "ctaText": "Explore Ngorongoro",
     "ctaLink": "/destinations/ngorongoro",
@@ -325,7 +325,7 @@ curl -X POST http://localhost:4450/api/heroes \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
-    "title": "Zanzibar — The Spice Island",
+    "title": "Zanzibar - The Spice Island",
     "subtitle": "Turquoise Waters, White Sand, and Rich Swahili Culture",
     "description": "Complete your Tanzanian adventure with a stay on the legendary Zanzibar archipelago. Relax on pristine beaches, explore the UNESCO-listed Stone Town with its winding alleys and ornate doors, snorkel coral reefs bursting with marine life, and savour the aromatic spice tours that gave this island its name.",
     "page": "DESTINATIONS",
@@ -389,7 +389,7 @@ curl -X POST http://localhost:4450/api/heroes \
   -d '{
     "title": "Luxury Tented Camps",
     "subtitle": "Fall Asleep to the Sounds of the African Bush",
-    "description": "There is nothing quite like sleeping in a canvas tent with the sounds of lions roaring in the distance and hyenas calling under a canopy of stars. Our luxury tented camps combine the romance of classic safari camping with modern comforts — en-suite bathrooms, plush bedding, gourmet dining, and personal butler service.",
+    "description": "There is nothing quite like sleeping in a canvas tent with the sounds of lions roaring in the distance and hyenas calling under a canopy of stars. Our luxury tented camps combine the romance of classic safari camping with modern comforts - en-suite bathrooms, plush bedding, gourmet dining, and personal butler service.",
     "page": "ACCOMMODATIONS",
     "ctaText": "View Tented Camps",
     "ctaLink": "/accommodations?type=tented-camp",
@@ -531,7 +531,7 @@ curl -X POST http://localhost:4450/api/heroes \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
     "title": "24/7 Safari Support",
-    "subtitle": "Always Reachable — Before, During, and After Your Trip",
+    "subtitle": "Always Reachable - Before, During, and After Your Trip",
     "description": "Our operations center operates around the clock during active safari seasons. If you are already on safari with us and need assistance, our emergency hotline connects you directly to our operations manager. For pre-trip questions, our booking team is available Monday through Saturday via phone, WhatsApp, and email.",
     "page": "CONTACT",
     "ctaText": "Emergency Contact",
@@ -618,7 +618,7 @@ curl -X POST http://localhost:4450/api/heroes \
   -d '{
     "title": "Frequently Asked Questions",
     "subtitle": "Everything You Need to Know Before Your Safari",
-    "description": "Planning a safari raises many questions — from visa requirements and vaccinations to what to pack and how close you can get to the animals. We have compiled answers to the most common questions from our guests to help you prepare for the adventure of a lifetime.",
+    "description": "Planning a safari raises many questions - from visa requirements and vaccinations to what to pack and how close you can get to the animals. We have compiled answers to the most common questions from our guests to help you prepare for the adventure of a lifetime.",
     "page": "FAQ",
     "ctaText": "Browse All FAQs",
     "ctaLink": "/faq#questions",
@@ -637,7 +637,7 @@ curl -X POST http://localhost:4450/api/heroes \
   -d '{
     "title": "Booking & Payment FAQs",
     "subtitle": "Deposits, Cancellations, Payment Methods, and More",
-    "description": "Understand our booking process, deposit requirements, cancellation policies, accepted payment methods, and travel insurance recommendations. We believe in transparent pricing with no hidden fees — every cost is detailed upfront so you can budget with confidence.",
+    "description": "Understand our booking process, deposit requirements, cancellation policies, accepted payment methods, and travel insurance recommendations. We believe in transparent pricing with no hidden fees - every cost is detailed upfront so you can budget with confidence.",
     "page": "FAQ",
     "ctaText": "Payment Questions",
     "ctaLink": "/faq#booking",
@@ -680,7 +680,7 @@ curl -X POST http://localhost:4450/api/heroes \
   -d '{
     "title": "What Our Guests Say",
     "subtitle": "Real Reviews from Real Travelers Who Explored Tanzania with Us",
-    "description": "Nothing speaks louder than the words of our guests. Read hundreds of verified reviews from travelers around the world who trusted Kabengo Safaris with their Tanzanian adventure. From honeymooners to families, solo travelers to large groups — discover why 98% of our guests rate their experience 5 stars.",
+    "description": "Nothing speaks louder than the words of our guests. Read hundreds of verified reviews from travelers around the world who trusted Kabengo Safaris with their Tanzanian adventure. From honeymooners to families, solo travelers to large groups - discover why 98% of our guests rate their experience 5 stars.",
     "page": "TESTIMONIALS",
     "ctaText": "Read All Reviews",
     "ctaLink": "/testimonials#reviews",
@@ -699,7 +699,7 @@ curl -X POST http://localhost:4450/api/heroes \
   -d '{
     "title": "Featured Guest Stories",
     "subtitle": "In-Depth Accounts of Life-Changing Safari Experiences",
-    "description": "Some safari experiences are so transformative that a short review does not do them justice. Our featured stories are longer-form accounts from guests who share detailed narratives of their Kabengo journey — the wildlife encounters that took their breath away, the guides who became friends, and the moments that changed their perspective.",
+    "description": "Some safari experiences are so transformative that a short review does not do them justice. Our featured stories are longer-form accounts from guests who share detailed narratives of their Kabengo journey - the wildlife encounters that took their breath away, the guides who became friends, and the moments that changed their perspective.",
     "page": "TESTIMONIALS",
     "ctaText": "Read Featured Stories",
     "ctaLink": "/testimonials#featured",
@@ -842,7 +842,7 @@ curl -X POST http://localhost:4450/api/heroes \
   -d '{
     "title": "Join the Kabengo Family",
     "subtitle": "Career Opportunities in Safari Tourism",
-    "description": "We are always looking for passionate individuals to join our growing team. Whether you are an experienced safari guide, a hospitality professional, a digital marketing specialist, or a wildlife conservationist, we would love to hear from you. Work in one of the most beautiful offices on Earth — the Tanzanian wilderness.",
+    "description": "We are always looking for passionate individuals to join our growing team. Whether you are an experienced safari guide, a hospitality professional, a digital marketing specialist, or a wildlife conservationist, we would love to hear from you. Work in one of the most beautiful offices on Earth - the Tanzanian wilderness.",
     "page": "OTHER",
     "ctaText": "View Open Positions",
     "ctaLink": "/careers",

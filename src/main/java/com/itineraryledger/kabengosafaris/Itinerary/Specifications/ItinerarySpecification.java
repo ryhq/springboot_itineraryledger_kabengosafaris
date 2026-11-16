@@ -98,7 +98,7 @@ public class ItinerarySpecification {
     public static Specification<Itinerary> searchKeyword(String keyword) {
         return (root, query, cb) -> {
             String pattern = "%" + keyword.toLowerCase() + "%";
-            // Note: description and highlights are @Lob fields — LOWER() on CLOB types
+            // Note: description and highlights are @Lob fields - LOWER() on CLOB types
             // causes errors in Hibernate 6, so they are excluded from keyword search
             return cb.or(
                 cb.like(cb.lower(root.get("name")), pattern),
@@ -174,7 +174,7 @@ public class ItinerarySpecification {
             cb.equal(root.get("budgetCategory"), budgetCategory);
     }
 
-    /** Rows created on or after `moment` — the recency counters. */
+    /** Rows created on or after `moment` - the recency counters. */
     public static Specification<Itinerary> createdAfter(java.time.LocalDateTime moment) {
         return (root, query, cb) ->
             moment == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), moment);

@@ -262,7 +262,7 @@ public class QuoteController {
     }
 
     /**
-     * Re-derive the Quote's items from its current day-tree × pax mix.
+     * Re-derive the Quote's items from its current day-tree x pax mix.
      * Drops the existing items and regenerates them via the shared cost
      * estimation engine, then refreshes totals. No-op for legacy quotes
      * that have no day snapshot.
@@ -458,7 +458,7 @@ public class QuoteController {
      *
      * Creates a Safari (DRAFT) from the quote's itinerary and customer.
      * Uses the quote's safariStartDate by default (the date used for cost estimation).
-     * Invoice is NOT created here — it is created later when the safari reaches
+     * Invoice is NOT created here - it is created later when the safari reaches
      * CONFIRMED state via POST /api/safaris/{id}/state/request-payment.
      *
      * @param id The obfuscated quote ID
@@ -545,7 +545,7 @@ public class QuoteController {
     @org.springframework.beans.factory.annotation.Autowired
     private com.itineraryledger.kabengosafaris.Quote.Repository.QuoteRepository bulkFlagsRepository;
 
-    /** PATCH /bulk — activate or withdraw a whole selection in one request. */
+    /** PATCH /bulk - activate or withdraw a whole selection in one request. */
     @org.springframework.web.bind.annotation.PatchMapping("/bulk")
     @PreAuthorize("hasAuthority('PERM_UPDATE_QUOTE')")
     public ResponseEntity<?> bulkFlags(

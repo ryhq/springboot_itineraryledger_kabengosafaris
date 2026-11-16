@@ -107,7 +107,7 @@ public class RoleSpecification {
         };
     }
 
-    /** Grants nothing — anybody holding it can sign in and do nothing. */
+    /** Grants nothing - anybody holding it can sign in and do nothing. */
     public static Specification<Role> hasNoPermissions() {
         return (root, query, cb) -> cb.isEmpty(root.get("permissions"));
     }
@@ -119,7 +119,7 @@ public class RoleSpecification {
     /**
      * Nobody holds it.
      *
-     * The join runs from User, because the many-to-many is owned there — a role has no
+     * The join runs from User, because the many-to-many is owned there - a role has no
      * `users` collection to test for emptiness.
      */
     public static Specification<Role> hasNoUsers() {

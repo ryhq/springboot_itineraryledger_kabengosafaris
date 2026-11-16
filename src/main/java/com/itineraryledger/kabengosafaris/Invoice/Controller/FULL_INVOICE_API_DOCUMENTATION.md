@@ -361,28 +361,28 @@ PERM_READ_INVOICE
 
 ```
 FullInvoiceDTO
-├── Invoice fields (id, invoiceCode, title, status, paymentStatus, dates, pricing)
-├── Summary statistics
-│   ├── totalLineItemsCount
-│   ├── totalCurrenciesCount
-│   └── currencies (array of currency codes)
-├── customer: CustomerDTO
-│   └── Customer information (name, code, email, phone, address, nationality)
-├── safari: SafariDTO
-│   └── Safari summary (name, code, state, dates, locations)
-├── lineItems: List<LineItemDTO>
-│   └── LineItemDTO
-│       ├── Item details (type, name, description, displayOrder)
-│       └── prices: List<PriceDTO>  [Multi-currency prices]
-│           └── PriceDTO (currency, quantity, unitPrice, totalPrice, breakdown)
-├── subtotals: List<PriceDTO>  [By currency]
-├── taxes: List<PriceDTO>  [By currency]
-├── discounts: List<PriceDTO>  [By currency]
-├── grandTotals: List<PriceDTO>  [By currency]
-├── amountsPaid: List<PriceDTO>  [By currency]
-├── balances: List<PriceDTO>  [By currency]
-└── bankAccounts: List<BankAccountDTO>  [Active accounts for invoice currencies]
-    └── BankAccountDTO (account details, bank info, international codes)
++== Invoice fields (id, invoiceCode, title, status, paymentStatus, dates, pricing)
++== Summary statistics
+|   +== totalLineItemsCount
+|   +== totalCurrenciesCount
+|   +== currencies (array of currency codes)
++== customer: CustomerDTO
+|   +== Customer information (name, code, email, phone, address, nationality)
++== safari: SafariDTO
+|   +== Safari summary (name, code, state, dates, locations)
++== lineItems: List<LineItemDTO>
+|   +== LineItemDTO
+|       +== Item details (type, name, description, displayOrder)
+|       +== prices: List<PriceDTO>  [Multi-currency prices]
+|           +== PriceDTO (currency, quantity, unitPrice, totalPrice, breakdown)
++== subtotals: List<PriceDTO>  [By currency]
++== taxes: List<PriceDTO>  [By currency]
++== discounts: List<PriceDTO>  [By currency]
++== grandTotals: List<PriceDTO>  [By currency]
++== amountsPaid: List<PriceDTO>  [By currency]
++== balances: List<PriceDTO>  [By currency]
++== bankAccounts: List<BankAccountDTO>  [Active accounts for invoice currencies]
+    +== BankAccountDTO (account details, bank info, international codes)
 ```
 
 ## Field Descriptions
@@ -462,7 +462,7 @@ FullInvoiceDTO
 | `currency` | String | Currency code (USD, EUR, TZS, etc.) |
 | `quantity` | Integer | Quantity/count for calculation |
 | `unitPrice` | Decimal | Price per unit |
-| `totalPrice` | Decimal | Total price (quantity × unitPrice) |
+| `totalPrice` | Decimal | Total price (quantity x unitPrice) |
 | `breakdown` | String | Human-readable breakdown explanation |
 | `formattedUnitPrice` | String | Formatted unit price with currency symbol |
 | `formattedTotalPrice` | String | Formatted total price with currency symbol |
@@ -581,8 +581,8 @@ The invoice system supports multi-currency pricing and payment tracking:
 ```
 For each currency:
   Subtotal = Sum of all line item total prices in that currency
-  Tax = Subtotal × (taxPercentage / 100)
-  Discount = Subtotal × (discountPercentage / 100)
+  Tax = Subtotal x (taxPercentage / 100)
+  Discount = Subtotal x (discountPercentage / 100)
   Grand Total = Subtotal + Tax - Discount
   Balance = Grand Total - Amount Paid
 ```

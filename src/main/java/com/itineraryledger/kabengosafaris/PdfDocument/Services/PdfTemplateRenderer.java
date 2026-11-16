@@ -115,10 +115,10 @@ public class PdfTemplateRenderer {
              * Then the company's own {{tokens}}, over the finished HTML.
              *
              * Two mechanisms on purpose. ${company.x} reads the model, which is right for text and for
-             * th: attributes — but Thymeleaf's inlining does not touch a style="" attribute at all, and
+             * th: attributes - but Thymeleaf's inlining does not touch a style="" attribute at all, and
              * inside a <style> block th:inline="css" ESCAPES what it substitutes: a colour came out as
              * `\#0f4a35` and a length as `\31 0px`, neither of which is valid CSS. A brand colour lives
-             * in exactly those two places, so it is a plain token replaced here — the same
+             * in exactly those two places, so it is a plain token replaced here - the same
              * {{companyAccent}} an email template uses, resolved by the same component.
              */
             renderedHtml = companyPlaceholderRenderer.apply(renderedHtml);
@@ -146,7 +146,7 @@ public class PdfTemplateRenderer {
          * Who is sending this document.
          *
          * Every PDF prints the company's name, address and TIN, and until now it printed them
-         * because the words were in the file — 17 of the 19 shipped PDF templates carried them.
+         * because the words were in the file - 17 of the 19 shipped PDF templates carried them.
          * Added HERE because both render paths pass through this method, so a caller cannot forget;
          * a data model that supplies its own `company` still wins, for previews.
          */

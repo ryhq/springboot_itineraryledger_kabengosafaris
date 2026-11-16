@@ -30,8 +30,8 @@ import lombok.NoArgsConstructor;
  * price covers is the gap this whole change exists to close.
  *
  * <p><strong>The wording is stored here as text, not joined through the catalogue.</strong> One
- * {@code UPDATE inclusion_items SET label = …} would otherwise rewrite every document ever sent,
- * including ones already rendered to PDF and emailed — so the customer's copy and ours would
+ * {@code UPDATE inclusion_items SET label = ...} would otherwise rewrite every document ever sent,
+ * including ones already rendered to PDF and emailed - so the customer's copy and ours would
  * disagree, and ours would be the one that looked altered. {@code inclusionItem} survives only as
  * a breadcrumb for the panel, nullable, and is never dereferenced to render anything.
  *
@@ -73,7 +73,7 @@ public class InvoiceInclusion {
      * The claim this line made, snapshotted too.
      *
      * <p>Read live, narrowing a catalogue item's scope would change which contradictions a sent
-     * quote reports — so a warning somebody cleared before sending would reappear afterwards,
+     * quote reports - so a warning somebody cleared before sending would reappear afterwards,
      * about a document they can no longer change.
      */
     @Column(name = "claim_applies_to", length = 200)

@@ -8,7 +8,7 @@ import lombok.Data;
  * Everything a caller can narrow the PDF document-type list by.
  *
  * The same shape as email events, because it is the same idea: one row per kind of
- * document the system produces — an invoice, a quote, a receipt, a full itinerary — each
+ * document the system produces - an invoice, a quote, a receipt, a full itinerary - each
  * defined by the code that generates it, each with templates behind it.
  *
  * And the same two silences worth catching. A document type switched off produces nothing;
@@ -29,8 +29,8 @@ public class PdfDocumentFilter {
     private List<String> statuses;
 
     /**
-     * noTemplates — nothing to render with, so the document cannot be produced at all
-     * nothingToRender — a template exists but none is enabled: the same outcome, reached
+     * noTemplates - nothing to render with, so the document cannot be produced at all
+     * nothingToRender - a template exists but none is enabled: the same outcome, reached
      *                   by accident rather than on purpose
      */
     private List<String> qualities;

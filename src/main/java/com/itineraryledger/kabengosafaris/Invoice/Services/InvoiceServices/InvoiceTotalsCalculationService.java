@@ -25,11 +25,11 @@ import java.util.Map;
  *
  * This service automatically recalculates:
  * - Subtotals by currency (sum of all active line item prices)
- * - Taxes by currency (subtotal × taxPercentage)
- * - Discounts by currency (the lines discountAppliesTo names × discountPercentage)
+ * - Taxes by currency (subtotal x taxPercentage)
+ * - Discounts by currency (the lines discountAppliesTo names x discountPercentage)
  * - Grand totals by currency (subtotal + taxes - discounts)
  *
- * Balances by currency are NOT persisted — they are derived on demand
+ * Balances by currency are NOT persisted - they are derived on demand
  * from grandTotals and payment rows (see InvoicePaymentAggregationService).
  *
  * Should be called whenever:
@@ -200,7 +200,7 @@ public class InvoiceTotalsCalculationService {
             String currency = entry.getKey();
             BigDecimal subtotal = entry.getValue();
 
-            // Calculate tax: subtotal × (taxPercentage / 100)
+            // Calculate tax: subtotal x (taxPercentage / 100)
             BigDecimal tax = subtotal
                 .multiply(taxPercentage)
                 .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
@@ -229,7 +229,7 @@ public class InvoiceTotalsCalculationService {
             String currency = entry.getKey();
             BigDecimal subtotal = entry.getValue();
 
-            // Calculate discount: subtotal × (discountPercentage / 100)
+            // Calculate discount: subtotal x (discountPercentage / 100)
             BigDecimal discount = subtotal
                 .multiply(discountPercentage)
                 .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);

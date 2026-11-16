@@ -36,7 +36,7 @@ public final class AvailabilityRequestSpecification {
             cb.lessThanOrEqualTo(root.get("chaseDueAt"), now));
     }
 
-    /** Asked, nothing back, and not yet due — the healthy waiting state. */
+    /** Asked, nothing back, and not yet due - the healthy waiting state. */
     public static Specification<AvailabilityRequest> awaiting(LocalDateTime now) {
         return (root, query, cb) -> cb.and(
             cb.equal(root.get("status"), AvailabilityRequest.Status.SENT),
@@ -45,7 +45,7 @@ public final class AvailabilityRequestSpecification {
                 cb.greaterThan(root.get("chaseDueAt"), now)));
     }
 
-    /** They answered and nobody has decided what it means yet — the real work of a morning. */
+    /** They answered and nobody has decided what it means yet - the real work of a morning. */
     public static Specification<AvailabilityRequest> repliedUndecided() {
         return (root, query, cb) -> cb.equal(root.get("status"), AvailabilityRequest.Status.REPLIED);
     }

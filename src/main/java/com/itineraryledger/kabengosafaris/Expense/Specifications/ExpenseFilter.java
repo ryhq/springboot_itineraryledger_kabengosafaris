@@ -55,8 +55,8 @@ public class ExpenseFilter {
     /**
      * Actionable states, the ones the office chases.
      *
-     * unpaid — money still owed to somebody. overdue — past the date they asked
-     * for it. dueSoon — falls due inside a week. unsettled covers both of the
+     * unpaid - money still owed to somebody. overdue - past the date they asked
+     * for it. dueSoon - falls due inside a week. unsettled covers both of the
      * first two, which is the weekly "who do we owe" question.
      */
     private List<String> qualities;

@@ -36,7 +36,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Fares — one published departure of a sector, in one contract window.
+ * Fares - one published departure of a sector, in one contract window.
  *
  * <p>Written through a bulk upsert rather than a create endpoint, because a price list arrives all
  * at once and is re-imported when the airline reissues it. A row already present for the same
@@ -68,7 +68,7 @@ public class FlightFareService {
 
         /*
          * The null check is NOT redundant. SORTABLE is a List.of, which forbids nulls and
-         * throws NullPointerException from contains(null) rather than answering false — and
+         * throws NullPointerException from contains(null) rather than answering false - and
          * sortBy is null on every request that does not ask for a sort, which is most of them.
          * Without it the whole listing answers 500.
          */
@@ -305,7 +305,7 @@ public class FlightFareService {
         return (root, query, cb) -> {
             List<Predicate> and = new ArrayList<>();
             /*
-             * Search what the listing SHOWS, which is the sector and the airline — neither of which
+             * Search what the listing SHOWS, which is the sector and the airline - neither of which
              * lives on this table. A fare has no name of its own, so searching only its own columns
              * would answer nothing for every term a person would actually type.
              */
@@ -342,7 +342,7 @@ public class FlightFareService {
      * Decode an optional filter id, or null when it was not supplied.
      *
      * <p>{@code IdObfuscator.decodeId} throws "Hash cannot be null or empty" on a null, and every id
-     * here is an OPTIONAL query parameter that is absent on most requests — so calling it directly
+     * here is an OPTIONAL query parameter that is absent on most requests - so calling it directly
      * turns the unfiltered listing, which is the one the panel opens with, into a 400. Same shape as
      * the List.of(...).contains(null) trap next door: a helper that rejects null, handed the null
      * that absence produces.

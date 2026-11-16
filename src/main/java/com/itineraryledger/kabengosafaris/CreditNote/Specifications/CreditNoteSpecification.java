@@ -47,7 +47,7 @@ public class CreditNoteSpecification {
     }
 
     /**
-     * Several statuses at once — OR inside the dimension, as every other list here does.
+     * Several statuses at once - OR inside the dimension, as every other list here does.
      *
      * "Confirmed or sent" is one question (what is out with a customer and not yet used); the single
      * `status` param could only ever ask half of it.
@@ -59,7 +59,7 @@ public class CreditNoteSpecification {
 
     /**
      * Free text over the four things somebody remembers: the code, the title, the customer, and the
-     * invoice it credits. Joined, so `query.distinct(true)` — otherwise a note joins twice and
+     * invoice it credits. Joined, so `query.distinct(true)` - otherwise a note joins twice and
      * appears twice.
      */
     public static Specification<CreditNote> keyword(String keyword) {
@@ -85,7 +85,7 @@ public class CreditNoteSpecification {
      * as one thing.
      *
      * It exists as its own dimension because a stat card is a filter here, and a card whose value
-     * was the comma-joined pair could be applied but never be seen as applied — the active check
+     * was the comma-joined pair could be applied but never be seen as applied - the active check
      * splits the URL value on commas and would never match it back.
      */
     public static Specification<CreditNote> statusGroupIn(java.util.List<String> groups) {
@@ -107,14 +107,14 @@ public class CreditNoteSpecification {
         return (root, query, cb) -> root.get("status").in(wanted);
     }
 
-    /** Confirmed or sent and not yet consumed — money the customer is still owed. */
+    /** Confirmed or sent and not yet consumed - money the customer is still owed. */
     public static Specification<CreditNote> outstanding() {
         return (root, query, cb) -> root.get("status").in(
             java.util.List.of(CreditNoteStatus.CONFIRMED, CreditNoteStatus.SENT));
     }
 
     /**
-     * Issued on or after a date — the same column and the same comparison the `issueDateFrom`
+     * Issued on or after a date - the same column and the same comparison the `issueDateFrom`
      * filter uses.
      *
      * It read `createdAt` first, which made the "issued lately" card count one set while its own

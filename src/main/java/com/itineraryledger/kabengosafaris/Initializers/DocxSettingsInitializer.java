@@ -14,10 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Seeds DOCX generation settings from application.properties into the DB
- * on first boot. Idempotent — existing rows are preserved so user edits
+ * on first boot. Idempotent - existing rows are preserved so user edits
  * survive restarts.
  *
- * Order: HIGHEST_PRECEDENCE + 16 — runs right after TranslationSettingsInitializer.
+ * Order: HIGHEST_PRECEDENCE + 16 - runs right after TranslationSettingsInitializer.
  */
 @Component
 @RequiredArgsConstructor
@@ -102,7 +102,7 @@ public class DocxSettingsInitializer implements ApplicationRunner, Ordered {
     }
 
     private void initializeDocxSettings() {
-        // ENGINE — takes effect immediately (WordGenerator re-reads per request)
+        // ENGINE - takes effect immediately (WordGenerator re-reads per request)
         createIfMissing(
             "docx.engine",
             docxEngine,
@@ -114,7 +114,7 @@ public class DocxSettingsInitializer implements ApplicationRunner, Ordered {
             false
         );
 
-        // LIBREOFFICE / JODConverter — these are baked into the OfficeManager
+        // LIBREOFFICE / JODConverter - these are baked into the OfficeManager
         // Spring bean at startup. Changes require a restart (flagged).
         createIfMissing(
             "jodconverter.local.enabled",

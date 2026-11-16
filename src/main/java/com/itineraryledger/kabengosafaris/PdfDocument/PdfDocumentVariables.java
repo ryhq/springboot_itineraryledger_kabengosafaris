@@ -129,7 +129,7 @@ public class PdfDocumentVariables {
      *
      * Each row is {resource suffix, name, description}. The file is expected at
      * {@code templates/pdf-templates/<document>_<suffix>.html}. Seeding these
-     * matters when a document type is useless with one template — a costing has
+     * matters when a document type is useless with one template - a costing has
      * two audiences, and the difference between them is which figures are
      * printed, not how they are laid out.
      */

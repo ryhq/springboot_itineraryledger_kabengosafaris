@@ -11,7 +11,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 /**
- * ExpenseDocument Entity — Manages reference documents for expenses.
+ * ExpenseDocument Entity - Manages reference documents for expenses.
  *
  * Stores files supplied by the vendor (or our own internal records) that
  * document a payment, such as:

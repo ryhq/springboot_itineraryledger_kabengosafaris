@@ -10,14 +10,14 @@ import lombok.Data;
 /**
  * Everything a caller can narrow the permission catalogue by, in one object.
  *
- * Nearly five hundred rows, four fifths of them generated as action × entity, so this
- * list is never read top to bottom — it is filtered to the handful somebody is asking
+ * Nearly five hundred rows, four fifths of them generated as action x entity, so this
+ * list is never read top to bottom - it is filtered to the handful somebody is asking
  * about. The two dimensions that matter are which part of the system a permission
  * covers (entity) and what it lets you do with it (action).
  *
  * The third is the interesting one: which permissions no role grants at all. Those are
  * capabilities nobody in the company has, usually because a module was built and never
- * assigned to anybody — an endpoint that returns 403 to every person who tries it.
+ * assigned to anybody - an endpoint that returns 403 to every person who tries it.
  */
 @Data
 public class PermissionFilter {
@@ -38,8 +38,8 @@ public class PermissionFilter {
     private List<String> statuses;
 
     /**
-     * noRoles — no role grants it, so nobody can do it
-     * custom  — not one of the generated action × entity four; a named capability
+     * noRoles - no role grants it, so nobody can do it
+     * custom  - not one of the generated action x entity four; a named capability
      */
     private List<String> qualities;
 

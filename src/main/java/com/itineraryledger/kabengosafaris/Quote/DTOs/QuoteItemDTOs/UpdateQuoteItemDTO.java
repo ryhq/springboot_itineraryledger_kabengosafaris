@@ -66,6 +66,6 @@ public class UpdateQuoteItemDTO {
         @Size(max = 500, message = "Breakdown cannot exceed 500 characters")
         private String breakdown;
 
-        // Note: totalPrice is NOT included - it will be computed as quantity × unitPrice
+        // Note: totalPrice is NOT included - it will be computed as quantity x unitPrice
     }
 }

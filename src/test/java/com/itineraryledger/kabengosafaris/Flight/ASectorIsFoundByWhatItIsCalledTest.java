@@ -43,7 +43,7 @@ class ASectorIsFoundByWhatItIsCalledTest {
         String body = source.substring(spec);
 
         assertFalse(body.contains("String like = \"%\" + keyword.trim().toLowerCase() + \"%\";"),
-            "the whole phrase must not be one LIKE again — that is the bug this replaced");
+            "the whole phrase must not be one LIKE again - that is the bug this replaced");
     }
 
     @Test

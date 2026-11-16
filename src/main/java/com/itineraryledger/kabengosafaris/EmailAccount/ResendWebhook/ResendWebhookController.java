@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Public webhook endpoint for Resend event callbacks.
- * No authentication required — Resend calls this endpoint directly.
+ * No authentication required - Resend calls this endpoint directly.
  * Security is handled via svix signature verification in ResendWebhookService.
  */
 @RestController

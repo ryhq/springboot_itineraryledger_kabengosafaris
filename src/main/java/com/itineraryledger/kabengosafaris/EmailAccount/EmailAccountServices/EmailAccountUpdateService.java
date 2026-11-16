@@ -279,7 +279,7 @@ public class EmailAccountUpdateService {
             existing.setProviderType(providerType);
         }
 
-        // Update API key (if provided) — for API-based providers (Resend, SendGrid)
+        // Update API key (if provided) - for API-based providers (Resend, SendGrid)
         if (updateDTO.getApiKey() != null && !updateDTO.getApiKey().isBlank()) {
             String encryptedApiKey = EncryptionUtil.encrypt(updateDTO.getApiKey());
             existing.setApiKey(encryptedApiKey);

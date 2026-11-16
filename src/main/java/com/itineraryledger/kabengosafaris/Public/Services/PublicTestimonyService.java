@@ -43,7 +43,7 @@ public class PublicTestimonyService {
     private final TestimonyImageStorageService storageService;
     private final PublicTranslationService publicTranslationService;
 
-    // ── Public query methods ─────────────────────────────────────────
+    // == Public query methods =========================================
 
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<?>> getPublicTestimonies(String lang) {
@@ -138,7 +138,7 @@ public class PublicTestimonyService {
         }
     }
 
-    // ── Public testimony submission ──────────────────────────────────
+    // == Public testimony submission ==================================
 
     @Transactional
     public ResponseEntity<ApiResponse<?>> submitPublicTestimony(PublicTestimonyRequest request) {
@@ -205,7 +205,7 @@ public class PublicTestimonyService {
         }
     }
 
-    // ── DTO conversion ───────────────────────────────────────────────
+    // == DTO conversion ===============================================
 
     public PublicTestimonyDTO convertToPublicDTO(Testimony testimony) {
         String primaryImageUrl = null;

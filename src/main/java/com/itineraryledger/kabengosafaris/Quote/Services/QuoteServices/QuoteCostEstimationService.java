@@ -44,8 +44,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * QuoteCostEstimationService — derives the {@link QuoteItem} price lines
- * from the Quote's own day-tree × pax mix (instead of from the source
+ * QuoteCostEstimationService - derives the {@link QuoteItem} price lines
+ * from the Quote's own day-tree x pax mix (instead of from the source
  * Itinerary). Reuses {@link ItineraryCostEstimationService}'s pricing
  * engine by building a synthetic {@link FullItineraryDTO} from the Quote
  * tree and delegating.
@@ -70,8 +70,8 @@ public class QuoteCostEstimationService {
     /**
      * The item types this service produces, and therefore the only ones it may remove.
      *
-     * <p>Everything else on a quote was put there by a person. FLIGHT is derived now — it comes off
-     * the day tree like the other three — so it belongs here; TRANSPORT does not, because a road
+     * <p>Everything else on a quote was put there by a person. FLIGHT is derived now - it comes off
+     * the day tree like the other three - so it belongs here; TRANSPORT does not, because a road
      * transfer is still typed by hand.
      */
     private static final java.util.Set<QuoteItemType> DERIVED_TYPES = java.util.Set.of(
@@ -79,7 +79,7 @@ public class QuoteCostEstimationService {
         QuoteItemType.FLIGHT);
 
     /**
-     * Recalculate a Quote's items from its current day-tree × pax mix.
+     * Recalculate a Quote's items from its current day-tree x pax mix.
      * Idempotent: drops existing items and rebuilds from scratch.
      */
     @Transactional
@@ -104,7 +104,7 @@ public class QuoteCostEstimationService {
      * Internal recalc used by both the explicit endpoint and the per-CRUD
      * triggers. Returns the count of items written.
      *
-     * Silently no-ops for legacy quotes (no day-tree, no pax) — those keep
+     * Silently no-ops for legacy quotes (no day-tree, no pax) - those keep
      * whatever items were generated at creation time.
      */
     @Transactional
@@ -148,7 +148,7 @@ public class QuoteCostEstimationService {
          * 3. Drop the DERIVED items and write them fresh. Only the derived ones.
          *
          * This used to delete every row on the quote and then rewrite only the three types cost
-         * estimation produces, and recalc fires on EVERY edit to the quote's day tree — eight call
+         * estimation produces, and recalc fires on EVERY edit to the quote's day tree - eight call
          * sites. So a line somebody typed by hand, which is how flights have been quoted until now,
          * was silently destroyed the next time anyone touched a day. No error, no warning, and the
          * only evidence was a total that quietly dropped.
@@ -184,7 +184,7 @@ public class QuoteCostEstimationService {
     }
 
     /**
-     * Coalesce key on the active transaction — multiple {@code triggerRecalc}
+     * Coalesce key on the active transaction - multiple {@code triggerRecalc}
      * calls inside one transaction (e.g. a service touching several
      * children in sequence) collapse to a single recalc, scheduled to fire
      * after the transaction commits. Call-sites don't need to know.
@@ -195,7 +195,7 @@ public class QuoteCostEstimationService {
      * Trigger recalc by Quote id. Coalesces within the active transaction:
      * the first call for each quoteId schedules an after-commit recalc;
      * subsequent calls in the same transaction are no-ops. If there's no
-     * active transaction (rare — call-sites are all @Transactional), runs
+     * active transaction (rare - call-sites are all @Transactional), runs
      * synchronously. Swallows exceptions either way so a pricing failure
      * never breaks the CRUD it's piggy-backing on.
      */
@@ -203,7 +203,7 @@ public class QuoteCostEstimationService {
         if (quoteId == null) return;
 
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            // No transaction — recalc immediately; legacy fallback.
+            // No transaction - recalc immediately; legacy fallback.
             try { recalculateBestEffort(quoteId); }
             catch (Exception e) { log.warn("Sync recalc failed for quote {}: {}", quoteId, e.getMessage()); }
             return;
@@ -235,7 +235,7 @@ public class QuoteCostEstimationService {
     }
 
     /**
-     * Run a recalc in its own transaction (REQUIRES_NEW) — used after the
+     * Run a recalc in its own transaction (REQUIRES_NEW) - used after the
      * caller's transaction has committed, so we get a clean view of the
      * data and don't conflict with the original session.
      */
@@ -245,7 +245,7 @@ public class QuoteCostEstimationService {
     }
 
     // =====================================================================
-    // Synthetic DTO builder — maps the Quote tree onto FullItineraryDTO
+    // Synthetic DTO builder - maps the Quote tree onto FullItineraryDTO
     // =====================================================================
 
     /**
@@ -455,7 +455,7 @@ public class QuoteCostEstimationService {
          * This is the half of the engine that is easy to leave out. The quote does not price off
          * the itinerary: recalculate() builds THIS synthetic DTO from the quote's own day tree and
          * feeds it to the same engine, precisely so that editing a quote's days re-prices the
-         * quote. A flight the office adds to a quote day — or removes from one — therefore reaches
+         * quote. A flight the office adds to a quote day - or removes from one - therefore reaches
          * the cost sheet only through here. Without this block the flight appears in the day tree,
          * prints on the document, and contributes nothing to the total.
          */
@@ -491,13 +491,13 @@ public class QuoteCostEstimationService {
     // =====================================================================
 
     /**
-     * Turn a cost-estimation breakdown into condensed QuoteItem rows — one
+     * Turn a cost-estimation breakdown into condensed QuoteItem rows - one
      * row per (QuoteItemType, currency), with the breakdown text preserving
      * the underlying line-item names so the PDF still reads honestly.
      *
      * Each persisted unit price is the rack-rate cost multiplied by
      * {@code (1 + agentCommission% + marginUplift%) / 100} so the customer-
-     * facing line-item price is already inflated — there is no separate
+     * facing line-item price is already inflated - there is no separate
      * "Markup" line on the PDF.
      */
     private int persistItems(Quote quote, ItineraryCostEstimationDTO estimation) {
@@ -518,7 +518,7 @@ public class QuoteCostEstimationService {
          * displayOrder is 1-based and unique within a quote, which is what the
          * create endpoint has always assumed (max + 1) and what the reorder
          * endpoint now writes. It used to restart at 0 per type here, and every
-         * condensed row was written as 0 — so three rows shared one position and
+         * condensed row was written as 0 - so three rows shared one position and
          * "sort by displayOrder" answered arbitrarily.
          */
         int written = 0;
@@ -543,7 +543,7 @@ public class QuoteCostEstimationService {
             /*
              * Flights last, so they read as the leg they are rather than mixed among the beds and
              * the park fees. Their multiplier is 1 unless somebody has explicitly scoped the uplift
-             * to FLIGHT — see upliftCovers, and the double-markup it exists to prevent.
+             * to FLIGHT - see upliftCovers, and the double-markup it exists to prevent.
              */
             written += writePerLine(quote, flights, QuoteItemType.FLIGHT, flightMultiplier, written + 1);
         }
@@ -638,17 +638,17 @@ public class QuoteCostEstimationService {
      * Does the quote's margin uplift reach this category?
      *
      * <p>For everything except a flight this is the shared scope rule, where a BLANK scope means
-     * "the whole quote" — {@code covers(null, …)} answers true, deliberately, because an uplift
+     * "the whole quote" - {@code covers(null, ...)} answers true, deliberately, because an uplift
      * somebody set without narrowing it is meant to apply to all of it.
      *
      * <p>⚠️ A FLIGHT is the exception, and it has to be, because the default is the wrong way round
-     * for it. A flight already carries a markup of its own — the airline's percentage or a flat fee
+     * for it. A flight already carries a markup of its own - the airline's percentage or a flat fee
      * per ticket, resolved on the fare and baked into the line before it ever reaches here. Nearly
      * every quote leaves marginUpliftAppliesTo empty. So the moment FLIGHT joined the enum, every
      * one of those quotes would have started adding the category uplift ON TOP of the fare markup,
      * with nothing changed and nobody told.
      *
-     * <p>So the uplift reaches a flight only when somebody names FLIGHT explicitly — an opt-in, not
+     * <p>So the uplift reaches a flight only when somebody names FLIGHT explicitly - an opt-in, not
      * an opt-out. This is the same inversion that produced the inclusion-claim defect: a helper
      * whose "unset means everything" default is right for the cases it was written for and exactly
      * wrong for the one added later.
@@ -665,9 +665,9 @@ public class QuoteCostEstimationService {
      * Build a customer-facing description for a per-line QuoteItem row.
      * Includes the day number, the full resource name (the same string used
      * for the item header), and a "charged per X" clause derived from the
-     * pax category — e.g. for a park fee:
+     * pax category - e.g. for a park fee:
      *
-     *   "Day 2 • Conservation Fee - Serengeti National Park, charged per person."
+     *   "Day 2 - Conservation Fee - Serengeti National Park, charged per person."
      *
      * The clause is omitted when paxCategory is null/blank, and a leading
      * "per " is added when the category itself doesn't already start with

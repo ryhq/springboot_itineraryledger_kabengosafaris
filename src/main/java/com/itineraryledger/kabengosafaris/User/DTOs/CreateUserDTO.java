@@ -23,7 +23,7 @@ public class CreateUserDTO {
     private String phoneNumber;
 
     /**
-     * Optional. Left blank, a strong one is generated and never shown to anybody —
+     * Optional. Left blank, a strong one is generated and never shown to anybody -
      * the activation email is what lets the account in.
      */
     private String password;
@@ -40,7 +40,7 @@ public class CreateUserDTO {
      * A single role, for callers that only ever grant one.
      *
      * The create form offers one picker, and adding an account from inside a role's own
-     * page grants that role — both send one id, and coercing a lone string into a list
+     * page grants that role - both send one id, and coercing a lone string into a list
      * is not something Jackson does by default. Merged with roleIds by allRoleIds().
      */
     private String roleId;

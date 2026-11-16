@@ -26,7 +26,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long>, JpaSp
     boolean existsByName(String name);
 
     // ========================
-    // FILTER VALUES — what this log actually holds
+    // FILTER VALUES - what this log actually holds
     // ========================
 
     /*

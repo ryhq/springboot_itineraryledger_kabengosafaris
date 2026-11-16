@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 /**
  * The new order of the whole list: position IS the new displayOrder (1-indexed).
  *
- * A bare list of ids, because FAQs are global — there is no parent to scope them to.
+ * A bare list of ids, because FAQs are global - there is no parent to scope them to.
  */
 @Data
 @NoArgsConstructor

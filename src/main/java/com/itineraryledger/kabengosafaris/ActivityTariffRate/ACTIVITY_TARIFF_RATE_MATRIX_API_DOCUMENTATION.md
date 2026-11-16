@@ -24,13 +24,13 @@ The Rate Matrix API provides all the data needed to render a rate input grid for
 
 | Charging Basis | Grid Structure                          | Age Categories |
 | -------------- | --------------------------------------- | -------------- |
-| `PER_PERSON`   | Season × Nation Category × Age Category | **Included**   |
-| `PER_VEHICLE`  | Season × Nation Category                | **Excluded**   |
-| `PER_GROUP`    | Season × Nation Category                | **Excluded**   |
-| `PER_DAY`      | Season × Nation Category                | **Excluded**   |
-| `PER_HOUR`     | Season × Nation Category                | **Excluded**   |
-| `PER_SESSION`  | Season × Nation Category                | **Excluded**   |
-| `FLAT_RATE`    | Season × Nation Category                | **Excluded**   |
+| `PER_PERSON`   | Season x Nation Category x Age Category | **Included**   |
+| `PER_VEHICLE`  | Season x Nation Category                | **Excluded**   |
+| `PER_GROUP`    | Season x Nation Category                | **Excluded**   |
+| `PER_DAY`      | Season x Nation Category                | **Excluded**   |
+| `PER_HOUR`     | Season x Nation Category                | **Excluded**   |
+| `PER_SESSION`  | Season x Nation Category                | **Excluded**   |
+| `FLAT_RATE`    | Season x Nation Category                | **Excluded**   |
 
 ---
 
@@ -235,7 +235,7 @@ if (includesAgeCategories) {
 
 #### For `PER_PERSON` Activities (3-dimensional grid)
 
-Each row represents: **Season × Nation Category × Age Category**
+Each row represents: **Season x Nation Category x Age Category**
 
 ```javascript
 function buildPerPersonRows(seasons, nationCategories, ageCategories) {
@@ -287,7 +287,7 @@ function buildPerPersonRows(seasons, nationCategories, ageCategories) {
 
 #### For Non-`PER_PERSON` Activities (2-dimensional grid)
 
-Each row represents: **Season × Nation Category** (no age category)
+Each row represents: **Season x Nation Category** (no age category)
 
 ```javascript
 function buildSimpleRows(seasons, nationCategories) {
@@ -452,19 +452,19 @@ GET /api/activity-tariff-rates/matrix?activityId=abc123&parkId=park2
 The `availableParks` field provides all parks associated with the activity, enabling a dropdown for switching between parks.
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│ Configure Rates for: Game Drive                         │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  Park: [Serengeti National Park ▼]  <-- Auto-selected on first load
-│        ├── Serengeti National Park    ✓                │
-│        ├── Ngorongoro Conservation Area                │
-│        └── Tarangire National Park                     │
-│                                                         │
-│  Charging Basis: Per Person                            │
-│  (Rates will include age categories)                   │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
++=========================================================+
+| Configure Rates for: Game Drive                         |
++=========================================================+
+|                                                         |
+|  Park: [Serengeti National Park v]  <-- Auto-selected on first load
+|        +== Serengeti National Park    ✓                |
+|        +== Ngorongoro Conservation Area                |
+|        +== Tarangire National Park                     |
+|                                                         |
+|  Charging Basis: Per Person                            |
+|  (Rates will include age categories)                   |
+|                                                         |
++=========================================================+
 ```
 
 **Building the dropdown from response:**

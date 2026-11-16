@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
  * The one statement that writes an access event, in a transaction of its own.
  *
  * <p>A separate bean on purpose. {@code @Transactional} is applied by a proxy, so a method
- * calling an annotated method on {@code this} gets no transaction at all — and, worse for the
+ * calling an annotated method on {@code this} gets no transaction at all - and, worse for the
  * bug this exists to fix, a {@code try/catch} written <em>inside</em> an annotated method never
  * sees the failure, because the commit that fails happens after the method has returned. The
  * catch has to live outside the proxy, which means the write has to live behind one.

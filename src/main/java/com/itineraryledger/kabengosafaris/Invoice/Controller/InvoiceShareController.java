@@ -86,7 +86,7 @@ public class InvoiceShareController {
         return shareService.update(id, dto);
     }
 
-    /** Bulk delete, bare array body, per-id outcomes — the house delete contract. */
+    /** Bulk delete, bare array body, per-id outcomes - the house delete contract. */
     @DeleteMapping("/api/invoice-shares")
     @PreAuthorize("hasAuthority('PERM_UPDATE_INVOICE')")
     public ResponseEntity<ApiResponse<?>> delete(@RequestBody List<String> ids) {

@@ -31,8 +31,8 @@ import lombok.RequiredArgsConstructor;
  * Activities and what they cost.
  *
  * Nearly the same shape as parks, with one difference that decides the order everything runs in: an
- * activity rate may be PARK-SPECIFIC — a balloon flight over the Serengeti is not priced like a
- * balloon flight anywhere else — so the parks have to be in place before these are read, or every
+ * activity rate may be PARK-SPECIFIC - a balloon flight over the Serengeti is not priced like a
+ * balloon flight anywhere else - so the parks have to be in place before these are read, or every
  * park-specific rate reports a park it cannot find.
  *
  * A rate with no park is the general price for the activity, and that null is meaningful rather than
@@ -90,7 +90,7 @@ public class ActivityTransfer implements ModuleTransfer {
                 rateRows.add(row);
             }
 
-            /* the gallery, only when asked for — it dwarfs the rates otherwise */
+            /* the gallery, only when asked for - it dwarfs the rates otherwise */
             imageFiles.attach(mapper, node, "activities", activity.getSlug(),
                 activityImages.findByActivityIdOrderByDisplayOrderAsc(activity.getId()), includeImages, files);
 
@@ -166,7 +166,7 @@ public class ActivityTransfer implements ModuleTransfer {
                 continue;
             }
 
-            /* One read per activity, not one per rate — see ParkTransfer.ratesAlreadyHere. */
+            /* One read per activity, not one per rate - see ParkTransfer.ratesAlreadyHere. */
             String rateKey = (park == null ? "-" : park.getId()) + "/" + season.getId()
                 + "/" + nation.getId() + "/" + (age == null ? "-" : age.getId());
             ActivityTariffRate existing = ratesAlreadyHere(context, activity).get(rateKey);

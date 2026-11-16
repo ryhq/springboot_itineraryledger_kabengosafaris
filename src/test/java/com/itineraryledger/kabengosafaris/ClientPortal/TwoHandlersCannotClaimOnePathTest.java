@@ -72,7 +72,7 @@ class TwoHandlersCannotClaimOnePathTest {
             }
         }
 
-        assertFalse(claims.isEmpty(), "found no portal mappings — this guard would check nothing");
+        assertFalse(claims.isEmpty(), "found no portal mappings - this guard would check nothing");
 
         List<String> clashes = new ArrayList<>();
         for (Map.Entry<String, List<Claim>> entry : claims.entrySet()) {

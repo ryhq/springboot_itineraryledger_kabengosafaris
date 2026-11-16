@@ -30,7 +30,7 @@ import com.itineraryledger.kabengosafaris.Translation.Services.TranslationServic
  * </pre>
  *
  * <p>Two separate faults. The percent sign was left outside the number mask, so the engine saw a
- * bare symbol and wrote it out as the word "Pourcentage" — and dropped the closing bracket with it.
+ * bare symbol and wrote it out as the word "Pourcentage" - and dropped the closing bracket with it.
  * And a cell holding nothing but "#:" was sent as prose, so the engine, having no answer, invented
  * one: "Oui". Yes.
  *

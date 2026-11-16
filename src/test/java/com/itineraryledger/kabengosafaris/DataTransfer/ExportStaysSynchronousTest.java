@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
  * That is not theoretical: it cost three rounds on a live 500 whose message was always somebody's
  * generic sentence, because the specific one could not reach the response.
  *
- * Bounded memory was the reason for streaming, and that is still had — the bundle is a file on disk
+ * Bounded memory was the reason for streaming, and that is still had - the bundle is a file on disk
  * and Spring copies a Resource through a buffer. The async part bought nothing and hid everything.
  */
 class ExportStaysSynchronousTest {
@@ -29,7 +29,7 @@ class ExportStaysSynchronousTest {
      * The file with its comments removed.
      *
      * Because the first version of this test failed on the comment EXPLAINING why the streaming body
-     * was removed — a check that cannot tell code from prose reports the fix as the fault.
+     * was removed - a check that cannot tell code from prose reports the fix as the fault.
      */
     private String codeOf(Path file) throws IOException {
         return Files.readString(file)
@@ -44,7 +44,7 @@ class ExportStaysSynchronousTest {
 
         assertFalse(source.contains("StreamingResponseBody"),
             "A streaming body escapes this controller's own error handling. Return an "
-                + "InputStreamResource over the built file instead — same memory, reportable faults.");
+                + "InputStreamResource over the built file instead - same memory, reportable faults.");
         assertTrue(source.contains("InputStreamResource"),
             "the bundle should be sent as a Resource");
     }
@@ -55,7 +55,7 @@ class ExportStaysSynchronousTest {
         String source = codeOf(CONTROLLER);
 
         assertTrue(source.contains("e.getClass().getSimpleName()"),
-            "e.getMessage() is null for plenty of exceptions — a 500 that says only 'could not' "
+            "e.getMessage() is null for plenty of exceptions - a 500 that says only 'could not' "
                 + "costs a deploy to diagnose");
         assertTrue(source.contains("catch (Throwable e)"),
             "an Error here is as invisible as an Exception, and just as worth reporting");
@@ -68,7 +68,7 @@ class ExportStaysSynchronousTest {
             + "kabengosafaris/DataTransfer/Services/BundleExportService.java"));
 
         assertTrue(service.contains("app.data.dir"),
-            "the service runs with PrivateTmp, where /tmp is memory — building a company's galleries "
+            "the service runs with PrivateTmp, where /tmp is memory - building a company's galleries "
                 + "there is the byte[] problem wearing a different hat");
     }
 }

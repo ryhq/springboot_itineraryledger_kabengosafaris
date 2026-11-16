@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 /**
  * What is still missing, and what it costs.
  *
- * A blank TIN is not a validation error — the app runs fine without it — but an invoice prints a
+ * A blank TIN is not a validation error - the app runs fine without it - but an invoice prints a
  * blank line where the tax number belongs, and nobody notices until a client asks. So the gaps are
  * reported as a list with a severity rather than enforced as required fields.
  */

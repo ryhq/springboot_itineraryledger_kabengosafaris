@@ -204,7 +204,7 @@ public class InvoiceUpdateService {
                         com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceItemType.class));
                 }
 
-                // Markup fields (DRAFT only) — bake into existing line item
+                // Markup fields (DRAFT only) - bake into existing line item
                 // unit prices when commission or uplift changes.
                 if (updateDTO.getAgentCommissionPercentage() != null
                         && !updateDTO.getAgentCommissionPercentage().equals(invoice.getAgentCommissionPercentage())) {

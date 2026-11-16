@@ -128,7 +128,7 @@ public class EmailAccountGetService {
      *
      * Sending mail is the one thing this system does that a customer sees directly, and it
      * fails quietly: a broken account produces no error anybody here reads, only an invoice
-     * that never arrives. So the figures are the silent failures — last send failed, never
+     * that never arrives. So the figures are the silent failures - last send failed, never
      * tested, and on the receiving side, fetching that has stopped.
      */
     private Map<String, Object> buildStats(Specification<EmailAccount> spec) {

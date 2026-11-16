@@ -65,7 +65,7 @@ public class SafariSpecification {
 
     public static Specification<Safari> searchKeyword(String keyword) {
         String lowerKeyword = "%" + keyword.toLowerCase() + "%";
-        // Note: description is @Lob — LOWER() on CLOB types causes errors in Hibernate 6
+        // Note: description is @Lob - LOWER() on CLOB types causes errors in Hibernate 6
         return (root, query, cb) -> cb.or(
                 cb.like(cb.lower(root.get("name")), lowerKeyword),
                 cb.like(cb.lower(root.get("code")), lowerKeyword),
@@ -85,7 +85,7 @@ public class SafariSpecification {
     }
 
     // ========================
-    // PHASE — where a safari is in time
+    // PHASE - where a safari is in time
     // ========================
 
     /**
@@ -98,7 +98,7 @@ public class SafariSpecification {
      *
      * Every phase is a statement about start date, end date and today, so every
      * one of them can be asked of the database. The boundaries mirror
-     * {@code Safari.getCurrentPhase()} exactly — the entity remains the
+     * {@code Safari.getCurrentPhase()} exactly - the entity remains the
      * definition, this is the same definition in SQL.
      */
     public static Specification<Safari> inPhase(SafariPhase phase, LocalDate today) {
@@ -125,7 +125,7 @@ public class SafariSpecification {
                     cb.greaterThanOrEqualTo(start, today.plusDays(1)),
                     cb.lessThanOrEqualTo(start, today.plusDays(2)));
                 /*
-                 * Unreachable in the entity — it needs a safari that has not
+                 * Unreachable in the entity - it needs a safari that has not
                  * started yet and starts in under a day, which cannot both hold.
                  * Answering with nothing is honest; answering with "starts
                  * today" would disagree with the badge on the row, which reads
@@ -140,7 +140,7 @@ public class SafariSpecification {
                  * "today is within two days of the start" is the same statement
                  * as "the start is within two days of today".
                  */
-                // days two and three — not the first, not the last
+                // days two and three - not the first, not the last
                 case EARLY_DAYS -> cb.and(
                     running,
                     cb.notEqual(start, today),

@@ -20,7 +20,7 @@ import java.math.RoundingMode;
  * <p><b>A missing currency is not USD.</b> The old symbol dialect fell back to
  * {@code code + " " + amount} whenever {@code Currency.getInstance} threw, so an unrecognised code
  * silently switched dialect halfway down a document. Here there is one dialect, and an amount with
- * no currency comes back with no currency rather than wearing a default — a number whose currency
+ * no currency comes back with no currency rather than wearing a default - a number whose currency
  * nobody recorded must not be presented as though somebody had.
  */
 public final class MoneyFormat {

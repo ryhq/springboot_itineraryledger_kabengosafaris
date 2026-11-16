@@ -1143,7 +1143,7 @@ public class SafariCostEstimationService {
      *
      * <p>This did not exist, and nothing said so. The invoice generator has always asked for
      * {@code getFlightCosts()}, the orchestrator behind the Cost tab has always priced flights,
-     * and this service — the one that actually builds the invoice — returned nothing. So the
+     * and this service - the one that actually builds the invoice - returned nothing. So the
      * Arusha to Zanzibar sector showed on screen at USD 764.16 and was absent from the invoice
      * the customer was asked to pay. Ported from the itinerary service, which has had it all
      * along.

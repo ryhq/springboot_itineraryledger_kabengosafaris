@@ -57,8 +57,8 @@ public class EmailEventGetService {
      * The list: the rows, the counters and the sort, in one response.
      *
      * It used to return every event as a bare array with no total, so the table under it
-     * reported "1–10 of 0" while showing rows. Now on the house contract like everything
-     * else, with the two counters that matter — an event switched off and an event with
+     * reported "1-10 of 0" while showing rows. Now on the house contract like everything
+     * else, with the two counters that matter - an event switched off and an event with
      * nothing to send are both silent, and neither is visible from the row itself.
      */
     public ResponseEntity<ApiResponse<?>> getAllEmailEvents(

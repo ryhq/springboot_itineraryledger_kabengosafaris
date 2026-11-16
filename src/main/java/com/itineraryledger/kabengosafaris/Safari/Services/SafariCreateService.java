@@ -516,8 +516,8 @@ public class SafariCreateService {
             Itinerary itinerary = quote.getItinerary();
             /*
              * The safari describes the QUOTE it was sold from, not the itinerary
-             * the quote was priced from. The quote has been negotiated — a day
-             * dropped, a route changed — and a booking whose header disagreed
+             * the quote was priced from. The quote has been negotiated - a day
+             * dropped, a route changed - and a booking whose header disagreed
              * with its own days is one the office operates from and gets wrong.
              */
             List<QuoteDay> orderedDays = quote.getDays().stream()
@@ -569,7 +569,7 @@ public class SafariCreateService {
                     /*
                      * The QUOTE's vehicle count, not the itinerary's.
                      *
-                     * The itinerary carries the reference party's figure — one car for the two
+                     * The itinerary carries the reference party's figure - one car for the two
                      * guests it was written around. A real booking sets its own: eight guests on
                      * ITI-8D7N-1004 need two. Taking the itinerary's number converted a quote
                      * priced for two vehicles into a safari planned for one, so the crater service
@@ -597,7 +597,7 @@ public class SafariCreateService {
 
             /*
              * From the QUOTE, not from quote.getItinerary(). The two disagree the moment anybody
-             * edits the quote, and what the customer accepted is the quote — a trip delivered
+             * edits the quote, and what the customer accepted is the quote - a trip delivered
              * against the template's promise instead is a trip delivered against something the
              * customer never saw. A legacy quote with no rows falls back to the itinerary, so a
              * trip booked before this existed still carries something.
@@ -724,7 +724,7 @@ public class SafariCreateService {
      *
      * <p>Every seat arrives PENDING, whatever the itinerary said. A trip that has been sold has not
      * had its seats held, and a row that arrives claiming otherwise is how a party reaches an
-     * airstrip without one — the same rule the accommodation rows follow.
+     * airstrip without one - the same rule the accommodation rows follow.
      */
     private void copyDayFlights(ItineraryDay itineraryDay, SafariDay safariDay) {
         if (itineraryDay.getFlights() == null || itineraryDay.getFlights().isEmpty()) {
@@ -750,7 +750,7 @@ public class SafariCreateService {
      * Flights from the QUOTE, which is the path that matters when one exists.
      *
      * <p>The quote is what the customer accepted. Reading the itinerary here instead would give the
-     * safari the template's current flights rather than the ones that were sold — the same mistake
+     * safari the template's current flights rather than the ones that were sold - the same mistake
      * that full_safari_modern.html makes by reaching through to the itinerary's highlights, and the
      * reason the accommodation copy beside this one exists in two versions too.
      */

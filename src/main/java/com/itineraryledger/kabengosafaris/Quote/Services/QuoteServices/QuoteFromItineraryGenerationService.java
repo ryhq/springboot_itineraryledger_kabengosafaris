@@ -172,7 +172,7 @@ public class QuoteFromItineraryGenerationService {
              *
              * It used to sit on convert: you could quote a draft itinerary, the
              * customer could accept it, and only then were you told the product
-             * was not published — an accepted quote that could not be fulfilled.
+             * was not published - an accepted quote that could not be fulfilled.
              * Worse, archiving an old itinerary broke every accepted quote
              * against it, months after anyone touched either record.
              *
@@ -260,7 +260,7 @@ public class QuoteFromItineraryGenerationService {
                  */
                 snapshotItineraryIntoQuote(itinerary, quote);
                 quoteRepository.save(quote);
-                // Items are derived from the new Quote tree × pax mix by the
+                // Items are derived from the new Quote tree x pax mix by the
                 // shared cost-estimation engine, so any future edits to the
                 // tree update totals through the same path.
                 itemsCreated = quoteCostEstimationService.recalculate(decodedQuoteId);
@@ -357,7 +357,7 @@ public class QuoteFromItineraryGenerationService {
         dto.setDiscountAppliesTo(discountAppliesTo == null ? null
             : QuoteItemTypeScope.canonical(QuoteItemTypeScope.parse(discountAppliesTo)));
 
-        // Internal markup — bakes into every line item's stored unit price
+        // Internal markup - bakes into every line item's stored unit price
         // by QuoteCostEstimationService. Customer never sees a separate
         // markup line.
         if (agentCommissionPercentage != null) {
@@ -383,7 +383,7 @@ public class QuoteFromItineraryGenerationService {
      * Create QuoteItems from cost estimation breakdown.
      *
      * <p>When {@code condense} is true, all line items belonging to the same
-     * QuoteItemType (Accommodation, Park Fee, Activity, …) are merged into a
+     * QuoteItemType (Accommodation, Park Fee, Activity, ...) are merged into a
      * single QuoteItem per type, with prices summed per currency. The merged
      * row's description preserves the underlying breakdown so the customer
      * still sees what is included on the PDF.
@@ -464,7 +464,7 @@ public class QuoteFromItineraryGenerationService {
 
         if (totalsByCurrency.isEmpty()) return false;
 
-        // Build the breakdown text — distinct itemNames in their original
+        // Build the breakdown text - distinct itemNames in their original
         // order. This keeps the merged row's description honest for the PDF.
         String breakdown = lineItems.stream()
                 .map(ItineraryCostEstimationDTO.CostLineItem::getItemName)
@@ -572,7 +572,7 @@ public class QuoteFromItineraryGenerationService {
         copyDaysStructure(itinerary, quote);
         /*
          * And what the price covers. A quote that states a figure without stating what the figure
-         * buys is the gap this closes — the quote sent to a real customer in September priced a
+         * buys is the gap this closes - the quote sent to a real customer in September priced a
          * 5,629 USD trip and said nothing anywhere about what it included.
          */
         inclusionSnapshot.itineraryToQuote(itinerary, quote);
@@ -672,8 +672,8 @@ public class QuoteFromItineraryGenerationService {
      * in the quote's own line items when the quote is generated, and copying the numbers here too
      * would give one price two homes and no rule for which wins.
      *
-     * <p>markupType/markupValue DO travel, because they are a decision — "flat 50 on this sector
-     * for this client" — and losing them would quietly re-price the flight at the airline default.
+     * <p>markupType/markupValue DO travel, because they are a decision - "flat 50 on this sector
+     * for this client" - and losing them would quietly re-price the flight at the airline default.
      */
     private void copyDayFlights(ItineraryDay itineraryDay, QuoteDay quoteDay) {
         if (itineraryDay.getFlights() == null || itineraryDay.getFlights().isEmpty()) {

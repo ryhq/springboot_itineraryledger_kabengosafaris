@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * That every permission an endpoint demands actually exists.
  *
  * A permission is matched by NAME. Demand one the catalogue does not contain and the endpoint answers
- * 403 to everybody — including a superadmin, who has every permission there is, because the one being
+ * 403 to everybody - including a superadmin, who has every permission there is, because the one being
  * asked for is not among them. Nothing fails at startup and nothing appears in a log; somebody simply
  * cannot use a page and nobody can say why.
  *
@@ -74,7 +74,7 @@ class PermissionNamesTest {
 
             %s
 
-            Either the name is wrong (check what entities.json calls that entity — EMAIL_SIGNATURE
+            Either the name is wrong (check what entities.json calls that entity - EMAIL_SIGNATURE
             against EMAIL_ACCOUNT_SIGNATURE, for instance) or the permission needs adding to
             entities.json or custom-permissions.json.
             """.formatted(unknown.size(), String.join("\n", unknown)));
@@ -94,7 +94,7 @@ class PermissionNamesTest {
         JsonNode custom = mapper.readTree(Files.readString(CUSTOM)).get("customPermissions");
         for (JsonNode permission : custom) names.add(permission.get("name").asText());
 
-        assertFalse(names.isEmpty(), "no permissions parsed — this guard would be checking nothing");
+        assertFalse(names.isEmpty(), "no permissions parsed - this guard would be checking nothing");
         return new HashSet<>(names);
     }
 }

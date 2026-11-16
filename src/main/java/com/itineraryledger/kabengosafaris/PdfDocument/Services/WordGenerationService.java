@@ -50,7 +50,7 @@ public class WordGenerationService {
     }
 
     /**
-     * As above, with the pricing date the costing document needs — the one type
+     * As above, with the pricing date the costing document needs - the one type
      * whose FIGURES depend on a parameter rather than its layout.
      */
     @Transactional(readOnly = true)

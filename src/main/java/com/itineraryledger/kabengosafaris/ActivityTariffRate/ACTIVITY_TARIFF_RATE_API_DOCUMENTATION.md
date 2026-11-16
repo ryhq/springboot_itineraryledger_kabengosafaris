@@ -41,7 +41,7 @@ The Activity Tariff Rate API manages pricing for activities based on:
 | **Rack Rate** | The price charged to the customer (revenue) |
 | **STO Rate** | The cost we pay on behalf of the customer (expense) |
 | **Profit Amount** | Rack Rate - STO Rate (the profit we make per transaction) |
-| **Profit Percentage** | (Profit Amount / Rack Rate) × 100 |
+| **Profit Percentage** | (Profit Amount / Rack Rate) x 100 |
 | **Charging Basis** | How the activity is charged: `PER_PERSON`, `PER_VEHICLE`, `PER_GROUP`, etc. |
 
 > **Business Rule:** Rack Rate must always be greater than or equal to STO Rate. We charge the customer at least what we pay on their behalf.
@@ -519,7 +519,7 @@ The unique key for matching is:
 | `stoRate` | BigDecimal | STO rate - cost paid on behalf of customer (expense) |
 | `currency` | String | ISO 4217 currency code |
 | `profitAmount` | BigDecimal | Calculated: Rack Rate - STO Rate |
-| `profitPercentage` | BigDecimal | Calculated: (Profit Amount / Rack Rate) × 100 |
+| `profitPercentage` | BigDecimal | Calculated: (Profit Amount / Rack Rate) x 100 |
 | `notes` | String | Optional notes |
 | `isActive` | Boolean | Active status |
 | `createdAt` | LocalDateTime | Creation timestamp |
@@ -587,7 +587,7 @@ An activity can only have rates if:
 | `rackRate` | Price charged to customer | $50.00 |
 | `stoRate` | Cost we pay on customer's behalf | $45.00 |
 | `profitAmount` | rackRate - stoRate | $5.00 |
-| `profitPercentage` | (profitAmount / rackRate) × 100 | 10.00% |
+| `profitPercentage` | (profitAmount / rackRate) x 100 | 10.00% |
 
 ### Unique Constraint
 

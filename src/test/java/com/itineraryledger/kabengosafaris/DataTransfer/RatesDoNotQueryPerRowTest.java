@@ -12,8 +12,8 @@ import org.junit.jupiter.api.Test;
 /**
  * That importing a rate sheet does not ask the database about every row.
  *
- * Each rate used to cost three round trips — "is this one already here?", "does the park-tariff
- * link exist?", then the insert — across three modules. For a bundle of 5,394 rates that is roughly
+ * Each rate used to cost three round trips - "is this one already here?", "does the park-tariff
+ * link exist?", then the insert - across three modules. For a bundle of 5,394 rates that is roughly
  * sixteen thousand statements, and a check of one took 274 seconds: longer than the gateway holds
  * the request open, so the report could never reach the person who asked for it. The rows were
  * never the cost; the conversation about them was.
@@ -46,7 +46,7 @@ class RatesDoNotQueryPerRowTest {
     void noFinderPerRow() throws IOException {
         /*
          * Named exactly, because these are the three that cost the 274 seconds. A new one would
-         * not be caught here — the map is the pattern to copy — but a revert would be.
+         * not be caught here - the map is the pattern to copy - but a revert would be.
          */
         assertFalse(sourceOf("ParkTransfer")
                 .contains("findByParkIdAndTariffIdAndSeasonIdAndNationCategoryIdAndAgeCategoryId"),

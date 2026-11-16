@@ -24,7 +24,7 @@ public class AirlineDTO {
     private String baggageNotes;
     private MarkupType markupType;
     private BigDecimal markupValue;
-    /** "13% per person" — what the panel shows without the reader doing the joining up. */
+    /** "13% per person" - what the panel shows without the reader doing the joining up. */
     private String markupSummary;
     private String bookingTerms;
     private String cancellationPolicy;

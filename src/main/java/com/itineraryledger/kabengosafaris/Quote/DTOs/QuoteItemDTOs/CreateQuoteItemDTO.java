@@ -50,7 +50,7 @@ public class CreateQuoteItemDTO {
 
     /**
      * Inner class for price input when creating a quote item
-     * totalPrice will be computed automatically: quantity × unitPrice
+     * totalPrice will be computed automatically: quantity x unitPrice
      */
     @Data
     @NoArgsConstructor

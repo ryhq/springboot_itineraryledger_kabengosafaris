@@ -18,7 +18,7 @@ import java.util.Optional;
 public interface SeasonPeriodRepository extends JpaRepository<SeasonPeriod, Long>, JpaSpecificationExecutor<SeasonPeriod> {
     // All queries handled through Specifications
 
-    /** A season's periods, for reading one season whole — export, and replacing them on import. */
+    /** A season's periods, for reading one season whole - export, and replacing them on import. */
     java.util.List<SeasonPeriod> findBySeasonId(Long seasonId);
 
     @Query("SELECT e.id FROM SeasonPeriod e WHERE e.id > :currentId ORDER BY e.id ASC LIMIT 1")

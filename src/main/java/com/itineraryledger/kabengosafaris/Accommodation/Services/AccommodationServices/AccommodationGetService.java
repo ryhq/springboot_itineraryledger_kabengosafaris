@@ -112,8 +112,8 @@ public class AccommodationGetService {
             AccommodationDTO accommodationDTO = convertToDTO(accommodation);
 
             /*
-             * Prev/next must walk the same filtered, sorted set the list showed —
-             * arrows that traverse a different set are worse than no arrows — and
+             * Prev/next must walk the same filtered, sorted set the list showed -
+             * arrows that traverse a different set are worse than no arrows - and
              * the N of M readout makes the wraparound visible.
              */
             Map<String, Object> nav = recordNavigation.navigate(
@@ -614,7 +614,7 @@ public class AccommodationGetService {
     }
 
     /**
-     * The filter chain the record pager walks — the same dimensions the list
+     * The filter chain the record pager walks - the same dimensions the list
      * offers, so paging from a filtered list stays inside those matches.
      */
     private Specification<Accommodation> navigationSpec(

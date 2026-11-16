@@ -75,7 +75,7 @@ public class TestimonySpecification {
     public static Specification<Testimony> hasNoAdminResponse() {
         /*
          * Null OR blank. This ran as IS NULL alone while adminResponse was @Lob, because
-         * TRIM over a CLOB threw and took the whole listing with it — so a saved-but-empty
+         * TRIM over a CLOB threw and took the whole listing with it - so a saved-but-empty
          * reply counted as answered. The mapping is fixed, so the counter can be exact.
          */
         return (root, query, cb) -> cb.or(
@@ -83,7 +83,7 @@ public class TestimonySpecification {
             cb.equal(cb.trim(root.get("adminResponse")), ""));
     }
 
-    /** Praise that never made it onto the site — approval pending at 4 stars or better. */
+    /** Praise that never made it onto the site - approval pending at 4 stars or better. */
     public static Specification<Testimony> isUnpublishedPraise() {
         return (root, query, cb) -> cb.and(
             cb.greaterThanOrEqualTo(root.get("rating"), 4),
@@ -119,7 +119,7 @@ public class TestimonySpecification {
             if (keyword == null || keyword.trim().isEmpty()) return cb.conjunction();
             String pattern = "%" + keyword.toLowerCase().trim() + "%";
             /*
-             * The review itself, which is what anybody actually remembers — "the couple who
+             * The review itself, which is what anybody actually remembers - "the couple who
              * mentioned the balloon". The body was left out while `message` was @Lob, and
              * the TITLE was never in here at all, which was an oversight rather than a
              * limitation: it is a plain varchar and always was.

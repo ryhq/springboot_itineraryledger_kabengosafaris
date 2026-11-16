@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
  * The article's content, in and out of storage.
  *
  * ONE implementation of the block JSON, the slug and the reading time, shared by create,
- * update, the public reader and the seeder — so an article written by the initializer and one
+ * update, the public reader and the seeder - so an article written by the initializer and one
  * written in the panel cannot end up in different shapes.
  *
  * Unreadable JSON returns an EMPTY list rather than throwing: a post whose body cannot be

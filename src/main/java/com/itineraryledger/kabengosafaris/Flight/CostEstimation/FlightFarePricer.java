@@ -13,7 +13,7 @@ import com.itineraryledger.kabengosafaris.Flight.Enums.MarkupType;
 /**
  * What a flight costs, and what we sell it for. The whole of the arithmetic, in one place.
  *
- * <p>This class knows nothing about itineraries, quotes or safaris — no {@code FullItineraryDTO}, no
+ * <p>This class knows nothing about itineraries, quotes or safaris - no {@code FullItineraryDTO}, no
  * {@code FullSafariDTO}, no Spring. That is the point. There are three cost-estimation stacks in
  * this codebase and the same sum would otherwise be written three times: the 70% child fare, the
  * markup that must not touch the tax, the cascade from line to fare to airline. Those are the parts
@@ -24,7 +24,7 @@ import com.itineraryledger.kabengosafaris.Flight.Enums.MarkupType;
  *
  * <pre>
  *   adult   = netFare                        + markup(netFare)        + taxes
- *   child   = netFare × childPercent / 100   + markup(child net)      + taxes
+ *   child   = netFare x childPercent / 100   + markup(child net)      + taxes
  * </pre>
  *
  * <h2>Three rules that are easy to get wrong</h2>
@@ -55,7 +55,7 @@ public final class FlightFarePricer {
     /**
      * A priced flight.
      *
-     * @param warnings things a human should see before this reaches a client — no net fare, flying
+     * @param warnings things a human should see before this reaches a client - no net fare, flying
      *                 out of season, a route that is on request only. Never a reason to refuse: the
      *                 house convention everywhere else is to warn loudly and let the office decide.
      */
@@ -83,7 +83,7 @@ public final class FlightFarePricer {
     /**
      * The cascade: a flight line's own markup beats the fare's, which beats the airline's.
      *
-     * <p>Null all the way up means no markup, which is a legitimate answer — a trip where the client
+     * <p>Null all the way up means no markup, which is a legitimate answer - a trip where the client
      * is being passed the airline's price at cost.
      */
     public static ResolvedMarkup resolveMarkup(MarkupType lineType, BigDecimal lineValue,
@@ -132,7 +132,7 @@ public final class FlightFarePricer {
 
         /*
          * The net fare is what a quote is built from. The Air Excel sheet publishes GROSS only, so a
-         * freshly imported fare has none until the office loads the airline's net rates — and a trip
+         * freshly imported fare has none until the office loads the airline's net rates - and a trip
          * priced off a gross fare would quietly undercut its own cost. Warn and price nothing.
          */
         if (!fare.hasNetFare()) {

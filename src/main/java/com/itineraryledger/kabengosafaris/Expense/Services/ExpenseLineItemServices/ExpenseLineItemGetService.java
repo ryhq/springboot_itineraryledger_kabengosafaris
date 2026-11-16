@@ -52,7 +52,7 @@ public class ExpenseLineItemGetService {
 
             /*
              * The list comes back ordered by displayOrder, so the arrows follow displayOrder
-             * too — the id-ordered walk this replaces moved through a different sequence from
+             * too - the id-ordered walk this replaces moved through a different sequence from
              * the one on screen, and could not say where in it you were.
              */
             Long parentId = expenseId;

@@ -66,7 +66,7 @@ public enum EditingLevel {
      * CHOOSE_CATALOGUE was designed, named, documented and offered in three dropdowns before
      * anything consulted it, so setting it did exactly what CHOOSE_OFFERED did while an
      * operator believed they had opened the catalogue. This application's rule about facets
-     * applies to settings too — one that does nothing is worse than one that is absent,
+     * applies to settings too - one that does nothing is worse than one that is absent,
      * because the absent one is at least honest about it.
      *
      * <p>The method stays, and so does the rule. A level added here before it is enforced must

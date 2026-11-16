@@ -195,7 +195,7 @@ public class SeasonSpecification {
         };
     }
 
-    /** Rows created on or after `moment` — the recency counters ("new this week"). */
+    /** Rows created on or after `moment` - the recency counters ("new this week"). */
     public static Specification<Season> createdAfter(java.time.LocalDateTime moment) {
         return (root, query, cb) ->
             moment == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), moment);

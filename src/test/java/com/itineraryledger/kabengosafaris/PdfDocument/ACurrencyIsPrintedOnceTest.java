@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * A money cell names its currency once.
  *
- * <p>The {@code formatted*} fields carry the ISO code — one dialect everywhere, so an invoice and
+ * <p>The {@code formatted*} fields carry the ISO code - one dialect everywhere, so an invoice and
  * its own receipt stop disagreeing. Several templates were already printing the code themselves,
  * either in a label above the figure or as a column header, and once the formatter started
  * including it those documents read <b>USD USD 9,500.70</b>.

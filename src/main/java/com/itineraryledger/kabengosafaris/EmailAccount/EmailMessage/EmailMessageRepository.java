@@ -19,7 +19,7 @@ public interface EmailMessageRepository extends JpaRepository<EmailMessage, Long
 
     /**
      * Used by ResendWebhookService when a delivery/bounce/complaint event
-     * arrives — the webhook's {@code email_id} field is what we persisted
+     * arrives - the webhook's {@code email_id} field is what we persisted
      * as {@code resend_email_id} at send time.
      */
     Optional<EmailMessage> findByResendEmailId(String resendEmailId);
@@ -44,7 +44,7 @@ public interface EmailMessageRepository extends JpaRepository<EmailMessage, Long
     List<EmailMessage> findSnoozedDueBy(@Param("now") LocalDateTime now);
 
     /**
-     * Incoming mail since a date, newest first — what a reply hunt reads.
+     * Incoming mail since a date, newest first - what a reply hunt reads.
      *
      * Drafts and our own sent copies are excluded: a request cannot be answered by the message that
      * asked it, and matching one to the other would close every ask the moment it was made.

@@ -71,7 +71,7 @@ public interface SeasonRepository extends JpaRepository<Season, Long>, JpaSpecif
      */
     List<Season> findByAccommodationIdAndIsActiveTrue(Long accommodationId);
 
-    /** Every season belonging to one lodge, active or not — an export carries what is there. */
+    /** Every season belonging to one lodge, active or not - an export carries what is there. */
     List<Season> findByAccommodationId(Long accommodationId);
 
     /**

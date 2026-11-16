@@ -34,7 +34,7 @@ import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteEdit
  * ACCEPTED or CONVERTED quote while the four day-tree services refused nothing, so the header of
  * a sold safari was frozen and its prices were not: changing the lodge on day four silently
  * re-priced a quotation the customer had already agreed to. The scan at the bottom is the part
- * that keeps it fixed — a fifth service, or a new method on one of the four, fails this test
+ * that keeps it fixed - a fifth service, or a new method on one of the four, fails this test
  * until it asks the policy too.
  */
 class AQuoteIsNotEditableWhenItIsLockedTest {

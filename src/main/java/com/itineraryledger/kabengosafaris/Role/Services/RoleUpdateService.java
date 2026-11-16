@@ -95,7 +95,7 @@ public class RoleUpdateService {
          * Built-in roles are read-only apart from the one switch that is genuinely useful.
          *
          * SUPERADMIN, ADMIN, USER and GUEST have their definition owned by RoleInitializer,
-         * which rewrites it on every startup — so editing a name, a description or a
+         * which rewrites it on every startup - so editing a name, a description or a
          * permission here is undone the next time the application restarts, and accepting a
          * write that will quietly vanish is worse than refusing it, because the person who
          * made it believes it held.
@@ -128,7 +128,7 @@ public class RoleUpdateService {
          * SUPERADMIN is always active.
          *
          * Switching it off drops every permission from everybody holding it, which includes
-         * whoever is doing the switching — and the endpoint that would switch it back on is
+         * whoever is doing the switching - and the endpoint that would switch it back on is
          * one of the permissions just lost. There is no route back from inside the
          * application, so this is refused rather than confirmed.
          */

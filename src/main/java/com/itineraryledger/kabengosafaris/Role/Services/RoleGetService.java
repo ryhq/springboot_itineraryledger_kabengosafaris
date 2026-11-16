@@ -53,7 +53,7 @@ public class RoleGetService {
      * The list itself now lives in RoleListService, on the house contract: counters
      * from the same specification as the rows, and record paging that walks the
      * filtered set. The method that used to be here was replaced rather than kept
-     * alongside it — two list paths over one table drift, and then the counters and
+     * alongside it - two list paths over one table drift, and then the counters and
      * the rows disagree.
      *
      * What stays here are the two narrow questions the older screens ask: which roles

@@ -27,13 +27,13 @@ import java.util.List;
  *
  * Structure:
  * Safari
- * ├── paxList (passenger configurations)
- * └── days (ordered by dayNumber)
- *     ├── activities (standalone activities, ordered by sortOrder)
- *     ├── accommodations (lodging options)
- *     └── parks (park visits, ordered by sortOrder)
- *         ├── activities (park-specific activities, ordered by sortOrder)
- *         └── tariffs (park entry fees/tariffs)
+ * +== paxList (passenger configurations)
+ * +== days (ordered by dayNumber)
+ *     +== activities (standalone activities, ordered by sortOrder)
+ *     +== accommodations (lodging options)
+ *     +== parks (park visits, ordered by sortOrder)
+ *         +== activities (park-specific activities, ordered by sortOrder)
+ *         +== tariffs (park entry fees/tariffs)
  */
 @Data
 @NoArgsConstructor
@@ -167,7 +167,7 @@ public class FullSafariDTO {
          * The itinerary's flight DTO, reused rather than copied.
          *
          * <p>Every other child here has a safari-specific DTO because the safari carries operational
-         * state the itinerary has no idea about — a booking status, an actual room number. A flight
+         * state the itinerary has no idea about - a booking status, an actual room number. A flight
          * row's booking status is a column on the entity, not something the COST engine reads, and
          * the cost engine is the only thing this DTO feeds. So the two would be the same twenty-odd
          * fields, three of which (netFare, taxesAndFees, the resolved markup) are arithmetic inputs

@@ -76,7 +76,7 @@ public class ExpensePaymentAdviceService {
      * Sent, it can be found again, and a supplier's reply threads under it. An advice fired from a
      * drawer left no trace anybody could search, and the person sending it never saw what went.
      *
-     * <p>Attachments are OFFERED, not attached. The payment's own proof — the bank slip — is what a
+     * <p>Attachments are OFFERED, not attached. The payment's own proof - the bank slip - is what a
      * supplier usually wants, so it leads; the bill's other documents follow. Whoever is sending
      * decides, because a bill can carry paperwork that is ours rather than theirs.
      */
@@ -133,7 +133,7 @@ public class ExpensePaymentAdviceService {
      *
      * The vendor's own single email address is the LAST resort, not the first. A vendor is an
      * account we settle; the addresses that get answered belong to the property, and a lodge
-     * usually keeps several — reservations, accounts, a general inbox. Reading only the vendor is
+     * usually keeps several - reservations, accounts, a general inbox. Reading only the vendor is
      * why the first version of this opened the composer with an empty To for a camp that plainly
      * has two addresses on file.
      *

@@ -14,13 +14,13 @@ import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemTypeScope;
 /**
  * A flight already carries its own markup, so the quote's category uplift must not reach it as well.
  *
- * <p>The trap is the default, not the code. {@code QuoteItemTypeScope.covers(null, …)} answers
- * <strong>true</strong> — an uplift somebody set without narrowing it is meant to apply to the whole
+ * <p>The trap is the default, not the code. {@code QuoteItemTypeScope.covers(null, ...)} answers
+ * <strong>true</strong> - an uplift somebody set without narrowing it is meant to apply to the whole
  * quote, which is right for the three categories it was written for. Nearly every quote leaves
  * {@code marginUpliftAppliesTo} empty.
  *
  * <p>So the moment FLIGHT joined the enum, every one of those quotes would have started adding the
- * category uplift ON TOP of the airline markup already baked into the fare — a silent price rise on
+ * category uplift ON TOP of the airline markup already baked into the fare - a silent price rise on
  * live quotes, with nothing edited and nobody told. Exactly the inversion behind the inclusion-claim
  * defect: a helper whose "unset means everything" default is right for its original cases and
  * exactly wrong for the one added later.
@@ -109,7 +109,7 @@ class AFlightIsNotMarkedUpTwiceTest {
     @DisplayName("the shared helper still answers true for null, which is why the guard is needed")
     void theSharedDefaultIsUnchanged() {
         assertTrue(QuoteItemTypeScope.covers(null, QuoteItemType.FLIGHT),
-            "if this ever answers false, the guard above is redundant and should go — but until "
+            "if this ever answers false, the guard above is redundant and should go - but until "
             + "then it is the only thing standing between a blank scope and a double markup");
     }
 }

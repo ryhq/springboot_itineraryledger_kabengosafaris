@@ -45,17 +45,17 @@ The system supports both **automated scheduled backups** and **manual on-demand 
 
 ```
 backup_settings
-├── id (Primary Key)
-├── setting_key (Unique)
-├── setting_value
-├── data_type (ENUM: STRING, INTEGER, BOOLEAN, LONG, DOUBLE)
-├── description
-├── active (Boolean)
-├── is_system_default (Boolean)
-├── category (ENUM: GENERAL, SCHEDULE, DATABASE, FILES, STORAGE, RETENTION, COMPRESSION, NOTIFICATION)
-├── requires_restart (Boolean)
-├── created_at (Timestamp)
-└── updated_at (Timestamp)
++== id (Primary Key)
++== setting_key (Unique)
++== setting_value
++== data_type (ENUM: STRING, INTEGER, BOOLEAN, LONG, DOUBLE)
++== description
++== active (Boolean)
++== is_system_default (Boolean)
++== category (ENUM: GENERAL, SCHEDULE, DATABASE, FILES, STORAGE, RETENTION, COMPRESSION, NOTIFICATION)
++== requires_restart (Boolean)
++== created_at (Timestamp)
++== updated_at (Timestamp)
 ```
 
 ---

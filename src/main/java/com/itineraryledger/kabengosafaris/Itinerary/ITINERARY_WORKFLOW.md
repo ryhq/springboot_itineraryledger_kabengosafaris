@@ -11,8 +11,8 @@ The Itinerary module implements a comprehensive status workflow system that mana
 ```
 DRAFT → COMPLETE → PUBLISHED → ARCHIVED
   ↑        ↓          ↓           |
-  └────────┴──────────┘           │
-           └──────────────────────┘
+  +========+==========+           |
+           +======================+
 ```
 
 | Status | Description | Can Edit? | Can Delete? | Can Use for Safari? |
@@ -27,62 +27,62 @@ DRAFT → COMPLETE → PUBLISHED → ARCHIVED
 ## Workflow Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    ITINERARY LIFECYCLE                          │
-└─────────────────────────────────────────────────────────────────┘
++=================================================================+
+|                    ITINERARY LIFECYCLE                          |
++=================================================================+
 
-┌──────────┐
-│  DRAFT   │ ◄─────────┐
-└─────┬────┘           │
-      │                │
-      │ [Complete Requirements Met]
-      │                │
-      ├────────────────┘
-      │
-      │ POST /api/itineraries/{id}/complete
-      │ Permission: PERM_COMPLETE_ITINERARY
-      │
-      ▼
-┌──────────┐
-│ COMPLETE │
-└─────┬────┘
-      │
-      │ POST /api/itineraries/{id}/publish
-      │ Permission: PERM_PUBLISH_ITINERARY
-      │
-      ▼
-┌──────────┐
-│PUBLISHED │
-└─────┬────┘
-      │
-      │ POST /api/itineraries/{id}/unpublish
-      │ Permission: PERM_UNPUBLISH_ITINERARY
-      │
-      ├──────► [Back to COMPLETE or DRAFT]
-      │
-      │ POST /api/itineraries/{id}/archive
-      │ Permission: PERM_ARCHIVE_ITINERARY
-      │
-      ▼
-┌──────────┐
-│ ARCHIVED │
-└─────┬────┘
-      │
-      │ POST /api/itineraries/{id}/unarchive
-      │ Permission: PERM_UNARCHIVE_ITINERARY
-      │
-      └──────► [Back to COMPLETE or DRAFT]
++==========+
+|  DRAFT   | ◄=========+
++=====+====+           |
+      |                |
+      | [Complete Requirements Met]
+      |                |
+      +================+
+      |
+      | POST /api/itineraries/{id}/complete
+      | Permission: PERM_COMPLETE_ITINERARY
+      |
+      v
++==========+
+| COMPLETE |
++=====+====+
+      |
+      | POST /api/itineraries/{id}/publish
+      | Permission: PERM_PUBLISH_ITINERARY
+      |
+      v
++==========+
+|PUBLISHED |
++=====+====+
+      |
+      | POST /api/itineraries/{id}/unpublish
+      | Permission: PERM_UNPUBLISH_ITINERARY
+      |
+      +======► [Back to COMPLETE or DRAFT]
+      |
+      | POST /api/itineraries/{id}/archive
+      | Permission: PERM_ARCHIVE_ITINERARY
+      |
+      v
++==========+
+| ARCHIVED |
++=====+====+
+      |
+      | POST /api/itineraries/{id}/unarchive
+      | Permission: PERM_UNARCHIVE_ITINERARY
+      |
+      +======► [Back to COMPLETE or DRAFT]
 
 
 ADDITIONAL TRANSITIONS:
 
-┌──────────┐    POST /api/itineraries/{id}/revert-to-draft     ┌──────────┐
-│ COMPLETE │ ───────────────────────────────────────────────► │  DRAFT   │
-└──────────┘    Permission: PERM_REVERT_ITINERARY_TO_DRAFT     └──────────┘
++==========+    POST /api/itineraries/{id}/revert-to-draft     +==========+
+| COMPLETE | ===============================================► |  DRAFT   |
++==========+    Permission: PERM_REVERT_ITINERARY_TO_DRAFT     +==========+
 
-┌──────────┐    POST /api/itineraries/{id}/revert-to-draft     ┌──────────┐
-│PUBLISHED │ ───────────────────────────────────────────────► │  DRAFT   │
-└──────────┘    Permission: PERM_REVERT_ITINERARY_TO_DRAFT     └──────────┘
++==========+    POST /api/itineraries/{id}/revert-to-draft     +==========+
+|PUBLISHED | ===============================================► |  DRAFT   |
++==========+    Permission: PERM_REVERT_ITINERARY_TO_DRAFT     +==========+
 ```
 
 ---

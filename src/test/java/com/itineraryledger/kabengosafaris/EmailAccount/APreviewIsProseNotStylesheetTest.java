@@ -28,7 +28,7 @@ import com.itineraryledger.kabengosafaris.EmailAccount.EmailMessage.Services.Htm
  * every templated message in the Sent list previewed as
  * "Welcome to Kabengo Safaris /* Reset &amp; Base *&#47; body { margin: 0; padding: 0;
  * font-family: 'Segoe UI'...". 975 sent messages read that way, and the fix was already in the
- * codebase — {@link HtmlToText} drops head, style and script before anything else and had no
+ * codebase - {@link HtmlToText} drops head, style and script before anything else and had no
  * caller on either path.
  *
  * <p>So this test guards the behaviour AND the shortcut that caused it: a naive tag-strip must not
@@ -110,7 +110,7 @@ class APreviewIsProseNotStylesheetTest {
     }
 
     /**
-     * Code only. A comment is allowed to quote the broken pattern — the one above this test's own
+     * Code only. A comment is allowed to quote the broken pattern - the one above this test's own
      * fix does exactly that, to say what not to write, and a scanner that cannot tell the
      * difference teaches people to delete the explanation instead of the mistake.
      */

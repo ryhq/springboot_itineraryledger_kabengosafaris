@@ -18,12 +18,12 @@ import org.junit.jupiter.api.Test;
  *
  * Each one is here because it was broken and the break was invisible:
  *
- *  · A reset link is a stateless JWT, so it worked over and over for its whole lifetime — including
+ *  | A reset link is a stateless JWT, so it worked over and over for its whole lifetime - including
  *    after its owner had already reset. Nothing in the code said otherwise; there was simply no check.
- *  · An address was written to the users table before the activation email went out, and a second
+ *  | An address was written to the users table before the activation email went out, and a second
  *    attempt was refused, so filling in a form permanently claimed somebody else's address.
- *  · /api/company/variables was reachable with `isAuthenticated()` while it carried the TIN and the
- *    bank account — and on this product authentication is self-service, so that meant anybody.
+ *  | /api/company/variables was reachable with `isAuthenticated()` while it carried the TIN and the
+ *    bank account - and on this product authentication is self-service, so that meant anybody.
  */
 class AuthFlowRulesTest {
 
@@ -71,7 +71,7 @@ class AuthFlowRulesTest {
         /* the same wording for spent and expired: the difference tells a stranger they were first */
         assertFalse(source.contains("already been used"),
             "saying a link was already used confirms to whoever holds it that somebody got there "
-                + "first — which is information about the account holder, not about the link");
+                + "first - which is information about the account holder, not about the link");
     }
 
     @Test
@@ -84,7 +84,7 @@ class AuthFlowRulesTest {
             "a pending registration has to be distinguishable from a real account");
         /*
          * Both halves of the test, because `enabled == false` alone also describes an account an
-         * administrator deactivated — and handing that address to the next person who asks would be
+         * administrator deactivated - and handing that address to the next person who asks would be
          * account takeover by web form.
          */
         int at = source.indexOf("private boolean isUnclaimed");
@@ -98,8 +98,8 @@ class AuthFlowRulesTest {
      * The endpoints that may be guarded by authentication alone, and nothing more.
      *
      * Deliberately a list rather than a rule about names. Registration is self-service on this
-     * product — anyone can create an account from the sign-in screen and activate it from their own
-     * inbox — so `isAuthenticated()` means "can receive email", not "works here". Every entry here is
+     * product - anyone can create an account from the sign-in screen and activate it from their own
+     * inbox - so `isAuthenticated()` means "can receive email", not "works here". Every entry here is
      * either about the caller's own account or is a fact the sign-in screen needs anyway.
      */
     private static final List<String> MAY_BE_AUTHENTICATED_ONLY = List.of(

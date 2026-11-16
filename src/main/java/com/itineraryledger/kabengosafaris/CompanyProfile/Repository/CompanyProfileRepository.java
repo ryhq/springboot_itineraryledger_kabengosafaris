@@ -21,7 +21,7 @@ public interface CompanyProfileRepository extends JpaRepository<CompanyProfile, 
      *
      * Deliberately NOT one query that join-fetches all five collections: Hibernate refuses to fetch
      * two Lists at once (MultipleBagFetchException), which is exactly how the first version of this
-     * failed — the endpoints answered 500 while the health check stayed green, because nothing had
+     * failed - the endpoints answered 500 while the health check stayed green, because nothing had
      * asked for the profile until a real request did.
      *
      * The collections are @BatchSize-ed instead, so a caller inside a transaction pays one small
@@ -36,7 +36,7 @@ public interface CompanyProfileRepository extends JpaRepository<CompanyProfile, 
      * Stamp the outcome of a website cache call onto the profile.
      *
      * <p>Three columns by id, not {@code save(profile)}. The caller runs after its own transaction
-     * has committed — often on another thread with no transaction at all — so the profile it holds
+     * has committed - often on another thread with no transaction at all - so the profile it holds
      * is detached and its five collections are uninitialised proxies. Merging that entity back
      * would have Hibernate cascade into collections it cannot load, which is a
      * LazyInitializationException raised by a bookkeeping write that nobody was waiting for.

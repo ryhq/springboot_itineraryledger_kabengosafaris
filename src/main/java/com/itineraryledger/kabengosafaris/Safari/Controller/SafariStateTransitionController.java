@@ -134,7 +134,7 @@ public class SafariStateTransitionController {
     }
 
     /**
-     * Record safari payment (deposit or full payment) — manual override
+     * Record safari payment (deposit or full payment) - manual override
      *
      * POST /api/safaris/{id}/state/record-payment
      *

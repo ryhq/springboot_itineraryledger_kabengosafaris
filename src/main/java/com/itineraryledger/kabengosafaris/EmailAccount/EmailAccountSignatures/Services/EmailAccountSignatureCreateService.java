@@ -121,7 +121,7 @@ public class EmailAccountSignatureCreateService {
                      * Somebody wrote this one, so it is not a system default.
                      *
                      * Leaving it unset left the column null, and the column is NOT NULL, so the
-                     * insert failed at COMMIT — after this method's try/catch had already returned
+                     * insert failed at COMMIT - after this method's try/catch had already returned
                      * 201. The class is @Transactional, so the violation surfaced from the commit
                      * instead of the catch, and the office got "An unexpected error occurred" with
                      * no clue which field.

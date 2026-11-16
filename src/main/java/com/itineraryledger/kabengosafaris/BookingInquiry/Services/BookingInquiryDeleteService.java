@@ -91,7 +91,7 @@ public class BookingInquiryDeleteService {
     /**
      * Why one id did not go.
      *
-     * A caller that asked about six needs to know which four survived and why —
+     * A caller that asked about six needs to know which four survived and why -
      * a bare count leaves them guessing, and guessing about deletions is worse
      * than being told.
      */

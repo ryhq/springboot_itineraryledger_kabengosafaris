@@ -92,7 +92,7 @@ public class TranslationAccountGetService {
     /**
      * The cards over the accounts.
      *
-     * A translation provider fails quietly — the text just comes back in English — so the
+     * A translation provider fails quietly - the text just comes back in English - so the
      * two figures that matter are the ones nobody would otherwise notice: which accounts
      * last failed, and which have never been proved to work at all.
      */

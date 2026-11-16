@@ -142,7 +142,7 @@ public class PublicActivityService {
 
             /*
              * An activity's gallery also shows how it looks in each park that offers
-             * it — the activity's own images lead, those follow. Each pair photo
+             * it - the activity's own images lead, those follow. Each pair photo
              * carries its parkName so the site can say where it was taken.
              */
             List<PublicImageDTO> pair = parkImagesForActivity(activity.getId());

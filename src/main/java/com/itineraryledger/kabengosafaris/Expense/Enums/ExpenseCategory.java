@@ -3,7 +3,7 @@ package com.itineraryledger.kabengosafaris.Expense.Enums;
 import lombok.Getter;
 
 /**
- * ExpenseCategory — buckets a single expense line by what we paid for.
+ * ExpenseCategory - buckets a single expense line by what we paid for.
  * Mirrors InvoiceItemType but oriented around outgoing operational costs.
  */
 @Getter

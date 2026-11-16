@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 /**
  * A new line for the catalogue.
  *
- * No displayOrder: a new item goes to the end, and where it belongs is decided by dragging — a
+ * No displayOrder: a new item goes to the end, and where it belongs is decided by dragging - a
  * running order is a sequence, so one row cannot own it.
  */
 @Data

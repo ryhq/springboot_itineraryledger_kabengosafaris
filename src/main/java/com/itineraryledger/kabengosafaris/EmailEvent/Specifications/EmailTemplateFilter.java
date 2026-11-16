@@ -23,9 +23,9 @@ public class EmailTemplateFilter {
 
     private String name;
 
-    /** Narrow to one event, by obfuscated id — what the event's own tab sends. */
+    /** Narrow to one event, by obfuscated id - what the event's own tab sends. */
     private String eventId;
-    /** …or several. */
+    /** ...or several. */
     private List<String> eventIds;
 
     private Boolean enabled;
@@ -35,10 +35,10 @@ public class EmailTemplateFilter {
     private List<String> statuses;
 
     /**
-     * kinds — the three roles a template can hold:
-     *   sent      — the one this event actually uses
-     *   original  — shipped with the system; editable and restorable, never deletable
-     *   custom    — written here
+     * kinds - the three roles a template can hold:
+     *   sent      - the one this event actually uses
+     *   original  - shipped with the system; editable and restorable, never deletable
+     *   custom    - written here
      */
     private List<String> kinds;
 

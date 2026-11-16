@@ -90,7 +90,7 @@ class PaymentAdviceTellsTheTruthTest {
     void theAddressesComeFromWhoAnswersThem() throws IOException {
         /*
          * The first version read bill.getVendor().getEmail() and nothing else, so the composer
-         * opened with an empty To for Osinon Tented Camp — a camp with two addresses on file,
+         * opened with an empty To for Osinon Tented Camp - a camp with two addresses on file,
          * reservations@ marked primary and info@ beside it. A vendor is an account we settle; the
          * addresses that get answered belong to the property.
          */

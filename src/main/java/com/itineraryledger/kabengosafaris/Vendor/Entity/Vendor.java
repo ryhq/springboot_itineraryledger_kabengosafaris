@@ -15,7 +15,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 /**
- * Vendor — an external party we PAY (lodges, fuel stations, mechanics, park
+ * Vendor - an external party we PAY (lodges, fuel stations, mechanics, park
  * authorities, transporters, landlords, insurers, etc).
  *
  * Lighter than Customer by design: no documents / contacts collections, no

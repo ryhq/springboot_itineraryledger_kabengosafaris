@@ -19,10 +19,10 @@ import java.util.Map;
  * Computes per-currency amountsPaid and balances for an invoice on demand
  * from the underlying Payment rows + the invoice's grandTotals.
  *
- * These values are NOT persisted on the Invoice entity — they are derived
+ * These values are NOT persisted on the Invoice entity - they are derived
  * at read time so they never drift from the source of truth (the payments table).
  *
- * Cross-currency payments are accounted for via their baseAmount (= amount × exchangeRate),
+ * Cross-currency payments are accounted for via their baseAmount (= amount x exchangeRate),
  * grouped by the invoice currency they settle (Payment.invoiceCurrency).
  */
 @Service
@@ -62,7 +62,7 @@ public class InvoicePaymentAggregationService {
     }
 
     /**
-     * Balance remaining per currency = grandTotal − sum(baseAmounts settling that currency).
+     * Balance remaining per currency = grandTotal - sum(baseAmounts settling that currency).
      */
     public List<Price> computeBalances(Invoice invoice) {
         List<Price> result = new ArrayList<>();

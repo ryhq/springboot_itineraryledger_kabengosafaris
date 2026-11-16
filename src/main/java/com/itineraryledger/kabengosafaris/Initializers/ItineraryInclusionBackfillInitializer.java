@@ -29,14 +29,14 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>An itinerary with no typed text at all is given the standard house promise rather than left
  * empty. Three live itineraries were in that state and had been showing no "what's included"
- * section on the public website for as long as they had existed — which is the fault that started
+ * section on the public website for as long as they had existed - which is the fault that started
  * all of this.
  *
  * <p><strong>All or nothing per itinerary.</strong> {@link ItineraryInclusionReader} falls back to
  * the old text columns only while an itinerary has ZERO rows, so linking three of an itinerary's
  * four lines would stop the fallback and silently drop the fourth. Three itineraries have their
- * entire promise typed as one 300-character paragraph — one "line" that is really a sentence of
- * prose — and those are left exactly as they are, still served by the fallback, for a human to
+ * entire promise typed as one 300-character paragraph - one "line" that is really a sentence of
+ * prose - and those are left exactly as they are, still served by the fallback, for a human to
  * split up when they choose. Better a trip that has not been converted than one converted badly.
  *
  * <p>Each itinerary is written in its own REQUIRES_NEW transaction inside its own try/catch, and
@@ -57,7 +57,7 @@ public class ItineraryInclusionBackfillInitializer implements ApplicationRunner 
         try {
             /*
              * Scalar columns only. The first version of this filtered on getInclusionList(), which
-             * is a LAZY collection on an entity that findAll() has already detached — so every
+             * is a LAZY collection on an entity that findAll() has already detached - so every
              * itinerary threw LazyInitializationException, the outer catch below swallowed it, and
              * the sweep reported a failure into a log nobody was reading. The result was 62 live
              * itineraries silently left on their old text. Whether an itinerary already has rows is
@@ -105,7 +105,7 @@ public class ItineraryInclusionBackfillInitializer implements ApplicationRunner 
     /**
      * The per-itinerary write, in its own transaction.
      *
-     * <p>A separate bean because a REQUIRES_NEW boundary is only honoured through the proxy — a
+     * <p>A separate bean because a REQUIRES_NEW boundary is only honoured through the proxy - a
      * self-call from the runner above would silently join the outer transaction and one bad
      * itinerary would roll back every itinerary before it.
      */
@@ -141,7 +141,7 @@ public class ItineraryInclusionBackfillInitializer implements ApplicationRunner 
             SEEDED_STANDARD,
             /** One of its lines is a paragraph, so all of it stays for a human. */
             LEFT_AS_PROSE,
-            /** Already has rows — a later boot. */
+            /** Already has rows - a later boot. */
             ALREADY_DONE
         }
 
@@ -165,7 +165,7 @@ public class ItineraryInclusionBackfillInitializer implements ApplicationRunner 
             if (included.isEmpty() && excluded.isEmpty()) {
                 /*
                  * Nothing typed, ever. Give it the house promise rather than leaving it printing a
-                 * price with no statement of what it covers — which is what these three have been
+                 * price with no statement of what it covers - which is what these three have been
                  * doing on the public website all along.
                  */
                 int position = 1;
@@ -254,7 +254,7 @@ public class ItineraryInclusionBackfillInitializer implements ApplicationRunner 
                 .isSystem(false)
                 .isStandard(false)
                 .defaultIncluded(included)
-                /* Nothing is claimed for text nobody has reviewed — a guess here fires warnings. */
+                /* Nothing is claimed for text nobody has reviewed - a guess here fires warnings. */
                 .claimAppliesTo(null)
                 .internalNotes("Created from an itinerary's typed text when the catalogue arrived.")
                 .build());

@@ -36,12 +36,12 @@ public class IdObfuscator {
     /**
      * The salt, when a deployment chooses to fix one. Unset by default, and unset is a decision.
      *
-     * UNSET — a new salt each startup. Ids are re-derived on every boot, so an identifier that
+     * UNSET - a new salt each startup. Ids are re-derived on every boot, so an identifier that
      * escaped into a referrer header, a proxy log, a screenshot or a shared browser history stops
      * resolving at the next restart. The cost is that no external reference to a record survives a
      * deploy: a saved deep link, or a saved filter naming a record, goes stale.
      *
-     * SET — ids hold still for the life of the salt, and references keep working. What protects the
+     * SET - ids hold still for the life of the salt, and references keep working. What protects the
      * record is then authorization alone, which is where the protection properly belongs: Hashids is
      * an encoding rather than encryption, and a caller who can already read records can supply plenty
      * of id-to-row pairs.
@@ -56,7 +56,7 @@ public class IdObfuscator {
      * The salt arrives as a CONSTRUCTOR parameter, not a @Value field.
      *
      * Field injection happens after construction, and the constructor is exactly where the salt is
-     * needed — a field would still be null here, so a perfectly good configured salt would be
+     * needed - a field would still be null here, so a perfectly good configured salt would be
      * ignored and the warning below would fire on every boot. (The same trap already shaped the
      * length fields, which is why they carry `> 0 ?` fallbacks.)
      */
@@ -95,7 +95,7 @@ public class IdObfuscator {
         int saltLengthForGenerator = Math.max(saltLength, 8);
 
         /*
-         * A stated salt is used as it is; otherwise one is generated, as it always was — which keeps
+         * A stated salt is used as it is; otherwise one is generated, as it always was - which keeps
          * every existing installation behaving exactly as before, unstable ids included, until it
          * chooses to set one.
          */

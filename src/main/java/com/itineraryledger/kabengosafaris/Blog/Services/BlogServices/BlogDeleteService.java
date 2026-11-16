@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Deleting articles, with a per-id report.
  *
- * A post owns its images, so deleting it deletes them — and the files with them, otherwise the
+ * A post owns its images, so deleting it deletes them - and the files with them, otherwise the
  * disk fills with pictures nothing can ever reach. Nothing else references a post, so there is
  * no reference check to make here; unpublishing remains the reversible option and the panel
  * offers it first.

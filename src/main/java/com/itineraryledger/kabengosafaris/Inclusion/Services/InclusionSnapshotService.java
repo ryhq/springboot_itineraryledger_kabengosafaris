@@ -25,13 +25,13 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>Each document copies from the one immediately above it and owns what it has from that moment.
  * Add two lines on a quote and the itinerary still has five, the quote has seven, and the safari
- * built from that quote inherits seven — not the itinerary's five. That is the whole point: the
+ * built from that quote inherits seven - not the itinerary's five. That is the whole point: the
  * promise is negotiated on the quote, and what the customer agreed to is what the trip must be
  * delivered and billed against.
  *
  * <p>Every copy takes the wording as <strong>text</strong>, not a foreign key. A key would mean one
- * {@code UPDATE inclusion_items SET label = …} rewrote every document ever sent, including ones
- * already rendered to PDF and emailed — the customer's copy and ours would disagree, and ours would
+ * {@code UPDATE inclusion_items SET label = ...} rewrote every document ever sent, including ones
+ * already rendered to PDF and emailed - the customer's copy and ours would disagree, and ours would
  * be the one that looked altered.
  *
  * <p>Disabled catalogue lines are dropped at the moment of copying, and never afterwards. A line
@@ -75,8 +75,8 @@ public class InclusionSnapshotService {
      * <p>The one that will be written wrong if anybody hurries. A safari created from a quote must
      * read the QUOTE's rows, not {@code quote.getItinerary()}'s: the two disagree the moment
      * somebody edits the quote, and the quote is what the customer accepted. The safari template
-     * already has this mistake elsewhere — {@code full_safari_modern.html:718} renders
-     * {@code safari.itinerary.highlightsList} — so it is one copy-paste away.
+     * already has this mistake elsewhere - {@code full_safari_modern.html:718} renders
+     * {@code safari.itinerary.highlightsList} - so it is one copy-paste away.
      */
     public int quoteToSafari(Quote quote, Safari safari) {
         if (quote == null || safari == null) return 0;

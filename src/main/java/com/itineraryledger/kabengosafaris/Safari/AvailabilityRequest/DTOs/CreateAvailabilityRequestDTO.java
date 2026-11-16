@@ -18,7 +18,7 @@ public class CreateAvailabilityRequestDTO {
     @NotBlank
     private String accommodationId;
 
-    /** Our sent copy — the thread this ask lives in. */
+    /** Our sent copy - the thread this ask lives in. */
     private String emailMessageId;
     private String emailAccountId;
 
@@ -28,7 +28,7 @@ public class CreateAvailabilityRequestDTO {
     private List<String> bccAddresses;
     private String subject;
 
-    /** The stay rows this covered — obfuscated ids of safari_day_accommodation. */
+    /** The stay rows this covered - obfuscated ids of safari_day_accommodation. */
     @NotEmpty
     private List<String> stayIds;
 

@@ -13,7 +13,7 @@ public class CompanyPhoneRequestDTO {
     @Size(max = 50)
     private String phoneNumber;
 
-    /** MOBILE · LANDLINE · WHATSAPP · RECEPTION · RESERVATIONS · EMERGENCY · FAX · TOLL_FREE · OTHER */
+    /** MOBILE | LANDLINE | WHATSAPP | RECEPTION | RESERVATIONS | EMERGENCY | FAX | TOLL_FREE | OTHER */
     private String phoneType;
 
     @Size(max = 100)

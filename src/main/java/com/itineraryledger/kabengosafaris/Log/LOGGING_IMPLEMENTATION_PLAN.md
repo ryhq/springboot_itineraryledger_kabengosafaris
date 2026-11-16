@@ -75,44 +75,44 @@ This document outlines the implementation of an advanced logging system for Kabe
 
 ```
 /Log
-├── Controller
-│   ├── LogController.java              # Main REST controller
-│   ├── LogSSEController.java           # Real-time log streaming via SSE
-│   ├── LogAnalyticsController.java     # Analytics and metrics endpoints
-│   └── LogSecurityController.java      # Security analysis endpoints
-├── DTOs
-│   ├── AccessLogDTO.java               # Enhanced access log DTO
-│   ├── SecurityAnalysisDTO.java        # Security threat analysis
-│   ├── PerformanceMetricsDTO.java      # Performance metrics
-│   ├── BotDetectionDTO.java            # Bot detection results
-│   ├── GeoLocationDTO.java             # Geographic information
-│   ├── EndpointAnalyticsDTO.java       # Endpoint usage statistics
-│   ├── HourlyMetricsDTO.java           # Hourly aggregated metrics
-│   ├── AlertConfigDTO.java             # Alert configuration
-│   ├── ExportRequestDTO.java           # Export request parameters
-│   └── LogFilterDTO.java               # Filter criteria
-├── Services
-│   ├── AccessLogParserService.java     # Parse Tomcat access logs
-│   ├── AccessLogService.java           # Core log retrieval and filtering
-│   ├── SecurityAnalysisService.java    # Security threat detection
-│   ├── PerformanceMonitorService.java  # Performance tracking
-│   ├── BotDetectionService.java        # Bot identification
-│   ├── GeoLocationService.java         # IP geolocation
-│   ├── LogAnalyticsService.java        # Analytics and statistics
-│   ├── LogExportService.java           # Export functionality
-│   ├── AlertService.java               # Alert system
-│   ├── LogRetentionService.java        # Archive and cleanup
-│   └── LogSSEService.java              # SSE broadcast service
-├── Enums
-│   ├── ThreatType.java                 # Security threat types
-│   ├── BotType.java                    # Bot classifications
-│   ├── AlertSeverity.java              # Alert severity levels
-│   └── ExportFormat.java               # Export format types
-└── Utils
-    ├── IPUtils.java                    # IP manipulation utilities
-    ├── PatternDetector.java            # Pattern matching for threats
-    ├── GeoIPDatabase.java              # GeoIP database wrapper
-    └── UserAgentParser.java            # User agent parsing
++== Controller
+|   +== LogController.java              # Main REST controller
+|   +== LogSSEController.java           # Real-time log streaming via SSE
+|   +== LogAnalyticsController.java     # Analytics and metrics endpoints
+|   +== LogSecurityController.java      # Security analysis endpoints
++== DTOs
+|   +== AccessLogDTO.java               # Enhanced access log DTO
+|   +== SecurityAnalysisDTO.java        # Security threat analysis
+|   +== PerformanceMetricsDTO.java      # Performance metrics
+|   +== BotDetectionDTO.java            # Bot detection results
+|   +== GeoLocationDTO.java             # Geographic information
+|   +== EndpointAnalyticsDTO.java       # Endpoint usage statistics
+|   +== HourlyMetricsDTO.java           # Hourly aggregated metrics
+|   +== AlertConfigDTO.java             # Alert configuration
+|   +== ExportRequestDTO.java           # Export request parameters
+|   +== LogFilterDTO.java               # Filter criteria
++== Services
+|   +== AccessLogParserService.java     # Parse Tomcat access logs
+|   +== AccessLogService.java           # Core log retrieval and filtering
+|   +== SecurityAnalysisService.java    # Security threat detection
+|   +== PerformanceMonitorService.java  # Performance tracking
+|   +== BotDetectionService.java        # Bot identification
+|   +== GeoLocationService.java         # IP geolocation
+|   +== LogAnalyticsService.java        # Analytics and statistics
+|   +== LogExportService.java           # Export functionality
+|   +== AlertService.java               # Alert system
+|   +== LogRetentionService.java        # Archive and cleanup
+|   +== LogSSEService.java              # SSE broadcast service
++== Enums
+|   +== ThreatType.java                 # Security threat types
+|   +== BotType.java                    # Bot classifications
+|   +== AlertSeverity.java              # Alert severity levels
+|   +== ExportFormat.java               # Export format types
++== Utils
+    +== IPUtils.java                    # IP manipulation utilities
+    +== PatternDetector.java            # Pattern matching for threats
+    +== GeoIPDatabase.java              # GeoIP database wrapper
+    +== UserAgentParser.java            # User agent parsing
 ```
 
 ## Database Tables (Optional - for persistent storage)

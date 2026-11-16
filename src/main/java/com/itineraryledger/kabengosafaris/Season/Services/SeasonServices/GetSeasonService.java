@@ -133,8 +133,8 @@ public class GetSeasonService {
             SeasonDTO seasonDTO = convertToDTO(season);
 
             /*
-             * Prev/next walks the SAME set the caller was looking at — this
-             * property's seasons when opened through it — and the N of M readout
+             * Prev/next walks the SAME set the caller was looking at - this
+             * property's seasons when opened through it - and the N of M readout
              * makes the wraparound visible.
              */
             Long scopedAccommodationId = null;

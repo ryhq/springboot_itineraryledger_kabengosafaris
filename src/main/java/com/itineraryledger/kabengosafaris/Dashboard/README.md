@@ -220,7 +220,7 @@ The dashboard API uses the following permissions:
 
 ### Quote Conversion Rate
 ```
-Conversion Rate = ((Accepted Quotes + Converted Quotes) / Total Sent Quotes) × 100
+Conversion Rate = ((Accepted Quotes + Converted Quotes) / Total Sent Quotes) x 100
 ```
 
 ### Revenue Metrics

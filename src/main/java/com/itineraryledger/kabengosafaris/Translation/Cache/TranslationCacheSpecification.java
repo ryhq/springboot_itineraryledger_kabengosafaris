@@ -87,7 +87,7 @@ public class TranslationCacheSpecification {
     /**
      * The one search box: the phrase, in either language.
      *
-     * Both sides on purpose — somebody hunting for a cached entry knows either the English
+     * Both sides on purpose - somebody hunting for a cached entry knows either the English
      * they wrote or the German they saw on the site, and which one they remember is not
      * something the box can ask. Safe to LOWER() because these are plain MEDIUMTEXT columns
      * rather than @Lob, which is what breaks the same query elsewhere in this codebase.

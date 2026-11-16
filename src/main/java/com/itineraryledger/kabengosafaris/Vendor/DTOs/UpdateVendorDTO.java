@@ -8,7 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** All fields optional — null means "leave unchanged". */
+/** All fields optional - null means "leave unchanged". */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -309,7 +309,7 @@ public class ActivityTariffRateGetService {
     }
 
     /**
-     * The ONE place a rate filter is expressed — rows, counters and prev/next all
+     * The ONE place a rate filter is expressed - rows, counters and prev/next all
      * build from it, so a card can never disagree with the table and the arrows can
      * never walk a different set from the one on screen.
      */

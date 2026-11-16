@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
  * somebody to go looking for the permission. For a company that does not have a fleet at all, the
  * honest answer is that there is no fleet here.
  *
- * The panel hides a disabled module from the sidebar, the palette and the breadcrumbs — but a
+ * The panel hides a disabled module from the sidebar, the palette and the breadcrumbs - but a
  * bookmark, an old link or a stale tab will still ask, and the frontend is not a security boundary.
  * This is where the answer is actually enforced.
  *

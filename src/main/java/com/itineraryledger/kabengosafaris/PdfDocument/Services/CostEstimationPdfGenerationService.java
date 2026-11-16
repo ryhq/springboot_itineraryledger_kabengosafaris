@@ -32,7 +32,7 @@ import java.time.format.DateTimeFormatter;
  * Unlike every other document here, this one has a parameter that changes the
  * answer rather than the presentation: the trip start date. Rates are seasonal,
  * so the same itinerary priced for February and for June are two correct and
- * different documents — which is why the date is passed in and printed on the
+ * different documents - which is why the date is passed in and printed on the
  * page rather than assumed.
  *
  * A saved copy is filed as an ItineraryDocument, because a costing belongs to

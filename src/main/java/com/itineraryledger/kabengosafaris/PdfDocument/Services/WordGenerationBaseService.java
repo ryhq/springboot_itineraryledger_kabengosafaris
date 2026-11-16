@@ -31,7 +31,7 @@ import java.util.Map;
  *
  * Mirrors {@link PdfGenerationBaseService} exactly: same template lookup,
  * same data-model build, same translation hook, same audit-log on failure.
- * Only the final converter (and content type / extension) differ — the same
+ * Only the final converter (and content type / extension) differ - the same
  * Thymeleaf-rendered HTML feeds both PDF and DOCX output.
  *
  * Extended by document-specific services:
@@ -62,7 +62,7 @@ public class WordGenerationBaseService {
     protected final TranslationService translationService;
 
     /**
-     * Backwards-compatible overload — uses the global {@code docx.engine} setting.
+     * Backwards-compatible overload - uses the global {@code docx.engine} setting.
      */
     @Transactional(readOnly = true)
     protected ResponseEntity<?> generateDocxInternal(
@@ -131,7 +131,7 @@ public class WordGenerationBaseService {
             // 4. Render template (shared with PDF path)
             String renderedHtml = renderer.renderTemplate(template.getFileName(), dataModel);
 
-            // 5. Validate rendered HTML for XHTML compliance — XHTMLImporter requires it
+            // 5. Validate rendered HTML for XHTML compliance - XHTMLImporter requires it
             validationService.validateForPdf(renderedHtml, template.getName());
 
             // 6. Translate HTML if language is specified and not English

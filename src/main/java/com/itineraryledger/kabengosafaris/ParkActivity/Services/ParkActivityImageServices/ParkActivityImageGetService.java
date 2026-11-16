@@ -235,7 +235,7 @@ public class ParkActivityImageGetService {
     }
 
     /**
-     * The filter chain the record pager walks — the same dimensions the list
+     * The filter chain the record pager walks - the same dimensions the list
      * offers, so paging from a filtered list stays inside those matches.
      */
     private org.springframework.data.jpa.domain.Specification<ParkActivityImage> navigationSpec(
@@ -309,8 +309,8 @@ public class ParkActivityImageGetService {
     /**
      * One image, plus where it sits in the set the caller was looking at.
      *
-     * The arrows MUST walk the same filtered and sorted list the table showed —
-     * paging into records the user never saw is worse than no arrows — so the
+     * The arrows MUST walk the same filtered and sorted list the table showed -
+     * paging into records the user never saw is worse than no arrows - so the
      * caller's filters come back in and rebuild that exact Specification.
      */
     public ResponseEntity<?> getImageById(

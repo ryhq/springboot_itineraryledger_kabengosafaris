@@ -13,7 +13,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 /**
- * ListStats — the dashboard counters that ride inside every list response.
+ * ListStats - the dashboard counters that ride inside every list response.
  *
  * Every list endpoint carries stat cards, and each card must be reachable as a
  * filter. Writing a bespoke computeStats() per module would be ~40 copies of the
@@ -67,7 +67,7 @@ public class ListStats {
             this.base = base == null ? Specification.unrestricted() : base;
         }
 
-        /** Row count for the current filter set — the leading "All X" card. */
+        /** Row count for the current filter set - the leading "All X" card. */
         public Builder<T> total() {
             stats.put("total", ListStats.this.count(entityClass, base));
             return this;

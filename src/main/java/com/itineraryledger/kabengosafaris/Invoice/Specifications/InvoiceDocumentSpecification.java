@@ -128,7 +128,7 @@ public class InvoiceDocumentSpecification {
     }
 
     /**
-     * Any of these types — the Type filter is multi-select, and a singular enum
+     * Any of these types - the Type filter is multi-select, and a singular enum
      * param cannot answer "invoice PDF or payment receipt".
      */
     public static Specification<InvoiceDocument> byDocumentTypes(java.util.List<DocumentType> types) {

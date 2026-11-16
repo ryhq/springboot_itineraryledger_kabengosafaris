@@ -63,7 +63,7 @@ public class QuoteGetService {
      * One quote, plus where it sits in the set the caller was looking at.
      *
      * The filters and sort come from the list page so prev/next stays inside
-     * that set — see buildSpec.
+     * that set - see buildSpec.
      */
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<?>> getQuoteById(
@@ -97,7 +97,7 @@ public class QuoteGetService {
             /*
              * Prev/next walks the SAME filtered, sorted set the list was showing.
              * It used to walk a raw id-ordered query, so paging out of a "Sent"
-             * list landed in a draft — arrows that traverse a different set than
+             * list landed in a draft - arrows that traverse a different set than
              * the one on screen are worse than no arrows.
              */
             Specification<Quote> navSpec = buildSpec(filter != null ? filter : new QuoteFilter());
@@ -356,7 +356,7 @@ public class QuoteGetService {
      * ONE specification, shared by the rows, the counters and the record walk.
      *
      * The three used to be able to disagree: the list filtered, the stat cards
-     * did not exist, and prev/next walked a raw id-ordered query — so paging out
+     * did not exist, and prev/next walked a raw id-ordered query - so paging out
      * of a "Sent" list landed you in a draft. Anything built from this cannot
      * drift from what is on screen.
      */
@@ -409,7 +409,7 @@ public class QuoteGetService {
      * Narrows by an obfuscated id, or narrows to nothing if it will not decode.
      *
      * A id that cannot be read used to be logged and dropped, which silently
-     * widened the result to every quote — the opposite of what was asked for.
+     * widened the result to every quote - the opposite of what was asked for.
      */
     private Specification<Quote> and(
         Specification<Quote> spec,
@@ -429,7 +429,7 @@ public class QuoteGetService {
     /**
      * Counters for the whole filtered set, built from the SAME specification.
      *
-     * Every figure here is reachable as a filter, and every filter has a figure —
+     * Every figure here is reachable as a filter, and every filter has a figure -
      * a card that cannot be clicked is decoration, and a filter with no counter
      * is a question the page refuses to answer.
      */

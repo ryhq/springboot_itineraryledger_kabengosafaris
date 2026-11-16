@@ -29,7 +29,7 @@ import com.itineraryledger.kabengosafaris.Safari.SafariInclusion.Entity.SafariIn
  * only works if each document holds its own rows and each copy reads its immediate parent.
  *
  * <p>Two of these pin mistakes that are one careless line away. A safari built from a quote must
- * read the QUOTE — the template already gets this wrong for highlights at
+ * read the QUOTE - the template already gets this wrong for highlights at
  * {@code full_safari_modern.html:718}, where it renders {@code safari.itinerary.highlightsList}. And
  * a document already sent must be immune to a later catalogue edit, which is the whole reason these
  * rows carry text rather than a foreign key.
@@ -42,7 +42,7 @@ class ThePromiseTravelsDownTheChainTest {
     @DisplayName("an edit on the quote reaches the safari and the invoice, and never the itinerary")
     void theChainFlowsOneWay() {
         Itinerary itinerary = itineraryWith(
-            "Private 4×4 safari vehicle with pop-up roof",
+            "Private 4x4 safari vehicle with pop-up roof",
             "Professional multilingual safari guide",
             "All park, conservation & crater-service fees",
             "Accommodation with meals as listed in the itinerary",
@@ -64,7 +64,7 @@ class ThePromiseTravelsDownTheChainTest {
         assertEquals(7, snapshot.toInvoice(safari, quote, invoice), "and so does the bill");
 
         assertEquals(5, itinerary.getInclusionList().size(),
-            "the template must be untouched — the next customer's quote starts from five again");
+            "the template must be untouched - the next customer's quote starts from five again");
     }
 
     @Test
@@ -163,7 +163,7 @@ class ThePromiseTravelsDownTheChainTest {
     void theClaimIsSnapshottedToo() {
         /*
          * Read live, narrowing a catalogue item's scope would change which contradictions a sent
-         * quote reports — a warning somebody cleared before sending would reappear afterwards,
+         * quote reports - a warning somebody cleared before sending would reappear afterwards,
          * about a document they can no longer change.
          */
         InclusionItem item = item("All park, conservation & crater-service fees");

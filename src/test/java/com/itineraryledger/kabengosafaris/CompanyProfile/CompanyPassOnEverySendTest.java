@@ -17,13 +17,13 @@ import org.junit.jupiter.api.Test;
 /**
  * That nothing takes a template and mails it without resolving the company first.
  *
- * The template files are written entirely in company variables now — the name, the accent colour,
- * the logo — so a code path that substitutes its own variables and stops has not sent a plain
+ * The template files are written entirely in company variables now - the name, the accent colour,
+ * the logo - so a code path that substitutes its own variables and stops has not sent a plain
  * version of the email. It has sent a broken one: "Thank you for registering with !" above a
  * layout with no colours, because the accent lives inside the stylesheet and a mail client that
  * meets `{{` in CSS discards the block rather than guessing.
  *
- * That is precisely what "Send me a test" did — the one feature whose entire purpose is to show
+ * That is precisely what "Send me a test" did - the one feature whose entire purpose is to show
  * somebody what their customer will receive. It had its own private substitution loop, so the pass
  * added to the real renderer never ran there.
  *

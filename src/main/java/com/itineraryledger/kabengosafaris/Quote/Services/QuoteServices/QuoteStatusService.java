@@ -603,7 +603,7 @@ public class QuoteStatusService {
     /**
      * Convert quote to booking/safari.
      * Creates a Safari (DRAFT) from the quote's itinerary and customer.
-     * Invoice is NOT created here — it is created later when the safari reaches
+     * Invoice is NOT created here - it is created later when the safari reaches
      * CONFIRMED state via the request-payment endpoint.
      * Only allowed from ACCEPTED status.
      *
@@ -678,7 +678,7 @@ public class QuoteStatusService {
             }
 
             // ============================================================
-            // Step 1: Create Safari — snapshot from Quote's own day-tree if
+            // Step 1: Create Safari - snapshot from Quote's own day-tree if
             // it has one; fall back to the Itinerary template for legacy
             // quotes that pre-date snapshot mode.
             // ============================================================
@@ -762,7 +762,7 @@ public class QuoteStatusService {
 
     /**
      * Check if quote is superseded (has a next version).
-     * Superseded quotes are locked — no workflow transitions allowed.
+     * Superseded quotes are locked - no workflow transitions allowed.
      */
     private ResponseEntity<ApiResponse<?>> checkSuperseded(Quote quote) {
         if (quote.getNextVersion() != null) {

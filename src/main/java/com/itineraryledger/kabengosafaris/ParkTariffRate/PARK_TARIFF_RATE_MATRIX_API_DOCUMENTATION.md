@@ -24,13 +24,13 @@ The Rate Matrix API provides all the data needed to render a rate input grid for
 
 | Charging Basis | Grid Structure                          | Age Categories |
 | -------------- | --------------------------------------- | -------------- |
-| `PER_PERSON`   | Season × Nation Category × Age Category | **Included**   |
-| `PER_VEHICLE`  | Season × Nation Category                | **Excluded**   |
-| `PER_GROUP`    | Season × Nation Category                | **Excluded**   |
-| `PER_DAY`      | Season × Nation Category                | **Excluded**   |
-| `PER_HOUR`     | Season × Nation Category                | **Excluded**   |
-| `PER_SESSION`  | Season × Nation Category                | **Excluded**   |
-| `FLAT_RATE`    | Season × Nation Category                | **Excluded**   |
+| `PER_PERSON`   | Season x Nation Category x Age Category | **Included**   |
+| `PER_VEHICLE`  | Season x Nation Category                | **Excluded**   |
+| `PER_GROUP`    | Season x Nation Category                | **Excluded**   |
+| `PER_DAY`      | Season x Nation Category                | **Excluded**   |
+| `PER_HOUR`     | Season x Nation Category                | **Excluded**   |
+| `PER_SESSION`  | Season x Nation Category                | **Excluded**   |
+| `FLAT_RATE`    | Season x Nation Category                | **Excluded**   |
 
 > **Note:** Unlike Activity Tariff Rates, Park Tariff Rates are **always park-specific**. There are no global rates - both `parkId` and `tariffId` are required.
 
@@ -245,7 +245,7 @@ if (includesAgeCategories) {
 
 #### For `PER_PERSON` Tariffs (3-dimensional grid)
 
-Each row represents: **Season × Nation Category × Age Category**
+Each row represents: **Season x Nation Category x Age Category**
 
 ```javascript
 function buildPerPersonRows(seasons, nationCategories, ageCategories) {
@@ -297,7 +297,7 @@ function buildPerPersonRows(seasons, nationCategories, ageCategories) {
 
 #### For Non-`PER_PERSON` Tariffs (2-dimensional grid)
 
-Each row represents: **Season × Nation Category** (no age category)
+Each row represents: **Season x Nation Category** (no age category)
 
 ```javascript
 function buildSimpleRows(seasons, nationCategories) {
@@ -384,19 +384,19 @@ The `parksWithTariff` field provides all parks that have the same tariff configu
 ### UI Flow Recommendation
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│ Configure Rates for: Park Entry Fee                     │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  Park: [Serengeti National Park ▼]                     │
-│        ├── Serengeti National Park    ✓                │
-│        ├── Ngorongoro Conservation Area                │
-│        └── Tarangire National Park                     │
-│                                                         │
-│  Charging Basis: Per Person                            │
-│  (Rates will include age categories)                   │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
++=========================================================+
+| Configure Rates for: Park Entry Fee                     |
++=========================================================+
+|                                                         |
+|  Park: [Serengeti National Park v]                     |
+|        +== Serengeti National Park    ✓                |
+|        +== Ngorongoro Conservation Area                |
+|        +== Tarangire National Park                     |
+|                                                         |
+|  Charging Basis: Per Person                            |
+|  (Rates will include age categories)                   |
+|                                                         |
++=========================================================+
 ```
 
 ### Building the Park Dropdown

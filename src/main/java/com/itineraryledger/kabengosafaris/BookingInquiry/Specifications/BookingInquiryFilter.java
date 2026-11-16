@@ -48,9 +48,9 @@ public class BookingInquiryFilter {
     /**
      * What needs doing, which is what the list is actually for.
      *
-     * unanswered — nobody has replied yet. stale — new and more than three days
-     * old, which is the one that costs bookings. noPhone — nothing to call them
-     * on. travellingSoon — their preferred start is inside a month, so a slow
+     * unanswered - nobody has replied yet. stale - new and more than three days
+     * old, which is the one that costs bookings. noPhone - nothing to call them
+     * on. travellingSoon - their preferred start is inside a month, so a slow
      * reply is worse than usual.
      */
     private List<String> queues;

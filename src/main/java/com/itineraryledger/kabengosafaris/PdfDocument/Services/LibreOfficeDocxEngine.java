@@ -16,19 +16,19 @@ import java.util.Comparator;
  *
  * Why file-based (instead of stream-based) conversion:
  * LibreOffice's HTML filter is well-behaved when the input arrives as a file
- * with an {@code .html} extension — it picks up the "HTML (StarWriter)" filter
+ * with an {@code .html} extension - it picks up the "HTML (StarWriter)" filter
  * and treats the file as a Writer document, so storing as DOCX succeeds. The
  * stream-based API (.convert(InputStream).as(HTML)) trips over format-family
  * resolution in some LibreOffice versions and aborts with
  * "IllegalArgumentException: Unsupported conversion" inside
  * LocalConversionTask.storeDocument. Writing to a temp file sidesteps this
- * entirely — at the cost of two tiny disk writes per request, which is
+ * entirely - at the cost of two tiny disk writes per request, which is
  * negligible next to the LibreOffice process round-trip.
  *
  * Much higher visual fidelity than docx4j: honors @page margins/size, renders
  * CSS more completely, handles page breaks properly, converts SVG to raster.
  *
- * Always registered as a bean — availability is reported by {@link #isAvailable()}
+ * Always registered as a bean - availability is reported by {@link #isAvailable()}
  * which checks whether {@link JodConverterManager} has a running pool. The
  * pool can be reloaded at runtime via POST /api/docx-settings/libreoffice/reload.
  */
@@ -120,7 +120,7 @@ public class LibreOfficeDocxEngine implements DocxEngine {
                     try {
                         Files.deleteIfExists(p);
                     } catch (IOException ignored) {
-                        // best-effort cleanup — OS tmp reaper will mop up
+                        // best-effort cleanup - OS tmp reaper will mop up
                     }
                 });
         } catch (IOException ignored) {

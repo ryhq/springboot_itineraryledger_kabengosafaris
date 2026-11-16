@@ -10,10 +10,10 @@ The system uses a **self-referencing entity pattern** to eliminate code duplicat
 
 ```
 Accommodation (HQ & Branches)
-├── Contact Information (Email, Phone, Images) 
-├── Room Configuration (Types, Standards, Board Types)
-├── Pricing (Rates by Season × Room × Meals)
-└── Documents (Contracts, Rate Sheets, Licenses)
++== Contact Information (Email, Phone, Images) 
++== Room Configuration (Types, Standards, Board Types)
++== Pricing (Rates by Season x Room x Meals)
++== Documents (Contracts, Rate Sheets, Licenses)
 ```
 
 ## Core Entities
@@ -432,11 +432,11 @@ The self-referencing design supports unlimited hierarchy depth:
 
 ```
 Serena Hotels Tanzania (HQ)
-├── Serengeti Serena Safari Lodge (Regional)
-│   ├── Serengeti North Camp (Sub-branch)
-│   └── Serengeti South Camp (Sub-branch)
-├── Ngorongoro Serena Safari Lodge (Regional)
-└── Lake Manyara Serena Safari Lodge (Regional)
++== Serengeti Serena Safari Lodge (Regional)
+|   +== Serengeti North Camp (Sub-branch)
+|   +== Serengeti South Camp (Sub-branch)
++== Ngorongoro Serena Safari Lodge (Regional)
++== Lake Manyara Serena Safari Lodge (Regional)
 ```
 
 **Setup Example**:

@@ -77,7 +77,7 @@ public class ItineraryGetService {
     }
 
     /**
-     * One itinerary, plus where it sits in the set the caller was looking at — the
+     * One itinerary, plus where it sits in the set the caller was looking at - the
      * list's filters and sort decide the walk, not raw id order.
      */
     public ResponseEntity<ApiResponse<?>> getItineraryById(
@@ -379,7 +379,7 @@ public class ItineraryGetService {
     }
 
     /**
-     * The ONE place an itinerary filter is expressed — rows, counters and prev/next
+     * The ONE place an itinerary filter is expressed - rows, counters and prev/next
      * all build from it, so a card can never disagree with the table.
      */
     private Specification<Itinerary> buildSpec(

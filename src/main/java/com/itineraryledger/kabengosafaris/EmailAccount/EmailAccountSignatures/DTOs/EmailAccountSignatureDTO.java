@@ -41,7 +41,7 @@ public class EmailAccountSignatureDTO {
      * The mailbox in words.
      *
      * A row carrying only an obfuscated id can say which account it belongs to only by
-     * showing the id, which tells nobody anything — and the cross-account list exists
+     * showing the id, which tells nobody anything - and the cross-account list exists
      * precisely so somebody can see whose signature is whose.
      */
     private String emailAccountName;

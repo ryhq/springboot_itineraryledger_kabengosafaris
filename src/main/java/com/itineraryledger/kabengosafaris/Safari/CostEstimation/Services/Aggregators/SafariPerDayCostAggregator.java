@@ -236,7 +236,7 @@ public class SafariPerDayCostAggregator {
     /**
      * The party, split into adults and children, for the flight calculator.
      *
-     * <p>A seat is the only thing on a safari day priced per person by AGE — a child flies at 70%
+     * <p>A seat is the only thing on a safari day priced per person by AGE - a child flies at 70%
      * of the fare. Beds go by room, park fees by their own tariff bands, so no other calculator
      * here needs the split, and the flight calculator takes it as a plain pair rather than a
      * safari type so the itinerary side can hand it the same thing.

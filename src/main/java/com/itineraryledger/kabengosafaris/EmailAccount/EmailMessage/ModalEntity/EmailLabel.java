@@ -45,12 +45,12 @@ public class EmailLabel {
     private EmailLabelColor color;
 
     /**
-     * The colour actually chosen, as #rrggbb — optional.
+     * The colour actually chosen, as #rrggbb - optional.
      *
      * {@link EmailLabelColor} is a four-value SEMANTIC palette (quote, booking, vendor, internal)
      * that v1 maps to its own CSS variables. That is not a colour picker, and a label somebody
-     * makes for "Zanzibar hotels" belongs to none of the four. So the enum stays — nothing that
-     * reads it breaks, and it is still what v1 paints with — and the exact colour lives here for
+     * makes for "Zanzibar hotels" belongs to none of the four. So the enum stays - nothing that
+     * reads it breaks, and it is still what v1 paints with - and the exact colour lives here for
      * clients that can use it. NULL means "whatever the enum paints", which is every existing row.
      */
     @Column(name = "color_hex", length = 9)

@@ -105,15 +105,15 @@ public class EmailMessageGetService {
             Pageable paging = PageRequest.of(page, size, Sort.by(direction, validatedSortBy));
 
             // Build specification
-            // §3 — hide snoozed messages from list queries. They re-surface
+            // §3 - hide snoozed messages from list queries. They re-surface
             // once EmailSnoozeService.wakeDueSnoozes clears the field.
-            // §7 — also exclude anything matching an active mute rule;
+            // §7 - also exclude anything matching an active mute rule;
             // those are reported separately via /folders/{id}/muted-summary.
             Specification<EmailMessage> spec = buildSpec(accountIdObfuscated, folderId, isRead, isStarred, isFlagged, hasAttachments, search, fromAddress, subject, labelIds, sentAfter, sentBefore, snoozed);
 
             Page<EmailMessage> pagedMessages = emailMessageRepository.findAll(spec, paging);
 
-            // §2 — batch the threadCount lookup for every threadId present in
+            // §2 - batch the threadCount lookup for every threadId present in
             // the page so the list rows can render the count chip without N+1.
             List<String> threadIds = pagedMessages.getContent().stream()
                 .map(EmailMessage::getThreadId)
@@ -136,13 +136,13 @@ public class EmailMessageGetService {
                 })
                 .toList();
 
-            // §Change — surface the account's last successful sync so the
+            // §Change - surface the account's last successful sync so the
             // frontend sync pill can colour itself by freshness without an
             // extra request.
             //
             // lastFetchedAt is stored as a zone-less LocalDateTime. Convert
             // it to an Instant using the JVM default zone so Jackson emits
-            // an ISO-8601 UTC string ("…Z") — the frontend's new Date(...)
+            // an ISO-8601 UTC string ("...Z") - the frontend's new Date(...)
             // then parses it correctly regardless of the user's timezone.
             LocalDateTime lastSyncLocal = emailAccountRepository.findById(accountId)
                 .map(a -> a.getLastFetchedAt())
@@ -185,7 +185,7 @@ public class EmailMessageGetService {
         List<String> labelIds,
         LocalDateTime sentAfter,
         LocalDateTime sentBefore,
-        /* the record walks the same set the list did — including the snoozed view */
+        /* the record walks the same set the list did - including the snoozed view */
         Boolean snoozed,
         String sortBy,
         String sortDirection
@@ -217,7 +217,7 @@ public class EmailMessageGetService {
             EmailMessageDTO dto = toFullDTO(message, htmlBody, attachmentDTOs);
 
             /*
-             * Circular navigation over the caller's filtered, sorted set — scoped to the
+             * Circular navigation over the caller's filtered, sorted set - scoped to the
              * parent when one is given. The id-ordered walk this replaces stepped through a
              * different set from the one on screen and could not say where you were in it.
              */
@@ -248,7 +248,7 @@ public class EmailMessageGetService {
     }
 
     /**
-     * §2 — Get a thread by its threadId (RFC-2822 derived string), returning
+     * §2 - Get a thread by its threadId (RFC-2822 derived string), returning
      * thread-level metadata plus all messages oldest → newest. This is the
      * shape the inbox v2 reading pane expects.
      */
@@ -299,7 +299,7 @@ public class EmailMessageGetService {
     }
 
     /**
-     * Get thread (all messages with the same threadId) — legacy entry point
+     * Get thread (all messages with the same threadId) - legacy entry point
      * that takes a message id and resolves to its thread.
      */
     public ResponseEntity<ApiResponse<?>> getThread(String accountIdObfuscated, String messageIdObfuscated) {
@@ -409,7 +409,7 @@ public class EmailMessageGetService {
      * re-rendering the letter: if somebody edited the wording before sending, the property received
      * the edit, and a follow-up that quotes something they never read is worse than none.
      *
-     * Best effort by design — null when the .eml cannot be read, and the caller carries on without
+     * Best effort by design - null when the .eml cannot be read, and the caller carries on without
      * a quote rather than failing.
      */
     public String htmlBodyOf(Long messageId) {
@@ -554,7 +554,7 @@ public class EmailMessageGetService {
 
     /**
      * The ONE description of the filtered set, shared by the rows and by the record
-     * arrows — paging that walked a different set from the one on screen would be
+     * arrows - paging that walked a different set from the one on screen would be
      * worse than no arrows (see CLAUDE.md).
      */
     private Specification<EmailMessage> buildSpec(
@@ -616,7 +616,7 @@ public class EmailMessageGetService {
                 }
             }
             if (search != null && !search.isBlank()) {
-                // §8 — parse operator syntax (from:, to:, label:, has:,
+                // §8 - parse operator syntax (from:, to:, label:, has:,
                 // is:, before:, after:) out of the search bar input.
                 SearchQueryParser.Parsed parsed = SearchQueryParser.parse(search);
                 for (String f : parsed.getFrom()) spec = spec.and(EmailMessageSpecification.fromAddressLike(f));
@@ -629,7 +629,7 @@ public class EmailMessageGetService {
                 if (parsed.getBefore() != null) spec = spec.and(EmailMessageSpecification.sentBefore(parsed.getBefore()));
                 if (parsed.getAfter() != null) spec = spec.and(EmailMessageSpecification.sentAfter(parsed.getAfter()));
                 if (!parsed.getLabel().isEmpty()) {
-                    // label:foo resolves on label name substring — convert to ids and use hasAnyLabel.
+                    // label:foo resolves on label name substring - convert to ids and use hasAnyLabel.
                     // (Substring match against EmailLabel.name would need an extra spec; keep it
                     // simple here and let the explicit `labelIds` query param do exact filtering.)
                     spec = spec.and((root, query, cb) -> {

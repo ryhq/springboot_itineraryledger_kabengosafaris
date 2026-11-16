@@ -59,7 +59,7 @@ public class PublicItineraryDTO {
      * What's included / not included, as a list.
      *
      * @Translatable, which they were not. PublicTranslationService has handled a translatable
-     * List<String> since the blog's bullet blocks, but these two were never annotated — so a
+     * List<String> since the blog's bullet blocks, but these two were never annotated - so a
      * German visitor read "Jede Kabengo-Safari beinhaltet" as a heading over eight bullets still
      * in English. Two annotations is the whole of that fix.
      */
@@ -74,14 +74,14 @@ public class PublicItineraryDTO {
     // Primary image (derived from first day's park)
     private String primaryImageUrl;
 
-    // How many actual Safaris were converted from this itinerary — set only by the "most booked" endpoint.
+    // How many actual Safaris were converted from this itinerary - set only by the "most booked" endpoint.
     private Long bookingCount;
 
     // Cost summary (rack prices only - no agent/net prices)
 
     private List<ItineraryCostSummaryDTO> costSummary;
 
-    // Pax breakdown (nationality + age category + count) — tells users "price is for X adults, Y nationality"
+    // Pax breakdown (nationality + age category + count) - tells users "price is for X adults, Y nationality"
     private List<PublicPaxDTO> paxBreakdown;
 
     // Day-by-day itinerary (for detail view only)

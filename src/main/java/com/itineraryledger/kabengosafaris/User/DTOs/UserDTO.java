@@ -61,7 +61,7 @@ public class UserDTO {
     private String mfaSecret;
 
     /**
-     * Access — which roles this account holds.
+     * Access - which roles this account holds.
      *
      * The whole reason to look at a user is to answer "what can they do", and the
      * answer is their roles; a user list without them is a staff directory.

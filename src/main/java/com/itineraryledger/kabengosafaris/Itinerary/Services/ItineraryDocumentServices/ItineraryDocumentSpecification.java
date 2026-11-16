@@ -148,7 +148,7 @@ public class ItineraryDocumentSpecification {
     }
 
     /**
-     * Any of these types — the Type filter is multi-select, and a singular enum
+     * Any of these types - the Type filter is multi-select, and a singular enum
      * param cannot answer "quotation or invoice".
      */
     public static Specification<ItineraryDocument> byDocumentTypes(java.util.List<DocumentType> types) {

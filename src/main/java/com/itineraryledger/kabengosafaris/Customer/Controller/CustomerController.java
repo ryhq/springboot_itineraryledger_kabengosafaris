@@ -189,7 +189,7 @@ public class CustomerController {
     private com.itineraryledger.kabengosafaris.Customer.Repository.CustomerRepository bulkFlagsRepository;
 
     /**
-     * PATCH /bulk — one request for a whole selection.
+     * PATCH /bulk - one request for a whole selection.
      *
      * Only the flags present in the body apply, so the same endpoint serves
      * activate, deactivate, blacklist, VIP. Returns per-id

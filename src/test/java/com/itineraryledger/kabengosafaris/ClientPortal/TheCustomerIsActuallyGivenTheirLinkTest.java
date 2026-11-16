@@ -34,14 +34,14 @@ import com.itineraryledger.kabengosafaris.Quote.Enums.RevisionReason;
  * <p>Sharing a quotation created the journey and left the address sitting in the panel for a
  * human to copy into a message by hand. Nothing emailed it: not the publish action, and not the
  * quotation email, which carried the PDF and no link at all. Meanwhile the history labelled that
- * first revision <em>"Sent to the customer"</em> — the display name of a revision REASON, not a
- * record of any message — beside a view count of nought.
+ * first revision <em>"Sent to the customer"</em> - the display name of a revision REASON, not a
+ * record of any message - beside a view count of nought.
  *
  * <p>Two readings of one screen, and a consultant would reach the wrong one: the customer is
  * ignoring us, when the truth was that nobody had ever given them the address. That is the same
  * failure the insight work exists to prevent, sitting two tabs away from it.
  *
- * <p>So the quotation email carries the link — the message the customer is already expecting,
+ * <p>So the quotation email carries the link - the message the customer is already expecting,
  * already carrying the PDF of the same quotation, going to the address the access code will go
  * to. And there is a second route for the quotations that went out before any of this existed.
  */

@@ -24,12 +24,12 @@ import lombok.extern.slf4j.Slf4j;
  * Put a copy of everything we send into the mailbox's own Sent folder.
  *
  * <p>Sending through an API rather than SMTP means the mail never passes through the mailbox, so
- * nothing puts a copy in Sent — that is normally a side effect of the mail client doing the
+ * nothing puts a copy in Sent - that is normally a side effect of the mail client doing the
  * sending. The result on Kabengo: the panel listed 996 sent messages while the real mailbox held
  * 300, the newest dated 8 September, which were simply the ones migrated from the old host.
  * Around seven hundred messages to clients existed only in this application's database. Open
  * webmail, Outlook or a phone and they were not there, so anyone replying from a mail client had
- * no record of what had already been said — and a reply quoting nothing is how a client gets told
+ * no record of what had already been said - and a reply quoting nothing is how a client gets told
  * something twice, or contradicted.
  *
  * <p>Deliberately best-effort and asynchronous. The message has already been accepted by the

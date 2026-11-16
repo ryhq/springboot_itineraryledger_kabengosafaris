@@ -10,6 +10,8 @@
     "",
     "'fold' is mechanical and reversible by eye: one character in, one string out. The spacing",
     "comes from the text, not from the map, so ' · ' becomes ' | ' and 'a·b' becomes 'a|b' without",
+    "Horizontal rules fold to '=' rather than '-' because a drawn line in an HTML comment would",
+    "otherwise become '--', which XHTML forbids inside a comment and the PDF renderer refuses.",
     "the map having to know which it is looking at.",
     "'foldInternal' is the same, for box-drawing art that only ever appears in comments, log",
     "banners and developer documentation. It is applied separately so a sweep of customer-facing",
@@ -51,8 +53,8 @@
     "­": ""
   },
   "foldInternal": {
-    "─": "-",
-    "━": "-",
+    "─": "=",
+    "━": "=",
     "│": "|",
     "┃": "|",
     "┌": "+",

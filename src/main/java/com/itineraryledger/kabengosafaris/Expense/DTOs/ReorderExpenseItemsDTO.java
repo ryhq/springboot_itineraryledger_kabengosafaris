@@ -14,7 +14,7 @@ import java.util.List;
 @Builder
 public class ReorderExpenseItemsDTO {
 
-    /** Item ids (obfuscated) in the desired order — index becomes displayOrder. */
+    /** Item ids (obfuscated) in the desired order - index becomes displayOrder. */
     @NotEmpty(message = "Order list cannot be empty")
     private List<String> itemIds;
 }

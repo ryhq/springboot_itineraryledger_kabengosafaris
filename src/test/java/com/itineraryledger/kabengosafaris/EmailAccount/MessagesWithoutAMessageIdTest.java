@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
  * Deduplication read `messageId != null && alreadyHave(messageId)`. A message whose header is
  * absent therefore skipped the check completely and was inserted again on every five-minute pass.
  * Jatelo's reservations mailbox reached ninety-three copies of one welcome letter inside a day of
- * being connected — every row stamped 05:13:50, every row with a null messageId — and was still
+ * being connected - every row stamped 05:13:50, every row with a null messageId - and was still
  * climbing when it was found.
  *
  * The header is optional in practice, so demanding one would fix nothing. The identity is derived
@@ -44,12 +44,12 @@ class MessagesWithoutAMessageIdTest {
         /*
          * The loop asks "do we have this one?" and processMessage writes the row. If they compute
          * the identity differently, every message is a miss on the next pass and the duplicates
-         * come straight back — which is the same bug wearing a different hat.
+         * come straight back - which is the same bug wearing a different hat.
          */
         String source = Files.readString(SERVICE);
         int callSites = source.split("identityOf\\(mimeMessage\\)", -1).length - 1;
         assertEquals(2, callSites,
-            "exactly two places need the identity — the fetch loop that asks whether we have it"
+            "exactly two places need the identity - the fetch loop that asks whether we have it"
                 + " and processMessage that stores it. Found " + callSites + ".");
         assertFalse(source.contains("String messageId = mimeMessage.getMessageID();"),
             "processMessage is reading the raw header again, so it would store null where the"
@@ -61,7 +61,7 @@ class MessagesWithoutAMessageIdTest {
     void syntheticIdsAreLabelled() throws IOException {
         String source = Files.readString(SERVICE);
         assertTrue(source.contains("@no-message-id.local"),
-            "a synthetic id must be recognisable as one — nobody should mistake it for something"
+            "a synthetic id must be recognisable as one - nobody should mistake it for something"
                 + " the sender wrote");
     }
 
@@ -69,8 +69,8 @@ class MessagesWithoutAMessageIdTest {
     @DisplayName("the identity is built from fields that do not change between fetches")
     void theMaterialIsStable() throws IOException {
         /*
-         * Anything that varies per fetch — the receipt time, a folder position, the local file
-         * name — would make every pass a fresh message and restore the duplicates exactly.
+         * Anything that varies per fetch - the receipt time, a folder position, the local file
+         * name - would make every pass a fresh message and restore the duplicates exactly.
          */
         String source = Files.readString(SERVICE);
         int from = source.indexOf("private String identityOf");
@@ -92,7 +92,7 @@ class MessagesWithoutAMessageIdTest {
         /*
          * The provider sends type, subType and a message on every bounce. They were stored in
          * rawPayload and never read out, so the log could report 266 bounces and not one word
-         * about why — and "Transient/General for six months" (a full mailbox) versus
+         * about why - and "Transient/General for six months" (a full mailbox) versus
          * "Permanent/NoEmail" (an address that does not exist) want opposite responses.
          */
         String dto = Files.readString(Path.of("src/main/java/com/itineraryledger/kabengosafaris/"

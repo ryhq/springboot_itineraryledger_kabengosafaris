@@ -10,7 +10,7 @@ public class CompanyLinkRequestDTO {
     @Size(max = 500)
     private String url;
 
-    /** WEBSITE · BOOKING · FACEBOOK · INSTAGRAM · TRIPADVISOR · LINKEDIN · X · YOUTUBE · TIKTOK · OTHER */
+    /** WEBSITE | BOOKING | FACEBOOK | INSTAGRAM | TRIPADVISOR | LINKEDIN | X | YOUTUBE | TIKTOK | OTHER */
     private String linkType;
 
     @Size(max = 100)

@@ -23,7 +23,7 @@ import java.util.List;
 /**
  * Docx4jDocxEngine - In-JVM HTML → DOCX conversion via docx4j's XHTMLImporter.
  *
- * Default engine — works without any external dependencies. Produces good
+ * Default engine - works without any external dependencies. Produces good
  * body fidelity (tables, paragraphs, fonts, colors, inline raster images,
  * simple page breaks). Silently drops CSS print-only features:
  *   - @page margins, @page headers/footers
@@ -76,7 +76,7 @@ public class Docx4jDocxEngine implements DocxEngine {
         Integer marginRight
     ) {
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            // XHTMLImporter expects parseable XHTML — convert named entities to numeric.
+            // XHTMLImporter expects parseable XHTML - convert named entities to numeric.
             String normalizedHtml = validationService.normalizeHtmlEntities(html);
 
             WordprocessingMLPackage wordPackage = WordprocessingMLPackage.createPackage();

@@ -26,7 +26,7 @@ import lombok.NoArgsConstructor;
 /**
  * An airline we buy seats from, and the markup we sell them at.
  *
- * <p>This is the operator record — the equivalent of an {@code Accommodation}. It holds the things
+ * <p>This is the operator record - the equivalent of an {@code Accommodation}. It holds the things
  * that are true of everything the airline flies rather than of one sector: who they are, what the
  * baggage allowance is, and <strong>what we add to their fare</strong>.
  *
@@ -34,7 +34,7 @@ import lombok.NoArgsConstructor;
  * and stays 13% across 243 routes; a fare may override it and a single flight on a single trip may
  * override it again, but neither has to, and nobody retypes 13 two hundred and forty-three times.
  *
- * <p>⚠️ The house rack = 1.3 × STO rule does not apply to this record or anything under it. That is
+ * <p>⚠️ The house rack = 1.3 x STO rule does not apply to this record or anything under it. That is
  * an accommodation rule. A 316 fare marked up 30% is 411 for a seat the airline publishes at 316,
  * which nobody sells; flights go out at cost plus the markup set here.
  */
@@ -71,7 +71,7 @@ public class Airline {
     private String website;
 
     /**
-     * Printed for the client. 20 kg on Air Excel's scheduled services, in soft bags — a guest who
+     * Printed for the client. 20 kg on Air Excel's scheduled services, in soft bags - a guest who
      * packs a hard case finds this out at the airstrip otherwise, with the case staying behind.
      */
     @Column(name = "baggage_kg")

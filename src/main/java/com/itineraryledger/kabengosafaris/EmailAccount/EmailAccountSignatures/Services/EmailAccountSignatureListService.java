@@ -30,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
  * Every signature, across every mailbox.
  *
  * The nested list under an account answers "what can this mailbox sign with". This is the
- * list of the signatures themselves — a thing somebody maintains and reviews, not only a
+ * list of the signatures themselves - a thing somebody maintains and reviews, not only a
  * detail of the account it hangs off. Without it there is no way to ask "which of these has
  * been rewritten" or "what is switched off" without opening each account in turn.
  *
@@ -116,7 +116,7 @@ public class EmailAccountSignatureListService {
 
             /*
              * The body lives on disk, not in the row. A read failure is reported rather than
-             * quietly returning a signature with no content — an empty editor looks exactly
+             * quietly returning a signature with no content - an empty editor looks exactly
              * like a signature somebody emptied, and one of those is safe to save over.
              */
             String content = signatureService.readSignatureFile(signature.getFileName());
@@ -156,7 +156,7 @@ public class EmailAccountSignatureListService {
         }
     }
 
-    /** The account a signature belongs to, obfuscated — the write services are nested under it. */
+    /** The account a signature belongs to, obfuscated - the write services are nested under it. */
     public String accountIdOf(String signatureIdObfuscated) {
         try {
             Long id = idObfuscator.decodeId(signatureIdObfuscated);

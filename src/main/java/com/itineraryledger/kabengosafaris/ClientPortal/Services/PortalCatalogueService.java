@@ -41,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p><strong>No figures, deliberately.</strong> Not one price crosses this boundary, and the
  * reason is not only that {@code stoRate} is our cost. The rack rate is not what the client
- * would pay either — commission and uplift are applied by the pricing engine, per quotation —
+ * would pay either - commission and uplift are applied by the pricing engine, per quotation -
  * so showing it would be showing a number that is wrong in a way the client cannot detect.
  * They choose, the quotation reprices, and the total they are then shown is the real one.
  *
@@ -89,7 +89,7 @@ public class PortalCatalogueService {
          * What the place looks like, from the published image module.
          *
          * <p>A name and a board type is a list somebody scrolls past. These are the pictures the
-         * website already serves to strangers, so a bare src is correct here — the rule that
+         * website already serves to strangers, so a bare src is correct here - the rule that
          * client DOCUMENTS must be streamed with the session does not reach a lodge photograph.
          *
          * <p>Null when the accommodation has no image, which the page renders as a plain card

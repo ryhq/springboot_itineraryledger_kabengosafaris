@@ -31,8 +31,8 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>A message carries TWO facts about its attachments: a boolean the list draws the paperclip
  * from, and the attachment rows the reader lists. Two writers set the boolean without writing the
- * rows — composing by hand never wrote them at all, and a sent PDF arriving without a filename
- * set the flag and skipped the row — so messages appeared to carry files and opened with nothing.
+ * rows - composing by hand never wrote them at all, and a sent PDF arriving without a filename
+ * set the flag and skipped the row - so messages appeared to carry files and opened with nothing.
  * Twenty-three of them on Kabengo, one a proposal claiming four documents.
  *
  * <p>Both writers are fixed. This is for the messages already sitting in Sent, whose .eml files
@@ -54,7 +54,7 @@ public class EmailAttachmentRowBackfillInitializer implements ApplicationRunner 
     private final EmailMessageRepository emailMessageRepository;
     /*
      * A separate bean, not a method on this one. @Transactional is applied by a proxy, and a
-     * proxy is bypassed when an object calls its own method — so REQUIRES_NEW on a private helper
+     * proxy is bypassed when an object calls its own method - so REQUIRES_NEW on a private helper
      * here would be silently ignored and the whole sweep would share one transaction, where a
      * single bad message takes the other twenty-two down with it.
      */

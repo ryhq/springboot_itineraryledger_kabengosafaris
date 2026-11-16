@@ -42,14 +42,14 @@ import java.util.Map;
 @Slf4j
 public class EmailTemplateTestService {
 
-    /** whoever this installation is — a test send that names the wrong company teaches nothing */
+    /** whoever this installation is - a test send that names the wrong company teaches nothing */
     @org.springframework.beans.factory.annotation.Value("${app.company.name:Management}")
     private String brandName;
 
     /** The same property the live availability letter greets with, so a test reads identically. */
     /*
      * A test send must show what a REAL send would show, so company identity comes from the profile
-     * via the renderer — this class supplies sample business data only. It used to hardcode
+     * via the renderer - this class supplies sample business data only. It used to hardcode
      * info@kabengosafaris.com and fall back to "Kabengo Safaris", and because a caller's variables
      * win over the merged ones, that would have overridden another company's own details in the one
      * email they send to check their branding.
@@ -78,7 +78,7 @@ public class EmailTemplateTestService {
      *
      * A test send used to substitute its sample business data and stop there, so every
      * {{companyName}} and {{companyAccent}} left the building unresolved. In the inbox that read
-     * "Thank you for registering with !" over a layout with no colours at all — the accent sits
+     * "Thank you for registering with !" over a layout with no colours at all - the accent sits
      * inside the stylesheet, and a mail client meeting `{{` in CSS discards the block rather than
      * guessing. The whole point of a test send is to show what the customer will get.
      */
@@ -402,13 +402,13 @@ public class EmailTemplateTestService {
      * says the urgency line, the amount and the optional blocks all behave. A test of the earliest
      * warning would look identical and demonstrate less.
      *
-     * Both optional blocks are filled — the vendor's own reference and the trip — since a test that
+     * Both optional blocks are filled - the vendor's own reference and the trip - since a test that
      * leaves them empty shows a letter with two sections silently missing and no way to tell whether
      * that was the data or the template.
      */
     /*
      * The three customer-facing money letters. They had no test case either, so "Send me a test"
-     * refused on all three exactly as it did on the reminder — found while fixing that one, and
+     * refused on all three exactly as it did on the reminder - found while fixing that one, and
      * fixed here rather than left to be discovered one template at a time.
      *
      * Every OPTIONAL field is filled on purpose. A test that leaves them blank renders a letter with
@@ -1046,7 +1046,7 @@ public class EmailTemplateTestService {
     }
 
     /**
-     * Sample values for the availability request — a real-shaped ask, not lorem.
+     * Sample values for the availability request - a real-shaped ask, not lorem.
      *
      * The point of a test send is to see what a lodge will see, so the sample has the two things
      * that make this letter awkward: several room types on one booking, and a meal plan that
@@ -1101,7 +1101,7 @@ public class EmailTemplateTestService {
     }
 
     /**
-     * Sample values for the chase — a property that has been silent for five days.
+     * Sample values for the chase - a property that has been silent for five days.
      *
      * Five, not one: a follow-up after a day reads as impatient, and the wording has to be checked
      * against a wait that justifies it. The rooms come through as the same HTML list the live path
@@ -1209,7 +1209,7 @@ public class EmailTemplateTestService {
 
         /*
          * Then the company, exactly as EmailTemplateRenderer does it for a real send. The sample
-         * data above wins where the names collide, because a test is allowed to invent a customer —
+         * data above wins where the names collide, because a test is allowed to invent a customer -
          * it is not allowed to invent who is writing to them.
          */
         return companyPlaceholderRenderer.apply(result);

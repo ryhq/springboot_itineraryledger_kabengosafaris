@@ -22,8 +22,8 @@ import lombok.RequiredArgsConstructor;
 /**
  * Who a rate is FOR: residency and age bands.
  *
- * Both are what park and activity rates are priced by — a Serengeti entry fee is one number for a
- * non-resident adult and another for an East African child — so they travel with the rates whether
+ * Both are what park and activity rates are priced by - a Serengeti entry fee is one number for a
+ * non-resident adult and another for an East African child - so they travel with the rates whether
  * or not anybody thinks of them as data worth moving.
  *
  * Two small tables in one module because they are never wanted separately, and because a rate needs

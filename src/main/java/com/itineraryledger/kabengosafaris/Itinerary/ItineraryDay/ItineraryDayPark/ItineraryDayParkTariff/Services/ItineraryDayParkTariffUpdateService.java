@@ -20,7 +20,7 @@ import java.util.Map;
  * Edits one fee on one park visit.
  *
  * The fee set could be chosen and cleared but never annotated: a fee that the
- * client is NOT paying for — already covered, or waived — could only be removed,
+ * client is NOT paying for - already covered, or waived - could only be removed,
  * which loses the record that it was considered at all.
  */
 @Service

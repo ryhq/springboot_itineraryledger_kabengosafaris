@@ -300,7 +300,7 @@ public class SafariStateTransitionService {
     }
 
     /**
-     * Record payment received — MANUAL OVERRIDE only.
+     * Record payment received - MANUAL OVERRIDE only.
      * Use when payment comes outside the Invoice system (cash, direct bank transfer).
      * Normal flow: payments go through Invoice module, SafariPaymentScheduler auto-detects.
      *
@@ -639,7 +639,7 @@ public class SafariStateTransitionService {
             /*
              * Back to a state a hold can be entered from, and nowhere else. The
              * target used to be taken from the request unchecked, so a hold
-             * could be released into any state at all — a back door in an
+             * could be released into any state at all - a back door in an
              * otherwise careful state machine.
              */
             Set<SafariState> resumable = Set.of(
@@ -890,7 +890,7 @@ public class SafariStateTransitionService {
             // Determine target state: specified in DTO or default to CLOSED
             /*
              * A dispute is raised against a finished booking, so resolving it
-             * puts the booking back into one of those states — not into DRAFT,
+             * puts the booking back into one of those states - not into DRAFT,
              * which is what an unchecked target allowed.
              */
             Set<SafariState> resolvable = Set.of(

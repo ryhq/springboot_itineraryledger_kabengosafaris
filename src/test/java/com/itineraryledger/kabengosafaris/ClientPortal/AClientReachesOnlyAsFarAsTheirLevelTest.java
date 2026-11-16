@@ -468,7 +468,7 @@ class AClientReachesOnlyAsFarAsTheirLevelTest {
              * applyAll is the batch, and it is the one method here that must NOT walk back from a
              * row: it delegates to the five, so the ownership check happens in each of them. What
              * it must not do is touch a repository itself, because that would be a second path
-             * into a quotation carrying its own idea of the rules — which is the hole this whole
+             * into a quotation carrying its own idea of the rules - which is the hole this whole
              * file exists to keep shut.
              */
             if (name.equals("applyAll")) {

@@ -74,7 +74,7 @@ public class ItineraryDayFlightService {
             }
             /*
              * A departure that belongs to a different sector would price this day off a flight it is
-             * not taking — and nothing downstream would notice, because both ids resolve.
+             * not taking - and nothing downstream would notice, because both ids resolve.
              */
             if (fare.getFlightRoute() == null || !fare.getFlightRoute().getId().equals(route.getId())) {
                 return ResponseEntity.badRequest().body(ApiResponse.error(400,

@@ -94,7 +94,7 @@ public class MFAServices {
             .period(30)
             .build();
         
-        // generate() returns raw PNG bytes — toString() on a byte[] yields "[B@…",
+        // generate() returns raw PNG bytes - toString() on a byte[] yields "[B@...",
         // so wrap it as a proper data URI the client can render directly
         return dev.samstevens.totp.util.Utils.getDataUriForImage(
             qrGenerator.generate(data),

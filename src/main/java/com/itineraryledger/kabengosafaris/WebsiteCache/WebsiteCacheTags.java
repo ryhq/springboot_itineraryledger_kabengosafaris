@@ -15,11 +15,11 @@ import java.util.Set;
  *
  * <h2>Why these are collections and not records</h2>
  *
- * The obvious design is a tag per record — {@code park:7xKq2} — so editing one park leaves the
+ * The obvious design is a tag per record - {@code park:7xKq2} - so editing one park leaves the
  * other nineteen alone. It does not work here, for a reason specific to this API: <b>ids are
  * obfuscated and the obfuscation rotates on every restart</b>. The id this process would put in a
  * tag today is not the id the website cached the page under yesterday, so a per-record tag would
- * silently stop matching after each deploy — the exact failure that is invisible until a client
+ * silently stop matching after each deploy - the exact failure that is invisible until a client
  * sees a stale price.
  *
  * <p>Clearing all parks because one changed costs a re-render of about twenty pages, once, at the
@@ -42,7 +42,7 @@ public final class WebsiteCacheTags {
      * There is deliberately no BRAND tag.
      *
      * The obvious one to add is the company's name, logo and contact details in the site's header
-     * and footer — except neither website reads those from this API. Both carry their own copy in
+     * and footer - except neither website reads those from this API. Both carry their own copy in
      * jsonld.tsx and their translation files, so a "company details" label would be accepted,
      * reported as cleared, and clear nothing: the page would then look current and be wrong, which
      * is the one answer a cache must never give. It goes in when a site actually fetches the
@@ -58,7 +58,7 @@ public final class WebsiteCacheTags {
      *
      * <p>Keyed on the URL space rather than on the entity, because the URL space is what the panel
      * actually calls and what a future resource descriptor will register. A path with no entry here
-     * changes nothing a visitor can see — a quote, an invoice, a user — and clears nothing.
+     * changes nothing a visitor can see - a quote, an invoice, a user - and clears nothing.
      *
      * <p>Longest prefix wins, so {@code /api/park-activities} is not read as {@code /api/park}.
      */

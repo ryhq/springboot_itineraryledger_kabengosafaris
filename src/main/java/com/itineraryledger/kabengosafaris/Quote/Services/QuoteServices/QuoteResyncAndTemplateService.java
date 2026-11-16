@@ -40,7 +40,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * QuoteResyncAndTemplateService — two inverse operations:
+ * QuoteResyncAndTemplateService - two inverse operations:
  *
  *   1. {@link #saveAsItinerary} promotes a Quote's customised day-tree
  *      back into the Itinerary catalog as a new template. Useful when
@@ -98,8 +98,8 @@ public class QuoteResyncAndTemplateService {
 
             /*
              * The new template describes THIS QUOTE, not the itinerary the quote
-             * was priced from. The quote has been negotiated — a day dropped, a
-             * lodge changed, a different pax split — and copying the source's
+             * was priced from. The quote has been negotiated - a day dropped, a
+             * lodge changed, a different pax split - and copying the source's
              * header would produce a template whose summary contradicted its own
              * days.
              *
@@ -167,7 +167,7 @@ public class QuoteResyncAndTemplateService {
             /*
              * And the promise. This used to be dropped: a quote whose wording had been negotiated
              * with a customer, saved as a template, came back with no statement of what its price
-             * covered at all — and the next quote generated from that template inherited the
+             * covered at all - and the next quote generated from that template inherited the
              * silence.
              */
             List<String> createdLines = copyQuoteInclusionsIntoItinerary(quote, fresh);
@@ -230,7 +230,7 @@ public class QuoteResyncAndTemplateService {
             }
 
             /*
-             * Wipe existing snapshot — orphanRemoval=true on Quote.days / Quote.paxList drops the
+             * Wipe existing snapshot - orphanRemoval=true on Quote.days / Quote.paxList drops the
              * child rows on flush. The inclusion rows are cleared by the snapshot itself rather
              * than here, so that one method owns clearing and re-writing them and the two cannot
              * get out of step.
@@ -412,7 +412,7 @@ public class QuoteResyncAndTemplateService {
      * Flights, when a quote is saved back as a reusable itinerary.
      *
      * <p>Without this the template arrives looking complete and flightless, and the next trip built
-     * from it quietly loses its Zanzibar leg — the same silent drop this service already had once
+     * from it quietly loses its Zanzibar leg - the same silent drop this service already had once
      * with the inclusion lines.
      */
     private void copyDayFlights(QuoteDay qd, ItineraryDay id) {

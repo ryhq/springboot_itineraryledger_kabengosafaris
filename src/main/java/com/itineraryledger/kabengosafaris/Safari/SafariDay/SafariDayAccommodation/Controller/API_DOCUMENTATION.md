@@ -488,14 +488,14 @@ Accommodations can only be created, updated (planning fields), or deleted when t
 When creating or updating primary accommodations, the system validates:
 
 **Overbooking Prevention**:
-- Sum of (room count × minimum occupancy) for all primary accommodations
+- Sum of (room count x minimum occupancy) for all primary accommodations
 - Must NOT exceed total safari pax count
 - Prevents booking more rooms than needed
 
 **Example**:
 - Total Pax: 6
 - Room Type: Double (min occupancy = 2)
-- Attempting to book 4 Double rooms = 4 × 2 = 8 minimum occupancy
+- Attempting to book 4 Double rooms = 4 x 2 = 8 minimum occupancy
 - **Validation Fails**: Minimum occupancy (8) > Total Pax (6)
 - System prevents overbooking
 
@@ -705,8 +705,8 @@ POST /api/safaris/s123/days/d456/accommodations
 ```
 
 **System calculates**:
-- Existing minimum occupancy: 2 rooms × 2 = 4
-- New minimum occupancy: 2 rooms × 2 = 4
+- Existing minimum occupancy: 2 rooms x 2 = 4
+- New minimum occupancy: 2 rooms x 2 = 4
 - Total minimum occupancy: 4 + 4 = 8
 - Total Pax: 6
 

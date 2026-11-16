@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * Null means "leave it alone" for every scalar, which is what click-to-edit needs: saving the
  * title cannot blank the excerpt somebody else is writing. Lists (body, faqs, tags) are
- * applied whenever present, because an EMPTY list is a real edit — "this post no longer has
+ * applied whenever present, because an EMPTY list is a real edit - "this post no longer has
  * an FAQ block".
  */
 @Service
@@ -94,7 +94,7 @@ public class BlogUpdateService {
 
             /*
              * The reading time follows the body unless somebody has typed one. An explicit
-             * value always wins — the field is editable, and silently overwriting what an
+             * value always wins - the field is editable, and silently overwriting what an
              * editor set would make it look broken.
              */
             if (updateDTO.getReadMinutes() != null) {

@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
  * What this installation has.
  *
  * Read by every signed-in user, because the panel builds its sidebar, command palette and breadcrumbs
- * from the answer — a nav entry leading to a 404 is worse than no entry. Nothing here is sensitive:
+ * from the answer - a nav entry leading to a 404 is worse than no entry. Nothing here is sensitive:
  * it is a list of which parts of the product this company bought.
  */
 @RestController
@@ -56,7 +56,7 @@ public class FeatureController {
 
         /*
          * A deployment-fixed feature cannot be changed here. Refusing loudly beats saving a row that
-         * the property will keep overruling — which would look like the switch is broken.
+         * the property will keep overruling - which would look like the switch is broken.
          */
         boolean fixed = featureService.view().stream()
             .anyMatch(row -> feature.getKey().equals(row.get("key")) && Boolean.TRUE.equals(row.get("fixedByDeployment")));

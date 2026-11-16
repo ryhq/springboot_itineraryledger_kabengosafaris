@@ -52,8 +52,8 @@ import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
  * throw away which part they meant. That is three more messages and a week.
  *
  * <p>The second is the one that would end a relationship. The same thread carries the office
- * talking to each other — what we think somebody can afford, whether a request is worth
- * humouring — and a read path that forgets one flag publishes all of it to the person it is
+ * talking to each other - what we think somebody can afford, whether a request is worth
+ * humouring - and a read path that forgets one flag publishes all of it to the person it is
  * about. There is no recovering from that, so it is checked in the query, and checked again
  * here, and a source scan below makes sure the portal never reaches for the other method.
  */

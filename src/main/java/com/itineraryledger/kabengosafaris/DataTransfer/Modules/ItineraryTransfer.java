@@ -177,7 +177,7 @@ public class ItineraryTransfer implements ModuleTransfer {
             }
 
             /*
-             * The handful of itineraries the backfill left alone — their promise is a paragraph, not
+             * The handful of itineraries the backfill left alone - their promise is a paragraph, not
              * a list, and splitting prose into lines is a person's job. They have no rows, so the
              * array above is empty and the text is all they have. Carried under its own key rather
              * than the shared one, so an itinerary is never ambiguous about which of the two it is
@@ -240,7 +240,7 @@ public class ItineraryTransfer implements ModuleTransfer {
                 }
 
                 /*
-                 * The sector by NAME — airline plus both airstrip codes — never by id, and the
+                 * The sector by NAME - airline plus both airstrip codes - never by id, and the
                  * chosen departure by the same three columns that identify it in the fare table.
                  * A row id means nothing in the receiving company.
                  */
@@ -401,8 +401,8 @@ public class ItineraryTransfer implements ModuleTransfer {
     /**
      * The exporter's chosen departure, if this company happens to have the same one.
      *
-     * <p>Matched on the three columns that identify a published departure — the contract window,
-     * the time, and the operating months — because that is what the fare table's own unique
+     * <p>Matched on the three columns that identify a published departure - the contract window,
+     * the time, and the operating months - because that is what the fare table's own unique
      * constraint uses. Null when there is no match, which is a legitimate answer: see the note at
      * the call site.
      */
@@ -431,7 +431,7 @@ public class ItineraryTransfer implements ModuleTransfer {
             ItineraryDay day = new ItineraryDay();
             /*
              * "flights" is excluded here as well as guarded inside Scalars. The day entity has no
-             * scalar of that name today, so the guard alone would do — but "inclusions" had no
+             * scalar of that name today, so the guard alone would do - but "inclusions" had no
              * business colliding with a column either, until it did, and that took down every
              * itinerary import in both companies. Naming it costs a word.
              */
@@ -534,7 +534,7 @@ public class ItineraryTransfer implements ModuleTransfer {
              * quoted from.
              *
              * A missing DEPARTURE does not refuse it. Two companies negotiate their own contracts
-             * with the same airline, so the exporter's 12:30 row may simply not exist here — the
+             * with the same airline, so the exporter's 12:30 row may simply not exist here - the
              * flight keeps its sector, loses the chosen departure, and the day prices off the
              * cheapest live fare and says so. That is the same state a planner leaves behind when
              * they pick a sector before the dates are real.

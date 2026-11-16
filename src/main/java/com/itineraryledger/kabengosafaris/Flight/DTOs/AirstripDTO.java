@@ -26,7 +26,7 @@ public class AirstripDTO {
     private BigDecimal longitude;
     private String notes;
     private Boolean isActive;
-    /** How many sectors touch this strip — the figure that decides whether it can be deleted. */
+    /** How many sectors touch this strip - the figure that decides whether it can be deleted. */
     private Long routeCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

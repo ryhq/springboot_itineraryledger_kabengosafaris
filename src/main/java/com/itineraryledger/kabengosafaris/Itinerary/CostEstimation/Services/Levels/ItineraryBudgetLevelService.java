@@ -149,7 +149,7 @@ public class ItineraryBudgetLevelService {
             .orElse(List.of());
     }
 
-    // ── one night's candidates ──────────────────────────────────────────────────────────────────
+    // == one night's candidates ==================================================================
 
     /**
      * Every bed recorded for a night, priced, cheapest first.
@@ -227,7 +227,7 @@ public class ItineraryBudgetLevelService {
         };
     }
 
-    // ── one column ──────────────────────────────────────────────────────────────────────────────
+    // == one column ==============================================================================
 
     private BudgetLevelComparisonDTO.LevelDTO buildLevel(
         BudgetLevel level,

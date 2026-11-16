@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 /**
  * One file in a multipart upload.
  *
- * The panel posts an INDEXED list (`images[0].blogId`, `images[0].image`, …), which is why
+ * The panel posts an INDEXED list (`images[0].blogId`, `images[0].image`, ...), which is why
  * this is a per-item DTO rather than one object with a list of files.
  */
 @Data

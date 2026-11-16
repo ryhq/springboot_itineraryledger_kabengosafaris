@@ -42,7 +42,7 @@ public class CreateInvoiceLineItemDTO {
 
     /**
      * Inner class for price input when creating an invoice line item
-     * totalPrice will be computed automatically: quantity × unitPrice
+     * totalPrice will be computed automatically: quantity x unitPrice
      */
     @Data
     @NoArgsConstructor

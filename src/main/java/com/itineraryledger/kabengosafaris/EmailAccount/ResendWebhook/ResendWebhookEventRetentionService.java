@@ -23,7 +23,7 @@ public class ResendWebhookEventRetentionService {
     private final AuditLogService auditLogService;
 
     /**
-     * Daily cleanup at 4 AM — delete webhook events older than the email retention period
+     * Daily cleanup at 4 AM - delete webhook events older than the email retention period
      */
     @Scheduled(cron = "0 0 4 * * ?")
     @Transactional

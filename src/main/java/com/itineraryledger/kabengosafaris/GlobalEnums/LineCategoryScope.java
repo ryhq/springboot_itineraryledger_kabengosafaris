@@ -14,7 +14,7 @@ import java.util.Set;
  * supplier invoicing beyond contract is an accommodation risk, so spreading it over park fees and
  * activities charges the client for a risk those lines do not carry.
  *
- * <p>Empty or null means EVERY category — what every record written before this said by saying
+ * <p>Empty or null means EVERY category - what every record written before this said by saying
  * nothing, and it must keep meaning the same thing.
  *
  * <p>Enum-agnostic on purpose. {@code QuoteItemType} and {@code InvoiceItemType} are the same ten

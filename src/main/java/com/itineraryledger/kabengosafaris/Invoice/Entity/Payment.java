@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
  *
  * Each payment tracks: amount, currency, date, method, and reference.
  * For cross-currency payments (e.g. EUR payment on a USD invoice), the exchangeRate
- * converts the payment amount to the invoice currency: baseAmount = amount × exchangeRate.
+ * converts the payment amount to the invoice currency: baseAmount = amount x exchangeRate.
  * The invoice status auto-transitions based on total baseAmount vs grand total.
  */
 @Entity
@@ -101,7 +101,7 @@ public class Payment {
     private BigDecimal exchangeRate;
 
     /**
-     * The equivalent amount in invoiceCurrency: amount × exchangeRate.
+     * The equivalent amount in invoiceCurrency: amount x exchangeRate.
      * This is the value used for balance calculations against the invoice grand total.
      * For same-currency payments, baseAmount == amount.
      */

@@ -36,7 +36,7 @@ public interface ActivityTariffRateRepository extends JpaRepository<ActivityTari
     List<ActivityTariffRate> findByActivityId(Long activityId);
 
     /**
-     * The one rate identified by the combination the table declares unique — park and age band both
+     * The one rate identified by the combination the table declares unique - park and age band both
      * optional.
      *
      * The derived finders next to this one cannot serve an import, because a derived query compares

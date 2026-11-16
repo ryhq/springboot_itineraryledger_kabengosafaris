@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
  * own code to their own address, their own trusted browser and their own line in the log, and the
  * organiser can take one of them off without disturbing anybody else.
  *
- * <p><strong>A reader decides nothing.</strong> That is not enforced here — it is enforced by
+ * <p><strong>A reader decides nothing.</strong> That is not enforced here - it is enforced by
  * {@link ParticipantRole#mayAct()}, which every acting path already asks, and this service simply
  * never creates anything but a READER. There is deliberately no way to invite a second lead: the
  * contract is with one person, and a booking accepted by somebody who was not authorised to
@@ -244,7 +244,7 @@ public class PortalInvitationService {
      * The same removal, asked for by the office.
      *
      * <p>Staff need it because the request arrives by telephone at least as often as it arrives
-     * through the page — somebody's address was wrong, or the person it belongs to has asked to
+     * through the page - somebody's address was wrong, or the person it belongs to has asked to
      * be taken off. It runs the identical path so the two cannot drift apart; what differs is
      * only who is allowed to ask.
      */

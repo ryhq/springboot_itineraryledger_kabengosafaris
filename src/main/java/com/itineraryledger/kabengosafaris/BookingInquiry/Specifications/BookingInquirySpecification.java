@@ -99,7 +99,7 @@ public class BookingInquirySpecification {
             : cb.equal(root.get("customer").get("id"), customerId);
     }
 
-    /* The work queues — what the list is actually for. */
+    /* The work queues - what the list is actually for. */
 
     /**
      * Nobody has replied yet.
@@ -112,7 +112,7 @@ public class BookingInquirySpecification {
     }
 
     /**
-     * New, and older than the window. This is the one that costs bookings —
+     * New, and older than the window. This is the one that costs bookings -
      * somebody asked for a safari and nobody has spoken to them since.
      */
     public static Specification<BookingInquiry> staleFor(int days) {
@@ -129,7 +129,7 @@ public class BookingInquirySpecification {
     }
 
     /**
-     * Travelling soon and not yet converted — a slow reply here is worse than
+     * Travelling soon and not yet converted - a slow reply here is worse than
      * usual, because the dates run out whether or not we answer.
      */
     public static Specification<BookingInquiry> travellingWithin(int days) {
@@ -152,7 +152,7 @@ public class BookingInquirySpecification {
             : cb.lessThanOrEqualTo(root.get("preferredStartDate"), date);
     }
 
-    /** Already a customer of ours — the inquiry did its job. */
+    /** Already a customer of ours - the inquiry did its job. */
     public static Specification<BookingInquiry> converted(boolean converted) {
         return (root, query, cb) -> converted
             ? cb.isNotNull(root.get("customer"))

@@ -33,18 +33,18 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Signatures as a resource of their own, at /api/email-signatures.
  *
- * The nested surface under an account stays exactly as it was — nothing that calls it needs
- * changing — but a signature is something somebody writes, reviews and searches across
+ * The nested surface under an account stays exactly as it was - nothing that calls it needs
+ * changing - but a signature is something somebody writes, reviews and searches across
  * mailboxes, and a resource reachable only by first knowing its parent cannot have a list
  * page, a record page or a filter of its own.
  *
  * Every write resolves the signature's account and hands off to the same nested service, so
- * there is one implementation of each rule rather than two that drift — including the guard
+ * there is one implementation of each rule rather than two that drift - including the guard
  * that a shipped signature can be restored but never deleted.
  *
  * The permission names are the nested controller's, exactly: a permission is matched by
- * NAME, and inventing PERM_READ_EMAIL_SIGNATURE here would have 403'd everybody — SUPERADMIN
- * included — for a resource that already has perfectly good permissions.
+ * NAME, and inventing PERM_READ_EMAIL_SIGNATURE here would have 403'd everybody - SUPERADMIN
+ * included - for a resource that already has perfectly good permissions.
  */
 @RestController
 @RequestMapping("/api/email-signatures")
@@ -86,7 +86,7 @@ public class EmailSignatureFlatController {
 
     /**
      * Creating one needs to know which mailbox it signs for, so `emailAccountId` is required
-     * — there is no such thing as a signature belonging to nothing.
+     * - there is no such thing as a signature belonging to nothing.
      */
     @PostMapping
     @PreAuthorize("hasAuthority('PERM_CREATE_EMAIL_ACCOUNT_SIGNATURE')")
@@ -103,7 +103,7 @@ public class EmailSignatureFlatController {
      * Enabling or disabling a selection in one request.
      *
      * Only `enabled` is offered. Which signature an account uses is a choice between
-     * siblings — turning several on at once cannot express it, and a bulk control that
+     * siblings - turning several on at once cannot express it, and a bulk control that
      * silently picked a winner would be worse than not having one.
      */
     @PatchMapping("/bulk")

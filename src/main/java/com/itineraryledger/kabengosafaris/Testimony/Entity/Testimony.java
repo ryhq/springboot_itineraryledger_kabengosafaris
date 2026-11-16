@@ -72,7 +72,7 @@ public class Testimony {
     private String reviewTitle;
 
     /*
-     * Deliberately NOT @Lob — see Hero.description. The review body is the thing people
+     * Deliberately NOT @Lob - see Hero.description. The review body is the thing people
      * search for ("the couple who mentioned the balloon"), and @Lob made that impossible.
      */
     @Column(name = "message", columnDefinition = "TEXT", nullable = false)
@@ -82,7 +82,7 @@ public class Testimony {
     private Integer rating;
 
     /*
-     * Also not @Lob — see `message`. This one is compared as well as read: "has nobody
+     * Also not @Lob - see `message`. This one is compared as well as read: "has nobody
      * replied to this?" needs TRIM over it, which a CLOB refuses.
      */
     @Column(name = "admin_response", columnDefinition = "TEXT")

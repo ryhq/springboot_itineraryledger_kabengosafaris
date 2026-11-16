@@ -41,7 +41,7 @@ import lombok.RequiredArgsConstructor;
  * Lodges, with everything a rate is made of inside them.
  *
  * The easy shape, once parks have forced the resolver to be honest. A rate here is identified by
- * (lodge, season, room type, room standard, board type) — and unlike a park rate, four of those five
+ * (lodge, season, room type, room standard, board type) - and unlike a park rate, four of those five
  * are CHILDREN of the lodge rather than company-wide lookups. "Deluxe" at one lodge has nothing to do
  * with "Deluxe" at another, so it travels inside the document and is matched within its own parent.
  *
@@ -144,7 +144,7 @@ public class AccommodationTransfer implements ModuleTransfer {
                 rateRows.add(row);
             }
 
-            /* the gallery, only when asked for — it dwarfs the rates otherwise */
+            /* the gallery, only when asked for - it dwarfs the rates otherwise */
             imageFiles.attach(mapper, node, "accommodations", lodge.getSlug(),
                 accommodationImages.findByAccommodationIdOrderByDisplayOrderAsc(lodge.getId()), includeImages, files);
 
@@ -195,7 +195,7 @@ public class AccommodationTransfer implements ModuleTransfer {
      * Room types, standards and board types.
      *
      * Created when absent even in SKIP mode, and never overwritten. They are not the point of an
-     * import — they are the vocabulary its rates are written in — so a missing one has to be made or
+     * import - they are the vocabulary its rates are written in - so a missing one has to be made or
      * every rate naming it is unplaceable, and an existing one must be left alone or somebody's
      * renamed room category quietly changes under their quotes.
      */
@@ -349,7 +349,7 @@ public class AccommodationTransfer implements ModuleTransfer {
                 continue;
             }
 
-            /* One read per lodge, not one per rate — see ParkTransfer.ratesAlreadyHere. */
+            /* One read per lodge, not one per rate - see ParkTransfer.ratesAlreadyHere. */
             String rateKey = season.getId() + "/" + type.getId() + "/" + standard.getId()
                 + "/" + board.getId();
             AccommodationRate existing = ratesAlreadyHere(context, lodge).get(rateKey);

@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * The company as the outside world sees it: brand, contact details, logo files.
  *
- * Public because the things here are published by definition — an {@code <img>} in an email or on
+ * Public because the things here are published by definition - an {@code <img>} in an email or on
  * the website carries no bearer token, and the footer of a PDF is handed to clients anyway. Tax
  * numbers, registration and licence numbers are NOT here; documents get those from the model.
  */
@@ -35,7 +35,7 @@ public class PublicCompanyController {
         return getService.getPublicCompany();
     }
 
-    /** {@code logo-light} · {@code logo-dark} · {@code favicon-light} · {@code favicon-dark} · {@code logo-email} */
+    /** {@code logo-light} | {@code logo-dark} | {@code favicon-light} | {@code favicon-dark} | {@code logo-email} */
     @GetMapping("/assets/{kind}")
     public ResponseEntity<Resource> getAsset(@PathVariable String kind) {
         return assetService.serve(kind);

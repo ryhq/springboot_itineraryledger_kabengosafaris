@@ -122,7 +122,7 @@ public class BookingInquiryService {
             inquiry.setPreferredDurationDays(request.getPreferredDurationDays());
         }
 
-        // Destination parks (planner "Where" step) — resolve identifiers to Park entities
+        // Destination parks (planner "Where" step) - resolve identifiers to Park entities
         if (request.getDestinationParkIds() != null && !request.getDestinationParkIds().isEmpty()) {
             java.util.Set<Park> parks = new java.util.HashSet<>();
             for (String ident : request.getDestinationParkIds()) {
@@ -403,7 +403,7 @@ public class BookingInquiryService {
         return v;
     }
 
-    /** "2 adults and 1 child", or "1 adult" — never a pair of bare numbers. */
+    /** "2 adults and 1 child", or "1 adult" - never a pair of bare numbers. */
     private String travellersSummary(BookingInquiry inquiry) {
         int adults = inquiry.getAdults() != null ? inquiry.getAdults() : 0;
         int children = inquiry.getChildren() != null ? inquiry.getChildren() : 0;

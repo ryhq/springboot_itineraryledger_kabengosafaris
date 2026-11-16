@@ -14,7 +14,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * One night this request asked about — the coverage join.
+ * One night this request asked about - the coverage join.
  *
  * The same shape billing uses to let one expense cover several days: a row per subject rather than
  * a column on the subject. It is what lets a stay answer "has anyone asked about me?", and what

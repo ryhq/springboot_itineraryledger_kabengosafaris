@@ -17,7 +17,7 @@ import com.itineraryledger.kabengosafaris.Security.RateLimit.RateLimiter;
  *
  * Registration, password reset and activation-resend each send an email to an address the caller
  * chose, and the websites' forms notify somebody by mail. Unlimited, they are a way to have this
- * installation deliver unwanted mail to anybody — from this company's address, against its own
+ * installation deliver unwanted mail to anybody - from this company's address, against its own
  * sending reputation.
  */
 class RateLimitTest {
@@ -64,7 +64,7 @@ class RateLimitTest {
             Thread.currentThread().interrupt();
         }
         assertEquals(0, limiter.check("ip:brief", 3, Duration.ofMillis(1)),
-            "a new window starts clean — somebody who waited should not still be refused");
+            "a new window starts clean - somebody who waited should not still be refused");
     }
 
     @Test
@@ -100,7 +100,7 @@ class RateLimitTest {
         for (String path : new String[] { "/api/auth/forgot-password",
             "/api/auth/resend-account-activation" }) {
             int at = source.indexOf(path);
-            assertTrue(at > 0, path + " must be limited — it sends mail to an address the caller picks");
+            assertTrue(at > 0, path + " must be limited - it sends mail to an address the caller picks");
             /* to the end of the rule, not to the first bracket, which is inside Duration.ofHours(1) */
             String rule = source.substring(at, source.indexOf("\"),", at) + "\"),".length());
             assertTrue(rule.contains(", true,"),
@@ -110,7 +110,7 @@ class RateLimitTest {
         /*
          * Registration is the exception, and its per-recipient limit lives elsewhere: the email
          * arrives in a JSON body, and a filter that reads the body consumes the stream the
-         * controller needs. If that check disappears, the only guard left is per-IP — and the
+         * controller needs. If that check disappears, the only guard left is per-IP - and the
          * attack worth stopping is many machines mailing one person.
          */
         String handler = Files.readString(Path.of("src/main/java/com/itineraryledger/"

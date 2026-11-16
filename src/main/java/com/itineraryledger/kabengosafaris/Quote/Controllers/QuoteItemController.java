@@ -152,7 +152,7 @@ public class QuoteItemController {
     private com.itineraryledger.kabengosafaris.Quote.Repository.QuoteItemRepository bulkFlagsRepository;
 
     /**
-     * PATCH /bulk — take a whole selection of lines in or out of the totals.
+     * PATCH /bulk - take a whole selection of lines in or out of the totals.
      *
      * One request rather than one per line: leaving a selection half-applied,
      * with nobody told which half, is how a quote goes out with a line the office

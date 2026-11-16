@@ -288,29 +288,29 @@ PERM_READ_ITINERARY
 
 ```
 FullItineraryDTO
-├── Itinerary fields (id, name, code, status, etc.)
-├── Summary statistics
-│   ├── totalPaxCount
-│   ├── totalDaysCount
-│   ├── totalParksCount
-│   ├── totalActivitiesCount
-│   └── totalAccommodationsCount
-├── paxList: List<PaxDTO>
-│   └── PaxDTO (id, nationCategory, ageCategory, count, notes)
-└── days: List<DayDTO>
-    └── DayDTO
-        ├── Day fields (dayNumber, title, description, etc.)
-        ├── activities: List<DayActivityDTO>  [Standalone activities]
-        │   └── DayActivityDTO (activity details, sortOrder, times, etc.)
-        ├── accommodations: List<DayAccommodationDTO>
-        │   └── DayAccommodationDTO (accommodation, room config, etc.)
-        └── parks: List<DayParkDTO>
-            └── DayParkDTO
-                ├── Park fields (park details, entryType, times)
-                ├── activities: List<ParkActivityDTO>  [Park-specific activities]
-                │   └── ParkActivityDTO (activity details within park)
-                └── tariffs: List<ParkTariffDTO>
-                    └── ParkTariffDTO (tariff details for park)
++== Itinerary fields (id, name, code, status, etc.)
++== Summary statistics
+|   +== totalPaxCount
+|   +== totalDaysCount
+|   +== totalParksCount
+|   +== totalActivitiesCount
+|   +== totalAccommodationsCount
++== paxList: List<PaxDTO>
+|   +== PaxDTO (id, nationCategory, ageCategory, count, notes)
++== days: List<DayDTO>
+    +== DayDTO
+        +== Day fields (dayNumber, title, description, etc.)
+        +== activities: List<DayActivityDTO>  [Standalone activities]
+        |   +== DayActivityDTO (activity details, sortOrder, times, etc.)
+        +== accommodations: List<DayAccommodationDTO>
+        |   +== DayAccommodationDTO (accommodation, room config, etc.)
+        +== parks: List<DayParkDTO>
+            +== DayParkDTO
+                +== Park fields (park details, entryType, times)
+                +== activities: List<ParkActivityDTO>  [Park-specific activities]
+                |   +== ParkActivityDTO (activity details within park)
+                +== tariffs: List<ParkTariffDTO>
+                    +== ParkTariffDTO (tariff details for park)
 ```
 
 ## Field Descriptions

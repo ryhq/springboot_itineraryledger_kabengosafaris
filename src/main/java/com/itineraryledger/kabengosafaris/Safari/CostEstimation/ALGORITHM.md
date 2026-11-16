@@ -11,32 +11,32 @@ This document describes the algorithm used to estimate safari costs. The system 
 ## High-Level Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    SAFARI COST ESTIMATION FLOW                          │
-└─────────────────────────────────────────────────────────────────────────┘
++=========================================================================+
+|                    SAFARI COST ESTIMATION FLOW                          |
++=========================================================================+
 
 1. INPUT
-   ├── Safari ID (obfuscated)
-   └── Mode (PER_DAY or PER_PAX)
+   +== Safari ID (obfuscated)
+   +== Mode (PER_DAY or PER_PAX)
 
 2. FETCH DATA
-   └── Load Full Safari (days with dates, pax, parks, activities, accommodations)
+   +== Load Full Safari (days with dates, pax, parks, activities, accommodations)
 
 3. FOR EACH DAY
-   ├── Use Day Date (from SafariDay entity)
-   ├── Resolve Season (global season for the day's date)
-   ├── Calculate Accommodation Costs
-   ├── Calculate Park Tariff Costs
-   └── Calculate Activity Costs
+   +== Use Day Date (from SafariDay entity)
+   +== Resolve Season (global season for the day's date)
+   +== Calculate Accommodation Costs
+   +== Calculate Park Tariff Costs
+   +== Calculate Activity Costs
 
 4. AGGREGATE
-   ├── PER_DAY Mode: Group by day → currency
-   └── PER_PAX Mode: Group by pax category → currency
+   +== PER_DAY Mode: Group by day → currency
+   +== PER_PAX Mode: Group by pax category → currency
 
 5. OUTPUT
-   ├── Line items with STO + Rack prices
-   ├── Totals grouped by currency (no mixing)
-   └── Rate issues log
+   +== Line items with STO + Rack prices
+   +== Totals grouped by currency (no mixing)
+   +== Rate issues log
 ```
 
 ---

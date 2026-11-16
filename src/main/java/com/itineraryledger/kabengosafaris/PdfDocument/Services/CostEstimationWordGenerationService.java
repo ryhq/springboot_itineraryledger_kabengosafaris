@@ -89,8 +89,8 @@ public class CostEstimationWordGenerationService extends WordGenerationBaseServi
     /**
      * The same, for a quote: the party that is travelling rather than the blueprint's two.
      *
-     * <p>A quote's costing is the one most likely to be reworked — somebody is deciding whether
-     * to hold the price — so it earns the editable format as much as the itinerary's does.
+     * <p>A quote's costing is the one most likely to be reworked - somebody is deciding whether
+     * to hold the price - so it earns the editable format as much as the itinerary's does.
      */
     @Transactional(readOnly = true)
     public ResponseEntity<?> generateQuoteCostingDocx(

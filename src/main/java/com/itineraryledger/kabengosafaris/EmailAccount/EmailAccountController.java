@@ -179,8 +179,8 @@ public class EmailAccountController {
     @PreAuthorize("hasAuthority('PERM_READ_EMAIL_ACCOUNT')")
     public ResponseEntity<?> getAllEmailAccounts(
         /*
-         * Every parameter the old signature took is still spelled the same on the wire —
-         * @ModelAttribute binds them onto the filter — plus the multi-value forms
+         * Every parameter the old signature took is still spelled the same on the wire -
+         * @ModelAttribute binds them onto the filter - plus the multi-value forms
          * (providerTypes, statuses, qualities) and a keyword.
          */
         @ModelAttribute com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountServices.EmailAccountFilter filter,
@@ -296,7 +296,7 @@ public class EmailAccountController {
     private com.itineraryledger.kabengosafaris.EmailAccount.EmailAccountRepository bulkFlagsRepository;
 
     /**
-     * PATCH /bulk — switch a selection of accounts off (or on) at once.
+     * PATCH /bulk - switch a selection of accounts off (or on) at once.
      *
      * Switching one off also clears its default: a disabled account cannot go on being the
      * one every invoice is sent from.

@@ -32,7 +32,7 @@ public class PaymentFilter {
     private String safariId;
     private String bankAccountId;
 
-    /** What came in, as it was received — not what the invoice was written in. */
+    /** What came in, as it was received - not what the invoice was written in. */
     private List<String> currencies;
 
     private LocalDate paidAfter;
@@ -41,8 +41,8 @@ public class PaymentFilter {
     /**
      * Things worth checking.
      *
-     * crossCurrency — received in a currency the invoice was not written in, so
-     * somebody applied a rate that is worth a second look. noBankAccount — nothing
+     * crossCurrency - received in a currency the invoice was not written in, so
+     * somebody applied a rate that is worth a second look. noBankAccount - nothing
      * says where the money landed, which makes it unreconcilable against a
      * statement.
      */

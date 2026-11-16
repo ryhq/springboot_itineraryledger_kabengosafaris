@@ -108,7 +108,7 @@ public class Quote {
     /**
      * Quote items (accommodations, activities, park fees, etc.). Derived
      * from the day-tree by QuoteCostEstimationService, so they live and die
-     * with the Quote — cascade ensures deleting the Quote also removes its
+     * with the Quote - cascade ensures deleting the Quote also removes its
      * item rows (otherwise the FK from quote_items.quote_id blocks the
      * parent delete).
      */
@@ -118,7 +118,7 @@ public class Quote {
 
     /**
      * Quote documents (PDFs, contracts, itineraries, etc.). Same lifecycle
-     * as items — cascade so the parent Quote is deletable.
+     * as items - cascade so the parent Quote is deletable.
      */
     @OneToMany(mappedBy = "quote", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
@@ -146,7 +146,7 @@ public class Quote {
 
     /**
      * What this document tells the customer its price covers, copied from its parent and owned
-     * from that moment — the same rule as the day tree.
+     * from that moment - the same rule as the day tree.
      */
     @OneToMany(mappedBy = "quote", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
@@ -163,7 +163,7 @@ public class Quote {
      * Whether what this document says its price covers is still its parent's, or was changed here.
      *
      * <p>Null on anything created before the chain existed, which is what the reader's fallback is
-     * for — "not recorded" is distinguishable from "inherited and untouched".
+     * for - "not recorded" is distinguishable from "inherited and untouched".
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "inclusions_source", length = 20)
@@ -285,24 +285,24 @@ public class Quote {
     private String discountAppliesTo;
 
     /**
-     * Agent commission percentage — money flowing out of the company to a
+     * Agent commission percentage - money flowing out of the company to a
      * third-party agent who referred the customer. Applied to every line
      * item's unit price as a multiplier (alongside marginUpliftPercentage)
-     * so the customer never sees a separate markup line — the inflated
+     * so the customer never sees a separate markup line - the inflated
      * prices ARE the line-item prices.
      */
     @Column(name = "agent_commission_percentage", precision = 5, scale = 2)
     private BigDecimal agentCommissionPercentage;
 
     /**
-     * Free-text note explaining the commission (e.g. "Agent Mole Matata —
+     * Free-text note explaining the commission (e.g. "Agent Mole Matata -
      * 5% referral fee on 2026 Q3 bookings"). Internal-only.
      */
     @Column(name = "agent_commission_reason", length = 500)
     private String agentCommissionReason;
 
     /**
-     * Margin uplift percentage — extra profit kept in-house above the
+     * Margin uplift percentage - extra profit kept in-house above the
      * default rack margin. Applied to every line item's unit price as a
      * multiplier (alongside agentCommissionPercentage).
      */
@@ -333,7 +333,7 @@ public class Quote {
 
     /**
      * Whether the derived QuoteItem rows should be rolled up by category
-     * (Accommodation / Park Fees / Activities — one row per type per
+     * (Accommodation / Park Fees / Activities - one row per type per
      * currency) or kept per-line from the cost-estimation breakdown. Driven
      * by the user's choice on the "Generate Quote from Itinerary" modal and
      * honored by {@code QuoteCostEstimationService.persistItems}. Defaults

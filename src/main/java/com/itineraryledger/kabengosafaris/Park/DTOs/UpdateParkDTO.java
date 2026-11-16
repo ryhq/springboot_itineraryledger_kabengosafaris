@@ -44,6 +44,6 @@ public class UpdateParkDTO {
     private Boolean isActive;
     private Boolean isWebActive;
 
-    /** obfuscated vendor id — who charges to enter */
+    /** obfuscated vendor id - who charges to enter */
     private String vendorId;
 }

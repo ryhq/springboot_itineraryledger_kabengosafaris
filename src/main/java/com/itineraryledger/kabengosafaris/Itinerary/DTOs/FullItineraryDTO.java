@@ -21,13 +21,13 @@ import java.util.List;
  *
  * Structure:
  * Itinerary
- * ├── paxList (passenger configurations)
- * └── days (ordered by dayNumber)
- *     ├── activities (standalone activities, ordered by sortOrder)
- *     ├── accommodations (lodging options)
- *     └── parks (park visits, ordered by sortOrder)
- *         ├── activities (park-specific activities, ordered by sortOrder)
- *         └── tariffs (park entry fees/tariffs)
+ * +== paxList (passenger configurations)
+ * +== days (ordered by dayNumber)
+ *     +== activities (standalone activities, ordered by sortOrder)
+ *     +== accommodations (lodging options)
+ *     +== parks (park visits, ordered by sortOrder)
+ *         +== activities (park-specific activities, ordered by sortOrder)
+ *         +== tariffs (park entry fees/tariffs)
  */
 @Data
 @NoArgsConstructor
@@ -138,7 +138,7 @@ public class FullItineraryDTO {
      * A flight on a day.
      *
      * <p>Carries the fare's own figures rather than a rate id, because the cost engine needs the net
-     * fare, the tax and the markup that is actually in force, and the markup is a cascade — this
+     * fare, the tax and the markup that is actually in force, and the markup is a cascade - this
      * line's, then the fare's, then the airline's. Resolving it once when the DTO is built means the
      * calculator and the panel cannot disagree about which one applied.
      */
@@ -167,7 +167,7 @@ public class FullItineraryDTO {
         /** PERCENT or AMOUNT, already resolved down the cascade. */
         private String markupType;
         private BigDecimal markupValue;
-        /** "this flight", "the fare" or the airline's name — so a quote can say where it came from. */
+        /** "this flight", "the fare" or the airline's name - so a quote can say where it came from. */
         private String markupSource;
         private Integer passengerCount;
         private Integer sortOrder;

@@ -53,7 +53,7 @@ public class FaqSpecification {
     /**
      * An answer too short to be an answer.
      *
-     * Not a style rule — a one-line reply to "do I need vaccinations?" is the kind of thing
+     * Not a style rule - a one-line reply to "do I need vaccinations?" is the kind of thing
      * that reads as evasive on a public page, and it is worth being able to list them.
      */
     public static Specification<Faq> thinAnswer(int minChars) {
@@ -72,7 +72,7 @@ public class FaqSpecification {
             : cb.greaterThanOrEqualTo(root.get("updatedAt"), since);
     }
 
-    /** Untouched for a long while — worth re-reading before a season starts. */
+    /** Untouched for a long while - worth re-reading before a season starts. */
     public static Specification<Faq> notUpdatedSince(LocalDateTime before) {
         return (root, query, cb) -> before == null
             ? cb.conjunction()

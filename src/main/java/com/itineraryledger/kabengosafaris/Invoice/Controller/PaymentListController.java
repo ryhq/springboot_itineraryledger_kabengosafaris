@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * A separate controller from the per-invoice one because it answers a different
  * question: that one is mounted under an invoice you already know, and this is for
- * when you do not — a line on a bank statement, a customer asking whether their
+ * when you do not - a line on a bank statement, a customer asking whether their
  * transfer arrived.
  */
 @RestController

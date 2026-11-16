@@ -100,7 +100,13 @@ public final class Typography {
         FOLD = Collections.unmodifiableMap(fold);
 
         Map<Character, String> internal = new LinkedHashMap<>();
-        for (char c : "─━".toCharArray()) internal.put(c, "-");
+        /*
+         * A drawn rule becomes equals signs, not hyphens. "--" is illegal inside an HTML
+         * comment, and three PDF templates carry their CSS section rules in one, so the
+         * obvious choice made OpenHTMLtoPDF refuse to render them. The build test for the
+         * templates caught it, which is the second time that guard has paid for itself.
+         */
+        for (char c : "─━".toCharArray()) internal.put(c, "=");
         for (char c : "│┃║".toCharArray()) internal.put(c, "|");
         for (char c : "┌┐└┘├┤┬┴┼".toCharArray()) {
             internal.put(c, "+");

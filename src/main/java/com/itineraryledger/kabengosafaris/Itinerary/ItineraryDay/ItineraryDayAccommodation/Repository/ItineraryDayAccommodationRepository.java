@@ -56,8 +56,8 @@ public interface ItineraryDayAccommodationRepository extends JpaRepository<Itine
      *
      * <p>Alternatives used to be excluded, on the reasoning that a backup is not really where the
      * trip stays. Measured against the live catalogue that reasoning cost far more than it saved:
-     * 43 of 64 lodge pages showed an empty carousel, and a lodge like Kahawa House — offered on
-     * day one of a published fourteen-day trip — appeared on no trip at all. A traveller who
+     * 43 of 64 lodge pages showed an empty carousel, and a lodge like Kahawa House - offered on
+     * day one of a published fourteen-day trip - appeared on no trip at all. A traveller who
      * searched for it found a page that ranked, described the property, and then had nothing to
      * sell them.
      *

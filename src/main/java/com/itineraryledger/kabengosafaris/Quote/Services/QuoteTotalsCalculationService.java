@@ -24,8 +24,8 @@ import java.util.Map;
  *
  * This service automatically recalculates:
  * - Subtotals by currency (sum of all active item prices)
- * - Taxes by currency (the lines taxAppliesTo names × taxPercentage)
- * - Discounts by currency (the lines discountAppliesTo names × discountPercentage)
+ * - Taxes by currency (the lines taxAppliesTo names x taxPercentage)
+ * - Discounts by currency (the lines discountAppliesTo names x discountPercentage)
  * - Grand totals by currency (subtotal + taxes - discounts)
  *
  * Should be called whenever:
@@ -202,7 +202,7 @@ public class QuoteTotalsCalculationService {
             String currency = entry.getKey();
             BigDecimal subtotal = entry.getValue();
 
-            // Calculate tax: subtotal × (taxPercentage / 100)
+            // Calculate tax: subtotal x (taxPercentage / 100)
             BigDecimal tax = subtotal
                 .multiply(taxPercentage)
                 .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
@@ -231,7 +231,7 @@ public class QuoteTotalsCalculationService {
             String currency = entry.getKey();
             BigDecimal subtotal = entry.getValue();
 
-            // Calculate discount: subtotal × (discountPercentage / 100)
+            // Calculate discount: subtotal x (discountPercentage / 100)
             BigDecimal discount = subtotal
                 .multiply(discountPercentage)
                 .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);

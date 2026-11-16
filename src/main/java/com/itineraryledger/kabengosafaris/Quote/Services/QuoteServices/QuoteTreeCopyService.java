@@ -38,8 +38,8 @@ import lombok.extern.slf4j.Slf4j;
  * hand them back the product as it is sold to strangers.
  *
  * <p>References travel as references. An accommodation, a route, a fare, a tariff are catalogue
- * rows shared by every quotation that names them; what is copied is the decision — this lodge,
- * this board basis, this many rooms, this markup — and never the catalogue row itself.
+ * rows shared by every quotation that names them; what is copied is the decision - this lodge,
+ * this board basis, this many rooms, this markup - and never the catalogue row itself.
  */
 @Service
 @RequiredArgsConstructor
@@ -91,7 +91,7 @@ public class QuoteTreeCopyService {
      * What the price covers.
      *
      * <p>From the previous quotation, not from the itinerary, because an inclusion line can be
-     * edited on a quotation — a concession promised to this customer belongs to this sale and
+     * edited on a quotation - a concession promised to this customer belongs to this sale and
      * has to survive into the version that replaces it.
      */
     private void copyInclusions(Quote source, Quote target) {

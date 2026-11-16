@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 
 /**
- * Dashboard Controller — aggregated statistics, trends, leaderboards, alerts.
+ * Dashboard Controller - aggregated statistics, trends, leaderboards, alerts.
  */
 @RestController
 @RequestMapping("/api/dashboard")

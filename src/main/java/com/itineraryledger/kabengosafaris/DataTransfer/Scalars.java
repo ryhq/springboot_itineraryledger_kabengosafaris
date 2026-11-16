@@ -30,11 +30,11 @@ import lombok.extern.slf4j.Slf4j;
  * Written reflectively rather than as a field list per entity, because a field list is a promise to
  * remember. Park alone has twenty-odd descriptive columns and they change; the version of this that
  * enumerated them would export a park correctly today and drop `bestTimeToVisit` the week somebody
- * adds `bestTimeToAvoid` next to it. Nothing would fail — the column would just quietly stop
+ * adds `bestTimeToAvoid` next to it. Nothing would fail - the column would just quietly stop
  * travelling, and only turn up as a blank field in another company months later.
  *
  * Only SIMPLE values are copied. Anything that is another entity or a collection is a relation, and
- * relations are resolved by natural key by the module that owns them — a foreign key means nothing
+ * relations are resolved by natural key by the module that owns them - a foreign key means nothing
  * in the company being imported into.
  */
 @Slf4j
@@ -57,7 +57,7 @@ public final class Scalars {
     /**
      * The entity's scalar columns as JSON.
      *
-     * @param exclude property names to leave out on top of the standard ones — for a column that is
+     * @param exclude property names to leave out on top of the standard ones - for a column that is
      *                local to this installation and would be nonsense elsewhere
      */
     public static ObjectNode of(ObjectMapper mapper, Object entity, String... exclude) {
@@ -74,13 +74,13 @@ public final class Scalars {
 
                 /*
                  * A column is something that can be written back. Anything with a getter and no
-                 * setter is DERIVED — computed from the real columns — and treating it as data was
+                 * setter is DERIVED - computed from the real columns - and treating it as data was
                  * a fault twice over: it put values in the bundle that no import could ever restore,
                  * and it invoked code that has every right to fail.
                  *
                  * Which it did, on a live export. PaxAgeCategory.getAgeRangeDisplay() reads maxAge
-                 * to print "6–11 years", and an adult category is legitimately "12 and over" with no
-                 * maximum — so exporting a company's guest categories threw a NullPointerException
+                 * to print "6-11 years", and an adult category is legitimately "12 and over" with no
+                 * maximum - so exporting a company's guest categories threw a NullPointerException
                  * on correct data. SeasonPeriod.getDurationDays() the same, on a period with no
                  * start. The whole bundle came back as a 500 saying nothing.
                  */
@@ -113,14 +113,14 @@ public final class Scalars {
          * Only the columns `of` would have written. This is what makes apply the exact inverse of
          * of, and it is not a tidiness argument: a row carries its references as NAMES, because a
          * name is the only form that means anything in another installation. A rate's row therefore
-         * has "season": "High Season" while the entity's season property is a Season — and Jackson,
+         * has "season": "High Season" while the entity's season property is a Season - and Jackson,
          * asked to build an entity out of a string, failed the whole row.
          *
          * FAIL_ON_UNKNOWN_PROPERTIES does not help, because season is not unknown. It is known and
          * it is the wrong shape.
          *
-         * Every rate importer hit this — parks, activities and accommodations all name their four
-         * references the same way — so no rate had ever imported. Excluding them at each call site
+         * Every rate importer hit this - parks, activities and accommodations all name their four
+         * references the same way - so no rate had ever imported. Excluding them at each call site
          * would work until the next module forgot, and the error it produces names no field.
          */
         copy.remove(notColumnsOf(entity.getClass()));
@@ -129,13 +129,13 @@ public final class Scalars {
          * A nested array or object can never populate a scalar column, so drop it rather than hand
          * it to Jackson.
          *
-         * Everything still in `copy` at this point is a simple column with a setter — that is what
-         * notColumnsOf leaves behind — and a module is free to reuse one of those names for its own
+         * Everything still in `copy` at this point is a simple column with a setter - that is what
+         * notColumnsOf leaves behind - and a module is free to reuse one of those names for its own
          * nested data, which it then writes itself. ItineraryTransfer does exactly that: the
          * itinerary's promise used to be the free-text column `inclusions` and is now an array of
          * rows under the same key, written by writeInclusions. Without this line Jackson was asked
          * to build a String out of a JSON array and threw, and because the throw happens per
-         * itinerary inside one transaction it took the whole bundle with it — every itinerary import
+         * itinerary inside one transaction it took the whole bundle with it - every itinerary import
          * answered 500, in both companies, with the message naming fourteen fields and blaming none.
          *
          * Silent, like the unknown-field tolerance above: the module that wrote the container is the
@@ -152,7 +152,7 @@ public final class Scalars {
              * Unknown fields ignored, and it has to be said explicitly: the default is to throw, so
              * the version of this without the next line refused an entire bundle because a newer
              * installation had added one column. Caught by a test that asserted the tolerance this
-             * comment claimed — the claim was wrong, not the test.
+             * comment claimed - the claim was wrong, not the test.
              */
             mapper.copy()
                 .disable(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -161,7 +161,7 @@ public final class Scalars {
         } catch (Exception e) {
             /*
              * fieldNames() is an Iterator, so this used to read "Could not apply
-             * java.util.LinkedHashMap$LinkedKeyIterator@458f3d5c to ParkTariffRate" — an object
+             * java.util.LinkedHashMap$LinkedKeyIterator@458f3d5c to ParkTariffRate" - an object
              * address where the diagnosis should be, and the cause discarded on top. The import
              * failed for a reason the message could not express, twice over.
              */
@@ -175,7 +175,7 @@ public final class Scalars {
     }
 
     /**
-     * The property names on this class that are NOT columns — associations, collections, and
+     * The property names on this class that are NOT columns - associations, collections, and
      * anything derived (a getter with no setter). Cached: an import applies this per row, and a
      * bundle carries thousands.
      */

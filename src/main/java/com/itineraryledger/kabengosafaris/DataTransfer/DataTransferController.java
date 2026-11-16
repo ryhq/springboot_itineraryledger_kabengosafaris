@@ -29,17 +29,17 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Moving reference data from one company to another.
  *
- * Inventory only — parks, activities, accommodations, the rates for each, and the small tables those
+ * Inventory only - parks, activities, accommodations, the rates for each, and the small tables those
  * rates are made of. Nothing that belongs to a customer can leave: no customers, quotes, invoices,
  * payments, safaris, users or mail accounts, and that is enforced by the module list rather than by
  * anybody remembering (see DataTransferSurfaceTest).
  *
  * The shape of the import is preview-then-commit, and the preview is not a description of what would
- * happen — it runs the import and rolls it back. Somebody is pointing this at a company that is
+ * happen - it runs the import and rolls it back. Somebody is pointing this at a company that is
  * already trading, and the only report worth trusting is one produced by the code that does the work.
  *
  * Permissions are matched by NAME against the catalogue, so EXPORT_DATA_BUNDLE and IMPORT_DATA_BUNDLE
- * are declared in custom-permissions.json — a name the catalogue does not know refuses everybody,
+ * are declared in custom-permissions.json - a name the catalogue does not know refuses everybody,
  * superadmin included.
  */
 @RestController
@@ -76,7 +76,7 @@ public class DataTransferController {
             long size = java.nio.file.Files.size(bundle);
 
             /*
-             * A plain Resource, written synchronously by Spring — NOT a StreamingResponseBody.
+             * A plain Resource, written synchronously by Spring - NOT a StreamingResponseBody.
              *
              * The streaming version runs after the controller returns, on an async dispatch, which
              * put any failure there outside this try block entirely: the export kept answering 500
@@ -84,7 +84,7 @@ public class DataTransferController {
              * appeared. Whatever was wrong, being unable to see it was worse. A Resource is copied
              * before the method's frame is gone, so a fault here says what it was.
              *
-             * Memory stays bounded either way — the bundle is a file on disk and Spring copies it
+             * Memory stays bounded either way - the bundle is a file on disk and Spring copies it
              * through a buffer. Content-Length is set so a large download shows real progress.
              */
             java.io.InputStream stream = new java.io.FilterInputStream(
@@ -107,7 +107,7 @@ public class DataTransferController {
              * Throwable, and the exception's CLASS in the message.
              *
              * Three rounds were spent on an export that answered 500 while every message reaching
-             * the screen was somebody's generic sentence — the global handler's, then mine. This
+             * the screen was somebody's generic sentence - the global handler's, then mine. This
              * endpoint is behind an export permission, so the person reading it is an administrator
              * of this company, and telling them "NullPointerException: this.maxAge is null" costs
              * nothing and saves a deploy. e.getMessage() is null for plenty of exceptions, which is
@@ -145,7 +145,7 @@ public class DataTransferController {
      * One bundle at a time.
      *
      * A preview does the whole import and rolls it back, so it holds row locks across every table
-     * the bundle touches for as long as it runs — thousands of rates is tens of seconds. A second
+     * the bundle touches for as long as it runs - thousands of rates is tens of seconds. A second
      * request arriving in that window waits on those locks and dies at MySQL's lock wait timeout,
      * reporting an insert that was never the problem.
      *
@@ -288,7 +288,7 @@ public class DataTransferController {
     /**
      * A failure, said in one line, without the statement.
      *
-     * The detail matters — an import that fails silently is worse — but a parameterised INSERT
+     * The detail matters - an import that fails silently is worse - but a parameterised INSERT
      * printed twice tells the office nothing and pushes the actual sentence off the screen. The
      * class name and the first line of the message are what a person can act on or quote.
      */

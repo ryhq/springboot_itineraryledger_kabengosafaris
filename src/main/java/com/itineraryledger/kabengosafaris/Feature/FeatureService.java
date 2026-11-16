@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
  * Two sources, and the order matters:
  *
  *  1. **A property wins.** `app.features.translation=false` is how a deployment says "this company
- *     does not have this, and nobody here can turn it on" — right for anything holding third-party
+ *     does not have this, and nobody here can turn it on" - right for anything holding third-party
  *     credentials, where a switch in the panel would only produce broken requests.
  *  2. **Otherwise the stored row**, which an administrator can change without a deploy. That is the
  *     point: a company deciding it wants credit notes should not need a release.

@@ -40,7 +40,7 @@ class CompanyProfileWriteRulesTest {
 
         CompanyCompletenessDTO result = service.completeness(null);
 
-        assertFalse(result.isReadyForDocuments(), "nothing is filled in — documents would print blanks");
+        assertFalse(result.isReadyForDocuments(), "nothing is filled in - documents would print blanks");
         assertEquals(0, result.getFilled());
         List<String> keys = result.getGaps().stream().map(CompanyCompletenessDTO.GapDTO::getKey).toList();
         assertTrue(keys.containsAll(List.of("tradingName", "tin", "email", "phone", "address", "bank")),
@@ -50,7 +50,7 @@ class CompanyProfileWriteRulesTest {
     }
 
     @Test
-    @DisplayName("a filled profile is ready even without a VRN — not every company is VAT-registered")
+    @DisplayName("a filled profile is ready even without a VRN - not every company is VAT-registered")
     void vrnIsNotBlocking() {
         CompanyProfileGetService service = getService(bank("0123456789"));
 
@@ -67,7 +67,7 @@ class CompanyProfileWriteRulesTest {
     }
 
     @Test
-    @DisplayName("an inactive email does not count — switching one off is how you retire it")
+    @DisplayName("an inactive email does not count - switching one off is how you retire it")
     void inactiveContactsDoNotCount() {
         CompanyProfileGetService service = getService(bank("0123456789"));
 
@@ -97,7 +97,7 @@ class CompanyProfileWriteRulesTest {
     }
 
     @Test
-    @DisplayName("a plain SVG is stored — including in an email slot, which converts it on the way out")
+    @DisplayName("a plain SVG is stored - including in an email slot, which converts it on the way out")
     void plainSvgIsStoredEverywhere(@TempDir Path dir) throws Exception {
         CompanyAssetService service = assetService(dir);
         byte[] svg = "<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0h10v10H0z\"/></svg>".getBytes();
@@ -108,7 +108,7 @@ class CompanyProfileWriteRulesTest {
 
         /*
          * This used to be a 400 telling somebody to go and export a PNG, and the rule behind it was
-         * right — Gmail and Outlook draw a broken-image box for an SVG. But the refusal put a chore
+         * right - Gmail and Outlook draw a broken-image box for an SVG. But the refusal put a chore
          * between a company and a working letterhead, and a company whose designer supplied only
          * vectors could not finish at all. The endpoint rasterises when it serves the slot instead
          * (see EmailLogoIsRasterTest), so the upload is accepted and the email still gets a raster.

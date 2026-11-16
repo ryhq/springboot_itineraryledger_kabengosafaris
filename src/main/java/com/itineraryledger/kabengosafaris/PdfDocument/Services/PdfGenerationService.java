@@ -152,7 +152,7 @@ public class PdfGenerationService {
     /**
      * A costing, generated and filed against the itinerary it prices.
      *
-     * Same shape as the itinerary save path — a costing belongs to the itinerary
+     * Same shape as the itinerary save path - a costing belongs to the itinerary
      * and that is where anyone would look for it.
      */
     @Transactional

@@ -170,7 +170,7 @@ public class PaxNationCategoryController {
     @org.springframework.beans.factory.annotation.Autowired
     private com.itineraryledger.kabengosafaris.PaxNationCategory.Repositories.PaxNationCategoryRepository bulkFlagsRepository;
 
-    /** PATCH /bulk — activate or withdraw a whole selection in one request. */
+    /** PATCH /bulk - activate or withdraw a whole selection in one request. */
     @PatchMapping("/bulk")
     @PreAuthorize("hasAuthority('PERM_UPDATE_PAX_NATION_CATEGORY')")
     public ResponseEntity<?> bulkFlags(

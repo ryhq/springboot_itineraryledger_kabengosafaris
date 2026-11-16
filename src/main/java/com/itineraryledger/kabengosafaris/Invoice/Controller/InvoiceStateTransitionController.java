@@ -121,7 +121,7 @@ public class InvoiceStateTransitionController {
      * Unlock an invoice for correction (SENT/PARTIALLY_PAID/OVERDUE/PAID → ON_HOLD)
      * POST /api/invoices/{id}/state/hold
      *
-     * Body: { "reason": "why this document is being reopened" } — required.
+     * Body: { "reason": "why this document is being reopened" } - required.
      * Payments are untouched; only the lock comes off.
      */
     @PostMapping("/hold")

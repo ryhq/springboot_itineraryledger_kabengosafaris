@@ -13,7 +13,7 @@ import jakarta.persistence.criteria.JoinType;
  * Filters for the people who can log in.
  *
  * Kept separate from Role/Services/UserSpecification, which exists to answer one
- * narrow question — who holds this role — for the role screen's assignment picker.
+ * narrow question - who holds this role - for the role screen's assignment picker.
  * This is the list's own set, and the counters and the record paging are all built
  * from it so they cannot disagree with the rows.
  */
@@ -74,7 +74,7 @@ public class UserSpecification {
         };
     }
 
-    /** No role at all — can sign in and then do nothing. */
+    /** No role at all - can sign in and then do nothing. */
     public static Specification<User> hasNoRoles() {
         return (root, query, cb) -> cb.isEmpty(root.get("roles"));
     }
@@ -87,7 +87,7 @@ public class UserSpecification {
      * Invited and never arrived.
      *
      * There is no last-login column on this table, so "never signed in" is read as
-     * an account that is still disabled and has never had a failed attempt either —
+     * an account that is still disabled and has never had a failed attempt either -
      * nobody has tried to use it at all. Named for what it can actually prove.
      */
     public static Specification<User> neverSignedIn() {
@@ -103,7 +103,7 @@ public class UserSpecification {
             cb.lessThan(root.get("passwordExpiryDate"), LocalDateTime.now()));
     }
 
-    /** Somebody is getting the password wrong — or guessing at it. */
+    /** Somebody is getting the password wrong - or guessing at it. */
     public static Specification<User> hasFailedAttempts() {
         return (root, query, cb) -> cb.greaterThan(root.get("failedAttempt"), 0);
     }

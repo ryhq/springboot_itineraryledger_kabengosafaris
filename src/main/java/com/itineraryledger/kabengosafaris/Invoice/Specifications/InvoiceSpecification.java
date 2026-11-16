@@ -155,7 +155,7 @@ public class InvoiceSpecification {
         return (root, query, cb) -> cb.equal(root.get("status"), InvoiceStatus.CANCELLED);
     }
 
-    /** One of several statuses — OR inside the dimension, as the facets expect. */
+    /** One of several statuses - OR inside the dimension, as the facets expect. */
     public static Specification<Invoice> byStatuses(List<InvoiceStatus> statuses) {
         return (root, query, cb) -> statuses == null || statuses.isEmpty()
             ? cb.conjunction()
@@ -189,7 +189,7 @@ public class InvoiceSpecification {
      * Free text over the code, the title, and the names on either side of it.
      *
      * The customer and the safari are joined because that is how the office looks
-     * an invoice up — by whose it is and which trip it was for, rarely by its
+     * an invoice up - by whose it is and which trip it was for, rarely by its
      * code. LEFT joins: an invoice with no safari must still be findable.
      */
     public static Specification<Invoice> searchKeyword(String keyword) {
@@ -219,7 +219,7 @@ public class InvoiceSpecification {
             : cb.equal(root.get("isSupplement"), isSupplement);
     }
 
-    /** Falls due within the window and is not settled — the chase list. */
+    /** Falls due within the window and is not settled - the chase list. */
     public static Specification<Invoice> dueWithin(int days) {
         return (root, query, cb) -> {
             LocalDate today = LocalDate.now();

@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
  * calculator used to add every pax band into one total and label it with whichever rate the loop
  * read last, so adding one Tanzanian adult to seven Germans turned TZS 46,020 of crater fees into
  * USD 46,020 and took a real quote from USD 23,903 to USD 66,879. Nothing was logged. The only
- * reason anybody noticed is that it tripled — the same defect reading a USD rate last on a mostly
+ * reason anybody noticed is that it tripled - the same defect reading a USD rate last on a mostly
  * shilling party would have understated the total and gone out to a client.
  *
  * <p>There is no exchange rate anywhere in costing, deliberately, so the honest answer is two
@@ -58,7 +58,7 @@ class TwoCurrenciesNeverBecomeOneTest {
     private static final String RESIDENT = "res";
     private static final String ADULT = "adult";
 
-    // ── the rule ────────────────────────────────────────────────────────────────────────────────
+    // == the rule ================================================================================
 
     @Test
     @DisplayName("a mixed party's gate fee leaves the calculator as one line per currency")
@@ -143,13 +143,13 @@ class TwoCurrenciesNeverBecomeOneTest {
          * Both rows are the same fee on the same day with the same "Per Person" basis, so on a
          * costing sheet they are indistinguishable apart from the figures. The panel and both PDF
          * templates already print this label and already hide it when it reads exactly
-         * "Per Person" — they were only ever handed the generic word.
+         * "Per Person" - they were only ever handed the generic word.
          */
         assertEquals("Non-Resident Adult", byCurrency.get("USD").getPaxCategory());
         assertEquals("Resident Adult", byCurrency.get("TZS").getPaxCategory());
     }
 
-    // ── a party of seven visitors and one Tanzanian ─────────────────────────────────────────────
+    // == a party of seven visitors and one Tanzanian =============================================
 
     private List<FullItineraryDTO.PaxDTO> sevenVisitorsAndOneResident() {
         FullItineraryDTO.PaxDTO visitors = new FullItineraryDTO.PaxDTO();
@@ -192,7 +192,7 @@ class TwoCurrenciesNeverBecomeOneTest {
         return detail;
     }
 
-    // ── a gate that charges each band in its own money ──────────────────────────────────────────
+    // == a gate that charges each band in its own money ==========================================
 
     private Crater crater() {
         return new Crater();

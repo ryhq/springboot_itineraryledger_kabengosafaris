@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 /**
  * That the logo an email points at is something a mail client can actually draw.
  *
- * Gmail and Outlook do not render SVG — they show a broken-image box — so a welcome email whose
+ * Gmail and Outlook do not render SVG - they show a broken-image box - so a welcome email whose
  * header pointed at the company's vector mark opened with exactly that box above the greeting. The
  * email slot refuses an SVG upload for this reason, but a company that has only uploaded vectors
  * still needs a logo in its mail, so the endpoint converts one on the way out.
@@ -59,7 +59,7 @@ class EmailLogoIsRasterTest {
         /*
          * The email slot can now hold either the icon (square) or the full lockup (wide), because it
          * borrows whatever the company uploaded. A fixed width AND height would squash the lockup
-         * into the icon's proportions — the sort of thing nobody notices until a client replies
+         * into the icon's proportions - the sort of thing nobody notices until a client replies
          * asking why the logo looks wrong.
          */
         List<Path> roots = List.of(
@@ -78,7 +78,7 @@ class EmailLogoIsRasterTest {
                         String tag = html.substring(open, close + 1);
                         assertFalse(tag.matches("(?s).*\\sheight=\"\\d+\".*"),
                             file.getFileName() + " pins the logo's height: " + tag
-                                + " — use width plus height:auto, or a wide lockup is squashed");
+                                + " - use width plus height:auto, or a wide lockup is squashed");
                         at = html.indexOf("{{companyLogoUrl}}", close);
                     }
                 }

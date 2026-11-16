@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Tells this company's website to stop showing something it was told earlier.
  *
- * <p>The website renders from this API and then keeps the answer — five minutes for anything that
+ * <p>The website renders from this API and then keeps the answer - five minutes for anything that
  * says a trip is for sale, an hour for the rest. Without this, an edit made in the panel is simply
  * not visible until that timer runs out, and the only honest thing the office can say to a client
  * is "give it an hour".
@@ -44,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * Every call here is best-effort. The edit is committed before anything is dialled, and a website
  * that is down, mid-deploy or misconfigured must not be able to make somebody's work bounce. What
- * a failure costs is the stale page the visitor would have seen anyway until the timer expired —
+ * a failure costs is the stale page the visitor would have seen anyway until the timer expired -
  * so the failure is recorded on the company row and shown in Settings, not thrown.
  */
 @Service
@@ -168,8 +168,8 @@ public class WebsiteCacheService {
     /**
      * How long an automatic clear covers, so a burst of saves is one call and not twenty.
      *
-     * <p>The panel's record pages save ONE FIELD PER REQUEST — that is what makes click-to-edit
-     * safe from two people overwriting each other — so correcting a lodge's name, region and
+     * <p>The panel's record pages save ONE FIELD PER REQUEST - that is what makes click-to-edit
+     * safe from two people overwriting each other - so correcting a lodge's name, region and
      * description is three saves in about ten seconds. Each would otherwise be its own call telling
      * the website the same thing.
      *
@@ -237,7 +237,7 @@ public class WebsiteCacheService {
      * Write down what was asked for and whether anybody answered.
      *
      * <p>A three-column update rather than a save: see the repository for why. It is also wrapped
-     * in its own try — a cache call that worked must not be reported as failed because the note
+     * in its own try - a cache call that worked must not be reported as failed because the note
      * about it could not be written.
      */
     private Outcome record(CompanyProfile profile, boolean ok, String detail, Set<String> tags) {

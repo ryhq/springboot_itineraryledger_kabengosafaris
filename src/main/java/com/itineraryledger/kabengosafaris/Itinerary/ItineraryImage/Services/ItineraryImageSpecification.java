@@ -54,7 +54,7 @@ public class ItineraryImageSpecification {
     }
 
     /**
-     * Any of these types — the list page's Type filter is multi-select, and a
+     * Any of these types - the list page's Type filter is multi-select, and a
      * singular enum param cannot answer "hero or gallery".
      */
     public static Specification<ItineraryImage> byImageTypes(java.util.List<ImageType> types) {

@@ -29,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
  * The chase list: every ask across every trip, in the order somebody works through them.
  *
  * A safari's own tab answers "what have we asked about this trip". This answers the question a
- * morning actually starts with — "who owes us an answer, and who has answered and been ignored" —
+ * morning actually starts with - "who owes us an answer, and who has answered and been ignored" -
  * which spans trips and therefore cannot live under one.
  *
  * Sorted by chase date ascending by default: the thing that has been waiting longest, first.
@@ -68,7 +68,7 @@ public class AvailabilityRequestListService {
         try {
             String resolvedSort = sortBy != null && VALID_SORT_FIELDS.contains(sortBy) ? sortBy : DEFAULT_SORT_FIELD;
             /*
-             * Ascending by default, which is the opposite of every other list here — and right:
+             * Ascending by default, which is the opposite of every other list here - and right:
              * the oldest unanswered ask is the one to chase first.
              */
             Sort.Direction direction = "desc".equalsIgnoreCase(sortDirection)
@@ -129,7 +129,7 @@ public class AvailabilityRequestListService {
      * One request, and where it sits in the set the list was showing.
      *
      * This was missing entirely: the record page asked for it and got a 500, which is the worst
-     * kind of gap — a page that exists, a link that leads to it, and nothing behind it. The
+     * kind of gap - a page that exists, a link that leads to it, and nothing behind it. The
      * filters travel with the request so the prev/next arrows walk the SAME set as the list, which
      * is the house rule; without them the arrows would wander into requests the list had excluded.
      */

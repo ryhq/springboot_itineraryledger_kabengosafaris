@@ -117,7 +117,7 @@ public class AccommodationDocumentSpecification {
             : cb.equal(root.get("accommodation").get("category"), category);
     }
 
-    /* Validity, recency and free-text — warn BEFORE expiry, which is the point. */
+    /* Validity, recency and free-text - warn BEFORE expiry, which is the point. */
 
     public static Specification<AccommodationDocument> expired() {
         return (root, query, cb) -> cb.and(

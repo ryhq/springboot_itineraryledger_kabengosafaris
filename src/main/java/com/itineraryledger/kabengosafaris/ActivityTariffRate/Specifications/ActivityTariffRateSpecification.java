@@ -226,7 +226,7 @@ public class ActivityTariffRateSpecification {
             .and(activeOnly());
     }
 
-    /** Rows created on or after `moment` — the recency counters. */
+    /** Rows created on or after `moment` - the recency counters. */
     public static Specification<ActivityTariffRate> createdAfter(java.time.LocalDateTime moment) {
         return (root, query, cb) ->
             moment == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), moment);
@@ -237,7 +237,7 @@ public class ActivityTariffRateSpecification {
      *
      * The list has always shown a search box; the endpoint had no keyword
      * parameter, so every keystroke was discarded server side. LEFT joins because
-     * a rate may have no age band — and an activity rate may have no park — and
+     * a rate may have no age band - and an activity rate may have no park - and
      * those must still be findable by the names they do have.
      */
     public static Specification<ActivityTariffRate> searchKeyword(String keyword) {

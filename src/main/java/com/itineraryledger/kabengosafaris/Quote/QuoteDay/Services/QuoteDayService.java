@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * QuoteDayService — Get/Update/Delete for QuoteDay rows owned by a Quote.
+ * QuoteDayService - Get/Update/Delete for QuoteDay rows owned by a Quote.
  * Days are created by the Itinerary→Quote deep-copy, not manually; so this
  * service does not expose a create endpoint.
  */

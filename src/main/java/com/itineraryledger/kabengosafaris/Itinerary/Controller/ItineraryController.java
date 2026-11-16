@@ -169,7 +169,7 @@ public class ItineraryController {
     private com.itineraryledger.kabengosafaris.Itinerary.Repository.ItineraryRepository bulkFlagsRepository;
 
     /**
-     * PATCH /bulk — one request for a whole selection.
+     * PATCH /bulk - one request for a whole selection.
      *
      * Retiring last season's catalogue is one action, not fifty. Only the flags
      * present in the body apply, and the response reports per-id outcomes rather
@@ -192,7 +192,7 @@ public class ItineraryController {
     /**
      * Duplicate ONE finished itinerary into a fresh draft.
      *
-     * The source must be COMPLETE or PUBLISHED — a draft has nothing settled
+     * The source must be COMPLETE or PUBLISHED - a draft has nothing settled
      * worth copying and an archived one was deliberately retired. Exactly one
      * per call: a copy is a decision about a specific template, and the response
      * has to be able to say what the new record contains.

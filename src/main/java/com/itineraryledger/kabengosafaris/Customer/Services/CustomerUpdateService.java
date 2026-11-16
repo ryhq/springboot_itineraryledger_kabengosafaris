@@ -184,7 +184,7 @@ public class CustomerUpdateService {
             );
 
         } catch (IllegalArgumentException e) {
-            // bad date / unknown enum value — a client mistake, not a server fault
+            // bad date / unknown enum value - a client mistake, not a server fault
             log.warn("Invalid value in customer update: {}", e.getMessage());
             return ResponseEntity.badRequest().body(
                 ApiResponse.error(400, e.getMessage(), "VALIDATION_ERROR")

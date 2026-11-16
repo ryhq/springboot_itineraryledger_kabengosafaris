@@ -27,7 +27,7 @@ public class CompanyAssetDTO {
     private String fileSizeFormatted;
     /** where to fetch it; null when the slot is empty. */
     private String url;
-    /** false for an SVG in the email slot — Outlook does not render SVG. */
+    /** false for an SVG in the email slot - Outlook does not render SVG. */
     private Boolean safeForEmail;
     private Boolean isActive;
     private LocalDateTime updatedAt;

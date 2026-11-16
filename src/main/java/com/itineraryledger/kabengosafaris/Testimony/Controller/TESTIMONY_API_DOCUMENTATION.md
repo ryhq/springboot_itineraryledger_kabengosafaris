@@ -142,7 +142,7 @@ Creates a new testimony/review.
 **Notes:**
 - `customerId` and `safariId` are optional associations; the customer and safari must exist if provided
 - `source` determines the `sourceDisplayName` automatically
-- New testimonies default to unapproved — use the approve endpoint or set `isApproved: true` at creation
+- New testimonies default to unapproved - use the approve endpoint or set `isApproved: true` at creation
 
 ---
 
@@ -203,7 +203,7 @@ Retrieves a single testimony by its obfuscated ID, including circular navigation
 ```
 
 **Navigation:**
-- `nextId` / `previousId` provide circular navigation — wraps from last to first and vice versa
+- `nextId` / `previousId` provide circular navigation - wraps from last to first and vice versa
 - Both are obfuscated IDs
 
 **Error Responses:**
@@ -326,7 +326,7 @@ Retrieves all testimonies with optional filtering, pagination, and sorting.
 ```
 
 **Notes:**
-- List endpoint returns `TestimonyListItemDTO` (lighter than full `TestimonyDTO`) — excludes `adminResponse`, `adminResponseDate`, `sentimentTags`, audit fields
+- List endpoint returns `TestimonyListItemDTO` (lighter than full `TestimonyDTO`) - excludes `adminResponse`, `adminResponseDate`, `sentimentTags`, audit fields
 - All filters are optional and can be combined
 - Invalid sort field returns 400 error with list of valid fields
 
@@ -727,7 +727,7 @@ A lighter DTO used in the paginated list endpoint. Excludes `adminResponse`, `ad
 
 ### Example 1: Create and Approve a Testimony
 
-**Step 1 — Create:**
+**Step 1 - Create:**
 ```http
 POST /api/testimonies
 Authorization: Bearer <token>
@@ -746,13 +746,13 @@ Content-Type: application/json
 }
 ```
 
-**Step 2 — Approve:**
+**Step 2 - Approve:**
 ```http
 PUT /api/testimonies/xyz789abc/approve
 Authorization: Bearer <token>
 ```
 
-**Step 3 — Add Admin Response:**
+**Step 3 - Add Admin Response:**
 ```http
 PUT /api/testimonies/xyz789abc/respond
 Authorization: Bearer <token>

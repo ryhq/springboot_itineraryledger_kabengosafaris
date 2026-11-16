@@ -11,14 +11,14 @@ import org.springframework.http.MediaType;
  * A stored mime type is not ours: it arrives on an uploaded file or, worse, straight off a mail
  * header, and a real Content-Type carries parameters. One attachment in this system is stored as
  *
- *   application/pdf; name=Sunshine Azure Zanzibar Beach Hotel- Availability Chart - as of ….pdf
+ *   application/pdf; name=Sunshine Azure Zanzibar Beach Hotel- Availability Chart - as of ....pdf
  *
- * — an unquoted parameter containing spaces. {@code MediaType.parseMediaType} throws
+ * - an unquoted parameter containing spaces. {@code MediaType.parseMediaType} throws
  * {@code InvalidMediaTypeException} on that, which extends IllegalArgumentException, which the
  * global handler maps to 400. So downloading that one attachment answered "400 Bad Request"
  * while the one beside it worked, and nothing in the log looked like a bug in downloading.
  *
- * The type is the part before the first ';' — the parameters describe the file, not the format,
+ * The type is the part before the first ';' - the parameters describe the file, not the format,
  * and are no business of ours when we are the ones serving the bytes.
  */
 public final class ContentTypes {

@@ -46,7 +46,7 @@ public class NewsletterDeleteService {
         try {
             /*
              * Per-row outcomes, because this used to answer "200, none deleted" in the same
-             * words as "200, all deleted" — an id that would not decode, a row already
+             * words as "200, all deleted" - an id that would not decode, a row already
              * gone, or a row that threw was logged here and never mentioned to the caller.
              */
             int deletedCount = 0;

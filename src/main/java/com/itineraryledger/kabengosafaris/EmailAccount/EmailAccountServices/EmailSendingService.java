@@ -537,7 +537,7 @@ public class EmailSendingService {
             }
 
             // Create metadata record. resendEmailId is the dedicated column
-            // the webhook handler indexes on — the messageId column keeps
+            // the webhook handler indexes on - the messageId column keeps
             // the RFC-2822-shaped value for compatibility with anything that
             // already parses it.
             EmailMessage emailMessage = EmailMessage.builder()

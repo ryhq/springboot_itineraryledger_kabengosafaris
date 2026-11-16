@@ -17,7 +17,7 @@ public interface ExpenseAllocationRepository extends JpaRepository<ExpenseAlloca
      * Every allocation on one safari, with its bill.
      *
      * The day tree needs to mark what is already billed, and it needs the answer
-     * for the whole trip in ONE request — a fourteen-day itinerary has dozens of
+     * for the whole trip in ONE request - a fourteen-day itinerary has dozens of
      * billable things and asking per row would be dozens of round trips.
      */
     @Query("""

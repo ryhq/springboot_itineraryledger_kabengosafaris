@@ -60,7 +60,7 @@ public class ExpensePaymentCreateService {
             /*
              * A draft bill is still being edited, so money must not attach to a figure that can
              * still move. But wanting to pay it IS the signal that it is real, so the caller may
-             * say "record it first" and both happen here, in this one transaction — never a bill
+             * say "record it first" and both happen here, in this one transaction - never a bill
              * left recorded with no payment against it.
              *
              * The promotion goes through the same method the standalone action uses, so the rule

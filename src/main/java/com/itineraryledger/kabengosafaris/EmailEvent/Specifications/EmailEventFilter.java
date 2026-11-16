@@ -7,12 +7,12 @@ import lombok.Data;
 /**
  * Everything a caller can narrow the email-event list by.
  *
- * A fixed, smallish set — one row per thing the system sends — so this is less about
+ * A fixed, smallish set - one row per thing the system sends - so this is less about
  * finding one than about the two states that matter and are otherwise invisible:
  *
- *   · An event switched off sends nothing at all. That is a legitimate choice and a
+ *   | An event switched off sends nothing at all. That is a legitimate choice and a
  *     silent one; nobody notices a receipt that never goes out.
- *   · An event with no enabled template has nothing to send even while switched on,
+ *   | An event with no enabled template has nothing to send even while switched on,
  *     which is the same outcome arrived at by accident rather than on purpose.
  */
 @Data
@@ -29,8 +29,8 @@ public class EmailEventFilter {
     private List<String> statuses;
 
     /**
-     * noTemplates — nothing to send, so the event is dead however it is configured
-     * noSystemDefault — nothing to fall back to if somebody deletes the custom one
+     * noTemplates - nothing to send, so the event is dead however it is configured
+     * noSystemDefault - nothing to fall back to if somebody deletes the custom one
      */
     private List<String> qualities;
 

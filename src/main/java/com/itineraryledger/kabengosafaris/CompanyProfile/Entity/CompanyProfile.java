@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
  * Who this installation IS.
  *
  * Every letter, invoice, voucher and signature this system produces says a company's name, quotes
- * its TIN and prints its address — and until now it said them because 38 of the 42 shipped template
+ * its TIN and prints its address - and until now it said them because 38 of the 42 shipped template
  * files had the words typed into them. That made a second company a find-and-replace across the
  * repository, and it made the first company's own change of address a deploy.
  *
@@ -28,7 +28,7 @@ import lombok.NoArgsConstructor;
  * collections with the same primary/active flags an accommodation's contacts already use.
  *
  * Bank details are not here either. They live in the Bank accounts module, which the invoice PDF
- * already reads — a sort code should have exactly one home.
+ * already reads - a sort code should have exactly one home.
  */
 @Entity
 @Table(name = "company_profile")
@@ -102,7 +102,7 @@ public class CompanyProfile {
     @Column(name = "default_currency", length = 3)
     private String defaultCurrency;
 
-    /** IANA zone, e.g. Africa/Dar_es_Salaam — what "today" means to this company. */
+    /** IANA zone, e.g. Africa/Dar_es_Salaam - what "today" means to this company. */
     @Column(name = "timezone", length = 64)
     private String timezone;
 
@@ -111,7 +111,7 @@ public class CompanyProfile {
     private String locale;
 
     /*
-     * How the company looks. Blank means "whatever the app ships with" — this is an override, not a
+     * How the company looks. Blank means "whatever the app ships with" - this is an override, not a
      * requirement, so an installation that never opens the Brand tab is unaffected.
      */
     /** drawn when no logo file is uploaded; blank means "the first letter of the trading name" */
@@ -130,7 +130,7 @@ public class CompanyProfile {
     /* ----------------------------------------------------------------- website */
 
     /**
-     * The public website's origin, e.g. https://example.com — scheme and host, no path.
+     * The public website's origin, e.g. https://example.com - scheme and host, no path.
      *
      * <p>Deliberately NOT the "website" link in the links collection. That one is for printing on a
      * letterhead and may be a pretty form with a locale on the end; this one is dialled by a machine
@@ -193,7 +193,7 @@ public class CompanyProfile {
     @Column(name = "website_cache_last_detail", length = 500)
     private String websiteCacheLastDetail;
 
-    /** True once a URL and a secret are both present — the two things a cache call needs. */
+    /** True once a URL and a secret are both present - the two things a cache call needs. */
     public boolean websiteCacheConfigured() {
         return websiteUrl != null && !websiteUrl.isBlank()
             && websiteCacheSecret != null && !websiteCacheSecret.isBlank();

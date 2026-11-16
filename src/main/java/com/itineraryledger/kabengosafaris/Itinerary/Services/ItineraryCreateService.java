@@ -106,7 +106,7 @@ public class ItineraryCreateService {
             itinerary.setCode(code);
 
             /*
-             * A new trip starts with the house promise, so nobody has to remember to add it — the
+             * A new trip starts with the house promise, so nobody has to remember to add it - the
              * three itineraries that showed no "what's included" section on the website were
              * simply ones nobody had pasted it into. Anything marked as not standard is left out,
              * so a trip-specific line never appears on paperwork it has nothing to do with.

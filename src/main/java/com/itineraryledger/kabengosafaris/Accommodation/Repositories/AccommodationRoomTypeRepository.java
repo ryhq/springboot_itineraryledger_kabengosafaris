@@ -18,7 +18,7 @@ public interface AccommodationRoomTypeRepository extends JpaRepository<Accommoda
      */
     Optional<AccommodationRoomType> findByAccommodationIdAndName(Long accommodationId, String name);
 
-    /** Every one of a lodge's room types, for reading it whole — export, and a rate's parents on import. */
+    /** Every one of a lodge's room types, for reading it whole - export, and a rate's parents on import. */
     java.util.List<AccommodationRoomType> findByAccommodationId(Long accommodationId);
 
     /**

@@ -40,7 +40,7 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
      * How many users hold each of the given roles, in one query.
      *
      * The role list needs a holder count per row, and asking per row is a query per
-     * role — the N+1 that makes a list page feel slow for no reason. Roles nobody holds
+     * role - the N+1 that makes a list page feel slow for no reason. Roles nobody holds
      * are simply absent from the result, so the caller defaults them to zero.
      *
      * @return rows of [roleId, count]

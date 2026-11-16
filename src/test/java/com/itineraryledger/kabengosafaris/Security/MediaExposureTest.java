@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
  * Which files anybody may fetch, and which need a token.
  *
  * This exists because every media endpoint was public. That is correct for a park photograph and
- * wrong for a customer document — the module that holds passports and visas — and the difference had
+ * wrong for a customer document - the module that holds passports and visas - and the difference had
  * never been written down anywhere a build could check. A URL is not a credential: links are
  * forwarded, logged by proxies, kept in browser history, and read off shared screens.
  *
@@ -35,7 +35,7 @@ class MediaExposureTest {
 
     /**
      * Published material. The website renders these with a plain {@code <img>}, which carries no
-     * bearer token, so a URL is the only credential — which is what "published" means.
+     * bearer token, so a URL is the only credential - which is what "published" means.
      */
     private static final Set<String> PUBLIC_MEDIA = Set.of(
         "accommodation-images",
@@ -48,7 +48,7 @@ class MediaExposureTest {
         "testimony-images");
 
     /**
-     * Everything else. Client paperwork, supplier contracts, quotes, invoices, receipts — read by the
+     * Everything else. Client paperwork, supplier contracts, quotes, invoices, receipts - read by the
      * panel through the API with its token, and by nobody else.
      */
     private static final Set<String> PRIVATE_MEDIA = Set.of(
@@ -102,7 +102,7 @@ class MediaExposureTest {
 
             %s
 
-            These hold client paperwork. A link is not a credential — it is forwarded, logged and
+            These hold client paperwork. A link is not a credential - it is forwarded, logged and
             left in history. The panel reads them through the API with its token, so no exemption is
             needed; if something genuinely cannot send a header, issue a short-lived signed link
             rather than opening the whole module.
@@ -132,7 +132,7 @@ class MediaExposureTest {
     /**
      * Every module whose controller serves a file, read from the source.
      *
-     * The alternative — asking Spring for its mappings — needs a running context and a database,
+     * The alternative - asking Spring for its mappings - needs a running context and a database,
      * which is exactly what CI does not have. A regex over the controllers finds the same endpoints
      * and runs in a second.
      */
@@ -155,7 +155,7 @@ class MediaExposureTest {
             }
         }
 
-        assertFalse(modules.isEmpty(), "found no media controllers — this guard would be checking nothing");
+        assertFalse(modules.isEmpty(), "found no media controllers - this guard would be checking nothing");
         return modules;
     }
 }

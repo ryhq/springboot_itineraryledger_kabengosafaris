@@ -368,7 +368,7 @@ public class TranslationController {
         /*
          * The house name for the one search box. Without it the list page's search sent
          * `keyword`, Spring dropped it on the floor, and every row came back as if nothing
-         * had been typed — a search that silently returns everything.
+         * had been typed - a search that silently returns everything.
          */
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false) Boolean includeStats,
@@ -444,7 +444,7 @@ public class TranslationController {
     /**
      * Ask the provider for this phrase again and keep the answer.
      *
-     * <p>Costs characters against the provider's quota — one entry's worth — which is why it is
+     * <p>Costs characters against the provider's quota - one entry's worth - which is why it is
      * a deliberate per-record action rather than anything that runs by itself.
      */
     @PostMapping("/cache/entries/{id}/retranslate")

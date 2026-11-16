@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
  * not be created today.
  *
  * The password is generated and thrown away. What the new colleague receives is an
- * activation link, so they choose their own — nobody has to read a temporary
+ * activation link, so they choose their own - nobody has to read a temporary
  * password down a phone line, and no administrator ever knows a colleague's password.
  */
 @Service
@@ -61,8 +61,8 @@ public class UserAdminCreateService {
             }
 
             /*
-             * A supplied password is honoured — occasionally an account is set up with
-             * somebody sitting there — but the normal path generates one nobody sees.
+             * A supplied password is honoured - occasionally an account is set up with
+             * somebody sitting there - but the normal path generates one nobody sees.
              */
             String password = blankToNull(request.getPassword());
 

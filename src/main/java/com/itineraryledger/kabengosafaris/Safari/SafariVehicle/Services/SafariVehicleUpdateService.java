@@ -97,7 +97,7 @@ public class SafariVehicleUpdateService {
                 );
             }
 
-            // Re-check availability if vehicle or dates changed — hard conflicts block, soft warn
+            // Re-check availability if vehicle or dates changed - hard conflicts block, soft warn
             List<String> warnings = null;
             if (needsAvailabilityCheck) {
                 AvailabilityResult availability = vehicleAvailabilityService.checkAvailability(

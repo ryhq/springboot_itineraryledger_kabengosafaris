@@ -49,7 +49,7 @@ public class ItineraryDayParkTariffController {
     }
 
     /**
-     * PUT /{tariffEntryId} — what to say about ONE fee on this visit.
+     * PUT /{tariffEntryId} - what to say about ONE fee on this visit.
      *
      * Which fees apply is the set above; this is whether a fee sits inside the
      * quoted price and what the office needs to know about it. A fee the client
@@ -70,7 +70,7 @@ public class ItineraryDayParkTariffController {
     }
 
     /**
-     * PUT — the whole fee set for this park visit, in one call.
+     * PUT - the whole fee set for this park visit, in one call.
      *
      * The UI is a checklist, and a checklist is a set rather than a sequence of
      * adds and removes: send the state you want and the server works out the

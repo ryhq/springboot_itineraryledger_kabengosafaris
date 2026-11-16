@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
  * The company profile row, created once and never overwritten.
  *
  * "Never overwritten" is the important half: this runs on every restart, and an operator who
- * corrects their own address must not have it reverted by the next deploy — the same rule the other
+ * corrects their own address must not have it reverted by the next deploy - the same rule the other
  * settings initializers follow.
  *
  * For an install that already has documents in the wild (Kabengo), the values seeded here are the
@@ -114,8 +114,8 @@ public class CompanyProfileInitializer implements ApplicationRunner, Ordered {
     /**
      * Read the profile the way a document reads it, at boot.
      *
-     * Because the first version of this could not be read at all — five lazy collections join-fetched
-     * in one query, which Hibernate refuses — and nothing found out until a real request answered 500
+     * Because the first version of this could not be read at all - five lazy collections join-fetched
+     * in one query, which Hibernate refuses - and nothing found out until a real request answered 500
      * with the health check still green. Reading it here means a profile that cannot be loaded shows
      * up in the deploy's own logs, before a client sees a blank invoice.
      */

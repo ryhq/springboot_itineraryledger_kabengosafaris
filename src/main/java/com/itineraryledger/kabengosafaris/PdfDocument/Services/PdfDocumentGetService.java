@@ -58,8 +58,8 @@ public class PdfDocumentGetService {
      * The list: the rows, the counters and the sort, in one response.
      *
      * It used to return every document type as a bare array with no total, so the table
-     * under it reported "1–10 of 0" while showing rows. Now on the house contract, with the
-     * counters that matter — a type switched off produces nothing, and a type switched ON
+     * under it reported "1-10 of 0" while showing rows. Now on the house contract, with the
+     * counters that matter - a type switched off produces nothing, and a type switched ON
      * with no enabled template has nothing to produce it from, which looks identical from
      * every other column.
      */

@@ -31,12 +31,12 @@ import java.nio.file.Paths;
  *
  * <p>Streams the file straight from disk via {@link RandomAccessFile} so the
  * JVM never buffers the whole archive into memory, and honours
- * {@code Range: bytes=…} so browsers' built-in download managers — and
- * future chunked/resumable clients — can pause, resume, and retry without
+ * {@code Range: bytes=...} so browsers' built-in download managers - and
+ * future chunked/resumable clients - can pause, resume, and retry without
  * re-fetching the entire backup.
  *
  * <p>Auth is the normal {@code Authorization: Bearer <JWT>} header. No
- * separate download token — staff with {@code PERM_DOWNLOAD_BACKUP} can
+ * separate download token - staff with {@code PERM_DOWNLOAD_BACKUP} can
  * hit this endpoint with their session JWT directly.
  */
 @RestController
@@ -66,7 +66,7 @@ public class BackupDownloadController {
      *
      * <p>The cookie is {@code HttpOnly}, {@code SameSite=Strict}, scoped to
      * {@code /api/backups/download/}, and expires within
-     * {@value #DOWNLOAD_COOKIE_TTL_SECONDS}s — long enough to click "Save",
+     * {@value #DOWNLOAD_COOKIE_TTL_SECONDS}s - long enough to click "Save",
      * short enough that a stolen cookie is useless almost immediately.
      */
     @PostMapping("/{filename}/prepare-download")
@@ -89,7 +89,7 @@ public class BackupDownloadController {
                 .httpOnly(true)
                 .secure(true)
                 // Cross-site cookie (management.kabengosafaris.com sets a
-                // cookie on api.kabengosafaris.ryhqtech.com — different
+                // cookie on api.kabengosafaris.ryhqtech.com - different
                 // registrable domains). SameSite=Lax is technically meant
                 // to work for top-level GET navigations, but Chrome refuses
                 // to honour cross-origin Set-Cookie from XHR/fetch with
@@ -145,7 +145,7 @@ public class BackupDownloadController {
         //   bytes=START-      (open end → through EOF)
         //   bytes=-SUFFIX     (last SUFFIX bytes)
         // Multipart ranges (multiple comma-separated ranges) are intentionally
-        // unsupported — they're rare in practice and a lot more code.
+        // unsupported - they're rare in practice and a lot more code.
         if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
             String spec = rangeHeader.substring("bytes=".length()).trim();
             int dash = spec.indexOf('-');
@@ -178,7 +178,7 @@ public class BackupDownloadController {
 
         long contentLength = end - start + 1;
 
-        // 3. Response headers — Accept-Ranges advertises range support for
+        // 3. Response headers - Accept-Ranges advertises range support for
         //    download managers; Content-Disposition forces a download dialog
         //    rather than inline rendering.
         response.setStatus(partial ? HttpStatus.PARTIAL_CONTENT.value() : HttpStatus.OK.value());
@@ -202,7 +202,7 @@ public class BackupDownloadController {
                     .httpOnly(true)
                     .secure(true)
                     // Cross-site cookie (management.kabengosafaris.com sets a
-                // cookie on api.kabengosafaris.ryhqtech.com — different
+                // cookie on api.kabengosafaris.ryhqtech.com - different
                 // registrable domains). SameSite=Lax is technically meant
                 // to work for top-level GET navigations, but Chrome refuses
                 // to honour cross-origin Set-Cookie from XHR/fetch with
@@ -215,7 +215,7 @@ public class BackupDownloadController {
             response.addHeader(HttpHeaders.SET_COOKIE, cleared.toString());
         }
 
-        // 4. HEAD requests want the headers only — Spring will deliver them
+        // 4. HEAD requests want the headers only - Spring will deliver them
         //    above. Stop before opening the file.
         if ("HEAD".equalsIgnoreCase(request.getMethod())) {
             return;
@@ -237,7 +237,7 @@ public class BackupDownloadController {
             out.flush();
         } catch (IOException e) {
             // Most common cause is the client disconnecting mid-download
-            // (browser cancel, network drop). Log at debug — there is
+            // (browser cancel, network drop). Log at debug - there is
             // nothing useful we can send to the client at this point because
             // the response headers have already been flushed.
             log.debug("Backup download stream closed for {}: {}", filename, e.getMessage());

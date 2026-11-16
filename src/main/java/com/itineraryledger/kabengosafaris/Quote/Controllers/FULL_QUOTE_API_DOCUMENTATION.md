@@ -306,23 +306,23 @@ PERM_READ_QUOTE
 
 ```
 FullQuoteDTO
-├── Quote fields (id, quoteCode, title, status, pricing, dates, etc.)
-├── Summary statistics
-│   ├── totalItemsCount
-│   └── totalCurrenciesCount
-├── customer: CustomerDTO
-│   └── Customer information (name, email, phone, address)
-├── itinerary: ItineraryDTO
-│   └── Itinerary summary (name, code, trip details)
-├── items: List<QuoteItemDTO>
-│   └── QuoteItemDTO
-│       ├── Item details (type, name, description)
-│       └── prices: List<PriceDTO>  [Multi-currency prices]
-│           └── PriceDTO (currency, quantity, unitPrice, totalPrice)
-├── subtotals: List<PriceDTO>  [By currency]
-├── taxes: List<PriceDTO>  [By currency]
-├── discounts: List<PriceDTO>  [By currency]
-└── grandTotals: List<PriceDTO>  [By currency]
++== Quote fields (id, quoteCode, title, status, pricing, dates, etc.)
++== Summary statistics
+|   +== totalItemsCount
+|   +== totalCurrenciesCount
++== customer: CustomerDTO
+|   +== Customer information (name, email, phone, address)
++== itinerary: ItineraryDTO
+|   +== Itinerary summary (name, code, trip details)
++== items: List<QuoteItemDTO>
+|   +== QuoteItemDTO
+|       +== Item details (type, name, description)
+|       +== prices: List<PriceDTO>  [Multi-currency prices]
+|           +== PriceDTO (currency, quantity, unitPrice, totalPrice)
++== subtotals: List<PriceDTO>  [By currency]
++== taxes: List<PriceDTO>  [By currency]
++== discounts: List<PriceDTO>  [By currency]
++== grandTotals: List<PriceDTO>  [By currency]
 ```
 
 ## Field Descriptions
@@ -398,7 +398,7 @@ FullQuoteDTO
 | `currency` | String | Currency code (USD, EUR, TZS, etc.) |
 | `quantity` | Integer | Quantity/count for calculation |
 | `unitPrice` | Decimal | Price per unit |
-| `totalPrice` | Decimal | Total price (quantity × unitPrice) |
+| `totalPrice` | Decimal | Total price (quantity x unitPrice) |
 | `breakdown` | String | Human-readable breakdown explanation |
 | `formattedUnitPrice` | String | Formatted unit price with currency symbol |
 | `formattedTotalPrice` | String | Formatted total price with currency symbol |
@@ -476,8 +476,8 @@ The quote system supports multi-currency pricing to accommodate passengers with 
 ```
 For each currency:
   Subtotal = Sum of all item total prices in that currency
-  Tax = Subtotal × (taxPercentage / 100)
-  Discount = Subtotal × (discountPercentage / 100)
+  Tax = Subtotal x (taxPercentage / 100)
+  Discount = Subtotal x (discountPercentage / 100)
   Grand Total = Subtotal + Tax - Discount
 ```
 

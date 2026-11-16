@@ -35,7 +35,7 @@ public class PublicTranslationService {
     /**
      * Preferred display names for locale codes the provider labels poorly.
      * LibreTranslate returns "Ukranian" (misspelt) for uk, and unknown codes fall back to
-     * their upper-cased code — this map wins over both.
+     * their upper-cased code - this map wins over both.
      */
     private static final Map<String, String> PREFERRED_LANGUAGE_NAMES = Map.of(
             "uk", "Ukrainian"
@@ -148,7 +148,7 @@ public class PublicTranslationService {
             return ResponseEntity.badRequest().body(
                     ApiResponse.error(400, "Maximum 500 texts per request, received " + texts.size(), "TOO_MANY_TEXTS"));
         }
-        // Skip isAvailable() check — it pings the provider API each time, which
+        // Skip isAvailable() check - it pings the provider API each time, which
         // can fail under rapid batch requests. Instead, just try to translate and
         // let individual failures fall back to original text gracefully.
 
@@ -180,7 +180,7 @@ public class PublicTranslationService {
 
     /**
      * Get supported languages with names from the translation provider.
-     * Public endpoint — no authentication required.
+     * Public endpoint - no authentication required.
      */
     public ResponseEntity<ApiResponse<?>> getSupportedLanguages() {
         try {
@@ -215,7 +215,7 @@ public class PublicTranslationService {
             return ResponseEntity.ok(ApiResponse.success(200, "Supported languages retrieved", response));
         } catch (Exception e) {
             log.error("Error fetching supported languages", e);
-            // Fallback — return just the codes from settings
+            // Fallback - return just the codes from settings
             List<String> supportedCodes = settingsService.getSupportedLanguages();
             Map<String, Object> response = new HashMap<>();
             response.put("supportedLanguages", supportedCodes);
@@ -231,13 +231,13 @@ public class PublicTranslationService {
         }
     }
 
-    // ── Internal ──
+    // == Internal ==
 
     private void translateObject(Object obj, String targetLang) {
         if (obj == null) return;
         Class<?> clazz = obj.getClass();
 
-        // Skip JDK/platform classes — they can't have @Translatable and reflection is blocked by modules
+        // Skip JDK/platform classes - they can't have @Translatable and reflection is blocked by modules
         String className = clazz.getName();
         if (className.startsWith("java.") || className.startsWith("javax.") || className.startsWith("jdk.")) {
             return;
@@ -265,7 +265,7 @@ public class PublicTranslationService {
                  * A @Translatable List<String>: the bullet items of a blog body block.
                  *
                  * Handled explicitly because the list recursion below looks for DTOs with
-                 * their own annotated fields, and a String has none — so an annotated list of
+                 * their own annotated fields, and a String has none - so an annotated list of
                  * plain strings would have been walked past in silence and shipped in English.
                  */
                 else if (field.isAnnotationPresent(Translatable.class)

@@ -43,7 +43,7 @@ class StoragePathsAreDeclaredTest {
     private static final Path CANONICAL = Paths.get("src/main/resources/application.properties");
     private static final Path PRODUCTION = Paths.get("src/main/resources/application-production.properties");
 
-    /** {@code ${some.key.storage.path:default}} — the placeholder form the storage services use. */
+    /** {@code ${some.key.storage.path:default}} - the placeholder form the storage services use. */
     private static final Pattern PLACEHOLDER =
             Pattern.compile("\\$\\{([a-zA-Z0-9._-]+\\.storage(?:\\.base)?\\.path)[:}]");
 

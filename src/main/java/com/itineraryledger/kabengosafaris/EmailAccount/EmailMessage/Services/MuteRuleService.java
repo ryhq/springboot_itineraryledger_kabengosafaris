@@ -100,7 +100,7 @@ public class MuteRuleService {
     }
 
     /**
-     * §7 — count messages in `folderId` received on `date` that matched
+     * §7 - count messages in `folderId` received on `date` that matched
      * any active mute rule. Returns a small payload with the count and up
      * to 5 sample message ids the inbox can offer to expand.
      */

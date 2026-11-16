@@ -38,7 +38,7 @@ public class AvailabilityRequestDTO {
     private LocalDateTime sentAt;
     private String sentByName;
     private LocalDateTime chaseDueAt;
-    /** true once it is past its chase date with no reply — computed, never stored stale */
+    /** true once it is past its chase date with no reply - computed, never stored stale */
     private Boolean chaseDue;
     private LocalDateTime repliedAt;
     private String replyMessageId;

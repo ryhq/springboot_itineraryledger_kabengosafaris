@@ -5,7 +5,7 @@ package com.itineraryledger.kabengosafaris.Flight.Enums;
  *
  * <p>Two shapes because the office genuinely uses both: a percentage on a long expensive sector, and
  * a flat handling fee on a short cheap one where a percentage would not cover the work of issuing
- * the ticket. "Air Excel need 300 per person, add 13% or add 50" — both of those, not one of them.
+ * the ticket. "Air Excel need 300 per person, add 13% or add 50" - both of those, not one of them.
  *
  * <p>Whichever is used, it applies <strong>per person</strong> and <strong>to the fare only</strong>.
  * Taxes and fees are never marked up: they are collected on the airline's behalf and an invoice has

@@ -43,8 +43,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Every day of a quote, with everything on it, in one request.
  *
- * The day-configuration screen shows what each day is missing — a night with no
- * stay, a park with no fees — and that cannot be answered day by day without one
+ * The day-configuration screen shows what each day is missing - a night with no
+ * stay, a park with no fees - and that cannot be answered day by day without one
  * request per day plus one per park. A fourteen-day safari would be fifty
  * requests to draw one screen.
  *
@@ -190,8 +190,8 @@ public class QuoteDayTreeService {
     }
 
     /**
-     * The markup cascade is resolved here, as it is everywhere else a flight is read — line, then
-     * fare, then airline — so the panel and the cost sheet cannot name different sources for the
+     * The markup cascade is resolved here, as it is everywhere else a flight is read - line, then
+     * fare, then airline - so the panel and the cost sheet cannot name different sources for the
      * same figure.
      */
     private DayFlightDTO toFlight(QuoteDayFlight flight) {

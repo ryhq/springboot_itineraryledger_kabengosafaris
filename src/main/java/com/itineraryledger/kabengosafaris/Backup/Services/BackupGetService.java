@@ -88,8 +88,8 @@ public class BackupGetService {
             /*
              * new File(dir, name), never dir + name.
              *
-             * The configured path may or may not end in a separator — an environment file written by
-             * hand usually does not — and concatenation then produces
+             * The configured path may or may not end in a separator - an environment file written by
+             * hand usually does not - and concatenation then produces
              * "/opt/kabengosafaris/backupsbackup_20260818.zip". The LIST kept working, because a
              * directory path is valid without its trailing slash, so backups appeared on screen and
              * every one of them 404'd when opened.
@@ -113,8 +113,8 @@ public class BackupGetService {
             BackupDTO backupDTO = convertToDTO(backupFile);
 
             /*
-             * The walk runs over the SAME filtered, sorted set the list used — page into a
-             * backup from a search and the arrows stay inside that search — and reports the
+             * The walk runs over the SAME filtered, sorted set the list used - page into a
+             * backup from a search and the arrows stay inside that search - and reports the
              * position, so "3 of 40" replaces two arrows and no idea where you are.
              */
             List<BackupInfo> ordered = filteredBackups(
@@ -475,7 +475,7 @@ public class BackupGetService {
     }
 
     /**
-     * The filtered, sorted set — shared by the rows, the counters and the record walk.
+     * The filtered, sorted set - shared by the rows, the counters and the record walk.
      *
      * Backups are files rather than rows, so there is no Specification to hand around; this
      * is the same idea done in memory. Sharing it is what stops a card counting one set
@@ -515,7 +515,7 @@ public class BackupGetService {
      * The cards over the backups.
      *
      * Every figure is about the same question: is there a recent, complete backup to restore
-     * from. "None in the last 24 hours" is the one worth acting on — a schedule that has
+     * from. "None in the last 24 hours" is the one worth acting on - a schedule that has
      * quietly stopped looks exactly like a system nobody has changed.
      */
     private Map<String, Object> buildStats(List<BackupInfo> filtered) {

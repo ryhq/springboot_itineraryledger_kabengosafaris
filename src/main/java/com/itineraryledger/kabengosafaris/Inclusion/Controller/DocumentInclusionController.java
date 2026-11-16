@@ -18,7 +18,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 /**
- * What a quote, safari or invoice says its price covers — read, edited and reset.
+ * What a quote, safari or invoice says its price covers - read, edited and reset.
  *
  * <p>One controller for the three, because they are one idea: each document inherits from the one
  * above it, may be edited, and may be put back. Splitting it across three files would put the same

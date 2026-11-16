@@ -74,7 +74,7 @@ public class ActivityGetService {
      *
      * The list's filters and sort arrive here because paging out of a filtered list
      * must stay inside that filter, and the record page's N of M must count that
-     * same set — it had no readout at all while the walk was raw id order.
+     * same set - it had no readout at all while the walk was raw id order.
      */
     public ResponseEntity<ApiResponse<?>> getActivityById(
         String idObfuscated,
@@ -358,7 +358,7 @@ public class ActivityGetService {
     }
 
     /**
-     * Shared filter chain — rows and stats must always agree, so both build here.
+     * Shared filter chain - rows and stats must always agree, so both build here.
      */
     private Specification<Activity> buildSpec(
         String name,

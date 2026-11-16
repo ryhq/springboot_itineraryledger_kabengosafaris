@@ -6,7 +6,7 @@ import java.util.List;
 import lombok.Data;
 
 /**
- * Everything a caller can narrow the blog list by, in one object — so the rows, the counters
+ * Everything a caller can narrow the blog list by, in one object - so the rows, the counters
  * and the record walk are asked the same question.
  */
 @Data

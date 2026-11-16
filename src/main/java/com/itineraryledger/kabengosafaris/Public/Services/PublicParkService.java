@@ -65,7 +65,7 @@ public class PublicParkService {
 
             Page<Park> parkPage;
             if ("visited".equalsIgnoreCase(sortBy) || "safariCount".equalsIgnoreCase(sortBy)) {
-                // Computed sort — order by usage count. Small dataset, so sort in memory then page.
+                // Computed sort - order by usage count. Small dataset, so sort in memory then page.
                 List<Park> all = parkRepository.findAll(spec, Sort.by("name").ascending());
                 Map<Long, Long> allCounts = usageCounts(all.stream().map(Park::getId).collect(Collectors.toList()));
                 all.sort((a, b) -> {
@@ -137,7 +137,7 @@ public class PublicParkService {
 
             /*
              * A park's gallery also shows the published photos of the activities it
-             * offers — the park's own images lead, those follow. Merged here rather
+             * offers - the park's own images lead, those follow. Merged here rather
              * than served separately so the website needs no change to benefit.
              */
             List<PublicImageDTO> pair = activityImagesForPark(park.getId());

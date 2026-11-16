@@ -228,7 +228,7 @@ public class RoleInitializer implements ApplicationRunner {
      *
      * Deleting a customer or an invoice destroys history somebody may need to answer
      * for, which is why ADMIN is denied DELETE everywhere else. Deleting an account
-     * or a role destroys no history — it withdraws access — and it is the one thing
+     * or a role destroys no history - it withdraws access - and it is the one thing
      * an administrator must be able to do without waiting for a superadmin. Somebody
      * leaves the company on a Friday; the person who can turn off their login has to
      * be the person who is there.
@@ -237,7 +237,7 @@ public class RoleInitializer implements ApplicationRunner {
 
     /**
      * Get ADMIN permissions (all except DELETE, which is still granted over
-     * users, roles and permissions — see ADMINISTRATION_ENTITIES)
+     * users, roles and permissions - see ADMINISTRATION_ENTITIES)
      */
     private Set<Permission> getAdminPermissions() {
         List<Permission> allPermissions = permissionRepository.findByActiveTrue();

@@ -24,13 +24,13 @@ import lombok.RequiredArgsConstructor;
 /**
  * Where a quote's promise and a quote's prices disagree.
  *
- * <p>A warning, never a refusal. A contradiction is frequently deliberate — park fees priced out
- * because the client pays at the gate is a legitimate quote — so this reports and gets out of the
+ * <p>A warning, never a refusal. A contradiction is frequently deliberate - park fees priced out
+ * because the client pays at the gate is a legitimate quote - so this reports and gets out of the
  * way. Blocking would teach people to phrase the promise around the check instead of fixing it.
  *
  * <p><strong>Only lines that make a checkable claim are checked at all.</strong> Eight of the
- * fourteen standard lines claim nothing a machine can verify — no line type stands for
- * "flying-doctors cover" or "drinking water on game drives" — and the shared
+ * fourteen standard lines claim nothing a machine can verify - no line type stands for
+ * "flying-doctors cover" or "drinking water on game drives" - and the shared
  * {@link LineCategoryScope} reads an unset scope as EVERY category, because for tax and discount
  * that is what it means. Read the same way here, "Drinking water on game drives" would accuse every
  * quote ever written of contradicting itself about park fees, insurance and visas at once. So the

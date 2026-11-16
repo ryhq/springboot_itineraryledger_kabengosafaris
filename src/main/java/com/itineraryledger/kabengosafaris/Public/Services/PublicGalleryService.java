@@ -65,7 +65,7 @@ public class PublicGalleryService {
             boolean fetchAccommodations = entityType == null || "ACCOMMODATION".equalsIgnoreCase(entityType);
 
             if (entityType != null) {
-                // Single type — use direct pagination
+                // Single type - use direct pagination
                 Pageable pageable = PageRequest.of(page, size);
 
                 if (fetchParks) {
@@ -95,7 +95,7 @@ public class PublicGalleryService {
                 return ResponseEntity.ok(ApiResponse.success(200, "Gallery images retrieved", response));
 
             } else {
-                // All types — fetch proportionally from each type
+                // All types - fetch proportionally from each type
                 // Get total counts first
                 Pageable countPage = PageRequest.of(0, 1);
                 totalParkImages = parkImageRepository.findAllActiveForGallery(countPage).getTotalElements();
@@ -153,7 +153,7 @@ public class PublicGalleryService {
         }
     }
 
-    // ── DTO Converters ─────────────────────────────────────────────
+    // == DTO Converters =============================================
 
     private PublicGalleryImageDTO toParkGalleryDTO(ParkImage image) {
         return PublicGalleryImageDTO.builder()
@@ -191,7 +191,7 @@ public class PublicGalleryService {
                 .build();
     }
 
-    // ── Helpers ─────────────────────────────────────────────────────
+    // == Helpers =====================================================
 
     private String toFullImageUrl(String relativePath) {
         if (relativePath == null || relativePath.isBlank()) return null;

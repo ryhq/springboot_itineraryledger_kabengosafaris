@@ -17,7 +17,7 @@ public enum CostItemType {
      * this enum and SILENTLY DROP anything they do not recognise, so a new type without a matching
      * branch in PerDayCostAggregator.calculateTotalsByCurrency, PerPaxCostAggregator and
      * CurrencyGroupedCostDTO produces line items that appear on screen and are missing from the
-     * total — which is worse than not showing them at all.
+     * total - which is worse than not showing them at all.
      */
     FLIGHT("Flight", "Air fares, their taxes and the markup on them");
 

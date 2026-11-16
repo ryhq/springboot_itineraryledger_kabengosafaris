@@ -302,7 +302,7 @@ public class RolePermissionService {
          * A built-in role's permissions are read-only.
          *
          * RoleInitializer rewrites them on every startup, so a grant made here survives only
-         * until the next restart and a revocation does not survive at all — the initializer
+         * until the next restart and a revocation does not survive at all - the initializer
          * only ever adds. Accepting the write would show the switches in the state the caller
          * chose while the system quietly disagreed, which is the worst outcome for a screen
          * whose entire job is saying who can do what.
@@ -484,7 +484,7 @@ public class RolePermissionService {
                 break;
             case "ADMIN":
                 /*
-                 * CREATE, READ, UPDATE — plus DELETE over users, roles and permissions.
+                 * CREATE, READ, UPDATE - plus DELETE over users, roles and permissions.
                  *
                  * Must match RoleInitializer.ADMINISTRATION_ENTITIES exactly. If it does
                  * not, restoring defaults here strips a permission that the next restart

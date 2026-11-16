@@ -33,7 +33,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Sectors — one airline, one origin, one destination.
+ * Sectors - one airline, one origin, one destination.
  *
  * <p>The three together are the route's identity and the table enforces it, so there is no way to
  * edit them here: repointing a sector would silently move every fare and every trip already on it.
@@ -61,7 +61,7 @@ public class FlightRouteService {
      * one that is absent, which is why the two name columns are marked unsortable on the panel
      * side rather than pretending.
      *
-     * The dotted paths are property paths, not SQL — Spring Data joins them for us.
+     * The dotted paths are property paths, not SQL - Spring Data joins them for us.
      */
     /**
      * Words that join two place names on screen and name nothing themselves.
@@ -94,7 +94,7 @@ public class FlightRouteService {
 
         /*
          * The null check is NOT redundant. SORTABLE is a List.of, which forbids nulls and
-         * throws NullPointerException from contains(null) rather than answering false — and
+         * throws NullPointerException from contains(null) rather than answering false - and
          * sortBy is null on every request that does not ask for a sort, which is most of them.
          * Without it the whole listing answers 500.
          */
@@ -203,7 +203,7 @@ public class FlightRouteService {
     }
 
     /**
-     * Deleting a route takes its fares with it — they describe departures of this sector and mean
+     * Deleting a route takes its fares with it - they describe departures of this sector and mean
      * nothing without it. A route a TRIP is using is refused, because that would silently strip a
      * flight from an itinerary somebody has already quoted.
      */
@@ -249,7 +249,7 @@ public class FlightRouteService {
             List<Predicate> and = new ArrayList<>();
             if (keyword != null && !keyword.isBlank()) {
                 /*
-                 * Searching a sector means searching its ends, which live on another table — so the
+                 * Searching a sector means searching its ends, which live on another table - so the
                  * join is here and the result is distinct, or a two-ended match returns the row twice.
                  */
                 var o = root.join("originAirstrip");
@@ -259,7 +259,7 @@ public class FlightRouteService {
                 /*
                  * Every WORD has to match something, rather than the whole phrase matching one
                  * field. A sector is displayed as "Arusha to Zanzibar", so that is what people
-                 * type — and as a single LIKE it matched nothing at all, because no column holds
+                 * type - and as a single LIKE it matched nothing at all, because no column holds
                  * both ends. Split into words, each must appear somewhere, and the pair narrows
                  * to the one sector instead of every flight touching Arusha.
                  *
@@ -289,7 +289,7 @@ public class FlightRouteService {
      * Decode an optional filter id, or null when it was not supplied.
      *
      * <p>{@code IdObfuscator.decodeId} throws "Hash cannot be null or empty" on a null, and every id
-     * here is an OPTIONAL query parameter that is absent on most requests — so calling it directly
+     * here is an OPTIONAL query parameter that is absent on most requests - so calling it directly
      * turns the unfiltered listing, which is the one the panel opens with, into a 400. Same shape as
      * the List.of(...).contains(null) trap next door: a helper that rejects null, handed the null
      * that absence produces.

@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
  * completeness gaps, and every write returns that same payload back. The four contact collections
  * and the five asset slots are addressed as sub-paths.
  *
- * Permissions are matched by NAME against the catalogue seeded from permissions/entities.json — the
+ * Permissions are matched by NAME against the catalogue seeded from permissions/entities.json - the
  * COMPANY_PROFILE entity is registered there, so PERM_READ_COMPANY_PROFILE and friends exist. A name
  * the catalogue does not know 403s everybody, superadmin included.
  */
@@ -55,7 +55,7 @@ public class CompanyProfileController {
     /**
      * What the company variables currently resolve to, for previewing a template.
      *
-     * This was `isAuthenticated()` on the reasoning that nothing here is secret — it is the text the
+     * This was `isAuthenticated()` on the reasoning that nothing here is secret - it is the text the
      * templates already send out. That was wrong twice over. The payload carries the TIN and the
      * default bank account's number, IBAN and SWIFT, which are not "the text on a letterhead" in any
      * useful sense. And authentication is SELF-SERVICE here: anyone may create an account from the
@@ -63,7 +63,7 @@ public class CompanyProfileController {
      * can receive email", not "somebody who works here".
      *
      * So: whoever edits a template may read it, because they genuinely need to see the name and the
-     * colours their layout will print — and the money and tax numbers inside it are redacted unless
+     * colours their layout will print - and the money and tax numbers inside it are redacted unless
      * the caller may read the company profile outright.
      */
     @GetMapping("/variables")

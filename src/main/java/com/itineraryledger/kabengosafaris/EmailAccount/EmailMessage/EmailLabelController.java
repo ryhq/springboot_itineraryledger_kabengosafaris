@@ -22,7 +22,7 @@ public class EmailLabelController {
 
     private final EmailLabelService emailLabelService;
 
-    // ─── Label CRUD ───────────────────────────────────────────────────
+    // === Label CRUD ===================================================
 
     @GetMapping("/labels")
     @PreAuthorize("hasAuthority('PERM_READ_EMAIL_MESSAGE')")
@@ -55,7 +55,7 @@ public class EmailLabelController {
         return emailLabelService.deleteLabel(accountId, labelId);
     }
 
-    // ─── Apply labels to messages ─────────────────────────────────────
+    // === Apply labels to messages =====================================
 
     @PutMapping("/messages/{id}/labels")
     @PreAuthorize("hasAuthority('PERM_UPDATE_EMAIL_MESSAGE')")

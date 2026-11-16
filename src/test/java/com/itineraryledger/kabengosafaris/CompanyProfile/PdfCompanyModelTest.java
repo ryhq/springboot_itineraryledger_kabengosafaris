@@ -34,7 +34,7 @@ class PdfCompanyModelTest {
               <h1 th:text="${company.name}">placeholder</h1>
               <p>Contact [[${company.email}]] on [[${company.phone}]]</p>
               <p th:text="${company.address}">placeholder</p>
-              <p>TIN [[${company.tin}]] · [[${company.website}]]</p>
+              <p>TIN [[${company.tin}]] | [[${company.website}]]</p>
               <p th:text="${company.bank.accountNumber}">placeholder</p>
               <p th:text="${company.formalName}">placeholder</p>
               <p>&copy; [[${company.year}]]</p>
@@ -121,7 +121,7 @@ class PdfCompanyModelTest {
         /*
          * A brand colour lives in a <style> block and in style="" attributes, and Thymeleaf serves
          * neither: inlining never touches an attribute, and inside <style> th:inline="css" ESCAPES what
-         * it writes — `\#0f4a35` for a colour, `\31 0px` for a length, both invalid. So the brand is a
+         * it writes - `\#0f4a35` for a colour, `\31 0px` for a length, both invalid. So the brand is a
          * plain token, and this asserts it arrives usable rather than merely present.
          */
         assertTrue(html.contains("background: #0f4a35;"), "the darker shade, unescaped:\n" + html);

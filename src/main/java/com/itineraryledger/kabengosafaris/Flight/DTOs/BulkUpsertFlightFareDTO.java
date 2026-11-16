@@ -26,7 +26,7 @@ public class BulkUpsertFlightFareDTO {
     @NotBlank(message = "Flight route is required")
     private String flightRouteId;
 
-    /** Null where the airline says TBC — which it does on 65 of Air Excel's 350 rows. */
+    /** Null where the airline says TBC - which it does on 65 of Air Excel's 350 rows. */
     @JsonFormat(pattern = "HH:mm")
     private LocalTime etd;
 

@@ -72,7 +72,7 @@ public class TestimonyDeleteService {
         int deletedCount = 0;
         /*
          * Per-row outcomes, because this used to answer "200, none deleted" in the same
-         * words as "200, all deleted" — a row that was missing or that threw was logged
+         * words as "200, all deleted" - a row that was missing or that threw was logged
          * here and never mentioned to the caller.
          */
         List<String> deletedIds = new java.util.ArrayList<>();

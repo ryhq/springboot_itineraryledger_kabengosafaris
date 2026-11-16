@@ -17,8 +17,8 @@ import lombok.NoArgsConstructor;
  * activities), its stays and its own activities.
  *
  * The field names deliberately match FullItineraryDTO's day tree. The
- * configuration screen is the same screen for both — a quote's days ARE the
- * itinerary's days, copied at the moment it was priced — so the two payloads
+ * configuration screen is the same screen for both - a quote's days ARE the
+ * itinerary's days, copied at the moment it was priced - so the two payloads
  * being the same shape is what lets one component serve both instead of two
  * that drift apart.
  */

@@ -307,7 +307,7 @@ public class PdfGenerationController {
     /**
      * The costing for a quote, priced at the party that is travelling.
      *
-     * <p>GET /api/pdf/quote/{quoteId}/costing — the symmetric twin of
+     * <p>GET /api/pdf/quote/{quoteId}/costing - the symmetric twin of
      * /api/pdf/itinerary/{id} with FULL_COST_ESTIMATION, which prices the product at its
      * reference party instead. Both exist because both are real questions.
      */

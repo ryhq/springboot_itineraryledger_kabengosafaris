@@ -13,13 +13,13 @@ The new implementation eliminates redundancy through **self-referencing** archit
 ### Database Schema
 ```
 accommodation                    (8 tables total)
-├── accommodation_emails         (separate table)
-├── accommodation_phones         (separate table)
-├── accommodation_image          (separate table)
-└── accommodation_branch         (separate entity - DUPLICATE!)
-    ├── accommodation_branch_emails   (DUPLICATE of accommodation_emails)
-    ├── accommodation_branch_phones   (DUPLICATE of accommodation_phones)
-    └── accommodation_branch_image    (DUPLICATE of accommodation_image)
++== accommodation_emails         (separate table)
++== accommodation_phones         (separate table)
++== accommodation_image          (separate table)
++== accommodation_branch         (separate entity - DUPLICATE!)
+    +== accommodation_branch_emails   (DUPLICATE of accommodation_emails)
+    +== accommodation_branch_phones   (DUPLICATE of accommodation_phones)
+    +== accommodation_branch_image    (DUPLICATE of accommodation_image)
 ```
 
 ### Problems with Old Approach
@@ -85,9 +85,9 @@ Developers must remember which endpoint to use!
 ### Database Schema
 ```
 accommodations                   (4 tables total - 50% reduction!)
-├── accommodation_emails         (shared for HQ and branches)
-├── accommodation_phones         (shared for HQ and branches)
-└── accommodation_images         (shared for HQ and branches)
++== accommodation_emails         (shared for HQ and branches)
++== accommodation_phones         (shared for HQ and branches)
++== accommodation_images         (shared for HQ and branches)
 ```
 
 ### Architecture: Self-Referencing Entity

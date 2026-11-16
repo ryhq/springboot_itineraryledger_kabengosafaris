@@ -12,7 +12,7 @@ package com.itineraryledger.kabengosafaris.Inclusion.Entity;
  */
 public enum InclusionsSource {
 
-    /** Unchanged since it was copied — resetting would do nothing. */
+    /** Unchanged since it was copied - resetting would do nothing. */
     INHERITED("Inherited", "Still exactly what the parent document said"),
 
     /** Changed on this document. Resetting discards those changes and re-copies the parent's. */

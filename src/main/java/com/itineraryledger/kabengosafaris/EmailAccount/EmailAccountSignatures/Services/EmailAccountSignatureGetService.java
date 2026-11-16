@@ -520,7 +520,7 @@ public class EmailAccountSignatureGetService {
                 .id(idObfuscator.encodeId(signature.getId()))
                 .emailAccountId(idObfuscator.encodeId(signature.getEmailAccount().getId()))
                 /*
-                 * The mailbox in words. THIS is the mapper the list and the record use — the
+                 * The mailbox in words. THIS is the mapper the list and the record use - the
                  * name went onto a different builder first, which is why the Mailbox column
                  * was empty and the breadcrumb said "Record".
                  */

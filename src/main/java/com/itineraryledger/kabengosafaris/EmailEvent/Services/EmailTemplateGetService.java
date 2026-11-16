@@ -170,7 +170,7 @@ public class EmailTemplateGetService {
 
             /*
              * Circular navigation inside this event's templates, filtered and sorted as the
-             * list was — the id-ordered walk it replaces ignored both, and could not say
+             * list was - the id-ordered walk it replaces ignored both, and could not say
              * where in the set you were.
              */
             String validatedSortBy = validateSortField(sortBy);

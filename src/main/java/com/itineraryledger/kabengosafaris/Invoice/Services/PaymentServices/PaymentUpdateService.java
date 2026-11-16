@@ -43,7 +43,7 @@ public class PaymentUpdateService {
     private final BankAccountRepository bankAccountRepository;
     private final IdObfuscator idObfuscator;
 
-    /** Safari states that are past FULLY_PAID — editing payments here is dangerous */
+    /** Safari states that are past FULLY_PAID - editing payments here is dangerous */
     private static final Set<SafariState> POST_PAYMENT_STATES = Set.of(
         SafariState.IN_PROGRESS, SafariState.COMPLETED, SafariState.CLOSED
     );
@@ -148,7 +148,7 @@ public class PaymentUpdateService {
                 payment.setBaseAmount(payment.getAmount().multiply(rate).setScale(2, RoundingMode.HALF_UP));
             }
 
-            // Bank account (optional) — empty string clears, null leaves unchanged
+            // Bank account (optional) - empty string clears, null leaves unchanged
             if (dto.getBankAccountId() != null) {
                 if (dto.getBankAccountId().isBlank()) {
                     payment.setBankAccount(null);

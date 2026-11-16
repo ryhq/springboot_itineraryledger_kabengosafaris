@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 /**
  * One feature switch, stored.
  *
- * Shaped like every other settings row in this system — key, value, data type, category — on purpose:
+ * Shaped like every other settings row in this system - key, value, data type, category - on purpose:
  * the panel already has a page that renders rows of that shape, so the switches need no new screen,
  * and an administrator finds them where they look for every other switch.
  */
@@ -36,7 +36,7 @@ public class FeatureSetting {
     @Column(name = "setting_key", nullable = false, length = 100)
     private String settingKey;
 
-    /** "true" or "false" — a string, like every other settings row */
+    /** "true" or "false" - a string, like every other settings row */
     @Column(name = "setting_value", nullable = false, columnDefinition = "TEXT")
     private String settingValue;
 

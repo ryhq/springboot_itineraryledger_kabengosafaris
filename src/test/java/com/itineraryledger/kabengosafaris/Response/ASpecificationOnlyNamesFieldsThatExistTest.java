@@ -34,10 +34,10 @@ class ASpecificationOnlyNamesFieldsThatExistTest {
 
     private static final Path JAVA = Paths.get("src/main/java");
 
-    /** `Specification<Park>` — what this class filters. */
+    /** `Specification<Park>` - what this class filters. */
     private static final Pattern SUBJECT = Pattern.compile("Specification<(\\w+)>");
 
-    /** `var park = root.join("park", …)` — an alias standing for another entity. */
+    /** `var park = root.join("park", ...)` - an alias standing for another entity. */
     private static final Pattern JOIN = Pattern.compile(
         "(?:var|Join<[^>]*>)\\s+(\\w+)\\s*=\\s*root\\.join\\(\"(\\w+)\"");
 
@@ -45,7 +45,7 @@ class ASpecificationOnlyNamesFieldsThatExistTest {
     private static final Pattern ATTRIBUTE = Pattern.compile(
         "(\\broot|\\b[a-z]\\w*)\\.get\\(\"(\\w+)\"\\)(?:\\.get\\(\"(\\w+)\"\\))?");
 
-    /** `private String name;` — including what it is, so a join can be followed. */
+    /** `private String name;` - including what it is, so a join can be followed. */
     private static final Pattern FIELD = Pattern.compile(
         "private\\s+([\\w<>,.\\[\\] ]+?)\\s+(\\w+)\\s*[;=]");
 
@@ -84,7 +84,7 @@ class ASpecificationOnlyNamesFieldsThatExistTest {
 
                     if (owner.equals("root")) {
                         if (!own.containsKey(first)) {
-                            offences.add(file.getFileName() + ": root.get(\"" + first + "\") — "
+                            offences.add(file.getFileName() + ": root.get(\"" + first + "\") - "
                                 + subject.group(1) + " has no such field");
                             continue;
                         }
@@ -92,14 +92,14 @@ class ASpecificationOnlyNamesFieldsThatExistTest {
                             Map<String, String> nested = fieldsOf(elementType(own.get(first)), sources);
                             if (nested != null && !nested.containsKey(second)) {
                                 offences.add(file.getFileName() + ": " + first + ".get(\"" + second
-                                    + "\") — " + elementType(own.get(first)) + " has no such field");
+                                    + "\") - " + elementType(own.get(first)) + " has no such field");
                             }
                         }
                     } else if (aliases.containsKey(owner)) {
                         Map<String, String> joined = fieldsOf(aliases.get(owner), sources);
                         if (joined != null && !joined.containsKey(first)) {
                             offences.add(file.getFileName() + ": " + owner + ".get(\"" + first
-                                + "\") — " + aliases.get(owner) + " has no such field");
+                                + "\") - " + aliases.get(owner) + " has no such field");
                         }
                     }
                 }

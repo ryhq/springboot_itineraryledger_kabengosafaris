@@ -12,7 +12,7 @@ import lombok.Getter;
  *
  * A plain class with getters rather than the identity snapshot record, on purpose. SpEL resolves a
  * property through its getter; a record exposes {@code name()}, not {@code getName()}, and whether
- * that resolves depends on reflective field access working — which is not something a company's
+ * that resolves depends on reflective field access working - which is not something a company's
  * invoice should depend on. Getters make it certain.
  */
 @Getter
@@ -48,11 +48,11 @@ public class CompanyTemplateModel {
     private final String logoLightUrl;
     private final String logoDarkUrl;
     private final String faviconUrl;
-    /** the whole lockup — mark plus wordmark — for a letterhead or a cover page */
+    /** the whole lockup - mark plus wordmark - for a letterhead or a cover page */
     private final String logoFullUrl;
     private final String logoFullTaglineUrl;
 
-    /** the logo as drawable markup — inline SVG, or an <img> with a data URI */
+    /** the logo as drawable markup - inline SVG, or an <img> with a data URI */
     private final String logoMarkup;
     private final String logoFullMarkup;
 

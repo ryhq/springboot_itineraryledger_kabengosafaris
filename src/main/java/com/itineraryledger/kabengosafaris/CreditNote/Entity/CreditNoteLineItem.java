@@ -18,7 +18,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Line item in a credit note — describes what is being credited and why.
+ * Line item in a credit note - describes what is being credited and why.
  */
 @Entity
 @Table(name = "credit_note_line_items")

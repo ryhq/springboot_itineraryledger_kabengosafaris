@@ -21,13 +21,13 @@ import lombok.RequiredArgsConstructor;
  *
  * <p>Supporting, and it travels because an itinerary needs it. Until the catalogue existed these
  * two sentences were free text on the itinerary row, so {@code Scalars.of} carried them by accident
- * — the moment they became rows they would have stopped travelling, and an itinerary imported into
+ * - the moment they became rows they would have stopped travelling, and an itinerary imported into
  * another company would have arrived saying nothing about what its price covers.
  *
  * <p><strong>Matched on the wording</strong>, not on a code. A code is derived from a row id, so
  * the same sentence has a different code in each company; the sentence itself is the only stable
  * name it has across an export. That is also why the importer refuses to rewrite an existing line:
- * two companies that both say "Private 4×4 safari vehicle with pop-up roof" mean the same thing,
+ * two companies that both say "Private 4x4 safari vehicle with pop-up roof" mean the same thing,
  * and neither needs the other's punctuation.
  */
 @Component

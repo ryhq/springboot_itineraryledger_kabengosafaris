@@ -80,7 +80,7 @@ public class RegistrationServices {
      * Register a new user, choosing whether to email the activation link.
      *
      * An administrator creating an account for a colleague goes through exactly this
-     * path — same uniqueness checks, same password policy, same expiry calculation —
+     * path - same uniqueness checks, same password policy, same expiry calculation -
      * but occasionally wants the account in place without a mail going out yet (the
      * person starts next month, or the invite will be resent later). Only that one
      * decision differs, so it is a parameter rather than a second copy of the method.
@@ -113,11 +113,11 @@ public class RegistrationServices {
          * An address nobody has proved they control does not get to own itself forever.
          *
          * The row was written before the activation email went out, and a second attempt was refused
-         * outright — so anyone could type a colleague's address, or the company's own info@, and that
+         * outright - so anyone could type a colleague's address, or the company's own info@, and that
          * address was permanently unusable. Nothing had to be compromised: filling in a form was
          * enough, and the person locked out had no way to tell why.
          *
-         * A pending registration — never activated, no roles, so nobody has ever signed in as it —
+         * A pending registration - never activated, no roles, so nobody has ever signed in as it -
          * is a claim, not an account. A fresh attempt on the same address replaces it and re-sends
          * the activation. Whoever actually reads that mailbox is the one who ends up with the
          * account, which is the only test that means anything here.
@@ -185,7 +185,7 @@ public class RegistrationServices {
 
         /*
          * Overwrite the claim in place when there was one, so its id, and anything already pointing
-         * at it, survive — and so the unique constraints on email/username/phone are not fought over
+         * at it, survive - and so the unique constraints on email/username/phone are not fought over
          * by two rows for the same person.
          */
         if (pending != null) {

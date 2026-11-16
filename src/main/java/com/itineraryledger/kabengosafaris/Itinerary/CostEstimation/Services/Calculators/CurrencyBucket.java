@@ -18,13 +18,13 @@ import java.util.Map;
  * read last, so a single resident on an eight-person quote turned TZS 46,020 of crater fees into
  * USD 46,020. Nothing was logged. The quote simply tripled.
  *
- * <p>That it tripled is why anyone noticed. The same defect understating a total — a USD band
- * read last on a mostly-TZS party — looks exactly like a correct quote, and goes out.
+ * <p>That it tripled is why anyone noticed. The same defect understating a total - a USD band
+ * read last on a mostly-TZS party - looks exactly like a correct quote, and goes out.
  *
  * <p>Keeping a bucket per currency lets each one leave the calculator as its own line, which is
  * the shape every total downstream already groups by: {@code calculateGrandTotals} keys on the
  * line's currency, and {@code writeCondensed} writes one price per currency onto the quote item.
- * There is no exchange rate anywhere in costing, deliberately — see
+ * There is no exchange rate anywhere in costing, deliberately - see
  * {@code ItineraryBudgetLevelService}: "Subtracting one currency from another produces a number
  * and it is a lie." Two currencies therefore stay two numbers, all the way to the client.
  */
@@ -64,7 +64,7 @@ public final class CurrencyBucket {
     /**
      * Add a band without recording its breakdown.
      *
-     * <p>The safari side does not keep per-band shares — a safari is costed for the party that
+     * <p>The safari side does not keep per-band shares - a safari is costed for the party that
      * actually travelled, so there is no per-pax mode to attribute back to. The band's name is
      * still worth carrying, because it is what tells two rows of the same fee apart.
      */
@@ -80,13 +80,13 @@ public final class CurrencyBucket {
     /**
      * Who this line is charging, for the label beside the item name.
      *
-     * <p>One gate on one day can now produce two rows — a shilling one and a dollar one — and
+     * <p>One gate on one day can now produce two rows - a shilling one and a dollar one - and
      * until this existed they were identical on the page apart from the figures: same name, same
      * "Per Person" basis, nothing saying which was whose. On a costing sheet that is a reader
      * guessing.
      *
      * <p>Returns the fallback when there is nothing better to say, because the panel and both PDF
-     * templates already hide the label when it reads exactly "Per Person" — they were built for
+     * templates already hide the label when it reads exactly "Per Person" - they were built for
      * this and were only ever handed the generic word.
      */
     public String bandLabel(String fallback) {
@@ -95,7 +95,7 @@ public final class CurrencyBucket {
 
     /**
      * The shares, or null when none were recorded, which is what the DTO expects for "no
-     * breakdown" — an empty list would read as a breakdown that found nothing.
+     * breakdown" - an empty list would read as a breakdown that found nothing.
      */
     public List<CostLineItemDTO.PaxShareDTO> sharesOrNull() {
         return shares.isEmpty() ? null : shares;
@@ -120,7 +120,7 @@ public final class CurrencyBucket {
     /**
      * The unit price to show beside the total.
      *
-     * <p>An average, because the bands inside one currency can still be charged differently — an
+     * <p>An average, because the bands inside one currency can still be charged differently - an
      * adult and a youth pay different conservation fees in the same shillings. The bands
      * themselves are kept in {@link #shares()}, so per-pax mode attributes rather than averages.
      */

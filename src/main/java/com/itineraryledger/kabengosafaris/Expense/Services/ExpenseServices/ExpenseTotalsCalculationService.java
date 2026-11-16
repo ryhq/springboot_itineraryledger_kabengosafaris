@@ -20,7 +20,7 @@ import java.util.Map;
 /**
  * Mirrors {@code InvoiceTotalsCalculationService} minus the discount math:
  *   subtotal       = sum of active line-item totalPrices per currency
- *   tax            = subtotal × taxPercentage
+ *   tax            = subtotal x taxPercentage
  *   grandTotal     = subtotal + tax
  */
 @Service

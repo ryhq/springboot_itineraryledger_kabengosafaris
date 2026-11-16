@@ -12,7 +12,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * One article, in full — the shape the website's BlogPost interface already has, plus the
+ * One article, in full - the shape the website's BlogPost interface already has, plus the
  * images the file-based version never had.
  */
 @Data

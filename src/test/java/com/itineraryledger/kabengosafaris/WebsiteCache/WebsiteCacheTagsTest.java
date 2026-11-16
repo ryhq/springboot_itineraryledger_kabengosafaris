@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
  * <p>This feature spans three repositories that cannot import each other: the tag catalogue here,
  * CACHE_TAGS in each website's server-api.ts, and KNOWN_TAGS in each website's revalidate route. A
  * name that exists in only one of them clears nothing and says it succeeded, which is the worst
- * answer a cache can give — the page then looks current and is not. These tests pin the half that
+ * answer a cache can give - the page then looks current and is not. These tests pin the half that
  * lives in Java; the websites' own halves are pinned by their type checkers.
  */
 class WebsiteCacheTagsTest {
@@ -31,7 +31,7 @@ class WebsiteCacheTagsTest {
             assertFalse(tags.isEmpty(), path + " is public content but maps to no tag");
             for (String tag : tags) {
                 assertTrue(WebsiteCacheTags.CATALOGUE.contains(tag),
-                    path + " produces \"" + tag + "\", which the catalogue does not list — the "
+                    path + " produces \"" + tag + "\", which the catalogue does not list - the "
                         + "website would be asked to clear a label nothing wears");
             }
         }
@@ -42,7 +42,7 @@ class WebsiteCacheTagsTest {
     void everyCatalogueTagIsReachable() {
         /*
          * The reverse of the test above, and the one that was missing. A label in the catalogue that
-         * no write produces is a label nothing on the website wears either — the panel offers a
+         * no write produces is a label nothing on the website wears either - the panel offers a
          * button for it, the website answers "cleared", and nothing is cleared. That is worse than
          * having no button, because the page then looks current and is not. "brand" sat here for
          * exactly one afternoon on that basis.
@@ -56,7 +56,7 @@ class WebsiteCacheTagsTest {
         for (String tag : WebsiteCacheTags.CATALOGUE) {
             if (tag.equals(WebsiteCacheTags.ALL)) continue;   // every fetch carries it by definition
             assertTrue(reachable.contains(tag),
-                "\"" + tag + "\" is offered but no write produces it — either the websites do not "
+                "\"" + tag + "\" is offered but no write produces it - either the websites do not "
                     + "label anything with it, or BY_PATH is missing an endpoint");
         }
     }

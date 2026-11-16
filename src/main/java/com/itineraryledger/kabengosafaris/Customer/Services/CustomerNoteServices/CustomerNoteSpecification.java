@@ -128,7 +128,7 @@ public class CustomerNoteSpecification {
             String likePattern = "%" + keyword.toLowerCase() + "%";
             return cb.or(
                 cb.like(cb.lower(root.get("subject")), likePattern),
-                // content is @Lob/TEXT (CLOB) — cast to String so LOWER/LIKE work
+                // content is @Lob/TEXT (CLOB) - cast to String so LOWER/LIKE work
                 // in Criteria, exactly as ParkSpecification does for tags
                 cb.like(cb.lower(root.get("content").as(String.class)), likePattern)
             );

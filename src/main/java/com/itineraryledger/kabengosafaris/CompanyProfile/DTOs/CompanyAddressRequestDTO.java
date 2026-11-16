@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class CompanyAddressRequestDTO {
 
-    /** OFFICE · POSTAL · BILLING · WAREHOUSE · OTHER */
+    /** OFFICE | POSTAL | BILLING | WAREHOUSE | OTHER */
     private String addressType;
 
     @Size(max = 100)

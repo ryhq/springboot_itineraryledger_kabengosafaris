@@ -271,7 +271,7 @@ public class EmailTemplateUpdateService {
      *
      * A corrected default does not travel with a deploy: seeded files are never overwritten, because
      * that is what protects an edit somebody made on purpose. So a fix ships, and nothing changes
-     * until each template is restored — twenty of them, one at a time, which nobody finishes.
+     * until each template is restored - twenty of them, one at a time, which nobody finishes.
      *
      * Reports per template instead of stopping at the first failure: one event without a packaged
      * default must not leave the other nineteen stale.

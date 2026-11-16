@@ -193,10 +193,10 @@ Deletes one or more accommodations. **If an accommodation has branches, all bran
 If you delete HQ with 2 branches, and each branch has 1 sub-branch:
 ```
 HQ
-├── Branch A
-│   └── Sub-branch A1
-└── Branch B
-    └── Sub-branch B1
++== Branch A
+|   +== Sub-branch A1
++== Branch B
+    +== Sub-branch B1
 ```
 Result: **5 accommodations deleted** (1 HQ + 2 branches + 2 sub-branches)
 

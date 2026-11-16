@@ -11,7 +11,7 @@ import com.itineraryledger.kabengosafaris.PdfDocument.Entity.PdfTemplate;
  *    paragraphs, fonts, inline images). Silently drops @page rules, running
  *    footers, counter(page), and SVG.
  *  - {@link LibreOfficeDocxEngine}: shells out to headless LibreOffice via
- *    JODConverter. Much higher visual fidelity — respects @page margins,
+ *    JODConverter. Much higher visual fidelity - respects @page margins,
  *    converts SVG, honors CSS more completely. Requires LibreOffice installed
  *    on the host and jodconverter.local.enabled=true.
  *

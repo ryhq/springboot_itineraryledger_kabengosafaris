@@ -410,29 +410,29 @@ PERM_READ_SAFARI
 
 ```
 FullSafariDTO
-├── Safari fields (id, name, code, state, phase, dates, etc.)
-├── Summary statistics
-│   ├── totalPaxCount
-│   ├── totalDaysCount
-│   ├── totalParksCount
-│   ├── totalActivitiesCount
-│   └── totalAccommodationsCount
-├── paxList: List<PaxDTO>
-│   └── PaxDTO (id, nationCategory, ageCategory, count, notes)
-└── days: List<DayDTO>
-    └── DayDTO
-        ├── Day fields (dayNumber, date, title, description, actual times, etc.)
-        ├── activities: List<DayActivityDTO>  [Standalone activities]
-        │   └── DayActivityDTO (activity details, completion status, actual times)
-        ├── accommodations: List<DayAccommodationDTO>
-        │   └── DayAccommodationDTO (accommodation, rooms, confirmation, check-in/out)
-        └── parks: List<DayParkDTO>
-            └── DayParkDTO
-                ├── Park fields (park details, entryType, actual times, fees paid)
-                ├── activities: List<ParkActivityDTO>  [Park-specific activities]
-                │   └── ParkActivityDTO (activity details, completion status)
-                └── tariffs: List<ParkTariffDTO>
-                    └── ParkTariffDTO (tariff details, payment status, receipts)
++== Safari fields (id, name, code, state, phase, dates, etc.)
++== Summary statistics
+|   +== totalPaxCount
+|   +== totalDaysCount
+|   +== totalParksCount
+|   +== totalActivitiesCount
+|   +== totalAccommodationsCount
++== paxList: List<PaxDTO>
+|   +== PaxDTO (id, nationCategory, ageCategory, count, notes)
++== days: List<DayDTO>
+    +== DayDTO
+        +== Day fields (dayNumber, date, title, description, actual times, etc.)
+        +== activities: List<DayActivityDTO>  [Standalone activities]
+        |   +== DayActivityDTO (activity details, completion status, actual times)
+        +== accommodations: List<DayAccommodationDTO>
+        |   +== DayAccommodationDTO (accommodation, rooms, confirmation, check-in/out)
+        +== parks: List<DayParkDTO>
+            +== DayParkDTO
+                +== Park fields (park details, entryType, actual times, fees paid)
+                +== activities: List<ParkActivityDTO>  [Park-specific activities]
+                |   +== ParkActivityDTO (activity details, completion status)
+                +== tariffs: List<ParkTariffDTO>
+                    +== ParkTariffDTO (tariff details, payment status, receipts)
 ```
 
 ## Field Descriptions
@@ -501,10 +501,10 @@ FullSafariDTO
 | Phase | Description | Days Calculation |
 |-------|-------------|------------------|
 | `FAR_FUTURE` | More than 30 days away | daysUntilStart > 30 |
-| `UPCOMING` | 8-30 days away | 8 ≤ daysUntilStart ≤ 30 |
-| `STARTING_SOON` | 1-7 days away | 1 ≤ daysUntilStart ≤ 7 |
-| `IN_PROGRESS` | Currently happening | startDate ≤ today ≤ endDate |
-| `RECENTLY_COMPLETED` | Finished within 7 days | 0 ≤ daysSinceEnd ≤ 7 |
+| `UPCOMING` | 8-30 days away | 8 <= daysUntilStart <= 30 |
+| `STARTING_SOON` | 1-7 days away | 1 <= daysUntilStart <= 7 |
+| `IN_PROGRESS` | Currently happening | startDate <= today <= endDate |
+| `RECENTLY_COMPLETED` | Finished within 7 days | 0 <= daysSinceEnd <= 7 |
 | `COMPLETED` | Finished over 7 days ago | daysSinceEnd > 7 |
 
 ### PaxDTO Fields

@@ -527,9 +527,9 @@ public class GlobalExceptionHandler {
 
         /*
          * Say the actual limit. "Reduce file size" is advice nobody can act on without knowing what
-         * to reduce it to, and this particular refusal reaches the browser as a CORS error — the
+         * to reduce it to, and this particular refusal reaches the browser as a CORS error - the
          * response is written while the upload is still being parsed, before the CORS headers go on
-         * — so by the time somebody sees a message at all, it had better be the whole answer.
+         * - so by the time somebody sees a message at all, it had better be the whole answer.
          */
         String message = "That file is larger than this installation accepts ("
                 + maxUploadSize + "). A data bundle exported without pictures is a fraction of the "
@@ -557,7 +557,7 @@ public class GlobalExceptionHandler {
          * The CAUSE, not just the message.
          *
          * "Failed to parse multipart servlet request" is what Spring says for every reason an upload
-         * can die — a temp directory it cannot write, a size limit, a truncated body — and on its own
+         * can die - a temp directory it cannot write, a size limit, a truncated body - and on its own
          * it sent two investigations down the wrong path. Whatever the browser is told, the log gets
          * the root cause.
          */

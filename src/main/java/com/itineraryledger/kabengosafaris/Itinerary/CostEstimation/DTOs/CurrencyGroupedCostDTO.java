@@ -104,7 +104,7 @@ public class CurrencyGroupedCostDTO {
      * was added. A cost sheet that disagrees with its own arithmetic is worse than one that is
      * simply wrong, because nothing about it looks broken.
      *
-     * <p>Adding a category means three edits, not one — the field, the adder, and this sum — and
+     * <p>Adding a category means three edits, not one - the field, the adder, and this sum - and
      * only a test holds them together.
      */
     public void calculateGrandTotals() {
@@ -168,8 +168,8 @@ public class CurrencyGroupedCostDTO {
      * one line on a safari the client can price-check against a public timetable, and an operator
      * reconciling an airline's invoice needs the figure on its own.
      *
-     * <p>Note both numbers are the SELLING price. A flight has no rack multiplier — that is an
-     * accommodation rule and applying it to a fare would price a 316 seat at 411 — so sto and rack
+     * <p>Note both numbers are the SELLING price. A flight has no rack multiplier - that is an
+     * accommodation rule and applying it to a fare would price a 316 seat at 411 - so sto and rack
      * carry the same figure and the markup is already inside it.
      */
     public void addFlightCost(BigDecimal sto, BigDecimal rack) {

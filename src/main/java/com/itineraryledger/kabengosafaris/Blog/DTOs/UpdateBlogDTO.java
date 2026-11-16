@@ -9,14 +9,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Patch semantics: null means "leave it alone", which is what click-to-edit needs — a single
+ * Patch semantics: null means "leave it alone", which is what click-to-edit needs - a single
  * field can be saved without carrying the other twenty back.
  *
  * The exception is deliberate: body, faqs and tags are LISTS, and an empty list is a real
  * value ("this article has no bullet blocks any more"), so those are applied whenever present.
  *
  * NO slug, by policy: an article's address is decided when it is created and never changes.
- * The field is absent rather than validated, so no shape of request can move a live URL —
+ * The field is absent rather than validated, so no shape of request can move a live URL -
  * every link to it, in search results, bookmarks and messages already sent, keeps working.
  * Retitling is free; the address is a promise.
  */

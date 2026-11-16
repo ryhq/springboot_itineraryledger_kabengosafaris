@@ -12,7 +12,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * A web address the company puts on its documents — the site, and the profiles a guest checks
+ * A web address the company puts on its documents - the site, and the profiles a guest checks
  * before booking. `{{companyWebsite}}` is the primary active WEBSITE; a footer can print the rest.
  */
 @Entity
@@ -64,7 +64,7 @@ public class CompanyLink {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    /** "www.kabengosafaris.com" — a document prints the address, not the protocol. */
+    /** "www.kabengosafaris.com" - a document prints the address, not the protocol. */
     public String display() {
         if (url == null) return "";
         return url.replaceFirst("^https?://", "").replaceFirst("/$", "");

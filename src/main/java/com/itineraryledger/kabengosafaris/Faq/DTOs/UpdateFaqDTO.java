@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
  * Patch semantics: null means "leave it alone".
  *
  * NO displayOrder. The running order is a SEQUENCE, and the only honest way to change a
- * sequence is to state the whole thing — POST /api/faqs/reorder. Editing one row's number
+ * sequence is to state the whole thing - POST /api/faqs/reorder. Editing one row's number
  * left the others holding their old ones, which is how two questions ended up sharing a
  * position and the page order stopped matching what anybody had set.
  */

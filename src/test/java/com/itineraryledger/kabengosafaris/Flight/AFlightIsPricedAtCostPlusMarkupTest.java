@@ -142,7 +142,7 @@ class AFlightIsPricedAtCostPlusMarkupTest {
     void noRackMultiplier() {
         var priced = FlightFarePricer.price(arushaToZanzibar("300.00"), null, 1, 0, null, null, null);
         /*
-         * 300 × 1.3 would be 390, before tax. Air Excel publishes this seat at 316; selling it at
+         * 300 x 1.3 would be 390, before tax. Air Excel publishes this seat at 316; selling it at
          * 415 is not a price anybody pays, and it is exactly what happens if somebody reuses
          * rackFromSto here because every other rate in the system goes through it.
          */

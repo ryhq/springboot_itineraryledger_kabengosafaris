@@ -53,7 +53,7 @@ import com.itineraryledger.kabengosafaris.Security.IdObfuscator;
  * <p><b>Date.</b> An option with no rate resolving for that night is a price we cannot stand
  * behind. It is not offered at all, rather than offered and refused afterwards.
  *
- * <p>And no figures. Not because the rack rate is secret — it is published — but because it is
+ * <p>And no figures. Not because the rack rate is secret - it is published - but because it is
  * not what this client would pay: commission and uplift are applied per quotation by the
  * pricing engine. A number that is wrong in a way the reader cannot detect is worse than no
  * number. They choose, the quotation reprices, and the total they are then shown is real.
@@ -229,7 +229,7 @@ class TheCatalogueOffersOnlyWhatWeCanDeliverTest {
      *
      * <p>The list stops at a fixed number of options. Filtering the page's copy of it would search
      * only what the cap let through, so a lodge the client can name by heart would be missing from
-     * a busy region — and they would conclude we do not work with it, which is the opposite of
+     * a busy region - and they would conclude we do not work with it, which is the opposite of
      * what the catalogue is for.
      */
     @Test

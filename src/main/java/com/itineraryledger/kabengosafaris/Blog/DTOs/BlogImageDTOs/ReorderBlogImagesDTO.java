@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 /**
  * The new order, as a whole list.
  *
- * Position in the list IS the new displayOrder (1-indexed) — the same contract as the
+ * Position in the list IS the new displayOrder (1-indexed) - the same contract as the
  * accommodation image reorder, which is what the panel already speaks.
  */
 @Data

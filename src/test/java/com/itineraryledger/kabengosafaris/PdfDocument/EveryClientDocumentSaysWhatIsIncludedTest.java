@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
  * A document that states a price states what the price covers.
  *
  * <p>Written from the gap it closes. A quote for a real trip was sent in September priced at
- * 5,629 USD with no statement anywhere on it of what that bought — and it was not an oversight by
+ * 5,629 USD with no statement anywhere on it of what that bought - and it was not an oversight by
  * whoever produced it: no template could print the lines, because the field was absent from every
  * PDF DTO and every schema. The only "what's included" prose in the whole document pipeline was a
  * hardcoded paragraph on the cost-estimation sheet, which customers never see.
@@ -34,7 +34,7 @@ class EveryClientDocumentSaysWhatIsIncludedTest {
     /**
      * Templates that must NOT carry the block, each for its own reason.
      *
-     * <p>Add to this list only with a reason. "It was easier" is not one — the default for anything
+     * <p>Add to this list only with a reason. "It was easier" is not one - the default for anything
      * a customer reads beside a figure is that it explains the figure.
      */
     private static final Set<String> EXEMPT = Set.of(
@@ -70,7 +70,7 @@ class EveryClientDocumentSaysWhatIsIncludedTest {
                     + "statement of what it buys");
             }
             if (!source.contains(".exclusionsList")) {
-                offences.add(name + ": never iterates exclusionsList — half the promise is the half "
+                offences.add(name + ": never iterates exclusionsList - half the promise is the half "
                     + "that prevents an argument later");
             }
             /*
@@ -117,7 +117,7 @@ class EveryClientDocumentSaysWhatIsIncludedTest {
               %s
 
             A quote, safari or invoice holds its OWN snapshot, and the two disagree the moment
-            anybody edits the quote — which is the whole point of the chain. Reading the template
+            anybody edits the quote - which is the whole point of the chain. Reading the template
             here would print a promise the customer never agreed to.
 
             This is not hypothetical: full_safari_modern.html already does exactly this for

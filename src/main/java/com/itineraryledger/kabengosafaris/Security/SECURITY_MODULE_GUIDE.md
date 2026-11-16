@@ -21,39 +21,39 @@ The Security module provides a comprehensive, database-driven security framework
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    HTTP Request                             │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-                       ▼
-        ┌──────────────────────────────────┐
-        │  JwtAuthenticationFilter         │
-        │  - Extract JWT from header       │
-        │  - Validate token                │
-        │  - Load user details             │
-        │  - Set security context          │
-        └──────────┬───────────────────────┘
-                   │
-                   ▼
-        ┌──────────────────────────────────┐
-        │  DynamicPermissionFilter         │
-        │  - Check endpoint permissions    │
-        │  - Validate user authorization   │
-        │  - Enforce database-driven rules │
-        └──────────┬───────────────────────┘
-                   │
-                   ▼
-        ┌─────────────────────────────────────┐
-        │  Controller/Method                  │
-        │  (@RequirePermission optional)      │
-        │  - PermissionCheckAspect intercepts │
-        │  - Additional permission checks     │
-        └──────────┬──────────────────────────┘
-                   │
-                   ▼
-        ┌──────────────────────────────────┐
-        │  Response                        │
-        └──────────────────────────────────┘
++=============================================================+
+|                    HTTP Request                             |
++======================+======================================+
+                       |
+                       v
+        +==================================+
+        |  JwtAuthenticationFilter         |
+        |  - Extract JWT from header       |
+        |  - Validate token                |
+        |  - Load user details             |
+        |  - Set security context          |
+        +==========+=======================+
+                   |
+                   v
+        +==================================+
+        |  DynamicPermissionFilter         |
+        |  - Check endpoint permissions    |
+        |  - Validate user authorization   |
+        |  - Enforce database-driven rules |
+        +==========+=======================+
+                   |
+                   v
+        +=====================================+
+        |  Controller/Method                  |
+        |  (@RequirePermission optional)      |
+        |  - PermissionCheckAspect intercepts |
+        |  - Additional permission checks     |
+        +==========+==========================+
+                   |
+                   v
+        +==================================+
+        |  Response                        |
+        +==================================+
 ```
 
 ---
@@ -519,13 +519,13 @@ Implements token bucket algorithm to prevent brute-force attacks by limiting log
 **Token Bucket Algorithm Explained:**
 ```
 Initial State: 5 tokens
-├─ Attempt 1: Consume 1 token (4 remaining)
-├─ Attempt 2: Consume 1 token (3 remaining)
-├─ Attempt 3: Consume 1 token (2 remaining)
-├─ Attempt 4: Consume 1 token (1 remaining)
-├─ Attempt 5: Consume 1 token (0 remaining)
-├─ Attempt 6: DENIED - No tokens available
-└─ After 1 minute (refill): 5 tokens restored (capped at maxCapacity)
++= Attempt 1: Consume 1 token (4 remaining)
++= Attempt 2: Consume 1 token (3 remaining)
++= Attempt 3: Consume 1 token (2 remaining)
++= Attempt 4: Consume 1 token (1 remaining)
++= Attempt 5: Consume 1 token (0 remaining)
++= Attempt 6: DENIED - No tokens available
++= After 1 minute (refill): 5 tokens restored (capped at maxCapacity)
 ```
 
 **When Rate Limiting is Disabled:**

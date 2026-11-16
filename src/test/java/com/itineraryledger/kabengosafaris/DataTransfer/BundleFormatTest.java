@@ -68,11 +68,11 @@ class BundleFormatTest {
         /*
          * compareTo, not equals: BigDecimal.equals compares SCALE as well as value, and JSON has no
          * concept of a trailing zero, so 1250.50 comes back as 1250.5. That is the same number, and
-         * the column it is written to has its own scale — what would matter is a rounded VALUE, so
+         * the column it is written to has its own scale - what would matter is a rounded VALUE, so
          * that is what is checked, here and on a figure with more decimals than money usually has.
          */
         assertEquals(0, new BigDecimal("1250.50").compareTo(node.path("rackRate").decimalValue()),
-            "money must survive exactly — a rate rounded in transit is a wrong quote");
+            "money must survive exactly - a rate rounded in transit is a wrong quote");
         assertEquals("PER_PERSON", node.path("basis").asText());
         assertEquals("--06-01", node.path("startDate").asText());
 
@@ -110,7 +110,7 @@ class BundleFormatTest {
 
         Fixture target = new Fixture();
         assertDoesNotThrow(() -> Scalars.apply(mapper, node, target),
-            "a bundle from a newer installation must not be refused field by field — the manifest's "
+            "a bundle from a newer installation must not be refused field by field - the manifest's "
                 + "schema version is where a real incompatibility is caught");
         assertEquals("Low Season", target.getName());
     }

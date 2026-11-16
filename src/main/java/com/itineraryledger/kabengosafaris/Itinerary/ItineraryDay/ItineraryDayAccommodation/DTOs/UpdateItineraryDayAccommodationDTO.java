@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 /**
  * What can change about a night's stay.
  *
- * The room configuration used to be fixed after creation — "delete and recreate
- * if a different configuration is needed" — which meant moving a booking from a
+ * The room configuration used to be fixed after creation - "delete and recreate
+ * if a different configuration is needed" - which meant moving a booking from a
  * Superior Suite to a Bungalow destroyed the row and its notes, and any UI that
  * offered the choice appeared to save and silently did nothing.
  *

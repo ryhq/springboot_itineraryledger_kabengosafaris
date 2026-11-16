@@ -36,7 +36,7 @@ public class ItineraryInclusionController {
         return service.get(itineraryId);
     }
 
-    /** The whole ordered set at once — position in the array is the print order. */
+    /** The whole ordered set at once - position in the array is the print order. */
     @PutMapping
     @PreAuthorize("hasAuthority('PERM_UPDATE_ITINERARY')")
     public ResponseEntity<ApiResponse<?>> set(

@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
  * The whole list, in order, replacing whatever the document held.
  *
  * <p>Wording rather than catalogue ids, unlike the itinerary's endpoint. A document's promise is
- * frozen text by design — that is what stops a catalogue edit rewriting a quote already with a
- * customer — so editing one here is editing the text, and a line that exists nowhere in the
+ * frozen text by design - that is what stops a catalogue edit rewriting a quote already with a
+ * customer - so editing one here is editing the text, and a line that exists nowhere in the
  * catalogue is perfectly legitimate: "the Seronera to Zanzibar flight, quoted separately" belongs
  * to one quote and to nothing else.
  */

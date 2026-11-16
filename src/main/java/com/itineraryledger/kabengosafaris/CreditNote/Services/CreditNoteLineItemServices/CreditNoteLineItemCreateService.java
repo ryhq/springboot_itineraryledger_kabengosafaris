@@ -89,7 +89,7 @@ public class CreditNoteLineItemCreateService {
             long existingCount = creditNoteLineItemRepository.countByCreditNoteId(decodedCreditNoteId);
             int nextDisplayOrder = (int) existingCount + 1;
 
-            // Resolve optional InvoiceLineItem link — must belong to the credit note's invoice
+            // Resolve optional InvoiceLineItem link - must belong to the credit note's invoice
             InvoiceLineItem linkedInvoiceLineItem = null;
             if (createDTO.getInvoiceLineItemId() != null && !createDTO.getInvoiceLineItemId().isBlank()) {
                 Long invoiceLineItemId;

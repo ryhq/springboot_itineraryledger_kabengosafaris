@@ -157,7 +157,7 @@ public class UserAdminGetService {
         /*
          * The status dimension. active/inactive is the enabled flag; locked is its own
          * thing, because a locked account is still enabled and simply cannot get in.
-         * Contradictory pairs cancel to no constraint, as everywhere else — asking for
+         * Contradictory pairs cancel to no constraint, as everywhere else - asking for
          * active AND inactive is asking for both, not for nothing.
          */
         boolean wantsActive = filter.hasStatus("active");
@@ -193,7 +193,7 @@ public class UserAdminGetService {
     /**
      * Decodes the obfuscated ids, or narrows to nothing if none of them read.
      *
-     * An unreadable id must not quietly widen the list to every account — that is the
+     * An unreadable id must not quietly widen the list to every account - that is the
      * opposite of what was asked for, and on this screen it is the access list.
      */
     private List<Long> decodeAll(List<String> obfuscated) {
@@ -222,7 +222,7 @@ public class UserAdminGetService {
     /**
      * The cards that head the list.
      *
-     * Every one of these is reachable as a filter, and every filter here has a card —
+     * Every one of these is reachable as a filter, and every filter here has a card -
      * a counter nobody can click through to only tells you that you have a problem.
      */
     private Map<String, Object> buildStats(Specification<User> spec) {

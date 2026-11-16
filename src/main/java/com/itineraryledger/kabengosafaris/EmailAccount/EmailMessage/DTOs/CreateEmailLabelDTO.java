@@ -15,7 +15,7 @@ public class CreateEmailLabelDTO {
     private String name;
 
     /**
-     * The semantic family — optional now.
+     * The semantic family - optional now.
      *
      * It used to be @NotNull, which made a label impossible to create from any client that thinks
      * in colours: the four values are QUOTE/BOOKING/VENDOR/INTERNAL, so "yellow" was a 400 every

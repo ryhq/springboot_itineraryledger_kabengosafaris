@@ -26,7 +26,7 @@ import org.springframework.mock.env.MockEnvironment;
  * That a feature switch actually switches something.
  *
  * The failure this guards against is quiet: a path typed one character wrong, or a module renamed, and
- * the flag still appears in the panel, still saves, still reads "off" — while every endpoint it was
+ * the flag still appears in the panel, still saves, still reads "off" - while every endpoint it was
  * meant to close stays open. Nobody finds out until a company sees a module it does not have.
  */
 class FeatureCatalogueTest {
@@ -54,7 +54,7 @@ class FeatureCatalogueTest {
 
             %s
 
-            If a module was renamed, the flag has to be renamed with it — otherwise the switch reads
+            If a module was renamed, the flag has to be renamed with it - otherwise the switch reads
             as off while every endpoint stays open.
             """.formatted(dead.size(), String.join("\n", dead)));
     }
@@ -74,7 +74,7 @@ class FeatureCatalogueTest {
             }
         }
 
-        assertTrue(clashes.isEmpty(), () -> "two features cannot own one path — whichever is checked "
+        assertTrue(clashes.isEmpty(), () -> "two features cannot own one path - whichever is checked "
             + "first would decide:\n" + String.join("\n", clashes));
     }
 
@@ -184,7 +184,7 @@ class FeatureCatalogueTest {
             }
         }
 
-        assertFalse(paths.isEmpty(), "found no controller mappings — this guard would check nothing");
+        assertFalse(paths.isEmpty(), "found no controller mappings - this guard would check nothing");
         return paths;
     }
 }

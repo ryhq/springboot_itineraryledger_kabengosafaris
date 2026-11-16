@@ -7,7 +7,7 @@ import com.itineraryledger.kabengosafaris.EmailAccount.Components.EncryptionUtil
  *
  * Most providers send and receive on one account, so one credential pair serves both and the IMAP
  * columns stay null. Some deployments cannot: the Jatelo droplet blocks outbound 465 and 587, so
- * that account sends through Brevo on 2525 and reads its mail from Namecheap Private Email — two
+ * that account sends through Brevo on 2525 and reads its mail from Namecheap Private Email - two
  * servers, two logins.
  *
  * This exists so the answer is computed in ONE place. It was computed in two: the fetch scheduler
@@ -16,7 +16,7 @@ import com.itineraryledger.kabengosafaris.EmailAccount.Components.EncryptionUtil
  * nothing.
  *
  * The pair is all-or-nothing on purpose. A username without a password would otherwise be silently
- * combined with the SMTP password — a mixture nobody configured, failing with an authentication
+ * combined with the SMTP password - a mixture nobody configured, failing with an authentication
  * error that names neither field. Create and update reject that combination outright.
  */
 public record ImapCredentials(String username, String password) {

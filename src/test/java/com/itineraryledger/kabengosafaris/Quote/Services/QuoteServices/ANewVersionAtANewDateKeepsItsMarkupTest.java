@@ -19,7 +19,7 @@ import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemType;
  * Moving a trip to another date reprices it. It must not also quietly remove our margin.
  *
  * <p>A new version with a new start date is the ordinary way a postponement is handled: the client
- * cannot travel in March after all, so June's rates apply. That path did not price the quotation —
+ * cannot travel in March after all, so June's rates apply. That path did not price the quotation -
  * it asked the ITINERARY estimator for a fresh estimate and wrote those figures onto the version
  * line by line. The agent's commission and the margin uplift are applied by
  * {@code QuoteCostEstimationService}, which that path never went through, so the new version came

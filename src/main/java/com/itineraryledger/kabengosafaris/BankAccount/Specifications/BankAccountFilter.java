@@ -8,7 +8,7 @@ import lombok.Data;
 /**
  * Everything a caller can narrow the bank-account list by, in one object.
  *
- * A small list — an operator has a handful of accounts — so this is less about
+ * A small list - an operator has a handful of accounts - so this is less about
  * finding one than about the counters being honest: which are live, which
  * currencies we can actually receive in, and whether anything is missing the
  * details a foreign transfer needs.
@@ -24,7 +24,7 @@ public class BankAccountFilter {
     private String currency;
     private List<String> currencies;
 
-    /** Which bank holds it — the one dimension a row genuinely shares. */
+    /** Which bank holds it - the one dimension a row genuinely shares. */
     private String bankName;
     private List<String> bankNames;
 
@@ -36,7 +36,7 @@ public class BankAccountFilter {
     /**
      * What is missing.
      *
-     * noSwift — cannot receive an international transfer. noIban — the same for
+     * noSwift - cannot receive an international transfer. noIban - the same for
      * Europe. Both are worth a card because a customer asked to pay and could not.
      */
     private List<String> qualities;

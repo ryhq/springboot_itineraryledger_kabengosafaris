@@ -196,7 +196,7 @@ public class PerPaxCostAggregator {
             if (item.getPaxShares() != null && !item.getPaxShares().isEmpty()) {
                 /*
                  * A per-person item priced band by band. Each band gets what it
-                 * was actually charged — an adult park fee and a youth park fee
+                 * was actually charged - an adult park fee and a youth park fee
                  * are different rates, and splitting their sum by headcount gave
                  * every band the same number regardless of its own rate.
                  */
@@ -223,7 +223,7 @@ public class PerPaxCostAggregator {
                 }
             } else if (isPerPersonCharging(chargingBasis)) {
                 /*
-                 * Per-person, but with no band detail — an older payload, or an
+                 * Per-person, but with no band detail - an older payload, or an
                  * item the calculator could not break down. Falling back to the
                  * headcount split is the best that can be said about it.
                  */

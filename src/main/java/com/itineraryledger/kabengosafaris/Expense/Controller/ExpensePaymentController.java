@@ -54,7 +54,7 @@ public class ExpensePaymentController {
     }
 
     /**
-     * GET /{paymentId}/advice — the letter, for the composer to send.
+     * GET /{paymentId}/advice - the letter, for the composer to send.
      *
      * Rendered here and sent from the mailbox, so the advice lands in Sent like every other message
      * and the supplier's reply threads under it. Nothing goes out until somebody presses Send.

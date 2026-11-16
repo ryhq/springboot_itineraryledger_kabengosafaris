@@ -21,7 +21,7 @@ import com.itineraryledger.kabengosafaris.Safari.DTOs.FullSafariDTO;
  *
  * <p>Which makes the getter's exact name and return type load-bearing in a way the compiler cannot
  * see: rename it, return an array, or let it answer null, and nine templates stop printing with no
- * error anywhere — the PDF simply comes out without the section, exactly as it did before any of
+ * error anywhere - the PDF simply comes out without the section, exactly as it did before any of
  * this was built.
  *
  * <p>{@code full_safari_modern.html:718} is the standing proof that this happens: it renders
@@ -76,7 +76,7 @@ class ADocumentCanIterateWhatItCoversTest {
             List.of("All park, conservation & crater-service fees",
                     "Professional multilingual safari guide"),
             quote.getInclusionsList(),
-            "order must be the order the rows came in — it is the print order");
+            "order must be the order the rows came in - it is the print order");
         assertIterableEquals(
             List.of("International flights & visas"),
             quote.getExclusionsList());
@@ -86,7 +86,7 @@ class ADocumentCanIterateWhatItCoversTest {
     @DisplayName("a line with no side stated prints under neither")
     void anUnstatedSidePrintsNowhere() {
         /*
-         * isIncluded is NOT NULL in the database, so this should not arise — but a DTO is also
+         * isIncluded is NOT NULL in the database, so this should not arise - but a DTO is also
          * built by hand in previews and tests, and a null defaulting to "included" would put a
          * sentence on the wrong half of a customer's document.
          */

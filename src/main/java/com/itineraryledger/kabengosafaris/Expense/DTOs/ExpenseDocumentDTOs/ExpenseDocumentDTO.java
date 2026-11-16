@@ -20,14 +20,14 @@ public class ExpenseDocumentDTO {
     private String expensePaymentId;        // nullable
 
     /**
-     * The payment this document is proof OF, in words: "USD 184.00 · 2026-08-20".
+     * The payment this document is proof OF, in words: "USD 184.00 | 2026-08-20".
      *
      * A document tied to a payment proves that transfer; one tied to the bill alone is what the
      * supplier asked for in the first place. That distinction is the reason the link exists, so it
-     * has to survive into any list that shows these — and an obfuscated payment id cannot say it.
+     * has to survive into any list that shows these - and an obfuscated payment id cannot say it.
      */
     private String expensePaymentLabel;    // nullable
-    /* who the bill was from and which trip it was for — a global list is
+    /* who the bill was from and which trip it was for - a global list is
        unreadable without them */
     private String vendorId;
     private String vendorName;
@@ -47,7 +47,7 @@ public class ExpenseDocumentDTO {
      * The shared documents table reads `fileDocumentUrl` for the preview and `fileSizeFormatted`
      * for the Size column; this module answered `fileUrl` and a raw byte count, so a bill's
      * documents tab showed no preview eye and an empty Size while a safari's showed both. The
-     * table is generated from one contract — a module that speaks a dialect of it silently loses
+     * table is generated from one contract - a module that speaks a dialect of it silently loses
      * whichever parts it did not say.
      */
     private String fileDocumentUrl;

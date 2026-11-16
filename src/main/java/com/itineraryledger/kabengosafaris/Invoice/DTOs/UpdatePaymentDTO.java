@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * DTO for updating an existing Payment record.
- * All fields are optional — only provided fields are updated.
+ * All fields are optional - only provided fields are updated.
  */
 @Data
 @NoArgsConstructor

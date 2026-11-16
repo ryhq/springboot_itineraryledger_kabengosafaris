@@ -655,12 +655,12 @@ DELETE /api/safaris/SAF123/days/DAY1/parks/PARK1/tariffs
 ### Entity Relationships
 ```
 Safari
-  └── SafariDay
-      └── SafariDayPark (Park Visit)
-          └── SafariDayParkTariff (This entity)
-              └── ParkTariff (Park + Tariff combination)
-                  ├── Park
-                  └── Tariff
+  +== SafariDay
+      +== SafariDayPark (Park Visit)
+          +== SafariDayParkTariff (This entity)
+              +== ParkTariff (Park + Tariff combination)
+                  +== Park
+                  +== Tariff
 ```
 
 ### Permissions Required

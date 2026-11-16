@@ -21,12 +21,12 @@ import com.itineraryledger.kabengosafaris.Inclusion.Entity.InclusionItem;
 import com.itineraryledger.kabengosafaris.Quote.Enums.QuoteItemType;
 
 /**
- * An inclusion line claims something checkable, or it claims nothing — and null means nothing.
+ * An inclusion line claims something checkable, or it claims nothing - and null means nothing.
  *
  * <p>This is the one place in the feature where a correct-looking one-liner produces a wrong answer
  * on every row. {@link LineCategoryScope} is shared with {@code taxAppliesTo} and
- * {@code discountAppliesTo}, where an unset scope means "the whole quote" — so
- * {@code covers(null, anything)} answers <strong>true</strong> and {@code parse(null, …)} returns
+ * {@code discountAppliesTo}, where an unset scope means "the whole quote" - so
+ * {@code covers(null, anything)} answers <strong>true</strong> and {@code parse(null, ...)} returns
  * every category. Here the meaning is inverted: an unset scope means this sentence says nothing a
  * machine can verify. Read it the shared way and "Drinking water on game drives" accuses every
  * quote ever written of contradicting itself about park fees, insurance and visas at once.
@@ -43,7 +43,7 @@ class AnInclusionClaimsOnlyWhatCanBeCheckedTest {
     @DisplayName("the shared scope helper reads null as everything, which is why we never pass it null")
     void theSharedHelperReadsNullTheOtherWayRound() {
         /*
-         * Not a complaint about LineCategoryScope — it is right for tax and discount. This asserts
+         * Not a complaint about LineCategoryScope - it is right for tax and discount. This asserts
          * the behaviour so that anybody changing it learns that this module depends on it.
          */
         assertTrue(LineCategoryScope.covers(null, QuoteItemType.PARK_FEE),
@@ -102,7 +102,7 @@ class AnInclusionClaimsOnlyWhatCanBeCheckedTest {
 
         /* And the one that is deliberately NOT the obvious category. */
         assertEquals("VISA", scopeOfSeed("International flights & visas"),
-            "VISA, not TRANSPORT — an internal hopper is a TRANSPORT line and is routinely included");
+            "VISA, not TRANSPORT - an internal hopper is a TRANSPORT line and is routinely included");
     }
 
     @Test
@@ -135,7 +135,7 @@ class AnInclusionClaimsOnlyWhatCanBeCheckedTest {
         for (String[] seed : seeds()) {
             if (seed[0].equals(label)) return seed[1];
         }
-        throw new AssertionError("No seed called \"" + label + "\" — was it renamed? "
+        throw new AssertionError("No seed called \"" + label + "\" - was it renamed? "
             + "The backfill matches existing itineraries on this exact text.");
     }
 

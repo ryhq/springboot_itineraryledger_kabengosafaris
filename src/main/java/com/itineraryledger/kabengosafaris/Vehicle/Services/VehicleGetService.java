@@ -230,7 +230,7 @@ public class VehicleGetService {
     }
 
     /**
-     * The ONE place a vehicle filter is expressed — rows, counters and prev/next all
+     * The ONE place a vehicle filter is expressed - rows, counters and prev/next all
      * build from this, so a card can never disagree with the table and the arrows
      * can never walk a different set from the one on screen.
      */

@@ -18,7 +18,7 @@ import java.util.List;
  * - Existing rates filtered by the same exclusions
  *
  * The frontend can use this data to render a grid where:
- * - Rows = Season × Nation Category (× Age Category for PER_PERSON)
+ * - Rows = Season x Nation Category (x Age Category for PER_PERSON)
  * - Columns = STO Rate, Rack Rate, Currency
  */
 @Data
@@ -148,8 +148,8 @@ public class ActivityRateMatrixResponseDTO {
     public static class MatrixSummary {
         /**
          * Total possible rate combinations based on the matrix
-         * For PER_PERSON: seasons × nationCategories × ageCategories
-         * For others: seasons × nationCategories
+         * For PER_PERSON: seasons x nationCategories x ageCategories
+         * For others: seasons x nationCategories
          */
         private Integer totalPossibleRates;
 

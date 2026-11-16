@@ -10,7 +10,7 @@ import com.itineraryledger.kabengosafaris.Faq.Repository.FaqRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/** Seeds ONE FAQ, in its own transaction — see BlogSeeder for why that matters. */
+/** Seeds ONE FAQ, in its own transaction - see BlogSeeder for why that matters. */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -46,6 +46,6 @@ public class FaqSeeder {
         return true;
     }
 
-    /** One entry of seed/faqs.json — the website's FaqItem, verbatim. */
+    /** One entry of seed/faqs.json - the website's FaqItem, verbatim. */
     public record SeedFaq(String q, String a, String category) {}
 }

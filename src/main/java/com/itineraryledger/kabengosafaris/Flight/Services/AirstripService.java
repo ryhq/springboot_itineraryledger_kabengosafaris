@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Airstrips — where aircraft land.
+ * Airstrips - where aircraft land.
  *
  * <p>A shared lookup rather than something an airline owns: two airlines flying into Seronera are
  * flying into the same strip, and that is what makes "who serves Seronera" answerable.
@@ -54,7 +54,7 @@ public class AirstripService {
 
         /*
          * The null check is NOT redundant. SORTABLE is a List.of, which forbids nulls and
-         * throws NullPointerException from contains(null) rather than answering false — and
+         * throws NullPointerException from contains(null) rather than answering false - and
          * sortBy is null on every request that does not ask for a sort, which is most of them.
          * Without it the whole listing answers 500.
          */

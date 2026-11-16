@@ -210,7 +210,7 @@ public class UserUpdateServices {
          * Changing your own password also spends any outstanding reset link.
          *
          * Otherwise a link somebody requested, abandoned, and left sitting in their inbox stays
-         * usable after they have already changed the password by hand — which is the same hole from
+         * usable after they have already changed the password by hand - which is the same hole from
          * the other direction.
          */
         user.setPasswordChangedAt(LocalDateTime.now());

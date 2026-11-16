@@ -466,7 +466,7 @@ public class AccommodationSpecification {
         return Specification.not(hasCoordinates());
     }
 
-    /** Missing TIN — distinct from hasTin(value), which matches a specific TIN. */
+    /** Missing TIN - distinct from hasTin(value), which matches a specific TIN. */
     public static Specification<Accommodation> missingTin() {
         return (root, query, cb) -> cb.or(
             cb.isNull(root.get("tin")),

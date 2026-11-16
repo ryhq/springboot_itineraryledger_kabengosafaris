@@ -16,7 +16,7 @@ public interface ItineraryDayFlightRepository
     void deleteByItineraryDayId(Long itineraryDayId);
     long countByItineraryDayId(Long itineraryDayId);
 
-    /** A route in use cannot be deleted — the same reference check every catalogue here does. */
+    /** A route in use cannot be deleted - the same reference check every catalogue here does. */
     long countByFlightRouteId(Long flightRouteId);
     long countByFlightFareId(Long flightFareId);
 }

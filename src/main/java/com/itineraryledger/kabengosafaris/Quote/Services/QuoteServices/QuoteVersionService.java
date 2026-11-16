@@ -102,7 +102,7 @@ public class QuoteVersionService {
                 );
             }
 
-            // Prevent branching — must version from latest in chain
+            // Prevent branching - must version from latest in chain
             if (original.getNextVersion() != null) {
                 String nextCode = original.getNextVersion().getQuoteCode();
                 return ResponseEntity.badRequest().body(
@@ -204,7 +204,7 @@ public class QuoteVersionService {
                 newQuote.getQuoteCode(), newVersionNumber, original.getQuoteCode(), original.getVersion());
 
             // ============================================================
-            // Step 2: The trip itself — days, party, inclusions
+            // Step 2: The trip itself - days, party, inclusions
             // ============================================================
             /*
              * This was missing entirely, and it made every new version hollow. The line items
@@ -214,15 +214,15 @@ public class QuoteVersionService {
              * total exactly where it was.
              *
              * Copied from the previous QUOTE, never re-snapshotted from the itinerary. After the
-             * first edit the two are different documents on purpose — the quotation's tree is
-             * the customer's own copy — and re-reading the itinerary would throw away every
+             * first edit the two are different documents on purpose - the quotation's tree is
+             * the customer's own copy - and re-reading the itinerary would throw away every
              * choice they had made.
              */
             int daysCopied = treeCopy.copyTree(original, newQuote);
             newQuote = quoteRepository.save(newQuote);
 
             // ============================================================
-            // Step 3: Items — re-generate if date changed, else deep copy
+            // Step 3: Items - re-generate if date changed, else deep copy
             // ============================================================
             int itemCount;
             if (dateChanged && daysCopied > 0) {
@@ -287,7 +287,7 @@ public class QuoteVersionService {
      *
      * <p>A new start date means new season rates, so the lines have to be priced again. The way
      * that used to be done was to ask the ITINERARY estimator for a fresh estimate and write its
-     * figures straight onto the version — which dropped the agent's commission and the margin
+     * figures straight onto the version - which dropped the agent's commission and the margin
      * uplift, because those multipliers live in {@code QuoteCostEstimationService} and are applied
      * to every other repricing in the application. A version created with a new date therefore
      * came out at cost plus the default margin, under-priced, and looked completely normal.
@@ -298,10 +298,10 @@ public class QuoteVersionService {
      *
      * <p>Both are fixed by the same move. The version already carries the day tree (step 2) and
      * already carries the new start date, so {@code recalculate} prices THAT, at the new date,
-     * with the markup applied — the identical path an ordinary edit takes.
+     * with the markup applied - the identical path an ordinary edit takes.
      *
      * <p>The items are copied first and deliberately. {@code recalculate} replaces only the lines
-     * it can regenerate, so a hand-written line — a transfer, a negotiated supplement — survives
+     * it can regenerate, so a hand-written line - a transfer, a negotiated supplement - survives
      * into the new version instead of disappearing with the date change. It is also what we fall
      * back to: if the estimator cannot answer, the version keeps v1's prices at v1's season, which
      * is wrong in a way staff can see, rather than arriving with no lines at all.

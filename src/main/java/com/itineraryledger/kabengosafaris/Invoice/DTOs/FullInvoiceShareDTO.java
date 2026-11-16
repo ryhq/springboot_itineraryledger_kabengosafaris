@@ -42,7 +42,7 @@ public class FullInvoiceShareDTO {
     private String formattedAmountPaid;
     private BigDecimal balance;
     private String formattedBalance;
-    /** UNPAID · PARTIALLY_PAID · PAID */
+    /** UNPAID | PARTIALLY_PAID | PAID */
     private String status;
     private String statusDisplayName;
 

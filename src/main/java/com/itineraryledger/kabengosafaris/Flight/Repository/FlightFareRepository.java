@@ -38,7 +38,7 @@ public interface FlightFareRepository extends JpaRepository<FlightFare, Long>, J
     List<FlightFare> findLiveForRouteOn(@Param("routeId") Long routeId, @Param("date") LocalDate date);
 
     /**
-     * The same, with no date — for an itinerary, which is a product and has none.
+     * The same, with no date - for an itinerary, which is a product and has none.
      *
      * <p>Ordered so a fare that actually has a net rate wins over one that only has the airline's
      * published gross, because only the first of those can be quoted.
@@ -52,7 +52,7 @@ public interface FlightFareRepository extends JpaRepository<FlightFare, Long>, J
         """)
     List<FlightFare> findLiveForRoute(@Param("routeId") Long routeId);
 
-    /** Rows a new price list supersedes. Retired, never deleted — a sent quote points at them. */
+    /** Rows a new price list supersedes. Retired, never deleted - a sent quote points at them. */
     @Query("""
         SELECT f FROM FlightFare f
         WHERE f.flightRoute.airline.id = :airlineId

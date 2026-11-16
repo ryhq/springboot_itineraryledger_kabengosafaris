@@ -18,8 +18,8 @@ import com.itineraryledger.kabengosafaris.EmailAccount.ModalEntity.ImapCredentia
 /**
  * Which login opens the mailbox, and that only one piece of code decides it.
  *
- * The Jatelo droplet blocks outbound 465 and 587 — both time out, and Brevo works only because it
- * listens on 2525 — so that account sends through a relay while its mail sits on Namecheap Private
+ * The Jatelo droplet blocks outbound 465 and 587 - both time out, and Brevo works only because it
+ * listens on 2525 - so that account sends through a relay while its mail sits on Namecheap Private
  * Email. Two servers, two logins. Every other account still has one, so the fallback carries them.
  */
 class MailboxLoginTest {
@@ -75,7 +75,7 @@ class MailboxLoginTest {
     }
 
     @Test
-    @DisplayName("both connection paths ask ImapCredentials — a test that passes must mean the fetch works")
+    @DisplayName("both connection paths ask ImapCredentials - a test that passes must mean the fetch works")
     void onlyOnePlaceDecides() throws IOException {
         /*
          * The fetch scheduler and the "Test IMAP" button each built their own connection and each
@@ -98,11 +98,11 @@ class MailboxLoginTest {
                 String args = connect.group(1).replaceAll("\\s+", " ");
                 assertTrue(args.contains("credentials.username()") && args.contains("credentials.password()"),
                     p.getFileName() + " opens the mailbox with " + args
-                        + " — it must use ImapCredentials.of(account), or it will disagree with"
+                        + " - it must use ImapCredentials.of(account), or it will disagree with"
                         + " the other connection path");
             }
             assertTrue(found > 0, "no store.connect(...) found in " + p.getFileName()
-                + " — this test is no longer watching what it thinks it is");
+                + " - this test is no longer watching what it thinks it is");
         }
     }
 
@@ -114,7 +114,7 @@ class MailboxLoginTest {
         assertTrue(dto.contains("imapPasswordConfigured"),
             "the response should say whether a mailbox password exists");
         assertFalse(dto.matches("(?s).*private String imapPassword;.*"),
-            "the mailbox password must never be a field on the response DTO — the SMTP password,"
+            "the mailbox password must never be a field on the response DTO - the SMTP password,"
                 + " API key and webhook secret are all write-only and this is no different");
     }
 }

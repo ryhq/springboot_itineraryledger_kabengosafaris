@@ -281,7 +281,7 @@ public class QuoteUpdateService {
             // do a full items recalc instead of just summing existing rows.
             boolean needsItemsRecalc = false;
 
-            // Update safari start date — drives season rates
+            // Update safari start date - drives season rates
             if (updateDTO.getSafariStartDate() != null
                     && !updateDTO.getSafariStartDate().equals(quote.getSafariStartDate())) {
                 quote.setSafariStartDate(updateDTO.getSafariStartDate());
@@ -296,7 +296,7 @@ public class QuoteUpdateService {
             }
             /*
              * Vehicles are priced per car per day, so this moves the total and the derived line
-             * items have to be rebuilt — unlike the tax, which is applied over the items that
+             * items have to be rebuilt - unlike the tax, which is applied over the items that
              * already exist.
              */
             if (updateDTO.getCarCount() != null
@@ -314,7 +314,7 @@ public class QuoteUpdateService {
                 quote.setDiscountReason(updateDTO.getDiscountReason());
             }
 
-            // Markup fields — agentCommission + marginUplift bake into line
+            // Markup fields - agentCommission + marginUplift bake into line
             // item prices in QuoteCostEstimationService, so any change to
             // these triggers a recalc below.
             if (updateDTO.getAgentCommissionPercentage() != null

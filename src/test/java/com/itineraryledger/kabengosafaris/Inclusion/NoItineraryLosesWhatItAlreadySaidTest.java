@@ -21,7 +21,7 @@ import com.itineraryledger.kabengosafaris.Itinerary.ItineraryInclusion.Entity.It
  *
  * <p>The safety is one rule: {@link ItineraryInclusionReader} answers from the catalogue rows when
  * there are any, and from the old text columns when there are none. That makes the backfill safe by
- * construction rather than by having been perfect — and it makes the whole change reversible, since
+ * construction rather than by having been perfect - and it makes the whole change reversible, since
  * nothing overwrote the columns it falls back to.
  *
  * <p>The rule has a sharp edge, which is what most of this pins: the fallback is per itinerary, not
@@ -35,7 +35,7 @@ class NoItineraryLosesWhatItAlreadySaidTest {
 
     /** The exact text 58 live itineraries carry, so the assertions are about real data. */
     private static final String HOUSE_INCLUDED = String.join("\n",
-        "Private 4×4 safari vehicle with pop-up roof",
+        "Private 4x4 safari vehicle with pop-up roof",
         "Professional multilingual safari guide",
         "All park, conservation & crater-service fees");
     private static final String HOUSE_EXCLUDED = String.join("\n",
@@ -52,7 +52,7 @@ class NoItineraryLosesWhatItAlreadySaidTest {
 
         assertTrue(reader.isLegacy(legacy));
         assertIterableEquals(
-            List.of("Private 4×4 safari vehicle with pop-up roof",
+            List.of("Private 4x4 safari vehicle with pop-up roof",
                     "Professional multilingual safari guide",
                     "All park, conservation & crater-service fees"),
             reader.included(legacy));
@@ -72,11 +72,11 @@ class NoItineraryLosesWhatItAlreadySaidTest {
             .inclusions("SHOULD NEVER BE READ")
             .exclusions("NOR THIS")
             .build();
-        converted.addInclusion(row("Private 4×4 safari vehicle with pop-up roof", true, 1));
+        converted.addInclusion(row("Private 4x4 safari vehicle with pop-up roof", true, 1));
         converted.addInclusion(row("International flights & visas", false, 2));
 
         assertFalse(reader.isLegacy(converted));
-        assertIterableEquals(List.of("Private 4×4 safari vehicle with pop-up roof"),
+        assertIterableEquals(List.of("Private 4x4 safari vehicle with pop-up roof"),
             reader.included(converted));
         assertIterableEquals(List.of("International flights & visas"),
             reader.excluded(converted));
@@ -88,7 +88,7 @@ class NoItineraryLosesWhatItAlreadySaidTest {
         /*
          * A line that is on neither list belongs on neither list. Deriving "not included" as
          * everything not ticked would have meant one catalogue addition rewriting the exclusion
-         * paragraph of every itinerary at once — a sentence sent to a paying customer that nobody
+         * paragraph of every itinerary at once - a sentence sent to a paying customer that nobody
          * wrote and nobody reviewed.
          */
         Itinerary trip = Itinerary.builder().build();

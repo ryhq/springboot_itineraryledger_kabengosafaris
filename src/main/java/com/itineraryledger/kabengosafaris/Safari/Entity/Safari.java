@@ -259,7 +259,7 @@ public class Safari {
 
     /**
      * What this document tells the customer its price covers, copied from its parent and owned
-     * from that moment — the same rule as the day tree.
+     * from that moment - the same rule as the day tree.
      */
     @OneToMany(mappedBy = "safari", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
@@ -276,7 +276,7 @@ public class Safari {
      * Whether what this document says its price covers is still its parent's, or was changed here.
      *
      * <p>Null on anything created before the chain existed, which is what the reader's fallback is
-     * for — "not recorded" is distinguishable from "inherited and untouched".
+     * for - "not recorded" is distinguishable from "inherited and untouched".
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "inclusions_source", length = 20)

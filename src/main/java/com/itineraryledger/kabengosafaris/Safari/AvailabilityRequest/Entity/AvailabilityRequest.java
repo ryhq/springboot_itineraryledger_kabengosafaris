@@ -20,12 +20,12 @@ import lombok.NoArgsConstructor;
  * One ask to one property: "have you room on these nights?"
  *
  * Sending mail used to leave no trace beyond the Sent folder, so nothing could answer the two
- * questions that actually matter the morning after — has this camp been asked, and did they reply?
+ * questions that actually matter the morning after - has this camp been asked, and did they reply?
  * A request is therefore a record, not a side effect: it names the message that went out, the
  * nights it covered, and what became of it.
  *
  * It covers SEVERAL NIGHTS the way a bill covers several days: through a join table, not a column,
- * because a lodge holding nights 1–2 and 12–13 was asked once about both and re-asking either of
+ * because a lodge holding nights 1-2 and 12-13 was asked once about both and re-asking either of
  * them is the mistake this exists to prevent.
  */
 @Entity
@@ -50,7 +50,7 @@ public class AvailabilityRequest {
     /**
      * Where the ask has got to.
      *
-     * REPLIED means somebody wrote back — NOT that they agreed. "We have space at $400" and "you
+     * REPLIED means somebody wrote back - NOT that they agreed. "We have space at $400" and "you
      * are booked" are different sentences, and only a person can tell them apart, so the closing
      * reason is set deliberately rather than inferred from a reply arriving.
      */
@@ -120,7 +120,7 @@ public class AvailabilityRequest {
     /**
      * Blind copies, kept because they are part of who was told.
      *
-     * They are invisible to the recipient and to everyone else on the message — which is exactly
+     * They are invisible to the recipient and to everyone else on the message - which is exactly
      * why the record has to hold them. Six months on, "who else saw this?" has no other answer.
      */
     @Column(name = "bcc_addresses", length = 2000)
@@ -137,7 +137,7 @@ public class AvailabilityRequest {
     @Column(name = "sent_by_user_id")
     private Long sentByUserId;
 
-    /** Three working days after it went out — when it stops being "recent" and becomes a chase. */
+    /** Three working days after it went out - when it stops being "recent" and becomes a chase. */
     @Column(name = "chase_due_at")
     private LocalDateTime chaseDueAt;
 
@@ -157,7 +157,7 @@ public class AvailabilityRequest {
 
     /*
      * Nullable on purpose. The table already has rows, and ddl-auto=update adds a NOT NULL column to
-     * a populated table by inventing an implicit default — which is the kind of migration that works
+     * a populated table by inventing an implicit default - which is the kind of migration that works
      * on MySQL and fails somewhere else. Null means none, and chasesSoFar() says so.
      */
     @Column(name = "chase_count")
@@ -191,7 +191,7 @@ public class AvailabilityRequest {
         return chaseCount != null ? chaseCount : 0;
     }
 
-    /** Open means still waiting on the property — the state the anti-spam guard asks about. */
+    /** Open means still waiting on the property - the state the anti-spam guard asks about. */
     public boolean isOpen() {
         return status != Status.CLOSED;
     }

@@ -96,7 +96,7 @@ public class CreditNoteGetService {
             CreditNoteDTO creditNoteDTO = creditNoteCreateService.convertToDTO(creditNote);
 
             /*
-             * Circular navigation over the caller's filtered, sorted set — scoped to the
+             * Circular navigation over the caller's filtered, sorted set - scoped to the
              * parent when one is given. The id-ordered walk this replaces stepped through a
              * different set from the one on screen and could not say where you were in it.
              */
@@ -151,7 +151,7 @@ public class CreditNoteGetService {
         String creditNoteCode,
         String title,
         CreditNoteStatus status,
-        /* several at once — "confirmed or sent" is one question */
+        /* several at once - "confirmed or sent" is one question */
         List<CreditNoteStatus> statuses,
         /* stages: draft / outstanding / settled */
         List<String> statusGroups,
@@ -219,7 +219,7 @@ public class CreditNoteGetService {
                 /*
                  * Counters over the SAME specification as the rows, so the cards and the table can
                  * never disagree. Every one is reachable as a filter, which is the rule for a listing
-                 * page here — and money owed back to a customer is exactly the sort of figure that
+                 * page here - and money owed back to a customer is exactly the sort of figure that
                  * must not be a guess.
                  */
                 LocalDate today = LocalDate.now();
@@ -299,7 +299,7 @@ public class CreditNoteGetService {
 
     /**
      * The ONE description of the filtered set, shared by the rows and by the record
-     * arrows — paging that walked a different set from the one on screen would be
+     * arrows - paging that walked a different set from the one on screen would be
      * worse than no arrows (see CLAUDE.md).
      */
     private Specification<CreditNote> buildSpec(

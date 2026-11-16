@@ -199,7 +199,7 @@ public class NotificationSettingsInitializer implements ApplicationRunner, Order
 
         /*
          * Three warnings, not one. A single reminder is a single chance to be looking at the inbox
-         * that morning — and a lapsed provisional hold costs the room, not just a late payment. The
+         * that morning - and a lapsed provisional hold costs the room, not just a late payment. The
          * days are configurable because a company with tighter supplier terms will want tighter
          * lead times, but the shape (early warning, last chance, today) is the point.
          */

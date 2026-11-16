@@ -70,7 +70,7 @@ public class ActivityImage {
 
     /**
      * Website visibility, separate from isActive: an image can be in use in the
-     * panel while being kept off the public site. Defaults to hidden — new photos
+     * panel while being kept off the public site. Defaults to hidden - new photos
      * are published deliberately, not by accident.
      */
     @Builder.Default

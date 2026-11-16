@@ -49,7 +49,7 @@ public class CreditNoteDeleteService {
      *
      * Only DRAFT credit notes can be deleted; anything further along is SKIPPED and says why.
      *
-     * Reports per id — {deletedCount, deletedIds, skipped:[{id, code, reason}]} — because a
+     * Reports per id - {deletedCount, deletedIds, skipped:[{id, code, reason}]} - because a
      * confirmed credit note is one the customer may already have been told about, and a plain 200
      * that quietly deleted three of five rows is the worst way for that to be discovered.
      *

@@ -9,7 +9,7 @@ import java.util.List;
 import lombok.Data;
 
 /**
- * §8 — parses search bar input into structured operators.
+ * §8 - parses search bar input into structured operators.
  *
  * Supported operators (any combination, in any order):
  *   from:&lt;substr&gt;        to:&lt;substr&gt;     subject:&lt;substr&gt;

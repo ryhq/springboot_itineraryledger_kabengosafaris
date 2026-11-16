@@ -336,7 +336,7 @@ public class PublicController {
      * The blog index.
      *
      * Paged when asked (page/size) and whole otherwise, matching the testimony endpoint's
-     * behaviour — the site's index wants a page, its sitemap and llms.txt want all of them.
+     * behaviour - the site's index wants a page, its sitemap and llms.txt want all of them.
      */
     @GetMapping("/blogs")
     public ResponseEntity<ApiResponse<?>> getBlogs(
@@ -360,7 +360,7 @@ public class PublicController {
     // FAQ
     // ========================
 
-    /** The global FAQ list for /faq — active only, in the order the panel set. */
+    /** The global FAQ list for /faq - active only, in the order the panel set. */
     @GetMapping("/faqs")
     public ResponseEntity<ApiResponse<?>> getFaqs(
         @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang

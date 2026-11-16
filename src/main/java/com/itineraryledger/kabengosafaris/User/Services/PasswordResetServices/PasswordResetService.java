@@ -149,8 +149,8 @@ public class PasswordResetService {
         /*
          * Is this link still live?
          *
-         * A reset token is a stateless JWT — signature and expiry are all it can be judged on by
-         * itself — so the same link worked repeatedly for its whole lifetime, including long after
+         * A reset token is a stateless JWT - signature and expiry are all it can be judged on by
+         * itself - so the same link worked repeatedly for its whole lifetime, including long after
          * its owner had finished resetting. Anybody who came across it later (a shared inbox, a
          * forwarded message, browser history, a proxy log) could set the password again.
          *
@@ -251,7 +251,7 @@ public class PasswordResetService {
         }
     }
 
-    /** Whose name goes on this message — a literal here welcomed one company's users to another. */
+    /** Whose name goes on this message - a literal here welcomed one company's users to another. */
     private String companyName() {
         try {
             String name = companyIdentityService.snapshot().name();

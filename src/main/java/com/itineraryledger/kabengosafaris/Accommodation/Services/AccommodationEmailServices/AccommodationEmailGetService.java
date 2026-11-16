@@ -137,8 +137,8 @@ public class AccommodationEmailGetService {
             }
 
             /*
-             * Prev/next walks the SAME set the caller was looking at — this parent's
-             * children when scoped, everything otherwise — and returns the position so
+             * Prev/next walks the SAME set the caller was looking at - this parent's
+             * children when scoped, everything otherwise - and returns the position so
              * the record page can show 'N of M' with the wraparound visible.
              */
             Specification<AccommodationEmail> navSpec = buildSpec(decodedParentId != null ? decodedParentId : decodeOrNull(accommodationId), emailFilter, emailType, isPrimary, isActive, label, keyword);

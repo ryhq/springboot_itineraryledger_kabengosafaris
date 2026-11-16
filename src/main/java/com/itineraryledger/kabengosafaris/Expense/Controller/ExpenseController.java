@@ -100,7 +100,7 @@ public class ExpenseController {
     }
 
     /**
-     * POST /{id}/record — this bill is real, and can now take payments.
+     * POST /{id}/record - this bill is real, and can now take payments.
      *
      * The transition the payment service has always asked for and nothing offered. Refused on a
      * bill with no amount yet, because that is what the rule is actually protecting.
@@ -113,7 +113,7 @@ public class ExpenseController {
     }
 
     /**
-     * POST /{id}/cancel — we do not owe this after all.
+     * POST /{id}/cancel - we do not owe this after all.
      *
      * Refused once money has been paid against it: that is a refund, not a
      * cancellation, and the two are different facts.
@@ -139,7 +139,7 @@ public class ExpenseController {
     @org.springframework.beans.factory.annotation.Autowired
     private com.itineraryledger.kabengosafaris.Expense.Repository.ExpenseRepository bulkFlagsRepository;
 
-    /** PATCH /bulk — one request for a whole selection, with per-id outcomes. */
+    /** PATCH /bulk - one request for a whole selection, with per-id outcomes. */
     @PatchMapping("/bulk")
     @PreAuthorize("hasAuthority('PERM_UPDATE_EXPENSE')")
     public ResponseEntity<?> bulkFlags(
@@ -158,7 +158,7 @@ public class ExpenseController {
     private com.itineraryledger.kabengosafaris.Expense.Services.ExpenseServices.ExpenseAllocationService allocationService;
 
     /**
-     * GET /{id}/allocations — the days and things this bill is paying for.
+     * GET /{id}/allocations - the days and things this bill is paying for.
      */
     @GetMapping("/{id}/allocations")
     @PreAuthorize("hasAuthority('PERM_READ_EXPENSE')")
@@ -167,7 +167,7 @@ public class ExpenseController {
     }
 
     /**
-     * POST /{id}/allocations — say what it covers, all at once.
+     * POST /{id}/allocations - say what it covers, all at once.
      *
      * A list because that is the ordinary case: the lodge invoices both nights
      * together, so both are attached in one gesture and nobody has to remember to
@@ -182,7 +182,7 @@ public class ExpenseController {
         return allocationService.attach(id, dto);
     }
 
-    /** DELETE /{id}/allocations — a bare array of allocation ids. */
+    /** DELETE /{id}/allocations - a bare array of allocation ids. */
     @DeleteMapping("/{id}/allocations")
     @PreAuthorize("hasAuthority('PERM_UPDATE_EXPENSE')")
     public ResponseEntity<ApiResponse<?>> detachAllocations(

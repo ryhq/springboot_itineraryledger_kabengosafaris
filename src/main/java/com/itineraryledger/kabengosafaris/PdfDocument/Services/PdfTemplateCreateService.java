@@ -173,7 +173,7 @@ public class PdfTemplateCreateService {
      * Registers a shipped template that is NOT the default.
      *
      * Idempotent by name, so a restart does not accumulate copies, and silent
-     * when the file is absent — an extra template that never shipped should
+     * when the file is absent - an extra template that never shipped should
      * simply not exist, not break startup.
      */
     public boolean createSeededTemplate(PdfDocument document, String suffix, String name, String description) {

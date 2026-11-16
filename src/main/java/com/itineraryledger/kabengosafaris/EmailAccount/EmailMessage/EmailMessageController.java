@@ -141,7 +141,7 @@ public class EmailMessageController {
             /*
              * A mail filename is not ours either: a quote in it would end the header's quoted
              * string early and a CR/LF would be header injection, so it goes through the same
-             * helper — which also keeps non-ASCII names readable via filename*.
+             * helper - which also keeps non-ASCII names readable via filename*.
              */
             .header(HttpHeaders.CONTENT_DISPOSITION, ContentTypes.attachment(filename))
             .contentType(ContentTypes.safe(mimeType))
@@ -192,7 +192,7 @@ public class EmailMessageController {
     }
 
     /**
-     * §10 — quick-reply. JSON body, no attachments. The frontend's inline
+     * §10 - quick-reply. JSON body, no attachments. The frontend's inline
      * reply composer in the reading pane hits this so it can send without
      * a full-page swap.
      */
@@ -283,7 +283,7 @@ public class EmailMessageController {
         return emailMessageDeleteService.batchMove(accountId, messageIds, targetFolderId);
     }
 
-    // §4 — dedicated archive endpoints. Equivalent to a move to the
+    // §4 - dedicated archive endpoints. Equivalent to a move to the
     // account's ARCHIVE folder but lets the frontend skip the lookup.
 
     @PostMapping("/{id}/archive")
@@ -302,7 +302,7 @@ public class EmailMessageController {
         return emailMessageDeleteService.batchArchive(accountId, messageIds);
     }
 
-    // §3 — snooze. Hidden from inbox until snoozeUntil; scheduled job
+    // §3 - snooze. Hidden from inbox until snoozeUntil; scheduled job
     // wakes them and re-asserts unread.
 
     @PostMapping("/{id}/snooze")

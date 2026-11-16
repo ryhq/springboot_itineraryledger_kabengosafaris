@@ -44,7 +44,7 @@ public class CreateCreditNoteLineItemDTO {
     /**
      * When true, bypasses the over-credit guard that prevents total credits
      * across all credit notes for an invoice from exceeding the invoice's
-     * grand total. Default false — reject if adding this line would push
+     * grand total. Default false - reject if adding this line would push
      * total credits past what's left on the invoice.
      */
     private Boolean force;

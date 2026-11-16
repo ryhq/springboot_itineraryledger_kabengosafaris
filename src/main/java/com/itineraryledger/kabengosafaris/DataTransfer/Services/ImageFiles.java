@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
  * Off by default because they dominate the bundle: a lodge's gallery is megabytes and its rate sheet
  * is kilobytes, and the usual reason to move data between companies is the rates. When they are
  * wanted, the row travels in the module's JSON like anything else and the FILE travels beside it
- * under a name the bundle chooses — never the absolute path it had, which belongs to one machine,
+ * under a name the bundle chooses - never the absolute path it had, which belongs to one machine,
  * one service account and one company's data directory.
  *
  * A file that has gone missing from disk is skipped with a line in the log rather than failing the

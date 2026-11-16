@@ -33,12 +33,12 @@ import jakarta.persistence.Table;
  * MySQL stores several of these columns as `enum(...)`, so a value the COLUMN has never heard of is
  * rejected however valid it is in Java. Adding a constant is therefore a schema change, and forgetting
  * the migration does not fail the build, does not fail a unit test, and does not fail until the
- * application tries to write the value — which for anything seeded at boot means the application
+ * application tries to write the value - which for anything seeded at boot means the application
  * never starts.
  *
  * That has now happened three times: asset_kind when the email logos were added, category when the bill
  * reminders were, and item_type when flights became a line on a quote and an invoice. The second one took a failed deploy and a canary rollback to find, because the only
- * test that boots the Spring context is @Disabled for want of a real MySQL — so nothing here notices
+ * test that boots the Spring context is @Disabled for want of a real MySQL - so nothing here notices
  * that the application cannot start.
  *
  * This needs no database. It reads the migrations, applies them in order so the latest definition of
@@ -146,13 +146,13 @@ class EnumColumnsAcceptTheirValuesTest {
         for (Map.Entry<String, Class<? extends Enum<?>>> entry : WRITERS.entrySet()) {
             Set<String> accepted = columns.get(entry.getKey());
             if (accepted == null) {
-                problems.add(entry.getKey() + " — no enum column by that name in any migration");
+                problems.add(entry.getKey() + " - no enum column by that name in any migration");
                 continue;
             }
             for (Enum<?> constant : entry.getValue().getEnumConstants()) {
                 if (!accepted.contains(constant.name())) {
                     problems.add(entry.getKey() + " would refuse " + constant.name()
-                        + " (it accepts " + accepted + ") — add a migration widening the column");
+                        + " (it accepts " + accepted + ") - add a migration widening the column");
                 }
             }
         }
@@ -166,7 +166,7 @@ class EnumColumnsAcceptTheirValuesTest {
     @DisplayName("the mapping covers every enum column a migration has widened")
     void widenedColumnsAreAccountedFor() throws IOException {
         /*
-         * A column somebody has already had to ALTER is a column whose Java enum grows — exactly the
+         * A column somebody has already had to ALTER is a column whose Java enum grows - exactly the
          * ones worth watching. If one is widened and never listed above, this test says so rather
          * than quietly checking two of three.
          */

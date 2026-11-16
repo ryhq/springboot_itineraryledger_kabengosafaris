@@ -19,16 +19,16 @@ import java.util.List;
  *
  * Structure:
  * Invoice
- * ├── customer (customer information)
- * ├── safari (safari summary)
- * ├── lineItems (invoice line items with multi-currency prices)
- * ├── subtotals (by currency)
- * ├── taxes (by currency)
- * ├── discounts (by currency)
- * ├── grandTotals (by currency)
- * ├── amountsPaid (by currency)
- * ├── balances (by currency)
- * └── bankAccounts (active bank accounts matching invoice currencies)
+ * +== customer (customer information)
+ * +== safari (safari summary)
+ * +== lineItems (invoice line items with multi-currency prices)
+ * +== subtotals (by currency)
+ * +== taxes (by currency)
+ * +== discounts (by currency)
+ * +== grandTotals (by currency)
+ * +== amountsPaid (by currency)
+ * +== balances (by currency)
+ * +== bankAccounts (active bank accounts matching invoice currencies)
  */
 @Data
 @NoArgsConstructor

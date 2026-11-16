@@ -127,7 +127,7 @@ public class CustomerDocumentSpecification {
             if (email == null || email.trim().isEmpty()) {
                 return cb.conjunction();
             }
-            // primaryEmail is a @Transient helper — query the customer's email rows instead
+            // primaryEmail is a @Transient helper - query the customer's email rows instead
             query.distinct(true);
             return cb.like(
                 cb.lower(root.join("customer").join("emails", jakarta.persistence.criteria.JoinType.LEFT).get("email")),
@@ -163,7 +163,7 @@ public class CustomerDocumentSpecification {
         );
     }
 
-    /** Expires within the next N days — the warning that matters before departure. */
+    /** Expires within the next N days - the warning that matters before departure. */
     public static Specification<CustomerDocument> expiringWithin(int days) {
         return (root, query, cb) -> {
             var now = java.time.LocalDateTime.now();

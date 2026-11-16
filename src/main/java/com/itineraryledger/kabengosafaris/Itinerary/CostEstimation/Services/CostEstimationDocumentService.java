@@ -23,7 +23,7 @@ import java.util.List;
 /**
  * Assembles a costing into the shape a document needs.
  *
- * The estimator answers one question per call — by day OR by pax band — because
+ * The estimator answers one question per call - by day OR by pax band - because
  * a screen only ever shows one at a time. A document is read once and cannot ask
  * again, so this runs both and hands over the pair, letting a template print
  * either without the caller having chosen in advance.

@@ -67,21 +67,21 @@ Controls email notifications sent to admin when visitors submit messages through
 When a user subscribes (or re-subscribes) to the newsletter:
 
 1. `NewsletterService` saves the subscription
-2. Checks `notification.newsletter.enabled` — if `false`, stops
+2. Checks `notification.newsletter.enabled` - if `false`, stops
 3. Gets recipient emails from `notification.newsletter.emails`
 4. Renders the `NEWSLETTER_SUBSCRIPTION` email template with variables:
    - `subscriberEmail`, `subscriberName`, `subscriptionDate`
    - `preferredLocale`, `source`, `isResubscription`
    - `linkedCustomerName`, `totalActiveSubscribers`
 5. Sends the rendered email to each recipient
-6. Notification failures are silently logged — they never break the subscribe flow
+6. Notification failures are silently logged - they never break the subscribe flow
 
 ### Booking Inquiry Notification
 
 When a visitor submits a booking inquiry:
 
 1. `BookingInquiryService` saves the inquiry with auto-generated code (e.g., `INQ-0001-03-26`)
-2. Checks `notification.booking_inquiry.enabled` — if `false`, stops
+2. Checks `notification.booking_inquiry.enabled` - if `false`, stops
 3. Gets recipient emails from `notification.booking_inquiry.emails`
 4. Renders the `BOOKING_INQUIRY` email template with variables:
    - `inquiryCode`, `firstName`, `lastName`, `email`, `phone`, `country`
@@ -90,20 +90,20 @@ When a visitor submits a booking inquiry:
    - `specialRequests`, `message`, `source`, `preferredLocale`, `inquiryDate`
    - Itinerary details (if linked): `itineraryName`, `itineraryCode`, `itineraryTotalDays`, `itineraryTotalNights`, `itineraryStartLocation`, `itineraryEndLocation`, `itineraryDescription`
 5. Sends the rendered email to each recipient
-6. Notification failures are silently logged — they never break the inquiry submission flow
+6. Notification failures are silently logged - they never break the inquiry submission flow
 
 ### Contact Us Notification
 
 When a visitor submits a message through the Contact Us form:
 
 1. `ContactMessageService` saves the message with auto-generated code (e.g., `MSG-0001-03-26`)
-2. Checks `notification.contact_us.enabled` — if `false`, stops
+2. Checks `notification.contact_us.enabled` - if `false`, stops
 3. Gets recipient emails from `notification.contact_us.emails`
 4. Renders the `CONTACT_US` email template with variables:
    - `contactCode`, `name`, `email`, `phone`, `subject`
    - `message`, `source`, `preferredLocale`, `contactDate`
 5. Sends the rendered email to each recipient
-6. Notification failures are silently logged — they never break the contact form submission flow
+6. Notification failures are silently logged - they never break the contact form submission flow
 
 ---
 
@@ -892,14 +892,14 @@ When updating settings, the `settingValue` must be compatible with the setting's
 
 ```
 NotificationSetting/
-├── API_DOCUMENTATION.md           # This file
-├── NotificationSetting.java       # Entity (notification_settings table)
-├── NotificationSettingRepository.java  # JPA Repository
-├── NotificationSettingDTO.java     # Response DTO
-├── UpdateNotificationSettingDTO.java   # Update request DTO
-├── NotificationSettingServices.java    # CRUD service
-├── NotificationSettingGetterServices.java  # Typed getters with @Value fallback
-└── NotificationSettingController.java  # REST controller
++== API_DOCUMENTATION.md           # This file
++== NotificationSetting.java       # Entity (notification_settings table)
++== NotificationSettingRepository.java  # JPA Repository
++== NotificationSettingDTO.java     # Response DTO
++== UpdateNotificationSettingDTO.java   # Update request DTO
++== NotificationSettingServices.java    # CRUD service
++== NotificationSettingGetterServices.java  # Typed getters with @Value fallback
++== NotificationSettingController.java  # REST controller
 ```
 
 ### Related Files

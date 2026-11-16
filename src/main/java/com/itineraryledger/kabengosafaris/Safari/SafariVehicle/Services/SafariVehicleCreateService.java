@@ -55,7 +55,7 @@ public class SafariVehicleCreateService {
             /*
              * Assigning a vehicle is operations, not editing.
              *
-             * isEditable() excludes FULLY_PAID and IN_PROGRESS — which is exactly
+             * isEditable() excludes FULLY_PAID and IN_PROGRESS - which is exactly
              * when the fleet is arranged. A trip that is paid for and about to
              * start could not be given a Land Cruiser, and one that lost a
              * vehicle mid-safari could not be given another. Only a finished or
@@ -95,7 +95,7 @@ public class SafariVehicleCreateService {
                 );
             }
 
-            // Check availability — hard conflicts block, soft (same-day boundary) conflicts warn
+            // Check availability - hard conflicts block, soft (same-day boundary) conflicts warn
             AvailabilityResult availability = vehicleAvailabilityService.checkAvailability(
                 vehicleId, startDate, endDate, null, null);
             if (availability.hasHardConflicts()) {

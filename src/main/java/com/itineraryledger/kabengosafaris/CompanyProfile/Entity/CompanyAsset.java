@@ -15,12 +15,12 @@ import lombok.NoArgsConstructor;
  * One of the company's marks.
  *
  * A logo is not one file. The panel needs a dark mark for light backgrounds and a light one for dark
- * backgrounds — the same wordmark cannot do both — and a browser tab needs a square favicon in each
+ * backgrounds - the same wordmark cannot do both - and a browser tab needs a square favicon in each
  * theme. Four SVGs, one slot each, replaceable without a deploy.
  *
  * LOGO_EMAIL is the fifth and the awkward one: most mail clients refuse SVG outright, so a letter
  * needs a raster. Keeping it as its own slot means the office can upload a PNG for mail while the
- * app keeps the crisp vector — rather than discovering, from a customer, that the logo is a blank
+ * app keeps the crisp vector - rather than discovering, from a customer, that the logo is a blank
  * square in Gmail.
  */
 @Entity
@@ -38,14 +38,14 @@ public class CompanyAsset {
      * The brand's files, by the job each one does.
      *
      * Two families, and mixing them up is the usual mistake: LOGO_LIGHT/LOGO_DARK are the ICONIC
-     * mark — the shape alone, legible at 24px in a topbar or on a footer line — while LOGO_FULL is
+     * mark - the shape alone, legible at 24px in a topbar or on a footer line - while LOGO_FULL is
      * the whole lockup, mark plus wordmark, for a letterhead or a website header. The full logo has
      * two cuts because a tagline reads well on a cover page and becomes noise in a header.
      */
     public enum AssetKind {
-        /** the mark for light backgrounds — dark ink */
+        /** the mark for light backgrounds - dark ink */
         LOGO_LIGHT,
-        /** the mark for dark backgrounds — light ink */
+        /** the mark for dark backgrounds - light ink */
         LOGO_DARK,
         /** mark plus wordmark, for places with room */
         LOGO_FULL,
@@ -61,7 +61,7 @@ public class CompanyAsset {
          * raster for mail on a DARK background.
          *
          * The shipped emails paint their header band in the dark accent, so the light-background
-         * copy disappears into it — a green mark on a dark green band is a faint outline, which is
+         * copy disappears into it - a green mark on a dark green band is a faint outline, which is
          * what a welcome email opened with.
          */
         LOGO_EMAIL_DARK
@@ -79,7 +79,7 @@ public class CompanyAsset {
     @Column(name = "asset_kind", nullable = false, length = 40)
     private AssetKind assetKind;
 
-    /** Stored name on disk under {app.data.dir}/company — a content hash, never shown. */
+    /** Stored name on disk under {app.data.dir}/company - a content hash, never shown. */
     @Column(name = "file_name", nullable = false, length = 255)
     private String fileName;
 
@@ -104,7 +104,7 @@ public class CompanyAsset {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    /** Whether a mail client will render this — SVG in an email is a blank square in most of them. */
+    /** Whether a mail client will render this - SVG in an email is a blank square in most of them. */
     public boolean safeForEmail() {
         return mimeType != null && !mimeType.toLowerCase().contains("svg");
     }

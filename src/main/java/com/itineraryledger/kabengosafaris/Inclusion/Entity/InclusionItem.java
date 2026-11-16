@@ -24,13 +24,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * One line of the promise attached to a price — "All park, conservation and crater-service fees".
+ * One line of the promise attached to a price - "All park, conservation and crater-service fees".
  *
  * <p>Before this existed, that sentence lived as free text on the itinerary, and the same eight
  * lines were pasted into 58 of 65 itineraries. Correcting a word meant editing 58 records, three
  * itineraries had never been pasted into at all, and no document printed any of it.
  *
- * <p>The catalogue holds the wording once. A document — itinerary, quote, safari, invoice — holds
+ * <p>The catalogue holds the wording once. A document - itinerary, quote, safari, invoice - holds
  * rows that point at these, each row saying whether this trip includes the thing or does not. The
  * side is a property of the row, not of the item: "Optional activities" is not-included on a
  * standard safari and included on one where we have thrown a balloon flight in.
@@ -91,7 +91,7 @@ public class InclusionItem {
      * Enabled or disabled.
      *
      * <p>Disabled means: hidden from the picker, refused by the write endpoints, and filtered out
-     * of live reads. It does NOT reach back into a document already sent — those hold their own
+     * of live reads. It does NOT reach back into a document already sent - those hold their own
      * copy of the wording as text, on purpose.
      */
     @Builder.Default
@@ -114,7 +114,7 @@ public class InclusionItem {
     @Column(name = "is_standard", nullable = false)
     private Boolean isStandard = true;
 
-    /** Which side a standard row starts on — eight of the house lines true, six false. */
+    /** Which side a standard row starts on - eight of the house lines true, six false. */
     @Builder.Default
     @Column(name = "default_included", nullable = false)
     private Boolean defaultIncluded = true;
@@ -123,9 +123,9 @@ public class InclusionItem {
      * What this sentence claims about the priced lines, as {@code LineCategoryScope} canonical text.
      *
      * <p><strong>NULL MEANS NO CLAIM, which is the opposite of what the shared helper assumes.</strong>
-     * {@code LineCategoryScope.covers(null, type)} returns true and {@code parse(null, …)} returns
+     * {@code LineCategoryScope.covers(null, type)} returns true and {@code parse(null, ...)} returns
      * every category, because for tax and discount an unset scope means "the whole quote". Here an
-     * unset scope means this sentence says nothing a machine can check — "Drinking water on game
+     * unset scope means this sentence says nothing a machine can check - "Drinking water on game
      * drives" is not a claim about a QuoteItemType. Anything reading this field must short-circuit
      * on null BEFORE calling either helper, or every quote is accused of every contradiction.
      */

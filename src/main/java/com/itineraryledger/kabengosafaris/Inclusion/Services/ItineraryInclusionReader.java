@@ -15,9 +15,9 @@ import lombok.RequiredArgsConstructor;
 /**
  * What an itinerary's price covers, resolved in one place.
  *
- * <p>This exists so that the fallback exists in exactly one place. Until the backfill has run —
+ * <p>This exists so that the fallback exists in exactly one place. Until the backfill has run -
  * and for anything it could not match, such as the three itineraries whose whole promise was typed
- * as a single 300-character paragraph — an itinerary's lines still live in the old
+ * as a single 300-character paragraph - an itinerary's lines still live in the old
  * {@code inclusions} / {@code exclusions} TEXT columns. Every read goes through here, so an
  * itinerary with no rows yet still answers with what it has always said, and the migration is safe
  * by construction rather than by having been perfect.

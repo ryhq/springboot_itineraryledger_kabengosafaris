@@ -62,7 +62,7 @@ public class VendorSpecification {
     }
 
     /**
-     * Any of these types — the Type filter is multi-select, and a singular enum
+     * Any of these types - the Type filter is multi-select, and a singular enum
      * param cannot answer "lodge or park authority".
      */
     public static Specification<Vendor> byTypes(java.util.List<VendorType> types) {

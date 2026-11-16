@@ -40,7 +40,7 @@ public class PdfDocumentInitializer implements ApplicationRunner, Ordered {
      * NOT @Transactional. Sharing one transaction across every document is what
      * made a single failed insert fatal: the per-document catch swallowed the
      * exception, the transaction was already rollback-only, and the commit threw
-     * afterwards — taking the context down and putting systemd in a restart
+     * afterwards - taking the context down and putting systemd in a restart
      * loop. Each document now gets its own transaction via PdfDocumentSeeder.
      */
     @Override

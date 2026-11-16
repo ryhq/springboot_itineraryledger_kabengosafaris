@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
  * One thing a bill covers, and enough about the bill to act on it.
  *
  * The day tree reads these to say "this stay is on 2 bills" and to offer them,
- * so the vendor, the status and the code travel with the link — otherwise every
+ * so the vendor, the status and the code travel with the link - otherwise every
  * chip on the page would need its own lookup.
  */
 @Data

@@ -13,11 +13,11 @@ import lombok.RequiredArgsConstructor;
  * Fills in the company's `{{placeholders}}` wherever they appear.
  *
  * One implementation, because there are two renderers and they must agree. The email templates had
- * this pass; signatures did not — signatures substitute `{name}` for the variables they declare, so a
+ * this pass; signatures did not - signatures substitute `{name}` for the variables they declare, so a
  * `{{companyName}}` in a signature went out to the customer as those exact characters. Whatever
  * carries the company's details has to resolve them the same way.
  *
- * Optional blocks are supported: `{{#companyInstagram}}…{{/companyInstagram}}` keeps its contents only
+ * Optional blocks are supported: `{{#companyInstagram}}...{{/companyInstagram}}` keeps its contents only
  * when the value is set, so a company with no Instagram page ships no icon linking nowhere.
  */
 @Component

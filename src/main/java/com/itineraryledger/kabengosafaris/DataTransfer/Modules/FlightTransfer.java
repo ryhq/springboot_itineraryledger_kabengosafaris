@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
  * Airlines, the strips they fly between, their sectors and their fares.
  *
  * <p>Supporting, and it travels because an itinerary can name a sector. Without it, importing a
- * flying trip into another company would refuse every itinerary that has a flight on it — the same
+ * flying trip into another company would refuse every itinerary that has a flight on it - the same
  * failure the inclusion catalogue had to solve when the promise became rows.
  *
  * <h2>Matched on natural names, never on ids</h2>
@@ -43,7 +43,7 @@ import lombok.RequiredArgsConstructor;
  *
  * <p>Fares are the one part that may legitimately differ between two companies: each negotiates its
  * own net rates with the same airline, and one may hold a contract the other does not. So a fare is
- * created if it is missing and left ALONE if it exists — this company's own negotiated price is not
+ * created if it is missing and left ALONE if it exists - this company's own negotiated price is not
  * the exporting company's to overwrite.
  *
  * <p>The same reasoning is why an itinerary naming a departure this company has not got is not
@@ -162,7 +162,7 @@ public class FlightTransfer implements ModuleTransfer {
             } else {
                 /*
                  * Left alone on purpose, even when overwriting is allowed. The markup on this record
-                 * is what THIS company adds to a fare — its own commercial decision — and importing
+                 * is what THIS company adds to a fare - its own commercial decision - and importing
                  * another company's trips must not quietly reprice every flight it already sells.
                  */
                 outcome.skip(name, "this company already has it, and its markup is its own");

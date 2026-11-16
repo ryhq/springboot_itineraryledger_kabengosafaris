@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>Editable at every step, which is the point of the chain: five lines on the itinerary, two more
  * added while negotiating the quote, and the safari and invoice that follow carry seven. Editing
- * here never reaches back up — the itinerary still has five, and the next customer's quote starts
+ * here never reaches back up - the itinerary still has five, and the next customer's quote starts
  * from five.
  *
  * <p>Reset is the other half of that. Without it an edit made by mistake two documents ago is
@@ -81,7 +81,7 @@ public class DocumentInclusionService {
 
         /*
          * Computed on the read the screen already makes, rather than behind an endpoint the panel
-         * has to remember to call — a warning nobody fetches is a warning nobody sees. It reads
+         * has to remember to call - a warning nobody fetches is a warning nobody sees. It reads
          * collections already loaded, so it costs nothing extra.
          *
          * Only on the quote. That is where the promise is negotiated and where somebody can still
@@ -277,8 +277,8 @@ public class DocumentInclusionService {
      * The rows a caller sent, or null when any of them is unusable.
      *
      * <p>Validated whole before anything is written, so a bad row cannot leave a document holding
-     * half a promise. An empty list is legitimate — it means this document says nothing about what
-     * its price covers — and is not the same as never having been set.
+     * half a promise. An empty list is legitimate - it means this document says nothing about what
+     * its price covers - and is not the same as never having been set.
      */
     private List<SetDocumentInclusionsDTO.Row> validated(SetDocumentInclusionsDTO dto) {
         if (dto == null || dto.getItems() == null) return null;
@@ -295,7 +295,7 @@ public class DocumentInclusionService {
      *
      * <p><strong>A safari has no foreign key to its quote.</strong> The best available answer is
      * the latest quote for the same itinerary and the same customer, which is exactly the lookup
-     * {@code InvoiceFromSafariGenerationService} already uses to inherit tax and discount scopes —
+     * {@code InvoiceFromSafariGenerationService} already uses to inherit tax and discount scopes -
      * so at least the two agree about which quote a trip descends from.
      *
      * <p>It is a heuristic, and where it matters the screen says which document it would reset

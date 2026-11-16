@@ -28,7 +28,7 @@ public class EmailEventSpecification {
      * The one search box: the name and the description.
      *
      * Names are shouty constants (SEND_INVOICE, USER_REGISTRATION), so somebody typing
-     * "invoice" or "welcome" has to hit the description too — that is where the words a
+     * "invoice" or "welcome" has to hit the description too - that is where the words a
      * person would actually use are written.
      */
     public static Specification<EmailEvent> searchKeyword(String keyword) {
@@ -53,7 +53,7 @@ public class EmailEventSpecification {
         return (root, query, cb) -> cb.not(cb.exists(templateSubquery(root, query, cb, null)));
     }
 
-    /** No enabled template — the same silence, arrived at a different way. */
+    /** No enabled template - the same silence, arrived at a different way. */
     public static Specification<EmailEvent> hasNoEnabledTemplate() {
         return (root, query, cb) -> cb.not(cb.exists(templateSubquery(root, query, cb, "enabled")));
     }

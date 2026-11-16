@@ -19,8 +19,8 @@ import lombok.extern.slf4j.Slf4j;
  * The standard lines a trip's promise is assembled from.
  *
  * <p>These fourteen are not invented here. They are the exact text 58 of the 65 live itineraries
- * already carried, byte for byte, pasted into each one by hand — which is what this replaces. The
- * wording is preserved character for character (including the × in "4×4" and the ampersands), so
+ * already carried, byte for byte, pasted into each one by hand - which is what this replaces. The
+ * wording is preserved character for character (including the x in "4x4" and the ampersands), so
  * that the backfill can match existing itineraries against it by exact text and no customer-facing
  * sentence changes on the day this ships.
  *
@@ -67,7 +67,7 @@ public class InclusionItemInitializer implements ApplicationRunner {
         new Seed("Airport transfers on arrival & departure", "Transport", true, "TRANSPORT"),
         /* No line type stands for bottled water, so it claims nothing and is never checked. */
         new Seed("Drinking water on game drives", "Provisions", true, null),
-        /* Tax is not a QuoteItemType — it is a percentage over other lines. */
+        /* Tax is not a QuoteItemType - it is a percentage over other lines. */
         new Seed("Government taxes & levies", "Taxes", true, null),
         /* Null for the same reason: cover is bundled, never an INSURANCE line. */
         new Seed("Flying-doctors emergency evacuation cover", "Safety & cover", true, null),

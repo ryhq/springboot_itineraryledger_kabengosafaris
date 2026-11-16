@@ -183,7 +183,7 @@ Retrieves a single testimony image by its obfuscated ID, including circular navi
 ```
 
 **Navigation:**
-- `nextId` / `previousId` provide circular navigation — wraps from last to first and vice versa
+- `nextId` / `previousId` provide circular navigation - wraps from last to first and vice versa
 - Both are obfuscated IDs
 
 **Error Responses:**
@@ -264,7 +264,7 @@ Serves the actual image binary file by its stored filename.
 - **404 Not Found** - Image not found or inactive
 
 **Notes:**
-- No authentication required — designed for public image display
+- No authentication required - designed for public image display
 - Only serves images where `isActive = true`
 - Cached for 24 hours via Cache-Control header
 
@@ -293,7 +293,7 @@ Serves the actual image binary file by its obfuscated ID.
 - **404 Not Found** - Image not found or inactive
 
 **Notes:**
-- No authentication required — designed for public image display
+- No authentication required - designed for public image display
 - Only serves images where `isActive = true`
 - This is the URL returned in `imageUrl` field of the DTO
 
@@ -579,8 +579,8 @@ DELETE /api/testimony-images?ids=img123abc
 ### Image URLs
 
 Each image has two accessible URLs:
-1. **By ID:** `http://localhost:4450/api/testimony-images/{id}/file` — uses obfuscated ID
-2. **By Filename:** `http://localhost:4450/api/testimony-images/file/{fileName}` — uses stored filename
+1. **By ID:** `http://localhost:4450/api/testimony-images/{id}/file` - uses obfuscated ID
+2. **By Filename:** `http://localhost:4450/api/testimony-images/file/{fileName}` - uses stored filename
 
 Both endpoints are public (no authentication required) and return the raw image binary.
 
@@ -703,7 +703,7 @@ Authorization: Bearer <token>
 
 - Validate images on the client side before uploading (file type, size)
 - Upload related images in a single batch request for atomicity
-- The server validates file format and size — check error responses for specifics
+- The server validates file format and size - check error responses for specifics
 
 ### 3. Public Display
 

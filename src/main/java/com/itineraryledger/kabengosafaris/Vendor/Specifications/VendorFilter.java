@@ -35,7 +35,7 @@ public class VendorFilter {
     private String country;
     private List<String> countries;
 
-    /** What we normally settle in — TZS, USD, EUR. */
+    /** What we normally settle in - TZS, USD, EUR. */
     private List<String> currencies;
 
     private Boolean isActive;

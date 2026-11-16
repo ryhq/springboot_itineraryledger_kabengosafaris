@@ -87,7 +87,7 @@ public class Invoice {
      * A second demand against a safari that already had one.
      *
      * Stored rather than inferred from the description, because the question the
-     * office asks a year later — why was this customer billed twice — has to be
+     * office asks a year later - why was this customer billed twice - has to be
      * answerable by a query, not by reading prose.
      */
     @Builder.Default
@@ -112,7 +112,7 @@ public class Invoice {
     private Customer customer;
 
     /**
-     * The safari this invoice is for (nullable, unique — one invoice per safari).
+     * The safari this invoice is for (nullable, unique - one invoice per safari).
      * If Safari is deleted, this field will be automatically set to NULL.
      */
     @ManyToOne(fetch = FetchType.LAZY)
@@ -128,7 +128,7 @@ public class Invoice {
 
     /**
      * What this document tells the customer its price covers, copied from its parent and owned
-     * from that moment — the same rule as the day tree.
+     * from that moment - the same rule as the day tree.
      */
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
@@ -145,7 +145,7 @@ public class Invoice {
      * Whether what this document says its price covers is still its parent's, or was changed here.
      *
      * <p>Null on anything created before the chain existed, which is what the reader's fallback is
-     * for — "not recorded" is distinguishable from "inherited and untouched".
+     * for - "not recorded" is distinguishable from "inherited and untouched".
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "inclusions_source", length = 20)
@@ -239,7 +239,7 @@ public class Invoice {
     // =====================================================================
 
     /**
-     * Agent commission percentage — pays off the referring agent.
+     * Agent commission percentage - pays off the referring agent.
      * Applied (with marginUplift) as a multiplier on each line item's unit
      * price before discount/tax, so the customer sees the inflated price as
      * the line total. P&L expense, not retained profit.
@@ -251,7 +251,7 @@ public class Invoice {
     private String agentCommissionReason;
 
     /**
-     * Margin uplift percentage — extra profit retained in-house. Applied
+     * Margin uplift percentage - extra profit retained in-house. Applied
      * together with agentCommissionPercentage as a per-line-item multiplier.
      */
     @Column(name = "margin_uplift_percentage", precision = 5, scale = 2)

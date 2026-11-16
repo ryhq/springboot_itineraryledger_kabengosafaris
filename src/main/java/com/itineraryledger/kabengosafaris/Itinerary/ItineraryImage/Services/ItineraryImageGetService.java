@@ -248,8 +248,8 @@ public class ItineraryImageGetService {
             }
 
             /*
-             * Prev/next walks the SAME set the caller came from — this itinerary's
-             * images when scoped, everything otherwise — and returns the position,
+             * Prev/next walks the SAME set the caller came from - this itinerary's
+             * images when scoped, everything otherwise - and returns the position,
              * so the record page can show 'N of M' and the wrap is visible. The id
              * walk it replaced could not say where you were.
              */

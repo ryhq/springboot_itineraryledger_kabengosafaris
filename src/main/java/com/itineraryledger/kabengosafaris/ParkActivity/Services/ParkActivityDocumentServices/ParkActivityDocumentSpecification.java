@@ -147,7 +147,7 @@ public class ParkActivityDocumentSpecification {
         };
     }
 
-    /* Validity counters — warn BEFORE expiry, which is the point of tracking it. */
+    /* Validity counters - warn BEFORE expiry, which is the point of tracking it. */
 
     public static Specification<ParkActivityDocument> expired() {
         return (root, query, cb) -> cb.and(

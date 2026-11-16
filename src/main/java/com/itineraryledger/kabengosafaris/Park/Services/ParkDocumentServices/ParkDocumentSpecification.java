@@ -134,7 +134,7 @@ public class ParkDocumentSpecification {
         };
     }
 
-    /** Open-ended — no valid-to recorded. */
+    /** Open-ended - no valid-to recorded. */
     public static Specification<ParkDocument> noExpiry() {
         return (root, query, cb) -> cb.isNull(root.get("validTo"));
     }
@@ -166,7 +166,7 @@ public class ParkDocumentSpecification {
     }
 
     /**
-     * Free-text search over title and both filenames — the fields a person would
+     * Free-text search over title and both filenames - the fields a person would
      * recognise. Without it the list's search box sent a parameter nothing read.
      */
     public static Specification<ParkDocument> searchKeyword(String keyword) {

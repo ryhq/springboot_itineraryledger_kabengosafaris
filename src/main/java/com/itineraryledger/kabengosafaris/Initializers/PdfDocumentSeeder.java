@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
  * document in try/catch, which looked like isolation and was not: the whole run
  * shared one transaction, so a failed insert marked it rollback-only, the catch
  * swallowed the exception, and the commit then threw
- * {@code UnexpectedRollbackException} — after the initializer had reported
+ * {@code UnexpectedRollbackException} - after the initializer had reported
  * success. Spring shut the context down, systemd restarted it, and the same
  * insert failed again. A description five characters too long took the API off
  * the air in a loop.
@@ -65,7 +65,7 @@ public class PdfDocumentSeeder {
             /*
              * The variable catalogue is refreshed on an existing row, which it never used to be.
              * It was written only at creation, so on every install that already had these rows a
-             * variable added to a schema could never appear — the template editor's picker went on
+             * variable added to a schema could never appear - the template editor's picker went on
              * offering the list it was seeded with years earlier, and the only symptom was somebody
              * typing a variable name by hand and getting it wrong. Same fix, same reasoning, as
              * EmailEventInitializer.

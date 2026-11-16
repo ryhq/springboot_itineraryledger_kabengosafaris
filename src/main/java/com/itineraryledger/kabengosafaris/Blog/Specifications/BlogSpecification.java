@@ -49,7 +49,7 @@ public class BlogSpecification {
 
     /**
      * The one search box: what the article is called, where it lives, who wrote it, what it
-     * is about — and the body, because "which post mentions Ndutu" is the question people
+     * is about - and the body, because "which post mentions Ndutu" is the question people
      * actually arrive with.
      */
     public static Specification<Blog> searchKeyword(String keyword) {

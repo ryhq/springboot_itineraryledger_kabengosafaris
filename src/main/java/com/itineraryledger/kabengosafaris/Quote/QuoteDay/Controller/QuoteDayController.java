@@ -19,7 +19,7 @@ public class QuoteDayController {
     private final com.itineraryledger.kabengosafaris.Quote.QuoteDay.Services.QuoteDayTreeService quoteDayTreeService;
 
     /**
-     * Every day with its parks, fees, activities and stays — one request.
+     * Every day with its parks, fees, activities and stays - one request.
      *
      * The day-configuration screen needs all of it at once to say what each day
      * is missing; asking day by day is one request per day plus one per park.

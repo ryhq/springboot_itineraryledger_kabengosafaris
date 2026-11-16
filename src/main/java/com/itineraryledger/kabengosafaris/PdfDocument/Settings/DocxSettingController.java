@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * REST Controller for DOCX Generation Settings.
- * Mirrors {@code TranslationSettingController} — list, update by ID, reset by category.
+ * Mirrors {@code TranslationSettingController} - list, update by ID, reset by category.
  */
 @RestController
 @RequestMapping("/api/docx-settings")
@@ -72,7 +72,7 @@ public class DocxSettingController {
     }
 
     // =====================================================================
-    // LibreOffice pool lifecycle — status, reload, stop
+    // LibreOffice pool lifecycle - status, reload, stop
     //
     // Admins can apply jodconverter.local.* edits without restarting the app.
     // Flip the settings via PUT /api/docx-settings/{id}, then POST the reload.

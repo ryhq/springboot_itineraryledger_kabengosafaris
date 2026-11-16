@@ -41,7 +41,7 @@ public class PaymentCustomerEmailService {
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
 
     /**
-     * Send payment receipt email to the customer (simple — uses defaults).
+     * Send payment receipt email to the customer (simple - uses defaults).
      * Called from PaymentCreateService when notifyCustomer=true.
      */
     public void sendPaymentReceiptEmail(Payment payment) {
@@ -49,7 +49,7 @@ public class PaymentCustomerEmailService {
     }
 
     /**
-     * Backwards-compatible overload without pdfTemplateId — uses the system default PDF template.
+     * Backwards-compatible overload without pdfTemplateId - uses the system default PDF template.
      */
     public void sendPaymentReceiptEmail(Payment payment, String language, Long emailTemplateId, boolean attachPdf) {
         sendPaymentReceiptEmail(payment, language, emailTemplateId, null, attachPdf);

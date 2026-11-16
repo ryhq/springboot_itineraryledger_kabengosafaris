@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
  *
  * The shipped emails paint their header band in the dark accent. Pointing that band at the
  * light-background copy is how a welcome email opened with a faint green outline where the mark
- * should be — a logo nobody can see, on the first screen a new customer ever gets.
+ * should be - a logo nobody can see, on the first screen a new customer ever gets.
  *
  * The failure is invisible in code review because both variables are plausible URLs and either one
  * renders *something*. So it is checked structurally: whatever sits inside a header band asks for
@@ -49,7 +49,7 @@ class EmailLogoMatchesItsBackgroundTest {
             while (at >= 0) {
                 /*
                  * Is it inside the header band? The band is a div that opens before the image and
-                 * has not closed yet — near enough to look back a few hundred characters for the
+                 * has not closed yet - near enough to look back a few hundred characters for the
                  * class, which is how these templates are all built.
                  */
                 String before = html.substring(Math.max(0, at - 600), at);
@@ -61,7 +61,7 @@ class EmailLogoMatchesItsBackgroundTest {
         }
 
         assertTrue(wrong.isEmpty(),
-            "Use {{companyLogoEmailDarkUrl}} inside a header band — the light-background copy "
+            "Use {{companyLogoEmailDarkUrl}} inside a header band - the light-background copy "
                 + "disappears into the dark accent: " + wrong);
     }
 

@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
  *
  * The caches matter more than they look. A bundle of 2,600 park rates names the same handful of
  * seasons and pax categories over and over, and resolving each one by a repository lookup would be
- * thousands of identical queries — so a name resolved once stays resolved for the run.
+ * thousands of identical queries - so a name resolved once stays resolved for the run.
  */
 @Getter
 @RequiredArgsConstructor

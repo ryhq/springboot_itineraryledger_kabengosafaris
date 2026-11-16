@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
  * The build fails if a customer's document can print what a night costs us.
  *
  * An itinerary PDF reached a customer reading "Auto-linked alternative: MID_RANGE in Arusha,
- * STO $90" — our supplier price and our internal budget grading — because the per-night `notes`
+ * STO $90" - our supplier price and our internal budget grading - because the per-night `notes`
  * field is operational by construction and four client-facing templates printed it anyway. The
  * field itself is legitimate; where it may appear is not.
  *
@@ -37,7 +37,7 @@ class NoClientDocumentPrintsOurCostTest {
 
     /**
      * The documents nobody outside the office reads. These may show operational notes and our own
-     * cost columns — that is what they are for.
+     * cost columns - that is what they are for.
      */
     private static final Set<String> OPERATIONAL = Set.of(
         "full_itinerary_accommodation_plan.html",   // the office's room list
@@ -52,13 +52,13 @@ class NoClientDocumentPrintsOurCostTest {
     static {
         FORBIDDEN.put(
             Pattern.compile("\\$\\{[^}]*\\bacc[A-Za-z]*\\.notes\\b", Pattern.CASE_INSENSITIVE),
-            "the per-night operational note — it has carried our STO price and our budget grading");
+            "the per-night operational note - it has carried our STO price and our budget grading");
         FORBIDDEN.put(
             Pattern.compile("STO\\s*[$\\u00a3\\u20ac]"),
             "an operator cost figure");
         FORBIDDEN.put(
             Pattern.compile("\\bSTO\\b"),
-            "the word STO — our pricing basis is not the customer's vocabulary");
+            "the word STO - our pricing basis is not the customer's vocabulary");
         FORBIDDEN.put(
             Pattern.compile("\\b(MID_RANGE|MIDRANGE|ULTRA_LUXURY|BUDGET|LUXURY)\\b"),
             "an internal budget grading (the enum token, not a property's own name)");
@@ -91,7 +91,7 @@ class NoClientDocumentPrintsOurCostTest {
             %s
 
             An operational note belongs on the accommodation plan, the choices sheet, the driver's
-            roadbook or the cost estimation sheet — the documents in this test's OPERATIONAL list.
+            roadbook or the cost estimation sheet - the documents in this test's OPERATIONAL list.
             If the template really is internal, add it there with a comment saying who reads it.
             Otherwise drop the field: there is no safe way to print it to a customer, and filtering
             on a prefix like "Auto-linked" is a blocklist against a string we do not own.

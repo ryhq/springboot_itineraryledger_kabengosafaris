@@ -16,12 +16,12 @@ import com.itineraryledger.kabengosafaris.Security.SecuritySettings.SecuritySett
  * The password rules, for the pages where somebody sets a password without being logged in.
  *
  * The policy lives in the security settings and is enforced by PasswordValidator, which only the
- * server can read — so the reset and activation pages had no way to state the rules and could only
+ * server can read - so the reset and activation pages had no way to state the rules and could only
  * submit a password and relay the refusal. That is one round trip per guess, and the person setting
  * a password after clicking a link in their email has the least patience for it.
  *
  * Public on purpose (it sits under /api/auth/**, which is permitAll). It gives away the SHAPE of a
- * password, never a password: length bounds and which character classes are required — the same
+ * password, never a password: length bounds and which character classes are required - the same
  * thing anybody learns by submitting one bad password, and the same thing every sign-up form on the
  * internet prints next to the field.
  */

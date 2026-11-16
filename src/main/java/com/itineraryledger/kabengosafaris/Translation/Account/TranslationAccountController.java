@@ -54,8 +54,8 @@ public class TranslationAccountController {
     @PreAuthorize("hasAuthority('PERM_READ_TRANSLATION_ACCOUNT')")
     public ResponseEntity<?> getAllTranslationAccounts(
         /*
-         * Every parameter the old signature took is still spelled the same on the wire —
-         * @ModelAttribute binds them onto the filter — plus the multi-value forms
+         * Every parameter the old signature took is still spelled the same on the wire -
+         * @ModelAttribute binds them onto the filter - plus the multi-value forms
          * (providerTypes, statuses, qualities) and a keyword.
          */
         @ModelAttribute TranslationAccountFilter filter,
@@ -134,7 +134,7 @@ public class TranslationAccountController {
     private com.itineraryledger.kabengosafaris.Translation.Account.TranslationAccountRepository bulkFlagsRepository;
 
     /**
-     * PATCH /bulk — switch a whole selection off at once.
+     * PATCH /bulk - switch a whole selection off at once.
      *
      * DISABLING only, and that is not an oversight. An account is enabled by passing a test
      * (TranslationAccountTestService sets the flag on success) precisely so that nothing can

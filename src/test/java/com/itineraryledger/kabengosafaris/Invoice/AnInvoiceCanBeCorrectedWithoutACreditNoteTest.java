@@ -18,8 +18,8 @@ import com.itineraryledger.kabengosafaris.Invoice.Enums.InvoiceStatus;
  * and the only instrument available was a credit note: a separate document telling her the invoice
  * she was holding was wrong, for a balance she had not yet paid. The invoice itself went on
  * stating the wrong total, which is the figure she reads and the figure she pays against. Worse,
- * a credit note in this system adjusts nothing — consuming one stamps a method and leaves the
- * invoice balance exactly where it was — so the paperwork and the ledger would have disagreed
+ * a credit note in this system adjusts nothing - consuming one stamps a method and leaves the
+ * invoice balance exactly where it was - so the paperwork and the ledger would have disagreed
  * until somebody reconciled them by hand.
  *
  * <p>ON_HOLD unlocks the invoice in place. The rules that matter are small and easy to get wrong

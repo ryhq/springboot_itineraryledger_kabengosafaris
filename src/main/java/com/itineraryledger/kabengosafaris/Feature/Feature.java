@@ -5,14 +5,14 @@ import java.util.List;
 /**
  * The parts of this product a company may not have.
  *
- * One codebase serves several tour companies. Most of it is the same for all of them — customers,
- * quotes, safaris — but not all: a company with no vehicles of its own has no use for a fleet, one
+ * One codebase serves several tour companies. Most of it is the same for all of them - customers,
+ * quotes, safaris - but not all: a company with no vehicles of its own has no use for a fleet, one
  * that never issues credit notes should not be asked to learn what they are, and a company without a
  * website has nothing to fill the content pages with. Before this the only answers were "show
  * everybody everything" and "fork the codebase".
  *
- * A feature owns API paths. Switched off, those paths answer 404 — an absent module should look
- * absent, not forbidden — and the panel drops it from the sidebar, the command palette and the
+ * A feature owns API paths. Switched off, those paths answer 404 - an absent module should look
+ * absent, not forbidden - and the panel drops it from the sidebar, the command palette and the
  * breadcrumbs, because a nav entry that leads to a 404 is worse than no entry.
  *
  * Adding one: add the constant with the paths it owns, and FeatureCatalogueTest will tell you if a

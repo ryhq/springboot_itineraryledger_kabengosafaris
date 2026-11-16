@@ -48,7 +48,7 @@ public class ExpenseDocumentGetService {
     private static final String DEFAULT_SORT_FIELD = "createdAt";
 
     /**
-     * Every expense document, filtered — the same page shape as every other
+     * Every expense document, filtered - the same page shape as every other
      * document module.
      *
      * It exists because the question "where is the slip for that transfer" is
@@ -92,7 +92,7 @@ public class ExpenseDocumentGetService {
             response.put("currentSortDirection", direction.name().toLowerCase());
             /*
              * Counters for the WHOLE filtered set, from the same specification as
-             * the rows — without them the page can only summarise what it loaded,
+             * the rows - without them the page can only summarise what it loaded,
              * and the "All filtered / This page" toggle has to stay hidden.
              */
             if (includeStats == null || includeStats) {
@@ -186,7 +186,7 @@ public class ExpenseDocumentGetService {
     /**
      * One document, and where it sits in the set the caller came from.
      *
-     * @param scopeParentId the bill, when opened from inside one — paging then
+     * @param scopeParentId the bill, when opened from inside one - paging then
      *                      stays among that bill's documents
      */
     public ResponseEntity<ApiResponse<?>> getById(String idObfuscated, String scopeParentId) {
@@ -234,7 +234,7 @@ public class ExpenseDocumentGetService {
              * Its own answer, because it has its own cause and its own fix.
              *
              * Every failure here used to be the same 500, so a URL carrying an id that no longer
-             * decodes was indistinguishable from a disk that had lost the file — and neither said
+             * decodes was indistinguishable from a disk that had lost the file - and neither said
              * so. This one means the link is stale: reload the record and it is rebuilt.
              */
             log.warn("Expense document id could not be decoded: {}", idObfuscated);
@@ -269,7 +269,7 @@ public class ExpenseDocumentGetService {
         }
     }
 
-    /** "USD 184.00 · 2026-08-20" — what a person needs to see that a slip answers THAT transfer. */
+    /** "USD 184.00 | 2026-08-20" - what a person needs to see that a slip answers THAT transfer. */
     private String paymentLabel(com.itineraryledger.kabengosafaris.Expense.Entity.ExpensePayment payment) {
         if (payment == null) return null;
         StringBuilder label = new StringBuilder();
@@ -309,7 +309,7 @@ public class ExpenseDocumentGetService {
                 /*
                  * Built now, not read from the column.
                  *
-                 * This module is the only one that STORES its file URL — written once at upload with
+                 * This module is the only one that STORES its file URL - written once at upload with
                  * the obfuscated id of the moment. Any change to the id salt or length, and every
                  * stored URL names an id that no longer decodes: the row still lists, the preview
                  * still offers itself, and fetching the file answers 500 for ever. Constructed on

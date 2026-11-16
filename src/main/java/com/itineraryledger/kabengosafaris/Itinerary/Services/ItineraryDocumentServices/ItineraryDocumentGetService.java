@@ -199,7 +199,7 @@ public class ItineraryDocumentGetService {
             response.put("totalItems", dtoPage.getTotalElements());
             /*
              * Counters for the WHOLE filtered set, from the same specification as
-             * the rows — without them the page can only summarise what it loaded,
+             * the rows - without them the page can only summarise what it loaded,
              * and the "All filtered / This page" toggle has to stay hidden.
              */
             if (includeStats == null || includeStats) {
@@ -238,7 +238,7 @@ public class ItineraryDocumentGetService {
     /**
      * One document, and where it sits in the set the caller came from.
      *
-     * @param scopeParentId the itinerary, when opened from inside one — paging
+     * @param scopeParentId the itinerary, when opened from inside one - paging
      *                      then stays among that itinerary's documents
      */
     public ResponseEntity<ApiResponse<?>> getDocumentById(String obfuscatedId, String scopeParentId) {
@@ -265,8 +265,8 @@ public class ItineraryDocumentGetService {
             ItineraryDocumentDTO documentDTO = toDTO(document);
 
             /*
-             * Prev/next walks the SAME set the caller was looking at — this
-             * itinerary's documents when scoped, everything otherwise — and
+             * Prev/next walks the SAME set the caller was looking at - this
+             * itinerary's documents when scoped, everything otherwise - and
              * returns the position, so the record page can show 'N of M'. It used
              * to walk a raw id-ordered query with no position at all.
              */

@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
  * The one mail account a brand-new installation needs to be reachable at all.
  *
  * Without it, provisioning deadlocks: mail is sent through an account stored in the DATABASE, a fresh
- * database has none, so the first account's activation email cannot be sent — and nobody can sign in
+ * database has none, so the first account's activation email cannot be sent - and nobody can sign in
  * to add the mail account that would have sent it.
  *
  * So the credentials the operator already has at provisioning time are written once, here, and the

@@ -56,7 +56,7 @@ public class NewsletterSubscriptionSpecification {
         return (root, query, cb) -> cb.isNull(root.get("customer"));
     }
 
-    /** Nothing but an address — a name makes the mail-out address somebody. */
+    /** Nothing but an address - a name makes the mail-out address somebody. */
     public static Specification<NewsletterSubscription> hasNoName() {
         return (root, query, cb) -> cb.or(
             cb.isNull(root.get("name")),

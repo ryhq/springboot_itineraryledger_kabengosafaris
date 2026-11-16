@@ -46,7 +46,7 @@ public class UpdateQuoteDTO {
     /**
      * How many vehicles this quote is priced for.
      *
-     * <p>Copied from the itinerary when the quote is generated, and independent of it afterwards —
+     * <p>Copied from the itinerary when the quote is generated, and independent of it afterwards -
      * that is the whole reason the quote carries its own column. It was missing here, so the
      * snapshot could never be corrected: a party of six quoted off an eight-guest itinerary paid
      * for two Land Cruisers with no way to say otherwise short of editing the product.

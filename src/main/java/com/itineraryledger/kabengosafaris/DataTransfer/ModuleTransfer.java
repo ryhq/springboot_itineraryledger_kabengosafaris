@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  * agree, and keeping them apart is how a field gets added to one and forgotten in the other.
  *
  * `order` is a dependency order, not a preference. An activity rate may point at a park, a park rate
- * points at the global tariff catalogue and the pax categories, and every rate points at a season —
+ * points at the global tariff catalogue and the pax categories, and every rate points at a season -
  * so those have to exist before the rates that name them, or the whole import reports "unresolved"
  * and writes nothing useful.
  */
@@ -30,7 +30,7 @@ public interface ModuleTransfer {
     /**
      * The number somebody actually cares about, when it is not the one above.
      *
-     * "27 parks" is not why anybody moves parks between companies — the 2,664 rates hanging off them
+     * "27 parks" is not why anybody moves parks between companies - the 2,664 rates hanging off them
      * are, and a picker that shows only the parents understates the job by two orders of magnitude.
      */
     default String detail() {

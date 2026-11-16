@@ -38,7 +38,7 @@ class CompanyLiteralsInTemplatesTest {
 
     /**
      * The literals. Deliberately specific: this catches a company's details, not any mention of a
-     * place — "Arusha" alone is a legitimate safari start point in sample data, "Arusha, Tanzania" as
+     * place - "Arusha" alone is a legitimate safari start point in sample data, "Arusha, Tanzania" as
      * a template's address block is not.
      */
     /** just the company names, for scanning code rather than templates */
@@ -100,7 +100,7 @@ class CompanyLiteralsInTemplatesTest {
     }
 
     @Test
-    @DisplayName("every {{company…}} placeholder a template uses is one the renderer actually supplies")
+    @DisplayName("every {{company...}} placeholder a template uses is one the renderer actually supplies")
     void everyCompanyPlaceholderExists() throws IOException {
         Set<String> supplied = new HashSet<>(CompanyIdentityService.Snapshot.empty("x").variables().keySet());
         supplied.add("currentYear");   // added per render, not part of the cached snapshot
@@ -147,7 +147,7 @@ class CompanyLiteralsInTemplatesTest {
         }
 
         assertTrue(unknown.isEmpty(), () -> "a PDF template reads something the company model does not "
-            + "have — Thymeleaf would throw mid-render, so no document at all would come out:\n"
+            + "have - Thymeleaf would throw mid-render, so no document at all would come out:\n"
             + String.join("\n", unknown));
     }
 
@@ -210,7 +210,7 @@ class CompanyLiteralsInTemplatesTest {
             An email SUBJECT, an authenticator's issuer label, a notification address or a sender
             name is read by a person, and this codebase serves several companies. Take the name from
             CompanyIdentityService (or app.company.name as a fallback), and take addresses from the
-            deployment's own configuration — never a default that names one company, which is how
+            deployment's own configuration - never a default that names one company, which is how
             one company's booking inquiries ended up addressed to another's mailbox.
             """.formatted(offences.size(), String.join("\n", offences)));
     }
@@ -226,7 +226,7 @@ class CompanyLiteralsInTemplatesTest {
             Matcher m = svg.matcher(Files.readString(file));
             while (m.find()) {
                 /*
-                 * A status icon — a tick, a warning triangle — is a few hundred characters and belongs
+                 * A status icon - a tick, a warning triangle - is a few hundred characters and belongs
                  * to the layout. A LOGO is tens of thousands, and it belongs to one company: nineteen
                  * PDF templates each carried 27KB of the same company's mark, so a second company
                  * restored the shipped default and got somebody else's logo on its invoice.
@@ -243,7 +243,7 @@ class CompanyLiteralsInTemplatesTest {
 
             %s
 
-            Use {{companyLogoMarkup}} or {{companyLogoFullMarkup}} — the company's own uploaded asset,
+            Use {{companyLogoMarkup}} or {{companyLogoFullMarkup}} - the company's own uploaded asset,
             embedded at render time so a PDF needs nothing from the network.
             """.formatted(offences.size(), String.join("\n", offences)));
     }
@@ -255,7 +255,7 @@ class CompanyLiteralsInTemplatesTest {
         for (String dir : SCANNED) {
             Path path = RESOURCES.resolve(dir);
             assertTrue(Files.isDirectory(path), "scanned directory is missing: " + path
-                + " — if it moved, this guard is silently checking nothing");
+                + " - if it moved, this guard is silently checking nothing");
             try (Stream<Path> stream = Files.walk(path)) {
                 stream.filter(Files::isRegularFile)
                     .filter(f -> f.toString().endsWith(".html") || f.toString().endsWith(".json"))

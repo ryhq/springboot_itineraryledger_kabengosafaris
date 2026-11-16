@@ -7,7 +7,7 @@ import lombok.Data;
  * The identity scalars.
  *
  * Patch semantics, the same as everywhere else in this API: a field left out (null) is not touched,
- * and a field sent as "" is CLEARED. Both matter here — the page saves one field at a time from a
+ * and a field sent as "" is CLEARED. Both matter here - the page saves one field at a time from a
  * click-to-edit grid, and a VRN that was entered by mistake has to be removable.
  */
 @Data
@@ -39,7 +39,7 @@ public class UpdateCompanyProfileDTO {
      *
      * <p>A String rather than a LocalDate so this field obeys the SAME rule as every other field
      * on this form: absent leaves it alone, "" clears it, a value sets it. Typed as a date it
-     * could be set and never unset, because null already means "not supplied" — the clearing
+     * could be set and never unset, because null already means "not supplied" - the clearing
      * problem this codebase has hit before on dates and enums.
      */
     private String licenceExpiry;

@@ -64,7 +64,7 @@ OTHER             - Miscellaneous items
 
 ### PriceInput Object
 
-Used when creating or updating invoice line items. The system automatically computes `totalPrice = quantity × unitPrice`.
+Used when creating or updating invoice line items. The system automatically computes `totalPrice = quantity x unitPrice`.
 
 ```json
 {
@@ -231,7 +231,7 @@ All fields are optional. Only provided fields will be updated.
 **Note:**
 - `displayOrder` **cannot be updated** through this endpoint - it can **only** be changed using the `/reorder` endpoint
 - When updating prices, provide complete price list (replaces existing prices)
-- `totalPrice` is computed automatically from `quantity × unitPrice`
+- `totalPrice` is computed automatically from `quantity x unitPrice`
 
 #### Response
 
@@ -670,7 +670,7 @@ Content-Type: application/json
 ```
 
 **Notes:**
-- The system automatically calculated `totalPrice = 4 × 250.00 = 1000.00`
+- The system automatically calculated `totalPrice = 4 x 250.00 = 1000.00`
 - The system automatically assigned `displayOrder = 1` (first item for this invoice)
 
 ---
@@ -800,7 +800,7 @@ Content-Type: application/json
 }
 ```
 
-**Note:** Total price automatically recalculated: `4 × 275.00 = 1100.00`
+**Note:** Total price automatically recalculated: `4 x 275.00 = 1100.00`
 
 ---
 
@@ -981,7 +981,7 @@ Content-Type: application/json
 
 ## Notes
 
-1. **Automatic Price Calculation:** When creating or updating items, users only provide `currency`, `quantity`, `unitPrice`, and optional `breakdown`. The system automatically computes `totalPrice = quantity × unitPrice`.
+1. **Automatic Price Calculation:** When creating or updating items, users only provide `currency`, `quantity`, `unitPrice`, and optional `breakdown`. The system automatically computes `totalPrice = quantity x unitPrice`.
 
 2. **Display Order Management:**
    - When creating a new item, `displayOrder` is **automatically assigned** by the system and **cannot be specified by users**
@@ -1019,7 +1019,7 @@ Content-Type: application/json
 
 2. **Use Descriptive Names:** Use clear, descriptive item names that clients will easily understand on the invoice.
 
-3. **Provide Breakdown Details:** Use the `breakdown` field to explain pricing (e.g., "Per person per night", "4 adults × 3 days").
+3. **Provide Breakdown Details:** Use the `breakdown` field to explain pricing (e.g., "Per person per night", "4 adults x 3 days").
 
 4. **Group Related Items:** Use `displayOrder` to group related items together (e.g., all accommodation items, then all park fees).
 

@@ -39,7 +39,7 @@ import lombok.NoArgsConstructor;
  * <p><strong>The fare is nullable and that is the point.</strong> An itinerary is a product, not a
  * booking. A planner choosing "Arusha to Zanzibar" is choosing a <em>sector</em>; whether the party
  * takes the 12:30 or the 14:00 is settled when the dates are real and the seats are held. A line
- * with a route but no fare still prices — off the cheapest current fare for that route — and says
+ * with a route but no fare still prices - off the cheapest current fare for that route - and says
  * that is what it did.
  */
 @Entity
@@ -73,12 +73,12 @@ public class ItineraryDayFlight {
     @JoinColumn(name = "flight_fare_id")
     private FlightFare flightFare;
 
-    /** Null means everybody on the trip — the usual case, and the one that survives a pax change. */
+    /** Null means everybody on the trip - the usual case, and the one that survives a pax change. */
     @Column(name = "passenger_count")
     private Integer passengerCount;
 
     /**
-     * An option rather than the plan. Alternatives are costed and shown, never added to the total —
+     * An option rather than the plan. Alternatives are costed and shown, never added to the total -
      * the same rule the accommodation calculator already follows.
      */
     @Column(name = "is_alternative", nullable = false)
@@ -116,8 +116,8 @@ public class ItineraryDayFlight {
         return !Boolean.TRUE.equals(isAlternative);
     }
 
-    /** "Air Excel ARS → ZNZ, 12:30" — how a day reads on a driver's sheet. */
-    /** "Air Excel ARS to ZNZ, 14:00" — see {@link FlightLabels}, which all three day trees share. */
+    /** "Air Excel ARS → ZNZ, 12:30" - how a day reads on a driver's sheet. */
+    /** "Air Excel ARS to ZNZ, 14:00" - see {@link FlightLabels}, which all three day trees share. */
     public String getDisplayName() {
         return FlightLabels.displayName(flightRoute, flightFare);
     }

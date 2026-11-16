@@ -35,7 +35,7 @@ public interface EmailContactRepository extends JpaRepository<EmailContact, Long
 
     long countByEmailAccountId(Long emailAccountId);
 
-    // Circular navigation — scoped to email account
+    // Circular navigation - scoped to email account
     @Query("SELECT c.id FROM EmailContact c WHERE c.emailAccount.id = :accountId AND c.id > :currentId ORDER BY c.id ASC LIMIT 1")
     Optional<Long> findNextIdInAccount(@Param("accountId") Long accountId, @Param("currentId") Long currentId);
 

@@ -43,8 +43,8 @@ public class NewsletterController {
     @PreAuthorize("hasAuthority('PERM_READ_NEWSLETTER_SUBSCRIPTION')")
     public ResponseEntity<ApiResponse<?>> listSubscriptions(
         /*
-         * Every parameter the old signature took is still spelled the same on the wire —
-         * @ModelAttribute binds them onto the filter — plus the multi-value forms
+         * Every parameter the old signature took is still spelled the same on the wire -
+         * @ModelAttribute binds them onto the filter - plus the multi-value forms
          * (statuses, sources, qualities).
          */
         @ModelAttribute NewsletterFilter filter,

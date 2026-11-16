@@ -129,7 +129,7 @@ public class EmailAccount {
      * Username for the mail store, when it differs from the SMTP one.
      *
      * A host that blocks outbound 465/587 forces sending through a relay while the mailbox itself
-     * stays elsewhere — two servers, two logins. Null means "same credentials as sending", which is
+     * stays elsewhere - two servers, two logins. Null means "same credentials as sending", which is
      * every account whose provider does both.
      */
     private String imapUsername;

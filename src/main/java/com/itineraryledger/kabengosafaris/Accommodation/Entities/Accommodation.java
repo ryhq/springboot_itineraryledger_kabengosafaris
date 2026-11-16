@@ -90,8 +90,8 @@ public class Accommodation {
      * Who we pay for a stay here.
      *
      * A property is a place guests sleep; a vendor is an account we settle. They
-     * are usually the same organisation, but not always — a group bills centrally
-     * for several camps — so the link is optional and set once. With it, a stay on
+     * are usually the same organisation, but not always - a group bills centrally
+     * for several camps - so the link is optional and set once. With it, a stay on
      * a safari's day can raise its own bill; without it, somebody has to remember
      * who to invoice-chase.
      */

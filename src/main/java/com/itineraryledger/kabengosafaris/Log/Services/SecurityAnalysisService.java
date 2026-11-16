@@ -147,14 +147,14 @@ public class SecurityAnalysisService {
                 matchedPatternDetails.add("XSS pattern in URI");
             }
 
-            // Path Traversal (check full URI — path traversal can appear anywhere)
+            // Path Traversal (check full URI - path traversal can appear anywhere)
             if (detectPattern(uri, PATH_TRAVERSAL_PATTERNS)) {
                 threats.add("PATH_TRAVERSAL");
                 score += 30;
                 matchedPatternDetails.add("Path traversal pattern in URI");
             }
 
-            // Command Injection (check path only — & in query strings is normal)
+            // Command Injection (check path only - & in query strings is normal)
             if (detectPattern(uriPath, COMMAND_INJECTION_PATTERNS)) {
                 threats.add("COMMAND_INJECTION");
                 score += 35;

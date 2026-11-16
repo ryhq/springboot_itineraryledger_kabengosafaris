@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
  * {@code {type:"p",text}}, {@code {type:"h2",text}}, {@code {type:"ul",items}},
  * {@code {type:"image",url,alt,caption}}.
  *
- * Everything a reader reads is @Translatable — including the bullet items, which are a
+ * Everything a reader reads is @Translatable - including the bullet items, which are a
  * List&lt;String&gt; rather than a nested DTO precisely to keep this JSON identical to the
  * file-based content the site ships today.
  */

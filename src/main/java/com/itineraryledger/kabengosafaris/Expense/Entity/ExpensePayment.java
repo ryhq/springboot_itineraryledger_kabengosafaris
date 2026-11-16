@@ -16,7 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * ExpensePayment — a single outgoing payment we made to a vendor against an
+ * ExpensePayment - a single outgoing payment we made to a vendor against an
  * Expense. Mirrors Payment exactly with cross-currency exchange-rate support.
  */
 @Entity
@@ -64,11 +64,11 @@ public class ExpensePayment {
     @Column(name = "expense_currency", length = 3)
     private String expenseCurrency;
 
-    /** 1 currency = exchangeRate × expenseCurrency. */
+    /** 1 currency = exchangeRate x expenseCurrency. */
     @Column(name = "exchange_rate", precision = 19, scale = 6)
     private BigDecimal exchangeRate;
 
-    /** amount × exchangeRate, kept for fast aggregation. */
+    /** amount x exchangeRate, kept for fast aggregation. */
     @Column(name = "base_amount", precision = 15, scale = 2)
     private BigDecimal baseAmount;
 

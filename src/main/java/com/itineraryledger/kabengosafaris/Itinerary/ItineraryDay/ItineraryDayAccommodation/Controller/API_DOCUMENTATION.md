@@ -341,7 +341,7 @@ Deletes multiple accommodation entries from an itinerary day in a single request
 
 3. **Pax Capacity Validation:**
    - When creating or updating primary accommodations, the system validates that:
-   - Total capacity = sum of (roomCount × maxOccupancy) for all primary accommodations
+   - Total capacity = sum of (roomCount x maxOccupancy) for all primary accommodations
    - Total capacity must be >= total pax count for the itinerary
    - Validation is skipped if no pax is configured or room types don't have maxOccupancy set
 

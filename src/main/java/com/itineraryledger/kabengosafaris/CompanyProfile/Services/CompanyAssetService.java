@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * The five brand files: two logos, two favicons, one raster logo for email.
  *
- * Deliberately NOT routed through the shared image pipeline. That pipeline exists for photographs —
+ * Deliberately NOT routed through the shared image pipeline. That pipeline exists for photographs -
  * it validates against the configured image formats, which exclude SVG, and SVG is the whole point
  * here: a logo has to stay sharp on a letterhead. So this service does its own, tighter validation.
  *
@@ -120,7 +120,7 @@ public class CompanyAssetService {
         /*
          * An SVG in an email slot is now converted rather than refused.
          *
-         * The rule was right — Gmail and Outlook draw a broken-image box for an SVG — but refusing
+         * The rule was right - Gmail and Outlook draw a broken-image box for an SVG - but refusing
          * the upload left the person with a task ("go and export a PNG") standing between them and a
          * working letterhead, and a company whose designer only supplied vectors could not finish.
          * The endpoint rasterises on the way out, so the file is accepted and the email still gets a
@@ -138,7 +138,7 @@ public class CompanyAssetService {
         }
 
         /*
-         * One row per slot (uq_company_asset_kind), so an upload REPLACES rather than accumulates —
+         * One row per slot (uq_company_asset_kind), so an upload REPLACES rather than accumulates -
          * and the file the old row pointed at is deleted, or the data directory grows a copy of every
          * logo anybody ever tried.
          */
@@ -196,7 +196,7 @@ public class CompanyAssetService {
     // ------------------------------------------------------------------ serve
 
     /**
-     * Public, because an {@code <img>} in an email or on the website carries no bearer token — the
+     * Public, because an {@code <img>} in an email or on the website carries no bearer token - the
      * same reason the other media endpoints are public. A logo is published material by definition.
      */
     @Transactional(readOnly = true)
@@ -258,7 +258,7 @@ public class CompanyAssetService {
     /**
      * What to serve when a slot is empty.
      *
-     * A template refers to a slot by a fixed URL — /api/public/company/assets/logo-email — and that
+     * A template refers to a slot by a fixed URL - /api/public/company/assets/logo-email - and that
      * URL has to answer for every installation, or the same template breaks on one company and not
      * on another. A 404 there is a broken-image box in somebody's invoice, so an empty slot borrows
      * the nearest logo the company HAS rather than admitting nothing.
@@ -268,7 +268,7 @@ public class CompanyAssetService {
      */
     private static final Map<CompanyAsset.AssetKind, CompanyAsset.AssetKind[]> FALLBACKS = new LinkedHashMap<>();
     static {
-        /* the dark-header copy borrows the DARK ink first — that is the whole point of the slot */
+        /* the dark-header copy borrows the DARK ink first - that is the whole point of the slot */
         FALLBACKS.put(CompanyAsset.AssetKind.LOGO_EMAIL_DARK, new CompanyAsset.AssetKind[] {
             CompanyAsset.AssetKind.LOGO_DARK, CompanyAsset.AssetKind.LOGO_EMAIL,
             CompanyAsset.AssetKind.LOGO_FULL, CompanyAsset.AssetKind.LOGO_LIGHT });
@@ -314,7 +314,7 @@ public class CompanyAssetService {
     /**
      * A PNG of an SVG, for the email slot.
      *
-     * Mail clients do not render SVG — Gmail and Outlook both show a broken-image box — which is why
+     * Mail clients do not render SVG - Gmail and Outlook both show a broken-image box - which is why
      * uploading an SVG into the email slot is refused. But a company that has only uploaded vector
      * logos still has to get a logo into its email, and telling them to export a PNG is a task
      * standing between them and a working letterhead. Batik is already on the classpath for the PDF

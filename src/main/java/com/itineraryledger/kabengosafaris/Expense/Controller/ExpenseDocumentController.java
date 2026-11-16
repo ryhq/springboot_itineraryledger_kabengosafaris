@@ -14,12 +14,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Expense documents — proof-of-payment files attached to an Expense (or to a
+ * Expense documents - proof-of-payment files attached to an Expense (or to a
  * specific ExpensePayment within it).
  *
  * Two routes:
- *   /api/expenses/{expenseId}/documents          — list + upload
- *   /api/expense-documents/{id}                  — single doc get / file / update / delete
+ *   /api/expenses/{expenseId}/documents          - list + upload
+ *   /api/expense-documents/{id}                  - single doc get / file / update / delete
  *
  * Mirrors the InvoiceDocumentController split.
  */
@@ -60,7 +60,7 @@ public class ExpenseDocumentController {
     // ---------------------------------------------------------------------
 
     /**
-     * GET /api/expense-documents — every expense document, filtered.
+     * GET /api/expense-documents - every expense document, filtered.
      *
      * The per-bill endpoint above answers "what is on this bill". This answers
      * "where is the slip for that transfer", which is asked without knowing which

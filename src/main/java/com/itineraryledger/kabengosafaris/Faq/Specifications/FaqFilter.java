@@ -8,7 +8,7 @@ import lombok.Data;
  * Everything a caller can narrow the FAQ list by.
  *
  * Every dimension here has a counter on the list page and every counter here is reachable as a
- * filter — a figure nobody can click is decoration, and a filter nothing counts is a guess.
+ * filter - a figure nobody can click is decoration, and a filter nothing counts is a guess.
  */
 @Data
 public class FaqFilter {
@@ -20,9 +20,9 @@ public class FaqFilter {
     private List<String> statuses;
     private Boolean isActive;
 
-    /** Data quality: no-category · has-category · thin-answer */
+    /** Data quality: no-category | has-category | thin-answer */
     private List<String> qualities;
 
-    /** Freshness: added-7 · added-30 · updated-7 · stale-90 */
+    /** Freshness: added-7 | added-30 | updated-7 | stale-90 */
     private List<String> recency;
 }

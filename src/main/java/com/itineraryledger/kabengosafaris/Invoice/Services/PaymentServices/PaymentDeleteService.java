@@ -42,7 +42,7 @@ public class PaymentDeleteService {
     private final IdObfuscator idObfuscator;
     private final jakarta.persistence.EntityManager entityManager;
 
-    /** Safari states past FULLY_PAID — deleting payments here is dangerous */
+    /** Safari states past FULLY_PAID - deleting payments here is dangerous */
     private static final Set<SafariState> POST_PAYMENT_STATES = Set.of(
         SafariState.IN_PROGRESS, SafariState.COMPLETED, SafariState.CLOSED
     );
@@ -146,7 +146,7 @@ public class PaymentDeleteService {
         long remainingPaymentCount = paymentRepository.countByInvoiceId(invoice.getId());
 
         if (remainingPaymentCount == 0) {
-            // No payments left — revert to SENT or OVERDUE
+            // No payments left - revert to SENT or OVERDUE
             if (invoice.getDueDate() != null && LocalDate.now().isAfter(invoice.getDueDate())) {
                 invoice.setStatus(InvoiceStatus.OVERDUE);
                 log.info("Invoice {} reverted to OVERDUE (no payments, past due date)", invoice.getInvoiceCode());
@@ -156,7 +156,7 @@ public class PaymentDeleteService {
             }
             invoice.setPaidDate(null);
         } else {
-            // Some payments remain — check if still fully paid or partially paid
+            // Some payments remain - check if still fully paid or partially paid
             boolean allFullyPaid = true;
             boolean anyPartiallyPaid = false;
 

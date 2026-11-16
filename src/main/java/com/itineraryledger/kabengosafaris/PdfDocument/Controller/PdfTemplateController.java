@@ -49,7 +49,7 @@ public class PdfTemplateController {
      * has one endpoint it can post to.
      *
      * `content` may be left out, and usually should be. A PDF layout is a whole HTML
-     * document — asking somebody to paste one into a create form is not a feature — so an
+     * document - asking somebody to paste one into a create form is not a feature - so an
      * empty one starts as a copy of whatever that document renders with today. You get a
      * working layout to edit rather than a blank page, which is what "add a template"
      * actually means to the person asking.
@@ -196,7 +196,7 @@ public class PdfTemplateController {
      * Enabling or disabling a selection in one request.
      *
      * Only `enabled` is offered. Which template a document is rendered WITH is a choice
-     * between siblings — turning several on at once cannot express it, and a bulk control
+     * between siblings - turning several on at once cannot express it, and a bulk control
      * that silently picked a winner would be worse than not having one.
      */
     @PatchMapping("/bulk")

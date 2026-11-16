@@ -44,7 +44,7 @@ public class Price {
     private BigDecimal unitPrice;
 
     /**
-     * Total price (quantity × unitPrice) in the specified currency
+     * Total price (quantity x unitPrice) in the specified currency
      * This is calculated but stored for consistency and query performance
      */
     @Column(nullable = false, precision = 19, scale = 2)
@@ -52,7 +52,7 @@ public class Price {
 
     /**
      * Optional breakdown or explanation of how this price was calculated
-     * Example: "2 Adults × $50 + 1 Child × $25"
+     * Example: "2 Adults x $50 + 1 Child x $25"
      */
     @Column(length = 500)
     private String breakdown;

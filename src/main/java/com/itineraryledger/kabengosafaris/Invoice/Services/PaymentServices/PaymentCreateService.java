@@ -56,7 +56,7 @@ public class PaymentCreateService {
     private final jakarta.persistence.EntityManager entityManager;
 
     /**
-     * Payable invoice states — payments are only accepted when the invoice is
+     * Payable invoice states - payments are only accepted when the invoice is
      * in one of these states.
      */
     private static final java.util.Set<InvoiceStatus> PAYABLE_STATES = java.util.Set.of(
@@ -133,7 +133,7 @@ public class PaymentCreateService {
 
             String invoiceCurrency = resolveInvoiceCurrency(dto.getInvoiceCurrency(), paymentCurrency, invoice);
             if (invoiceCurrency == null) {
-                // Could not auto-infer — multi-currency invoice with cross-currency payment
+                // Could not auto-infer - multi-currency invoice with cross-currency payment
                 Set<String> grandTotalCurrencies = invoice.getGrandTotals().stream()
                     .map(Price::getCurrency)
                     .collect(Collectors.toSet());
@@ -304,7 +304,7 @@ public class PaymentCreateService {
         if (explicit != null && !explicit.isBlank()) {
             String upper = explicit.toUpperCase();
             if (!grandTotalCurrencies.contains(upper)) {
-                return null; // invalid — not one of the invoice currencies
+                return null; // invalid - not one of the invoice currencies
             }
             return upper;
         }
@@ -319,7 +319,7 @@ public class PaymentCreateService {
             return grandTotalCurrencies.iterator().next();
         }
 
-        // 4. Ambiguous — cannot infer
+        // 4. Ambiguous - cannot infer
         return null;
     }
 

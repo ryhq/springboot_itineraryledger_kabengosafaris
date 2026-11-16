@@ -15,7 +15,7 @@ import com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyIdentit
  *
  * Every field of the identity snapshot is a String, so putting a URL where markup belongs compiles
  * perfectly and fails in front of a client: a cost estimation printed
- * "https://api…/assets/logo-full-tagline" as text in the space reserved for the logo, because two
+ * "https://api.../assets/logo-full-tagline" as text in the space reserved for the logo, because two
  * fields had been added to the middle of the record while the positional constructor kept its old
  * order.
  *
@@ -60,7 +60,7 @@ class CompanyVariableShapesTest {
     }
 
     @Test
-    @DisplayName("a markup variable holds markup — the mix-up that printed a URL on an invoice")
+    @DisplayName("a markup variable holds markup - the mix-up that printed a URL on an invoice")
     void markupIsMarkup() {
         Map<String, String> vars = variables();
         for (String name : List.of("companyLogoMarkup", "companyLogoFullMarkup")) {
@@ -68,7 +68,7 @@ class CompanyVariableShapesTest {
             assertNotNull(value, name + " is not supplied at all");
             assertTrue(value.startsWith("<svg") || value.startsWith("<img"),
                 name + " must be drawable markup, but was: " + value
-                    + " — a URL here prints as text where the logo belongs");
+                    + " - a URL here prints as text where the logo belongs");
         }
     }
 

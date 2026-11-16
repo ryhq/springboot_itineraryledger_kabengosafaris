@@ -24,7 +24,7 @@ import com.itineraryledger.kabengosafaris.Quote.Services.QuoteServices.QuoteRevi
  *
  * <p>The requirement behind the whole of change tracking is not that a change list exists; it is
  * that the client's and the office's are the same list. Two summaries of one conversation is how
- * a review ends with each side certain, and one of them wrong, about what was agreed — and the
+ * a review ends with each side certain, and one of them wrong, about what was agreed - and the
  * disagreement surfaces at the worst possible moment, which is the invoice.
  *
  * <p>So two things are pinned here. The sentences, because a diff that reports a lodge swap as a

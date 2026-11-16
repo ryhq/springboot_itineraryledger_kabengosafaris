@@ -47,7 +47,7 @@ public class ItineraryDTO {
     @Translatable private String highlights;
     /*
      * The legacy typed text, kept read-only. It is still the answer for an itinerary the backfill
-     * left alone — three trips whose whole promise was typed as one paragraph — and the panel
+     * left alone - three trips whose whole promise was typed as one paragraph - and the panel
      * shows it so a line nobody could match is visible to whoever can retype it, rather than lost.
      * Nothing writes these any more: both create and update refuse them with INCLUSIONS_MOVED.
      */

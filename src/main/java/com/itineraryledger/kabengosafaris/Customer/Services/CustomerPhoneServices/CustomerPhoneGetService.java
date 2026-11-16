@@ -488,7 +488,7 @@ public class CustomerPhoneGetService {
     }
 
     /**
-     * The filter chain the record pager walks — the same dimensions the list
+     * The filter chain the record pager walks - the same dimensions the list
      * offers, so paging from a filtered list stays inside those matches.
      */
     private Specification<CustomerPhone> navigationSpec(

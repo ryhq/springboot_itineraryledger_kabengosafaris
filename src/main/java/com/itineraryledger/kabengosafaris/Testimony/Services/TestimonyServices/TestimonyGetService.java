@@ -350,7 +350,7 @@ public class TestimonyGetService {
     /**
      * One specification, used by the rows, the cards and the record walk.
      *
-     * OR inside a dimension, AND across dimensions — so "Google or TripAdvisor, pending,
+     * OR inside a dimension, AND across dimensions - so "Google or TripAdvisor, pending,
      * one or two stars" reads the way somebody means it.
      */
     private Specification<Testimony> buildSpec(TestimonyFilter filter) {

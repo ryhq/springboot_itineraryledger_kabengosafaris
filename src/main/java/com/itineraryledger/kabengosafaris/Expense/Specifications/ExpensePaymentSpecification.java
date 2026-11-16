@@ -81,7 +81,7 @@ public class ExpensePaymentSpecification {
      * Paid in a currency the bill was not written in.
      *
      * Somebody applied an exchange rate by hand, and a wrong one quietly changes
-     * what we still owe the supplier — so it is worth being able to list them.
+     * what we still owe the supplier - so it is worth being able to list them.
      */
     public static Specification<ExpensePayment> crossCurrency() {
         return (root, query, cb) -> cb.and(
@@ -102,7 +102,7 @@ public class ExpensePaymentSpecification {
 
     /**
      * The one search box: the reference, the notes, the bill's code and the
-     * vendor's name — because a statement line is looked up by its reference and a
+     * vendor's name - because a statement line is looked up by its reference and a
      * query from a supplier by their name.
      */
     public static Specification<ExpensePayment> searchKeyword(String keyword) {

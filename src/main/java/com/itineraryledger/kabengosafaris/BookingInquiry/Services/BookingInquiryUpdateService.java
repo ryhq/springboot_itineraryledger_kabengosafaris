@@ -131,7 +131,7 @@ public class BookingInquiryUpdateService {
      * disagreeing about the same person.
      *
      * <p>Idempotent. An inquiry that has already been converted returns the
-     * customer it made rather than making a second one — double-clicking a button
+     * customer it made rather than making a second one - double-clicking a button
      * should not create two people.
      *
      * <p>An existing customer with the same email is adopted rather than

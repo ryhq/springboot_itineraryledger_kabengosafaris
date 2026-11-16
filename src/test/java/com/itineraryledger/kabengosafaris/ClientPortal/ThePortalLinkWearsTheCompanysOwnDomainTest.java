@@ -18,12 +18,12 @@ import com.itineraryledger.kabengosafaris.CompanyProfile.Repository.CompanyProfi
  * What a client is told to open.
  *
  * <p>A link is the first thing a customer sees of a company, and
- * {@code api.something.ryhqtech.com/portal/…} tells them they are looking at our plumbing. The
+ * {@code api.something.ryhqtech.com/portal/...} tells them they are looking at our plumbing. The
  * address is a setting; when nobody has set it, it is built from the company's own domain rather
  * than from the API's, because the company's domain is the thing a customer already recognises.
  *
- * <p>The website field is not a tidy URL in either live company — one holds a {@code www.} prefix
- * and the other a locale path — so the normalising is the part worth pinning. Each case here is a
+ * <p>The website field is not a tidy URL in either live company - one holds a {@code www.} prefix
+ * and the other a locale path - so the normalising is the part worth pinning. Each case here is a
  * value that actually exists or plausibly could, not an invented one.
  */
 class ThePortalLinkWearsTheCompanysOwnDomainTest {

@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
  * we invoiced.
  *
  * The quote said what the trip should cost and the invoice says what the customer
- * owes. Neither says what we actually paid — a lodge swapped mid-trip, a park fee
+ * owes. Neither says what we actually paid - a lodge swapped mid-trip, a park fee
  * that went up, a second vehicle nobody planned. That gap is the difference
  * between the margin we quoted and the margin we made, and it can only be
  * answered by the bills.
@@ -38,7 +38,7 @@ public class SafariCostingDTO {
     /** How many still have money owing to the supplier. */
     private Integer unpaidExpenseCount;
 
-    /** NOTHING_RECORDED · OWING · SETTLED */
+    /** NOTHING_RECORDED | OWING | SETTLED */
     private String supplierStatus;
     private String supplierStatusDisplayName;
 
@@ -46,7 +46,7 @@ public class SafariCostingDTO {
     private List<Price> paidOut;
     private List<Price> owedToSuppliers;
 
-    /** One per category (ACCOMMODATION, PARK_FEE, …), largest first. */
+    /** One per category (ACCOMMODATION, PARK_FEE, ...), largest first. */
     private List<CategoryTotal> byCategory;
 
     /** Only where a currency has both revenue and cost. */

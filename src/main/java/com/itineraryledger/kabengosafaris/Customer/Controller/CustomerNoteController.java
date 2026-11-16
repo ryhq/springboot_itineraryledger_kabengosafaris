@@ -203,7 +203,7 @@ public class CustomerNoteController {
     }
 
     /**
-     * Notes for one customer — parent-scoped variant matching the other
+     * Notes for one customer - parent-scoped variant matching the other
      * customer sub-resources (emails, phones, documents all have it).
      */
     @GetMapping("/customer/{customerId}")

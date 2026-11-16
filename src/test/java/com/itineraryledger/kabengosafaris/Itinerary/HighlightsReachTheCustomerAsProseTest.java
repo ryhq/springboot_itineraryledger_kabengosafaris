@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>An itinerary stores this field as a JSON array, because that is the shape the website wants.
  * The PDF templates printed the field straight out, so page one of every itinerary document ever
- * sent read {@code ["Tarangire elephants", "Ngorongoro Crater descent"]} — brackets, quotes and
+ * sent read {@code ["Tarangire elephants", "Ngorongoro Crater descent"]} - brackets, quotes and
  * commas included. 46 of the 60 itineraries in the catalogue are stored that way, so this was not
  * an edge case; it was the normal case.
  */

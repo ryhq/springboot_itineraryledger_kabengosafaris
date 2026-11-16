@@ -76,7 +76,7 @@ public class ActivityImageSpecification {
             after == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), after);
     }
 
-    /** No caption — the image cannot be labelled on the website. */
+    /** No caption - the image cannot be labelled on the website. */
     public static Specification<ActivityImage> missingCaption() {
         return (root, query, cb) -> cb.or(
             cb.isNull(root.get("caption")),
@@ -84,7 +84,7 @@ public class ActivityImageSpecification {
         );
     }
 
-    /** No alt text — an accessibility gap. */
+    /** No alt text - an accessibility gap. */
     public static Specification<ActivityImage> missingAltText() {
         return (root, query, cb) -> cb.or(
             cb.isNull(root.get("altText")),

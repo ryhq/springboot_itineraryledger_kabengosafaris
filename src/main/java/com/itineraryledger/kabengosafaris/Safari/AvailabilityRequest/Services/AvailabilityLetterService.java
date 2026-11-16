@@ -45,7 +45,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * Rendered HERE rather than in the browser so one wording serves every sender. The office edits it
  * as an email template (event AVAILABILITY_REQUEST) without a deploy, and anything that later sends
- * unattended — a scheduled chase, a job — produces exactly what a person would have sent. Two
+ * unattended - a scheduled chase, a job - produces exactly what a person would have sent. Two
  * renderers would have drifted apart inside a month.
  *
  * The facts are assembled from the safari, never taken from the caller: dates from the days, rooms
@@ -72,7 +72,7 @@ public class AvailabilityLetterService {
     private static final String CHASE_EVENT = "AVAILABILITY_REQUEST_CHASE";
     private static final DateTimeFormatter SLASH = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter SHORT = DateTimeFormatter.ofPattern("d MMM yyyy");
-    /** "18 Aug 2026, 08:42" — the stamp above a quoted message. */
+    /** "18 Aug 2026, 08:42" - the stamp above a quoted message. */
     private static final DateTimeFormatter QUOTE_STAMP = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm");
 
     /** The company this deployment is, for the greeting line. */
@@ -130,7 +130,7 @@ public class AvailabilityLetterService {
              *
              * A property used on two separate nights is not one booking. Reading the first night and
              * the last as check-in and check-out produced a letter saying "26/01 to 29/01, 2 nights"
-             * — three nights of dates against a count of two — for guests who are somewhere else on
+             * - three nights of dates against a count of two - for guests who are somewhere else on
              * the 27th. A reservations desk either blocks a night nobody wants or writes back to ask
              * what we meant, and both cost more than getting it right here.
              */
@@ -149,14 +149,14 @@ public class AvailabilityLetterService {
             variables.put("accommodationName", property.getName() != null ? property.getName() : "your property");
             variables.put("checkIn", checkIn.format(SLASH));
             variables.put("checkOut", checkOut.format(SLASH));
-            /* this block's nights, not the trip's — the table describes one visit */
+            /* this block's nights, not the trip's - the table describes one visit */
             variables.put("nights", String.valueOf(firstBlock.size()));
             variables.put("guestCount", pax.total() + (pax.total() == 1 ? " Guest" : " Guests"));
             variables.put("paxBreakdown", pax.text());
             variables.put("roomConfiguration", roomLines(byNight.get(checkIn)));
             variables.put("mealPlan", mealPlan(subMap(byNight, firstBlock)));
             /*
-             * The second and later visits, each with its own dates, rooms and board — which is what
+             * The second and later visits, each with its own dates, rooms and board - which is what
              * the template's {{stayBlocks}} was always for and what this used to leave empty.
              */
             variables.put("stayBlocks", laterBlocks(byNight, blocks));
@@ -184,7 +184,7 @@ public class AvailabilityLetterService {
             return ResponseEntity.ok(ApiResponse.success(200, "Availability letter rendered", response));
         } catch (IllegalArgumentException | IllegalStateException bad) {
             /*
-             * The template is missing, disabled, or short of a variable — all three fixable in the
+             * The template is missing, disabled, or short of a variable - all three fixable in the
              * templates screen, so they are reported as such. A 500 would send somebody here instead.
              */
             return ResponseEntity.badRequest().body(ApiResponse.error(400,
@@ -201,8 +201,8 @@ public class AvailabilityLetterService {
      * The chase letter, and the envelope the first one went out in.
      *
      * The recipients come from the RECORD, not from the mail thread: the request kept the To, the Cc
-     * and the Bcc, and a follow-up that quietly drops the people who were copied — or the address
-     * that was blind-copied — changes who is in the conversation without saying so. Bcc especially:
+     * and the Bcc, and a follow-up that quietly drops the people who were copied - or the address
+     * that was blind-copied - changes who is in the conversation without saying so. Bcc especially:
      * nothing in the thread can tell you it was there.
      */
     public ResponseEntity<ApiResponse<?>> chaseLetter(String requestIdObfuscated) {
@@ -263,7 +263,7 @@ public class AvailabilityLetterService {
 
             String subject;
             if (request.getSubject() != null && !request.getSubject().isBlank()) {
-                /* the same thread, so the same subject with Re: — not a new conversation */
+                /* the same thread, so the same subject with Re: - not a new conversation */
                 subject = request.getSubject().toLowerCase().startsWith("re:")
                     ? request.getSubject() : "Re: " + request.getSubject();
             } else {
@@ -277,7 +277,7 @@ public class AvailabilityLetterService {
              *
              * Requests written before the envelope was recorded have no To at all, and a chase that
              * opens with an empty recipient box and a disabled Send button is a dead end. So the
-             * property's own resolution is the fallback — the same one the first letter used.
+             * property's own resolution is the fallback - the same one the first letter used.
              */
             String to = request.getToAddress();
             List<String> cc = readAddresses(request.getCcAddresses());
@@ -291,7 +291,7 @@ public class AvailabilityLetterService {
             }
 
             /*
-             * The request quoted underneath, as a reply would — what was actually SENT rather than a
+             * The request quoted underneath, as a reply would - what was actually SENT rather than a
              * re-render, because an edited letter is what the property read. Absent when the stored
              * .eml cannot be read, in which case the chase still repeats the dates and the rooms.
              */
@@ -564,7 +564,7 @@ public class AvailabilityLetterService {
         return String.join(" | ", parts);
     }
 
-    /** "29 Jan – 1 Feb 2027" for the subject line. */
+    /** "29 Jan - 1 Feb 2027" for the subject line. */
     private String range(LocalDate from, LocalDate to) {
         if (from.getYear() == to.getYear() && from.getMonth() == to.getMonth()) {
             return from.getDayOfMonth() + "-" + to.format(SHORT);

@@ -49,8 +49,8 @@ public class AuditLogController {
     @PreAuthorize("hasAuthority('PERM_READ_AUDIT_LOG')")
     public ResponseEntity<?> getAllAuditLogs(
         /*
-         * Every parameter the old signature took is still spelled the same on the wire —
-         * @ModelAttribute binds them onto the filter — plus the multi-value forms (actions,
+         * Every parameter the old signature took is still spelled the same on the wire -
+         * @ModelAttribute binds them onto the filter - plus the multi-value forms (actions,
          * entityTypes, statuses), a keyword, and the date range an audit log is actually
          * read by.
          */

@@ -10,7 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 
 /**
- * Multipart upload — bound from form-data on POST /api/expenses/{expenseId}/documents.
+ * Multipart upload - bound from form-data on POST /api/expenses/{expenseId}/documents.
  * Spring populates this from @ModelAttribute.
  */
 @Data

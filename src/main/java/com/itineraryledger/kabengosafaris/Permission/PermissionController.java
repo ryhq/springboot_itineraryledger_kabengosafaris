@@ -73,7 +73,7 @@ public class PermissionController {
      * The distinct entities in the catalogue, in one call.
      *
      * The filter dropdown needs all hundred and five of them, and paging through the
-     * list to collect them would only ever offer the twenty on the current page — a
+     * list to collect them would only ever offer the twenty on the current page - a
      * filter that cannot see most of its own options.
      */
     @GetMapping("/entities")
@@ -87,7 +87,7 @@ public class PermissionController {
      *
      * Worth knowing what this does: an inactive permission is dropped from the
      * authorities of every role that grants it, immediately and everywhere. It is a
-     * system-wide switch, not a per-role one — to take a capability away from one role,
+     * system-wide switch, not a per-role one - to take a capability away from one role,
      * edit that role.
      */
     @PatchMapping("/bulk")

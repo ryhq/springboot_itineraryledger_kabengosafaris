@@ -98,7 +98,7 @@ public class EmailLabelService {
             EmailLabel saved = emailLabelRepository.save(EmailLabel.builder()
                 .emailAccount(account)
                 .name(dto.getName().trim())
-                /* absent family means the neutral one — see CreateEmailLabelDTO */
+                /* absent family means the neutral one - see CreateEmailLabelDTO */
                 .color(dto.getColor() != null ? dto.getColor() : EmailLabelColor.INTERNAL)
                 .colorHex(dto.getColorHex())
                 .isSystem(false)
@@ -126,7 +126,7 @@ public class EmailLabelService {
              * The four seeded labels used to be locked. They are not special: EmailLabelInitializer
              * seeds them only when an account has NO labels at all, so a rename or a new colour
              * sticks across restarts. Refusing the edit protected nothing and left "Quote" yellow
-             * forever, so the guard is gone — `isSystem` now records where a label came from
+             * forever, so the guard is gone - `isSystem` now records where a label came from
              * rather than forbidding anything.
              */
             if (dto.getName() != null && !dto.getName().isBlank()) {
@@ -184,10 +184,10 @@ public class EmailLabelService {
             }
             /*
              * Deletable, like any other label. If an account ends up with NO labels the seeder puts
-             * the four back on the next restart — that is worth knowing, not worth blocking, and
+             * the four back on the next restart - that is worth knowing, not worth blocking, and
              * the UI says so before you agree to it.
              */
-            // Detach from all messages — orphanRemoval isn't on the inverse
+            // Detach from all messages - orphanRemoval isn't on the inverse
             // side, so we wipe the join rows explicitly via the JPQL bridge.
             List<EmailMessage> tagged = emailMessageRepository.findAllByLabelsId(labelId);
             for (EmailMessage m : tagged) m.getLabels().removeIf(l -> l.getId().equals(labelId));

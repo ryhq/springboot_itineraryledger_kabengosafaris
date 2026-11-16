@@ -277,7 +277,7 @@ public class InvoiceFullGetService {
             dto.setGrandTotals(grandTotalDTOs);
         }
 
-        // Derive amountsPaid and balances from the payments table — they are
+        // Derive amountsPaid and balances from the payments table - they are
         // not stored on the Invoice entity.
         List<PriceDTO> amountsPaidDTOs = paymentAggregationService.computeAmountsPaid(invoice).stream()
             .map(this::convertPriceToDTO)

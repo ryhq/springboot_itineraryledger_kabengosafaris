@@ -74,13 +74,13 @@ public class SafariPaymentScheduler {
     /**
      * Check if all invoices for a safari are fully paid.
      * Returns false if:
-     * - Safari has no invoices (manual payment flow — don't auto-transition)
+     * - Safari has no invoices (manual payment flow - don't auto-transition)
      * - Any invoice is still unpaid (DRAFT, SENT, VIEWED, PARTIALLY_PAID, OVERDUE)
      */
     private boolean isFullyPaidByInvoices(Safari safari) {
         List<Invoice> allInvoices = invoiceRepository.findBySafariId(safari.getId());
 
-        // No invoices linked — can't auto-determine payment status
+        // No invoices linked - can't auto-determine payment status
         if (allInvoices.isEmpty()) {
             return false;
         }

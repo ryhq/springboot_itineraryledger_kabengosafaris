@@ -7,7 +7,7 @@ import lombok.Data;
  *
  * Every value here came out of a URL the visitor could edit, so nothing on it is
  * trusted: {@link AttributionService} caps, strips and re-derives before any of it
- * is stored. The channel is deliberately absent — the browser does not get to say
+ * is stored. The channel is deliberately absent - the browser does not get to say
  * what channel it is.
  */
 @Data

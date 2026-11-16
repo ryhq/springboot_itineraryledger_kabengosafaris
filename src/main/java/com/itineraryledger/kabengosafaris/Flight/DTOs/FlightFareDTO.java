@@ -28,7 +28,7 @@ public class FlightFareDTO {
     private LocalDate validFrom;
     private LocalDate validTo;
     private String operatingMonths;
-    /** "June to November" — the month list read back as words. */
+    /** "June to November" - the month list read back as words. */
     private String operatingWindow;
     private BigDecimal netFare;
     private BigDecimal grossFare;

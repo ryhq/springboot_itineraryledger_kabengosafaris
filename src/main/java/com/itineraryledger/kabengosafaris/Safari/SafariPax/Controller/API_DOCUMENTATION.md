@@ -767,23 +767,23 @@ Content-Type: application/json
 
 ```
 1. Create Safari from Itinerary
-   └─> Pax automatically copied from itinerary template
+   +=> Pax automatically copied from itinerary template
 
 2. Customize Safari Pax
-   └─> Update counts via upsert
-   └─> Add special requirements
-   └─> Adjust for actual confirmed passengers
+   +=> Update counts via upsert
+   +=> Add special requirements
+   +=> Adjust for actual confirmed passengers
 
 3. Confirm Safari
-   └─> Pax data frozen for operational planning
+   +=> Pax data frozen for operational planning
 
 4. Pre-Safari Operations
-   └─> Use pax data for vehicle allocation
-   └─> Use pax data for meal planning
-   └─> Use pax data for park permit applications
+   +=> Use pax data for vehicle allocation
+   +=> Use pax data for meal planning
+   +=> Use pax data for park permit applications
 
 5. Post-Safari
-   └─> Pax data becomes read-only for historical records
+   +=> Pax data becomes read-only for historical records
 ```
 
 ---

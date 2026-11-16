@@ -12,7 +12,7 @@ public class CompanyEmailRequestDTO {
     @Size(max = 255)
     private String email;
 
-    /** GENERAL · RESERVATIONS · BILLING · SUPPORT · MARKETING · MANAGEMENT · OTHER */
+    /** GENERAL | RESERVATIONS | BILLING | SUPPORT | MARKETING | MANAGEMENT | OTHER */
     private String emailType;
 
     @Size(max = 100)

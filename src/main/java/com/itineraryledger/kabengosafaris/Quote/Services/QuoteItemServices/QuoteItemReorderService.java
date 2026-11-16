@@ -218,7 +218,7 @@ public class QuoteItemReorderService {
             // ========================
             /*
              * `expectedDisplayOrder` is what the CALLER believes the item's order
-             * is right now — an optimistic-concurrency check, so a reorder built
+             * is right now - an optimistic-concurrency check, so a reorder built
              * from a stale list is refused instead of silently reshuffling
              * somebody else's arrangement.
              *

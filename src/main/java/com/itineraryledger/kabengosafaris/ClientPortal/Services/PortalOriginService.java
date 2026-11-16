@@ -76,7 +76,7 @@ public class PortalOriginService {
      * {@code mytrip.} in front of the company's own domain, when nobody has said otherwise.
      *
      * <p>The alternative fallback is this API's address, and a client who is sent
-     * {@code api.<something>.com/portal/…} has been told, accurately, that they are looking at
+     * {@code api.<something>.com/portal/...} has been told, accurately, that they are looking at
      * our plumbing. Both companies already serve the portal at {@code mytrip.} their own domain,
      * so the guess is the answer in every case we have, and an explicit setting overrides it the
      * moment it is not.

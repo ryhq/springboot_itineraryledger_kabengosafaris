@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * What a safari has been invoiced and what has been paid — asked of the
+ * What a safari has been invoiced and what has been paid - asked of the
  * invoices, never remembered by the safari.
  *
  * The safari used to hold this as two states of its own (PENDING_PAYMENT,

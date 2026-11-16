@@ -17,7 +17,7 @@ import com.itineraryledger.kabengosafaris.CompanyProfile.Services.CompanyIdentit
  * What a document prints about the company.
  *
  * No Spring and no database on purpose: this is the part that decides how a phone number, an address
- * and a website LOOK on an invoice, and it should be checkable in a second on any machine — including
+ * and a website LOOK on an invoice, and it should be checkable in a second on any machine - including
  * a CI runner with no MySQL, which is why the rest of this project's tests do not run.
  */
 class CompanyIdentityFormattingTest {
@@ -89,7 +89,7 @@ class CompanyIdentityFormattingTest {
                 "companyAddress", "companyWebsite", "companyTin", "companyVrn", "companyLogoUrl",
                 "brandName", "bankName", "bankAccountNumber", "bankSwift")) {
             assertTrue(vars.containsKey(key), key + " must be offered to every template");
-            assertNotNull(vars.get(key), key + " must never be null — a template would print 'null'");
+            assertNotNull(vars.get(key), key + " must never be null - a template would print 'null'");
         }
         assertEquals("Kabengo Safaris", vars.get("companyLegalName"),
             "with no legal name recorded, the trading name stands in rather than leaving a blank");

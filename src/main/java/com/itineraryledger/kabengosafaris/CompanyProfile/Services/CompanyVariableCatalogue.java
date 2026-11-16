@@ -8,15 +8,15 @@ import java.util.Map;
 /**
  * The company's variables, declared once for every renderer in the product.
  *
- * They were always substituted — an email footer, a PDF letterhead and a signature all resolve them —
+ * They were always substituted - an email footer, a PDF letterhead and a signature all resolve them -
  * but nothing DECLARED them, so the "variables you can use" panel showed only the record's own fields.
  * A variable nobody can discover may as well not exist: template authors typed the company's details
  * by hand instead, which is the drift this whole exercise was meant to end.
  *
  * One list, three consumers:
- *  · email events and signatures merge it into their declared variables as {{name}}
- *  · PDF documents merge it as ${company.path}, because Thymeleaf reads a path into a model
- *  · the renderers substitute it whether the template declares it or not
+ *  | email events and signatures merge it into their declared variables as {{name}}
+ *  | PDF documents merge it as ${company.path}, because Thymeleaf reads a path into a model
+ *  | the renderers substitute it whether the template declares it or not
  *
  * Adding one here makes it visible in all three panels and usable in every template, with no
  * per-event or per-document editing.
@@ -60,7 +60,7 @@ public final class CompanyVariableCatalogue {
 
         /*
          * The brand. A template that hardcodes a green is a template that looks wrong for the second
-         * company, exactly like a hardcoded name — so the accent, the corner radius and the font are
+         * company, exactly like a hardcoded name - so the accent, the corner radius and the font are
          * variables too, and the shipped templates use them.
          */
         VARIABLES.put("companyAccent", "The brand accent colour, e.g. #1c7a58. In a PDF use {{companyAccent}} even inside CSS - a ${} expression is escaped there");
@@ -72,7 +72,7 @@ public final class CompanyVariableCatalogue {
         VARIABLES.put("companyFont", "The brand font stack");
 
         /*
-         * Assets. Every installation serves them at the SAME path — /api/public/company/assets/<kind> —
+         * Assets. Every installation serves them at the SAME path - /api/public/company/assets/<kind> -
          * so a template refers to the variable and never to a host, and the same template renders for
          * every company without editing.
          */
@@ -103,7 +103,7 @@ public final class CompanyVariableCatalogue {
 
     /**
      * The catalogue as an email event or signature declares its variables: `name`, `description`, and
-     * never required — a template that leaves the company out is unusual, not broken.
+     * never required - a template that leaves the company out is unusual, not broken.
      */
     public static List<Map<String, Object>> asEmailVariables() {
         List<Map<String, Object>> out = new ArrayList<>();
@@ -122,7 +122,7 @@ public final class CompanyVariableCatalogue {
      * The same catalogue as a PDF document declares its variables: a `path` into the model, since a
      * Thymeleaf expression reads a path rather than a flat placeholder.
      *
-     * `companyName` becomes `company.name`, `bankSwift` becomes `company.bank.swift` — the shapes the
+     * `companyName` becomes `company.name`, `bankSwift` becomes `company.bank.swift` - the shapes the
      * PDF model actually exposes.
      */
     public static List<Map<String, Object>> asPdfVariables() {

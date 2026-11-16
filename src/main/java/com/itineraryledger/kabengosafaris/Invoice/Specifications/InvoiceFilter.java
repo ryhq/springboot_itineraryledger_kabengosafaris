@@ -33,7 +33,7 @@ public class InvoiceFilter {
     /**
      * Coarser than a status: what the office is actually asking for.
      *
-     * draft · unpaid (sent, part paid, overdue) · paid · closed. Multi-value,
+     * draft | unpaid (sent, part paid, overdue) | paid | closed. Multi-value,
      * OR'd together, so "unpaid or overdue" is one question.
      */
     private String statusGroup;
@@ -56,8 +56,8 @@ public class InvoiceFilter {
     /**
      * Actionable data quality, the same idea as the customer list's.
      *
-     * dueSoon — falls due inside a week and is not settled. unsent — a draft
-     * that has been sitting there. unpaid — money still outstanding.
+     * dueSoon - falls due inside a week and is not settled. unsent - a draft
+     * that has been sitting there. unpaid - money still outstanding.
      */
     private List<String> qualities;
 

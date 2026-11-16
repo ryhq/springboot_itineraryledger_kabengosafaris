@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p><strong>Nothing here may stop a quotation being sent.</strong> The email is the thing that
  * matters; the link is an addition to it. The feature may be off, the customer may have no
- * address, the portal may be misconfigured — in every case this answers with an empty string and
+ * address, the portal may be misconfigured - in every case this answers with an empty string and
  * the email goes out exactly as it did before. An operator finding out that the portal is
  * misconfigured by having a customer's quotation fail to send would be a far worse outcome than
  * the link being absent from it.

@@ -53,7 +53,7 @@ public class BundleExportService {
 
     /**
      * Which build wrote the bundle. Absent when the jar was assembled without the build-info goal,
-     * which is the usual case running from an IDE — the same source the version endpoint reads.
+     * which is the usual case running from an IDE - the same source the version endpoint reads.
      */
     private final java.util.Optional<org.springframework.boot.info.BuildProperties> buildProperties;
 
@@ -111,7 +111,7 @@ public class BundleExportService {
      *
      * Not a byte[], which is what the first version did and what failed on the first real export:
      * a company with 69 lodges and their galleries produces a zip far larger than it is sensible to
-     * hold in memory, twice — once as the zip being built and again as the response body. Written to
+     * hold in memory, twice - once as the zip being built and again as the response body. Written to
      * disk it is bounded by disk.
      *
      * Not streamed straight to the response either, tempting as that is. Everything here is read
@@ -135,7 +135,7 @@ public class BundleExportService {
         /*
          * Built under the application's own data directory, not /tmp.
          *
-         * The service runs with PrivateTmp, where /tmp is a RAM-backed tmpfs — so a bundle with a
+         * The service runs with PrivateTmp, where /tmp is a RAM-backed tmpfs - so a bundle with a
          * company's galleries in it would be written to memory by another name, which is the exact
          * problem building it in a byte[] had. This path is on disk and inside the unit's
          * ReadWritePaths.
@@ -166,7 +166,7 @@ public class BundleExportService {
             /*
              * Copied through a buffer rather than read whole: a bundle's files are the large part,
              * and readAllBytes on each one puts the biggest image in the gallery into memory for no
-             * reason. Duplicate names are skipped rather than thrown on — two owners can legitimately
+             * reason. Duplicate names are skipped rather than thrown on - two owners can legitimately
              * reference one stored file, and a ZipException there would lose the entire export.
              */
             java.util.Set<String> written = new java.util.HashSet<>();
@@ -181,7 +181,7 @@ public class BundleExportService {
                 }
             }
 
-            /* last, so its counts are final — a reader takes the manifest, not the file order */
+            /* last, so its counts are final - a reader takes the manifest, not the file order */
             zip.putNextEntry(new ZipEntry("manifest.json"));
             zip.write(mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(manifest));
             zip.closeEntry();

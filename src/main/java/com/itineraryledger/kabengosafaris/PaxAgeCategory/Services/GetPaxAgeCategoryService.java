@@ -280,7 +280,7 @@ public class GetPaxAgeCategoryService {
     }
 
     /**
-     * The ONE place this module's filter is expressed — rows, counters and prev/next
+     * The ONE place this module's filter is expressed - rows, counters and prev/next
      * all build from it, so a card can never disagree with the table and the arrows
      * can never walk a different set from the one on screen.
      */

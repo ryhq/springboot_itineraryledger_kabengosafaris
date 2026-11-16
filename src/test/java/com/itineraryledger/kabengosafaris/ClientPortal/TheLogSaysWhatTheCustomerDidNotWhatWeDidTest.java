@@ -39,7 +39,7 @@ import com.itineraryledger.kabengosafaris.ClientPortal.Services.PortalInsightSer
  * <p>The access log holds everything that happens to a journey, and that includes us: a
  * consultant freezing the quotation, the office taking a proposal over, a link being withdrawn,
  * an editing level changed. Counting rows to answer whether the customer is interested folds
- * all of that in and produces a number that is confidently wrong — a quotation nobody has opened
+ * all of that in and produces a number that is confidently wrong - a quotation nobody has opened
  * reading as busy because three people here have been tidying it up.
  *
  * <p>That is the same failure as the stats rule everywhere else in this application: never

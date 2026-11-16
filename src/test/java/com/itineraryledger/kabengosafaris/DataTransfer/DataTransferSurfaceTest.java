@@ -33,7 +33,7 @@ class DataTransferSurfaceTest {
     /**
      * Reference and inventory data only.
      *
-     * Every one of these describes a thing the company SELLS — a park, an activity, a lodge, what
+     * Every one of these describes a thing the company SELLS - a park, an activity, a lodge, what
      * they cost, and the small vocabularies those prices are written in. None of them describes a
      * person, an agreement, or money that changed hands.
      */
@@ -60,8 +60,8 @@ class DataTransferSurfaceTest {
          * What a price covers: the catalogue of sentences an itinerary's promise is assembled from.
          *
          * Reference data by the same test as everything above it. A line is wording about the
-         * PRODUCT — "Private 4x4 safari vehicle with pop-up roof", "International flights & visas"
-         * — with no customer, no figure and no agreement in it. It travels because an itinerary
+         * PRODUCT - "Private 4x4 safari vehicle with pop-up roof", "International flights & visas"
+         * - with no customer, no figure and no agreement in it. It travels because an itinerary
          * names these lines, and an itinerary that arrived without them would state a trip and say
          * nothing about what it includes.
          *
@@ -80,8 +80,8 @@ class DataTransferSurfaceTest {
          *
          * <p>One thing here is more commercially loaded than a lodge rate, and it was thought
          * about rather than waved through: the airline's default MARKUP is this company's own
-         * margin policy, not a supplier's price. It travels — accommodation STO rates are more
-         * revealing still, and these bundles move between companies the same operator owns — but
+         * margin policy, not a supplier's price. It travels - accommodation STO rates are more
+         * revealing still, and these bundles move between companies the same operator owns - but
          * the import deliberately refuses to overwrite an airline that already exists, so
          * receiving a bundle can never silently re-price flights the receiving company is already
          * selling. See FlightTransfer.
@@ -123,7 +123,7 @@ class DataTransferSurfaceTest {
                 for (String forbidden : FORBIDDEN) {
                     /*
                      * The import line is the tell. A module cannot read what it has not imported, and
-                     * a name in a comment is not a data path — hence matching the import, not the file.
+                     * a name in a comment is not a data path - hence matching the import, not the file.
                      */
                     if (source.contains("import com.itineraryledger.kabengosafaris." + forbidden + ".")
                         || source.contains("." + forbidden + "Repository;")) {
@@ -144,7 +144,7 @@ class DataTransferSurfaceTest {
         String activities = Files.readString(MODULES.resolve("ActivityTransfer.java"));
         String accommodations = Files.readString(MODULES.resolve("AccommodationTransfer.java"));
 
-        /* a park rate is (park, tariff, season, residency, age) — four of them live elsewhere */
+        /* a park rate is (park, tariff, season, residency, age) - four of them live elsewhere */
         for (String needed : new String[] { "tariffs", "pax-categories", "seasons" }) {
             assertTrue(parks.contains("\"" + needed + "\""),
                 "parks must carry " + needed + ", or every rate is unplaceable");

@@ -20,13 +20,13 @@ import java.util.List;
  *
  * Structure:
  * Quote
- * ├── customer (customer information)
- * ├── itinerary (itinerary summary)
- * ├── items (quote line items with multi-currency prices)
- * ├── subtotals (by currency)
- * ├── taxes (by currency)
- * ├── discounts (by currency)
- * └── grandTotals (by currency)
+ * +== customer (customer information)
+ * +== itinerary (itinerary summary)
+ * +== items (quote line items with multi-currency prices)
+ * +== subtotals (by currency)
+ * +== taxes (by currency)
+ * +== discounts (by currency)
+ * +== grandTotals (by currency)
  */
 @Data
 @NoArgsConstructor
@@ -51,7 +51,7 @@ public class FullQuoteDTO {
     // PRICING DETAILS
     // ========================
     private Boolean isStoRate;
-    /** Vehicles this quote is priced for — its own, not the itinerary's current figure. */
+    /** Vehicles this quote is priced for - its own, not the itinerary's current figure. */
     private Integer carCount;
     private BigDecimal taxPercentage;
 
@@ -133,7 +133,7 @@ public class FullQuoteDTO {
      * The grand total divided by the headcount, one entry per currency.
      *
      * <p>This divides the quote's OWN grand total, tax and discount included, so
-     * {@code perGuest × totalPax} comes back to the figure printed above it. A band-aware split
+     * {@code perGuest x totalPax} comes back to the figure printed above it. A band-aware split
      * taken from the cost estimation would be more precise per head and would not reconcile with
      * the total on the same page, which is the worse failure on a document a client checks.
      */

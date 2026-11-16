@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
  *
  * <p>Until this existed the question had two answers. {@code QuoteUpdateService} refused to edit
  * an ACCEPTED or CONVERTED quote, while {@code PUT /api/quote-day-accommodations/{id}} and its
- * three siblings checked nothing at all — so the header of a converted quotation was frozen and
+ * three siblings checked nothing at all - so the header of a converted quotation was frozen and
  * its prices were not. A safari already sold could be silently re-priced by editing the lodge on
  * day four, and the quotation the customer agreed to would no longer say what they agreed to.
  *
@@ -27,12 +27,12 @@ import lombok.RequiredArgsConstructor;
  *
  * <p>The decision folds together five things that were scattered or nowhere:
  * <ul>
- *   <li><b>status</b> — a decided quotation is a record of what was decided</li>
- *   <li><b>superseded</b> — a quote with a {@code nextVersion} has been replaced; edit the one
+ *   <li><b>status</b> - a decided quotation is a record of what was decided</li>
+ *   <li><b>superseded</b> - a quote with a {@code nextVersion} has been replaced; edit the one
  *       that replaced it, or the two disagree and nobody can say which was sent</li>
- *   <li><b>isActive</b> — withdrawn from use</li>
- *   <li><b>frozen</b> — the operator's override on the client's link</li>
- *   <li><b>with the operator</b> — staff have taken the pen; a client edit arriving now would
+ *   <li><b>isActive</b> - withdrawn from use</li>
+ *   <li><b>frozen</b> - the operator's override on the client's link</li>
+ *   <li><b>with the operator</b> - staff have taken the pen; a client edit arriving now would
  *       overwrite a review already in progress</li>
  * </ul>
  *
@@ -84,7 +84,7 @@ public class QuoteEditPolicy {
     }
 
     /**
-     * May this quotation's day tree — its accommodations, activities, parks and flights — change?
+     * May this quotation's day tree - its accommodations, activities, parks and flights - change?
      *
      * <p>Separate from editing the header because the day tree is what the price is computed
      * from. A title can be tidied on a sent quotation without changing what anybody owes; a

@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * The first account, on an empty installation.
  *
- * A fresh database has permissions, roles, parks and templates — and nobody who can sign in. Every
+ * A fresh database has permissions, roles, parks and templates - and nobody who can sign in. Every
  * account in this system is created by somebody who is already signed in, so provisioning a new
  * company used to end with an INSERT written by hand, which is both easy to get wrong and impossible
  * to audit.
@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
  * Only ever runs when there are ZERO users: an installation with people in it is never touched, so a
  * stray property on a restart cannot mint a superadmin.
  *
- * The password is generated and nobody sees it — not the log, not the operator, not this class. The
+ * The password is generated and nobody sees it - not the log, not the operator, not this class. The
  * account arrives by activation email, the same way an admin-created account does, because an audit
  * entry has to name the person who acted and a shared password names nobody.
  */

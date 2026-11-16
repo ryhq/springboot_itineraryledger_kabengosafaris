@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Counting requests per caller, in this process.
  *
- * In memory on purpose. Every company runs its own single process against its own database — there
+ * In memory on purpose. Every company runs its own single process against its own database - there
  * is no shared cache to put this in, and introducing one to hold a counter would be a new thing to
  * operate for no gain. The cost is honest: a restart forgives everybody, which is fine for something
  * whose job is blunting abuse rather than enforcing a quota.

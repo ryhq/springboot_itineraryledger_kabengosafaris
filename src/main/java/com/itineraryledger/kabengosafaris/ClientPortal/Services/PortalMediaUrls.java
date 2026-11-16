@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
  * quietly: the day photographs would keep working while the lodge pictures in the catalogue
  * silently 404, and nothing anywhere would say why.
  *
- * <p>Only PUBLISHED image modules belong here — park, accommodation, itinerary and the rest of
+ * <p>Only PUBLISHED image modules belong here - park, accommodation, itinerary and the rest of
  * the family the public website already renders in a bare {@code <img>}. Client documents are the
  * opposite and are streamed through the API with the session; there is no method on this class
  * that would build a URL to one.

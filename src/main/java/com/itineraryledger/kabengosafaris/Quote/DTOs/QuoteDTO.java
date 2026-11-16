@@ -44,7 +44,7 @@ public class QuoteDTO {
 
     // Pricing details
     private Boolean isStoRate;
-    /** Vehicles this quote is priced for — its own, not the itinerary's current figure. */
+    /** Vehicles this quote is priced for - its own, not the itinerary's current figure. */
     private Integer carCount;
     private BigDecimal taxPercentage;
 

@@ -27,7 +27,7 @@ public class EmailContactController {
     private final EmailContactDeleteService emailContactDeleteService;
 
     /**
-     * Autocomplete search — used by compose TO/CC/BCC fields
+     * Autocomplete search - used by compose TO/CC/BCC fields
      */
     @GetMapping("/search")
     @PreAuthorize("hasAuthority('PERM_READ_EMAIL_CONTACT')")

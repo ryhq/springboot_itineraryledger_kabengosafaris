@@ -13,12 +13,12 @@ import lombok.*;
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class DuplicateItineraryDayDTO {
 
-    /** How many copies, 1–20. Bounded by the itinerary's free day slots. */
+    /** How many copies, 1-20. Bounded by the itinerary's free day slots. */
     @Builder.Default
     private Integer copies = 1;
 
     /**
-     * AFTER puts the copies directly behind the source and renumbers the rest —
+     * AFTER puts the copies directly behind the source and renumbers the rest -
      * which is what "three nights here" means. END appends them.
      */
     @Builder.Default

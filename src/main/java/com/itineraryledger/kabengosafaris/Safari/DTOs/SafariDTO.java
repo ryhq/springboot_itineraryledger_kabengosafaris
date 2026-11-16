@@ -73,7 +73,7 @@ public class SafariDTO {
 
     /**
      * For the office. The entity has always had it and the update endpoint has
-     * always taken it — it just never came back, so the field read "—" however
+     * always taken it - it just never came back, so the field read "-" however
      * often it was filled in and the note looked lost.
      */
     private String internalNotes;
@@ -106,7 +106,7 @@ public class SafariDTO {
 
     /**
      * What the trip cost us, read from its expenses, and the margin against what
-     * we invoiced. Derived like billing — nothing here is stored on the safari.
+     * we invoiced. Derived like billing - nothing here is stored on the safari.
      */
     private SafariCostingDTO costing;
     private Integer totalDaysCount;

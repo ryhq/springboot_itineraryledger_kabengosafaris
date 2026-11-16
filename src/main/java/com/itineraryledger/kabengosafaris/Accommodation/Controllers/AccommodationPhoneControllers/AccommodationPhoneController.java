@@ -249,7 +249,7 @@ public class AccommodationPhoneController {
     private com.itineraryledger.kabengosafaris.Accommodation.Repositories.AccommodationPhoneRepository bulkFlagsRepository;
 
     /**
-     * PATCH /bulk — one request for a whole selection.
+     * PATCH /bulk - one request for a whole selection.
      *
      * Activating fifty rows one request at a time is slow and can leave the set
      * half-changed; this applies only the flags present in the body and reports

@@ -107,7 +107,7 @@ public class VendorController {
     private com.itineraryledger.kabengosafaris.Vendor.Repository.VendorRepository bulkFlagsRepository;
 
     /**
-     * PATCH /bulk — one request for a whole selection.
+     * PATCH /bulk - one request for a whole selection.
      *
      * Only the flags present in the body apply, and it reports per-id outcomes
      * rather than a bare 200 that hides what did not change.

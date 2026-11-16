@@ -17,6 +17,6 @@ public interface SafariDayFlightRepository
     long countBySafariDayId(Long safariDayId);
     long countByFlightRouteId(Long flightRouteId);
 
-    /** Seats still not ticketed — what an operations list is actually asking for. */
+    /** Seats still not ticketed - what an operations list is actually asking for. */
     List<SafariDayFlight> findByBookingStatusNot(SafariDayFlight.BookingStatus status);
 }

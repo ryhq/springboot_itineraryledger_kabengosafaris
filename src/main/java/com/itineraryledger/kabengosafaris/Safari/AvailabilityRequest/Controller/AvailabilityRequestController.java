@@ -25,8 +25,8 @@ import lombok.RequiredArgsConstructor;
  * Availability requests, read and written where they belong: under the safari they were asked for.
  *
  * Permissions are their own entity rather than borrowed from SAFARI: writing to suppliers is a
- * different job from editing a trip, and a name the catalogue does not contain 403s everybody —
- * superadmin included — so PERM_*_AVAILABILITY_REQUEST goes into entities.json in the same change.
+ * different job from editing a trip, and a name the catalogue does not contain 403s everybody -
+ * superadmin included - so PERM_*_AVAILABILITY_REQUEST goes into entities.json in the same change.
  */
 @RestController
 @Validated
@@ -48,7 +48,7 @@ public class AvailabilityRequestController {
     /**
      * The letter, ready to send: subject, HTML, To and Cc.
      *
-     * A read, so it is a GET with the nights in the query — nothing is written until the mail has
+     * A read, so it is a GET with the nights in the query - nothing is written until the mail has
      * actually gone. Rendered from the AVAILABILITY_REQUEST template, which the office owns.
      */
     @GetMapping("/api/safaris/{safariId}/availability-requests/letter")
@@ -66,7 +66,7 @@ public class AvailabilityRequestController {
         return availabilityRequestService.list(safariId);
     }
 
-    /** One row per night asked about — what the day screen draws its chips from. */
+    /** One row per night asked about - what the day screen draws its chips from. */
     @GetMapping("/api/safaris/{safariId}/availability-request-coverage")
     @PreAuthorize("hasAuthority('PERM_READ_AVAILABILITY_REQUEST')")
     public ResponseEntity<ApiResponse<?>> coverage(@PathVariable("safariId") String safariId) {
@@ -127,7 +127,7 @@ public class AvailabilityRequestController {
      *
      * A read: nothing is recorded until the follow-up has actually gone, at which point the caller
      * posts /chased. To, Cc and Bcc come from the RECORD, so a follow-up keeps the same people in
-     * the conversation — including whoever was blind-copied, which the thread itself cannot tell you.
+     * the conversation - including whoever was blind-copied, which the thread itself cannot tell you.
      */
     @GetMapping("/api/availability-requests/{requestId}/chase-letter")
     @PreAuthorize("hasAuthority('PERM_CREATE_AVAILABILITY_REQUEST')")
@@ -154,7 +154,7 @@ public class AvailabilityRequestController {
      * Look for replies that already arrived.
      *
      * A person clicks this when a lodge has clearly written back and the request still says it is
-     * waiting — mail fetched while the matching hook did not exist, or before a record kept the
+     * waiting - mail fetched while the matching hook did not exist, or before a record kept the
      * headers to match on, would otherwise sit on the chase list for ever.
      */
     @PostMapping("/api/availability-requests/rescan-replies")

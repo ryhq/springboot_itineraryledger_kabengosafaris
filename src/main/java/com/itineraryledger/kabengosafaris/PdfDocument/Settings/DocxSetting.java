@@ -56,7 +56,7 @@ public class DocxSetting {
     @Builder.Default
     private Boolean active = true;
 
-    /** Marks seeded defaults — cannot be deleted, can be reset. */
+    /** Marks seeded defaults - cannot be deleted, can be reset. */
     @Column(nullable = false)
     @Builder.Default
     private Boolean isSystemDefault = false;
@@ -67,7 +67,7 @@ public class DocxSetting {
 
     /**
      * True for jodconverter.local.* settings whose values are baked into the
-     * OfficeManager Spring bean at startup — changes need an app restart to
+     * OfficeManager Spring bean at startup - changes need an app restart to
      * take effect. The router for {@code docx.engine} re-reads on every
      * request so it's {@code false}.
      */

@@ -123,12 +123,12 @@ public class EmailComposeService {
      */
     @Transactional
     public ResponseEntity<ApiResponse<?>> replyAll(String accountIdObfuscated, String messageIdObfuscated, ComposeEmailDTO dto, List<MultipartFile> attachments) {
-        // Same as reply — the frontend sets toAddresses + ccAddresses with all recipients
+        // Same as reply - the frontend sets toAddresses + ccAddresses with all recipients
         return reply(accountIdObfuscated, messageIdObfuscated, dto, attachments);
     }
 
     /**
-     * §10 — Quick reply. Builds a minimal ComposeEmailDTO from the
+     * §10 - Quick reply. Builds a minimal ComposeEmailDTO from the
      * original message (To = sender, optional Cc = original to+cc list
      * minus this account when REPLY_ALL, subject prefixed with "Re:"
      * if missing) and routes through the standard reply flow.
@@ -193,7 +193,7 @@ public class EmailComposeService {
 
     private java.util.List<String> parseAddresses(String raw) {
         if (raw == null || raw.isBlank()) return java.util.List.of();
-        // Stored as JSON array — fall back to a permissive split if parse fails.
+        // Stored as JSON array - fall back to a permissive split if parse fails.
         try {
             com.fasterxml.jackson.databind.ObjectMapper m = new com.fasterxml.jackson.databind.ObjectMapper();
             return m.readValue(raw, new com.fasterxml.jackson.core.type.TypeReference<java.util.List<String>>() {});
@@ -548,7 +548,7 @@ public class EmailComposeService {
              * WHICH message went out, not merely that one did.
              *
              * This used to answer `data: null`, so a caller who needed to record what it had just
-             * sent — an availability request naming its own thread — had nothing to record. The
+             * sent - an availability request naming its own thread - had nothing to record. The
              * fields are null only when the sent copy could not be filed, which is a warning about
              * bookkeeping rather than a failed send.
              */
@@ -620,7 +620,7 @@ public class EmailComposeService {
 
         // Build a synthetic MimeMessage purely for storage so the sent-folder
         // read path (which parses .eml from disk) can show the full HTML body
-        // — not just the 200-char snippet. The mail sender here is never used
+        // - not just the 200-char snippet. The mail sender here is never used
         // to actually send anything; we only need its createMimeMessage() to
         // produce a Session-backed MimeMessage we can serialize.
         try {
@@ -728,7 +728,7 @@ public class EmailComposeService {
              * The files as rows, exactly as the sent copy does it.
              *
              * The draft already carried them inside its .eml, so sending it would have delivered
-             * them correctly — but the reader lists the ROWS, and with none it showed a paperclip
+             * them correctly - but the reader lists the ROWS, and with none it showed a paperclip
              * and an empty attachment list. On a draft that is worse than on a sent message: the
              * whole point of a draft is that somebody opens it to check what is about to go out,
              * and they would have concluded the file was missing and attached it a second time.
@@ -758,7 +758,7 @@ public class EmailComposeService {
      * The sent copy, and WHICH copy it was.
      *
      * It used to return nothing, so the id of the message just sent was thrown away and the caller
-     * could not point anything at it — no availability request, no follow-up, no "open the thread".
+     * could not point anything at it - no availability request, no follow-up, no "open the thread".
      * Null still means the copy could not be filed, which is a warning rather than a failed send.
      */
     /**
@@ -834,7 +834,7 @@ public class EmailComposeService {
                  * SENT, because that is what just happened: our server accepted it.
                  *
                  * Only the events path and the Resend webhook set this before, so a message written
-                 * by hand sat in Sent with no state at all — indistinguishable from one that never
+                 * by hand sat in Sent with no state at all - indistinguishable from one that never
                  * left. DELIVERED is not ours to claim; the webhook upgrades it when the receiving
                  * server confirms, and that difference is exactly what somebody chasing a lodge needs.
                  */
@@ -928,7 +928,7 @@ public class EmailComposeService {
 
         helper.setSubject(dto.getSubject());
         /*
-         * text first, HTML second — multipart/alternative, in the order the standard wants.
+         * text first, HTML second - multipart/alternative, in the order the standard wants.
          *
          * Sending HTML alone (which is what this did) costs spam score and leaves anything
          * reading text with tag soup. The text half is derived from the same body, so the two

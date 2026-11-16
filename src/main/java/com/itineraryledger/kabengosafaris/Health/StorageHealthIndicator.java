@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * Every image, document, signature, email template and PDF template in this app is a file on disk
  * beside the database row that names it, so a data directory that is missing, read-only or full is
- * not a degraded feature — it is a bill whose invoice cannot be opened and a safari whose voucher
+ * not a degraded feature - it is a bill whose invoice cannot be opened and a safari whose voucher
  * cannot be produced. Both of those turned up as opaque 500s during development, which is exactly
  * the failure this reports before anybody notices.
  *

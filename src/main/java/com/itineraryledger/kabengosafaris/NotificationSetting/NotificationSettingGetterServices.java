@@ -153,7 +153,7 @@ public class NotificationSettingGetterServices {
     /**
      * How many days ahead to warn, largest first.
      *
-     * Defaults to 7, 3 and 0 — early warning, last chance, and the day itself. Parsed defensively
+     * Defaults to 7, 3 and 0 - early warning, last chance, and the day itself. Parsed defensively
      * because it is a free-text field somebody can put anything in, and a bad character here must
      * not stop every reminder for the whole company.
      */

@@ -41,7 +41,7 @@ public interface ParkTariffRateRepository extends JpaRepository<ParkTariffRate, 
      * The one rate identified by the combination the table declares unique.
      *
      * Written out rather than derived, because the age band is nullable and a derived query compares
-     * it with `= :ageCategoryId` — which is never true for NULL in SQL. A park fee that applies to
+     * it with `= :ageCategoryId` - which is never true for NULL in SQL. A park fee that applies to
      * every age would therefore never be found, and an import would insert a duplicate on every run
      * until the unique constraint refused it.
      */

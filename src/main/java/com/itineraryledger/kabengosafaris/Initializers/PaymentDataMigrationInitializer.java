@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
  * invoiceCurrency is set to the invoice's first grand-total currency and baseAmount = amount.
  * These will need manual exchange rate correction by the admin.
  *
- * Safe to run repeatedly — only touches rows where baseAmount IS NULL.
+ * Safe to run repeatedly - only touches rows where baseAmount IS NULL.
  */
 @Component
 @RequiredArgsConstructor

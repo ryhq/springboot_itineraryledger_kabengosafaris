@@ -68,7 +68,7 @@ class AChannelIsDerivedNotDeclaredTest {
             service.resolveChannel("facebook.com", null, "fbclid", null));
         assertTrue(!service.resolveChannel("facebook.com", null, "fbclid", null).isPaid());
 
-        /* Tagged as paid social, it is paid social — because somebody said so, not because of the id. */
+        /* Tagged as paid social, it is paid social - because somebody said so, not because of the id. */
         assertEquals(AcquisitionChannel.PAID_SOCIAL,
             service.resolveChannel("facebook", "paid_social", "fbclid", null));
     }
@@ -103,8 +103,8 @@ class AChannelIsDerivedNotDeclaredTest {
     void nothingCapturedStaysNothing() {
         /*
          * DIRECT is a statement: nobody sent them. A payload with nothing in it is the
-         * absence of a statement — a browser with storage blocked, a caller that omits
-         * the field — and stamping it DIRECT would quietly fold every unmeasured lead
+         * absence of a statement - a browser with storage blocked, a caller that omits
+         * the field - and stamping it DIRECT would quietly fold every unmeasured lead
          * into a channel it never came from.
          */
         assertNull(service.from(null));
