@@ -20,7 +20,6 @@
     "'keep' is the part that matters most. A clean-up that strips accents breaks five language",
     "catalogues, a Spanish lodge's name and half the customer list."
   ],
-
   "fold": {
     "—": "-",
     "–": "-",
@@ -51,7 +50,6 @@
     "​": "",
     "­": ""
   },
-
   "foldInternal": {
     "─": "-",
     "━": "-",
@@ -88,7 +86,6 @@
     "◌": "o",
     "⤢": "[]"
   },
-
   "manual": {
     "→": "a route takes the word: 'Arusha to Serengeti'. On a button the arrow is decoration, so it goes.",
     "←": "same: '< Back' reads as a glyph nobody typed. Drop it, or use an inline SVG chevron.",
@@ -111,7 +108,6 @@
     "™": "drop it",
     "®": "drop it"
   },
-
   "keep": {
     "€": "currency",
     "£": "currency",
@@ -119,7 +115,6 @@
     "©": "copyright, in every footer",
     "$": "currency"
   },
-
   "keepRules": [
     "Any letter carrying a diacritic, in any language. The de, es, fr, it and pt catalogues are built from them, and so are supplier names (Sueños Luxury Camp) and customer names. Folding these is the one mistake in this exercise that loses meaning rather than style.",
     "Any character outside the Latin script. uk.json is roughly 25,000 Cyrillic characters, and the websites' Navbar lists language names natively: 日本語, 中文, 한국어, العربية, हिन्दी, Українська.",
@@ -127,5 +122,33 @@
     "The three decode tables that must hold the real characters because they are what does the decoding: HtmlToText's entity map, PdfTemplateValidationService.HTML_ENTITIES, and the mask markers in TranslationService.",
     "This file, the Java map that mirrors it, the guards that read it, and any test asserting on these characters.",
     "Anything a customer, a visitor or a supplier wrote themselves: contact messages, booking inquiries, a guest's own testimony text, and received mail. Rewriting those falsifies a record."
-  ]
+  ],
+  "keepIn": {
+    "_": [
+      "Punctuation that belongs to a language, in the files that are written in it.",
+      "",
+      "German writes „Anführungszeichen“, French writes « guillemets » and spells l’hôtel with a",
+      "curly apostrophe, and both put a non-breaking space before ! and ?. Those are not",
+      "typographic affectation, they are how the language is written, and folding them would",
+      "anglicise seven translations so that a German reader sees English quotation marks around",
+      "Spanish opens a question with ¿ and an exclamation with ¡; without them the sentence is",
+      "not punctuated, it is broken.",
+      "German words. It is the same judgement as keeping é: the character is carrying meaning.",
+      "",
+      "Dashes and ellipses are not in this list, because no language requires them.",
+      "The English and Swahili catalogues are not in this list either, so they are folded in full."
+    ],
+    "src/messages/(?!en|sw)[a-z]{2}\\.json$": [
+      "«",
+      "»",
+      "„",
+      "“",
+      "”",
+      "‘",
+      "’",
+      " ",
+      "¿",
+      "¡"
+    ]
+  }
 }

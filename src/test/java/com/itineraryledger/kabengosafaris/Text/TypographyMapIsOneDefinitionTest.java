@@ -71,6 +71,34 @@ class TypographyMapIsOneDefinitionTest {
     }
 
     @Test
+    @DisplayName("a language keeps its own punctuation in its own file")
+    void theKeepInRulesSurvive() throws IOException {
+        JsonNode root = read();
+        assertTrue(root.has("keepIn"),
+            "the keepIn section is gone. Without it a sweep anglicises seven translations: a "
+                + "German reader gets English quotation marks around German words, and Spanish "
+                + "loses the mark that opens a question.");
+
+        JsonNode rules = root.get("keepIn");
+        String catalogues = null;
+        var names = rules.fieldNames();
+        while (names.hasNext()) {
+            String name = names.next();
+            if (!"_".equals(name)) catalogues = name;
+        }
+        assertTrue(catalogues != null, "no path pattern is listed");
+
+        String chars = rules.get(catalogues).toString();
+        for (String needed : new String[] {
+            "\u00ab", "\u00bb", "\u201e", "\u2019", "\u00bf", "\u00a1", "\u00a0" }) {
+            assertTrue(chars.contains(needed),
+                "the catalogue rule no longer keeps " + needed + ". Guillemets, the German low "
+                    + "quote, the French apostrophe and non-breaking space, and the Spanish "
+                    + "opening marks are how those languages are written.");
+        }
+    }
+
+    @Test
     @DisplayName("nothing is on two lists at once")
     void theListsDoNotOverlap() {
         for (Character c : Typography.FOLD.keySet()) {
