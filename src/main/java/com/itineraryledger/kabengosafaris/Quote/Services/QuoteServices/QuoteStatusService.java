@@ -390,6 +390,17 @@ public class QuoteStatusService {
 
             // Update status
             quote.setStatus(QuoteStatus.REJECTED);
+            /*
+             * A closed quotation no longer stands as written.
+             *
+             * isValid is a stored flag, and nothing cleared it when a quotation reached a
+             * decision: the nightly sweep only touches READY and SENT, and the edit policy
+             * refuses every change once a status is decided, so the flag could never be corrected
+             * afterwards either. Cancelled, rejected and converted quotations on Kabengo were all
+             * still carrying it. Cleared here, at the moment the decision is recorded, which is
+             * the only point that still can.
+             */
+            quote.setIsValid(false);
             quote = quoteRepository.save(quote);
 
             log.info("Quote marked as rejected: {}", quote.getQuoteCode());
@@ -440,6 +451,17 @@ public class QuoteStatusService {
 
             // Update status
             quote.setStatus(QuoteStatus.EXPIRED);
+            /*
+             * A closed quotation no longer stands as written.
+             *
+             * isValid is a stored flag, and nothing cleared it when a quotation reached a
+             * decision: the nightly sweep only touches READY and SENT, and the edit policy
+             * refuses every change once a status is decided, so the flag could never be corrected
+             * afterwards either. Cancelled, rejected and converted quotations on Kabengo were all
+             * still carrying it. Cleared here, at the moment the decision is recorded, which is
+             * the only point that still can.
+             */
+            quote.setIsValid(false);
             quote = quoteRepository.save(quote);
 
             log.info("Quote marked as expired: {}", quote.getQuoteCode());
@@ -490,6 +512,17 @@ public class QuoteStatusService {
 
             // Update status
             quote.setStatus(QuoteStatus.CANCELLED);
+            /*
+             * A closed quotation no longer stands as written.
+             *
+             * isValid is a stored flag, and nothing cleared it when a quotation reached a
+             * decision: the nightly sweep only touches READY and SENT, and the edit policy
+             * refuses every change once a status is decided, so the flag could never be corrected
+             * afterwards either. Cancelled, rejected and converted quotations on Kabengo were all
+             * still carrying it. Cleared here, at the moment the decision is recorded, which is
+             * the only point that still can.
+             */
+            quote.setIsValid(false);
             quote = quoteRepository.save(quote);
 
             log.info("Quote cancelled: {}", quote.getQuoteCode());
@@ -701,6 +734,8 @@ public class QuoteStatusService {
             // Step 2: Update quote status to CONVERTED
             // ============================================================
             quote.setStatus(QuoteStatus.CONVERTED);
+            /* Converted to a booking, so it no longer stands as an open offer. */
+            quote.setIsValid(false);
             quote = quoteRepository.save(quote);
             log.info("Quote status set to CONVERTED: {}", quote.getQuoteCode());
 
