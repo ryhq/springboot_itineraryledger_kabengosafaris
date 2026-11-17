@@ -197,6 +197,57 @@ public final class Typography {
     }
 
     /**
+     * The same characters, written as HTML entities.
+     *
+     * <p>A rendered invoice still showed arrows and em dashes after every template body had
+     * been cleaned, because the markup never held the characters: it held {@code &rarr;} and
+     * {@code &mdash;}. A reader sees no difference, which is exactly what an entity is for, so
+     * a sweep that looks only for literal characters finds nothing and leaves it in place.
+     *
+     * <p>Both spellings are live.
+     * {@code PdfTemplateValidationService.normalizeHtmlEntities} rewrites named entities to
+     * numeric ones on every render, so a template can carry either.
+     *
+     * <p>The non-breaking space is not here. In markup it is spacing, not punctuation: it holds
+     * "USD" to "1,200" and pads a cell, and folding it changes how a page sets rather than how
+     * it reads.
+     */
+    public static final Map<String, String> ENTITIES;
+
+    private static final Map<Character, String> NAMED = Map.ofEntries(
+        Map.entry('\u2014', "mdash"), Map.entry('\u2013', "ndash"),
+        Map.entry('\u00b7', "middot"), Map.entry('\u2022', "bull"),
+        Map.entry('\u2026', "hellip"), Map.entry('\u2019', "rsquo"),
+        Map.entry('\u2018', "lsquo"), Map.entry('\u201c', "ldquo"),
+        Map.entry('\u201d', "rdquo"), Map.entry('\u00ab', "laquo"),
+        Map.entry('\u00bb', "raquo"), Map.entry('\u00d7', "times"),
+        Map.entry('\u2192', "rarr"), Map.entry('\u2190', "larr"),
+        Map.entry('\u2191', "uarr"), Map.entry('\u2193', "darr"),
+        Map.entry('\u2265', "ge"), Map.entry('\u2264', "le"),
+        Map.entry('\u00b2', "sup2"), Map.entry('\u00b0', "deg"),
+        Map.entry('\u2212', "minus"), Map.entry('\u00ae', "reg"),
+        Map.entry('\u2122', "trade"));
+
+    static {
+        Map<String, String> entities = new LinkedHashMap<>();
+        Map<Character, String> all = new LinkedHashMap<>(FOLD);
+        all.putAll(FOLD_INTERNAL);
+        for (Character c : MANUAL.keySet()) all.putIfAbsent(c, "");
+
+        for (Map.Entry<Character, String> entry : all.entrySet()) {
+            char c = entry.getKey();
+            if (c == '\u00a0') continue;
+            String replacement = MANUAL.containsKey(c) ? "" : entry.getValue();
+            entities.put(String.format("&#%d;", (int) c), replacement);
+            entities.put(String.format("&#x%x;", (int) c), replacement);
+            entities.put(String.format("&#x%X;", (int) c), replacement);
+            String name = NAMED.get(c);
+            if (name != null) entities.put("&" + name + ";", replacement);
+        }
+        ENTITIES = Collections.unmodifiableMap(entities);
+    }
+
+    /**
      * Whether this character has to go, by any of the three routes.
      *
      * <p>What the guards ask. {@link #KEEP}, letters with diacritics and non-Latin scripts answer

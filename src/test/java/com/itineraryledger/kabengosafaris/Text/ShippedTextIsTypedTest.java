@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -112,6 +113,50 @@ class ShippedTextIsTypedTest {
             "A string literal is text somebody reads: an email subject, a document line, a "
                 + "message the panel shows, a value seeded into the database. Comments are not "
                 + "scanned, so a dash in your explanation is fine."));
+    }
+
+    @Test
+    @DisplayName("nor written as an HTML entity, which a reader cannot tell apart")
+    void entitiesAreNotALoophole() throws IOException {
+        List<String> offences = new ArrayList<>();
+
+        for (Path root : SCANNED_RESOURCES) {
+            if (!Files.isDirectory(root)) continue;
+            try (Stream<Path> files = Files.walk(root)) {
+                for (Path file : files.filter(Files::isRegularFile).toList()) {
+                    List<String> lines;
+                    try {
+                        lines = Files.readAllLines(file);
+                    } catch (java.io.UncheckedIOException
+                             | java.nio.charset.MalformedInputException e) {
+                        continue;
+                    }
+                    for (int i = 0; i < lines.size(); i++) {
+                        String line = lines.get(i);
+                        for (Map.Entry<String, String> entity : Typography.ENTITIES.entrySet()) {
+                            if (line.contains(entity.getKey())) {
+                                /*
+                                 * An empty replacement means the character is one the map
+                                 * refuses to substitute automatically, so say that rather than
+                                 * telling somebody to replace an arrow with nothing.
+                                 */
+                                String advice = entity.getValue().isEmpty()
+                                    ? "decide: this one needs a sentence, see \"manual\" in "
+                                        + "typography.json"
+                                    : "'" + entity.getValue() + "'";
+                                offences.add(String.format("%s:%d  '%s'  ->  %s",
+                                    file, i + 1, entity.getKey(), advice));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        assertTrue(offences.isEmpty(), () -> describe(offences,
+            "A rendered invoice showed arrows and em dashes long after every template body read "
+                + "clean, because the markup held &rarr; and &mdash; rather than the characters. "
+                + "A reader cannot tell the difference, so neither does this."));
     }
 
     private void collect(List<String> offences, String where, String text) {

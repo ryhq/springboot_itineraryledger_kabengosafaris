@@ -152,7 +152,7 @@
           <tr>
             <td>
               <div class="pay-step">Deposit to confirm</div>
-              <div class="pay-sub"><span th:text="${quote.depositPercentage}">30</span>% of total &#8212; secures your booking</div>
+              <div class="pay-sub"><span th:text="${quote.depositPercentage}">30</span>% of total - secures your booking</div>
             </td>
             <td class="pay-due" th:text="${quote.depositDueDate != null ? #temporals.format(quote.depositDueDate, 'dd MMM yyyy') : 'On confirmation'}">15 Oct 2026</td>
             <td class="amt" th:text="${row.currency + ' ' + #numbers.formatDecimal(row.totalPrice * quote.depositPercentage / 100, 1, 'COMMA', 2, 'POINT')}">EUR 6,000.00</td>
