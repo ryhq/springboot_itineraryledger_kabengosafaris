@@ -6,6 +6,8 @@ import com.itineraryledger.kabengosafaris.Inclusion.Services.InclusionSnapshotSe
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -19,6 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
 import com.itineraryledger.kabengosafaris.Customer.Enums.CustomerType;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.FullQuoteDTO;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.Entity.QuoteDay;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.Entity.QuoteDayAccommodation;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayActivity.Entity.QuoteDayActivity;
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayPark.Entity.QuoteDayPark;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.FullQuoteDTO.*;
 import com.itineraryledger.kabengosafaris.Quote.Embeddables.Price;
 import com.itineraryledger.kabengosafaris.Quote.Entity.Quote;
@@ -272,6 +278,11 @@ public class QuoteFullGetService {
         }
 
         // ========================
+        // THE TRIP, DAY BY DAY
+        // ========================
+        applyDays(quote, dto);
+
+        // ========================
         // QUOTE ITEMS
         // ========================
         List<QuoteItem> items = quoteItemRepository.findByQuoteIdOrderByDisplayOrder(quote.getId());
@@ -475,5 +486,104 @@ public class QuoteFullGetService {
         }
 
         return name.length() > 0 ? name.toString() : customer.getCode();
+    }
+
+    /**
+     * The day-by-day for the document, plus the span it covers.
+     *
+     * <p>Built here rather than reused from {@code QuoteDayTreeDTO} for one reason: the tree the
+     * panel reads carries the alternatives staff choose between and the internal notes that hold
+     * our cost and our budget grading. A client document must contain neither, and the reliable
+     * way to guarantee that is to leave them out of the model rather than to remember not to
+     * print them in three templates.
+     *
+     * <p>{@code safariEndDate} and {@code nights} come off the days, not off the itinerary. A
+     * quotation may be longer than the trip it was generated from - that is the whole point of
+     * being able to add days to one - so the itinerary's own length would be the wrong answer.
+     */
+    private void applyDays(Quote quote, FullQuoteDTO dto) {
+        if (quote.getDays() == null || quote.getDays().isEmpty()) return;
+
+        List<QuoteDay> ordered = quote.getDays().stream()
+            .sorted(Comparator.comparing(QuoteDay::getDayNumber,
+                Comparator.nullsLast(Integer::compareTo)))
+            .collect(Collectors.toList());
+
+        List<FullQuoteDTO.DayDTO> days = new ArrayList<>();
+        int nights = 0;
+        for (QuoteDay day : ordered) {
+            if (Boolean.TRUE.equals(day.getIsOvernight())) nights++;
+            days.add(toDocumentDay(day));
+        }
+        dto.setDays(days);
+        dto.setNights(nights);
+
+        QuoteDay last = ordered.get(ordered.size() - 1);
+        dto.setSafariEndDate(last.getDayDate());
+    }
+
+    private FullQuoteDTO.DayDTO toDocumentDay(QuoteDay day) {
+        List<FullQuoteDTO.DayStayDTO> stays = new ArrayList<>();
+        if (day.getAccommodations() != null) {
+            for (QuoteDayAccommodation stay : day.getAccommodations()) {
+                /* The alternatives are the menu WE choose from. The client is told where they
+                 * are sleeping, not which three places we considered. */
+                if (Boolean.TRUE.equals(stay.getIsAlternative())) continue;
+                stays.add(FullQuoteDTO.DayStayDTO.builder()
+                    .accommodationName(stay.getAccommodation() != null
+                        ? stay.getAccommodation().getName() : null)
+                    .roomTypeName(stay.getRoomType() != null ? stay.getRoomType().getName() : null)
+                    .roomStandardName(stay.getRoomStandard() != null
+                        ? stay.getRoomStandard().getName() : null)
+                    .boardTypeName(stay.getBoardType() != null ? stay.getBoardType().getName() : null)
+                    .roomCount(stay.getRoomCount())
+                    .build());
+            }
+        }
+
+        List<FullQuoteDTO.DayActivityDTO> activities = new ArrayList<>();
+        if (day.getActivities() != null) {
+            for (QuoteDayActivity activity : day.getActivities()) {
+                activities.add(FullQuoteDTO.DayActivityDTO.builder()
+                    .activityName(activity.getActivity() != null
+                        ? activity.getActivity().getName() : null)
+                    .startTime(activity.getStartTime())
+                    .endTime(activity.getEndTime())
+                    .build());
+            }
+        }
+
+        List<FullQuoteDTO.DayParkDTO> parks = new ArrayList<>();
+        if (day.getParks() != null) {
+            for (QuoteDayPark visit : day.getParks()) {
+                parks.add(FullQuoteDTO.DayParkDTO.builder()
+                    .parkName(visit.getPark() != null ? visit.getPark().getName() : null)
+                    .entryTypeDisplayName(visit.getEntryType() != null
+                        ? visit.getEntryType().getDisplayName() : null)
+                    .build());
+            }
+        }
+
+        return FullQuoteDTO.DayDTO.builder()
+            .id(idObfuscator.encodeId(day.getId()))
+            .dayNumber(day.getDayNumber())
+            .date(day.getDayDate())
+            .dayTag(day.getDayTag())
+            .title(day.getTitle())
+            .description(day.getDescription())
+            .morningActivities(day.getMorningActivities())
+            .afternoonActivities(day.getAfternoonActivities())
+            .eveningActivities(day.getEveningActivities())
+            .wildlifeHighlights(day.getWildlifeHighlights())
+            .scenicHighlights(day.getScenicHighlights())
+            .specialNotes(day.getSpecialNotes())
+            .startLocation(day.getStartLocation())
+            .endLocation(day.getEndLocation())
+            .isOvernight(day.getIsOvernight())
+            .mealsIncluded(day.getMealsIncluded())
+            .accommodations(stays)
+            .activities(activities)
+            .parks(parks)
+            .build();
     }
 }

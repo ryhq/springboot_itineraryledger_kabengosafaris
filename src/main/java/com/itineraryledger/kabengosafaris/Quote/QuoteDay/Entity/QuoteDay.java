@@ -11,6 +11,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +54,21 @@ public class QuoteDay {
 
     @Column(name = "day_number", nullable = false)
     private Integer dayNumber;
+
+    /**
+     * The calendar date this day falls on, mirroring {@code SafariDay.actualDate}.
+     *
+     * <p>Derived, never typed: {@code quote.safariStartDate + (dayNumber - 1)}, recomputed by
+     * {@link com.itineraryledger.kabengosafaris.Quote.QuoteDay.Services.QuoteDayCalendarService}
+     * whenever days are added, removed or reordered. It is deliberately absent from
+     * {@code UpdateQuoteDayDTO} so that no caller can set it to something the day numbering
+     * does not agree with.
+     *
+     * <p>Null when the quote has no {@code safariStartDate} - a quotation nobody has dated yet
+     * states no dates rather than inventing them.
+     */
+    @Column(name = "day_date")
+    private LocalDate dayDate;
 
     @Column(name = "day_tag", length = 50)
     private String dayTag;

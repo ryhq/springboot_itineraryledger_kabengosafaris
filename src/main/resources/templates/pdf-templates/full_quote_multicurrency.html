@@ -264,6 +264,21 @@
         margin-bottom: 15px;
       }
 
+      /* The day-by-day. Flat blocks that never split across a page break: a day a traveller
+         has to turn back a page to finish is a plan they cannot follow. */
+      .day-block {
+        border-left: 3px solid #51a853;
+        padding: 8px 0 8px 12px;
+        margin-bottom: 12px;
+        page-break-inside: avoid;
+      }
+
+      .day-head { font-size: 11pt; font-weight: 700; color: {{companyAccent}}; margin-bottom: 2px; }
+      .day-date { font-size: 9pt; font-weight: 600; color: #555; margin-bottom: 5px; }
+      .day-text { font-size: 9.5pt; line-height: 1.5; margin-bottom: 4px; }
+      .day-stay { font-size: 9pt; color: #333; margin-top: 5px; }
+      .day-stay-label { font-weight: 600; color: #555; }
+
       .itinerary-name {
         font-size: 13pt;
         font-weight: 700;
@@ -918,7 +933,17 @@
           <span class="info-label">Itinerary Code:</span>
           <span class="info-value" th:text="${quote.itinerary.code}">ITI-7D6N-001</span>
         </div>
-        <div class="info-row" th:if="${quote.itinerary.totalDays != null}">
+        <!-- This quote's own length, not the catalogue trip's: a quotation may be longer
+             than the itinerary it came from, and then the itinerary's figures describe a trip
+             this client is not taking. -->
+        <div class="info-row" th:if="${quote.days != null and !quote.days.isEmpty()}">
+          <span class="info-label">Duration:</span>
+          <span class="info-value">
+            <span th:text="${quote.days.size()}">7</span> Days /
+            <span th:text="${quote.nights}">6</span> Nights
+          </span>
+        </div>
+        <div class="info-row" th:if="${(quote.days == null or quote.days.isEmpty()) and quote.itinerary.totalDays != null}">
           <span class="info-label">Duration:</span>
           <span class="info-value">
             <span th:text="${quote.itinerary.totalDays}">7</span> Days /
@@ -940,6 +965,50 @@
         <div class="info-row" th:if="${quote.itinerary.endLocation != null and !#strings.isEmpty(quote.itinerary.endLocation)}">
           <span class="info-label">End Location:</span>
           <span class="info-value" th:text="${quote.itinerary.endLocation}">Arusha</span>
+        </div>
+      </div>
+    </section>
+
+        <!-- ========================================
+         DAY BY DAY
+
+         Dates, so a client can book flights around the plan rather than guess at it.
+         ======================================== -->
+    <section class="section-block" th:if="${quote.days != null and !quote.days.isEmpty()}">
+      <h2 class="section-title">Your Day by Day</h2>
+
+      <div class="info-row" th:if="${quote.safariStartDate != null}">
+        <span class="info-label">Travel dates:</span>
+        <span class="info-value">
+          <span th:text="${#temporals.format(quote.safariStartDate, 'd MMMM yyyy')}">30 December 2026</span>
+          <span th:if="${quote.safariEndDate != null}"> to
+            <span th:text="${#temporals.format(quote.safariEndDate, 'd MMMM yyyy')}">9 January 2027</span>
+          </span>
+        </span>
+      </div>
+
+      <div class="day-block" th:each="day : ${quote.days}">
+        <div class="day-head">
+          <span th:text="${day.dayTag != null ? day.dayTag : 'Day ' + day.dayNumber}">Day 1</span>
+          <span th:if="${day.title != null}" th:text="' - ' + ${day.title}"> - Arrival in Arusha</span>
+        </div>
+        <div class="day-date" th:if="${day.date != null}"
+             th:text="${#temporals.format(day.date, 'EEEE, d MMMM yyyy')}">Wednesday, 30 December 2026</div>
+        <div class="day-text" th:if="${day.description != null and !#strings.isEmpty(day.description)}"
+             th:text="${day.description}">Day description.</div>
+        <div class="day-stay" th:if="${day.accommodations != null and !day.accommodations.isEmpty()}">
+          <span class="day-stay-label">Overnight:</span>
+          <span th:each="stay, st : ${day.accommodations}">
+            <span th:text="${stay.accommodationName}">Kahawa House</span><span
+              th:if="${stay.roomCount != null and stay.roomTypeName != null}"
+              th:text="' (' + ${stay.roomCount} + ' x ' + ${stay.roomTypeName} + ')'"> (3 x Double Room)</span><span
+              th:if="${stay.boardTypeName != null}" th:text="', ' + ${stay.boardTypeName}">, Bed and Breakfast</span><span
+              th:if="${!st.last}">; </span>
+          </span>
+        </div>
+        <div class="day-stay" th:if="${day.mealsIncluded != null and !#strings.isEmpty(day.mealsIncluded)}">
+          <span class="day-stay-label">Meals:</span>
+          <span th:text="${day.mealsIncluded}">B, L, D</span>
         </div>
       </div>
     </section>

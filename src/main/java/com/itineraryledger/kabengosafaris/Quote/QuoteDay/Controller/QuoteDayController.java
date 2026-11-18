@@ -1,5 +1,6 @@
 package com.itineraryledger.kabengosafaris.Quote.QuoteDay.Controller;
 
+import com.itineraryledger.kabengosafaris.Quote.QuoteDay.DTOs.CreateQuoteDayDTO;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.DTOs.UpdateQuoteDayDTO;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.Services.QuoteDayService;
 import com.itineraryledger.kabengosafaris.Response.ApiResponse;
@@ -40,6 +41,32 @@ public class QuoteDayController {
     @PreAuthorize("hasAuthority('PERM_READ_QUOTE_DAY')")
     public ResponseEntity<ApiResponse<?>> getDay(@PathVariable String dayId) {
         return quoteDayService.getDayById(dayId);
+    }
+
+    /**
+     * Add a day the quotation's itinerary does not have.
+     *
+     * <p>The catalogue trip is a product; this quotation is one client's version of it, and the
+     * client's version is the one that moves. An arrival night before the trip starts, or a few
+     * nights in town after it ends, is a change to this quote - not a reason to build a second
+     * itinerary that will never be sold to anybody else.
+     */
+    @PostMapping("/api/quotes/{quoteId}/days")
+    @PreAuthorize("hasAuthority('PERM_CREATE_QUOTE_DAY')")
+    public ResponseEntity<ApiResponse<?>> createDay(
+            @PathVariable String quoteId,
+            @Valid @RequestBody CreateQuoteDayDTO dto
+    ) {
+        log.info("POST /api/quotes/{}/days - adding day at position {}", quoteId, dto.getPosition());
+        return quoteDayService.createDay(quoteId, dto);
+    }
+
+    /** Another night here: the copy lands directly after the day it came from. */
+    @PostMapping("/api/quote-days/{dayId}/duplicate")
+    @PreAuthorize("hasAuthority('PERM_CREATE_QUOTE_DAY')")
+    public ResponseEntity<ApiResponse<?>> duplicateDay(@PathVariable String dayId) {
+        log.info("POST /api/quote-days/{}/duplicate", dayId);
+        return quoteDayService.duplicateDay(dayId);
     }
 
     @PutMapping("/api/quote-days/{dayId}")

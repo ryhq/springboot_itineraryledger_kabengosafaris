@@ -78,6 +78,15 @@ public class FullQuoteDTO {
     // VALIDITY AND DATES
     // ========================
     private LocalDate safariStartDate;
+
+    /**
+     * The last day of the trip, and the number of nights in it - both read off the day tree
+     * rather than off the itinerary behind it, because a quotation is allowed to be longer than
+     * the trip it was generated from and usually is.
+     */
+    private LocalDate safariEndDate;
+    private Integer nights;
+
     private LocalDate sentDate;
     private LocalDate validFrom;
     private LocalDate validTo;
@@ -155,6 +164,17 @@ public class FullQuoteDTO {
     // ========================
     private CustomerDTO customer;
     private ItineraryDTO itinerary;
+    /**
+     * The day-by-day, dated, in order.
+     *
+     * <p>A quotation used to carry prices and no itinerary, which is why a client could read one
+     * and still not know which night they were where. What is NOT here is as deliberate as what
+     * is: alternative accommodation rows and every internal note are dropped when this is built,
+     * so a template cannot print our cost or our budget grading by accident. A document model
+     * that does not hold a thing cannot leak it.
+     */
+    private List<DayDTO> days;
+
     private List<QuoteItemDTO> items;
     private List<PriceDTO> subtotals;
     private List<PriceDTO> taxes;
@@ -365,4 +385,73 @@ public class FullQuoteDTO {
             .toList();
     }
 
+
+    /**
+     * One day of the trip as the client is allowed to see it.
+     *
+     * <p>Distance is not here. The house rule is that a day states how long the driving takes,
+     * not how many kilometres it covers, and a document is the last place to break it.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class DayDTO {
+        private String id;
+        private Integer dayNumber;
+        /** The calendar date, null only when the quote has no start date. */
+        private LocalDate date;
+        private String dayTag;
+        private String title;
+        private String description;
+        private String morningActivities;
+        private String afternoonActivities;
+        private String eveningActivities;
+        private String wildlifeHighlights;
+        private String scenicHighlights;
+        private String specialNotes;
+        private String startLocation;
+        private String endLocation;
+        private Boolean isOvernight;
+        private String mealsIncluded;
+        private List<DayStayDTO> accommodations;
+        private List<DayActivityDTO> activities;
+        private List<DayParkDTO> parks;
+    }
+
+    /** The night. Alternatives never reach here, and neither do the operational notes. */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class DayStayDTO {
+        private String accommodationName;
+        private String roomTypeName;
+        private String roomStandardName;
+        private String boardTypeName;
+        private Integer roomCount;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class DayActivityDTO {
+        private String activityName;
+        private String startTime;
+        private String endTime;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class DayParkDTO {
+        private String parkName;
+        private String entryTypeDisplayName;
+    }
 }

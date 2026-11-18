@@ -121,7 +121,9 @@
           <td th:if="${quote.itinerary != null and (quote.itinerary.totalDays != null or quote.itinerary.totalNights != null)}">
             <div class="meta-label">Duration</div>
             <div class="meta-value">
-              <span th:if="${quote.itinerary.totalDays != null}" th:text="${quote.itinerary.totalDays + ' days'}">14 days</span><span th:if="${quote.itinerary.totalNights != null}" th:text="${' | ' + quote.itinerary.totalNights + ' nights'}"> | 13 nights</span>
+              <!-- the quote's own length where it has one; a quotation may be longer than the trip behind it -->
+              <span th:if="${quote.days != null and !quote.days.isEmpty()}" th:text="${quote.days.size() + ' days | ' + quote.nights + ' nights'}">11 days | 11 nights</span>
+              <span th:if="${quote.days == null or quote.days.isEmpty()}"><span th:if="${quote.itinerary.totalDays != null}" th:text="${quote.itinerary.totalDays + ' days'}">14 days</span><span th:if="${quote.itinerary.totalNights != null}" th:text="${' | ' + quote.itinerary.totalNights + ' nights'}"> | 13 nights</span></span>
             </div>
           </td>
           <td th:if="${quote.statusDisplayName != null}">

@@ -31,6 +31,10 @@ public class QuoteDayTreeDTO {
 
     private String id;
     private Integer dayNumber;
+
+    /** The calendar date this day falls on; null when the quote carries no start date. */
+    private java.time.LocalDate date;
+
     private String dayTag;
     private String title;
     private String description;

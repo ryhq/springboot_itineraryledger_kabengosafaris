@@ -112,34 +112,48 @@ public class QuoteTreeCopyService {
         if (source.getDays() == null) return 0;
 
         for (QuoteDay day : source.getDays()) {
-            QuoteDay copy = QuoteDay.builder()
-                .dayNumber(day.getDayNumber())
-                .dayTag(day.getDayTag())
-                .title(day.getTitle())
-                .description(day.getDescription())
-                .morningActivities(day.getMorningActivities())
-                .afternoonActivities(day.getAfternoonActivities())
-                .eveningActivities(day.getEveningActivities())
-                .wildlifeHighlights(day.getWildlifeHighlights())
-                .scenicHighlights(day.getScenicHighlights())
-                .specialNotes(day.getSpecialNotes())
-                .startLocation(day.getStartLocation())
-                .endLocation(day.getEndLocation())
-                .distanceKm(day.getDistanceKm())
-                .isOvernight(day.getIsOvernight())
-                .mealsIncluded(day.getMealsIncluded())
-                .internalNotes(day.getInternalNotes())
-                .build();
-
-            copyAccommodations(day, copy);
-            copyActivities(day, copy);
-            copyParks(day, copy);
-            copyFlights(day, copy);
-
+            QuoteDay copy = copyDay(day);
+            copy.setDayNumber(day.getDayNumber());
+            copy.setDayTag(day.getDayTag());
+            copy.setDayDate(day.getDayDate());
             copy.setQuote(target);
             target.getDays().add(copy);
         }
         return target.getDays().size();
+    }
+
+    /**
+     * One day and everything under it, detached from any quote.
+     *
+     * <p>Public because duplicating a single day within one quotation - "another night here" -
+     * needs exactly this and nothing else. The caller supplies the position: {@code dayNumber},
+     * {@code dayTag}, {@code dayDate} and the owning quote are deliberately left unset, because
+     * the only thing entitled to decide those is {@code QuoteDayCalendarService}, after the
+     * copy has been placed.
+     */
+    public QuoteDay copyDay(QuoteDay day) {
+        QuoteDay copy = QuoteDay.builder()
+            .title(day.getTitle())
+            .description(day.getDescription())
+            .morningActivities(day.getMorningActivities())
+            .afternoonActivities(day.getAfternoonActivities())
+            .eveningActivities(day.getEveningActivities())
+            .wildlifeHighlights(day.getWildlifeHighlights())
+            .scenicHighlights(day.getScenicHighlights())
+            .specialNotes(day.getSpecialNotes())
+            .startLocation(day.getStartLocation())
+            .endLocation(day.getEndLocation())
+            .distanceKm(day.getDistanceKm())
+            .isOvernight(day.getIsOvernight())
+            .mealsIncluded(day.getMealsIncluded())
+            .internalNotes(day.getInternalNotes())
+            .build();
+
+        copyAccommodations(day, copy);
+        copyActivities(day, copy);
+        copyParks(day, copy);
+        copyFlights(day, copy);
+        return copy;
     }
 
     /**

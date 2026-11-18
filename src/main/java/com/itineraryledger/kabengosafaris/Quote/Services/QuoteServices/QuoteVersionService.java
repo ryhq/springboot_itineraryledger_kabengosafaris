@@ -60,6 +60,7 @@ public class QuoteVersionService {
     private final QuoteCostEstimationService quoteCostEstimation;
     private final IdObfuscator idObfuscator;
     private final QuoteTreeCopyService treeCopy;
+    private final com.itineraryledger.kabengosafaris.Quote.QuoteDay.Services.QuoteDayCalendarService calendar;
     private final UserRepository userRepository;
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("MMM dd, yyyy");
@@ -220,6 +221,14 @@ public class QuoteVersionService {
              */
             int daysCopied = treeCopy.copyTree(original, newQuote);
             newQuote = quoteRepository.save(newQuote);
+
+            /* The copy carries the dates the ORIGINAL days fell on. If this version moved the
+             * trip, those dates are now a week's worth of wrong on a document the client reads,
+             * and nothing below would correct them - repricing looks at seasons, not calendars.
+             * One call, and the dates follow the start date they are defined from. */
+            if (daysCopied > 0) {
+                calendar.recalculate(newQuote);
+            }
 
             // ============================================================
             // Step 3: Items - re-generate if date changed, else deep copy

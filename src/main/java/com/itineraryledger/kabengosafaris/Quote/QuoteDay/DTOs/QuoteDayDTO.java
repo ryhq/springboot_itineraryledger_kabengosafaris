@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -16,6 +17,10 @@ public class QuoteDayDTO {
     private String quoteId;
 
     private Integer dayNumber;
+
+    /** The calendar date this day falls on; null when the quote carries no start date. */
+    private LocalDate date;
+
     private String dayTag;
     private String title;
 

@@ -96,6 +96,24 @@
     "isRequired": false
   },
   {
+    "path": "safariStartDate",
+    "type": "LocalDate",
+    "description": "First day of the trip. This is the date of day 1 by definition - adding a day in front of the quote moves it back.",
+    "isRequired": false
+  },
+  {
+    "path": "safariEndDate",
+    "type": "LocalDate",
+    "description": "Last day of the trip, read off the day tree rather than off the itinerary, because a quotation may be longer than the trip it was generated from.",
+    "isRequired": false
+  },
+  {
+    "path": "nights",
+    "type": "Integer",
+    "description": "How many of the days are overnight stays. Counted from the days, not from the itinerary's night count.",
+    "isRequired": false
+  },
+  {
     "path": "sentDate",
     "type": "LocalDate",
     "description": "Date quote was sent to customer",
@@ -350,6 +368,165 @@
         "path": "endLocation",
         "type": "String",
         "description": "Ending location"
+      }
+    ]
+  },
+  {
+    "path": "days",
+    "type": "List<DayDTO>",
+    "description": "The trip day by day, in order, each with its calendar date. Access with: th:each='day : ${quote.days}'. This is the client-safe copy: no alternative lodges, no internal notes.",
+    "isRequired": false,
+    "children": [
+      {
+        "path": "id",
+        "type": "String",
+        "description": "Obfuscated day ID"
+      },
+      {
+        "path": "dayNumber",
+        "type": "Integer",
+        "description": "Sequential day number (1, 2, 3...)"
+      },
+      {
+        "path": "date",
+        "type": "LocalDate",
+        "description": "Calendar date this day falls on. Null only when the quote has no start date."
+      },
+      {
+        "path": "dayTag",
+        "type": "String",
+        "description": "Display tag (e.g., 'Day 1', 'Day 2')"
+      },
+      {
+        "path": "title",
+        "type": "String",
+        "description": "Day title (e.g., 'Arrival in Arusha')"
+      },
+      {
+        "path": "description",
+        "type": "String",
+        "description": "Full day description"
+      },
+      {
+        "path": "morningActivities",
+        "type": "String",
+        "description": "Morning activities text"
+      },
+      {
+        "path": "afternoonActivities",
+        "type": "String",
+        "description": "Afternoon activities text"
+      },
+      {
+        "path": "eveningActivities",
+        "type": "String",
+        "description": "Evening activities text"
+      },
+      {
+        "path": "wildlifeHighlights",
+        "type": "String",
+        "description": "Wildlife highlights for this day"
+      },
+      {
+        "path": "scenicHighlights",
+        "type": "String",
+        "description": "Scenic highlights for this day"
+      },
+      {
+        "path": "specialNotes",
+        "type": "String",
+        "description": "Special notes for the traveller"
+      },
+      {
+        "path": "startLocation",
+        "type": "String",
+        "description": "Day start location"
+      },
+      {
+        "path": "endLocation",
+        "type": "String",
+        "description": "Day end location"
+      },
+      {
+        "path": "isOvernight",
+        "type": "Boolean",
+        "description": "Whether the day includes an overnight stay"
+      },
+      {
+        "path": "mealsIncluded",
+        "type": "String",
+        "description": "Meals included (e.g., 'B,L,D' for Breakfast, Lunch, Dinner)"
+      },
+      {
+        "path": "accommodations",
+        "type": "List<DayStayDTO>",
+        "description": "Where the party sleeps. Access: th:each='stay : ${day.accommodations}'. Alternatives are NOT here - the client is told where they are sleeping, not which places we considered - and neither are the internal notes.",
+        "children": [
+          {
+            "path": "accommodationName",
+            "type": "String",
+            "description": "Property name (e.g., 'Kahawa House')"
+          },
+          {
+            "path": "roomTypeName",
+            "type": "String",
+            "description": "Room type (e.g., 'Double Room', 'Single')"
+          },
+          {
+            "path": "roomStandardName",
+            "type": "String",
+            "description": "Room standard (e.g., 'Luxury', 'Standard')"
+          },
+          {
+            "path": "boardTypeName",
+            "type": "String",
+            "description": "Board type (e.g., 'Full Board', 'Bed and Breakfast')"
+          },
+          {
+            "path": "roomCount",
+            "type": "Integer",
+            "description": "Number of rooms of this type"
+          }
+        ]
+      },
+      {
+        "path": "activities",
+        "type": "List<DayActivityDTO>",
+        "description": "Activities planned for the day. Access: th:each='activity : ${day.activities}'",
+        "children": [
+          {
+            "path": "activityName",
+            "type": "String",
+            "description": "Activity name (e.g., 'Walking safari')"
+          },
+          {
+            "path": "startTime",
+            "type": "String",
+            "description": "Planned start time (e.g., '08:00')"
+          },
+          {
+            "path": "endTime",
+            "type": "String",
+            "description": "Planned end time (e.g., '12:00')"
+          }
+        ]
+      },
+      {
+        "path": "parks",
+        "type": "List<DayParkDTO>",
+        "description": "Parks visited on the day. Access: th:each='park : ${day.parks}'",
+        "children": [
+          {
+            "path": "parkName",
+            "type": "String",
+            "description": "Park name (e.g., 'Tarangire National Park')"
+          },
+          {
+            "path": "entryTypeDisplayName",
+            "type": "String",
+            "description": "Human-readable entry type (Transit, Day trip, Sleep over)"
+          }
+        ]
       }
     ]
   },

@@ -104,6 +104,7 @@ public class QuoteDayTreeService {
         QuoteDayTreeDTO dto = QuoteDayTreeDTO.builder()
             .id(idObfuscator.encodeId(day.getId()))
             .dayNumber(day.getDayNumber())
+            .date(day.getDayDate())
             .dayTag(day.getDayTag())
             .title(day.getTitle())
             .description(day.getDescription())
