@@ -97,11 +97,21 @@ public class QuoteVersionService {
                     ApiResponse.error(400, "Quote is in READY status. Revert to DRAFT to make changes, or send it first.", "REVERT_INSTEAD")
                 );
             }
-            if (status == QuoteStatus.CONVERTED) {
-                return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Cannot create a new version of a CONVERTED quote. It has already been booked.", "CONVERTED_QUOTE")
-                );
-            }
+            /*
+             * CONVERTED is deliberately NOT refused here.
+             *
+             * It was, on the reasoning that a booked trip must not be re-quoted. But a new
+             * version never alters the one it succeeds: v1 keeps its status, its totals and the
+             * safari built from it, and gains only a "superseded by" marker. What the refusal
+             * actually prevented was answering the commonest thing a booked client does - extend
+             * the trip - and the system had no other answer, because a safari cannot grow days
+             * either. Verified before removing it: nothing operational follows nextVersion. It is
+             * read by the edit policy, the status guard and the DTO mappers, never by a safari,
+             * an invoice or a payment.
+             *
+             * Editing a converted quotation IN PLACE is still refused, by QuoteEditPolicy. That
+             * is the rule that protects what was agreed, and it is untouched.
+             */
 
             // Prevent branching - must version from latest in chain
             if (original.getNextVersion() != null) {
