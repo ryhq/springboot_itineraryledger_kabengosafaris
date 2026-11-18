@@ -344,6 +344,32 @@ public class PublicItineraryService {
     }
 
     /**
+     * Every published trip in full, for the corpus endpoint.
+     *
+     * <p>This exists rather than letting the corpus call {@link #convertToDetailDTO} itself,
+     * because the cost summary is attached by the CALLER of that converter and not by the
+     * converter - {@link #getItineraryByIdentifier} does it one trip at a time, just below. A
+     * corpus that called the converter alone would publish every itinerary with no price on it,
+     * which is the one fact a model is most often asked for, and nothing would have failed.
+     *
+     * <p>The summaries are fetched in one query rather than one per trip.
+     */
+    public List<PublicItineraryDTO> corpusDetails(List<Itinerary> itineraries) {
+        List<Long> ids = itineraries.stream().map(Itinerary::getId).collect(Collectors.toList());
+        Map<Long, List<ItineraryCostSummary>> costsById = ids.isEmpty()
+            ? Collections.emptyMap()
+            : costSummaryRepository.findByItinerary_IdIn(ids).stream()
+                .collect(Collectors.groupingBy(cs -> cs.getItinerary().getId()));
+
+        return itineraries.stream().map(itinerary -> {
+            PublicItineraryDTO dto = convertToDetailDTO(itinerary);
+            dto.setCostSummary(mapToPublicCostSummary(
+                costsById.getOrDefault(itinerary.getId(), Collections.emptyList())));
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    /**
      * Convert Itinerary to detail DTO (full day-by-day breakdown)
      */
     private PublicItineraryDTO convertToDetailDTO(Itinerary itinerary) {

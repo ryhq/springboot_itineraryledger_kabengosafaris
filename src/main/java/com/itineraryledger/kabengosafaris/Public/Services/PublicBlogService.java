@@ -134,7 +134,8 @@ public class PublicBlogService {
             .build();
     }
 
-    private PublicBlogDetailDTO toDetailDTO(Blog blog) {
+    /** Also the corpus endpoint, so an article reads the same there as on its own page. */
+    public PublicBlogDetailDTO toDetailDTO(Blog blog) {
         List<BlogBlockDTO> blocks = contentService.readBlocks(blog.getBodyJson());
         List<BlogFaqDTO> faqs = contentService.readFaqs(blog.getFaqsJson());
 

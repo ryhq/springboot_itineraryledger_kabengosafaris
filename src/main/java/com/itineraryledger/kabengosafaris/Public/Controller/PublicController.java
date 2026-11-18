@@ -16,6 +16,7 @@ import com.itineraryledger.kabengosafaris.Public.Services.PublicNavigationServic
 import com.itineraryledger.kabengosafaris.Public.Services.PublicParkService;
 import com.itineraryledger.kabengosafaris.Public.Services.PublicSearchService;
 import com.itineraryledger.kabengosafaris.Public.Services.PublicBlogService;
+import com.itineraryledger.kabengosafaris.Public.Services.PublicCorpusService;
 import com.itineraryledger.kabengosafaris.Public.Services.PublicFaqService;
 import com.itineraryledger.kabengosafaris.Public.Services.PublicTestimonyService;
 import com.itineraryledger.kabengosafaris.Public.Services.PublicTranslationService;
@@ -50,6 +51,7 @@ public class PublicController {
     private final PublicItineraryService publicItineraryService;
     private final PublicTestimonyService publicTestimonyService;
     private final PublicBlogService publicBlogService;
+    private final PublicCorpusService publicCorpusService;
     private final PublicFaqService publicFaqService;
     private final PublicSearchService publicSearchService;
     private final PublicTranslationService publicTranslationService;
@@ -354,6 +356,26 @@ public class PublicController {
         @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang
     ) {
         return publicBlogService.getPublicBlogBySlug(slug, publicTranslationService.parseLanguage(lang));
+    }
+
+    // ========================
+    // CORPUS (everything, for /llms-full.txt)
+    // ========================
+
+    /**
+     * The whole published catalogue in one response, in English.
+     *
+     * <p>Same reasoning as the blog index above, one level up: the website's sitemap and
+     * llms.txt want everything, and assembling "everything with its prose" from the list
+     * endpoints would take a detail request per record.
+     *
+     * <p>There is deliberately no {@code Accept-Language} parameter. Translation is on demand
+     * and cached on a hash of the English, so a German corpus would mean pushing the entire
+     * catalogue through the provider in one request, for a file whose convention is one file.
+     */
+    @GetMapping("/llms-corpus")
+    public ResponseEntity<ApiResponse<?>> getCorpus() {
+        return publicCorpusService.getCorpus();
     }
 
     // ========================

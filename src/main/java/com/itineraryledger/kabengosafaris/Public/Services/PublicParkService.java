@@ -261,7 +261,8 @@ public class PublicParkService {
             .build();
     }
 
-    private PublicParkDetailDTO convertToDetailDTO(Park p) {
+    /** Also the corpus endpoint, so a park reads the same there as on its own page. */
+    public PublicParkDetailDTO convertToDetailDTO(Park p) {
         return PublicParkDetailDTO.builder()
             .slug(p.getSlug())
             .name(p.getName())

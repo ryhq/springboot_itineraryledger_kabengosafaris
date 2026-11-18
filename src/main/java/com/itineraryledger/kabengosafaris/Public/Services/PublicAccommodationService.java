@@ -198,7 +198,8 @@ public class PublicAccommodationService {
         return a.getName() != null ? a.getName() : "";
     }
 
-    private PublicAccommodationDTO convertToDetailDTO(Accommodation a) {
+    /** Also the corpus endpoint, so a lodge reads the same there as on its own page. */
+    public PublicAccommodationDTO convertToDetailDTO(Accommodation a) {
         return PublicAccommodationDTO.builder()
             .name(a.getName())
             .slug(a.getSlug())

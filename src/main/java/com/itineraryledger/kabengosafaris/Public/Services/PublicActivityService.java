@@ -277,7 +277,8 @@ public class PublicActivityService {
         return a.getName() != null ? a.getName() : "";
     }
 
-    private PublicActivityDetailDTO convertToDetailDTO(Activity a) {
+    /** Also the corpus endpoint, so an activity reads the same there as on its own page. */
+    public PublicActivityDetailDTO convertToDetailDTO(Activity a) {
         return PublicActivityDetailDTO.builder()
             .slug(a.getSlug())
             .name(a.getName())
