@@ -34,6 +34,10 @@ public class QuoteDayParkTariff {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "quote_day_park_id", nullable = false)
     @JsonIgnore
+    /* Excluded from equals/hashCode/toString: the visit holds its tariffs, and @Data writes those
+     * over every field, so the pair recurses until the stack ends. */
+    @lombok.EqualsAndHashCode.Exclude
+    @lombok.ToString.Exclude
     private QuoteDayPark quoteDayPark;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

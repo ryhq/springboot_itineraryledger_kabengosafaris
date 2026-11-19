@@ -61,6 +61,10 @@ public class QuoteDayFlight {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "quote_day_id", nullable = false)
     @JsonIgnore
+    /* Excluded from equals/hashCode/toString: the day holds its flights, and @Data writes those
+     * over every field, so the pair recurses until the stack ends. */
+    @lombok.EqualsAndHashCode.Exclude
+    @lombok.ToString.Exclude
     private QuoteDay quoteDay;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

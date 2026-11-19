@@ -57,6 +57,10 @@ public class QuoteItem {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "quote_id", nullable = false)
+    /* Excluded from equals/hashCode/toString: the parent holds its items, and @Data writes those
+     * over every field, so the pair recurses until the stack ends. */
+    @lombok.EqualsAndHashCode.Exclude
+    @lombok.ToString.Exclude
     private Quote quote;
 
     // =====================================================================

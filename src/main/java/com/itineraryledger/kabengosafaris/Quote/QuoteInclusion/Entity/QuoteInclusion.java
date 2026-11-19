@@ -56,6 +56,10 @@ public class QuoteInclusion {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "quote_id", nullable = false)
+    /* Excluded from equals/hashCode/toString: the quote holds its inclusions, and @Data writes those
+     * over every field, so the pair recurses until the stack ends. */
+    @lombok.EqualsAndHashCode.Exclude
+    @lombok.ToString.Exclude
     private Quote quote;
 
     /** Where this line came from. Null once that catalogue row is gone; nothing reads it to render. */

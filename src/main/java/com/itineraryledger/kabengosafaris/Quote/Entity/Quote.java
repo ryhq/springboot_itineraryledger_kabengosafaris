@@ -359,6 +359,10 @@ public class Quote {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "previous_version_id")
+    /* Excluded from equals/hashCode/toString: the chain runs both ways: v1.nextVersion is v2 and v2.previousVersion is v1, and @Data writes those
+     * over every field, so the pair recurses until the stack ends. */
+    @lombok.EqualsAndHashCode.Exclude
+    @lombok.ToString.Exclude
     private Quote previousVersion;
 
     /**
@@ -366,6 +370,12 @@ public class Quote {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "next_version_id")
+    /* The other direction of the same chain, excluded for the same reason. Linking a version
+     * is what closed the loop in practice: createNewVersion sets original.nextVersion to the
+     * new quote, whose previousVersion is the original, and the next comparison of either
+     * ran until the stack ended. */
+    @lombok.EqualsAndHashCode.Exclude
+    @lombok.ToString.Exclude
     private Quote nextVersion;
     
     /**
