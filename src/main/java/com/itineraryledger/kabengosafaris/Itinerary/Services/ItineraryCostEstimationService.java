@@ -689,11 +689,37 @@ public class ItineraryCostEstimationService {
 
             LocalDate dayDate = startDate.plusDays(day.getDayNumber() - 1);
 
-            for (FullItineraryDTO.DayAccommodationDTO accommodation : day.getAccommodations()) {
-                // Skip alternatives
-                if (accommodation.getIsAlternative() != null && accommodation.getIsAlternative()) {
-                    continue;
-                }
+            /*
+             * Who sleeps where, settled for the whole night before any row is priced. A
+             * per-person rate charges per guest, and this used to hand every row the whole
+             * party, so a night written as several room types billed the party several times.
+             */
+            java.util.List<FullItineraryDTO.DayAccommodationDTO> chosenStays = day.getAccommodations().stream()
+                .filter(a -> !Boolean.TRUE.equals(a.getIsAlternative()))
+                .toList();
+            int partyOnTrip = itinerary.getPaxList() != null
+                ? itinerary.getPaxList().stream().mapToInt(p -> p.getCount() != null ? p.getCount() : 0).sum()
+                : 0;
+            com.itineraryledger.kabengosafaris.Accommodation.Services.AccommodationServices
+                .RoomOccupancyAllocator.Allocation nightAllocation =
+                com.itineraryledger.kabengosafaris.Accommodation.Services.AccommodationServices
+                    .RoomOccupancyAllocator.allocate(
+                        chosenStays.stream()
+                            .map(a -> new com.itineraryledger.kabengosafaris.Accommodation.Services
+                                .AccommodationServices.RoomOccupancyAllocator.RoomBlock(
+                                    a.getRoomCount() != null ? a.getRoomCount() : 1,
+                                    a.getRoomTypeMaxOccupancy()))
+                            .toList(),
+                        partyOnTrip);
+            if (nightAllocation.isShort()) {
+                /* Priced for the beds it has, so the figure drops and somebody asks why. */
+                warnings.add(String.format("Day %d: %s - priced for the beds it has",
+                    day.getDayNumber(), nightAllocation.shortfallMessage()));
+            }
+
+            for (int stayIndex = 0; stayIndex < chosenStays.size(); stayIndex++) {
+                FullItineraryDTO.DayAccommodationDTO accommodation = chosenStays.get(stayIndex);
+                int sleepingHere = nightAllocation.perRow().get(stayIndex);
 
                 Long accommodationId = idObfuscator.decodeId(accommodation.getAccommodationId());
                 Long roomTypeId = idObfuscator.decodeId(accommodation.getRoomTypeId());
@@ -735,11 +761,11 @@ public class ItineraryCostEstimationService {
                     String rateTypeNote;
 
                     if (rate.getIsPerPerson() != null && rate.getIsPerPerson()) {
-                        // Per Person Sharing (PPS) - multiply by number of people
-                        // Rate is per person per night
-                        quantity = totalPax;
+                        /* Per person means per person IN THESE ROOMS, not everybody on the
+                         * trip - otherwise a second room type bills the party a second time. */
+                        quantity = sleepingHere;
                         itemTotal = unitPrice != null
-                            ? unitPrice.multiply(BigDecimal.valueOf(totalPax))
+                            ? unitPrice.multiply(BigDecimal.valueOf(sleepingHere))
                             : BigDecimal.ZERO;
                         rateTypeNote = "Per Person Sharing/Night";
                     } else {

@@ -432,6 +432,15 @@ public class FullQuoteDTO {
         private String roomStandardName;
         private String boardTypeName;
         private Integer roomCount;
+
+        /**
+         * How many people these rooms hold - {@code roomCount} times the room type's occupancy.
+         *
+         * <p>On the document because it is the line a client checks against their own party, and
+         * because it is the same figure a per-person rate is billed on: if the quotation says
+         * three doubles sleeping six, the price says six too, and the two cannot drift apart.
+         */
+        private Integer sleeps;
     }
 
     @Data

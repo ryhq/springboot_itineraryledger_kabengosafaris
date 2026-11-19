@@ -66,6 +66,7 @@ public class QuoteDayTreeService {
     private final QuoteDayActivityRepository dayActivityRepository;
     private final QuoteDayFlightRepository flightRepository;
     private final FlightFareRepository flightFareRepository;
+    private final com.itineraryledger.kabengosafaris.Quote.QuotePax.Repository.QuotePaxRepository quotePaxRepository;
     private final IdObfuscator idObfuscator;
 
     public ResponseEntity<ApiResponse<?>> getDayTree(String quoteIdObfuscated) {
@@ -94,6 +95,15 @@ public class QuoteDayTreeService {
         response.put("id", quoteIdObfuscated);
         response.put("days", days);
         response.put("totalDaysCount", days.size());
+        /*
+         * How many are travelling, so the screen that chooses the rooms can say whether they
+         * fit. The itinerary and safari trees have carried this all along; the quote's had not,
+         * which is why a night with four beds for eight guests could be built and sold without
+         * anything on the page disagreeing.
+         */
+        response.put("totalPax", quotePaxRepository.findByQuoteIdOrderByIdAsc(quoteId).stream()
+            .mapToInt(pax -> pax.getCount() != null ? pax.getCount() : 0)
+            .sum());
 
         return ResponseEntity.ok(
             ApiResponse.success(200, "Quote days retrieved successfully", response)

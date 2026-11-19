@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.itineraryledger.kabengosafaris.Customer.Entity.Customer;
 import com.itineraryledger.kabengosafaris.Customer.Enums.CustomerType;
+import com.itineraryledger.kabengosafaris.Accommodation.Services.AccommodationServices.RoomOccupancyAllocator;
 import com.itineraryledger.kabengosafaris.Quote.DTOs.FullQuoteDTO;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.Entity.QuoteDay;
 import com.itineraryledger.kabengosafaris.Quote.QuoteDay.QuoteDayAccommodation.Entity.QuoteDayAccommodation;
@@ -537,6 +538,10 @@ public class QuoteFullGetService {
                         ? stay.getRoomStandard().getName() : null)
                     .boardTypeName(stay.getBoardType() != null ? stay.getBoardType().getName() : null)
                     .roomCount(stay.getRoomCount())
+                    .sleeps(new RoomOccupancyAllocator.RoomBlock(
+                        stay.getRoomCount() != null ? stay.getRoomCount() : 1,
+                        stay.getRoomType() != null ? stay.getRoomType().getMaxOccupancy() : null)
+                        .capacity())
                     .build());
             }
         }

@@ -1,6 +1,7 @@
 package com.itineraryledger.kabengosafaris.Safari.CostEstimation.Services.Calculators;
 
 import com.itineraryledger.kabengosafaris.Accommodation.Entities.AccommodationRate;
+import com.itineraryledger.kabengosafaris.Accommodation.Services.AccommodationServices.RoomOccupancyAllocator;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.DTOs.CostLineItemDTO;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.CostItemType;
 import com.itineraryledger.kabengosafaris.Itinerary.CostEstimation.Enums.ExclusionReason;
@@ -62,17 +63,41 @@ public class SafariAccommodationCostCalculator {
         // Calculate total pax count
         int totalPax = calculateTotalPax(paxList);
 
-        for (FullSafariDTO.DayAccommodationDTO accommodation : day.getAccommodations()) {
-            // Skip alternative accommodations
-            if (Boolean.TRUE.equals(accommodation.getIsAlternative())) {
-                continue;
-            }
+        /*
+         * Who sleeps where, decided once for the whole night before any row is priced.
+         *
+         * A per-person rate charges per guest, and this used to hand every row the whole party -
+         * so a night written as "three doubles and a single" billed eight people twice. The rows
+         * are filled in order, each taking as many as its rooms hold, and each is then priced for
+         * the people allocated to it. Per-room rows ignore the allocation and still bill rooms.
+         */
+        List<FullSafariDTO.DayAccommodationDTO> chosen = day.getAccommodations().stream()
+            .filter(a -> !Boolean.TRUE.equals(a.getIsAlternative()))
+            .toList();
+
+        RoomOccupancyAllocator.Allocation allocation = RoomOccupancyAllocator.allocate(
+            chosen.stream()
+                .map(a -> new RoomOccupancyAllocator.RoomBlock(
+                    a.getRoomCount() != null ? a.getRoomCount() : 1,
+                    a.getRoomTypeMaxOccupancy()))
+                .toList(),
+            totalPax);
+
+        if (allocation.isShort()) {
+            /* Four beds for eight guests is a booking that cannot happen, not a cheap night.
+             * Priced at what it sleeps so the figure drops and somebody asks why. */
+            log.warn("Day {}: {} - the night is priced for the beds it has", day.getDayNumber(),
+                allocation.shortfallMessage());
+        }
+
+        for (int i = 0; i < chosen.size(); i++) {
+            FullSafariDTO.DayAccommodationDTO accommodation = chosen.get(i);
 
             CostLineItemDTO lineItem = calculateAccommodationCost(
                 day.getDayNumber(),
                 accommodation,
                 dayDate,
-                totalPax
+                allocation.perRow().get(i)
             );
 
             if (lineItem != null) {
@@ -90,7 +115,7 @@ public class SafariAccommodationCostCalculator {
             Integer dayNumber,
             FullSafariDTO.DayAccommodationDTO accommodation,
             LocalDate dayDate,
-            int totalPax
+            int sleepingHere
     ) {
         Long accommodationId = idObfuscator.decodeId(accommodation.getAccommodationId());
         Long roomTypeId = idObfuscator.decodeId(accommodation.getRoomTypeId());
@@ -123,7 +148,8 @@ public class SafariAccommodationCostCalculator {
 
         // Determine pricing mode
         boolean isPerPerson = rate.getIsPerPerson() != null && rate.getIsPerPerson();
-        int quantity = isPerPerson ? totalPax : roomCount;
+        /* Per person means per person IN THESE ROOMS, not everybody on the trip. */
+        int quantity = isPerPerson ? sleepingHere : roomCount;
         String chargingBasis = isPerPerson ? "Per Person Sharing" : "Per Room";
         String notes = accommodation.getBoardTypeName() + " (" + chargingBasis + "/Night)";
 

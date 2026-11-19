@@ -486,6 +486,11 @@
             "path": "roomCount",
             "type": "Integer",
             "description": "Number of rooms of this type"
+          },
+          {
+            "path": "sleeps",
+            "type": "Integer",
+            "description": "How many people these rooms hold (roomCount x the room type's occupancy). The same figure a Per Person Sharing rate is billed on, so the document and the price cannot disagree."
           }
         ]
       },

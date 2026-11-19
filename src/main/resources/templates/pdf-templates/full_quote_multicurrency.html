@@ -1001,7 +1001,8 @@
           <span th:each="stay, st : ${day.accommodations}">
             <span th:text="${stay.accommodationName}">Kahawa House</span><span
               th:if="${stay.roomCount != null and stay.roomTypeName != null}"
-              th:text="' (' + ${stay.roomCount} + ' x ' + ${stay.roomTypeName} + ')'"> (3 x Double Room)</span><span
+              th:text="' (' + ${stay.roomCount} + ' x ' + ${stay.roomTypeName}
+                        + (${stay.sleeps} != null ? ', sleeps ' + ${stay.sleeps} : '') + ')'"> (3 x Double Room, sleeps 6)</span><span
               th:if="${stay.boardTypeName != null}" th:text="', ' + ${stay.boardTypeName}">, Bed and Breakfast</span><span
               th:if="${!st.last}">; </span>
           </span>
