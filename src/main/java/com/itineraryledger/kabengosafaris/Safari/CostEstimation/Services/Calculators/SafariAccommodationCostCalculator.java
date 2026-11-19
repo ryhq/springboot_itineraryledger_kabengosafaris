@@ -83,6 +83,13 @@ public class SafariAccommodationCostCalculator {
                 .toList(),
             totalPax);
 
+        if (allocation.occupancyUnknown()) {
+            /* Without occupancy a row cannot say how many it holds, so one row swallows the
+             * whole party and the rooms beside it bill nobody. Say so - it is a catalogue gap,
+             * not a quiet rounding. */
+            log.warn("Day {}: a room type has no occupancy recorded, so the night could not be "
+                + "split across its rooms", day.getDayNumber());
+        }
         if (allocation.isShort()) {
             /* Four beds for eight guests is a booking that cannot happen, not a cheap night.
              * Priced at what it sleeps so the figure drops and somebody asks why. */

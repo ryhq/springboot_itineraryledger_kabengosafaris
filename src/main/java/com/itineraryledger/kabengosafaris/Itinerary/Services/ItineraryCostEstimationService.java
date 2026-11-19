@@ -711,6 +711,11 @@ public class ItineraryCostEstimationService {
                                     a.getRoomTypeMaxOccupancy()))
                             .toList(),
                         partyOnTrip);
+            if (nightAllocation.occupancyUnknown()) {
+                warnings.add(String.format(
+                    "Day %d: a room type has no occupancy recorded, so the night could not be "
+                    + "split across its rooms", day.getDayNumber()));
+            }
             if (nightAllocation.isShort()) {
                 /* Priced for the beds it has, so the figure drops and somebody asks why. */
                 warnings.add(String.format("Day %d: %s - priced for the beds it has",

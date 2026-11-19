@@ -346,6 +346,14 @@ public class QuoteCostEstimationService {
                 if (a.getRoomType() != null) {
                     ad.setRoomTypeId(idObfuscator.encodeId(a.getRoomType().getId()));
                     ad.setRoomTypeName(a.getRoomType().getName());
+                    /*
+                     * How many the room sleeps, which is how a per-person rate knows how many
+                     * people this row carries. Left unset, every night fell back to "this row
+                     * takes whoever is left" and the first row absorbed the whole party while
+                     * the rooms beside it billed nobody.
+                     */
+                    ad.setRoomTypeMaxOccupancy(a.getRoomType().getMaxOccupancy());
+                    ad.setRoomTypeMinOccupancy(a.getRoomType().getMinOccupancy());
                 }
                 if (a.getRoomStandard() != null) {
                     ad.setRoomStandardId(idObfuscator.encodeId(a.getRoomStandard().getId()));
