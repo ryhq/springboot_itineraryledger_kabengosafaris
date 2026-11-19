@@ -69,6 +69,7 @@ public class QuoteFromItineraryGenerationService {
     private final ItineraryRepository itineraryRepository;
     private final CustomerRepository customerRepository;
     private final QuoteRepository quoteRepository;
+    private final com.itineraryledger.kabengosafaris.Quote.QuoteDay.Services.QuoteDayCalendarService calendar;
     private final IdObfuscator idObfuscator;
     private final InclusionSnapshotService inclusionSnapshot;
 
@@ -81,6 +82,7 @@ public class QuoteFromItineraryGenerationService {
             ItineraryRepository itineraryRepository,
             CustomerRepository customerRepository,
             QuoteRepository quoteRepository,
+            com.itineraryledger.kabengosafaris.Quote.QuoteDay.Services.QuoteDayCalendarService calendar,
             IdObfuscator idObfuscator,
             InclusionSnapshotService inclusionSnapshot
     ) {
@@ -91,6 +93,7 @@ public class QuoteFromItineraryGenerationService {
         this.itineraryRepository = itineraryRepository;
         this.customerRepository = customerRepository;
         this.quoteRepository = quoteRepository;
+        this.calendar = calendar;
         this.idObfuscator = idObfuscator;
         this.inclusionSnapshot = inclusionSnapshot;
     }
@@ -259,6 +262,13 @@ public class QuoteFromItineraryGenerationService {
                  * in two places and would eventually be added in one.
                  */
                 snapshotItineraryIntoQuote(itinerary, quote);
+                /*
+                 * An itinerary is a template and carries no dates; a quotation is for one party
+                 * travelling on known days and must. Without this the days came out numbered but
+                 * undated, so the quotation document could not say which night was where - the
+                 * exact gap the dates were added to close.
+                 */
+                calendar.redate(quote);
                 quoteRepository.save(quote);
                 // Items are derived from the new Quote tree x pax mix by the
                 // shared cost-estimation engine, so any future edits to the

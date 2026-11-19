@@ -235,9 +235,13 @@ public class QuoteVersionService {
             /* The copy carries the dates the ORIGINAL days fell on. If this version moved the
              * trip, those dates are now a week's worth of wrong on a document the client reads,
              * and nothing below would correct them - repricing looks at seasons, not calendars.
-             * One call, and the dates follow the start date they are defined from. */
+             *
+             * redate, not recalculate: the copies already arrived in order with their numbers,
+             * so there is nothing to renumber, and the rows are still pending their insert at
+             * this point - querying for them mid-copy is what made the first attempt throw at
+             * commit, outside the catch below, as a bare UNKNOWN_ERROR. */
             if (daysCopied > 0) {
-                calendar.recalculate(newQuote);
+                calendar.redate(newQuote);
             }
 
             // ============================================================

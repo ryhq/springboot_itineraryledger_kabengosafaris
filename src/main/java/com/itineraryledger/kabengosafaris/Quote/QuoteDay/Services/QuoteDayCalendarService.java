@@ -78,6 +78,28 @@ public class QuoteDayCalendarService {
         log.debug("Quote {}: renumbered {} days from {}", quote.getId(), orderedDays.size(), start);
     }
 
+    /**
+     * Set the dates only, leaving the numbering alone.
+     *
+     * <p>For a day tree that is already numbered correctly and only needs its calendar worked
+     * out: one freshly copied from another quote, or one just snapshotted from an itinerary.
+     * Both arrive in order with their numbers intact, so {@link #recalculate} would do the whole
+     * parking dance to hand every row back the number it already had - pointless work, and done
+     * against rows that may not be in the database yet.
+     *
+     * <p>Works off the quote's own collection rather than a query for exactly that reason: the
+     * days may still be pending an insert, and asking the database for them mid-transaction is
+     * how the first version of this threw at commit instead of in the method that caused it.
+     */
+    public void redate(Quote quote) {
+        if (quote == null || quote.getDays() == null) return;
+        LocalDate start = quote.getSafariStartDate();
+        for (QuoteDay day : quote.getDays()) {
+            Integer n = day.getDayNumber();
+            day.setDayDate(start == null || n == null ? null : start.plusDays(n - 1L));
+        }
+    }
+
     /** The date a given day number falls on, or null when the quote carries no start date. */
     public LocalDate dateOf(Quote quote, int dayNumber) {
         LocalDate start = quote.getSafariStartDate();
