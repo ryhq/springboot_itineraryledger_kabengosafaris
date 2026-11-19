@@ -275,6 +275,18 @@ public class QuoteVersionService {
             original.setNextVersion(newQuote);
             quoteRepository.save(original);
 
+            /*
+             * Force the write out HERE, inside the try.
+             *
+             * Everything above only stages changes; the flush happens when the transaction
+             * commits, which is after this method has returned and after the catch below has
+             * been passed. So any constraint this violates was being thrown where nothing could
+             * explain it: the caller got the framework's bare "An unexpected error occurred"
+             * while the careful message this method builds was never reachable. Flushing here
+             * means a failure lands in the catch, names itself, and rolls back exactly as before.
+             */
+            quoteRepository.flush();
+
             // Reload for updated totals
             newQuote = quoteRepository.findById(newQuote.getId()).orElse(newQuote);
 
