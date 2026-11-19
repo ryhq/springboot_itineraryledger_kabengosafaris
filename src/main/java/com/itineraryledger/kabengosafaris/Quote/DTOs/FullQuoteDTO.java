@@ -175,6 +175,15 @@ public class FullQuoteDTO {
      */
     private List<DayDTO> days;
 
+    /**
+     * The same nights as a lodge would book them: consecutive nights at one property, with one
+     * check-in and one check-out, instead of a row per day.
+     *
+     * <p>Three nights at a camp is one reservation. Sending it as three is how a property ends up
+     * holding three separate one-night bookings for the same party.
+     */
+    private List<StayDTO> stays;
+
     private List<QuoteItemDTO> items;
     private List<PriceDTO> subtotals;
     private List<PriceDTO> taxes;
@@ -462,5 +471,27 @@ public class FullQuoteDTO {
     public static class DayParkDTO {
         private String parkName;
         private String entryTypeDisplayName;
+    }
+
+    /**
+     * One booking at one property: who stays, from when, until when, in what.
+     *
+     * <p>{@code checkOut} is the morning AFTER the last night, which is what a property reads it
+     * as. Quoting the last night's own date there is the commonest way a rooming list loses a
+     * night.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class StayDTO {
+        private String accommodationName;
+        private LocalDate checkIn;
+        private LocalDate checkOut;
+        private Integer nights;
+        /** How many people the rooms of this stay hold, across all its room types. */
+        private Integer sleeps;
+        private List<DayStayDTO> rooms;
     }
 }

@@ -518,6 +518,10 @@ public class QuoteFullGetService {
         }
         dto.setDays(days);
         dto.setNights(nights);
+        /* The same nights as a property would book them. Grouped from the document's own day
+         * list rather than the entities, so the rooming list cannot show a room the quotation
+         * does not. */
+        dto.setStays(QuoteStayGrouper.group(days));
 
         QuoteDay last = ordered.get(ordered.size() - 1);
         dto.setSafariEndDate(last.getDayDate());

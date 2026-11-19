@@ -536,6 +536,76 @@
     ]
   },
   {
+    "path": "stays",
+    "type": "List<StayDTO>",
+    "description": "The same nights as a property would book them: consecutive nights at one lodge collapsed into one stay. A new stay starts when the property changes, the room mix changes, or a day without an overnight breaks the run. Access with: th:each='stay : ${quote.stays}'",
+    "isRequired": false,
+    "children": [
+      {
+        "path": "accommodationName",
+        "type": "String",
+        "description": "Property name (e.g., 'Kahawa House')"
+      },
+      {
+        "path": "checkIn",
+        "type": "LocalDate",
+        "description": "First night of the stay - the day the party arrives."
+      },
+      {
+        "path": "checkOut",
+        "type": "LocalDate",
+        "description": "The morning AFTER the last night, which is what a property reads it as. Quoting the last night's own date here loses a night."
+      },
+      {
+        "path": "nights",
+        "type": "Integer",
+        "description": "How many nights this stay covers"
+      },
+      {
+        "path": "sleeps",
+        "type": "Integer",
+        "description": "How many people the rooms of this stay hold, across all its room types"
+      },
+      {
+        "path": "rooms",
+        "type": "List<DayStayDTO>",
+        "description": "The room mix for this stay. Access: th:each='room : ${stay.rooms}'",
+        "children": [
+          {
+            "path": "accommodationName",
+            "type": "String",
+            "description": "Property name (e.g., 'Kahawa House')"
+          },
+          {
+            "path": "roomTypeName",
+            "type": "String",
+            "description": "Room type (e.g., 'Double Room', 'Single')"
+          },
+          {
+            "path": "roomStandardName",
+            "type": "String",
+            "description": "Room standard (e.g., 'Luxury', 'Standard')"
+          },
+          {
+            "path": "boardTypeName",
+            "type": "String",
+            "description": "Board type (e.g., 'Full Board', 'Bed and Breakfast')"
+          },
+          {
+            "path": "roomCount",
+            "type": "Integer",
+            "description": "Number of rooms of this type"
+          },
+          {
+            "path": "sleeps",
+            "type": "Integer",
+            "description": "How many people these rooms hold (roomCount x the room type's occupancy). The same figure a Per Person Sharing rate is billed on, so the document and the price cannot disagree."
+          }
+        ]
+      }
+    ]
+  },
+  {
     "path": "items",
     "type": "List<QuoteItemDTO>",
     "description": "Quote line items. Access with: th:each='item : ${quote.items}'",

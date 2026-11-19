@@ -135,6 +135,40 @@ public class PdfDocumentVariables {
      */
     public static String[][] getExtraTemplates(String documentName) {
         return switch (documentName) {
+            /*
+             * A quotation now carries its own dated trip - the days, the chosen property, the
+             * room mix and how many those rooms sleep - so it can print the trip as well as the
+             * price. Same model, same data source, different job and different reader.
+             */
+            case "FULL_QUOTE" -> new String[][]{
+                {
+                    "itinerary",
+                    "Itinerary",
+                    "The trip day by day with its real dates, lodges and rooms, and what is "
+                        + "included. No prices at all - the quotation itself states those - so it "
+                        + "can be sent while the price is still being settled."
+                },
+                {
+                    "rooming_list",
+                    "Rooming List",
+                    "For the property: consecutive nights grouped into one booking each, with "
+                        + "check-in, check-out, room mix and head count. No prices - a lodge is "
+                        + "told what we are booking, never what the client is charged."
+                }
+            };
+            /*
+             * This template has existed, finished, since it was written, and nothing registered
+             * it - so it was never seeded for any company and nobody could use it. The filename
+             * convention it was written to was right all along.
+             */
+            case "FULL_ITINERARY" -> new String[][]{
+                {
+                    "accommodation_plan",
+                    "Accommodation Plan",
+                    "The nights of a catalogue itinerary as a rooming plan: property, room mix "
+                        + "and board per night. A template, so it carries no dates."
+                }
+            };
             case "FULL_COST_ESTIMATION" -> new String[][]{
                 {
                     "client_price_sheet",

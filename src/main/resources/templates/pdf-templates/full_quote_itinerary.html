@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title th:text="${quote.title != null ? quote.title : 'Safari Quote'}">Safari Quote</title>
+    <style>
+      /* ========================================
+           COMPANY - QUOTE TEMPLATE
+           Brand Colors:
+           - Accent (the company's own): {{companyAccent}}
+           - Accent, darkened: {{companyAccentDark}}
+           - Olive Brown (from the company\'s accent): {{companyAccentDark}}
+           ======================================== */
+
+      /* Reset & Base */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 10pt;
+        line-height: 1.7;
+        color: #2c2c2c;
+        background: #fff;
+      }
+
+      /* Page Settings */
+      @page {
+        size: A4 portrait;
+        margin: 18mm 15mm 22mm 15mm;
+      }
+
+      @page {
+        @bottom-right {
+          content: counter(page) " of " counter(pages);
+          font-size: 9pt;
+          color: {{companyAccent}};
+        }
+        @bottom-left {
+          content: element(footer-running);
+        }
+      }
+
+      /* Running Footer */
+      .footer-running {
+        position: running(footer-running);
+        font-size: 8pt;
+        color: {{companyAccent}};
+      }
+
+      /* ========================================
+           COVER / HEADER SECTION
+           ======================================== */
+      .cover-header {
+        border-bottom: 3px solid {{companyAccent}};
+        padding-bottom: 20px;
+        margin-bottom: 25px;
+      }
+
+      .brand-row {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .brand-row td {
+        vertical-align: middle;
+        padding: 0;
+      }
+
+      .logo-cell {
+        width: 200px;
+      }
+
+      .title-cell {
+        text-align: right;
+        padding-left: 20px;
+      }
+
+      .doc-type {
+        font-size: 24pt;
+        font-weight: 700;
+        color: {{companyAccent}};
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin: 0;
+      }
+
+      .doc-meta {
+        font-size: 10pt;
+        color: #6b6b6b;
+        margin-top: 4px;
+      }
+
+      .doc-date {
+        font-size: 10pt;
+        font-weight: 600;
+        color: #2c2c2c;
+        margin-top: 2px;
+      }
+
+      .doc-code {
+        font-family: "Courier New", monospace;
+        color: {{companyAccent}};
+        font-weight: 600;
+      }
+
+      .doc-version {
+        font-size: 9pt;
+        color: #6b6b6b;
+        margin-top: 3px;
+      }
+
+      /* ========================================
+           OVERVIEW GRID
+           ======================================== */
+      .overview-section {
+        margin-bottom: 25px;
+      }
+
+      .overview-grid {
+        width: 100%;
+        border-collapse: collapse;
+        background: #f7f7f7;
+        border: 1px solid #e8e8e8;
+      }
+
+      .overview-grid td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #e8e8e8;
+        vertical-align: top;
+      }
+
+      .overview-grid tr:last-child td {
+        border-bottom: none;
+      }
+
+      .ov-label {
+        font-size: 8pt;
+        color: #6b6b6b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+      }
+
+      .ov-value {
+        font-size: 11pt;
+        color: #2c2c2c;
+        font-weight: 500;
+        margin-top: 2px;
+      }
+
+      .ov-accent {
+        color: {{companyAccent}};
+        font-weight: 700;
+      }
+
+      /* Status Badge */
+      .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 3px;
+        font-size: 9pt;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .status-draft {
+        background: #e8e8e8;
+        color: #6b6b6b;
+      }
+
+      .status-sent {
+        background: #b3d4fc;
+        color: #3498db;
+      }
+
+      .status-accepted {
+        background: #c8e6c9;
+        color: {{companyAccent}};
+      }
+
+      .status-rejected {
+        background: #f5c6cb;
+        color: #c0392b;
+      }
+
+      .status-expired {
+        background: #fff8e1;
+        color: {{companyAccentDark}};
+      }
+
+      /* Description Block */
+      .description-block {
+        font-size: 10pt;
+        color: #6b6b6b;
+        line-height: 1.8;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f9f9f9;
+        border-left: 4px solid {{companyAccentDark}};
+      }
+
+      /* ========================================
+           SECTION BLOCKS
+           ======================================== */
+      .section-block {
+        margin-bottom: 20px;
+      }
+
+      .section-title {
+        font-size: 12pt;
+        font-weight: 700;
+        color: {{companyAccent}};
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid {{companyAccent}};
+        margin-bottom: 10px;
+      }
+
+      /* Info Box (Customer) */
+      .info-box {
+        background: #f9f9f9;
+        border: 1px solid #f39c12;
+        border-left: 4px solid #f39c12;
+        padding: 15px;
+        margin-bottom: 15px;
+      }
+
+      .info-row {
+        margin-bottom: 8px;
+      }
+
+      .info-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .info-label {
+        font-size: 8pt;
+        color: #b36b00;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        display: inline-block;
+        width: 120px;
+      }
+
+      .info-value {
+        font-size: 10pt;
+        color: #2c2c2c;
+        font-weight: 500;
+      }
+
+      /* Itinerary Box */
+      .itinerary-box {
+        background: {{companyAccentSoft}};
+        border: 1px solid #c8e6c9;
+        border-left: 4px solid #51a853;
+        padding: 15px;
+        margin-bottom: 15px;
+      }
+
+      /* The day-by-day. Kept to flat blocks with page-break-inside: avoid, because a day
+         split across a page break is the one thing a traveller reading a plan cannot follow. */
+      .day-block {
+        border-left: 3px solid #51a853;
+        padding: 8px 0 8px 12px;
+        margin-bottom: 12px;
+        page-break-inside: avoid;
+      }
+
+      .day-head {
+        font-size: 11pt;
+        font-weight: 700;
+        color: {{companyAccent}};
+        margin-bottom: 2px;
+      }
+
+      .day-date {
+        font-size: 9pt;
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 5px;
+      }
+
+      .day-text {
+        font-size: 9.5pt;
+        line-height: 1.5;
+        margin-bottom: 4px;
+      }
+
+      .day-stay {
+        font-size: 9pt;
+        color: #333;
+        margin-top: 5px;
+      }
+
+      .day-stay-label {
+        font-weight: 600;
+        color: #555;
+      }
+
+      .itinerary-name {
+        font-size: 13pt;
+        font-weight: 700;
+        color: {{companyAccent}};
+        margin-bottom: 8px;
+      }
+
+      /* ========================================
+           QUOTE ITEMS TABLE
+           ======================================== */
+      .items-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        font-size: 9pt;
+      }
+
+      .items-table th {
+        background: {{companyAccent}};
+        color: #fff;
+        padding: 10px 12px;
+        text-align: left;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 8pt;
+        letter-spacing: 0.5px;
+      }
+
+      .items-table th.text-right {
+        text-align: right;
+      }
+
+      .items-table th.text-center {
+        text-align: center;
+      }
+
+      .items-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #e8e8e8;
+        vertical-align: top;
+      }
+
+      .items-table tr:nth-child(even) {
+        background: #f7f7f7;
+      }
+
+      .items-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .item-type-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        background: #e8e8e8;
+        color: #6b6b6b;
+        border-radius: 3px;
+        font-size: 7pt;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        margin-bottom: 4px;
+      }
+
+      .item-name {
+        font-weight: 600;
+        color: #2c2c2c;
+        font-size: 10pt;
+      }
+
+      .item-description {
+        font-size: 8pt;
+        color: #6b6b6b;
+        margin-top: 3px;
+        line-height: 1.4;
+      }
+
+      .text-right {
+        text-align: right;
+      }
+
+      .text-center {
+        text-align: center;
+      }
+
+      .currency-label {
+        font-weight: 600;
+        color: {{companyAccentDark}};
+        font-size: 8pt;
+        text-transform: uppercase;
+        display: block;
+      }
+
+      .price-amount {
+        font-weight: 600;
+        color: #2c2c2c;
+      }
+
+      /* ========================================
+           TOTALS SECTION
+           ======================================== */
+      .totals-wrapper {
+        margin-bottom: 25px;
+      }
+
+      .currency-totals-block {
+        margin-bottom: 20px;
+        page-break-inside: avoid;
+      }
+
+      .currency-header {
+        background: {{companyAccentDark}};
+        color: #fff;
+        padding: 10px 15px;
+        font-size: 11pt;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0;
+      }
+
+      .totals-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid #e8e8e8;
+        border-top: none;
+      }
+
+      .totals-table td {
+        padding: 10px 15px;
+        border-bottom: 1px solid #e8e8e8;
+      }
+
+      .totals-table tr:last-child {
+        border-bottom: none;
+      }
+
+      .totals-label {
+        font-size: 10pt;
+        color: #6b6b6b;
+        font-weight: 500;
+        width: 70%;
+      }
+
+      .totals-amount {
+        font-size: 11pt;
+        color: #2c2c2c;
+        font-weight: 600;
+        text-align: right;
+        width: 30%;
+      }
+
+      .grand-total-row {
+        background: #f7f7f7;
+        border-top: 2px solid {{companyAccent}};
+      }
+
+      .grand-total-row .totals-label {
+        font-size: 12pt;
+        color: {{companyAccent}};
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .grand-total-row .totals-amount {
+        font-size: 14pt;
+        color: {{companyAccent}};
+        font-weight: 700;
+      }
+
+      /* ========================================
+           PAYMENT TERMS
+           ======================================== */
+      .payment-terms-box {
+        background: #fff8e1;
+        border: 1px solid #ffecb3;
+        border-left: 4px solid #f39c12;
+        padding: 15px;
+        margin-bottom: 15px;
+      }
+
+      .payment-terms-title {
+        font-size: 11pt;
+        font-weight: 700;
+        color: #b36b00;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .payment-row {
+        margin-bottom: 8px;
+        padding: 8px 0;
+        border-bottom: 1px dotted #f39c12;
+      }
+
+      .payment-row:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+      }
+
+      .payment-label {
+        font-size: 9pt;
+        color: #b36b00;
+        font-weight: 600;
+        display: inline-block;
+        width: 150px;
+      }
+
+      .payment-value {
+        font-size: 10pt;
+        color: #2c2c2c;
+        font-weight: 600;
+      }
+
+      /* ========================================
+           VALIDITY INFO
+           ======================================== */
+      .validity-box {
+        background: {{companyAccentSoft}};
+        border: 1px solid #c8e6c9;
+        padding: 12px 15px;
+        margin-bottom: 15px;
+      }
+
+      .validity-box.expired {
+        background: #fdecea;
+        border: 1px solid #f5c6cb;
+      }
+
+      .validity-label {
+        font-size: 8pt;
+        color: {{companyAccent}};
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 5px;
+      }
+
+      .validity-box.expired .validity-label {
+        color: #c0392b;
+      }
+
+      .validity-dates {
+        font-size: 10pt;
+        color: #2c2c2c;
+        font-weight: 600;
+      }
+
+      /* ========================================
+           NOTES SECTION
+           ======================================== */
+      .notes-box {
+        background: #f7f7f7;
+        border: 1px solid #d9d9d9;
+        padding: 15px;
+        margin-bottom: 15px;
+      }
+
+      .notes-title {
+        font-size: 10pt;
+        font-weight: 700;
+        color: #2c2c2c;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .notes-content {
+        font-size: 9pt;
+        color: #6b6b6b;
+        line-height: 1.6;
+        white-space: pre-line;
+      }
+
+      /* ========================================
+           FOOTER
+           ======================================== */
+      .document-footer {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid {{companyAccent}};
+        text-align: center;
+      }
+
+      .footer-brand-name {
+        font-size: 14pt;
+        font-weight: 700;
+        color: {{companyAccent}};
+        margin-bottom: 3px;
+      }
+
+      .footer-tagline {
+        font-size: 9pt;
+        color: #6b6b6b;
+        font-style: italic;
+        margin-bottom: 15px;
+      }
+
+      .footer-contact {
+        font-size: 9pt;
+        color: #6b6b6b;
+        margin-bottom: 15px;
+      }
+
+      .footer-contact span {
+        margin: 0 10px;
+      }
+
+      .footer-disclaimer {
+        font-size: 8pt;
+        color: #999999;
+        line-height: 1.5;
+        text-align: center;
+        margin: 0 auto 10px auto;
+      }
+
+      .footer-generated {
+        font-size: 8pt;
+        color: #999999;
+      }
+
+
+      /* ---- the trip, day by day and stay by stay ---- */
+      .trip-head { margin-bottom: 14pt; }
+      .trip-dates { font-size: 11pt; font-weight: 600; color: {{companyAccent}}; }
+      .trip-sub { font-size: 9.5pt; color: #6b6b6b; }
+
+      .day-block {
+        border-left: 3px solid {{companyAccent}};
+        padding: 8px 0 8px 12px;
+        margin-bottom: 13px;
+        page-break-inside: avoid;
+      }
+      .day-head { font-size: 11pt; font-weight: 700; color: {{companyAccent}}; margin-bottom: 2px; }
+      .day-date { font-size: 9pt; font-weight: 600; color: #555; margin-bottom: 5px; }
+      .day-text { font-size: 9.5pt; line-height: 1.55; margin-bottom: 4px; }
+      .day-line { font-size: 9pt; color: #333; margin-top: 4px; }
+      .day-label { font-weight: 600; color: #555; }
+
+      .stay-block {
+        border: 1px solid #ddd;
+        border-left: 4px solid {{companyAccent}};
+        padding: 10px 12px;
+        margin-bottom: 11px;
+        page-break-inside: avoid;
+      }
+      .stay-name { font-size: 11pt; font-weight: 700; color: {{companyAccent}}; }
+      .stay-when { font-size: 9.5pt; font-weight: 600; color: #444; margin: 2px 0 6px; }
+      .room-row { font-size: 9.5pt; padding: 2px 0; }
+      .room-count { font-weight: 700; }
+      .room-sleeps { color: #6b6b6b; }
+
+      /* Page Break */
+      .page-break {
+        page-break-before: always;
+      }
+
+      .no-break {
+        page-break-inside: avoid;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Running Footer Element -->
+    <div class="footer-running">
+      <span style="font-weight: 600; color: {{companyAccentDark}}">[[${company.name}]]</span> |
+      [[${company.website}]]
+    </div>
+
+    <!-- ========================================
+         COVER HEADER
+         ======================================== -->
+    <header class="cover-header">
+      <table class="brand-row">
+        <tr>
+          <td class="logo-cell">
+            <!-- the company own logo, embedded at render time -->
+            <span class="company-logo">{{companyLogoFullMarkup}}</span>
+          </td>
+          <td class="title-cell">
+            <h1 class="doc-type">Itinerary</h1>
+            <p class="doc-meta" th:if="${quote.quoteCode != null and !#strings.isEmpty(quote.quoteCode)}">
+              #: <span class="doc-code" th:text="${quote.quoteCode}">QT-1001-0126-1</span>
+            </p>
+            <p class="doc-version" th:if="${quote.version != null}">
+              Version <span th:text="${quote.version}">1</span>
+            </p>
+            <p class="doc-date" th:if="${quote.createdAt != null}">
+              Date: <span th:text="${#temporals.format(quote.createdAt, 'dd MMMM yyyy')}">30 January 2026</span>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </header>
+
+    <!-- ========================================
+         QUOTE OVERVIEW
+         ======================================== -->
+    <section class="overview-section">
+      <table class="overview-grid">
+        <tr>
+          <td style="width: 50%;">
+            <div class="ov-label">Quote Title</div>
+            <div class="ov-value ov-accent" th:text="${quote.title}">7-Day Serengeti Safari Quote</div>
+          </td>
+          <td style="width: 50%;" th:if="${quote.statusDisplayName != null}">
+            <div class="ov-label">Status</div>
+            <div class="ov-value">
+              <span class="status-badge"
+                    th:classappend="${quote.status != null ? 'status-' + #strings.toLowerCase(quote.status) : 'status-draft'}"
+                    th:text="${quote.statusDisplayName}">Draft</span>
+            </div>
+          </td>
+        </tr>
+        <tr th:if="${quote.description != null and !#strings.isEmpty(quote.description)}">
+          <td colspan="2">
+            <div class="ov-label">Description</div>
+            <div class="ov-value" th:text="${quote.description}">Quote description</div>
+          </td>
+        </tr>
+      </table>
+    </section>
+
+    <!-- ========================================
+         CUSTOMER INFORMATION
+         ======================================== -->
+    <section class="section-block" th:if="${quote.customer != null}">
+      <h2 class="section-title">Customer Information</h2>
+      <div class="info-box">
+        <div class="info-row">
+          <span class="info-label">Customer Name:</span>
+          <span class="info-value" th:text="${quote.customer.customerName}">John Doe</span>
+        </div>
+        <div class="info-row" th:if="${quote.customer.email != null and !#strings.isEmpty(quote.customer.email)}">
+          <span class="info-label">Email:</span>
+          <span class="info-value" th:text="${quote.customer.email}">john@example.com</span>
+        </div>
+        <div class="info-row" th:if="${quote.customer.phone != null and !#strings.isEmpty(quote.customer.phone)}">
+          <span class="info-label">Phone:</span>
+          <span class="info-value" th:text="${quote.customer.phone}">+1 234 567 8900</span>
+        </div>
+        <div class="info-row" th:if="${quote.customer.nationality != null and !#strings.isEmpty(quote.customer.nationality)}">
+          <span class="info-label">Nationality:</span>
+          <span class="info-value" th:text="${quote.customer.nationality}">United States</span>
+        </div>
+        <div class="info-row" th:if="${quote.customer.country != null and !#strings.isEmpty(quote.customer.country)}">
+          <span class="info-label">Country:</span>
+          <span class="info-value" th:text="${quote.customer.country}">United States</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================
+         THE TRIP
+         ======================================== -->
+    <section class="section-block">
+      <h2 class="section-title">Your Safari</h2>
+      <div class="trip-head">
+        <div class="trip-dates" th:if="${quote.safariStartDate != null}">
+          <span th:text="${#temporals.format(quote.safariStartDate, 'd MMMM yyyy')}">30 December 2026</span>
+          <span th:if="${quote.safariEndDate != null}"> to
+            <span th:text="${#temporals.format(quote.safariEndDate, 'd MMMM yyyy')}">9 January 2027</span>
+          </span>
+        </div>
+        <div class="trip-sub">
+          <span th:if="${quote.nights != null}" th:text="${quote.nights} + (${quote.nights} == 1 ? ' night' : ' nights')">11 nights</span><span
+            th:if="${quote.totalPax != null}" th:text="' - ' + ${quote.totalPax} + (${quote.totalPax} == 1 ? ' traveller' : ' travellers')"> - 8 travellers</span>
+        </div>
+      </div>
+
+      <!--
+        No figures on this document, by decision. The quotation states the money; this states the
+        trip, so the plan can be sent while the price is still moving between versions.
+      -->
+      <div class="day-block" th:each="day : ${quote.days}">
+        <div class="day-head">
+          <span th:text="${day.dayTag != null ? day.dayTag : 'Day ' + day.dayNumber}">Day 1</span>
+          <span th:if="${day.title != null}" th:text="' - ' + ${day.title}"> - Arrival in Arusha</span>
+        </div>
+        <div class="day-date" th:if="${day.date != null}"
+             th:text="${#temporals.format(day.date, 'EEEE, d MMMM yyyy')}">Wednesday, 30 December 2026</div>
+
+        <div class="day-text" th:if="${day.description != null and !#strings.isEmpty(day.description)}"
+             th:text="${day.description}">What happens on this day.</div>
+
+        <div class="day-line" th:if="${day.startLocation != null and day.endLocation != null
+                                       and day.startLocation != day.endLocation}">
+          <span class="day-label">Route:</span>
+          <span th:text="${day.startLocation}">Arusha</span> to <span th:text="${day.endLocation}">Karatu</span>
+        </div>
+
+        <div class="day-line" th:if="${!#lists.isEmpty(day.parks)}">
+          <span class="day-label">Parks:</span>
+          <span th:each="park, p : ${day.parks}"><span th:text="${park.parkName}">Tarangire National Park</span><span
+            th:if="${park.entryTypeDisplayName != null}" th:text="' (' + ${park.entryTypeDisplayName} + ')'"> (Day trip)</span><span
+            th:if="${!p.last}">, </span></span>
+        </div>
+
+        <div class="day-line" th:if="${!#lists.isEmpty(day.activities)}">
+          <span class="day-label">Activities:</span>
+          <span th:each="act, a : ${day.activities}"><span th:text="${act.activityName}">Game drive</span><span
+            th:if="${!a.last}">, </span></span>
+        </div>
+
+        <div class="day-line" th:if="${!#lists.isEmpty(day.accommodations)}">
+          <span class="day-label">Overnight:</span>
+          <span th:each="stay, s : ${day.accommodations}"><span th:text="${stay.accommodationName}">Kahawa House</span><span
+            th:if="${stay.roomCount != null and stay.roomTypeName != null}"
+            th:text="' (' + ${stay.roomCount} + ' x ' + ${stay.roomTypeName}
+                      + (${stay.sleeps} != null ? ', sleeps ' + ${stay.sleeps} : '') + ')'"> (3 x Double Room, sleeps 6)</span><span
+            th:if="${stay.boardTypeName != null}" th:text="', ' + ${stay.boardTypeName}">, Bed and Breakfast</span><span
+            th:if="${!s.last}">; </span></span>
+        </div>
+
+        <div class="day-line" th:if="${day.mealsIncluded != null and !#strings.isEmpty(day.mealsIncluded)}">
+          <span class="day-label">Meals:</span>
+          <span th:text="${day.mealsIncluded}">B, L, D</span>
+        </div>
+
+        <div class="day-text" th:if="${day.specialNotes != null and !#strings.isEmpty(day.specialNotes)}"
+             style="font-style: italic; color: #6b6b6b" th:text="${day.specialNotes}">A note for the traveller.</div>
+      </div>
+    </section>
+
+    <!-- ========================================
+         FOOTER
+         ======================================== -->
+      <!--
+        What this price covers.
+
+        Two lists, each stated on this document rather than derived from the other: a line sits
+        under "Not included" because somebody put it there. The wording was snapshotted when this
+        document was produced, so editing the inclusion catalogue afterwards never changes what a
+        document already sent to a customer says.
+      -->
+      <div
+        class="inclusions-box"
+        th:if="${!#lists.isEmpty(quote.inclusionsList) or !#lists.isEmpty(quote.exclusionsList)}"
+        style="margin: 14pt 0 10pt; page-break-inside: avoid"
+      >
+        <h4 style="margin: 0 0 6pt; font-size: 11pt">What this price covers</h4>
+        <table style="width: 100%; border-collapse: collapse">
+          <tr>
+            <td style="width: 50%; vertical-align: top; padding-right: 12pt">
+              <div th:if="${!#lists.isEmpty(quote.inclusionsList)}">
+                <p style="margin: 0 0 3pt; font-size: 9.5pt; font-weight: bold">Included</p>
+                <ul style="margin: 0; padding-left: 14pt; font-size: 9.5pt">
+                  <li
+                    th:each="line : ${quote.inclusionsList}"
+                    th:text="${line}"
+                    style="margin-bottom: 2pt"
+                  >
+                    An included line
+                  </li>
+                </ul>
+              </div>
+            </td>
+            <td style="width: 50%; vertical-align: top">
+              <div th:if="${!#lists.isEmpty(quote.exclusionsList)}">
+                <p style="margin: 0 0 3pt; font-size: 9.5pt; font-weight: bold">Not included</p>
+                <ul style="margin: 0; padding-left: 14pt; font-size: 9.5pt">
+                  <li
+                    th:each="line : ${quote.exclusionsList}"
+                    th:text="${line}"
+                    style="margin-bottom: 2pt"
+                  >
+                    A line this price does not cover
+                  </li>
+                </ul>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+    <footer class="document-footer">
+      <div class="footer-brand-name">[[${company.name}]]</div>
+      <div class="footer-tagline" th:if="${company.tagline != null and !#strings.isEmpty(company.tagline)}" th:text="${company.tagline}">Company tagline</div>
+
+      <div class="footer-contact">
+        <span>[[${company.website}]]</span>
+        <span>[[${company.email}]]</span>
+        <span>[[${company.phone}]]</span>
+      </div>
+
+      <div class="footer-disclaimer">
+        This quote is subject to availability and confirmation. Prices are valid as per the dates mentioned above.
+        Terms and conditions apply.
+      </div>
+
+      <!--
+        Rate Type deliberately not printed. This is the customer's copy, and "STO Rate" told them
+        the figures beside it are our operator cost; "Rack Rate" is trade vocabulary they should not
+        have to decode. The basis stays on the record and on the internal cost estimation sheet.
+      -->
+      <div class="footer-generated" th:if="${quote.createdByName != null}">
+        <span>Prepared by: <span th:text="${quote.createdByName}">John Doe</span></span>
+      </div>
+    </footer>
+  </body>
+</html>

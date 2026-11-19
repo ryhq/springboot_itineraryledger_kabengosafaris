@@ -40,6 +40,9 @@ class EveryClientDocumentSaysWhatIsIncludedTest {
     private static final Set<String> EXEMPT = Set.of(
         /* Operational sheets for our own people; the guide and the office already know. */
         "full_itinerary_accommodation_plan.html",
+        /* For the property, not the customer: rooms, dates and head count, and no price at all.
+         * There is no figure on it for an inclusions list to explain. */
+        "full_quote_rooming_list.html",
         "full_itinerary_accommodation_choices.html",
         "full_itinerary_driver_roadbook.html",
         "safari_accommodation_plan.html",
