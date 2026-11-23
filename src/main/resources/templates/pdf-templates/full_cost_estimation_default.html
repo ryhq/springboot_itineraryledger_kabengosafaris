@@ -324,7 +324,7 @@
              style="margin-top: 10pt">
         <caption style="text-align: left">
           Quoted on <span th:text="${costing.subjectCode}">QT-0000</span>
-          <span th:if="${multi}" th:text="${' | ' + quoted.currency}"> | USD</span>
+          <span th:if="${multi}" th:text="${' | ' + total.currency}"> | USD</span>
         </caption>
         <!--
           Two columns where the table above has four. The cost table compares STO against rack;

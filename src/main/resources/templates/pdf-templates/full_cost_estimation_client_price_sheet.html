@@ -292,7 +292,7 @@
              th:if="${costing.subjectKind == 'QUOTE' and quoted.currency == total.currency}"
              style="margin-top: 10pt">
         <caption>
-          Quoted
+          Quoted in <span th:text="${total.currency}">USD</span>
           <span class="unit">- as it appears on <span th:text="${costing.subjectCode}">QT-0000</span></span>
         </caption>
         <thead>

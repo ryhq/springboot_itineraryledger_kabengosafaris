@@ -70,6 +70,36 @@ class AQuotedTotalBelongsToItsOwnCurrencyTest {
                 + "every currency heading: " + offenders);
     }
 
+    /** The caption of the table, from the opening tag to the closing caption tag. */
+    private static final Pattern QUOTED_CAPTION = Pattern.compile(
+        "<table[^>]*th:each=\"quoted : \\$\\{costing\\.quoteTotals}\"[^>]*>\\s*<caption[^>]*>(.*?)</caption>",
+        Pattern.DOTALL);
+
+    @Test
+    @DisplayName("the quoted table says which currency it is in")
+    void theQuotedTableNamesItsCurrency() throws IOException {
+        /*
+         * Filtering the loop fixes the figures but leaves two tables with the same caption, one
+         * under each heading. A reader who has scrolled past the heading cannot tell which is
+         * which, and these are the two numbers the client is asked to pay.
+         */
+        List<String> offenders = new ArrayList<>();
+
+        for (String name : COSTING_SHEETS) {
+            String body = Files.readString(TEMPLATES.resolve(name));
+            Matcher m = QUOTED_CAPTION.matcher(body);
+            while (m.find()) {
+                if (!m.group(1).contains("total.currency")) {
+                    offenders.add(name);
+                }
+            }
+        }
+
+        assertTrue(offenders.isEmpty(),
+            "The quoted table in these does not name its currency, so two captions read alike: "
+                + offenders);
+    }
+
     @Test
     @DisplayName("no costing sheet still hard-codes 'Per guest' against the whole party")
     void thePerHeadLabelIsDerived() throws IOException {
