@@ -107,6 +107,40 @@ public class FullCostEstimationDTO {
     @Builder.Default
     private List<ItineraryCostSummaryDTO> savedSummary = new ArrayList<>();
 
+    /* ------------------------- derived, for templates -------------------- */
+
+    /**
+     * "Per guest" or "Average per guest", with the headcount the division used.
+     *
+     * <p>A non-resident adult and an East African adult do not pay the same park fee, and on a
+     * quotation priced in two currencies one band may carry a whole currency on its own. Dividing
+     * either total by the whole party is then an average, and a sheet that calls it "per guest"
+     * invites the reader to multiply it by their own headcount and land somewhere nobody quoted.
+     * That is exactly what happened on QT-1011-1126-2, where seven German guests and one
+     * Tanzanian produced a USD figure that looked like a price.
+     *
+     * <p>Same wording as {@code FullQuoteDTO.getPerGuestBasisLabel()} on purpose: a client holding
+     * the quotation and the price sheet should not have to decide whether two differently-phrased
+     * lines mean the same thing.
+     *
+     * <p>A getter rather than a stored field, because SpEL resolves getters and there is nothing
+     * here to keep in step with the value it describes.
+     */
+    public String getPerGuestBasisLabel() {
+        if (totalPax == null || totalPax <= 0) {
+            return null;
+        }
+        String head = paxCostDetails != null && paxCostDetails.size() > 1
+            ? "Average per guest"
+            : "Per guest";
+        return head + ", over " + totalPax + (totalPax == 1 ? " traveller" : " travelling");
+    }
+
+    /** True when the party spans more than one pax band, so no single per-head price exists. */
+    public boolean isPerGuestAveraged() {
+        return paxCostDetails != null && paxCostDetails.size() > 1;
+    }
+
     /* ----------------------------- quote only ---------------------------- */
 
     /**

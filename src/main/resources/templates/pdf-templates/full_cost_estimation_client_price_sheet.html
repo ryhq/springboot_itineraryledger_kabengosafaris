@@ -269,7 +269,7 @@
             <td class="num" th:text="${#numbers.formatDecimal(total.grandTotalRack, 1, 'COMMA', 2, 'POINT')}">0.00</td>
           </tr>
           <tr th:if="${total.rackPerPax != null}">
-            <td style="color: #666">Per guest (<span th:text="${costing.totalPax}">0</span> pax)</td>
+            <td style="color: #666" th:text="${costing.perGuestBasisLabel}">Per guest, over 0 travelling</td>
             <td class="num" th:text="${#numbers.formatDecimal(total.rackPerPax, 1, 'COMMA', 2, 'POINT')}">0.00</td>
           </tr>
         </tbody>
@@ -289,7 +289,8 @@
         the two documents cannot disagree.
       -->
       <table class="grid" th:each="quoted : ${costing.quoteTotals}"
-             th:if="${costing.subjectKind == 'QUOTE'}" style="margin-top: 10pt">
+             th:if="${costing.subjectKind == 'QUOTE' and quoted.currency == total.currency}"
+             style="margin-top: 10pt">
         <caption>
           Quoted
           <span class="unit">- as it appears on <span th:text="${costing.subjectCode}">QT-0000</span></span>
@@ -321,11 +322,17 @@
             <td class="num" th:text="${#numbers.formatDecimal(quoted.grandTotal, 1, 'COMMA', 2, 'POINT')}">0.00</td>
           </tr>
           <tr th:if="${quoted.perGuest != null}">
-            <td style="color: #666">Per guest (<span th:text="${costing.totalPax}">0</span> pax)</td>
+            <td style="color: #666" th:text="${costing.perGuestBasisLabel}">Per guest, over 0 travelling</td>
             <td class="num" th:text="${#numbers.formatDecimal(quoted.perGuest, 1, 'COMMA', 2, 'POINT')}">0.00</td>
           </tr>
         </tbody>
       </table>
+
+      <p class="note" th:if="${costing.perGuestAveraged}">
+        The party spans more than one passenger band, so the per-guest line above averages the
+        whole party rather than naming a price any one guest pays. What each band is charged is
+        set out under "By passenger band".
+      </p>
     </div>
 
 
