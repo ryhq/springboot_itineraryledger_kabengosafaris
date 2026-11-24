@@ -123,6 +123,72 @@ class AQuotationGroupsItsNightsIntoStaysTest {
     }
 
     @Test
+    @DisplayName("a night split across two lodges is two bookings, each named for its own lodge")
+    void aSplitNightIsTwoBookings() {
+        /*
+         * QT-1011-1126-2: Farm of Dreams could not hold eight, so the triple and the single stay
+         * there and the two doubles go to Kudu Lodge ten minutes away. Read as one booking named
+         * after the first row, this sends Farm of Dreams a rooming list holding two Double/Twin
+         * rooms it never agreed to - and tells Kudu nothing at all.
+         */
+        var split = new FullQuoteDTO.DayStayDTO[]{
+            room("Farm of Dreams Lodge", "Triple", 1, 3),
+            room("Farm of Dreams Lodge", "Single", 1, 1),
+            room("Kudu Lodge", "Double/Twin", 2, 4)};
+
+        var stays = QuoteStayGrouper.group(List.of(
+            night("2027-01-05", split), night("2027-01-06", split)));
+
+        assertEquals(2, stays.size(), "two properties are holding rooms, so two bookings");
+
+        var farm = stays.get(0);
+        assertEquals("Farm of Dreams Lodge", farm.getAccommodationName());
+        assertEquals(2, farm.getNights());
+        assertEquals(4, farm.getSleeps(), "the triple and the single, not the whole party");
+        assertEquals(2, farm.getRooms().size(), "Kudu's rooms are not Farm of Dreams' to hold");
+        assertEquals(LocalDate.parse("2027-01-07"), farm.getCheckOut());
+
+        var kudu = stays.get(1);
+        assertEquals("Kudu Lodge", kudu.getAccommodationName());
+        assertEquals(2, kudu.getNights());
+        assertEquals(4, kudu.getSleeps());
+        assertEquals(1, kudu.getRooms().size());
+        assertEquals(LocalDate.parse("2027-01-05"), kudu.getCheckIn());
+        assertEquals(LocalDate.parse("2027-01-07"), kudu.getCheckOut());
+    }
+
+    @Test
+    @DisplayName("one half of a split run can end while the other carries on")
+    void oneHalfOfASplitCanEndEarly() {
+        /*
+         * The overflow is usually the part that moves. Farm of Dreams keeps its rooms through all
+         * three nights while the two doubles come back from Kudu on the last one, which is three
+         * bookings - and the Farm of Dreams one must not be restarted just because the night's
+         * room list changed around it.
+         */
+        var stays = QuoteStayGrouper.group(List.of(
+            night("2027-01-05",
+                room("Farm of Dreams Lodge", "Triple", 1, 3),
+                room("Kudu Lodge", "Double/Twin", 2, 4)),
+            night("2027-01-06",
+                room("Farm of Dreams Lodge", "Triple", 1, 3),
+                room("Kudu Lodge", "Double/Twin", 2, 4)),
+            night("2027-01-07",
+                room("Farm of Dreams Lodge", "Triple", 1, 3),
+                room("Farm of Dreams Lodge", "Double/Twin", 2, 4))));
+
+        assertEquals(3, stays.size());
+        assertEquals("Farm of Dreams Lodge", stays.get(0).getAccommodationName());
+        assertEquals(2, stays.get(0).getNights(), "the triple alone, for the first two nights");
+        assertEquals("Kudu Lodge", stays.get(1).getAccommodationName());
+        assertEquals(2, stays.get(1).getNights());
+        assertEquals(LocalDate.parse("2027-01-07"), stays.get(1).getCheckOut(),
+            "Kudu is checked out of on the 7th, the morning the party rejoins");
+        assertEquals("Farm of Dreams Lodge", stays.get(2).getAccommodationName());
+        assertEquals(1, stays.get(2).getNights(), "the mix changed, so it is a second booking");
+    }
+
+    @Test
     @DisplayName("a trip with no days has no stays")
     void nothingGroupsToNothing() {
         assertTrue(QuoteStayGrouper.group(List.of()).isEmpty());
