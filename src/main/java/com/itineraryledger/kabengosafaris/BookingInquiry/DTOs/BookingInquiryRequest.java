@@ -21,7 +21,13 @@ public class BookingInquiryRequest {
     @Size(max = 100)
     private String firstName;
 
-    @NotBlank(message = "Last name is required")
+    /**
+     * Optional, because the first save of a lead has only a first name and an email.
+     *
+     * <p>It was required for as long as the form asked everything at once. Now that the form
+     * writes the lead down as soon as it knows who it is, insisting on a surname would mean
+     * refusing to record somebody who is plainly interested.
+     */
     @Size(max = 100)
     private String lastName;
 
@@ -35,11 +41,17 @@ public class BookingInquiryRequest {
     @Size(max = 100)
     private String country;
 
+    /*
+     * Null, not 1, when the request says nothing about it. These arrive one step at a time
+     * now, and a step about dates that defaulted the party size would silently overwrite the
+     * answer given on the step before it. The entity still defaults to one adult and no
+     * children, so a lead that is never asked still counts as somebody.
+     */
     @Min(value = 1, message = "At least 1 adult is required")
-    private Integer adults = 1;
+    private Integer adults;
 
     @Min(0)
-    private Integer children = 0;
+    private Integer children;
 
     private String preferredStartDate;
     private String preferredEndDate;
@@ -68,5 +80,19 @@ public class BookingInquiryRequest {
      * Optional: a form posted without it simply records nothing rather than failing.
      */
     private AttributionRequest attribution;
+
+    /** Which step of the form produced this, so an abandoned lead says where it was lost. */
+    private Integer step;
+
+    /**
+     * A field no human ever sees, and therefore never fills in.
+     *
+     * <p>There is no captcha anywhere in this codebase and the draft endpoint will create a
+     * row from an email alone, so this is the cheap half of the defence: the form renders it
+     * hidden, a scripted submitter fills everything it finds, and anything arriving with this
+     * set is accepted politely and thrown away. The expensive half is that a draft sends no
+     * mail and notifies nobody, so the worst a bot achieves is a row.
+     */
+    private String website;
 
 }

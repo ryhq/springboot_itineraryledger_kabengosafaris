@@ -11,8 +11,8 @@
   },
   {
     "name": "lastName",
-    "description": "Inquirer's last name",
-    "isRequired": true
+    "description": "Inquirer's last name, if they gave one - the form no longer insists on it",
+    "isRequired": false
   },
   {
     "name": "email",

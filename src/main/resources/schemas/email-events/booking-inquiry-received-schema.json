@@ -11,8 +11,8 @@
   },
   {
     "name": "lastName",
-    "description": "Their last name",
-    "isRequired": true
+    "description": "Their last name, if they gave one - the form no longer insists on it",
+    "isRequired": false
   },
   {
     "name": "greetingName",

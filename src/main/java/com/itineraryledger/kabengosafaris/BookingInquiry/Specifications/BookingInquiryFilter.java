@@ -75,6 +75,16 @@ public class BookingInquiryFilter {
      */
     private List<String> tracking;
 
+    /**
+     * Whether they finished the form.
+     *
+     * <p>"partial" is somebody who gave us their name and their email and then stopped - a
+     * real lead with half an answer. A dimension rather than a work queue, for the same reason
+     * tracking is one: the queues are OR'd, so "waiting over 3 days" plus "did not finish"
+     * would return the union and answer neither.
+     */
+    private List<String> completion;
+
     private LocalDateTime createdAfter;
     private LocalDateTime createdBefore;
 

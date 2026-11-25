@@ -36,5 +36,9 @@ public class BookingInquiryListItemDTO {
     private String channelDisplayName;
     private String campaign;
 
+    /** Null when they never finished. The table needs the badge, not the whole story. */
+    private LocalDateTime submittedAt;
+    private Integer lastStep;
+
     private LocalDateTime createdAt;
 }

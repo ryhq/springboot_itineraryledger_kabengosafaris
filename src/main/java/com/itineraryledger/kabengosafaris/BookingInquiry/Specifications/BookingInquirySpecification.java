@@ -99,6 +99,27 @@ public class BookingInquirySpecification {
             : cb.equal(root.get("customer").get("id"), customerId);
     }
 
+    /* Finished, or still being typed. */
+
+    /**
+     * They got to the end and sent it.
+     *
+     * <p><b>Every work queue below has to AND this on</b>, and that is the whole reason a
+     * half-filled lead is marked by a timestamp rather than by a sixth InquiryStatus. A draft
+     * is status NEW, because it is - nobody has answered it. So without this it would be
+     * counted as unanswered, called stale after three days, listed as having no phone number,
+     * and put in the urgent queue if it happened to name a date. A lifecycle marker that the
+     * queues do not consult is decoration.
+     */
+    public static Specification<BookingInquiry> submitted() {
+        return (root, query, cb) -> cb.isNotNull(root.get("submittedAt"));
+    }
+
+    /** Started and never finished. A real email address attached to half an answer. */
+    public static Specification<BookingInquiry> partial() {
+        return (root, query, cb) -> cb.isNull(root.get("submittedAt"));
+    }
+
     /* The work queues - what the list is actually for. */
 
     /**
@@ -108,7 +129,9 @@ public class BookingInquirySpecification {
      * and a quoted inquiry is being worked whether or not it closes.
      */
     public static Specification<BookingInquiry> unanswered() {
-        return (root, query, cb) -> cb.equal(root.get("status"), InquiryStatus.NEW);
+        return (root, query, cb) -> cb.and(
+            cb.equal(root.get("status"), InquiryStatus.NEW),
+            cb.isNotNull(root.get("submittedAt")));
     }
 
     /**
@@ -118,14 +141,17 @@ public class BookingInquirySpecification {
     public static Specification<BookingInquiry> staleFor(int days) {
         return (root, query, cb) -> cb.and(
             cb.equal(root.get("status"), InquiryStatus.NEW),
+            cb.isNotNull(root.get("submittedAt")),
             cb.lessThan(root.get("createdAt"), LocalDateTime.now().minusDays(days)));
     }
 
     /** No phone number: they can only be emailed, which is slower. */
     public static Specification<BookingInquiry> missingPhone() {
-        return (root, query, cb) -> cb.or(
-            cb.isNull(root.get("phone")),
-            cb.equal(cb.trim(root.get("phone")), ""));
+        return (root, query, cb) -> cb.and(
+            cb.isNotNull(root.get("submittedAt")),
+            cb.or(
+                cb.isNull(root.get("phone")),
+                cb.equal(cb.trim(root.get("phone")), "")));
     }
 
     /**
@@ -134,10 +160,25 @@ public class BookingInquirySpecification {
      */
     public static Specification<BookingInquiry> travellingWithin(int days) {
         return (root, query, cb) -> cb.and(
+            cb.isNotNull(root.get("submittedAt")),
             cb.isNotNull(root.get("preferredStartDate")),
             cb.between(root.get("preferredStartDate"),
                 java.time.LocalDate.now(), java.time.LocalDate.now().plusDays(days)),
             cb.not(root.get("status").in(InquiryStatus.CONVERTED, InquiryStatus.LOST)));
+    }
+
+    /**
+     * Which side of the line a lead is on, as a filter dimension of its own.
+     *
+     * <p>Not a queue value, because the queues are OR'd together and "stale or partial" is a
+     * union that answers neither question. This is AND'd, the way tracking is.
+     */
+    public static Specification<BookingInquiry> byCompletion(java.util.List<String> completion) {
+        if (completion == null || completion.isEmpty()) return null;
+        boolean wantsComplete = completion.contains("complete");
+        boolean wantsPartial = completion.contains("partial");
+        if (wantsComplete == wantsPartial) return null;   // both, or neither, constrains nothing
+        return wantsComplete ? submitted() : partial();
     }
 
     public static Specification<BookingInquiry> startingAfter(java.time.LocalDate date) {

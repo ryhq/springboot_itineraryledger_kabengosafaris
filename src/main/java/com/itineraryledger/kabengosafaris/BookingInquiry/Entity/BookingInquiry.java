@@ -48,7 +48,14 @@ public class BookingInquiry {
     @Column(nullable = false, length = 100)
     private String firstName;
 
-    @Column(nullable = false, length = 100)
+    /**
+     * Nullable, because the first save of a lead has only a first name and an email.
+     *
+     * <p>Most people give it on a later step and a quotation reads better with it, but a
+     * surname is not worth losing a lead over, and the form no longer asks for one before it
+     * is willing to write the row.
+     */
+    @Column(length = 100)
     private String lastName;
 
     @Column(nullable = false)
@@ -145,8 +152,44 @@ public class BookingInquiry {
 
     private LocalDateTime convertedAt;
 
+    /**
+     * The handle a browser mid-form comes back with, or null for a lead taken any other way.
+     *
+     * <p>A UUID rather than the obfuscated id, because <b>the obfuscated ids rotate on every
+     * restart</b>. A handle built from one would stop resolving the moment the API is
+     * deployed, which is precisely when somebody is halfway through the form.
+     *
+     * <p>It is kept after the lead is finished rather than cleared, so that a retried request
+     * finds the same row and is refused, instead of silently creating a second lead.
+     */
+    @Column(name = "draft_token", length = 36)
+    private String draftToken;
+
+    /**
+     * When the visitor finished. <b>Null means they never did</b> - the row is a real lead
+     * with a real email, but they stopped partway and nobody has their dates.
+     */
+    @Column(name = "submitted_at")
+    private LocalDateTime submittedAt;
+
+    /** The furthest step they reached, so an abandoned lead says where it was lost. */
+    @Column(name = "last_step")
+    private Integer lastStep;
+
+    @Column(name = "last_step_at")
+    private LocalDateTime lastStepAt;
+
+    /** True once the visitor finished. A partial lead is not a pipeline status - see {@link InquiryStatus}. */
+    @Transient
+    public boolean isSubmitted() {
+        return submittedAt != null;
+    }
+
     @Transient
     public String getDisplayName() {
+        if (lastName == null || lastName.isBlank()) {
+            return firstName;
+        }
         return firstName + " " + lastName;
     }
 

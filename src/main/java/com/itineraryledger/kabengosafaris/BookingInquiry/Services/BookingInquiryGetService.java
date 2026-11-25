@@ -232,6 +232,12 @@ public class BookingInquiryGetService {
             spec = spec.and(BookingInquirySpecification.byCustomerId(decode(filter.getCustomerId())));
         }
 
+        if (filter.getCompletion() != null && !filter.getCompletion().isEmpty()) {
+            Specification<BookingInquiry> completion =
+                BookingInquirySpecification.byCompletion(filter.getCompletion());
+            if (completion != null) spec = spec.and(completion);
+        }
+
         // the work queues, OR'd: "show me what needs doing"
         Specification<BookingInquiry> queue = null;
         if (filter.wants("unanswered")) queue = or(queue, BookingInquirySpecification.unanswered());
@@ -273,6 +279,12 @@ public class BookingInquiryGetService {
             .count("travellingSoon", BookingInquirySpecification.travellingWithin(30))
             .count("noPhone", BookingInquirySpecification.missingPhone())
             .count("converted", BookingInquirySpecification.converted(true))
+            /*
+             * Started and never finished. The form now saves as it is typed, so somebody who
+             * gave their name and their email and then closed the tab leaves a row behind
+             * instead of nothing at all. This is the counter that says how many.
+             */
+            .count("partial", BookingInquirySpecification.partial())
             /*
              * Where they came from. The breakdown is what a campaign report groups by;
              * `paid` is the subset that cost money, and `untracked` is the honest
@@ -337,6 +349,9 @@ public class BookingInquiryGetService {
             .updatedAt(inquiry.getUpdatedAt())
             .contactedAt(inquiry.getContactedAt())
             .convertedAt(inquiry.getConvertedAt())
+            .submittedAt(inquiry.getSubmittedAt())
+            .lastStep(inquiry.getLastStep())
+            .lastStepAt(inquiry.getLastStepAt())
             .build();
 
         if (inquiry.getItinerary() != null) {
@@ -367,6 +382,8 @@ public class BookingInquiryGetService {
             .channelDisplayName(inquiry.getAttribution() != null && inquiry.getAttribution().getChannel() != null
                 ? inquiry.getAttribution().getChannel().getDisplayName() : null)
             .campaign(inquiry.getAttribution() != null ? inquiry.getAttribution().getCampaign() : null)
+            .submittedAt(inquiry.getSubmittedAt())
+            .lastStep(inquiry.getLastStep())
             .createdAt(inquiry.getCreatedAt())
             .build();
 

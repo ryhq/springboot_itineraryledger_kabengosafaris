@@ -526,6 +526,58 @@ public class PublicController {
         return ResponseEntity.ok(result);
     }
 
+    /*
+     * The form saves as it goes, rather than once at the end.
+     *
+     * Three calls, all POST. A public PATCH would be the tidier verb, but the public CORS
+     * block allows only GET, POST, HEAD and OPTIONS, and widening the methods every origin on
+     * the internet may use against this API is a poor trade for a nicer word.
+     *
+     * The endpoint above stays exactly as it was, so a website still running the previous
+     * build keeps working until it is replaced.
+     */
+
+    /** Write the lead down as soon as we know who it is. Sends nobody anything. */
+    @PostMapping("/booking-inquiries/draft")
+    public ResponseEntity<Map<String, Object>> startBookingInquiryDraft(
+            @Valid @RequestBody BookingInquiryRequest request,
+            @RequestHeader(value = "Accept-Language", defaultValue = "en") String langHeader) {
+        applyLocale(request, langHeader);
+        return ResponseEntity.ok(bookingInquiryService.startDraft(request));
+    }
+
+    /** Add what they have just answered. Only the fields present are touched. */
+    @PostMapping("/booking-inquiries/draft/{draftToken}")
+    public ResponseEntity<Map<String, Object>> appendToBookingInquiryDraft(
+            @PathVariable String draftToken,
+            @RequestBody BookingInquiryRequest request,
+            @RequestHeader(value = "Accept-Language", defaultValue = "en") String langHeader) {
+        applyLocale(request, langHeader);
+        return ResponseEntity.ok(bookingInquiryService.appendToDraft(draftToken, request));
+    }
+
+    /** They have finished. This is the only call that emails anybody. */
+    @PostMapping("/booking-inquiries/draft/{draftToken}/complete")
+    public ResponseEntity<Map<String, Object>> completeBookingInquiryDraft(
+            @PathVariable String draftToken,
+            @RequestBody BookingInquiryRequest request,
+            @RequestHeader(value = "Accept-Language", defaultValue = "en") String langHeader) {
+        applyLocale(request, langHeader);
+        return ResponseEntity.ok(bookingInquiryService.completeDraft(draftToken, request));
+    }
+
+    /**
+     * The browser's own locale wins; the Accept-Language header is the fallback.
+     *
+     * <p>It decides which language the acknowledgement is written in, so getting it wrong
+     * sends a German family a letter in English.
+     */
+    private void applyLocale(BookingInquiryRequest request, String langHeader) {
+        if (request.getLocale() == null || request.getLocale().isBlank()) {
+            request.setLocale(publicTranslationService.parseLanguage(langHeader));
+        }
+    }
+
     // ========================
     // TRANSLATION LANGUAGES
     // ========================

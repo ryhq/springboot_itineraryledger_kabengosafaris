@@ -67,4 +67,18 @@ public class BookingInquiryDTO {
     private LocalDateTime updatedAt;
     private LocalDateTime contactedAt;
     private LocalDateTime convertedAt;
+
+    /**
+     * When they finished the form, or null if they never did.
+     *
+     * <p>A null here is a real lead with half an answer, not a broken row: the form saves as
+     * it is typed, so somebody who gave their name and their email and then stopped is
+     * recorded rather than lost. It is deliberately not a sixth {@code InquiryStatus} - a
+     * half-written lead is not a stage of the sale.
+     */
+    private LocalDateTime submittedAt;
+
+    /** Which step they reached, so an abandoned lead says where it was lost. */
+    private Integer lastStep;
+    private LocalDateTime lastStepAt;
 }

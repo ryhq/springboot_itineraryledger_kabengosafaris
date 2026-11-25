@@ -71,6 +71,21 @@ public class RateLimitFilter extends OncePerRequestFilter {
          */
         new RateLimitRule("POST", "/api/auth/login", 30, Duration.ofMinutes(15), false,
             "sign-in attempts"),
+        /*
+         * The planner saves as it is typed, so one visitor is now six requests rather than one.
+         *
+         * ORDER MATTERS HERE. A rule matches on startsWith and the first match wins, so these
+         * have to sit above the booking-inquiries rule below or they inherit its ten an hour -
+         * and a single family filling in one form would use half of that between them.
+         *
+         * Appending to a draft is cheap and safe: it writes to a row whose unguessable token
+         * the caller already holds, it creates nothing, and it sends no mail. Creating one
+         * keeps the old ceiling, because that is the call a stranger can reach with nothing.
+         */
+        new RateLimitRule("POST", "/api/public/booking-inquiries/draft/", 120, Duration.ofHours(1),
+            false, "form steps"),
+        new RateLimitRule("POST", "/api/public/booking-inquiries/draft", 10, Duration.ofHours(1),
+            false, "booking inquiries"),
         /* the website's own forms - each one notifies somebody by mail */
         new RateLimitRule("POST", "/api/public/booking-inquiries", 10, Duration.ofHours(1), false,
             "booking inquiries"),
