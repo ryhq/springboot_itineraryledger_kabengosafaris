@@ -30,16 +30,43 @@ public class BookingInquiryController {
     private final BookingInquiryGetService getService;
     private final BookingInquiryUpdateService updateService;
     private final BookingInquiryDeleteService deleteService;
+    private final com.itineraryledger.kabengosafaris.BookingInquiry.Services
+        .OfflineConversionExportService offlineConversions;
 
     @Autowired
     public BookingInquiryController(
         BookingInquiryGetService getService,
         BookingInquiryUpdateService updateService,
-        BookingInquiryDeleteService deleteService
+        BookingInquiryDeleteService deleteService,
+        com.itineraryledger.kabengosafaris.BookingInquiry.Services
+            .OfflineConversionExportService offlineConversions
     ) {
         this.getService = getService;
         this.updateService = updateService;
         this.deleteService = deleteService;
+        this.offlineConversions = offlineConversions;
+    }
+
+    /**
+     * Which clicks became bookings, in the file Google Ads imports.
+     *
+     * <p>The tag reports an enquiry while the visitor is still on the page. A booking happens
+     * weeks later in the office, so nothing in the browser can report it, and the account
+     * therefore knows how many enquiries a campaign produced and nothing about whether any of
+     * them was worth having.
+     *
+     * <p>Returns the file AND everything that could not go in it, each with a reason. A lead
+     * dropped silently from an export is how a campaign comes to look worthless.
+     */
+    @GetMapping("/offline-conversions")
+    @PreAuthorize("hasAuthority('PERM_READ_BOOKING_INQUIRY')")
+    public ResponseEntity<ApiResponse<?>> offlineConversions(
+        @RequestParam(required = false) String conversionName,
+        @RequestParam(required = false) String currency
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(200,
+            "Offline conversions prepared",
+            offlineConversions.build(conversionName, currency)));
     }
 
     @GetMapping
