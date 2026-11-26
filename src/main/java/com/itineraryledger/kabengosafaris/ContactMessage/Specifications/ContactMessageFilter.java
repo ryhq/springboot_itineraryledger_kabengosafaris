@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import com.itineraryledger.kabengosafaris.Attribution.AcquisitionChannel;
 import com.itineraryledger.kabengosafaris.ContactMessage.Entity.ContactMessageStatus;
 
 import lombok.Data;
@@ -40,6 +41,20 @@ public class ContactMessageFilter {
      * old. known - from somebody already on our books, which changes how it reads.
      */
     private List<String> queues;
+
+    /* Where it came from. Same dimensions, same names as the inquiry list. */
+    private AcquisitionChannel channel;
+    private List<AcquisitionChannel> channels;
+    private List<String> campaigns;
+    private List<String> sources;
+
+    /**
+     * Whether the click was bought, and whether anything was recorded at all.
+     *
+     * <p>A dimension of its own rather than another queue: the queues are OR'd, so "not replied
+     * to" plus "came from an ad" would return the union and answer neither question.
+     */
+    private List<String> tracking;
 
     private LocalDateTime createdAfter;
     private LocalDateTime createdBefore;

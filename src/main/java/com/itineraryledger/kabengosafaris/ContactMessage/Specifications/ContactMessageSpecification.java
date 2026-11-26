@@ -1,9 +1,11 @@
 package com.itineraryledger.kabengosafaris.ContactMessage.Specifications;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.jpa.domain.Specification;
 
+import com.itineraryledger.kabengosafaris.Attribution.AcquisitionChannel;
 import com.itineraryledger.kabengosafaris.ContactMessage.Entity.ContactMessage;
 import com.itineraryledger.kabengosafaris.ContactMessage.Entity.ContactMessageStatus;
 
@@ -92,5 +94,66 @@ public class ContactMessageSpecification {
         return (root, query, cb) -> known
             ? cb.isNotNull(root.get("customer"))
             : cb.isNull(root.get("customer"));
+    }
+
+    /* ---------- where the message came from ---------- */
+
+    /*
+     * The arrival has been stored on every contact message since lead attribution shipped and
+     * nothing has ever read it back: no field on the DTO, no dimension on the filter. So an ad
+     * click that landed on the contact page instead of the planner was recorded and then
+     * invisible, and the campaign that paid for it looked like it produced nothing.
+     *
+     * Identical rules to the inquiry side rather than a second opinion about them - a campaign
+     * counted one way here and another way there is worse than not counting it at all.
+     */
+
+    public static Specification<ContactMessage> byChannel(AcquisitionChannel channel) {
+        return (root, query, cb) -> channel == null
+            ? cb.conjunction()
+            : cb.equal(root.get("attribution").get("channel"), channel);
+    }
+
+    public static Specification<ContactMessage> byChannels(List<AcquisitionChannel> channels) {
+        return (root, query, cb) -> channels == null || channels.isEmpty()
+            ? cb.conjunction()
+            : root.get("attribution").get("channel").in(channels);
+    }
+
+    /** Matched whole, so "serengeti-jul" is never folded into "serengeti-july-retarget". */
+    public static Specification<ContactMessage> byCampaigns(List<String> campaigns) {
+        return (root, query, cb) -> campaigns == null || campaigns.isEmpty()
+            ? cb.conjunction()
+            : root.get("attribution").get("campaign").in(campaigns);
+    }
+
+    public static Specification<ContactMessage> bySources(List<String> sources) {
+        return (root, query, cb) -> sources == null || sources.isEmpty()
+            ? cb.conjunction()
+            : cb.lower(root.get("attribution").get("source")).in(
+                sources.stream().map(v -> v.toLowerCase().trim()).toList());
+    }
+
+    public static Specification<ContactMessage> paidChannels() {
+        List<AcquisitionChannel> paid = java.util.Arrays.stream(AcquisitionChannel.values())
+            .filter(AcquisitionChannel::isPaid)
+            .toList();
+        return (root, query, cb) -> root.get("attribution").get("channel").in(paid);
+    }
+
+    /** No arrival at all: taken before this shipped, or a browser with storage blocked. */
+    public static Specification<ContactMessage> untracked() {
+        return (root, query, cb) -> cb.isNull(root.get("attribution").get("channel"));
+    }
+
+    /** An unknown value narrows nothing rather than erroring, so an old bookmark still lists. */
+    public static Specification<ContactMessage> byTracking(List<String> tracking) {
+        if (tracking == null || tracking.isEmpty()) return (root, query, cb) -> cb.conjunction();
+        boolean paid = tracking.contains("paid");
+        boolean untracked = tracking.contains("untracked");
+        if (paid && untracked) return (root, query, cb) -> cb.conjunction();
+        if (paid) return paidChannels();
+        if (untracked) return untracked();
+        return (root, query, cb) -> cb.conjunction();
     }
 }

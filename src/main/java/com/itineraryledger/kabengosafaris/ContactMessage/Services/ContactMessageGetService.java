@@ -39,6 +39,7 @@ public class ContactMessageGetService {
     private final IdObfuscator idObfuscator;
     private final com.itineraryledger.kabengosafaris.Response.ListStats listStats;
     private final com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation;
+    private final com.itineraryledger.kabengosafaris.Attribution.AttributionService attributionService;
 
     private static final List<String> VALID_SORT_FIELDS = Arrays.asList(
         "code", "name", "email", "subject", "status", "createdAt", "updatedAt"
@@ -50,8 +51,10 @@ public class ContactMessageGetService {
         ContactMessageRepository repository,
         IdObfuscator idObfuscator,
         com.itineraryledger.kabengosafaris.Response.ListStats listStats,
-        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation
+        com.itineraryledger.kabengosafaris.Response.RecordNavigation recordNavigation,
+        com.itineraryledger.kabengosafaris.Attribution.AttributionService attributionService
     ) {
+        this.attributionService = attributionService;
         this.listStats = listStats;
         this.recordNavigation = recordNavigation;
         this.repository = repository;
@@ -212,6 +215,23 @@ public class ContactMessageGetService {
             }
         }
 
+        /* Where it came from. AND'd dimensions, exactly as on the inquiry list. */
+        if (filter.getChannel() != null) {
+            spec = spec.and(ContactMessageSpecification.byChannel(filter.getChannel()));
+        }
+        if (filter.getChannels() != null && !filter.getChannels().isEmpty()) {
+            spec = spec.and(ContactMessageSpecification.byChannels(filter.getChannels()));
+        }
+        if (filter.getCampaigns() != null && !filter.getCampaigns().isEmpty()) {
+            spec = spec.and(ContactMessageSpecification.byCampaigns(filter.getCampaigns()));
+        }
+        if (filter.getSources() != null && !filter.getSources().isEmpty()) {
+            spec = spec.and(ContactMessageSpecification.bySources(filter.getSources()));
+        }
+        if (filter.getTracking() != null && !filter.getTracking().isEmpty()) {
+            spec = spec.and(ContactMessageSpecification.byTracking(filter.getTracking()));
+        }
+
         // the work queues, OR'd
         Specification<ContactMessage> queue = null;
         if (filter.wants("unread")) queue = or(queue, ContactMessageSpecification.unread());
@@ -241,6 +261,16 @@ public class ContactMessageGetService {
             .count("unanswered", ContactMessageSpecification.unanswered())
             .count("stale", ContactMessageSpecification.staleFor(2))
             .count("known", ContactMessageSpecification.fromKnownCustomer(true))
+            /*
+             * Where they came from. `untracked` is the honest counter beside the breakdown -
+             * without it the percentages read as though they covered every message, when most
+             * of these predate any arrival being recorded at all.
+             */
+            .breakdown("byChannel",
+                com.itineraryledger.kabengosafaris.Attribution.AcquisitionChannel.values(),
+                ContactMessageSpecification::byChannel)
+            .count("paid", ContactMessageSpecification.paidChannels())
+            .count("untracked", ContactMessageSpecification.untracked())
             .recency(ContactMessageSpecification::createdAfter)
             .build();
     }
@@ -270,6 +300,7 @@ public class ContactMessageGetService {
             .createdAt(message.getCreatedAt())
             .updatedAt(message.getUpdatedAt())
             .respondedAt(message.getRespondedAt())
+            .attribution(attributionService.toDto(message.getAttribution()))
             .build();
 
         if (message.getCustomer() != null) {
@@ -289,6 +320,11 @@ public class ContactMessageGetService {
             .subject(message.getSubject())
             .status(message.getStatus())
             .statusDisplayName(message.getStatus() != null ? message.getStatus().getDisplayName() : null)
+            .channel(message.getAttribution() != null ? message.getAttribution().getChannel() : null)
+            .channelDisplayName(message.getAttribution() != null
+                && message.getAttribution().getChannel() != null
+                ? message.getAttribution().getChannel().getDisplayName() : null)
+            .campaign(message.getAttribution() != null ? message.getAttribution().getCampaign() : null)
             .createdAt(message.getCreatedAt())
             .build();
     }

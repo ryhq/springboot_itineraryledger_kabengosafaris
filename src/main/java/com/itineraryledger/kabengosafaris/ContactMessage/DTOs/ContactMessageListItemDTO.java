@@ -22,5 +22,12 @@ public class ContactMessageListItemDTO {
     private String subject;
     private ContactMessageStatus status;
     private String statusDisplayName;
+    /*
+     * Three fields, not the whole arrival: a table needs a badge, the record needs the story.
+     */
+    private com.itineraryledger.kabengosafaris.Attribution.AcquisitionChannel channel;
+    private String channelDisplayName;
+    private String campaign;
+
     private LocalDateTime createdAt;
 }

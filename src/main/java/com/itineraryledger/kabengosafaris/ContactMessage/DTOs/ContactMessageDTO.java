@@ -32,4 +32,15 @@ public class ContactMessageDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime respondedAt;
+
+    /**
+     * How they arrived.
+     *
+     * <p>It has been stored on every contact message since lead attribution shipped and read
+     * back by nothing at all, so an ad click that landed here rather than on the planner was
+     * recorded and then invisible - and the campaign that paid for it looked like it produced
+     * nothing. Null for anything taken before that, so the panel can say "not recorded"
+     * instead of quietly reporting it as direct traffic.
+     */
+    private com.itineraryledger.kabengosafaris.Attribution.AttributionDTO attribution;
 }
