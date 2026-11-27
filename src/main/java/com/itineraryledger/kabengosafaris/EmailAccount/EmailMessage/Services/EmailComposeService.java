@@ -74,10 +74,7 @@ public class EmailComposeService {
                     ApiResponse.error(404, "Email account not found", "EMAIL_ACCOUNT_NOT_FOUND"));
             }
 
-            if (Boolean.TRUE.equals(dto.getIsDraft())) {
-                return saveDraft(account, dto, attachments);
-            }
-
+            /* isDraft is honoured inside sendEmail, which every send path goes through. */
             return sendEmail(account, dto, attachments, null);
         } catch (Exception e) {
             log.error("Error composing email", e);
@@ -485,7 +482,24 @@ public class EmailComposeService {
     // Private helpers
     // =====================================================================
 
+    /**
+     * Send it, unless the caller asked for a draft.
+     *
+     * <p><b>The guard lives here and nowhere else, because this is the only door out.</b> It
+     * used to sit in composeAndSend, which meant compose honoured {@code isDraft} and reply,
+     * replyAll and forward silently ignored it - the same DTO, the same field, accepted and
+     * thrown away on three endpoints out of four. The panel's composer only ever posts drafts
+     * through compose, so nothing noticed until a reply written as a draft was delivered to a
+     * client instead. There is no recalling that.
+     *
+     * <p>A flag that is accepted and ignored is worse than one that is rejected, and worst of
+     * all when the value being ignored means "do not send this". Putting the check at the exit
+     * rather than on each caller is what stops the next endpoint reintroducing it.
+     */
     private ResponseEntity<ApiResponse<?>> sendEmail(EmailAccount account, ComposeEmailDTO dto, List<MultipartFile> attachments, EmailMessage replyTo) {
+        if (Boolean.TRUE.equals(dto.getIsDraft())) {
+            return saveDraft(account, dto, attachments);
+        }
         try {
             boolean isResendApi = account.getProviderType() == EmailAccountProvider.RESEND
                     && account.getSendingMethod() == SendingMethod.API;
